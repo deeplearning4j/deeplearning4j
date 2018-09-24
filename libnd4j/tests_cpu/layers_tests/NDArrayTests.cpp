@@ -135,11 +135,11 @@ TEST_F(NDArrayTest, TestGetScalar1) {
     ASSERT_EQ(4.0f, arrayF->e<float>(1, 1));
 
 
-    arrayF->putScalar(1, 0, 7.0f);
+    arrayF->p(1, 0, 7.0f);
     ASSERT_EQ(7.0f, arrayF->e<float>(1, 0));
 
 
-    arrayC->putScalar(1, 1, 9.0f);
+    arrayC->p(1, 1, 9.0f);
     ASSERT_EQ(9.0f, arrayC->e<float>(1, 1));
 
     delete[] c;
@@ -160,19 +160,19 @@ TEST_F(NDArrayTest, EqualityTest1) {
 
     for (int i = 0; i < arrayA->rows(); i++) {
         for (int k = 0; k < arrayA->columns(); k++) {
-            arrayA->putScalar(i, k, (float) i);
+            arrayA->p(i, k, (float) i);
         }
     }
 
     for (int i = 0; i < arrayB->rows(); i++) {
         for (int k = 0; k < arrayB->columns(); k++) {
-            arrayB->putScalar(i, k, (float) i);
+            arrayB->p(i, k, (float) i);
         }
     }
 
     for (int i = 0; i < arrayC->rows(); i++) {
         for (int k = 0; k < arrayC->columns(); k++) {
-            arrayC->putScalar(i, k, (float) i+1);
+            arrayC->p(i, k, (float) i+1);
         }
     }
 
@@ -231,7 +231,7 @@ TEST_F(NDArrayTest, TestTad3) {
     ASSERT_TRUE(row2->isView());
     ASSERT_EQ(3, row2->lengthOf());
 
-    row2->putScalar(1, 1.0);
+    row2->p(1, 1.0);
 
     //array->printBuffer();
 
@@ -290,7 +290,7 @@ TEST_F(NDArrayTest, TestRepeat1) {
     auto array = NDArrayFactory::create<float>('c', {2, 2});
     auto exp = new NDArray(eBuffer, eShape);
     for (int e = 0; e < array->lengthOf(); e++)
-        array->putScalar(e, e + 1);
+        array->p(e, e + 1);
 
     //array->printBuffer();
 
@@ -635,10 +635,10 @@ TEST_F(NDArrayTest, TestChecks4) {
 
 TEST_F(NDArrayTest, TestReductionAny1) {
     auto array = NDArrayFactory::_create<float>('c', {2, 2});
-    array.putScalar(0, 1.0f);
-    array.putScalar(1, 1.0f);
-    array.putScalar(2, 0.0f);
-    array.putScalar(3, 0.0f);
+    array.p(0, 1.0f);
+    array.p(1, 1.0f);
+    array.p(2, 0.0f);
+    array.p(3, 0.0f);
 
     auto result0 = array.reduceAlongDimension(reduce::Any, {0});
 
@@ -660,10 +660,10 @@ TEST_F(NDArrayTest, TestReductionAny1) {
 
 TEST_F(NDArrayTest, TestReductionAll1) {
     auto array = NDArrayFactory::_create<float>('c', {2, 2});
-    array.putScalar(0, 1.0f);
-    array.putScalar(1, 1.0f);
-    array.putScalar(2, 0.0f);
-    array.putScalar(3, 0.0f);
+    array.p(0, 1.0f);
+    array.p(1, 1.0f);
+    array.p(2, 0.0f);
+    array.p(3, 0.0f);
 
     auto result0 = array.reduceAlongDimension(reduce::All, {0});
 
@@ -824,10 +824,10 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul1) {
     exp.triggerAllocationFlag(false, false);
 
     for (int e = 0; e < x.lengthOf(); e++)
-        x.putScalar(e, e+1);
+        x.p(e, e+1);
 
     for (int e = 0; e < y.lengthOf(); e++)
-        y.putScalar(e, e+1);
+        y.p(e, e+1);
 
     x.permutei({1, 0});
     y.permutei({1, 0});
@@ -850,10 +850,10 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul2) {
     exp.triggerAllocationFlag(false, false);
 
     for (int e = 0; e < x.lengthOf(); e++)
-        x.putScalar(e, e+1);
+        x.p(e, e+1);
 
     for (int e = 0; e < y.lengthOf(); e++)
-        y.putScalar(e, e+1);
+        y.p(e, e+1);
 
     auto x_ = x.dup('f');
     auto y_ = y.dup('f');
@@ -882,10 +882,10 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul3) {
     exp.triggerAllocationFlag(false, false);
 
     for (int e = 0; e < x.lengthOf(); e++)
-        x.putScalar(e, e+1);
+        x.p(e, e+1);
 
     for (int e = 0; e < y.lengthOf(); e++)
-        y.putScalar(e, e+1);
+        y.p(e, e+1);
 
     x.permutei({0, 3, 4, 5, 1, 2});
     y.permutei({3, 2, 1, 0});
@@ -911,10 +911,10 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul4) {
     exp.triggerAllocationFlag(false, false);
 
     for (int e = 0; e < x.lengthOf(); e++)
-        x.putScalar(e, e+1);
+        x.p(e, e+1);
 
     for (int e = 0; e < y.lengthOf(); e++)
-        y.putScalar(e, e+1);
+        y.p(e, e+1);
 
     auto y_ = y.dup('f');
 
@@ -1131,11 +1131,11 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
 
     auto a = NDArrayFactory::_create<float>('c', {2, 3, 4});
     for (int e = 0; e < a.lengthOf(); e++)
-        a.putScalar(e, e+1);
+        a.p(e, e+1);
 
     auto b = NDArrayFactory::_create<float>('c', {2, 4, 3});
     for (int e = 0; e < b.lengthOf(); e++)
-        b.putScalar(e, e+1);
+        b.p(e, e+1);
 
     NDArray exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
@@ -1158,11 +1158,11 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_2) {
 
     auto a = NDArrayFactory::_create<float>('c', {2, 72, 25});
     for (int e = 0; e < a.lengthOf(); e++)
-        a.putScalar(e, e+1);
+        a.p(e, e+1);
 
     auto b = NDArrayFactory::_create<float>('c', {2, 25, 2});
     for (int e = 0; e < b.lengthOf(); e++)
-        b.putScalar(e, e+1);
+        b.p(e, e+1);
 
     NDArray exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
@@ -1293,7 +1293,7 @@ TEST_F(NDArrayTest, TestIndexedPut3) {
 
 TEST_F(NDArrayTest, TestIndexedPut4) {
     auto x = NDArrayFactory::_create<float>('f', {2, 2});
-    x.putScalar(0, 1, 1.0f);
+    x.p(0, 1, 1.0f);
 
     //x.printBuffer("after");
     ASSERT_NEAR(reinterpret_cast<float *>(x.getBuffer())[2], 1.0, 1e-5);
@@ -1302,7 +1302,7 @@ TEST_F(NDArrayTest, TestIndexedPut4) {
 
 TEST_F(NDArrayTest, TestIndexedPut5) {
     auto x = NDArrayFactory::_create<float>('c', {2, 2});
-    x.putScalar(0, 1, 1.0f);
+    x.p(0, 1, 1.0f);
 
     //x.printBuffer("after");
     ASSERT_NEAR(x.bufferAsT<float>()[1], 1.0, 1e-5);
@@ -1320,7 +1320,7 @@ TEST_F(NDArrayTest, TestAllTensors1) {
 TEST_F(NDArrayTest, TestIndexing1) {
     auto matrix = NDArrayFactory::_create<float>('c', {5, 5});
     for (int e = 0; e < matrix.lengthOf(); e++)
-        matrix.putScalar(e, (float) e);
+        matrix.p(e, (float) e);
 
     IndicesList idx({NDIndex::interval(2,4), NDIndex::all()});
     auto sub = matrix.subarray(idx);
@@ -1339,7 +1339,7 @@ TEST_F(NDArrayTest, TestIndexing1) {
 TEST_F(NDArrayTest, TestIndexing2) {
     auto matrix = NDArrayFactory::_create<float>('c', {2, 5, 4, 4});
     for (int e = 0; e < matrix.lengthOf(); e++)
-        matrix.putScalar(e, (float) e);
+        matrix.p(e, (float) e);
 
     IndicesList idx({ NDIndex::all(), NDIndex::interval(2,4), NDIndex::all(),  NDIndex::all()});
     auto sub = matrix.subarray(idx);
@@ -1362,7 +1362,7 @@ TEST_F(NDArrayTest, TestIndexing2) {
 TEST_F(NDArrayTest, TestIndexing3) {
     auto matrix = NDArrayFactory::_create<float>('c', {5, 5});
     for (int e = 0; e < matrix.lengthOf(); e++)
-        matrix.putScalar(e, (float) e);
+        matrix.p(e, (float) e);
 
     auto sub = matrix({2,4, 0,0});
 
@@ -1376,7 +1376,7 @@ TEST_F(NDArrayTest, TestIndexing3) {
 TEST_F(NDArrayTest, TestIndexing4) {
     auto matrix = NDArrayFactory::_create<float>('c', {2, 5, 4, 4});
     for (int e = 0; e < matrix.lengthOf(); e++)
-        matrix.putScalar(e, (float) e);
+        matrix.p(e, (float) e);
 
     auto sub = matrix({0,0, 2,4, 0,0, 0,0});    
 
@@ -1513,7 +1513,7 @@ TEST_F(NDArrayTest, TestReshapeNegative2) {
 TEST_F(NDArrayTest, TestStdDev1) {
     auto array = NDArrayFactory::_create<double>('c', {1, 5});
     for (int e = 0; e < array.lengthOf(); e++)
-        array.putScalar(e, e+1);
+        array.p(e, e+1);
 
     auto std = array.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
     ASSERT_NEAR(std, 1.58109, 1e-4);
@@ -1540,7 +1540,7 @@ TEST_F(NDArrayTest, TestStdDev2) {
 TEST_F(NDArrayTest, TestStdDev3) {
     auto array = NDArrayFactory::_create<float>('c', {1, 5000000});
     for (int e = 0; e < array.lengthOf(); e++)
-        array.putScalar(e, 1.f + (e%2?0.5f:-0.5f));
+        array.p(e, 1.f + (e%2?0.5f:-0.5f));
 
     auto std = array.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
     // nd4j_printf("Variance is %f\n", std);
@@ -1553,7 +1553,7 @@ TEST_F(NDArrayTest, TestStdDev4) {
     float x = ethalon;
     int total = array.lengthOf();
     for (int e = 0; e < total; e++) {
-        array.putScalar(e, 1.0f + (e % 2?ethalon:-ethalon));
+        array.p(e, 1.0f + (e % 2?ethalon:-ethalon));
         x *= (e % 2? 2.f: 0.5f);
     }
     x = 0.f;
@@ -1582,8 +1582,8 @@ TEST_F(NDArrayTest, TestStdDev5) {
     auto array = NDArrayFactory::_create<float>('c', {1, 1000000}); //00000});
     auto arrayD = NDArrayFactory::_create<double>('c', {1, 1000000}); //00000});
     for (int e = 0; e < array.lengthOf(); e++) {
-        array.putScalar(e, 1.f + (e%2?1/5.f:-1/5.f));
-        arrayD.putScalar(e, 1.0 + (e%2?1/5.:-1/5.));
+        array.p(e, 1.f + (e%2?1/5.f:-1/5.f));
+        arrayD.p(e, 1.0 + (e%2?1/5.:-1/5.));
     }
     float stdF = array.varianceNumber(variance::SummaryStatsStandardDeviation, false).e<float>(0);
     double stdD = arrayD.varianceNumber(variance::SummaryStatsStandardDeviation, false).e<double>(0);

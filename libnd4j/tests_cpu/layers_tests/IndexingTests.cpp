@@ -34,9 +34,9 @@ public:
 TEST_F(IndexingTests, StridedSlice_1) {
     auto x = NDArrayFactory::_create<float>('c', {3, 3, 3});
     auto exp = NDArrayFactory::_create<float>('c', {1, 1, 3});
-    exp.putScalar(0, 25.f);
-    exp.putScalar(1, 26.f);
-    exp.putScalar(2, 27.f);
+    exp.p(0, 25.f);
+    exp.p(1, 26.f);
+    exp.p(2, 27.f);
 
     x.linspace(1);
 
@@ -115,9 +115,9 @@ TEST_F(IndexingTests, SimpleSlice_1) {
     input.setBuffer(_inB);
 
     auto exp = NDArrayFactory::_create<float>('c', {1, 1, 3});
-    exp.putScalar(0, 3.0f);
-    exp.putScalar(1, 3.0f);
-    exp.putScalar(2, 3.0f);
+    exp.p(0, 3.0f);
+    exp.p(1, 3.0f);
+    exp.p(2, 3.0f);
 
     nd4j::ops::slice op;
 
@@ -140,12 +140,12 @@ TEST_F(IndexingTests, SimpleSlice_2) {
     input.setBuffer(_inB);
 
     auto exp = NDArrayFactory::_create<float>('c', {1, 2, 3});
-    exp.putScalar(0, 3.0f);
-    exp.putScalar(1, 3.0f);
-    exp.putScalar(2, 3.0f);
-    exp.putScalar(3, 4.0f);
-    exp.putScalar(4, 4.0f);
-    exp.putScalar(5, 4.0f);
+    exp.p(0, 3.0f);
+    exp.p(1, 3.0f);
+    exp.p(2, 3.0f);
+    exp.p(3, 4.0f);
+    exp.p(4, 4.0f);
+    exp.p(5, 4.0f);
 
     nd4j::ops::slice op;
 
@@ -167,12 +167,12 @@ TEST_F(IndexingTests, SimpleSlice_3) {
     input.setBuffer(_inB);
 
     auto exp = NDArrayFactory::_create<float>('c', {2, 1, 3});
-    exp.putScalar(0, 3.0f);
-    exp.putScalar(1, 3.0f);
-    exp.putScalar(2, 3.0f);
-    exp.putScalar(3, 5.0f);
-    exp.putScalar(4, 5.0f);
-    exp.putScalar(5, 5.0f);
+    exp.p(0, 3.0f);
+    exp.p(1, 3.0f);
+    exp.p(2, 3.0f);
+    exp.p(3, 5.0f);
+    exp.p(4, 5.0f);
+    exp.p(5, 5.0f);
 
     nd4j::ops::slice op;
 

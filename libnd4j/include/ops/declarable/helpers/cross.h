@@ -34,9 +34,9 @@ namespace helpers {
             auto b2 = b->e<double>(2);
 
             Nd4jLong idx = 0L;
-            o->putScalar(Nd4jLong(0L), a1 * b2 - a2 * b1);
-            o->putScalar(1L, a2 * b0 - a0 * b2);
-            o->putScalar(2L, a0 * b1 - a1 * b0);
+            o->p(Nd4jLong(0L), a1 * b2 - a2 * b1);
+            o->p(1L, a2 * b0 - a0 * b2);
+            o->p(2L, a0 * b1 - a1 * b0);
         } else {
             auto a0 = a->e<Nd4jLong>(0);
             auto a1 = a->e<Nd4jLong>(1);
@@ -47,9 +47,9 @@ namespace helpers {
             auto b2 = b->e<Nd4jLong>(2);
 
             Nd4jLong idx = 0L;
-            o->putScalar(Nd4jLong(0L), a1 * b2 - a2 * b1);
-            o->putScalar(1L, a2 * b0 - a0 * b2);
-            o->putScalar(2L, a0 * b1 - a1 * b0);
+            o->p(Nd4jLong(0L), a1 * b2 - a2 * b1);
+            o->p(1L, a2 * b0 - a0 * b2);
+            o->p(2L, a0 * b1 - a1 * b0);
         }
     }
 

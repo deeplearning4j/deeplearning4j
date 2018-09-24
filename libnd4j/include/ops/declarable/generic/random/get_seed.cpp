@@ -30,7 +30,7 @@ namespace nd4j {
             auto rng = block.getRNG();
             auto z = OUTPUT_VARIABLE(0);
 
-            z->putScalar(Nd4jLong(0), rng->getSeed());
+            z->p(Nd4jLong(0), rng->getSeed());
 
             return Status::OK();
         }

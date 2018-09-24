@@ -255,7 +255,7 @@ TEST_F(NDArrayTest2, mmul_test3) {
     auto wT = NDArrayFactory::_create<float>(x.ordering(), {1, (int)x.lengthOf()}, x.getWorkspace());                            // row-vector (transposed w)
 
     w = x / (float)10.;         
-    w.putScalar(0, 1.);
+    w.p(0, 1.);
     wT.assign(&w);
 
     auto result = mmul(w ,wT);

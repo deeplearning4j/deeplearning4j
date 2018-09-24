@@ -595,7 +595,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
         Nd4jLong numElements = this->lengthOf();
 
         for (Nd4jLong e = 0; e < numElements; e++) {
-            this->putScalar(e, step * (e + 1));
+            this->p(e, step * (e + 1));
         }
     }
 
@@ -1105,7 +1105,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 /*
     template <typename T>
-    void NDArray::putScalar(const Nd4jLong* indices, const T value) {
+    void NDArray::p(const Nd4jLong* indices, const T value) {
         auto xType = this->dataType();
         BUILD_SINGLE_SELECTOR(xType, templatedSet,(this->_buffer, indices, value), LIBND4J_TYPES);
     }
@@ -2637,26 +2637,26 @@ NDArray NDArray::transp() const {
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in linear buffer to position i
     template <typename T>
-    void NDArray::putScalar(const Nd4jLong i, const T value) {
+    void NDArray::p(const Nd4jLong i, const T value) {
         auto xType = this->dataType();
 
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, i, p), LIBND4J_TYPES);
     }
-    template void NDArray::putScalar(const Nd4jLong i, const double value);
-    template void NDArray::putScalar(const Nd4jLong i, const float value);
-    template void NDArray::putScalar(const Nd4jLong i, const float16 value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong value);
-    template void NDArray::putScalar(const Nd4jLong i, const int value);
-    template void NDArray::putScalar(const Nd4jLong i, const int8_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const uint8_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const int16_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const bool value);
+    template void NDArray::p(const Nd4jLong i, const double value);
+    template void NDArray::p(const Nd4jLong i, const float value);
+    template void NDArray::p(const Nd4jLong i, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong value);
+    template void NDArray::p(const Nd4jLong i, const int value);
+    template void NDArray::p(const Nd4jLong i, const int8_t value);
+    template void NDArray::p(const Nd4jLong i, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const int16_t value);
+    template void NDArray::p(const Nd4jLong i, const bool value);
 
 
     template <typename T>
     void NDArray::putIndexedScalar(const Nd4jLong i, const T value) {
-        putScalar<T>(i, value);
+        p<T>(i, value);
     }
     template void NDArray::putIndexedScalar(const Nd4jLong i, const double value);
     template void NDArray::putIndexedScalar(const Nd4jLong i, const float value);
@@ -2675,7 +2675,7 @@ NDArray NDArray::transp() const {
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template, * NDArray::bufferAsT(), LIBND4J_TYPES);
 
 
-    void NDArray::putScalar(const Nd4jLong i, const NDArray& value) {
+    void NDArray::p(const Nd4jLong i, const NDArray& value) {
         // probqbly wrong args order
         BUILD_SINGLE_SELECTOR(value.dataType(), templatedSet, (_buffer, i, value.dataType(), value.getBuffer()), LIBND4J_TYPES);
         // void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value)
@@ -2686,7 +2686,7 @@ NDArray NDArray::transp() const {
 // This method sets value in 2D matrix to position i, j
 
     template <typename T>
-    void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const T value) {
+    void NDArray::p(const Nd4jLong i, const Nd4jLong j, const T value) {
         //(*this)(i,j) = value;
 
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
@@ -2695,20 +2695,20 @@ NDArray NDArray::transp() const {
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
     }
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const double value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const float value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const float16 value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const int value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const int8_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const uint8_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const int16_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const bool value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const double value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const float value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int16_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const bool value);
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 3D matrix to position i,j,k
     template <typename T>
-    void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value) {
+    void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value) {
         //(*this)(i,j,k) = value;
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         auto xType = this->dataType();
@@ -2716,18 +2716,18 @@ NDArray NDArray::transp() const {
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
     }
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const double value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float16 value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int8_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint8_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int16_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const bool value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const double value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int16_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const bool value);
 
     template <typename T>
-    void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const T value) {
+    void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const T value) {
         //(*this)(i,j,k) = value;
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         auto xType = this->dataType();
@@ -2735,15 +2735,15 @@ NDArray NDArray::transp() const {
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
     }
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const double value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float16 value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const Nd4jLong value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int8_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint8_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int16_t value);
-    template void NDArray::putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bool value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const double value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const Nd4jLong value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int16_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bool value);
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -3682,7 +3682,7 @@ NDArray NDArray::transp() const {
                 for(Nd4jLong i = 0; i < rows; ++i)
                     for(Nd4jLong j = 0; j < cols; ++j)
                         if (i + diag <= j)
-                            putScalar<T>(i, j, value);
+                            p<T>(i, j, value);
                 break;
 
             case 'l':                           // fill lower triangular block
@@ -3690,7 +3690,7 @@ NDArray NDArray::transp() const {
                 for(Nd4jLong i = 0; i < rows; ++i)
                     for(Nd4jLong j = 0; j < cols; ++j)
                         if (i + diag >= j)
-                            putScalar<T>(i, j, value);
+                            p<T>(i, j, value);
                 break;
             default:
                 throw std::string("NDArray::setValueInDiagMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");

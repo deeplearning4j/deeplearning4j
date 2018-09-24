@@ -69,16 +69,16 @@ namespace helpers {
 
 #pragma omp parallel for if(values->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < values->lengthOf(); e++) {
-            values->putScalar(e, static_cast<T>(valuesVector[e]));
+            values->p(e, static_cast<T>(valuesVector[e]));
             if (counts != nullptr) 
-                counts->putScalar(e, countsMap[valuesVector[e]]);
+                counts->p(e, countsMap[valuesVector[e]]);
         }
 
 //#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < indices->lengthOf(); e++) {
             auto posI = std::find(valuesVector.begin(), valuesVector.end(), input->e<T>(e));
             auto dist = std::distance(valuesVector.begin(), posI);
-            indices->putScalar(e, Nd4jLong(dist));//indicesMap[(*input)(e)];
+            indices->p(e, Nd4jLong(dist));//indicesMap[(*input)(e)];
         }
 
         return Status::OK();

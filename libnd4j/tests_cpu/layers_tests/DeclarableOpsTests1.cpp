@@ -149,15 +149,15 @@ TEST_F(DeclarableOpsTests1, TestTensorMmul1) {
     auto y = NDArrayFactory::create<float>('c', {2, 3, 4});
 
     for (int i = 0; i < x->lengthOf(); i++) {
-        x->putScalar(i, i + 1);
-        y->putScalar(i, i + 1);
+        x->p(i, i + 1);
+        y->p(i, i + 1);
     }
 
     auto exp = NDArrayFactory::_create<float>('c', {2, 2});
-    exp.putScalar(0, 650.0);
-    exp.putScalar(1, 1586.0);
-    exp.putScalar(2, 1586.0);
-    exp.putScalar(3, 4250.0);
+    exp.p(0, 650.0);
+    exp.p(1, 1586.0);
+    exp.p(2, 1586.0);
+    exp.p(3, 4250.0);
 
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, x);
@@ -191,17 +191,17 @@ TEST_F(DeclarableOpsTests1, TestTensorDot2) {
     auto y = NDArrayFactory::create<float>('f', {2, 3, 4});
 
     for (int i = 0; i < x->lengthOf(); i++) {
-        // x->putScalar(i, i + 1);
-        // y->putScalar(i, i + 1);
+        // x->p(i, i + 1);
+        // y->p(i, i + 1);
         reinterpret_cast<float*>(x->getBuffer())[i] = i + 1;
         reinterpret_cast<float*>(y->getBuffer())[i] = i + 1;
     }
 
     auto exp = NDArrayFactory::_create<float>('c', {2, 2});
-    exp.putScalar(0, 2300.0);
-    exp.putScalar(1, 2444.0);
-    exp.putScalar(2, 2444.0);
-    exp.putScalar(3, 2600.0);
+    exp.p(0, 2300.0);
+    exp.p(1, 2444.0);
+    exp.p(2, 2444.0);
+    exp.p(3, 2600.0);
 
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, x);
@@ -235,16 +235,16 @@ TEST_F(DeclarableOpsTests1, TestTensorDot3) {
     auto y = NDArrayFactory::create<float>('f', {2, 3, 4});
 
     for (int i = 0; i < x->lengthOf(); i++) {
-        x->putScalar(i, i + 1);
-        // y->putScalar(i, i + 1);
+        x->p(i, i + 1);
+        // y->p(i, i + 1);
         reinterpret_cast<float*>(y->getBuffer())[i] = i + 1;
     }
 
     auto exp = NDArrayFactory::create<float>('f', {2, 2});
-    // exp->putScalar(0, 1090.0);
-    // exp->putScalar(1, 2818.0);
-    // exp->putScalar(2, 1168.0);
-    // exp->putScalar(3, 3040.0);
+    // exp->p(0, 1090.0);
+    // exp->p(1, 2818.0);
+    // exp->p(2, 1168.0);
+    // exp->p(3, 3040.0);
     reinterpret_cast<float*>(exp->getBuffer())[0] = 1090.0;
     reinterpret_cast<float*>(exp->getBuffer())[1] = 2818.0;
     reinterpret_cast<float*>(exp->getBuffer())[2] = 1168.0;
@@ -283,16 +283,16 @@ TEST_F(DeclarableOpsTests1, TestTensorDot4) {
     auto y =  NDArrayFactory::create<float>('c', {2, 3, 4});
 
     for (int i = 0; i < x->lengthOf(); i++) {
-        // x->putScalar(i, i + 1);
+        // x->p(i, i + 1);
         reinterpret_cast<float*>(x->getBuffer())[i] = i + 1;
-        y->putScalar(i, i + 1);
+        y->p(i, i + 1);
     }
 
     auto exp = NDArrayFactory::create<float>('f', {2, 2});
-    // exp->putScalar(0, 1090.0);
-    // exp->putScalar(1, 1168.0);
-    // exp->putScalar(2, 2818.0);
-    // exp->putScalar(3, 3040.0);
+    // exp->p(0, 1090.0);
+    // exp->p(1, 1168.0);
+    // exp->p(2, 2818.0);
+    // exp->p(3, 3040.0);
     reinterpret_cast<float*>(exp->getBuffer())[0] = 1090.0;
     reinterpret_cast<float*>(exp->getBuffer())[1] = 1168.0;
     reinterpret_cast<float*>(exp->getBuffer())[2] = 2818.0;
@@ -593,11 +593,11 @@ TEST_F(DeclarableOpsTests1, ClipByValue1) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     auto exp = NDArrayFactory::_create<float>('c', {5, 5});
     x->assign(4);
-    x->putScalar(0, -1);
-    x->putScalar(1, 2);
+    x->p(0, -1);
+    x->p(1, 2);
     exp.assign(3);
-    exp.putScalar(0, 0);
-    exp.putScalar(1, 2);
+    exp.p(0, 0);
+    exp.p(1, 2);
 
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, x);
@@ -1079,11 +1079,11 @@ TEST_F(DeclarableOpsTests1, MultiplyScalarScalar1) {
 TEST_F(DeclarableOpsTests1, TestMatMul1) {
     auto x = NDArrayFactory::create<float>('c', {3, 5});
     for (int e = 0; e < x->lengthOf(); e++)
-        x->putScalar(e, e+1);
+        x->p(e, e+1);
 
     auto y = NDArrayFactory::create<float>('c', {5, 3});
     for (int e = 0; e < y->lengthOf(); e++)
-        y->putScalar(e, e+1);
+        y->p(e, e+1);
 
     float _expB[]{135.0, 310.0, 485.0, 150.0, 350.0, 550.0, 165.0, 390.0, 615.0};
     Nd4jLong _expS[] {2, 3, 3, 1, 3, 0, 1, 102};
@@ -1119,22 +1119,22 @@ TEST_F(DeclarableOpsTests1, TestSoftMax_bp_1) {
 
     auto input = NDArrayFactory::create<double>('c', {2, 2});
     for (int e = 0; e < input->lengthOf(); e++)
-        input->putScalar(e, e+1);
+        input->p(e, e+1);
 
     auto epsilon = NDArrayFactory::create<double>('c', {2, 2});
-    epsilon->putScalar(0, 0.1f);
-    epsilon->putScalar(1, 0.2f);
-    epsilon->putScalar(2, 0.3f);
-    epsilon->putScalar(3, 0.4f);
+    epsilon->p(0, 0.1f);
+    epsilon->p(1, 0.2f);
+    epsilon->p(2, 0.3f);
+    epsilon->p(3, 0.4f);
 
     auto output = NDArrayFactory::create<double>('c', {2, 2});
     output->assign(1.0f);
 
     auto exp = NDArrayFactory::create<double>('c', {2, 2});
-    exp->putScalar(0, -0.019661194f);
-    exp->putScalar(1, 0.019661194f);
-    exp->putScalar(2, -0.019661194f);
-    exp->putScalar(3, 0.019661194f);
+    exp->p(0, -0.019661194f);
+    exp->p(1, 0.019661194f);
+    exp->p(2, -0.019661194f);
+    exp->p(3, 0.019661194f);
 
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, input);
@@ -1769,7 +1769,7 @@ TEST_F(DeclarableOpsTests1, Repeat1) {
     auto x = NDArrayFactory::create<float>('c', {2, 2});
     auto exp = new NDArray(eBuffer, eShape);
     for (int e = 0; e < x->lengthOf(); e++)
-        x->putScalar(e, e + 1);
+        x->p(e, e + 1);
     
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, x);
@@ -3676,9 +3676,9 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
     auto start = NDArrayFactory::_create<float>('c', {1, 1});
     auto stop = NDArrayFactory::_create<float>('c', {1, 1});
     auto step = NDArrayFactory::_create<float>('c', {1, 1});
-    start.putScalar(0, 1.f);
-    stop.putScalar(0, 5.f);
-    step.putScalar(0, 1.f);
+    start.p(0, 1.f);
+    stop.p(0, 5.f);
+    step.p(0, 1.f);
 
     nd4j::ops::range op;
 

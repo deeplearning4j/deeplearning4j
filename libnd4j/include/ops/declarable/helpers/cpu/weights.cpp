@@ -30,9 +30,9 @@ namespace helpers {
                 int val = input->e<int>(e);
                 if (val < maxLength) {
                     if (weights != nullptr)
-                        output->putScalar(val, output->e<T>(val) + weights->e<T>(e));
+                        output->p(val, output->e<T>(val) + weights->e<T>(e));
                     else
-                        output->putScalar(val, output->e<T>(val) + 1);
+                        output->p(val, output->e<T>(val) + 1);
                 }
             }
     }

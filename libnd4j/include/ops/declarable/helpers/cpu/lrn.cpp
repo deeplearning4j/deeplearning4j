@@ -48,7 +48,7 @@ namespace helpers {
                     quadSum += val * val;
                 }
                 double dividor = nd4j::math::nd4j_pow<double, double, double>(bias + alpha * quadSum, beta);
-                listOut->at(c)->putScalar<double>(e,  listInput->at(c)->e<double>(e) / dividor);
+                listOut->at(c)->p<double>(e,  listInput->at(c)->e<double>(e) / dividor);
             }
         }
 

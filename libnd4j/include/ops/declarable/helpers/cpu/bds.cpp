@@ -49,7 +49,7 @@ namespace helpers {
                     nd4j_printf("broadcast_dynamic_shape: Input shapes should be compatible", "");
                     return Status::CODE(ND4J_STATUS_VALIDATION, "BDS validation failed!");
                 }
-            output->putScalar(e, val);
+            output->p(e, val);
         }
         return Status::OK();
     }

@@ -35,8 +35,8 @@ namespace helpers {
                 T _e0 = matrix->e<T>(theFirst, i);
                 T _e1 = matrix->e<T>(theSecond, i);
 
-                matrix->putScalar<T>(theFirst, i, _e1);
-                matrix->putScalar<T>(theSecond, i, _e0);
+                matrix->p<T>(theFirst, i, _e1);
+                matrix->p<T>(theSecond, i, _e0);
             }
     }
     BUILD_SINGLE_TEMPLATE(template void _swapRows, (NDArray* matrix, int theFirst, int theSecond), LIBND4J_TYPES);
@@ -51,19 +51,19 @@ namespace helpers {
         invertedMatrix->assign(T(0.0));
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 0; i < n; i++)
-            invertedMatrix->putScalar(i, i, 1.0f);
+            invertedMatrix->p(i, i, 1.0f);
 
         if (inputMatrix->isIdentityMatrix()) return;
 
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 1; i < n; i++)
-            invertedMatrix->putScalar(i, i - 1,  -inputMatrix->e<T>(i, i - 1));
+            invertedMatrix->p(i, i - 1,  -inputMatrix->e<T>(i, i - 1));
 
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 2; i < n; i++) {
             for (int j = i - 2; j > -1; --j) 
                 for (int k = 0; k < i; k++) 
-                    invertedMatrix->putScalar(i, j, invertedMatrix->e<T>(i, j) - (invertedMatrix->e<T>(k, j) * inputMatrix->e<T>(i, k)));
+                    invertedMatrix->p(i, j, invertedMatrix->e<T>(i, j) - (invertedMatrix->e<T>(k, j) * inputMatrix->e<T>(i, k)));
         }
     }
 
@@ -84,17 +84,17 @@ namespace helpers {
 
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 0; i < n; i++)
-            invertedMatrix->putScalar(i, i, invertedMatrix->e<T>(i, i) / inputMatrix->e<T>(i, i));
+            invertedMatrix->p(i, i, invertedMatrix->e<T>(i, i) / inputMatrix->e<T>(i, i));
 
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 0; i < n - 1; i++)
-            invertedMatrix->putScalar(i, i + 1, invertedMatrix->e<T>(i, i+1) - (inputMatrix->e<T>(i, i + 1) * invertedMatrix->e<T>(i + 1, i + 1) / inputMatrix->e<T>(i, i)));
+            invertedMatrix->p(i, i + 1, invertedMatrix->e<T>(i, i+1) - (inputMatrix->e<T>(i, i + 1) * invertedMatrix->e<T>(i + 1, i + 1) / inputMatrix->e<T>(i, i)));
 
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = n - 2; i > - 1; i--) {
             for (int j = i + 2; j < n; j++) 
                 for (int k = i; k < n; k++) 
-                    invertedMatrix->putScalar(i, j, invertedMatrix->e<T>(i, j) - ((invertedMatrix->e<T>(k, j) * inputMatrix->e<T>(i, k) / inputMatrix->e<T>(i, i))));
+                    invertedMatrix->p(i, j, invertedMatrix->e<T>(i, j) - ((invertedMatrix->e<T>(k, j) * inputMatrix->e<T>(i, k) / inputMatrix->e<T>(i, i))));
         }
     }
 
@@ -139,10 +139,10 @@ namespace helpers {
 
                 for( int j = i + 1; j < rowNum; j++ ) {
 
-                    compoundMatrix->putScalar(j, i, compoundMatrix->e<T>(j, i) / compoundMatrix->e<T>(i, i));
+                    compoundMatrix->p(j, i, compoundMatrix->e<T>(j, i) / compoundMatrix->e<T>(i, i));
                     for( int k = i + 1; k < rowNum; k++ ) {
                         T arg = compoundMatrix->e<T>(j, i) * compoundMatrix->e<T>(i, k);
-                        compoundMatrix->putScalar(j, k, compoundMatrix->e<T>(j, k) - arg);
+                        compoundMatrix->p(j, k, compoundMatrix->e<T>(j, k) - arg);
                     }
                 }
             }
@@ -178,10 +178,10 @@ namespace helpers {
 //#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
-                matrix.putScalar(row, input->e<T>(k));
+                matrix.p(row, input->e<T>(k));
             }
 
-            output->putScalar(e, _lup<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr));
+            output->p(e, _lup<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr));
         }
 
         return Status::OK();
@@ -213,7 +213,7 @@ namespace helpers {
                 matrix.assign(0.0f);
 
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-                matrix.putScalar(row++, input->e<T>(k));
+                matrix.p(row++, input->e<T>(k));
             }
             T det = _lup<T>(&matrix, &compound, &permutation).template e<T>(0);
 
@@ -226,12 +226,12 @@ namespace helpers {
             lowerMatrix.setIdentity(); // set up U to identity matrix
             for (int k = 1; k < n; k++) {  // and then put all values under main diagonal on to it
                 for (int j = 0; j < k; j++)
-                    lowerMatrix.putScalar(k, j, compound.template e<T>(k, j));
+                    lowerMatrix.p(k, j, compound.template e<T>(k, j));
             }
             upperMatrix.setIdentity(); // set up U to identity matrix
             for (int k = 0; k < n; k++) {  // and then put all values under main diagonal on to it
                 for (int j = k; j < n; j++)
-                    upperMatrix.putScalar(k, j, compound.template e<T>(k, j));
+                    upperMatrix.p(k, j, compound.template e<T>(k, j));
             }
             invertUpperMatrix(&upperMatrix, &matrix);
 
@@ -240,7 +240,7 @@ namespace helpers {
             nd4j::MmulHelper::mmul(&matrix, &upperMatrix, &compound, 1.0, 0.0);
             nd4j::MmulHelper::mmul(&compound, &permutation, &matrix, 1.0, 0.0);
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-                output->putScalar(k, matrix.template e<T>(row++));
+                output->p(k, matrix.template e<T>(row++));
             }
         }
 

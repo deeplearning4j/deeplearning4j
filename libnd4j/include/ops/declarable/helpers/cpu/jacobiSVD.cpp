@@ -155,18 +155,18 @@ bool JacobiSVD<T>::isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem) {
     const T precision = DataTypeUtils::eps<T>();
 
     if(n == (T)0.f) {
-        block.putScalar(p, p, 0.f);
-        block.putScalar(q, p, 0.f);
+        block.p(p, p, 0.f);
+        block.p(q, p, 0.f);
     } else {
         T v = block.e<T>(p, p) / n;
 
-        rotation.putScalar(0, 0, v);
-        rotation.putScalar(1,1, v);
+        rotation.p(0, 0, v);
+        rotation.p(1,1, v);
 
         v = block.e<T>(q,p) / n;
-        rotation.putScalar(0, 1, v);
+        rotation.p(0, 1, v);
 
-        rotation.putScalar(1,0, -rotation.template e<T>(0, 1));
+        rotation.p(1,0, -rotation.template e<T>(0, 1));
         mulRotationOnLeft(p, q, block, rotation);        
 
         if(_calcU) {
@@ -192,10 +192,10 @@ bool JacobiSVD<T>::createJacobiRotation(const T& x, const T& y, const T& z, NDAr
 
     if(denom < DataTypeUtils::min<T>()) {
         
-        rotation.putScalar(0,0, 1.f);
-        rotation.putScalar(1,1, 1.f);
-        rotation.putScalar(0,1, 0.f);
-        rotation.putScalar(1,0, 0.f);
+        rotation.p(0,0, 1.f);
+        rotation.p(1,1, 1.f);
+        rotation.p(0,1, 0.f);
+        rotation.p(1,0, 0.f);
         return false;
     } 
     else {
@@ -211,11 +211,11 @@ bool JacobiSVD<T>::createJacobiRotation(const T& x, const T& y, const T& z, NDAr
   
         T sign = t > (T)0. ? 1. : -1.;
         T n = 1. / math::nd4j_sqrt<T,T>(t*t + 1.f);
-        rotation.putScalar(0,0, n);
-        rotation.putScalar(1,1, n);
+        rotation.p(0,0, n);
+        rotation.p(1,1, n);
 
-        rotation.putScalar(0,1,  -sign * (y / math::nd4j_abs<T>(y)) * math::nd4j_abs<T>(t) * n);
-        rotation.putScalar(1,0, -rotation.e<T>(0,1));
+        rotation.p(0,1,  -sign * (y / math::nd4j_abs<T>(y)) * math::nd4j_abs<T>(t) * n);
+        rotation.p(1,0, -rotation.e<T>(0,1));
 
         return true;
     }
@@ -226,10 +226,10 @@ template <typename T>
 void JacobiSVD<T>::svd2x2(const NDArray& block, int p, int q, NDArray& left, NDArray& right) {
         
     auto m = NDArrayFactory::_create(block.ordering(), {2, 2}, block.dataType(), block.getWorkspace());
-    m.putScalar<T>(0,0, block.e<T>(p,p));
-    m.putScalar<T>(0,1, block.e<T>(p,q));
-    m.putScalar<T>(1,0, block.e<T>(q,p));
-    m.putScalar<T>(1,1, block.e<T>(q,q));
+    m.p<T>(0,0, block.e<T>(p,p));
+    m.p<T>(0,1, block.e<T>(p,q));
+    m.p<T>(1,0, block.e<T>(q,p));
+    m.p<T>(1,1, block.e<T>(q,q));
   
     auto rotation = NDArrayFactory::_create(block.ordering(), {2, 2}, block.dataType(), block.getWorkspace());
     T t = m.e<T>(0,0) + m.e<T>(1,1);
@@ -237,19 +237,19 @@ void JacobiSVD<T>::svd2x2(const NDArray& block, int p, int q, NDArray& left, NDA
 
     if(math::nd4j_abs<T>(d) < DataTypeUtils::min<T>()) {
     
-        rotation.putScalar(0,0, 1.f);
-        rotation.putScalar(1,1, 1.f);
-        rotation.putScalar(0,1, 0.f);
-        rotation.putScalar(1,0, 0.f);
+        rotation.p(0,0, 1.f);
+        rotation.p(1,1, 1.f);
+        rotation.p(0,1, 0.f);
+        rotation.p(1,0, 0.f);
     }
     else {    
     
         T u = t / d;
         T tmp = math::nd4j_sqrt<T,T>(1. + u*u);
-        rotation.putScalar(0,0, u / tmp);
-        rotation.putScalar(1,1, u / tmp);
-        rotation.putScalar(0,1, 1.f / tmp);
-        rotation.putScalar(1,0, -rotation.e<T>(0,1));
+        rotation.p(0,0, u / tmp);
+        rotation.p(1,1, u / tmp);
+        rotation.p(0,1, 1.f / tmp);
+        rotation.p(1,0, -rotation.e<T>(0,1));
     }
               
     m.assign(mmul(rotation, m));
@@ -260,9 +260,9 @@ void JacobiSVD<T>::svd2x2(const NDArray& block, int p, int q, NDArray& left, NDA
 
     createJacobiRotation(_x, _y, _z, right);
 
-    m.putScalar<T>(0, 0, _x);
-    m.putScalar<T>(0, 1, _y);
-    m.putScalar<T>(1, 1, _z);
+    m.p<T>(0, 0, _x);
+    m.p<T>(0, 1, _y);
+    m.p<T>(1, 1, _z);
 
     auto temp = right.transpose();
     left.assign(mmul(rotation, *temp));
@@ -383,7 +383,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
     }
     
     for(int i = 0; i < _diagSize; ++i) {                
-        _s.putScalar(i, math::nd4j_abs<T>(_m.e<T>(i,i)));
+        _s.p(i, math::nd4j_abs<T>(_m.e<T>(i,i)));
         if(_calcU && _m.e<T>(i,i) < (T)0.) {
             auto temp = _u.subarray({{},{i, i+1}});
             temp->applyTransform(transform::Neg, temp, nullptr);
@@ -407,8 +407,8 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
 
             T _e0 = _s.e<T>(i);
             T _e1 = _s.e<T>(pos);
-            _s.putScalar(pos, _e0);
-            _s.putScalar(i, _e1);
+            _s.p(pos, _e0);
+            _s.p(i, _e1);
             //math::nd4j_swap<T>(_s(i), _s(pos));
             
             if(_calcU) {

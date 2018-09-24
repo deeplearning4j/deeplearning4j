@@ -72,7 +72,7 @@ static void _percentile(const NDArray& input, NDArray& output, std::vector<int>&
         T* buff = reinterpret_cast<T *>(flattenedArr.getBuffer());
         flattenedArr.assign(listOfSubArrs->at(i));
         std::sort(buff, buff + len);
-        output.putScalar(i, flattenedArr.e<T>(position));
+        output.p(i, flattenedArr.e<T>(position));
     }
 
     delete listOfSubArrs;

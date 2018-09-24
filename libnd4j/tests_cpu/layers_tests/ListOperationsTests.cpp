@@ -141,7 +141,7 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
 TEST_F(ListOperationsTests, BasicTest_Size_1) {
     NDArrayList list(10);
     auto exp = NDArrayFactory::_create<double>('c', {1, 1});
-    exp.putScalar(0, 10);
+    exp.p(0, 10);
     for (int e = 0; e < 10; e++) {
         auto row = NDArrayFactory::create<double>('c', {1, 100});
         row->assign((double) e);
@@ -190,9 +190,9 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
     auto matrix = NDArrayFactory::_create<double>('c', {10, 5});
 
     auto lengths = NDArrayFactory::_create<double>('c', {1, 3});
-    lengths.putScalar(0, 2);
-    lengths.putScalar(1, 3);
-    lengths.putScalar(2, 5);
+    lengths.p(0, 2);
+    lengths.p(1, 3);
+    lengths.p(2, 5);
 
     auto tads = matrix.allTensorsAlongDimension({1});
 
@@ -255,7 +255,7 @@ TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
     }
     auto indices = NDArrayFactory::_create<double>('c', {1, 10});
     for (int e = 0; e < matrix.rows(); e++)
-        indices.putScalar(e, 9 - e);
+        indices.p(e, 9 - e);
 
     nd4j::ops::scatter_list op;
     auto result = op.execute(&list, {&indices, &matrix, &s}, {}, {});

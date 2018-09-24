@@ -49,8 +49,8 @@ TEST_F(WorkspaceTests, BasicInitialization2) {
 
     auto array = NDArrayFactory::_create<float>('c', {5, 5}, &workspace);
 
-    array.putScalar(0, 1.0f);
-    array.putScalar(5, 1.0f);
+    array.p(0, 1.0f);
+    array.p(5, 1.0f);
 
     auto v = array.reduceNumber(reduce::Sum);
     auto f = v.e<float>(0);
@@ -69,8 +69,8 @@ TEST_F(WorkspaceTests, BasicInitialization3) {
 
     auto array = NDArrayFactory::_create<float>('c', {5, 5}, &workspace);
 
-    array.putScalar(0, 1.0f);
-    array.putScalar(5, 1.0f);
+    array.p(0, 1.0f);
+    array.p(5, 1.0f);
 
     auto v = array.reduceNumber(reduce::Sum);
     auto f = v.e<float>(0);
@@ -86,16 +86,16 @@ TEST_F(WorkspaceTests, ResetTest1) {
     Workspace workspace(65536);
 
     auto array = NDArrayFactory::_create<float>('c', {5, 5}, &workspace);
-    array.putScalar(0, 1.0f);
-    array.putScalar(5, 1.0f);
+    array.p(0, 1.0f);
+    array.p(5, 1.0f);
 
     workspace.scopeOut();
     for (int e = 0; e < 5; e++) {
         workspace.scopeIn();
 
         auto array2 = NDArrayFactory::_create<float>('c', {5, 5}, &workspace);
-        array2.putScalar(0, 1.0f);
-        array2.putScalar(5, 1.0f);
+        array2.p(0, 1.0f);
+        array2.p(5, 1.0f);
 
         ASSERT_NEAR(2.0f, array2.reduceNumber(reduce::Sum).e<float>(0), 1e-5);
 

@@ -87,7 +87,7 @@ namespace nd4j {
                     // scalar
                     Nd4jLong res = NativeOpExcutioner::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(),
                                                                          block.getTArguments()->data());
-                    z->putScalar(Nd4jLong(0), res);
+                    z->p(Nd4jLong(0), res);
                 } else {
                     // TAD
                     std::vector<int> dims(*block.getIArguments());

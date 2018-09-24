@@ -50,7 +50,7 @@ class ScatterHelper {
                     T t0 = input->e<T>(idx);
                     T t1 = updates->e<T>(e);
                     
-                    output->putScalar(idx, OpClass::op(t0, t1, nullptr));
+                    output->p(idx, OpClass::op(t0, t1, nullptr));
                 }
 
                 return Status::OK();

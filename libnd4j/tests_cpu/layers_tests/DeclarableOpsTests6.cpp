@@ -850,8 +850,8 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_5) {
     auto x = NDArrayFactory::_create<double>('c', {1, 4, 4});
     auto exp = NDArrayFactory::_create<double>({-16.0});
     x.linspace(1);
-    x.putScalar(5, 4.0);
-    x.putScalar(12, 12.0);
+    x.p(5, 4.0);
+    x.p(12, 12.0);
 
     nd4j::ops::matrix_determinant op;
     auto result = op.execute({&x}, {}, {});

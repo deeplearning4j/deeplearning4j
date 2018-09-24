@@ -381,7 +381,7 @@ TEST_F(GraphTests, ReductionsTest1) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     for (int r = 0; r < x->rows(); r++) {
         for (int c = 0; c < x->columns(); c++) {
-            x->putScalar(r, c, -c);
+            x->p(r, c, -c);
         }
     }
 
@@ -414,7 +414,7 @@ TEST_F(GraphTests, IndexReductionsTest1) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     for (int r = 0; r < x->rows(); r++) {
         for (int c = 0; c < x->columns(); c++) {
-            x->putScalar(r, c, -c);
+            x->p(r, c, -c);
         }
     }
 
@@ -523,7 +523,7 @@ TEST_F(GraphTests, BroadcastTest1) {
 
     auto y = NDArrayFactory::create<float>('c', {1, 5});
     for (int e = 0; e < y->columns(); e++) {
-        y->putScalar(e, e);
+        y->p(e, e);
     }
 
     auto z = NDArrayFactory::create<float>('c', {5, 5});

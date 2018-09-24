@@ -48,10 +48,10 @@ TEST_F(ConvolutionTests, TestConv2D_1) {
     auto weights = NDArrayFactory::create<double>('c', {oC, iC, kH, kW});
 
     for (int e = 0; e < input->lengthOf(); e++)
-        input->putScalar(e, e + 1);
+        input->p(e, e + 1);
 
     for (int e = 0; e < weights->lengthOf(); e++)
-        weights->putScalar(e, e + 1);
+        weights->p(e, e + 1);
 
     auto exp = new NDArray(_expB, _expS);
     exp->triggerAllocationFlag(false, false);
@@ -149,11 +149,11 @@ TEST_F(ConvolutionTests, SeparableConv2D_FF_NoBias_1) {
 
     auto input = NDArrayFactory::create<float>('c', {B, iC, iY, iX});
     for (int e = 0; e < input->lengthOf(); e++)
-        input->putScalar(e, e+1);
+        input->p(e, e+1);
 
     auto weights = NDArrayFactory::create<float>('c', {oC, iC, kY, kX});
     for (int e = 0; e < weights->lengthOf(); e++)
-        weights->putScalar(e, e+1);
+        weights->p(e, e+1);
 
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, input);

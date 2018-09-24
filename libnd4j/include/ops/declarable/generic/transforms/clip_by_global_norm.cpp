@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
     }
 
     globalNorm = nd4j::math::nd4j_sqrt(globalNorm);
-    OUTPUT_VARIABLE(block.width())->putScalar(0, globalNorm);
+    OUTPUT_VARIABLE(block.width())->p(0, globalNorm);
     const T factor = clipNorm / globalNorm;
 
     for (int e = 0; e < block.width(); e++) {

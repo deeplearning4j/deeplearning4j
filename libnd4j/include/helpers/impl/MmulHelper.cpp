@@ -525,7 +525,7 @@ nd4j::NDArray* MmulHelper::mmul(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArra
             throw std::runtime_error("A length != B length");
         if (result == nullptr)
             result = NDArrayFactory::create<double>('c', {1, 1});
-        //result->putScalar(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));
+        //result->p(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));
         BUILD_TRIPLE_SELECTOR(xType, yType, zType, _dot, (A->buffer(), B->buffer(), result->buffer(), A->lengthOf()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
         return result;
     } else { //if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix()) || (A->isColumnVector() && B->isRowVector())) {
@@ -565,7 +565,7 @@ NDArray* MmulHelper::simpleMMul(const NDArray* a, const NDArray* b, NDArray* c, 
     for(int row = 0; row < M; ++row)
         for(int col = 0; col < N; ++col)
             for(int j = 0; j < K; ++j)
-                    dot->putScalar(row,col, a->e<double>(row,j) * b->e<double>(j,col));
+                    dot->p(row,col, a->e<double>(row,j) * b->e<double>(j,col));
 
     if(alpha != 1.)
         dot->applyScalar(scalar::Multiply, alpha, dot, nullptr);

@@ -76,7 +76,7 @@ static NDArray _polyGamma(const NDArray& n, const NDArray& x) {
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
 	for(int i = 0; i < x.lengthOf(); ++i)
-		result.putScalar(i, polyGamma<T>(n.e<int>(i), x.e<T>(i)));
+		result.p(i, polyGamma<T>(n.e<int>(i), x.e<T>(i)));
 
 	return result;
 }

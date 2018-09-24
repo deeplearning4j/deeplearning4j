@@ -916,8 +916,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_14) {
     labels.linspace(1);
     predictions.linspace(2);
     weights.assign(0.5);
-    weights.putScalar(1, 0.f);
-    weights.putScalar(2, 0.f);
+    weights.p(1, 0.f);
+    weights.p(2, 0.f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -968,10 +968,10 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_16) {
     labels.linspace(1);
     predictions.linspace(3);
     weights.assign(0.5);
-    predictions.putScalar(0, 0.);
-    predictions.putScalar(1, 0.);
-    predictions.putScalar(2, 0.);
-    predictions.putScalar(3, 0.);
+    predictions.p(0, 0.);
+    predictions.p(1, 0.);
+    predictions.p(2, 0.);
+    predictions.p(3, 0.);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -997,14 +997,14 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_17) {
     labels.linspace(1);
     predictions.linspace(3);
     weights.assign(0.5);
-    predictions.putScalar(0, 0.);
-    predictions.putScalar(1, 0.);
-    predictions.putScalar(2, 0.);
-    predictions.putScalar(3, 0.);
-    labels.putScalar(0, 0.);
-    labels.putScalar(1, 0.);
-    labels.putScalar(2, 0.);
-    labels.putScalar(3, 0.);
+    predictions.p(0, 0.);
+    predictions.p(1, 0.);
+    predictions.p(2, 0.);
+    predictions.p(3, 0.);
+    labels.p(0, 0.);
+    labels.p(1, 0.);
+    labels.p(2, 0.);
+    labels.p(3, 0.);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -1030,14 +1030,14 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_18) {
     labels.linspace(1);
     predictions.linspace(3);
     weights.assign(0.5);
-    predictions.putScalar(0, 0.);
-    predictions.putScalar(1, 0.);
-    predictions.putScalar(2, 0.);
-    predictions.putScalar(3, 0.);
-    labels.putScalar(0, 0.);
-    labels.putScalar(1, 0.);
-    labels.putScalar(2, 0.);
-    labels.putScalar(3, 0.);
+    predictions.p(0, 0.);
+    predictions.p(1, 0.);
+    predictions.p(2, 0.);
+    predictions.p(3, 0.);
+    labels.p(0, 0.);
+    labels.p(1, 0.);
+    labels.p(2, 0.);
+    labels.p(3, 0.);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -1164,18 +1164,18 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_23) {
     labels.linspace(1);
     predictions.linspace(3);
     weights.assign(0.5);
-    predictions.putScalar(0, 0.);
-    predictions.putScalar(1, 0.);
-    predictions.putScalar(2, 0.);
-    predictions.putScalar(3, 0.);
-    labels.putScalar(0, 0.);
-    labels.putScalar(1, 0.);
-    labels.putScalar(2, 0.);
-    labels.putScalar(3, 0.);
-    weights.putScalar(40+0, 0.);
-    weights.putScalar(40+1, 0.);
-    weights.putScalar(40+2, 0.);
-    weights.putScalar(40+3, 0.);
+    predictions.p(0, 0.);
+    predictions.p(1, 0.);
+    predictions.p(2, 0.);
+    predictions.p(3, 0.);
+    labels.p(0, 0.);
+    labels.p(1, 0.);
+    labels.p(2, 0.);
+    labels.p(3, 0.);
+    weights.p(40+0, 0.);
+    weights.p(40+1, 0.);
+    weights.p(40+2, 0.);
+    weights.p(40+3, 0.);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
@@ -1430,8 +1430,8 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test10) {
     labels.linspace(1);
     weights.assign(0.5);
     predictions.assign(0.5);
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
 
     nd4j::ops::cosine_distance_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2,2});
@@ -1723,10 +1723,10 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test12) {
                                             
     logits.linspace(1);
     weights.assign(0.5);
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
-    weights.putScalar(3, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
+    weights.p(3, 0.);
     
 
     nd4j::ops::hinge_loss op;
@@ -1947,10 +1947,10 @@ TEST_F(DeclarableOpsTests2, huber_loss_test8) {
     labels.linspace(0.1, 0.1);
     predictions.linspace(1);
     weights.assign(0.5);    
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
-    weights.putScalar(3, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
+    weights.p(3, 0.);
 
     nd4j::ops::huber_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {0.1}, {2});
@@ -2023,10 +2023,10 @@ TEST_F(DeclarableOpsTests2, huber_loss_test11) {
     labels.linspace(0.1, 0.1);
     predictions.linspace(1);
     weights.assign(0.5);    
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
-    weights.putScalar(3, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
+    weights.p(3, 0.);
 
     nd4j::ops::huber_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {0.1}, {3});
@@ -2270,10 +2270,10 @@ TEST_F(DeclarableOpsTests2, log_loss_test10) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
-    weights.putScalar(3, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
+    weights.p(3, 0.);
 
     nd4j::ops::log_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
@@ -2346,10 +2346,10 @@ TEST_F(DeclarableOpsTests2, log_loss_test13) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
-    weights.putScalar(3, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
+    weights.p(3, 0.);
  
     nd4j::ops::log_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
@@ -2567,10 +2567,10 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test9) {
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
-    weights.putScalar(3, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
+    weights.p(3, 0.);
  
     nd4j::ops::mean_pairwssqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {});
@@ -2671,10 +2671,10 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test4) {
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
-    weights.putScalar(3, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
+    weights.p(3, 0.);
 
     nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
@@ -2771,10 +2771,10 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test8) {
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);    
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
-    weights.putScalar(3, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
+    weights.p(3, 0.);
 
     nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
@@ -2871,9 +2871,9 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test12) {
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
 
     nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -2970,9 +2970,9 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test16) {
     predictions.linspace(0.5, 0.5);
     labels.linspace(1);
     weights.assign(0.5);        
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
 
     nd4j::ops::mean_sqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
@@ -3185,9 +3185,9 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test9) {
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
 
     nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {1});
@@ -3280,9 +3280,9 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test13) {
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
 
     nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {2});
@@ -3375,9 +3375,9 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test17) {
                                             
     logits.linspace(0.1, 0.1);
     weights.assign(0.5);    
-    weights.putScalar(0, 0.);
-    weights.putScalar(1, 0.);
-    weights.putScalar(2, 0.);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
 
     nd4j::ops::sigm_cross_entropy_loss op;
     auto results = op.execute({&logits, &weights, &labels}, {5.}, {3});

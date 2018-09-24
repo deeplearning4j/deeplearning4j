@@ -59,7 +59,7 @@ namespace helpers {
                                 }
                             }
                         }
-                        (*output).putScalar<Y>(b, h_out, w_out, d, cur_val);
+                        (*output).p<Y>(b, h_out, w_out, d, cur_val);
                     }
                 }
             }

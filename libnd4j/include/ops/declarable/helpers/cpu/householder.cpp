@@ -57,7 +57,7 @@ NDArray Householder<T>::evalHHmatrix(const NDArray& x) {
 		w.assign(x / u0);		
 	}
 	
-	w.putScalar(Nd4jLong(0), 1.f);
+	w.p(Nd4jLong(0), 1.f);
 	wT.assign(&w);
 	
 	auto identity = NDArrayFactory::_create(x.ordering(), {(int)x.lengthOf(), (int)x.lengthOf()}, x.dataType(), x.getWorkspace());

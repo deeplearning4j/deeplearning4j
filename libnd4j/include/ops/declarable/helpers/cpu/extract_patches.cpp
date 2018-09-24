@@ -51,7 +51,7 @@ namespace helpers {
                 for (int l = 0; l < sizeRow && l + i < rowDim; l++)
                 for (int m = 0; m < sizeCol && m + j < colDim; m++) {
                 for (int k = 0; k < lastDim; ++k) {
-                    outMatrix->putScalar<T>(pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
+                    outMatrix->p<T>(pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
                     if (pos >= outMatrix->lengthOf()) { k = lastDim; m = sizeCol; l = sizeRow; j = colDim; i = rowDim; }
                 }
             }

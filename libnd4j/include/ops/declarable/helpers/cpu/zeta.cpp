@@ -120,7 +120,7 @@ static NDArray zeta_(const NDArray& x, const NDArray& q) {
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
 	for(int i = 0; i < x.lengthOf(); ++i)
-		result.putScalar(i, zeta<T>(x.e<T>(i), q.e<T>(i)));
+		result.p(i, zeta<T>(x.e<T>(i), q.e<T>(i)));
 
 	return result;
 }

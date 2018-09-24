@@ -71,7 +71,7 @@ TEST_F(ScopeTests, RealTests_1) {
     y->assign(0.0);
 
     auto scalar = NDArrayFactory::create<float>('c', {1, 1});
-    scalar->putScalar(0, 10);
+    scalar->p(0, 10);
 
     auto variableSpace = graph.getVariableSpace();
     variableSpace->putVariable(-1, x);

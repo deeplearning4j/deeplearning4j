@@ -42,9 +42,9 @@ TEST_F(SwitchTests, SwitchTest1) {
     input->assign(-119.0f);
 
     auto condtionX = NDArrayFactory::create<float>('c', {1, 1});
-    condtionX->putScalar(0, 0.0f);
+    condtionX->p(0, 0.0f);
     auto condtionY = NDArrayFactory::create<float>('c', {1, 1});
-    condtionY->putScalar(0, 0.0f);
+    condtionY->p(0, 0.0f);
 
     variableSpace->putVariable(-1, input);
     variableSpace->putVariable(-2, condtionX);
@@ -133,9 +133,9 @@ TEST_F(SwitchTests, SwitchTest2) {
     input->assign(-119.0f);
 
     auto condtionX = NDArrayFactory::create<float>('c', {1, 1});
-    condtionX->putScalar(0, 1.0f);
+    condtionX->p(0, 1.0f);
     auto condtionY = NDArrayFactory::create<float>('c', {1, 1});
-    condtionY->putScalar(0, 1.0f);
+    condtionY->p(0, 1.0f);
 
 
     variableSpace->putVariable(-1, input);
@@ -199,9 +199,9 @@ TEST_F(SwitchTests, SwitchTest3) {
     input->assign(-119.0f);
 
     auto condtionX = NDArrayFactory::create<float>('c', {1, 1});
-    condtionX->putScalar(0, 2.0f);
+    condtionX->p(0, 2.0f);
     auto condtionY = NDArrayFactory::create<float>('c', {1, 1});
-    condtionY->putScalar(0, 1.0f);
+    condtionY->p(0, 1.0f);
 
 
     variableSpace->putVariable(-1, input);

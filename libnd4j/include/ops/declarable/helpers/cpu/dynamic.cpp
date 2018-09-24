@@ -63,7 +63,7 @@ namespace nd4j {
                         outputs[i].second = 0;
                         for (int e = 0; e < indices->lengthOf(); ++e)
                             if (indices->e<Nd4jLong>(e) == i)
-                                outputs[i].first->putScalar(outputs[i].second++, input->e<T>(e));
+                                outputs[i].first->p(outputs[i].second++, input->e<T>(e));
                     }
             }
             template <typename T>
@@ -86,7 +86,7 @@ namespace nd4j {
                                             output->lengthOf(), pos);
                                 return ND4J_STATUS_VALIDATION;
                             }
-                            output->putScalar<T>(pos, data->e<T>(i));
+                            output->p<T>(pos, data->e<T>(i));
                         }
                     }
                 }
@@ -168,7 +168,7 @@ namespace nd4j {
                         outputs[i].second = 0;
                         for (int e = 0; e < indices->lengthOf(); ++e)
                             if (indices->e<Nd4jLong>(e) == i)
-                                output->putScalar<T>(e, outputs[i].first->e<T>(outputs[i].second++));
+                                output->p<T>(e, outputs[i].first->e<T>(outputs[i].second++));
                     }
                 }
 

@@ -1779,7 +1779,7 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test3) {
     
     auto x = NDArrayFactory::_create<double>('c', {2, 3, 2, 5});    
     x.linspace(-30.);
-    x.putScalar(30, 0.5);   // avoid zero, since it is points of discontinuity for prelu
+    x.p(30, 0.5);   // avoid zero, since it is points of discontinuity for prelu
     auto alpha = NDArrayFactory::_create<double>('c', {5,3}, {-0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.5, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7});
     auto dLdO = NDArrayFactory::_create<double>('c', {2, 3, 2, 5});
 
@@ -1799,7 +1799,7 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test4) {
     
     auto x = NDArrayFactory::_create<double>('c', {2, 3, 4, 5});    
     x.linspace(-50.);
-    x.putScalar(50, 0.5);   // avoid zero, since it is points of discontinuity for prele
+    x.p(50, 0.5);   // avoid zero, since it is points of discontinuity for prele
     auto alpha = NDArrayFactory::_create<double>('c', {2,10}, {-0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.25, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2});
     auto dLdO = NDArrayFactory::_create<double>('c', {2, 3, 4, 5});
 

@@ -50,7 +50,7 @@ nd4j::NDArray* processCondition(int mode,nd4j::NDArray *arg, nd4j::NDArray *comp
             for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
                 T result2 = processElementCondition(mode,arg1(i),comp1(0.));
                 if(result2 > 0) {
-                    output->putScalar(numResults, arg1(i));
+                    output->p(numResults, arg1(i));
                     numResults++;
                 }
             }
@@ -62,7 +62,7 @@ nd4j::NDArray* processCondition(int mode,nd4j::NDArray *arg, nd4j::NDArray *comp
             for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
                 T result2 = processElementCondition(mode,arg1(i),compScalar);
                 if(result2 > 0) {
-                    output->putScalar(numResults, arg1(i));
+                    output->p(numResults, arg1(i));
                     numResults++;
                 }
             }
@@ -76,14 +76,14 @@ nd4j::NDArray* processCondition(int mode,nd4j::NDArray *arg, nd4j::NDArray *comp
         for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
             T result2 = processElementCondition(mode,arg1(i),compScalar);
             if(result2 > 0) {
-                output->putScalar(numResults, arg1(i));
+                output->p(numResults, arg1(i));
                 numResults++;
             }
         }
     }
 
     if(numResult != nullptr)
-        numResult->putScalar(0,numResults);
+        numResult->p(0,numResults);
 
     return output;
 
