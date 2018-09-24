@@ -68,38 +68,7 @@ template void NDArrayFactory::memcpy_(void *ptr, const std::vector<int8_t> &vect
     template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const int16_t value, const char order, nd4j::memory::Workspace* workspace);
     template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const bool value, const char order, nd4j::memory::Workspace* workspace);
 
-
-    // template <typename T>
-    // NDArray* NDArrayFactory::create_(const std::initializer_list<T>& values, nd4j::memory::Workspace* workspace) {
-    //     std::vector<T> vector(values);
-    //     return create_(vector, workspace);
-    // }
-    // template NDArray* NDArrayFactory::create_(const std::initializer_list<float>& values, nd4j::memory::Workspace* workspace);
-    // template NDArray* NDArrayFactory::create_(const std::initializer_list<double>& values, nd4j::memory::Workspace* workspace);
-    // template NDArray* NDArrayFactory::create_(const std::initializer_list<float16>& values, nd4j::memory::Workspace* workspace);
-    // template NDArray* NDArrayFactory::create_(const std::initializer_list<Nd4jLong>& values, nd4j::memory::Workspace* workspace);
-    // template NDArray* NDArrayFactory::create_(const std::initializer_list<int>& values, nd4j::memory::Workspace* workspace);
-    // template NDArray* NDArrayFactory::create_(const std::initializer_list<bool>& values, nd4j::memory::Workspace* workspace);
-    // template NDArray* NDArrayFactory::create_(const std::initializer_list<uint8_t>& values, nd4j::memory::Workspace* workspace);
-    // template NDArray* NDArrayFactory::create_(const std::initializer_list<int8_t>& values, nd4j::memory::Workspace* workspace);
-    // template NDArray* NDArrayFactory::create_(const std::initializer_list<int16_t>& values, nd4j::memory::Workspace* workspace);
-
-    template <typename T>
-    NDArray NDArrayFactory::create(const std::initializer_list<T>& values, nd4j::memory::Workspace* workspace) {
-        std::vector<T> vec(values);
-        return create<T>(vec, workspace);
-    }
-    template NDArray NDArrayFactory::create(const std::initializer_list<double>& values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::create(const std::initializer_list<float>& values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::create(const std::initializer_list<float16>& values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::create(const std::initializer_list<Nd4jLong>& values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::create(const std::initializer_list<int>& values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::create(const std::initializer_list<int16_t>& values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::create(const std::initializer_list<int8_t>& values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::create(const std::initializer_list<uint8_t>& values, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::create(const std::initializer_list<bool>& values, nd4j::memory::Workspace* workspace);
-
-
+////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<T>& data, nd4j::memory::Workspace* workspace) {
         std::vector<T> vec(data);
@@ -114,35 +83,6 @@ template void NDArrayFactory::memcpy_(void *ptr, const std::vector<int8_t> &vect
     template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<int8_t>& data, nd4j::memory::Workspace* workspace);
     template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<uint8_t>& data, nd4j::memory::Workspace* workspace);
     template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<bool>& data, nd4j::memory::Workspace* workspace);
-
-
-    ////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    NDArray* NDArrayFactory::create_(const std::vector<T> &values, nd4j::memory::Workspace* workspace) {
-        auto res = new NDArray();
-
-        int8_t *buffer = nullptr;
-        auto shapeInfo = ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(), values.size(), workspace);
-        ALLOCATE(buffer, workspace, values.size() * sizeof(T), int8_t);
-        
-        res->setBuffer(buffer);
-        res->setShapeInfo(shapeInfo);
-        //T *t = values.data();
-        //std::memcpy(res->getBuffer(), values.data(), values.size() * sizeof(T));
-
-        res->triggerAllocationFlag(true, true);
-        res->setWorkspace(workspace);
-        return res;
-    }
-    template NDArray* NDArrayFactory::create_(const std::vector<float> &v, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const std::vector<double> &v, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const std::vector<float16> &v, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const std::vector<Nd4jLong> &v, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const std::vector<int> &v, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const std::vector<bool> &v, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const std::vector<uint8_t> &v, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const std::vector<int8_t> &v, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const std::vector<int16_t> &v, nd4j::memory::Workspace* workspace);
 
 #endif
 
