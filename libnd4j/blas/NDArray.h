@@ -150,7 +150,7 @@ namespace nd4j {
         NDArray(Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
-        *  default constructor, do not allocate memory, memory for array is passed from outside 
+        *  do not allocate memory, memory for array is passed from outside 
         */
         NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
 

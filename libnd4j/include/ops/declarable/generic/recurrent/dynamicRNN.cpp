@@ -72,7 +72,7 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
         h = h->permute({1, 0, 2});                      // [bS x time x numUnits] -> [time x bS x numUnits]
     }
 
-    helpers::rnnTimeLoop({x, Wx, Wh, b, h0, maxTimeStep}, h, hFinal);
+    helpers::rnnTimeLoop(x, Wx, Wh, b, h0, maxTimeStep, h, hFinal);
 
     if(timeMajor == false) {
         delete x;

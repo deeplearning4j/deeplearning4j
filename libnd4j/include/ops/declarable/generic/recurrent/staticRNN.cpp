@@ -33,8 +33,8 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
     auto Wh = INPUT_VARIABLE(2);               // hidden-to-hidden weights, [numUnits x numUnits]
 	auto b  = INPUT_VARIABLE(3);               // biases for, [2*numUnits]
 
-	NDArray* h0          = nullptr;     		      // initial cell output (at time step = 0) [bS x numUnits]
-	NDArray* maxTimeStep = nullptr;			      // vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
+	NDArray* h0          = nullptr;     	   // initial cell output (at time step = 0) [bS x numUnits]
+	NDArray* maxTimeStep = nullptr;			   // vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
 
     if(block.width() == 5) {
         if ((*INPUT_VARIABLE(4)).rankOf() == 2)
@@ -66,7 +66,7 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
         REQUIRE_TRUE(ShapeUtils::shapeAsString(maxTimeStep)  == ShapeUtils::shapeAsString({bS}), 0, "STATIC_RNN custom operation: wrong shape of maxTimeStep array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString({bS}).c_str(), ShapeUtils::shapeAsString(maxTimeStep).c_str());
 
 
-    helpers::rnnTimeLoop({x, Wx, Wh, b, h0, maxTimeStep}, h, hFinal);
+    helpers::rnnTimeLoop(x, Wx, Wh, b, h0, maxTimeStep,  h, hFinal);
     
     return Status::OK();
 }

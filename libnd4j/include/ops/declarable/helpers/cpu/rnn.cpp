@@ -36,14 +36,13 @@ static FORCEINLINE NDArray activation(const NDArray& arr) {
 
 
 //////////////////////////////////////////////////////////////////////////
-void rnnCell(const std::vector<NDArray*>& inArrs, NDArray* ht) {
+void rnnCell(const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* ht_1, NDArray* ht) {
 
-    auto xt   = inArrs[0];                   // input [bS x inSize]
-    auto Wx   = inArrs[1];                   // input-to-hidden weights, [inSize  x numUnits]
-    auto Wh   = inArrs[2];                   // hidden-to-hidden weights, [numUnits x numUnits]
-    auto b    = inArrs[3];                   // biases, [2*numUnits]: {0, numUnits} are input-to-hidden biases and {numUnits, 2*numUnits} are hidden-to-hidden biases
-
-    auto ht_1 = inArrs[4];                   // previous cell output [bS x numUnits],  that is at previous time step t-1, in case of projection=false -> numUnits=numUnits!!!
+    // xt   input [bS x inSize]
+    // Wx   input-to-hidden weights, [inSize  x numUnits]
+    // Wh   hidden-to-hidden weights, [numUnits x numUnits]
+    // b    biases, [2*numUnits]: {0, numUnits} are input-to-hidden biases and {numUnits, 2*numUnits} are hidden-to-hidden biases
+    // ht_1 previous cell output [bS x numUnits],  that is at previous time step t-1, in case of projection=false -> numUnits=numUnits!!!
 
     const int numUnits  = ht_1->sizeAt(1);
     
@@ -53,17 +52,16 @@ void rnnCell(const std::vector<NDArray*>& inArrs, NDArray* ht) {
 }
 
 
-
 //////////////////////////////////////////////////////////////////////////
-void rnnTimeLoop(const std::vector<NDArray*>& inArrs, NDArray* h, NDArray* hFinal) {
+void rnnTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* h0, const NDArray* maxTimeStep, NDArray* h, NDArray* hFinal) {
 
-    auto x  = inArrs[0];               	// input [time x bS x inSize]
-	auto Wx = inArrs[1];               	// input-to-hidden  weights, [inSize  x numUnits]
-    auto Wh = inArrs[2];               	// hidden-to-hidden weights, [numUnits x numUnits]
-	auto b  = inArrs[3];               	// biases for, [2*numUnits]
+    // x   input [time x bS x inSize]
+	// Wx  input-to-hidden  weights, [inSize  x numUnits]
+    // Wh  hidden-to-hidden weights, [numUnits x numUnits]
+	// b   biases for, [2*numUnits]
 
-	auto h0          = inArrs[4];		// initial cell output (at time step = 0) [bS x numUnits]
-	auto maxTimeStep = inArrs[5];     	// vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
+	// h0          initial cell output (at time step = 0) [bS x numUnits]
+	// maxTimeStep vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
     
     const int time     = x->sizeAt(0);
     const int bS       = x->sizeAt(1);        
@@ -93,7 +91,7 @@ void rnnTimeLoop(const std::vector<NDArray*>& inArrs, NDArray* h, NDArray* hFina
                     ht_1.assign((*h)({maxStep-1,maxStep, e,e+1, 0,0}));
             }
             else {
-                helpers::rnnCell({&xt, Wx, Wh, b, &ht_1}, &ht);
+                helpers::rnnCell(&xt, Wx, Wh, b, &ht_1, &ht);
                 ht_1.assign(ht);
             }
         }

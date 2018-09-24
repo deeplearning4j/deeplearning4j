@@ -31,7 +31,7 @@ namespace nd4j {
     class NDArrayFactory {
     private:
         template <typename T>
-        static void _memcpy(void *ptr, std::vector<T> &vector);
+        static void _memcpy(void *ptr, const std::vector<T> &vector);
     public:
         template <typename T>
         static NDArray* empty(nd4j::memory::Workspace* workspace = nullptr);
@@ -64,7 +64,7 @@ namespace nd4j {
         static NDArray* vector(Nd4jLong length, const T startingValue = (T) 0, nd4j::memory::Workspace *workspace = nullptr);
 
         template <typename T>
-        static NDArray* create_(std::initializer_list<Nd4jLong> s, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray* create_(const std::initializer_list<Nd4jLong>& shape, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
         static NDArray* create_(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace = nullptr);
@@ -75,17 +75,17 @@ namespace nd4j {
         static NDArray* create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray create(const char order, const std::vector<Nd4jLong> &shape, std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
         static NDArray create(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace = nullptr);
         static NDArray create(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray create(std::vector<T> &values, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray create(const std::vector<T> &values, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray* create_(std::vector<T> &values, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray* create_(const std::vector<T> &values, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
@@ -100,10 +100,10 @@ namespace nd4j {
          * @param values
          */
         template <typename T>
-        static NDArray* create_(std::initializer_list<T> values, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray* create_(const std::initializer_list<T>& values, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray create(const char order, const std::initializer_list<Nd4jLong> shape, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray create(const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
         static NDArray create(T* buffer, char order, std::initializer_list<Nd4jLong> shape, nd4j::memory::Workspace* workspace = nullptr);
@@ -112,10 +112,10 @@ namespace nd4j {
         static NDArray* create_(T* buffer, char order, std::initializer_list<Nd4jLong> shape, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray create(std::initializer_list<T> values, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray create(const std::initializer_list<T>& values, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray create(const char order, const std::vector<Nd4jLong> &shape, std::initializer_list<T> data, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<T>& data, nd4j::memory::Workspace* workspace = nullptr);
 #endif
     };
 }
