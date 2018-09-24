@@ -21,6 +21,8 @@
 #include <helpers/ShapeBuilders.h>
 
 namespace nd4j {
+
+
     Nd4jLong* ShapeBuilders::createScalarShapeInfo(nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
         auto res = createScalarShapeInfo(workspace);
         nd4j::ArrayOptions::setDataType(res, dataType);
@@ -93,5 +95,20 @@ Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const ch
 
     return ShapeBuilders::createShapeInfo(dataType, order, std::vector<Nd4jLong>(shapeOnly), workspace);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+Nd4jLong* ShapeBuilders::copyShapeInfo(const Nd4jLong* inShapeInfo, const bool copyStrides, memory::Workspace* workspace) {
+
+    Nd4jLong *outShapeInfo = nullptr;
+    ALLOCATE(outShapeInfo, workspace, shape::shapeInfoLength(inShapeInfo), Nd4jLong);
+    
+    memcpy(outShapeInfo, inShapeInfo, shape::shapeInfoByteLength(inShapeInfo));
+
+    if(!copyStrides)
+        shape::updateStrides(outShapeInfo, shape::order(outShapeInfo));
+
+    return outShapeInfo;
+}
+
 
 }

@@ -81,11 +81,6 @@ namespace nd4j {
         template <typename T>
         static NDArray create(const std::vector<T> &values, nd4j::memory::Workspace* workspace = nullptr);
 
-        /**
-        *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
-        */
-        static NDArray create(const NDArray *other, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
-
 #ifndef __JAVACPP_HACK__
         // this method only available out of javacpp
         /**

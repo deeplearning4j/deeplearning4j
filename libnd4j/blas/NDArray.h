@@ -187,6 +187,12 @@ namespace nd4j {
         NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
+        *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        */
+        NDArray(const NDArray *other, const bool copyStrides = false, memory::Workspace* workspace = nullptr);
+                
+
+        /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
          * @param offset
          * @return
@@ -1335,7 +1341,6 @@ namespace nd4j {
             delete []_shapeInfo;
 
         _shapeInfo = shapeInfo;
-        _isShapeAlloc = false;
 
         if (shapeInfo != nullptr) {
             this->_length = shape::length(shapeInfo);

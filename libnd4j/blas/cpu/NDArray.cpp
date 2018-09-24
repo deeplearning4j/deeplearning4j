@@ -140,45 +140,27 @@ namespace nd4j {
 
     }
 
-    NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
-        int rank = (int) shape.size();
+////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
+        
+    if ((int) shape.size() > MAX_RANK)
+        throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-        if (rank > MAX_RANK)
-            throw std::invalid_argument("Rank of NDArray can't exceed 32");
+    setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, workspace));
+    ALLOCATE(_buffer, workspace, _length * DataTypeUtils::sizeOf(dtype), int8_t);        
+    _workspace = workspace;    
+    triggerAllocationFlag(true, true);
+}
 
-        auto shapeOf = new Nd4jLong[rank];
-        int cnt = 0;
+////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::memory::Workspace* workspace) {
+    
+    ALLOCATE(_buffer, workspace, other->_length * DataTypeUtils::sizeOf(other->dataType()), int8_t);
+    setShapeInfo(ShapeBuilders::copyShapeInfo(other->_shapeInfo, copyStrides, workspace));
+    _workspace = workspace;    
+    triggerAllocationFlag(true, true);
+}
 
-        for (auto &item: shape)
-            shapeOf[cnt++] = item;
-
-        _workspace = workspace;
-        if (workspace == nullptr) {
-            if (order == 'f')
-                _shapeInfo = shape::shapeBufferFortran(rank, dtype, shapeOf);
-            else
-                _shapeInfo = shape::shapeBuffer(rank, dtype, shapeOf);
-
-            _buffer = new int8_t[shape::length(_shapeInfo) * DataTypeUtils::sizeOfElement(dtype)];
-        } else {
-            _shapeInfo = reinterpret_cast<Nd4jLong*>(workspace->allocateBytes(shape::shapeInfoByteLength(rank)));
-            if (order == 'f')
-                shape::shapeBufferFortran(rank, dtype, shapeOf, _shapeInfo);
-            else
-                shape::shapeBuffer(rank, dtype, shapeOf, _shapeInfo);
-
-            _buffer = reinterpret_cast<int8_t *>(workspace->allocateBytes(shape::length(_shapeInfo) * DataTypeUtils::sizeOfElement(dtype)));
-        }
-
-        ArrayOptions::setDataType(_shapeInfo, dtype);
-        memset(_buffer, 0, DataTypeUtils::sizeOfElement(dtype) * shape::length(_shapeInfo));
-        shape::updateStrides(_shapeInfo, order);
-
-        _isBuffAlloc = true;
-        _isShapeAlloc = true;
-
-        delete[] shapeOf;
-    }
 
     template <typename T>
     void NDArray::templatedAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const {

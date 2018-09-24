@@ -45,6 +45,12 @@ namespace nd4j {
         static Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace);
         static Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const char order, const std::initializer_list<Nd4jLong>& shapeOnly, memory::Workspace* workspace);
 
+        /**
+        *   allocates memory for new shapeInfo and copy all information from inShapeInfo to new shapeInfo
+        *   if copyStrides is false then strides for new shapeInfo are recalculated
+        */
+        static Nd4jLong* copyShapeInfo(const Nd4jLong* inShapeInfo, const bool copyStrides, memory::Workspace* workspace);
+
     };
 }
 
