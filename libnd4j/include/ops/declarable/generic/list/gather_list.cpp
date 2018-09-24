@@ -49,7 +49,7 @@ namespace nd4j {
             auto result = NDArrayFactory::create_('c', shape, list->dataType());
             int skipPosition = 0;
             for (int e = 0; e < indices->lengthOf(); e++) {
-                auto idx = indices->getIndexedScalar<int>(e);
+                auto idx = indices->e<int>(e);
                 auto array = list->readRaw(idx);
                 
                 IndicesList indicesList;

@@ -39,11 +39,11 @@ namespace nd4j {
                 auto z = OUTPUT_VARIABLE(0);
 
                 if (y->isR()) {
-                    auto v = !cond->getIndexedScalar<bool>(0)? y->getIndexedScalar<double>(0) : x->getIndexedScalar<double>(0);
-                    z->putIndexedScalar(0, v);
+                    auto v = !cond->e<bool>(0)? y->e<double>(0) : x->e<double>(0);
+                    z->p(0, v);
                 } else {
-                    auto v = !cond->getIndexedScalar<bool>(0)? y->getIndexedScalar<Nd4jLong>(0) : x->getIndexedScalar<Nd4jLong>(0);
-                    z->putIndexedScalar(0, v);
+                    auto v = !cond->e<bool>(0)? y->e<Nd4jLong>(0) : x->e<Nd4jLong>(0);
+                    z->p(0, v);
                 }
             } else {
                 bool same = cond->isSameShape(x);
@@ -53,11 +53,11 @@ namespace nd4j {
 
                     for (int e = 0; e < cond->lengthOf(); e++) {
                         if (y->isR()) {
-                            auto r = !cond->getIndexedScalar<bool>(e) ? y->getIndexedScalar<double>(e) : x->getIndexedScalar<double>(e);
-                            z->putIndexedScalar(e, r);
+                            auto r = !cond->e<bool>(e) ? y->e<double>(e) : x->e<double>(e);
+                            z->p(e, r);
                         } else {
-                            auto r = !cond->getIndexedScalar<bool>(e) ? y->getIndexedScalar<Nd4jLong>(e) : x->getIndexedScalar<Nd4jLong>(e);
-                            z->putIndexedScalar(e, r);
+                            auto r = !cond->e<bool>(e) ? y->e<Nd4jLong>(e) : x->e<Nd4jLong>(e);
+                            z->p(e, r);
                         }
                     }
                 } else {
@@ -71,7 +71,7 @@ namespace nd4j {
                     auto tadsZ = z->allTensorsAlongDimension(dims);
 
                     for (int e = 0; e < tadsX->size(); e++) {
-                        if (!cond->getIndexedScalar<bool>(e)) {
+                        if (!cond->e<bool>(e)) {
                             tadsZ->at(e)->assign(tadsY->at(e));
                         } else {
                             tadsZ->at(e)->assign(tadsX->at(e));

@@ -15,36 +15,20 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// Created by raver119 on 24/09/18.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_shape)
+#ifndef DEV_TESTS_WHERE_H
+#define DEV_TESTS_WHERE_H
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/helpers.h>
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(shape_of, 1, 1, false, 0, 0) {
-            auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
-
-            for (int e = 0; e < x->rankOf(); e++)
-                z->p(e, x->sizeAt(e));
-
-            STORE_RESULT(z);
-
-            return Status::OK();
-        };
-        DECLARE_SYN(shape, shape_of);
-
-        DECLARE_SHAPE_FN(shape_of) {
-            auto inShape = inputShape->at(0);
-
-            // always LONG
-            return SHAPELIST(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, shape::rank(inShape), block.workspace()));
-        };
+        namespace helpers {
+            void _where(NDArray &condition, NDArray& output, memory::Workspace *workspace);
+        }
     }
 }
 
-#endif
+#endif //DEV_TESTS_WHERE_H

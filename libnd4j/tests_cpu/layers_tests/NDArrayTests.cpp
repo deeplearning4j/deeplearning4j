@@ -235,7 +235,7 @@ TEST_F(NDArrayTest, TestTad3) {
 
     //array->printBuffer();
 
-    row2->putIndexedScalar(2, 1.0);
+    row2->p(2, 1.0);
 
     //array->printBuffer();
 
@@ -314,8 +314,8 @@ TEST_F(NDArrayTest, TestRepeat1) {
 TEST_F(NDArrayTest, TestIndexedPut1) {
     auto array = NDArrayFactory::create_<float>('f', {3, 3});
 
-    array->putIndexedScalar(4, 1.0f);
-    ASSERT_EQ(1.0f, array->getIndexedScalar<float>(4));
+    array->p(4, 1.0f);
+    ASSERT_EQ(1.0f, array->e<float>(4));
     //array->printBuffer();
 
     delete array;
@@ -1277,7 +1277,7 @@ TEST_F(NDArrayTest, BroadcastOpsTest1) {
 TEST_F(NDArrayTest, TestIndexedPut2) {
     auto x = NDArrayFactory::create<float>('f', {2, 2});
     //x.printShapeInfo("x shape");
-    x.putIndexedScalar(1, 1.0f);
+    x.p(1, 1.0f);
 
     //x.printBuffer("after");
     ASSERT_NEAR(reinterpret_cast<float *>(x.getBuffer())[2], 1.0, 1e-5);
@@ -1285,7 +1285,7 @@ TEST_F(NDArrayTest, TestIndexedPut2) {
 
 TEST_F(NDArrayTest, TestIndexedPut3) {
     auto x = NDArrayFactory::create<float>('c', {2, 2});
-    x.putIndexedScalar(1, 1.0f);
+    x.p(1, 1.0f);
 
     //x.printBuffer("after");
     ASSERT_NEAR(reinterpret_cast<float *>(x.getBuffer())[1], 1.0, 1e-5);
@@ -1354,7 +1354,7 @@ TEST_F(NDArrayTest, TestIndexing2) {
 
     ASSERT_EQ(64, sub->lengthOf());
     ASSERT_NEAR(32, sub->e<float>(0), 1e-5);
-    ASSERT_NEAR(112, sub->getIndexedScalar<float>(32), 1e-5);
+    ASSERT_NEAR(112, sub->e<float>(32), 1e-5);
 
     delete sub;
 }
@@ -1388,7 +1388,7 @@ TEST_F(NDArrayTest, TestIndexing4) {
 
     ASSERT_EQ(64, sub.lengthOf());
     ASSERT_NEAR(32, sub.e<float>(0), 1e-5);
-    ASSERT_NEAR(112, sub.getIndexedScalar<float>(32), 1e-5);
+    ASSERT_NEAR(112, sub.e<float>(32), 1e-5);
 }
 
 TEST_F(NDArrayTest, TestReshapeNegative1) {
@@ -1527,7 +1527,7 @@ TEST_F(NDArrayTest, TestStdDev2) {
     ASSERT_EQ(5, tad->lengthOf());
 
     for (int e = 0; e < tad->lengthOf(); e++)
-        tad->putIndexedScalar(e, e+1);
+        tad->p(e, e+1);
 
     ASSERT_NEAR(15, tad->sumNumber().e<double>(0), 1e-5);
 

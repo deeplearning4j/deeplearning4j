@@ -266,20 +266,20 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
 
                 case 1:             // REFLECT mode                 
                     for(int j = 1;  j <= leftOffset; ++j)                                               // fill firstly left side 
-                        subArrOut.putIndexedScalar(leftOffset - j, subArrIn.getIndexedScalar<T>(j));
+                        subArrOut.p(leftOffset - j, subArrIn.e<T>(j));
                     for(int j = 0; j < subArrIn.lengthOf(); ++j)                                        // fill middle
-                        subArrOut.putIndexedScalar(leftOffset + j, subArrIn.getIndexedScalar<T>(j));
+                        subArrOut.p(leftOffset + j, subArrIn.e<T>(j));
                     for(int j = (subArrOut.lengthOf() - leftOffset); j < subArrOut.lengthOf(); ++j)     // fill right side
-                        subArrOut.putIndexedScalar(j, subArrIn.getIndexedScalar<T>(subArrOut.lengthOf() - j - 1));
+                        subArrOut.p(j, subArrIn.e<T>(subArrOut.lengthOf() - j - 1));
                     break;
 
                 case 2:             // SYMMETRIC mode               
                     for(int j = 1;  j <= leftOffset; ++j)                                               // fill firstly left side 
-                        subArrOut.putIndexedScalar(leftOffset - j, subArrIn.getIndexedScalar<T>(j-1));
+                        subArrOut.p(leftOffset - j, subArrIn.e<T>(j-1));
                     for(int j = 0; j < subArrIn.lengthOf(); ++j)                                        // fill middle
-                        subArrOut.putIndexedScalar(leftOffset + j, subArrIn.getIndexedScalar<T>(j));
+                        subArrOut.p(leftOffset + j, subArrIn.e<T>(j));
                     for(int j = (subArrOut.lengthOf() - leftOffset); j < subArrOut.lengthOf(); ++j)     // fill right side
-                        subArrOut.putIndexedScalar(j, subArrIn.getIndexedScalar<T>(subArrOut.lengthOf() - j));
+                        subArrOut.p(j, subArrIn.e<T>(subArrOut.lengthOf() - j));
                     break;
             }
         }

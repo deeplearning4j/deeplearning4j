@@ -23,6 +23,7 @@
 
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/where.h>
 
 namespace nd4j {
     namespace ops {
@@ -42,13 +43,13 @@ namespace nd4j {
                     // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
                     for (int e = 0; e < condition->lengthOf(); e++) {
                         if (y->isR()) {
-                            auto r = !condition->getIndexedScalar<bool>(e) ? y->getIndexedScalar<double>(e)
-                                                                           : x->getIndexedScalar<double>(e);
-                            z->putIndexedScalar(e, r);
+                            auto r = !condition->e<bool>(e) ? y->e<double>(e)
+                                                                           : x->e<double>(e);
+                            z->p(e, r);
                         } else {
-                            auto r = !condition->getIndexedScalar<bool>(e) ? y->getIndexedScalar<Nd4jLong>(e)
-                                                                           : x->getIndexedScalar<Nd4jLong>(e);
-                            z->putIndexedScalar(e, r);
+                            auto r = !condition->e<bool>(e) ? y->e<Nd4jLong>(e)
+                                                                           : x->e<Nd4jLong>(e);
+                            z->p(e, r);
                         }
                     }
                 } else {
@@ -60,7 +61,7 @@ namespace nd4j {
                     auto tadsZ = z->allTensorsAlongDimension(dims);
 
                     for (int e = 0; e < tadsX->size(); e++) {
-                        if (!condition->getIndexedScalar<bool>(e)) {
+                        if (!condition->e<bool>(e)) {
                             tadsZ->at(e)->assign(tadsY->at(e));
                         } else {
                             tadsZ->at(e)->assign(tadsX->at(e));
@@ -73,30 +74,14 @@ namespace nd4j {
                 }
             } else {
                 // in this case we return 2D matrix, which basically contains coordinates fo true
-
                 REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead", block.width());
+                auto output = OUTPUT_VARIABLE(0);
 
                 int width = condition->rankOf();
 
                 std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(width, {0});
 
-                NDArrayList list(0, true);
-                int cnt = 0;
-
-                Nd4jLong idx[MAX_RANK];
-                for (int e = 0; e < condition->lengthOf(); e++) {
-                    if (!condition->getIndexedScalar<bool>(e)) {
-                        //auto array = new NDArray('c', {1, condition->rankOf()});
-                        throw std::runtime_error("Not implemented properly");
-                        //for (int f = 0; f < condition->rankOf(); f++)
-                            //array->putIndexedScalar(e, (T) idx[f]);
-
-                        //list.write(cnt++, array);
-                    }
-                }
-
-                auto result = list.stack();
-                OVERWRITE_RESULT(result);
+                helpers::_where(*condition, *output, block.workspace());
             }
 
             return ND4J_STATUS_OK;
@@ -114,7 +99,7 @@ namespace nd4j {
                 // output shape is the 2D tensor num_true x rankOf (inShape)
                 auto condition = INPUT_VARIABLE(0);
                 auto inShape = inputShape->at(0);
-                Nd4jLong numOfTrue = condition->reduceNumber(reduce::CountNonZero, nullptr).getIndexedScalar<Nd4jLong>(0);
+                Nd4jLong numOfTrue = condition->reduceNumber(reduce::CountNonZero, nullptr).e<Nd4jLong>(0);
                 Nd4jLong *newshape;
                 ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
@@ -123,9 +108,11 @@ namespace nd4j {
                 newshape[2] = shape::rank(inShape);
                 newshape[3] = 1;
                 newshape[4] = 1;
-                newshape[5] = 0;
                 newshape[6] = 1;
                 newshape[7] = 99;
+
+                // always long in this case
+                ArrayOptions::setDataType(newshape, nd4j::DataType::DataType_INT64);
 
                 return SHAPELIST(newshape);
             }

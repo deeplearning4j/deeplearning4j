@@ -43,39 +43,39 @@ namespace nd4j {
                     if(y->isScalar()) {
                         if (y->isR()) {
                             for (int e = 0; e < condition->lengthOf(); e++) {
-                                auto r = condition->getIndexedScalar<bool>(e) ? y->getIndexedScalar<double>(0)
-                                                                              : x->getIndexedScalar<double>(e);
-                                z->putIndexedScalar(e, r);
+                                auto r = condition->e<bool>(e) ? y->e<double>(0)
+                                                                              : x->e<double>(e);
+                                z->p(e, r);
                             }
                         } else {
                             for (int e = 0; e < condition->lengthOf(); e++) {
-                                auto r = condition->getIndexedScalar<bool>(e) ? y->getIndexedScalar<Nd4jLong>(0)
-                                                                              : x->getIndexedScalar<Nd4jLong>(e);
-                                z->putIndexedScalar(e, r);
+                                auto r = condition->e<bool>(e) ? y->e<Nd4jLong>(0)
+                                                                              : x->e<Nd4jLong>(e);
+                                z->p(e, r);
                             }
                         }
                     }
                     else {
                         if (y->isR()) {
                             for (int e = 0; e < condition->lengthOf(); e++) {
-                                if (condition->getIndexedScalar<bool>(e)) {
-                                    auto r = y->getIndexedScalar<double>(numMatches);
-                                    z->putIndexedScalar(e, r);
+                                if (condition->e<bool>(e)) {
+                                    auto r = y->e<double>(numMatches);
+                                    z->p(e, r);
                                     numMatches++;
                                 } else {
-                                    auto r = x->getIndexedScalar<double>(e);
-                                    z->putIndexedScalar(e, r);
+                                    auto r = x->e<double>(e);
+                                    z->p(e, r);
                                 }
                             }
                         } else {
                             for (int e = 0; e < condition->lengthOf(); e++) {
-                                if (condition->getIndexedScalar<bool>(e)) {
-                                    auto r = y->getIndexedScalar<Nd4jLong>(numMatches);
-                                    z->putIndexedScalar(e, r);
+                                if (condition->e<bool>(e)) {
+                                    auto r = y->e<Nd4jLong>(numMatches);
+                                    z->p(e, r);
                                     numMatches++;
                                 } else {
-                                    auto r = x->getIndexedScalar<Nd4jLong>(e);
-                                    z->putIndexedScalar(e, r);
+                                    auto r = x->e<Nd4jLong>(e);
+                                    z->p(e, r);
                                 }
                             }
                         }
@@ -90,7 +90,7 @@ namespace nd4j {
                     auto tadsZ = z->allTensorsAlongDimension(dims);
 
                     for (int e = 0; e < tadsX->size(); e++) {
-                        if (!condition->getIndexedScalar<bool>(e))
+                        if (!condition->e<bool>(e))
                             tadsZ->at(e)->assign(tadsY->at(e));
                         else
                             tadsZ->at(e)->assign(tadsX->at(e));
@@ -137,7 +137,7 @@ namespace nd4j {
             } else {
                 auto condition = INPUT_VARIABLE(0);
 
-                auto numOfTrue = condition->reduceNumber(reduce::CountNonZero).getIndexedScalar<Nd4jLong>(0);
+                auto numOfTrue = condition->reduceNumber(reduce::CountNonZero).e<Nd4jLong>(0);
                 // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
                 for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
                     Nd4jLong *newShape;

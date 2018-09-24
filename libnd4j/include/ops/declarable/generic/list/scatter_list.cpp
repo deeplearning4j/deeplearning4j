@@ -52,7 +52,7 @@ namespace nd4j {
             std::vector<int> axis = ShapeUtils::convertAxisToTadTarget(array->rankOf(), {0});
             auto tads = array->allTensorsAlongDimension( axis);
             for (int e = 0; e < tads->size(); e++) {
-                auto idx = indices->getIndexedScalar<int>(e);
+                auto idx = indices->e<int>(e);
                 if (idx >= tads->size())
                     return ND4J_STATUS_BAD_ARGUMENTS;
 
