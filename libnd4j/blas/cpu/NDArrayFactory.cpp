@@ -627,7 +627,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
 
     NDArray result;
 
-    Nd4jLong* shapeInfo = ShapeBuilders::createShapeInfo(order, shape, workspace);
+    Nd4jLong* shapeInfo = ShapeBuilders::createShapeInfo(DataTypeUtils::fromT<T>(), order, shape, workspace);
 
     result.setBuffer(reinterpret_cast<uint8_t*>(buffer));
     result.setShapeInfo(shapeInfo);
