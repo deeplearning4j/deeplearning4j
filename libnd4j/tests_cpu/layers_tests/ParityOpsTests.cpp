@@ -585,7 +585,7 @@ TEST_F(ParityOpsTests, Test_Select_2) {
 }
 
 TEST_F(ParityOpsTests, Test_Select_3) {
-    auto mask = NDArrayFactory::create<float>('c', {1, 1}, {0});
+    auto mask = NDArrayFactory::create<float>('c', {1, 1}, {0.});
     auto x = NDArrayFactory::create<float>('c', {1, 1}, {1});
     auto y = NDArrayFactory::create<float>('c', {1, 1}, {2});
     auto exp = NDArrayFactory::create<float>('c', {1, 1}, {2});
@@ -644,7 +644,7 @@ TEST_F(ParityOpsTests, Test_Bias_Add_1) {
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_1) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto idc = NDArrayFactory::create<float>('c', {1}, {0});
+    auto idc = NDArrayFactory::create<float>('c', {1}, {0.});
     auto updates = NDArrayFactory::create<float>('c', {1, 2}, {1, 1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {2, 3, 3, 4});
 
@@ -678,7 +678,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_2) {
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_3) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    auto idc = NDArrayFactory::create<float>('c', {1}, {0});
+    auto idc = NDArrayFactory::create<float>('c', {1}, {0.});
     auto updates = NDArrayFactory::create<float>('c', {1, 2, 2}, {1, 1, 1, 1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {2, 3, 4, 5, 5, 6, 7, 8});
 
@@ -763,7 +763,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_7) {
 
 TEST_F(ParityOpsTests, scatterMax_test1) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto idc = NDArrayFactory::create<float>('c', {1}, {0});
+    auto idc = NDArrayFactory::create<float>('c', {1}, {0.});
     auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10, 1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {10, 2, 3, 4});
 
@@ -797,7 +797,7 @@ TEST_F(ParityOpsTests, scatterMax_test2) {
 
 TEST_F(ParityOpsTests, scatterMax_test3) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    auto idc = NDArrayFactory::create<float>('c', {1}, {0});
+    auto idc = NDArrayFactory::create<float>('c', {1}, {0.});
     auto updates = NDArrayFactory::create<float>('c', {1, 2, 2}, {10, 1, 30, 1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {10, 2, 30, 4, 5, 6, 7, 8});
 
@@ -866,7 +866,7 @@ TEST_F(ParityOpsTests, scatterMax_test6) {
 
 TEST_F(ParityOpsTests, scatterMin_test1) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto idc = NDArrayFactory::create<float>('c', {1}, {0});
+    auto idc = NDArrayFactory::create<float>('c', {1}, {0.});
     auto updates = NDArrayFactory::create<float>('c', {1, 2}, {-1, 1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-1, 1, 3, 4});
 
@@ -900,7 +900,7 @@ TEST_F(ParityOpsTests, scatterMin_test2) {
 
 TEST_F(ParityOpsTests, scatterMin_test3) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    auto idc = NDArrayFactory::create<float>('c', {1}, {0});
+    auto idc = NDArrayFactory::create<float>('c', {1}, {0.});
     auto updates = NDArrayFactory::create<float>('c', {1, 2, 2}, {10, 1, 30, 2});
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 1, 3, 2, 5, 6, 7, 8});
 

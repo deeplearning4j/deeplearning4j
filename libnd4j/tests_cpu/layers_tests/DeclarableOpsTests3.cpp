@@ -408,7 +408,7 @@ TEST_F(DeclarableOpsTests3, Test_Range_1) {
 
 TEST_F(DeclarableOpsTests3, Test_Range_2) {
     auto start= NDArrayFactory::create<float>('c', {1, 1}, {2});
-    auto stop= NDArrayFactory::create<float>('c', {1, 1}, {0});
+    auto stop= NDArrayFactory::create<float>('c', {1, 1}, {0.});
     auto step= NDArrayFactory::create<float>('c', {1, 1}, {-1});
     auto exp= NDArrayFactory::create<float>('c', {2}, {2, 1});
 
@@ -426,7 +426,7 @@ TEST_F(DeclarableOpsTests3, Test_Range_2) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Range_3) {
-    auto start= NDArrayFactory::create<float>('c', {1, 1}, {0});
+    auto start= NDArrayFactory::create<float>('c', {1, 1}, {0.});
     auto stop= NDArrayFactory::create<float>('c', {1, 1}, {2});
     auto step= NDArrayFactory::create<float>('c', {1, 1}, {1});
     auto exp= NDArrayFactory::create<float>('c', {2}, {0, 1});
