@@ -23,6 +23,7 @@
 
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/where.h>
 
 namespace nd4j {
     namespace ops {
@@ -80,22 +81,7 @@ namespace nd4j {
 
                 std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(width, {0});
 
-                NDArrayList list(0, true);
-                int cnt = 0;
-
-                Nd4jLong idx[MAX_RANK];
-                for (int e = 0; e < condition->lengthOf(); e++) {
-                    if (!condition->getIndexedScalar<bool>(e)) {
-                        //auto array = new NDArray('c', {1, condition->rankOf()});
-                        throw std::runtime_error("Not implemented properly");
-                        //for (int f = 0; f < condition->rankOf(); f++)
-                            //array->putIndexedScalar(e, (T) idx[f]);
-
-                        //list.write(cnt++, array);
-                    }
-                }
-
-                auto result = list.stack();
+                auto result = helpers::_where(*condition, block.dataType(), block.workspace());
                 OVERWRITE_RESULT(result);
             }
 
@@ -123,9 +109,10 @@ namespace nd4j {
                 newshape[2] = shape::rank(inShape);
                 newshape[3] = 1;
                 newshape[4] = 1;
-                newshape[5] = 0;
                 newshape[6] = 1;
                 newshape[7] = 99;
+
+                ArrayOptions::setDataType(newshape, block.dataType());
 
                 return SHAPELIST(newshape);
             }

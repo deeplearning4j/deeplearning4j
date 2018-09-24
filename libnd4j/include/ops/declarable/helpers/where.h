@@ -15,31 +15,20 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 30.11.17.
+// Created by raver119 on 24/09/18.
 //
 
-#ifndef LIBND4J_OPS_HELPERS_H
-#define LIBND4J_OPS_HELPERS_H
+#ifndef DEV_TESTS_WHERE_H
+#define DEV_TESTS_WHERE_H
 
-#include <pointercast.h>
-#include <op_boilerplate.h>
-#include <graph/LaunchContext.h>
-#include <types/float16.h>
-#include <types/types.h>
-#include <helpers/shape.h>
-#include <NDArray.h>
-#include <vector>
-#include <array>
-#include <Status.h>
-#include <NDArrayFactory.h>
+#include <ops/declarable/helpers/helpers.h>
 
-#ifdef __CUDACC__
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <cuda_runtime.h>
-#include <cuda_device_runtime_api.h>
-#include <stdio.h>
-#include <stdlib.h>
-#endif // CUDACC
+namespace nd4j {
+    namespace ops {
+        namespace helpers {
+            NDArray* _where(NDArray &condition, nd4j::DataType dataType, memory::Workspace *workspace);
+        }
+    }
+}
 
-#endif // LIBND4J_HELPERS_H
+#endif //DEV_TESTS_WHERE_H
