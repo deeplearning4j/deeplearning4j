@@ -24,6 +24,7 @@ import com.rits.cloning.Cloner;
 import com.rits.cloning.IFastCloner;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
@@ -32,6 +33,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.functions.FunctionProperties;
 import org.nd4j.autodiff.samediff.flow.FlowPath;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.base.Preconditions;
@@ -4976,7 +4978,7 @@ public class SameDiff {
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
      * then output = [18, 36, 16] = [prod(3,6), prod(1,4,9), prod(2,8)]<br>
      * Note that the segment IDs must be sorted from smallest to largest segment.
-     * See {@link #unsortedSegmentProd(String, SDVariable, SDVariable)} for the same op without this sorted requirement
+     * See {@link #unsortedSegmentProd(String, SDVariable, SDVariable, int)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -5025,7 +5027,7 @@ public class SameDiff {
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
      * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
      * Note that the segment IDs must be sorted from smallest to largest segment.
-     * See {@link #unsortedSegmentSum(String, SDVariable, SDVariable)} for the same op without this sorted requirement
+     * See {@link #unsortedSegmentSum(String, SDVariable, SDVariable, int)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -10956,7 +10958,7 @@ public class SameDiff {
 
     protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables, Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter) {
         val opName = node.opName();
-        val hash = getOpNum(node.opName(), node.opType());
+        val hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
         double[] extras = node.getExtraArgs() != null ? new double[node.getExtraArgs().length] : new double[0];
@@ -11050,7 +11052,7 @@ public class SameDiff {
                 bufferBuilder,
                 ownId,
                 fname,
-                getFlatOpType(node.opType()),
+                FlatBuffersMapper.getFlatOpType(node.opType()),
                 hash,
                 properties,
                 nodesIn,
@@ -11210,30 +11212,7 @@ public class SameDiff {
         return asFlatBuffers(configuration);
     }
 
-    /**
-     * This method just converts enums
-     *
-     * @param val
-     * @return
-     */
-    public static ByteOrder getOrderFromByte(byte val) {
-        if (val == org.nd4j.graph.ByteOrder.LE)
-            return ByteOrder.LITTLE_ENDIAN;
-        else
-            return ByteOrder.BIG_ENDIAN;
-    }
 
-    /**
-     * This method returns current byte order for this JVM as libnd4j enum
-     *
-     * @return
-     */
-    public static byte getOrderAsByte() {
-        if (ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN))
-            return org.nd4j.graph.ByteOrder.BE;
-        else
-            return org.nd4j.graph.ByteOrder.LE;
-    }
 
     /**
      * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later
@@ -11267,6 +11246,135 @@ public class SameDiff {
         }
     }
 
+
+    public static SameDiff fromFlatFile(@NonNull File file) throws IOException {
+        byte[] bytes;
+        try(InputStream is = new BufferedInputStream(new FileInputStream(file))){
+            bytes = IOUtils.toByteArray(is);
+        }
+        ByteBuffer bbIn = ByteBuffer.wrap(bytes);
+
+        FlatGraph fg = FlatGraph.getRootAsFlatGraph(bbIn);
+
+        int numOps = fg.nodesLength();
+        int numVars = fg.variablesLength();
+        List<FlatNode> ops = new ArrayList<>(numOps);
+        for( int i=0; i<numOps; i++ ){
+            ops.add(fg.nodes(i));
+        }
+        List<FlatVariable> vars = new ArrayList<>(numVars);
+        for( int i=0; i<numVars; i++ ){
+            vars.add(fg.variables(i));
+        }
+
+        FlatConfiguration conf = fg.configuration();
+
+        /* Reconstruct the graph
+        We'll do the reconstruction manually here, rather than using sd.var(...), so that we have more control
+        over the final result.
+         */
+
+        SameDiff sd = SameDiff.create();
+
+        //Reconstruct variables:
+        Map<Integer,SDVariable> varNodeIds = new HashMap<>();
+        Map<Pair<Integer,Integer>, SDVariable> variablesByNodeAndOutNum = new HashMap<>();
+        for(FlatVariable v : vars){
+            int shapeLength = v.shapeLength();
+            long[] shape = new long[shapeLength];
+            for( int i=0; i<shapeLength; i++ ){
+                shape[i] = v.shape(i);
+            }
+            SDVariable var = SDVariable.builder()
+                    .varName(v.name())
+                    .sameDiff(sd)
+                    .shape(shape)
+                    .build();
+            sd.variableMap.put(v.name(), var);
+            sd.variableNameToShape.put(v.name(), shape);
+
+
+            FlatArray fa = v.ndarray();
+            if(fa != null){
+                INDArray arr = Nd4j.createFromFlatArray(fa);
+                sd.variableNameToArr.put(v.name(), arr);
+            }
+
+            IntPair id = v.id();    //First value: node (op) id. Second: output number
+//            varIds.put(v.id().first(), var);
+            variablesByNodeAndOutNum.put(new Pair<>(id.first(), id.second()), var);
+        }
+
+        //Reconstruct ops:
+        for(FlatNode fn : ops){
+            DifferentialFunction df = FlatBuffersMapper.fromFlatNode(fn);
+
+            //Work out inputs and outputs:
+            int[] output = new int[fn.outputLength()];
+            for (int i = 0; i < output.length; i++) {
+                output[i] = fn.output(i);
+            }
+            int[] input = new int[fn.inputLength()];
+            for (int i = 0; i < input.length; i++) {
+                input[i] = fn.input(i);
+            }
+            IntPair[] inputPaired = new IntPair[fn.inputPairedLength()];
+            for (int i = 0; i < inputPaired.length; i++) {
+                inputPaired[i] = fn.inputPaired(i);
+            }
+
+            String[] inputNames = new String[input.length];
+            for(int i=0; i<inputPaired.length; i++ ){
+                int nodeId = inputPaired[i].first();
+                int nodeOutNum = inputPaired[i].second();
+                SDVariable varIn = variablesByNodeAndOutNum.get(new Pair<>(nodeId, nodeOutNum));
+                inputNames[i] = varIn.getVarName();
+            }
+            sd.incomingArgsReverse.put(df.getOwnName(), inputNames);
+
+            String[] outputNames = new String[output.length];
+            for( int i=0; i<outputNames.length; i++ ){
+                SDVariable outVar = variablesByNodeAndOutNum.get(new Pair<>(fn.id(), i));
+                outputNames[i] = outVar.getVarName();
+            }
+            sd.outgoingArgsReverse.put(df.getOwnName(), outputNames);
+
+//            int id = fn.id();
+//            String name = fn.name();
+//            Op.Type opType = FlatBuffersMapper.getTypeFromByte(fn.opType());
+//            long opNum = fn.opNum();
+//            FlatProperties properties = fn.propertiesLength() > 0 ? fn.properties(0) : null;
+//            int[] input = new int[fn.inputLength()];
+//            for( int i=0; i<input.length; i++ ){
+//                input[i] = fn.input(i);
+//            }
+//            IntPair[] inputPaired = new IntPair[fn.inputPairedLength()];
+//            for( int i=0; i<inputPaired.length; i++ ){
+//                inputPaired[i] = fn.inputPaired(i);
+//            }
+////            DataBuffer.Type dt = SameDiff.getDataTypeFromByte(fn.dataType());
+//            int[] output = new int[fn.outputLength()];
+//            for( int i=0; i<output.length; i++ ){
+//                output[i] = fn.output(i);
+//            }
+//            double[] extraParams = new double[fn.extraParamsLength()];
+//            for( int i=0; i<extraParams.length; i++ ){
+//                extraParams[i] = fn.extraParams(i);
+//            }
+//            long[] extraInteger = new long[fn.extraIntegerLength()];
+//            for( int i=0; i<extraInteger.length; i++ ){
+//                extraInteger[i] = fn.extraInteger(i);
+//            }
+//            int[] dimensions = new int[fn.dimensionsLength()];
+//            for( int i=0; i<dimensions.length; i++ ){
+//                dimensions[i] = fn.dimensions(i);
+//            }
+//            float scalar = fn.scalar();
+        }
+
+        return sd;
+    }
+
     /**
      * This method returns a text representation of the "flattened" graph.
      *
@@ -11298,9 +11406,9 @@ public class SameDiff {
 
             log.info("{}:<{}>", node.id(), node.name());
             sb.append(node.id())
-                    .append(":<").append(node.name()).append("> ").append(SameDiff.getTypeFromByte(node.opType()));
+                    .append(":<").append(node.name()).append("> ").append(FlatBuffersMapper.getTypeFromByte(node.opType()));
 
-            if (SameDiff.getTypeFromByte(node.opType()) != Op.Type.CUSTOM)
+            if (FlatBuffersMapper.getTypeFromByte(node.opType()) != Op.Type.CUSTOM)
                 sb.append(": ").append(node.opNum());
             else {
                 val keys = map.keySet();
@@ -11338,170 +11446,6 @@ public class SameDiff {
         return sb.toString();
     }
 
-    /**
-     * This method converts enums for DataType
-     *
-     * @param val
-     * @return
-     */
-    public static DataBuffer.Type getDataTypeFromByte(byte val) {
-        if (val == DataType.FLOAT)
-            return DataBuffer.Type.FLOAT;
-        else if (val == DataType.DOUBLE)
-            return DataBuffer.Type.DOUBLE;
-        else if (val == DataType.HALF)
-            return DataBuffer.Type.HALF;
-
-        throw new UnsupportedOperationException("Unsupported DataType: [" + val + "]");
-    }
-
-    /**
-     * This method converts enums for DataType
-     *
-     * @param type
-     * @return
-     */
-    public static byte getDataTypeAsByte(DataBuffer.Type type) {
-        switch (type) {
-            case FLOAT:
-                return DataType.FLOAT;
-            case DOUBLE:
-                return DataType.DOUBLE;
-            case HALF:
-                return DataType.HALF;
-            case INT:
-                return DataType.INT32;
-            case LONG:
-                return DataType.INT64;
-            default:
-                throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
-        }
-    }
-
-    /**
-     * This method return operation ID for given op name/type pair.
-     *
-     * @param name
-     * @param type
-     * @return
-     */
-    public static long getOpNum(String name, Op.Type type) {
-        if (type == Op.Type.LOOP) {
-            return 0;
-        } else if (type == Op.Type.RETURN) {
-            return 40;
-        } else if (type == Op.Type.IF) {
-            return 30;
-        } else if (type == Op.Type.CONDITIONAL) {
-            return 10;
-        } else if (type == Op.Type.MERGE) {
-            return 60L;
-        } else if (type == Op.Type.LOOP_COND) {
-            return 70L;
-        } else if (type == Op.Type.NEXT_ITERATION) {
-            return 80L;
-        } else if (type == Op.Type.EXIT) {
-            return 90L;
-        } else if (type == Op.Type.ENTER) {
-            return 100L;
-        } else if (type == Op.Type.CUSTOM) {
-            val name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
-            if (name2 == null) {
-                val name3 = Nd4j.getExecutioner().getCustomOperations().get(name);
-                if (name3 == null)
-                    return 0;
-                else
-                    return name3.getHash();
-            } else
-                return name2.getHash();
-            //return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
-
-        } else
-            return (long) Nd4j.getOpFactory().getOpNumByName(name);
-    }
-
-    /**
-     * This method converts enums for Op.Type
-     *
-     * @param type Byte representing the op type
-     * @return Op type
-     */
-    public static Op.Type getTypeFromByte(byte type) {
-        switch (type) {
-            case OpType.SCALAR:
-                return Op.Type.SCALAR;
-            case OpType.BROADCAST:
-                return Op.Type.BROADCAST;
-            case OpType.TRANSFORM:
-                return Op.Type.TRANSFORM;
-            case OpType.ACCUMULATION:
-                return Op.Type.REDUCE;
-            case OpType.ACCUMULATION3:
-                return Op.Type.REDUCE3;
-            case OpType.INDEX_ACCUMULATION:
-                return Op.Type.INDEXREDUCE;
-            case OpType.RANDOM:
-                return Op.Type.RANDOM;
-            case OpType.LOGIC:
-                return Op.Type.META;
-            case OpType.CUSTOM:
-                return Op.Type.CUSTOM;
-            case OpType.SHAPE:
-                return Op.Type.SHAPE;
-            case OpType.PAIRWISE:
-                return Op.Type.PAIRWISE;
-            case OpType.SUMMARYSTATS:
-                return Op.Type.SUMMARYSTATS;
-            default:
-                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
-        }
-    }
-
-    /**
-     * This method converts an Op.Type to it's corresponding byte value
-     *
-     * @param type type to convert
-     * @return Byte representing the op type
-     */
-    public static byte getFlatOpType(Op.Type type) {
-        switch (type) {
-            case SCALAR:
-                return OpType.SCALAR;
-            case BROADCAST:
-                return OpType.BROADCAST;
-            case TRANSFORM:
-            case SPECIAL:
-                return OpType.TRANSFORM;
-            case REDUCE:
-                return OpType.ACCUMULATION;
-            case REDUCE3:
-                return OpType.ACCUMULATION3;
-            case INDEXREDUCE:
-                return OpType.INDEX_ACCUMULATION;
-            case RANDOM:
-                return OpType.RANDOM;
-            case MERGE:
-            case CONDITIONAL:
-            case LOOP:
-            case RETURN:
-            case ENTER:
-            case EXIT:
-            case NEXT_ITERATION:
-            case LOOP_COND:
-            case IF:
-                return OpType.LOGIC;
-            case CUSTOM:
-                return OpType.CUSTOM;
-            case SHAPE:
-                return OpType.SHAPE;
-            case PAIRWISE:
-                return OpType.PAIRWISE;
-            case SUMMARYSTATS:
-                return OpType.SUMMARYSTATS;
-            default:
-                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
-        }
-    }
 
     /**
      * This method checks the order of ops defined in the current SameDiff instance, and shuffles them if required
