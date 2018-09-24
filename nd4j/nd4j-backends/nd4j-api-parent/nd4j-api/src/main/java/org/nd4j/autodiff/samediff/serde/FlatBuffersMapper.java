@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -105,6 +106,20 @@ public class FlatBuffersMapper {
 
     public static Class<?> getOpClass(long idHash, Op.Type type){
         switch (type){
+            case CUSTOM:
+                return DifferentialFunctionClassHolder.getInstance().customOpClassForHash(idHash);
+            case SCALAR:
+            case TRANSFORM:
+            case PAIRWISE:
+            case SPECIAL:
+            case BROADCAST:
+            case REDUCE:
+            case INDEXREDUCE:
+            case VARIANCE:
+            case REDUCE3:
+            case RANDOM:
+                return DifferentialFunctionClassHolder.getInstance().legacyOpClassForId(type, idHash);
+
             case LOOP:
             case RETURN:
             case IF:
@@ -114,10 +129,8 @@ public class FlatBuffersMapper {
             case NEXT_ITERATION:
             case EXIT:
             case ENTER:
-            case CUSTOM:
-                return DifferentialFunctionClassHolder.getInstance().customOpClassForHash(idHash);
             default:
-////                return (long) Nd4j.getOpFactory().getOpNumByName(name);
+                throw new UnsupportedOperationException("Not supported or not implemneted: op type " + type + ", id/hash " + idHash );
         }
     }
 
@@ -268,14 +281,14 @@ public class FlatBuffersMapper {
         }
         float scalar = fn.scalar();
 
-        if(opType == Op.Type.CUSTOM){
+        if(opType == Op.Type.CUSTOM) {
 //            DifferentialFunction df = DifferentialFunctionClassHolder.getInstance().getInstance(name);
             Class<?> c = DifferentialFunctionClassHolder.getInstance().customOpClassForHash(opNum);
 
             Preconditions.checkNotNull(c, "Could not find class for hash %s", opNum);
 
             DifferentialFunction op;
-            try{
+            try {
                 op = (DifferentialFunction) c.newInstance();
             } catch (IllegalAccessException | InstantiationException e) {
                 throw new RuntimeException("Error creating differential function instance of type " + c);
@@ -285,12 +298,27 @@ public class FlatBuffersMapper {
 
             //Set args:
             //op.addTArgument();
-            if(op instanceof CustomOp) {
+            if (op instanceof CustomOp) {
                 //TODO where are T args?
-                ((CustomOp)op).addIArgument(extraInteger);
+                ((CustomOp) op).addIArgument(extraInteger);
             }
 
             return op;
+        } else if (opType == Op.Type.SCALAR || opType == Op.Type.TRANSFORM) {
+            Class<?> c = DifferentialFunctionClassHolder.getInstance().legacyOpClassForId(opType, opNum);
+            Op op;
+            try {
+                op = (Op) c.newInstance();
+            } catch (IllegalAccessException | InstantiationException e) {
+                throw new RuntimeException("Error creating differential function (Op) instance of type " + c);
+            }
+
+            op.setExtraArgs(extraParams);
+            if(opType == Op.Type.SCALAR){
+                ScalarOp sOp = (ScalarOp)op;
+                sOp.setScalar(scalar);
+            }
+            return (DifferentialFunction)op;
         } else {
             throw new UnsupportedOperationException("Not yet implemented: op type " + opType);
         }

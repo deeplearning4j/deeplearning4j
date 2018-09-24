@@ -11279,35 +11279,46 @@ public class SameDiff {
         //Reconstruct variables:
         Map<Integer,SDVariable> varNodeIds = new HashMap<>();
         Map<Pair<Integer,Integer>, SDVariable> variablesByNodeAndOutNum = new HashMap<>();
+        Map<String,List<SDVariable>> variablesByName = new HashMap<>();
         for(FlatVariable v : vars){
             int shapeLength = v.shapeLength();
             long[] shape = new long[shapeLength];
             for( int i=0; i<shapeLength; i++ ){
                 shape[i] = v.shape(i);
             }
+
+            String n = v.name();
+
             SDVariable var = SDVariable.builder()
-                    .varName(v.name())
+                    .varName(n)
                     .sameDiff(sd)
                     .shape(shape)
                     .build();
-            sd.variableMap.put(v.name(), var);
-            sd.variableNameToShape.put(v.name(), shape);
+            sd.variableMap.put(n, var);
+            sd.variableNameToShape.put(n, shape);
 
 
             FlatArray fa = v.ndarray();
             if(fa != null){
                 INDArray arr = Nd4j.createFromFlatArray(fa);
-                sd.variableNameToArr.put(v.name(), arr);
+                sd.variableNameToArr.put(n, arr);
             }
 
             IntPair id = v.id();    //First value: node (op) id. Second: output number
 //            varIds.put(v.id().first(), var);
             variablesByNodeAndOutNum.put(new Pair<>(id.first(), id.second()), var);
+
+            if(!variablesByName.containsKey(n)){
+                variablesByName.put(n, new ArrayList<SDVariable>());
+            }
+            List<SDVariable> list = variablesByName.get(n);
+            list.add(var);
         }
 
         //Reconstruct ops:
         for(FlatNode fn : ops){
             DifferentialFunction df = FlatBuffersMapper.fromFlatNode(fn);
+            String name = fn.name();
 
             //Work out inputs and outputs:
             int[] output = new int[fn.outputLength()];
@@ -11319,11 +11330,13 @@ public class SameDiff {
                 input[i] = fn.input(i);
             }
             IntPair[] inputPaired = new IntPair[fn.inputPairedLength()];
+            List<Pair<Integer,Integer>> intPairList = new ArrayList<>();
             for (int i = 0; i < inputPaired.length; i++) {
                 inputPaired[i] = fn.inputPaired(i);
+                intPairList.add(new Pair<>(inputPaired[i].first(), inputPaired[i].second()));
             }
 
-            String[] inputNames = new String[input.length];
+            String[] inputNames = new String[inputPaired.length];
             for(int i=0; i<inputPaired.length; i++ ){
                 int nodeId = inputPaired[i].first();
                 int nodeOutNum = inputPaired[i].second();
@@ -11332,12 +11345,53 @@ public class SameDiff {
             }
             sd.incomingArgsReverse.put(df.getOwnName(), inputNames);
 
-            String[] outputNames = new String[output.length];
-            for( int i=0; i<outputNames.length; i++ ){
-                SDVariable outVar = variablesByNodeAndOutNum.get(new Pair<>(fn.id(), i));
-                outputNames[i] = outVar.getVarName();
+//            String[] outputNames = new String[output.length];
+//            for( int i=0; i<outputNames.length; i++ ){
+//                Pair<Integer,Integer> p = new Pair<>(fn.id(), i);
+//                SDVariable outVar = variablesByNodeAndOutNum.get(p);
+//                outputNames[i] = outVar.getVarName();
+//            }
+            List<SDVariable> varsForOp = variablesByName.get(name);
+
+            //Can't assume that variables for the op have all been defined. For example, if we export before execution in SameDiff
+            //In theory, we can reconstruct the output variables (minus names) if we know the number of op outputs
+            //And we can calculate the op outputs - in most cases - after the op has been created and parameters set
+            int numOutputs = df.getNumOutputs();
+            if(numOutputs <= 0){
+                numOutputs = fn.outputLength();
             }
-            sd.outgoingArgsReverse.put(df.getOwnName(), outputNames);
+
+            if(varsForOp != null && varsForOp.size() == numOutputs){
+                String[] varNames = new String[varsForOp.size()];
+                for( int i=0; i<varNames.length; i++ ){
+                    varNames[i] = varsForOp.get(i).getVarName();
+                }
+                sd.outgoingArgsReverse.put(df.getOwnName(), varNames);
+            } else {
+                //We're missing some variables...
+                List<String> varNames = new ArrayList<>(numOutputs);
+                if(varsForOp != null && varsForOp.size() > 0){
+                    for(SDVariable sdv : varsForOp){
+                        varNames.add(sdv.getVarName());
+                    }
+                }
+                //TODO naming here is NOT safe, could easily cause collisions under some circumstances
+                for( int i=varNames.size(); i<numOutputs; i++ ){
+                    String varName = name  + (i == 0 ? "" : "_" + i);
+                    varNames.add(varName);
+                    //Create and add variable:
+
+                    SDVariable var = SDVariable.builder()
+                            .varName(varName)
+                            .sameDiff(sd)
+                            .shape(null)
+                            .build();
+                    sd.variableMap.put(varName, var);
+                }
+                sd.outgoingArgsReverse.put(df.getOwnName(), varNames.toArray(new String[varNames.size()]));
+            }
+
+            sd.functionInstancesById.put(name, df);
 
 //            int id = fn.id();
 //            String name = fn.name();
