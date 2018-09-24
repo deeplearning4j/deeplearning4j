@@ -22,10 +22,14 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.onnx.OnnxDescriptorParser;
 import org.nd4j.imports.descriptors.onnx.OpDescriptor;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.CustomOpDescriptor;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,9 +43,9 @@ import java.util.*;
 @Slf4j
 public class DifferentialFunctionClassHolder {
     private Map<String, DifferentialFunction> nodeConverters = new HashMap<>();
-    private static DifferentialFunctionClassHolder INSTANCE = new DifferentialFunctionClassHolder();
     private Map<String,DifferentialFunction> tensorFlowNames = new HashMap<>();
     private Map<String,DifferentialFunction> onnxNames = new HashMap<>();
+    private Map<Long,Class<?>> customOpHashToClass = new HashMap<>();
     private List<String> missingOps = new ArrayList<>();
 
     private Map<String,OpDescriptor> onnxOpDescriptors;
@@ -66,6 +70,8 @@ public class DifferentialFunctionClassHolder {
     private int countTotalTfOps;
     @Getter
     private int countTotalMappedOps;
+
+    private static DifferentialFunctionClassHolder INSTANCE = new DifferentialFunctionClassHolder();
 
     /**
      * Get the fields for a given {@link DifferentialFunction}
@@ -277,6 +283,34 @@ public class DifferentialFunctionClassHolder {
 
         countTotalTfOps = tensorflowOpDescriptors.size();
         countTotalMappedOps = nodeConverters.size();
+
+
+        //Get custom ops - map from hash to class
+        Map<String,CustomOpDescriptor> descriptorMap = Nd4j.getExecutioner().getCustomOperations();
+        for(Map.Entry<String,CustomOpDescriptor> e : descriptorMap.entrySet()){
+            String name = e.getKey();
+            DifferentialFunction df = getInstance(name);
+
+            if(df == null){
+                //Can be no class for 2 reasons:
+                //(a) op name aliases
+                //(b) libnd4j ops with no corresponding ND4J op class
+                continue;
+            }
+
+            if(!CustomOp.class.isAssignableFrom(df.getClass())){
+                //Not a custom op class
+                continue;
+            }
+
+            long h = e.getValue().getHash();
+            if(customOpHashToClass.containsKey(h) && customOpHashToClass.get(h) != df.getClass()){
+//                throw new IllegalStateException("Custom op with hash " + h + " mapped to multiple classes: " + customOpHashToClass.get(h)
+//                        + " and " + df.getClass());
+                log.warn("Multiple custom ops map to hash {} - only latter one will be used: {} and {}", h, customOpHashToClass.get(h), df.getClass() );
+            }
+            customOpHashToClass.put(e.getValue().getHash(), df.getClass());
+        }
     }
 
 
@@ -331,6 +365,10 @@ public class DifferentialFunctionClassHolder {
      */
     public DifferentialFunction getInstance(String name) {
         return nodeConverters.get(name);
+    }
+
+    public Class<?> customOpClassForHash(long customOpHash){
+        return customOpHashToClass.get(customOpHash);
     }
 
     public static DifferentialFunctionClassHolder getInstance() {

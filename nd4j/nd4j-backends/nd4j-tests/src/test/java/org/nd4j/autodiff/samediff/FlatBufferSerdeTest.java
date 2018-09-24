@@ -4,10 +4,14 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.graph.*;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -22,7 +26,6 @@ public class FlatBufferSerdeTest {
 
     @Test
     public void testBasic() throws Exception {
-
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
         SDVariable tanh = sd.tanh("out", in);
@@ -73,17 +76,50 @@ public class FlatBufferSerdeTest {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
 //        SDVariable tanh = sd.tanh("out", in);
-        SDVariable x = sd.mean("x", in, true, 1);
+//        SDVariable x = sd.mean("x", in, true, 1); //REDUCTION
+//        SDVariable x = sd.square(in);             //TRANSFORM
+
+        SDVariable x = sd.cumsum(in, false, false, 1);
+
+        INDArray out1 = sd.execAndEndResult();
 
         File f = testDir.newFile();
         f.delete();
-
         sd.asFlatFile(f);
 
-        SameDiff loaded = SameDiff.fromFlatFile(f);
+        SameDiff restored = SameDiff.fromFlatFile(f);
+
+        List<SDVariable> varsOrig = sd.variables();
+        List<SDVariable> varsRestorted = restored.variables();
+        assertEquals(varsOrig.size(), varsRestorted.size());
+        for(int i=0; i<varsOrig.size(); i++){
+            assertEquals(varsOrig.get(i).getVarName(), varsRestorted.get(i).getVarName());
+        }
+
+        DifferentialFunction[] fOrig = sd.functions();
+        DifferentialFunction[] fRestored = restored.functions();
+        assertEquals(fOrig.length, fRestored.length);
+
+        for( int i=0; i<sd.functions().length; i++ ){
+            assertEquals(fOrig[i].getClass(), fRestored[i].getClass());
+        }
 
 
+        INDArray outLoaded = restored.execAndEndResult();
 
+        assertEquals(out1, outLoaded);
     }
+
+//    @Test
+//    public void temp() throws Exception {
+//        URI u = new URI("");
+//        File source = new File(u.toURL().toURI());
+//        ClassPathResource cpr = new ClassPathResource("testdir\\inner");
+//        File to = testDir.newFolder();
+//        cpr.copyDirectory(to);
+//        for(File f : to.listFiles()){
+//            System.out.println(f.getAbsolutePath());
+//        }
+//    }
 
 }

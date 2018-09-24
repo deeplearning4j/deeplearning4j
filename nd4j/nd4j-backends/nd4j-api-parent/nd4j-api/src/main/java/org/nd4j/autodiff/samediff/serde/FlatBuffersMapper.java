@@ -2,9 +2,11 @@ package org.nd4j.autodiff.samediff.serde;
 
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -99,6 +101,24 @@ public class FlatBuffersMapper {
 
         } else
             return (long) Nd4j.getOpFactory().getOpNumByName(name);
+    }
+
+    public static Class<?> getOpClass(long idHash, Op.Type type){
+        switch (type){
+            case LOOP:
+            case RETURN:
+            case IF:
+            case CONDITIONAL:
+            case MERGE:
+            case LOOP_COND:
+            case NEXT_ITERATION:
+            case EXIT:
+            case ENTER:
+            case CUSTOM:
+                return DifferentialFunctionClassHolder.getInstance().customOpClassForHash(idHash);
+            default:
+////                return (long) Nd4j.getOpFactory().getOpNumByName(name);
+        }
     }
 
 
@@ -215,10 +235,10 @@ public class FlatBuffersMapper {
 
     public static DifferentialFunction fromFlatNode(FlatNode fn){
 
-        int id = fn.id();
-        String name = fn.name();
+        int id = fn.id();               //ID of the node
+        String name = fn.name();        //Name of the node, NOT the name of the op
         Op.Type opType = FlatBuffersMapper.getTypeFromByte(fn.opType());
-        long opNum = fn.opNum();
+        long opNum = fn.opNum();        //Op num: hash for custom, number for legacy
         FlatProperties properties = fn.propertiesLength() > 0 ? fn.properties(0) : null;
         int[] input = new int[fn.inputLength()];
         for( int i=0; i<input.length; i++ ){
@@ -249,15 +269,28 @@ public class FlatBuffersMapper {
         float scalar = fn.scalar();
 
         if(opType == Op.Type.CUSTOM){
-            DifferentialFunction df = DifferentialFunctionClassHolder.getInstance().getInstance(name);
-            DynamicCustomOp op = (DynamicCustomOp)df;
+//            DifferentialFunction df = DifferentialFunctionClassHolder.getInstance().getInstance(name);
+            Class<?> c = DifferentialFunctionClassHolder.getInstance().customOpClassForHash(opNum);
 
-            df.setExtraArgs(extraParams);
-            op.addIArgument(extraInteger);
+            Preconditions.checkNotNull(c, "Could not find class for hash %s", opNum);
 
-            //TODO where are T args?
+            DifferentialFunction op;
+            try{
+                op = (DifferentialFunction) c.newInstance();
+            } catch (IllegalAccessException | InstantiationException e) {
+                throw new RuntimeException("Error creating differential function instance of type " + c);
+            }
 
-            return df;
+            //Set input SDVariables:
+
+            //Set args:
+            //op.addTArgument();
+            if(op instanceof CustomOp) {
+                //TODO where are T args?
+                ((CustomOp)op).addIArgument(extraInteger);
+            }
+
+            return op;
         } else {
             throw new UnsupportedOperationException("Not yet implemented: op type " + opType);
         }
