@@ -30,8 +30,8 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactory::_create(matrix.ordering(), {matrix.sizeAt(0), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace())),
-                                                         _HHbidiag(nd4j::NDArrayFactory::_create(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace())) {
+BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactory::create(matrix.ordering(), {matrix.sizeAt(0), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace())),
+                                                         _HHbidiag(nd4j::NDArrayFactory::create(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace())) {
 
 	// input validation
 	if(matrix.rankOf() != 2 || matrix.isScalar())
@@ -142,7 +142,7 @@ HHsequence BiDiagonalUp::_makeHHsequence(const char type) const {
 	if(type == 'u') {
 
     	const int diagSize = _HHbidiag.sizeAt(0);
-    	auto colOfCoeffs = NDArrayFactory::_create(_HHmatrix.ordering(),  {diagSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
+    	auto colOfCoeffs = NDArrayFactory::create(_HHmatrix.ordering(),  {diagSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
 
 	    for(int i = 0; i < diagSize; ++i)
 	        colOfCoeffs.p(i, _HHmatrix.e<T>(i,i));
@@ -152,7 +152,7 @@ HHsequence BiDiagonalUp::_makeHHsequence(const char type) const {
     else {
 
     	const int diagUpSize = _HHbidiag.sizeAt(0) - 1;
-		NDArray colOfCoeffs = NDArrayFactory::_create(_HHmatrix.ordering(), {diagUpSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
+		NDArray colOfCoeffs = NDArrayFactory::create(_HHmatrix.ordering(), {diagUpSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
 
     	for(int i = 0; i < diagUpSize; ++i)
         	colOfCoeffs.p(i, _HHmatrix.e<T>(i,i+1));

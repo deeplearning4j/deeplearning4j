@@ -35,7 +35,7 @@ public:
 };
 
 TEST_F(VariableTests, TestClone_1) {
-    auto array1 = NDArrayFactory::create<float>('c', {5, 5});
+    auto array1 = NDArrayFactory::create_<float>('c', {5, 5});
     array1->assign(1.0);
 
     auto var1 = new Variable(array1, "alpha");
@@ -64,7 +64,7 @@ TEST_F(VariableTests, TestClone_1) {
 
 TEST_F(VariableTests, Test_FlatVariableDataType_1) {
     flatbuffers::FlatBufferBuilder builder(1024);
-    auto original = NDArrayFactory::_create<float>('c', {5, 10});
+    auto original = NDArrayFactory::create<float>('c', {5, 10});
     original.linspace(1);
 
     auto vec = original.asByteVector();
@@ -98,7 +98,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_1) {
 
 TEST_F(VariableTests, Test_FlatVariableDataType_2) {
     flatbuffers::FlatBufferBuilder builder(1024);
-    auto original = NDArrayFactory::_create<double>('c', {5, 10});
+    auto original = NDArrayFactory::create<double>('c', {5, 10});
     original.linspace(1);
 
     auto vec = original.asByteVector();
@@ -133,8 +133,8 @@ TEST_F(VariableTests, Test_FlatVariableDataType_2) {
 
 TEST_F(VariableTests, Test_FlatVariableDataType_3) {
     flatbuffers::FlatBufferBuilder builder(1024);
-    auto original = NDArrayFactory::_create<double>('c', {5, 10});
-    auto floating = NDArrayFactory::_create<float>('c', {5, 10});
+    auto original = NDArrayFactory::create<double>('c', {5, 10});
+    auto floating = NDArrayFactory::create<float>('c', {5, 10});
     original.linspace(1);
     floating.linspace(1);
 
@@ -170,7 +170,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_3) {
 
 TEST_F(VariableTests, Test_FlatVariableDataType_4) {
     flatbuffers::FlatBufferBuilder builder(1024);
-    auto original = NDArrayFactory::_create<float>('c', {5, 10});
+    auto original = NDArrayFactory::create<float>('c', {5, 10});
 
 
     auto vec = original.asByteVector();
@@ -200,7 +200,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_4) {
 }
 
 TEST_F(VariableTests, Test_Dtype_Conversion_1) {
-    auto x = NDArrayFactory::create<float>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    auto x = NDArrayFactory::create_<float>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
     Variable v(x, "alpha", 12, 3);
 
     auto vd = v.template asT<double>();

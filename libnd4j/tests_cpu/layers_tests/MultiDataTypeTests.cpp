@@ -32,9 +32,9 @@ public:
 };
 
 TEST_F(MultiDataTypeTests, Basic_Test_1) {
-    auto x = NDArrayFactory::_create<float>('c', {2, 3}, {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
-    auto y = NDArrayFactory::_create<double>('c', {2, 3}, {0.0, 1.0, 2.0, 3.0, 4.0, 5.0});
-    auto e = NDArrayFactory::_create<float>('c', {2, 3}, {0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f});
+    auto x = NDArrayFactory::create<float>('c', {2, 3}, {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
+    auto y = NDArrayFactory::create<double>('c', {2, 3}, {0.0, 1.0, 2.0, 3.0, 4.0, 5.0});
+    auto e = NDArrayFactory::create<float>('c', {2, 3}, {0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f});
 
     auto z = x + y;
 
@@ -42,9 +42,9 @@ TEST_F(MultiDataTypeTests, Basic_Test_1) {
 }
 
 TEST_F(MultiDataTypeTests, Basic_Test_2) {
-    auto x = NDArrayFactory::_create<float>('c', {2, 3}, {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
-    auto y = NDArrayFactory::_create<double>(2.0);
-    auto e = NDArrayFactory::_create<float>('c', {2, 3}, {0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f});
+    auto x = NDArrayFactory::create<float>('c', {2, 3}, {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
+    auto y = NDArrayFactory::create<double>(2.0);
+    auto e = NDArrayFactory::create<float>('c', {2, 3}, {0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f});
 
     auto z = x * y;
 

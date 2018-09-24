@@ -84,7 +84,7 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
+                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillUniform(block.getRNG(), z, from, to);
 
@@ -158,7 +158,7 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
+                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillGaussian(block.getRNG(), z, mean, stdev);
 
@@ -186,7 +186,7 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
+                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillBernoulli(block.getRNG(), z, prob);
 
@@ -219,7 +219,7 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
+                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillBinomial(block.getRNG(), z, trials, prob);
 
@@ -251,7 +251,7 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
+                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillLogNormal(block.getRNG(), z, mean, stdev);
 
@@ -283,7 +283,7 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
+                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillTruncatedNormal(block.getRNG(), z, mean, stdev);
 

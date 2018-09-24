@@ -70,7 +70,7 @@ void triu(const NDArray& input, NDArray& output, const int diagonal) {
 template <typename T>
 static void triuBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
 
-    auto dOdI = NDArrayFactory::_create(&gradO);                // dO/dI
+    auto dOdI = NDArrayFactory::create(&gradO);                // dO/dI
     helpers::triu(input, dOdI, diagonal);
 
 #pragma omp parallel for if(dOdI.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     

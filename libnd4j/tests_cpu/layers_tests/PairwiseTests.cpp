@@ -34,7 +34,7 @@ public:
 
 
 TEST_F(EqualsTest,Eps) {
-    auto val = nd4j::NDArrayFactory::_create(0.0f);
+    auto val = nd4j::NDArrayFactory::create(0.0f);
     functions::reduce3::Reduce3<float, float>::execScalar(opNum,
                                                                data,
                                                                firstShapeBuffer,

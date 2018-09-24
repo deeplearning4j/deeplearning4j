@@ -32,9 +32,9 @@ HHcolPivQR::HHcolPivQR(const NDArray& matrix) {
 
     _qr = matrix;
     _diagSize = math::nd4j_min<int>(matrix.sizeAt(0), matrix.sizeAt(1));    
-    _coeffs = NDArrayFactory::_create(matrix.ordering(), {1, _diagSize}, matrix.dataType(), matrix.getWorkspace());
+    _coeffs = NDArrayFactory::create(matrix.ordering(), {1, _diagSize}, matrix.dataType(), matrix.getWorkspace());
     
-    _permut = NDArrayFactory::_create(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace());
+    _permut = NDArrayFactory::create(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace());
 
     evalData();    
 }
@@ -50,9 +50,9 @@ void HHcolPivQR::_evalData() {
     int rows = _qr.sizeAt(0);
     int cols = _qr.sizeAt(1);    
         
-    auto transp = NDArrayFactory::_create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
-    auto normsUpd = NDArrayFactory::_create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
-    auto normsDir = NDArrayFactory::_create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
+    auto transp = NDArrayFactory::create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
+    auto normsUpd = NDArrayFactory::create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
+    auto normsDir = NDArrayFactory::create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
           
     int transpNum = 0;
 

@@ -44,47 +44,47 @@ public:
 
         // conv2d_bp
         tuples.push_back((new OpTuple("conv2d_bp"))
-                                 ->addInput(NDArrayFactory::create<float>('c', {2, 1, 4, 4}))
-                                 ->addInput(NDArrayFactory::create<float>('c', {2, 1, 3, 3}))
+                                 ->addInput(NDArrayFactory::create_<float>('c', {2, 1, 4, 4}))
+                                 ->addInput(NDArrayFactory::create_<float>('c', {2, 1, 3, 3}))
                                  //->addInput(new NDArray<float>('c', {2, 1}))
-                                 ->addInput(NDArrayFactory::create<float>('c', {2, 2, 4, 4}))
+                                 ->addInput(NDArrayFactory::create_<float>('c', {2, 2, 4, 4}))
                                  ->setIArgs({3, 3, 1, 1, 0, 0, 1, 1, 1}));
 
 
         // mergeavg
         tuples.emplace_back((new OpTuple("mergeavg"))
-                                    ->addInput(NDArrayFactory::create<float>('c', {100, 100}))
-                                    ->addInput(NDArrayFactory::create<float>('c', {100, 100}))
-                                    ->addInput(NDArrayFactory::create<float>('c', {100, 100}))
-                                    ->addInput(NDArrayFactory::create<float>('c', {100, 100})));
+                                    ->addInput(NDArrayFactory::create_<float>('c', {100, 100}))
+                                    ->addInput(NDArrayFactory::create_<float>('c', {100, 100}))
+                                    ->addInput(NDArrayFactory::create_<float>('c', {100, 100}))
+                                    ->addInput(NDArrayFactory::create_<float>('c', {100, 100})));
 
         // mergemax
-        auto mergeMax_X0 = NDArrayFactory::create<float>('c', {100, 100});
-        auto mergeMax_X1 = NDArrayFactory::create<float>('c', {100, 100});
-        auto mergeMax_X2 = NDArrayFactory::create<float>('c', {100, 100});
+        auto mergeMax_X0 = NDArrayFactory::create_<float>('c', {100, 100});
+        auto mergeMax_X1 = NDArrayFactory::create_<float>('c', {100, 100});
+        auto mergeMax_X2 = NDArrayFactory::create_<float>('c', {100, 100});
         tuples.push_back(new OpTuple("mergemax", {mergeMax_X0, mergeMax_X1, mergeMax_X2}, {}, {}));
 
         // conv2d
-        auto conv2d_Input = NDArrayFactory::create<float>('c', {1, 2, 5, 4});
-        auto conv2d_Weights = NDArrayFactory::create<float>('c', {3, 2, 2, 2});
-        auto conv2d_Bias = NDArrayFactory::create<float>('c', {3, 1});
+        auto conv2d_Input = NDArrayFactory::create_<float>('c', {1, 2, 5, 4});
+        auto conv2d_Weights = NDArrayFactory::create_<float>('c', {3, 2, 2, 2});
+        auto conv2d_Bias = NDArrayFactory::create_<float>('c', {3, 1});
         tuples.push_back(new OpTuple("conv2d", {conv2d_Input, conv2d_Weights, conv2d_Bias}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1, 0}));
 
         // test custom op
         tuples.emplace_back((new OpTuple("testcustom"))
                                     ->setIArgs({1, 2})
-                                    ->addInput(NDArrayFactory::create<float>('c', {100, 100})));
+                                    ->addInput(NDArrayFactory::create_<float>('c', {100, 100})));
 
 
         // deconv2d
         tuples.emplace_back((new OpTuple("deconv2d"))
-                                    ->addInput(NDArrayFactory::create<float>('c', {2, 3, 4, 4}))
-                                    ->addInput(NDArrayFactory::create<float>('c', {3, 3, 5, 5}))
+                                    ->addInput(NDArrayFactory::create_<float>('c', {2, 3, 4, 4}))
+                                    ->addInput(NDArrayFactory::create_<float>('c', {3, 3, 5, 5}))
                                     ->setIArgs({5, 5, 1, 1, 0, 0, 1, 1, 0, 0}));
 
         // maxpool2d
         tuples.emplace_back((new OpTuple("maxpool2d"))
-                                    ->addInput(NDArrayFactory::create<float>('c', {2, 1, 28, 28}))
+                                    ->addInput(NDArrayFactory::create_<float>('c', {2, 1, 28, 28}))
                                     ->setIArgs({5, 5, 1, 1, 0, 0, 2, 2, 0}));
     }
 
@@ -153,9 +153,9 @@ TEST_F(OpsArena, TestFeedForward) {
 
 
 TEST_F(OpsArena, TestMmulHelper1) {
-    auto a = NDArrayFactory::_create<float>('c', {100, 100});
-    auto b = NDArrayFactory::_create<float>('c', {100, 100});
-    auto c = NDArrayFactory::_create<float>('c', {100, 100});
+    auto a = NDArrayFactory::create<float>('c', {100, 100});
+    auto b = NDArrayFactory::create<float>('c', {100, 100});
+    auto c = NDArrayFactory::create<float>('c', {100, 100});
 
     nd4j::MmulHelper::mmul(&a, &b, &c);
 
@@ -176,8 +176,8 @@ TEST_F(OpsArena, TestMmulHelper1) {
 
 
 TEST_F(OpsArena, TestMmulHelper2) {
-    auto a = NDArrayFactory::_create<float>('c', {100, 100});
-    auto b = NDArrayFactory::_create<float>('c', {100, 100});
+    auto a = NDArrayFactory::create<float>('c', {100, 100});
+    auto b = NDArrayFactory::create<float>('c', {100, 100});
 
     auto c = nd4j::MmulHelper::mmul(&a, &b);
     delete c;

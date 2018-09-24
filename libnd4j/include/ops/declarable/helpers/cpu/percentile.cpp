@@ -46,7 +46,7 @@ static void _percentile(const NDArray& input, NDArray& output, std::vector<int>&
     for(int i=0; i<shapeOfSubArr.size(); ++i)
         shapeOfSubArr[i] = listOfSubArrs->at(0)->shapeOf()[i];
 
-    auto flattenedArr = NDArrayFactory::_create('c', shapeOfSubArr, input.dataType(), input.getWorkspace());
+    auto flattenedArr = NDArrayFactory::create('c', shapeOfSubArr, input.dataType(), input.getWorkspace());
     const int len = flattenedArr.lengthOf();
     
     const float fraction = 1.f - q / 100.;

@@ -72,7 +72,7 @@ static FORCEINLINE T polyGamma(const int n, const T x) {
 template <typename T>
 static NDArray _polyGamma(const NDArray& n, const NDArray& x) {
 
-	NDArray result = NDArrayFactory::_create(&x, false, x.getWorkspace());
+	NDArray result = NDArrayFactory::create(&x, false, x.getWorkspace());
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
 	for(int i = 0; i < x.lengthOf(); ++i)

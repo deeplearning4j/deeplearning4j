@@ -87,7 +87,7 @@ void HHsequence::_applyTo(NDArray& dest) {
     int size = _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1);
 
     if(dest.rankOf() != 2 || (dest.sizeAt(0) != size && dest.sizeAt(1) != size))
-        dest = NDArrayFactory::_create(dest.ordering(), {size, size}, dest.dataType(), dest.getWorkspace());
+        dest = NDArrayFactory::create(dest.ordering(), {size, size}, dest.dataType(), dest.getWorkspace());
     dest.setIdentity();
     
     for(int k = _diagSize - 1; k >= 0; --k) {

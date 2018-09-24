@@ -76,7 +76,7 @@ namespace nd4j {
 
     template <typename T>
     NDArray* NDArray::asT() {
-        auto result  = NDArrayFactory::create(this->ordering(), this->getShapeAsVector(), DataTypeUtils::fromT<T>());
+        auto result  = NDArrayFactory::create_(this->ordering(), this->getShapeAsVector(), DataTypeUtils::fromT<T>());
         auto l = this->lengthOf();
 
         // FIXME: we want to avoid put/get indexed scalars here really

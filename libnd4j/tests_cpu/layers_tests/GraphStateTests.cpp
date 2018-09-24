@@ -136,13 +136,13 @@ TEST_F(GraphStateTests, Stateful_Execution_2) {
 TEST_F(GraphStateTests, Stateful_Execution_3) {
     NativeOps nativeOps;
 
-    auto var0 = NDArrayFactory::_create<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto var1 = NDArrayFactory::_create<float>(11.0f);
-    auto var2 = NDArrayFactory::_create<float>(2.0f);
+    auto var0 = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto var1 = NDArrayFactory::create<float>(11.0f);
+    auto var2 = NDArrayFactory::create<float>(2.0f);
 
-    auto res0 = NDArrayFactory::_create<float>('c', {2, 2});
-    auto res1 = NDArrayFactory::_create<float>(0.0f);
-    auto res2 = NDArrayFactory::_create<float>(0.0f);
+    auto res0 = NDArrayFactory::create<float>('c', {2, 2});
+    auto res1 = NDArrayFactory::create<float>(0.0f);
+    auto res2 = NDArrayFactory::create<float>(0.0f);
 
     // registering our GraphState holder
     auto state = (GraphState *) nativeOps.getGraphState(117L);
@@ -220,13 +220,13 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
 TEST_F(GraphStateTests, Stateful_Execution_4) {
     NativeOps nativeOps;
 
-    auto var0 = NDArrayFactory::_create<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto var1 = NDArrayFactory::_create<float>(5.0f);
+    auto var0 = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto var1 = NDArrayFactory::create<float>(5.0f);
 
-    auto res0 = NDArrayFactory::_create<float>('c', {2, 2});
-    auto res1 = NDArrayFactory::_create<float>(0.0f);
+    auto res0 = NDArrayFactory::create<float>('c', {2, 2});
+    auto res1 = NDArrayFactory::create<float>(0.0f);
 
-    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {-4, -3, -2, -1});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-4, -3, -2, -1});
 
 
     // registering our GraphState holder
@@ -298,13 +298,13 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
 TEST_F(GraphStateTests, Stateful_Execution_5) {
     NativeOps nativeOps;
 
-    auto var0 = NDArrayFactory::_create<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto var1 = NDArrayFactory::_create<float>(5.0f);
+    auto var0 = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto var1 = NDArrayFactory::create<float>(5.0f);
 
-    auto res0 = NDArrayFactory::_create<float>('c', {2, 2});
-    auto res1 = NDArrayFactory::_create<float>(0.0f);
+    auto res0 = NDArrayFactory::create<float>('c', {2, 2});
+    auto res1 = NDArrayFactory::create<float>(0.0f);
 
-    auto exp = NDArrayFactory::_create<float>('c', {2, 2}, {6, 7, 8, 9});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {6, 7, 8, 9});
 
 
     // registering our GraphState holder
