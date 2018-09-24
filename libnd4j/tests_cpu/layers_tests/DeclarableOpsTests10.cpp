@@ -147,6 +147,8 @@ TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 
     auto res = op.execute({&in, &pad}, {10.0}, {0});
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    res->at(0)->printIndexedBuffer("PAD_SGO");
+    exp.printIndexedBuffer("PAD_EXP");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;
 }
