@@ -74,15 +74,14 @@ namespace nd4j {
                 }
             } else {
                 // in this case we return 2D matrix, which basically contains coordinates fo true
-
                 REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead", block.width());
+                auto output = OUTPUT_VARIABLE(0);
 
                 int width = condition->rankOf();
 
                 std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(width, {0});
 
-                auto result = helpers::_where(*condition, block.dataType(), block.workspace());
-                OVERWRITE_RESULT(result);
+                helpers::_where(*condition, *output, block.workspace());
             }
 
             return ND4J_STATUS_OK;
@@ -112,7 +111,8 @@ namespace nd4j {
                 newshape[6] = 1;
                 newshape[7] = 99;
 
-                ArrayOptions::setDataType(newshape, block.dataType());
+                // always long in this case
+                ArrayOptions::setDataType(newshape, nd4j::DataType::DataType_INT64);
 
                 return SHAPELIST(newshape);
             }

@@ -25,7 +25,7 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
             template <typename T>
-            static NDArray* __where(NDArray &condition, nd4j::DataType dataType, memory::Workspace *workspace) {
+            static void __where(NDArray &condition, NDArray& output, memory::Workspace *workspace) {
                 NDArrayList list(0, true);
                 int cnt = 0;
 
@@ -35,7 +35,7 @@ namespace nd4j {
 
                     auto offset = shape::getOffset(0, condition.shapeOf(), condition.stridesOf(), idx, condition.rankOf());
                     if (condition.e<bool>(offset)) {
-                        auto array = NDArrayFactory::create_('c', {1, condition.rankOf()}, dataType, workspace);
+                        auto array = NDArrayFactory::create_('c', {1, condition.rankOf()}, output.dataType(), workspace);
                         for (int f = 0; f < condition.rankOf(); f++)
                             array->p(f, (T) idx[f]);
 
@@ -43,12 +43,14 @@ namespace nd4j {
                     }
                 }
 
-                return list.stack();
+                auto s = list.stack();
+                output.assign(s);
+                delete s;
             }
-            BUILD_SINGLE_TEMPLATE(template NDArray* __where,(NDArray &condition, nd4j::DataType dataType, memory::Workspace *workspace), LIBND4J_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void __where,(NDArray &condition, NDArray& output, memory::Workspace *workspace), LIBND4J_TYPES);
 
-            NDArray* _where(NDArray &condition, nd4j::DataType dataType, memory::Workspace *workspace) {
-                BUILD_SINGLE_SELECTOR(dataType, return __where, (condition, dataType, workspace), LIBND4J_TYPES);
+            void _where(NDArray &condition, NDArray& output, memory::Workspace *workspace) {
+                BUILD_SINGLE_SELECTOR(output.dataType(), __where, (condition, output, workspace), LIBND4J_TYPES);
             }
         }
     }

@@ -26,7 +26,7 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            NDArray* _where(NDArray &condition, nd4j::DataType dataType, memory::Workspace *workspace);
+            void _where(NDArray &condition, NDArray& output, memory::Workspace *workspace);
         }
     }
 }
