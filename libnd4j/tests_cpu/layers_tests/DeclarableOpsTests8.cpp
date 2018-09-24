@@ -2294,7 +2294,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test8) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test9) {
     
-    auto labels = NDArrayFactory::create<double>('c', {1}, {0});
+    auto labels = NDArrayFactory::create<double>('c', {1}, {0.});
     auto logits = NDArrayFactory::create<double>('c', {1}, {0.2});
     auto expected = NDArrayFactory::create<double>(0.);
                                                

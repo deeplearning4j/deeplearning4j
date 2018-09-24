@@ -3145,7 +3145,7 @@ TEST_F(DeclarableOpsTests1, ArgMax2) {
 
 TEST_F(DeclarableOpsTests1, ArgMax3) {
     auto x = NDArrayFactory::create<float>('c', {3, 5});
-    auto dim = NDArrayFactory::create<float>('c', {1, 1}, {0});
+    auto dim = NDArrayFactory::create<float>('c', {1, 1}, {0.});
     x.linspace(1);
     auto exp = NDArrayFactory::create<float>('c', {5});
     exp.assign(2.0f);

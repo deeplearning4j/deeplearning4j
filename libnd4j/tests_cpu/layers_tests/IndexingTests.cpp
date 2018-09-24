@@ -460,7 +460,7 @@ TEST_F(IndexingTests, Test_StridedSlice_3) {
 
 TEST_F(IndexingTests, Test_StridedSlice_4) {
     auto x = NDArrayFactory::create<float>('c', {1, 2}, {5, 2});
-    auto a = NDArrayFactory::create<float>('c', {1, 1}, {0});
+    auto a = NDArrayFactory::create<float>('c', {1, 1}, {0.});
     auto b = NDArrayFactory::create<float>('c', {1, 1}, {1});
     auto c = NDArrayFactory::create<float>('c', {1, 1}, {1});
     auto exp = NDArrayFactory::create<float>(5.0f);
