@@ -33,7 +33,7 @@ public:
 };
 
 TEST_F(ScalarTests, Test_Create_1) {
-    auto x = NDArrayFactory::_create<float>(2.0f);
+    auto x = NDArrayFactory::create<float>(2.0f);
 
     ASSERT_EQ(0, x.rankOf());
     ASSERT_EQ(1, x.lengthOf());
@@ -45,8 +45,8 @@ TEST_F(ScalarTests, Test_Create_1) {
 }
 
 TEST_F(ScalarTests, Test_Add_1) {
-    auto x = NDArrayFactory::_create<float>(2.0f);
-    auto exp = NDArrayFactory::_create<float>(5.0f);
+    auto x = NDArrayFactory::create<float>(2.0f);
+    auto exp = NDArrayFactory::create<float>(5.0f);
 
     x += 3.0f;
 
@@ -56,9 +56,9 @@ TEST_F(ScalarTests, Test_Add_1) {
 }
 
 TEST_F(ScalarTests, Test_Add_2) {
-    auto x = NDArrayFactory::_create<float>(2.0f);
-    auto y = NDArrayFactory::_create<float>(3.0f);
-    auto exp = NDArrayFactory::_create<float>(5.0f);
+    auto x = NDArrayFactory::create<float>(2.0f);
+    auto y = NDArrayFactory::create<float>(3.0f);
+    auto exp = NDArrayFactory::create<float>(5.0f);
 
     x += y;
 
@@ -68,9 +68,9 @@ TEST_F(ScalarTests, Test_Add_2) {
 }
 
 TEST_F(ScalarTests, Test_Add_3) {
-    auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
-    auto y = NDArrayFactory::_create<float>(3.0f);
-    auto exp = NDArrayFactory::_create<float>('c', {3}, {4, 5, 6});
+    auto x = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
+    auto y = NDArrayFactory::create<float>(3.0f);
+    auto exp = NDArrayFactory::create<float>('c', {3}, {4, 5, 6});
 
     x += y;
 
@@ -80,18 +80,18 @@ TEST_F(ScalarTests, Test_Add_3) {
 }
 
 TEST_F(ScalarTests, Test_EQ_1) {
-    auto x = NDArrayFactory::_create<float>(2.0f);
-    auto y = NDArrayFactory::_create<float>(3.0f);
+    auto x = NDArrayFactory::create<float>(2.0f);
+    auto y = NDArrayFactory::create<float>(3.0f);
 
     ASSERT_TRUE(y.isSameShape(&x));
     ASSERT_FALSE(y.equalsTo(&x));
 }
 
 TEST_F(ScalarTests, Test_Concat_1) {
-    auto t = NDArrayFactory::_create<float>(1.0f);
-    auto u = NDArrayFactory::_create<float>(2.0f);
-    auto v = NDArrayFactory::_create<float>(3.0f);
-    auto exp = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto t = NDArrayFactory::create<float>(1.0f);
+    auto u = NDArrayFactory::create<float>(2.0f);
+    auto v = NDArrayFactory::create<float>(3.0f);
+    auto exp = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
 
     nd4j::ops::concat op;
     auto result = op.execute({&t, &u, &v}, {}, {0});
@@ -108,10 +108,10 @@ TEST_F(ScalarTests, Test_Concat_1) {
 
 
 TEST_F(ScalarTests, Test_Concat_2) {
-    auto t = NDArrayFactory::_create<float>(1.0f);
-    auto u = NDArrayFactory::_create<float>('c', {3}, {2, 3, 4});
-    auto v = NDArrayFactory::_create<float>(5.0f);
-    auto exp = NDArrayFactory::_create<float>('c', {5}, {1, 2, 3, 4, 5});
+    auto t = NDArrayFactory::create<float>(1.0f);
+    auto u = NDArrayFactory::create<float>('c', {3}, {2, 3, 4});
+    auto v = NDArrayFactory::create<float>(5.0f);
+    auto exp = NDArrayFactory::create<float>('c', {5}, {1, 2, 3, 4, 5});
 
     nd4j::ops::concat op;
     auto result = op.execute({&t, &u, &v}, {}, {0});
@@ -128,10 +128,10 @@ TEST_F(ScalarTests, Test_Concat_2) {
 
 
 TEST_F(ScalarTests, Test_Concat_3) {
-    auto t = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
-    auto u = NDArrayFactory::_create<float>(4.0f);
-    auto v = NDArrayFactory::_create<float>(5.0f);
-    auto exp = NDArrayFactory::_create<float>('c', {5}, {1, 2, 3, 4, 5});
+    auto t = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
+    auto u = NDArrayFactory::create<float>(4.0f);
+    auto v = NDArrayFactory::create<float>(5.0f);
+    auto exp = NDArrayFactory::create<float>('c', {5}, {1, 2, 3, 4, 5});
 
     nd4j::ops::concat op;
     auto result = op.execute({&t, &u, &v}, {}, {0});
@@ -149,8 +149,8 @@ TEST_F(ScalarTests, Test_Concat_3) {
 }
 
 TEST_F(ScalarTests, Test_ExpandDims_1) {
-    auto x = NDArrayFactory::_create<float>(2.0f);
-    auto exp = NDArrayFactory::_create<float>('c', {1}, {2.0f});
+    auto x = NDArrayFactory::create<float>(2.0f);
+    auto exp = NDArrayFactory::create<float>('c', {1}, {2.0f});
 
     nd4j::ops::expand_dims op;
     auto result = op.execute({&x}, {}, {0});
@@ -166,8 +166,8 @@ TEST_F(ScalarTests, Test_ExpandDims_1) {
 }
 
 TEST_F(ScalarTests, Test_Squeeze_1) {
-    auto x = NDArrayFactory::_create<float>(2.0f);
-    auto exp = NDArrayFactory::_create<float>(2.0f);
+    auto x = NDArrayFactory::create<float>(2.0f);
+    auto exp = NDArrayFactory::create<float>(2.0f);
 
     nd4j::ops::squeeze op;
     auto result = op.execute({&x}, {}, {});
@@ -183,8 +183,8 @@ TEST_F(ScalarTests, Test_Squeeze_1) {
 
 
 TEST_F(ScalarTests, Test_Reshape_1) {
-    auto x = NDArrayFactory::_create<float>(2.0f);
-    auto exp = NDArrayFactory::_create<float>('c', {1, 1, 1}, {2.0f});
+    auto x = NDArrayFactory::create<float>(2.0f);
+    auto exp = NDArrayFactory::create<float>('c', {1, 1, 1}, {2.0f});
 
     nd4j::ops::reshape op;
     auto result = op.execute({&x}, {}, {-99, 1, 1, 1});
@@ -200,8 +200,8 @@ TEST_F(ScalarTests, Test_Reshape_1) {
 
 
 TEST_F(ScalarTests, Test_Permute_1) {
-    auto x = NDArrayFactory::_create<float>(3.0f);
-    auto exp = NDArrayFactory::_create<float>(3.0f);
+    auto x = NDArrayFactory::create<float>(3.0f);
+    auto exp = NDArrayFactory::create<float>(3.0f);
 
     nd4j::ops::permute op;
     auto result = op.execute({&x}, {}, {0});
@@ -217,10 +217,10 @@ TEST_F(ScalarTests, Test_Permute_1) {
 
 
 TEST_F(ScalarTests, Test_Stack_1) {
-    auto t = NDArrayFactory::_create<float>(1.0f);
-    auto u = NDArrayFactory::_create<float>(2.0f);
-    auto v = NDArrayFactory::_create<float>(3.0f);
-    auto exp = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
+    auto t = NDArrayFactory::create<float>(1.0f);
+    auto u = NDArrayFactory::create<float>(2.0f);
+    auto v = NDArrayFactory::create<float>(3.0f);
+    auto exp = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
 
     nd4j::ops::stack op;
     auto result = op.execute({&t, &u, &v}, {}, {0});
@@ -235,11 +235,11 @@ TEST_F(ScalarTests, Test_Stack_1) {
 }
 
 TEST_F(ScalarTests, Test_Stack_2) {
-    auto t = NDArrayFactory::_create<float>('c', {1, 1}, {1.0f});
-    auto u = NDArrayFactory::_create<float>('c', {1, 1}, {2.0f});
-    auto v = NDArrayFactory::_create<float>('c', {1, 1}, {3.0f});
-    auto w = NDArrayFactory::_create<float>('c', {1, 1}, {4.0f});
-    auto exp = NDArrayFactory::_create<float>('c', {4, 1, 1}, {1, 2, 3, 4});
+    auto t = NDArrayFactory::create<float>('c', {1, 1}, {1.0f});
+    auto u = NDArrayFactory::create<float>('c', {1, 1}, {2.0f});
+    auto v = NDArrayFactory::create<float>('c', {1, 1}, {3.0f});
+    auto w = NDArrayFactory::create<float>('c', {1, 1}, {4.0f});
+    auto exp = NDArrayFactory::create<float>('c', {4, 1, 1}, {1, 2, 3, 4});
 
     nd4j::ops::stack op;
     auto result = op.execute({&t, &u, &v, &w}, {}, {0});
@@ -257,11 +257,11 @@ TEST_F(ScalarTests, Test_Stack_2) {
 
 
 TEST_F(ScalarTests, Test_Concat_Scalar_1) {
-    auto t = NDArrayFactory::_create<float>('c', {1, 1}, {1.0f});
-    auto u = NDArrayFactory::_create<float>('c', {1, 1}, {2.0f});
-    auto v = NDArrayFactory::_create<float>('c', {1, 1}, {3.0f});
-    auto w = NDArrayFactory::_create<float>('c', {1, 1}, {4.0f});
-    auto exp = NDArrayFactory::_create<float>('c', {4, 1}, {1, 2, 3, 4});
+    auto t = NDArrayFactory::create<float>('c', {1, 1}, {1.0f});
+    auto u = NDArrayFactory::create<float>('c', {1, 1}, {2.0f});
+    auto v = NDArrayFactory::create<float>('c', {1, 1}, {3.0f});
+    auto w = NDArrayFactory::create<float>('c', {1, 1}, {4.0f});
+    auto exp = NDArrayFactory::create<float>('c', {4, 1}, {1, 2, 3, 4});
 
     nd4j::ops::concat op;
     auto result = op.execute({&t, &u, &v, &w}, {}, {0});
@@ -277,11 +277,11 @@ TEST_F(ScalarTests, Test_Concat_Scalar_1) {
 
 
 TEST_F(ScalarTests, Test_Concat_Scalar_2) {
-    auto t = NDArrayFactory::_create<float>('c', {1, 1}, {1.0f});
-    auto u = NDArrayFactory::_create<float>('c', {1, 1}, {2.0f});
-    auto v = NDArrayFactory::_create<float>('c', {1, 1}, {3.0f});
-    auto w = NDArrayFactory::_create<float>('c', {1, 1}, {4.0f});
-    auto exp = NDArrayFactory::_create<float>('c', {1, 4}, {1, 2, 3, 4});
+    auto t = NDArrayFactory::create<float>('c', {1, 1}, {1.0f});
+    auto u = NDArrayFactory::create<float>('c', {1, 1}, {2.0f});
+    auto v = NDArrayFactory::create<float>('c', {1, 1}, {3.0f});
+    auto w = NDArrayFactory::create<float>('c', {1, 1}, {4.0f});
+    auto exp = NDArrayFactory::create<float>('c', {1, 4}, {1, 2, 3, 4});
 
     nd4j::ops::concat op;
     auto result = op.execute({&t, &u, &v, &w}, {}, {1});

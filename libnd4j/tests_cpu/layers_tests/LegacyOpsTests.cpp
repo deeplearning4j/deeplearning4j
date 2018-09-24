@@ -36,10 +36,10 @@ class LegacyOpsTests : public testing::Test {
 
 
 TEST_F(LegacyOpsTests, TransformTests_1) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
 
-    auto exp = NDArrayFactory::_create<float>('c', {5, 5});
+    auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(-1.0);
 
     nd4j::ops::LegacyTransformOp op(6);
@@ -49,10 +49,10 @@ TEST_F(LegacyOpsTests, TransformTests_1) {
 }
 
 TEST_F(LegacyOpsTests, TransformTests_2) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
 
-    auto exp = NDArrayFactory::_create<float>('c', {5, 5});
+    auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(-1.0);
 
     nd4j::ops::LegacyTransformOp op(6);
@@ -68,10 +68,10 @@ TEST_F(LegacyOpsTests, TransformTests_2) {
 }
 
 TEST_F(LegacyOpsTests,  Reciprocal_1) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(2.0f);
 
-    auto ethalon = NDArrayFactory::_create<float>('c', {5, 5});
+    auto ethalon = NDArrayFactory::create<float>('c', {5, 5});
     ethalon.assign(0.5f);
 
     nd4j::ops::LegacyTransformOp op(94);
@@ -83,13 +83,13 @@ TEST_F(LegacyOpsTests,  Reciprocal_1) {
 }
 
 TEST_F(LegacyOpsTests,  PWT_Tests_1) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(2.0);
 
-    auto y = NDArrayFactory::_create<float>('c', {5, 5});
+    auto y = NDArrayFactory::create<float>('c', {5, 5});
     y.assign(3.0);
 
-    auto exp = NDArrayFactory::_create<float>('c', {5, 5});
+    auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(6.0);
 
     nd4j::ops::LegacyPairwiseTransformOp op(6);
@@ -103,13 +103,13 @@ TEST_F(LegacyOpsTests,  PWT_Tests_1) {
 }
 
 TEST_F(LegacyOpsTests,  PWT_Tests_2) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(2.0);
 
-    auto y = NDArrayFactory::_create<float>('c', {5, 5});
+    auto y = NDArrayFactory::create<float>('c', {5, 5});
     y.assign(3.0);
 
-    auto exp = NDArrayFactory::_create<float>('c', {5, 5});
+    auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(6.0);
 
     nd4j::ops::LegacyPairwiseTransformOp op(6);
@@ -124,10 +124,10 @@ TEST_F(LegacyOpsTests,  PWT_Tests_2) {
 }
 
 TEST_F(LegacyOpsTests, Scalar_Test_1) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(2.0);
 
-    auto exp = NDArrayFactory::_create<float>('c', {5, 5});
+    auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(7.0);
 
     nd4j::ops::LegacyScalarOp op(0);
@@ -137,10 +137,10 @@ TEST_F(LegacyOpsTests, Scalar_Test_1) {
 }
 
 TEST_F(LegacyOpsTests, Scalar_Test_2) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(2.0);
 
-    auto exp = NDArrayFactory::_create<float>('c', {5, 5});
+    auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(7.0);
 
     nd4j::ops::LegacyScalarOp op(0, 5.0f);
@@ -154,7 +154,7 @@ TEST_F(LegacyOpsTests, Scalar_Test_2) {
 
 
 TEST_F(LegacyOpsTests, ReduceTests_1) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
 
     nd4j::ops::LegacyReduceOp op(1);
@@ -173,7 +173,7 @@ TEST_F(LegacyOpsTests, ReduceTests_1) {
 
 
 TEST_F(LegacyOpsTests, ReduceTests_2) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
 
     nd4j::ops::LegacyReduceOp op(1);
@@ -195,9 +195,9 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
 
 
 TEST_F(LegacyOpsTests, ReduceTests_3) {
-    auto x = NDArrayFactory::_create<float>('c', {3, 5});
+    auto x = NDArrayFactory::create<float>('c', {3, 5});
     x.linspace(1);
-    auto indices = NDArrayFactory::_create<float>('c', {1,1}, {1});
+    auto indices = NDArrayFactory::create<float>('c', {1,1}, {1});
 
 
     nd4j::ops::LegacyReduceOp op(1);
@@ -215,9 +215,9 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
 
 
 TEST_F(LegacyOpsTests, ReduceTests_4) {
-    auto x = NDArrayFactory::_create<float>('c', {2, 3, 5});
+    auto x = NDArrayFactory::create<float>('c', {2, 3, 5});
     x.linspace(1);
-    auto indices = NDArrayFactory::_create<float>('c', {1,1}, {1});
+    auto indices = NDArrayFactory::create<float>('c', {1,1}, {1});
 
 
     nd4j::ops::LegacyReduceOp op(1);
@@ -235,7 +235,7 @@ TEST_F(LegacyOpsTests, ReduceTests_4) {
 
 
 TEST_F(LegacyOpsTests, IndexReduceTests_1) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.linspace(1);
 
     nd4j::ops::LegacyIndexReduceOp op(0);
@@ -254,7 +254,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_1) {
 
 
 TEST_F(LegacyOpsTests, IndexReduceTests_2) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.linspace(1);
 
     nd4j::ops::LegacyIndexReduceOp op(0);
@@ -276,10 +276,10 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
 
 
 TEST_F(LegacyOpsTests, BroadcastingTests_1) {
-    auto x = NDArrayFactory::_create<double>('c', {5, 5});
+    auto x = NDArrayFactory::create<double>('c', {5, 5});
     x.assign(0.0f);
 
-    auto row = NDArrayFactory::_create<double>('c', {1, 5});
+    auto row = NDArrayFactory::create<double>('c', {1, 5});
     row.linspace(1);
 
     nd4j::ops::LegacyBroadcastOp op(0);
@@ -296,8 +296,8 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
 }
 
 TEST_F(LegacyOpsTests, PowDerivative_1) {
-    auto x = NDArrayFactory::_create<float>('c', {5, 5});
-    auto exp = NDArrayFactory::_create<float>('c', {5, 5});
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
+    auto exp = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(3.f);
     exp.assign(6.f);
 

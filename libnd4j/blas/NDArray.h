@@ -150,7 +150,7 @@ namespace nd4j {
         NDArray(Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
-        *  default constructor, do not allocate memory, memory for array is passed from outside 
+        *  do not allocate memory, memory for array is passed from outside 
         */
         NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
 
@@ -1185,9 +1185,9 @@ namespace nd4j {
         *  value - scalar value to assign
         */
         template <typename T>
-        void putScalar(const Nd4jLong i, const T value);
+        void p(const Nd4jLong i, const T value);
 
-        void putScalar(const Nd4jLong i, const NDArray& value);
+        void p(const Nd4jLong i, const NDArray& value);
 
         /** 
         *  assigns given scalar to 2D array element by given indexes
@@ -1196,7 +1196,7 @@ namespace nd4j {
         *  value - scalar value to assign
         */
         template <typename T>
-        void putScalar(const Nd4jLong i, const Nd4jLong j, const T value);
+        void p(const Nd4jLong i, const Nd4jLong j, const T value);
 
         /** 
         *  assigns given scalar to 3D array element by given indexes
@@ -1206,14 +1206,14 @@ namespace nd4j {
         *  value - scalar value to assign
         */
         template <typename T>
-        void putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value);
+        void p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value);
 
         template <typename T>
-        void putScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const T value);
+        void p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const T value);
 
         /*
         template <typename T>
-        void putScalar(const Nd4jLong* indices, const T value);
+        void p(const Nd4jLong* indices, const T value);
 */
         /**
         *  returns true if array is 2D

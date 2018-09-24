@@ -373,7 +373,7 @@ nd4j::NDArray* MmulHelper::mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDA
     }
     if (result == nullptr) {
         nd4j_verbose("mmulMxM: Creating new array: [%i x %i]\n", A->rows(), B->columns());
-        result = NDArrayFactory::create<Z>('f', {A->rows(), B->columns()}, nullptr);
+        result = NDArrayFactory::create_<Z>('f', {A->rows(), B->columns()}, nullptr);
     }
         
     auto aShape = A->shapeOf();
@@ -483,7 +483,7 @@ nd4j::NDArray* MmulHelper::mmulMxV(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDA
         if (A->columns() != B->lengthOf())
             throw std::runtime_error("A columns != B length");
         if (result == nullptr)
-            result = NDArrayFactory::create<Z>('f', {A->rows(), 1});
+            result = NDArrayFactory::create_<Z>('f', {A->rows(), 1});
 
         auto xType = A->dataType();
         auto yType = B->dataType();
@@ -524,8 +524,8 @@ nd4j::NDArray* MmulHelper::mmul(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArra
         if (A->lengthOf() != B->lengthOf())
             throw std::runtime_error("A length != B length");
         if (result == nullptr)
-            result = NDArrayFactory::create<double>('c', {1, 1});
-        //result->putScalar(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));
+            result = NDArrayFactory::create_<double>('c', {1, 1});
+        //result->p(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));
         BUILD_TRIPLE_SELECTOR(xType, yType, zType, _dot, (A->buffer(), B->buffer(), result->buffer(), A->lengthOf()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
         return result;
     } else { //if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix()) || (A->isColumnVector() && B->isRowVector())) {
@@ -547,12 +547,12 @@ NDArray* MmulHelper::simpleMMul(const NDArray* a, const NDArray* b, NDArray* c, 
 
     NDArray* dot = c;
     if(c == nullptr) 
-        c = NDArrayFactory::create('f', {a->shapeOf()[0], b->shapeOf()[1]}, b->dataType(), a->getWorkspace());
+        c = NDArrayFactory::create_('f', {a->shapeOf()[0], b->shapeOf()[1]}, b->dataType(), a->getWorkspace());
     else {
         if( c->shapeOf()[0] != a->shapeOf()[0] || c->shapeOf()[1] != b->shapeOf()[1])
             throw std::runtime_error("NDArrayFactory::simpleMMul static function: wrong shape of C array !");
         if(beta != 0. ) {
-            dot = NDArrayFactory::create(c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]}, c->dataType(), a->getWorkspace());
+            dot = NDArrayFactory::create_(c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]}, c->dataType(), a->getWorkspace());
             if( beta != 1.)
                 c->applyScalar(scalar::Multiply, beta, c, nullptr);
         }        
@@ -565,7 +565,7 @@ NDArray* MmulHelper::simpleMMul(const NDArray* a, const NDArray* b, NDArray* c, 
     for(int row = 0; row < M; ++row)
         for(int col = 0; col < N; ++col)
             for(int j = 0; j < K; ++j)
-                    dot->putScalar(row,col, a->e<double>(row,j) * b->e<double>(j,col));
+                    dot->p(row,col, a->e<double>(row,j) * b->e<double>(j,col));
 
     if(alpha != 1.)
         dot->applyScalar(scalar::Multiply, alpha, dot, nullptr);

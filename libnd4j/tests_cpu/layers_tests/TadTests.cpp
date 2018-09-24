@@ -37,8 +37,8 @@ public:
 TEST_F(TadTests, Test4DTad1) {
     std::unique_ptr<NDArray> arraySource(nd4j::NDArrayFactory::linspace(1.0f, 10000.0f, 10000));
 
-    std::unique_ptr<NDArray> arrayExp(NDArrayFactory::create<float>('c', {2, 1, 4, 4}));
-    std::unique_ptr<NDArray> arrayBad(NDArrayFactory::create<float>('c', {2, 1, 4, 4}));
+    std::unique_ptr<NDArray> arrayExp(NDArrayFactory::create_<float>('c', {2, 1, 4, 4}));
+    std::unique_ptr<NDArray> arrayBad(NDArrayFactory::create_<float>('c', {2, 1, 4, 4}));
 
     arrayExp->setBuffer(arraySource->getBuffer());
     //arrayExp->printShapeInfo("Exp shapeBuffer: ");
@@ -63,8 +63,8 @@ TEST_F(TadTests, Test4DTad1) {
 }
 
 TEST_F(TadTests, TestNumTads1) {
-    auto x = NDArrayFactory::_create<float>('c', {2, 3});
-    auto y = NDArrayFactory::_create<float>('c', {2, 2});
+    auto x = NDArrayFactory::create<float>('c', {2, 3});
+    auto y = NDArrayFactory::create<float>('c', {2, 2});
 
     std::vector<int> dim({0});
 
@@ -109,7 +109,7 @@ TEST_F(TadTests, TestShapeTad_1) {
 }
 
 TEST_F(TadTests, TadNoAxis_1) {
-    auto array = NDArrayFactory::_create<float>('c', {2, 3});
+    auto array = NDArrayFactory::create<float>('c', {2, 3});
 
     shape::TAD tad(array.shapeInfo(), nullptr, 0);
     tad.createTadOnlyShapeInfo();
@@ -121,8 +121,8 @@ TEST_F(TadTests, TadNoAxis_1) {
 }
 
 TEST_F(TadTests, TadEdgeCase_1) {
-    auto array = NDArrayFactory::_create<float>('c', {5, 4, 1});
-    auto exp = NDArrayFactory::_create<float>('c', {5, 4});
+    auto array = NDArrayFactory::create<float>('c', {5, 4, 1});
+    auto exp = NDArrayFactory::create<float>('c', {5, 4});
     array.linspace(1);
 
     auto tad = array.tensorAlongDimension(0, {0, 1});
@@ -133,7 +133,7 @@ TEST_F(TadTests, TadEdgeCase_1) {
 }
 
 TEST_F(TadTests, TestEdgeCase_2) {
-    auto array = NDArrayFactory::_create<float>('f', {2, 3, 1}, {1, 4, 2, 5, 3, 6});
+    auto array = NDArrayFactory::create<float>('f', {2, 3, 1}, {1, 4, 2, 5, 3, 6});
 
     auto tad1 = array.tensorAlongDimension(1, {2});
 
@@ -149,7 +149,7 @@ TEST_F(TadTests, TestEdgeCase_2) {
 }
 
 TEST_F(TadTests, TadEdgeCase_2) {
-    auto array = NDArrayFactory::_create<float>('c', {2, 3, 4});
+    auto array = NDArrayFactory::create<float>('c', {2, 3, 4});
 
     auto tad = array.tensorAlongDimension(0, {1});
 

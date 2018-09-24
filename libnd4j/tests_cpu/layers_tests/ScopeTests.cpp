@@ -34,7 +34,7 @@ public:
 TEST_F(ScopeTests, BasicTests_1) {
     Graph graph;
 
-    auto x = NDArrayFactory::create<float>('c', {2, 2});
+    auto x = NDArrayFactory::create_<float>('c', {2, 2});
     x->assign(0.0f);
 
     auto variableSpace = graph.getVariableSpace();
@@ -64,14 +64,14 @@ TEST_F(ScopeTests, BasicTests_1) {
 TEST_F(ScopeTests, RealTests_1) {
     Graph graph;
 
-    auto x = NDArrayFactory::create<float>('c', {2, 2});
+    auto x = NDArrayFactory::create_<float>('c', {2, 2});
     x->assign(0.0f);
 
-    auto y = NDArrayFactory::create<float>('c', {2, 2});
+    auto y = NDArrayFactory::create_<float>('c', {2, 2});
     y->assign(0.0);
 
-    auto scalar = NDArrayFactory::create<float>('c', {1, 1});
-    scalar->putScalar(0, 10);
+    auto scalar = NDArrayFactory::create_<float>('c', {1, 1});
+    scalar->p(0, 10);
 
     auto variableSpace = graph.getVariableSpace();
     variableSpace->putVariable(-1, x);

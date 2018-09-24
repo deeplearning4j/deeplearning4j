@@ -43,20 +43,20 @@ TEST_F(SanityTests, VariableSpace_1) {
 
 TEST_F(SanityTests, VariableSpace_2) {
     VariableSpace variableSpace;
-    variableSpace.putVariable(1, new Variable(NDArrayFactory::create<float>('c', {3, 3})));
-    variableSpace.putVariable(1, 1, new Variable(NDArrayFactory::create<float>('c', {3, 3})));
+    variableSpace.putVariable(1, new Variable(NDArrayFactory::create_<float>('c', {3, 3})));
+    variableSpace.putVariable(1, 1, new Variable(NDArrayFactory::create_<float>('c', {3, 3})));
 
     std::pair<int, int> pair(1, 2);
-    variableSpace.putVariable(pair, new Variable(NDArrayFactory::create<float>('c', {3, 3})));
+    variableSpace.putVariable(pair, new Variable(NDArrayFactory::create_<float>('c', {3, 3})));
 }
 
 
 TEST_F(SanityTests, Graph_1) {
     Graph graph;
 
-    graph.getVariableSpace()->putVariable(1, new Variable(NDArrayFactory::create<float>('c', {3, 3})));
-    graph.getVariableSpace()->putVariable(1, 1, new Variable(NDArrayFactory::create<float>('c', {3, 3})));
+    graph.getVariableSpace()->putVariable(1, new Variable(NDArrayFactory::create_<float>('c', {3, 3})));
+    graph.getVariableSpace()->putVariable(1, 1, new Variable(NDArrayFactory::create_<float>('c', {3, 3})));
 
     std::pair<int, int> pair(1, 2);
-    graph.getVariableSpace()->putVariable(pair, new Variable(NDArrayFactory::create<float>('c', {3, 3})));
+    graph.getVariableSpace()->putVariable(pair, new Variable(NDArrayFactory::create_<float>('c', {3, 3})));
 }

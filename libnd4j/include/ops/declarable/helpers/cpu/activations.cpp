@@ -175,9 +175,9 @@ namespace helpers {
             double x = input.e<double>(i);
             if(x < 0.0) {
                 // FIXME: double
-                output.putScalar(i, (x * alpha.e<double>(ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i))));
+                output.p(i, (x * alpha.e<double>(ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i))));
             } else
-                output.putScalar(i, x);
+                output.p(i, x);
         }
     }
 
@@ -197,11 +197,11 @@ namespace helpers {
             double grO = dLdO.e<double>(i);
             if(x < 0.0) {
                 Nd4jLong alphaInd = ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i);
-                dLdI.putScalar(i, grO * alpha.e<double>(alphaInd));
-                dLdA.putScalar(i, dLdA.e<double>(i) + (grO * x));
+                dLdI.p(i, grO * alpha.e<double>(alphaInd));
+                dLdA.p(i, dLdA.e<double>(i) + (grO * x));
             }
             else
-                dLdI.putScalar(i, grO);
+                dLdI.p(i, grO);
     }
 }
 

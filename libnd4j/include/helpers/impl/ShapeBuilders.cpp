@@ -58,14 +58,14 @@ namespace nd4j {
         return newShape;
     }
 
-    Nd4jLong* ShapeBuilders::createShapeInfo(nd4j::DataType dataType, const char order, const std::vector<Nd4jLong> shapeOnly, memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::createShapeInfo(nd4j::DataType dataType, const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
         auto res = createShapeInfo(order, shapeOnly, workspace);
         nd4j::ArrayOptions::setDataType(res, dataType);
         return res;
     }
 
     ////////////////////////////////////////////////////////////////////////////////
-    Nd4jLong* ShapeBuilders::createShapeInfo(const char order, const std::vector<Nd4jLong> shapeOnly, memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::createShapeInfo(const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
         int rank = shapeOnly.size();
 
         if(shapeOnly[0] == 0) // scalar case
@@ -87,4 +87,11 @@ namespace nd4j {
 
         return shapeInfo;
     }
+
+////////////////////////////////////////////////////////////////////////////////
+Nd4jLong* ShapeBuilders::createShapeInfo(const char order, const std::initializer_list<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
+
+    return ShapeBuilders::createShapeInfo(order, std::vector<Nd4jLong>(shapeOnly), workspace);
+}
+
 }

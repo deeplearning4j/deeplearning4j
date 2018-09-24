@@ -30,8 +30,8 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactory::_create(matrix.ordering(), {matrix.sizeAt(0), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace())),
-                                                         _HHbidiag(nd4j::NDArrayFactory::_create(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace())) {
+BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactory::create(matrix.ordering(), {matrix.sizeAt(0), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace())),
+                                                         _HHbidiag(nd4j::NDArrayFactory::create(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace())) {
 
 	// input validation
 	if(matrix.rankOf() != 2 || matrix.isScalar())
@@ -68,8 +68,8 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 
 			Householder<T>::evalHHmatrixDataI(*column, _x, _y);
 
-            _HHmatrix.putScalar<T>(i, i, _x);
-            _HHbidiag.putScalar<T>(i, i, _y);
+            _HHmatrix.p<T>(i, i, _x);
+            _HHbidiag.p<T>(i, i, _y);
 
 			// multiply corresponding matrix block on householder matrix from the left: P * bottomRightCorner
 			bottomRightCorner =  _HHmatrix.subarray({{i, rows}, {i+1, cols}});	// {i, cols}
@@ -90,8 +90,8 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 
 			Householder<T>::evalHHmatrixDataI(*row, _x, _y);
 
-            _HHmatrix.putScalar<T>(i, i+1, _x);
-            _HHbidiag.putScalar<T>(i, i+1, _y);
+            _HHmatrix.p<T>(i, i+1, _x);
+            _HHbidiag.p<T>(i, i+1, _y);
 
 			// multiply corresponding matrix block on householder matrix from the right: bottomRightCorner * P
 			bottomRightCorner = _HHmatrix.subarray({{i+1, rows}, {i+1, cols}});  // {i, rows}
@@ -109,8 +109,8 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 
 		Householder<T>::evalHHmatrixDataI(*row, _x, _y);
 
-        _HHmatrix.putScalar<T>(cols-2,cols-1, _x);
-        _HHbidiag.putScalar<T>(cols-2,cols-1, _y);
+        _HHmatrix.p<T>(cols-2,cols-1, _x);
+        _HHbidiag.p<T>(cols-2,cols-1, _y);
 
 		delete row;
 
@@ -121,8 +121,8 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 
 		Householder<T>::evalHHmatrixDataI(*column, _x, _y);
 
-		_HHmatrix.putScalar<T>(cols-1, cols-1, _x);
-        _HHbidiag.putScalar<T>(cols-1, cols-1, _y);
+		_HHmatrix.p<T>(cols-1, cols-1, _x);
+        _HHbidiag.p<T>(cols-1, cols-1, _y);
 
 		delete column;
 	}
@@ -142,20 +142,20 @@ HHsequence BiDiagonalUp::_makeHHsequence(const char type) const {
 	if(type == 'u') {
 
     	const int diagSize = _HHbidiag.sizeAt(0);
-    	auto colOfCoeffs = NDArrayFactory::_create(_HHmatrix.ordering(),  {diagSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
+    	auto colOfCoeffs = NDArrayFactory::create(_HHmatrix.ordering(),  {diagSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
 
 	    for(int i = 0; i < diagSize; ++i)
-	        colOfCoeffs.putScalar(i, _HHmatrix.e<T>(i,i));
+	        colOfCoeffs.p(i, _HHmatrix.e<T>(i,i));
 
     	return HHsequence(_HHmatrix, colOfCoeffs, type);
     }
     else {
 
     	const int diagUpSize = _HHbidiag.sizeAt(0) - 1;
-		NDArray colOfCoeffs = NDArrayFactory::_create(_HHmatrix.ordering(), {diagUpSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
+		NDArray colOfCoeffs = NDArrayFactory::create(_HHmatrix.ordering(), {diagUpSize, 1}, _HHmatrix.dataType(), _HHmatrix.getWorkspace());
 
     	for(int i = 0; i < diagUpSize; ++i)
-        	colOfCoeffs.putScalar(i, _HHmatrix.e<T>(i,i+1));
+        	colOfCoeffs.p(i, _HHmatrix.e<T>(i,i+1));
 
     	HHsequence result(_HHmatrix, colOfCoeffs, type);
     	result._diagSize = diagUpSize;

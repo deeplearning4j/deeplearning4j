@@ -44,8 +44,8 @@ namespace helpers {
 #pragma omp parallel for if(lastDimList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                 for (int e = 0; e < lastDimList->size(); ++e) {
                     int maxPos = lastDimList->at(e)->argMax();
-                    indeces->putScalar(e, maxPos); //topIndex;
-                    values->putScalar(e, lastDimList->at(e)->e<T>(maxPos));
+                    indeces->p(e, maxPos); //topIndex;
+                    values->p(e, lastDimList->at(e)->e<T>(maxPos));
                 }
             }
             else { 
@@ -93,9 +93,9 @@ namespace helpers {
 
                     for (int pos = 0; pos < k; ++pos, ++nextPos) {
                         if (values != nullptr)
-                            values->putScalar(nextPos, topValues[pos]);
+                            values->p(nextPos, topValues[pos]);
 
-                        indeces->putScalar(nextPos, topIndices[pos]);
+                        indeces->p(nextPos, topIndices[pos]);
                     }
                 }
         }
@@ -110,7 +110,7 @@ namespace helpers {
             for (int i = 0; i < input->rankOf(); i++)
                 shapeV[i] = input->sizeAt(i);
             shapeV[input->rankOf()] = k;
-            std::unique_ptr<NDArray> indices(NDArrayFactory::create<T>(input->ordering(), shapeV));
+            std::unique_ptr<NDArray> indices(NDArrayFactory::create_<T>(input->ordering(), shapeV));
             NDArray* values = nullptr;
             int status = topKFunctor(input, values, indices.get(), k, true);
 
@@ -125,7 +125,7 @@ namespace helpers {
                         }
                     }
                     if (found)
-                        result->putScalar<T>(e, (T)1);
+                        result->p<T>(e, (T)1);
                 }
             }
             return status; 

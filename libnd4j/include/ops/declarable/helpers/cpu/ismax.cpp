@@ -34,7 +34,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
         int length = input->lengthOf();
         if ((input->shapeOf())[dimensions[0]] == 1) {
             for (int i = 0; i < length; i++)
-                output->putScalar<T>(i, 1.f);
+                output->p<T>(i, 1.f);
         }
         else {
             int eleStride = shape::elementWiseStride(input->getShapeInfo());
@@ -48,7 +48,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                             currMax = input->e<T>(i);
                             maxIdx = i;
                         }
-                        output->putScalar<T>(i, 0.f);
+                        output->p<T>(i, 0.f);
                     }
                 }
                 else {
@@ -62,7 +62,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                                 currMaxLocal = input->e<T>(i);
                                 maxIdxLocal = i;
                             }
-                            output->putScalar<T>(i, 0.f);
+                            output->p<T>(i, 0.f);
                         }
 #pragma omp critical
                         {
@@ -73,7 +73,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                         }
                     }
                 }
-                output->putScalar<T>(maxIdx, 1.f);
+                output->p<T>(maxIdx, 1.f);
             }
             else {
                 int maxIdx = 0;
@@ -85,7 +85,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                             currMax = input->e<T>(i*eleStride);
                             maxIdx = i;
                         }
-                        output->putScalar<T>(i, 0.f);
+                        output->p<T>(i, 0.f);
                     }
                 }
                 else {
@@ -99,7 +99,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                                 currMaxLocal = input->e<T>(i*eleStride);
                                        maxIdxLocal = i;
                             }
-                            output->putScalar<T>(i, 0.f);
+                            output->p<T>(i, 0.f);
                         }
 #pragma omp critical
                         {
@@ -110,7 +110,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                         }
                     }
                 }
-                output->putScalar<T>(maxIdx, 1.f);
+                output->p<T>(maxIdx, 1.f);
             }
         }
     }

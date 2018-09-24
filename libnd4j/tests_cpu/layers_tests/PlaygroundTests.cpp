@@ -44,7 +44,7 @@ public:
 
 
 TEST_F(PlaygroundTests, LambdaTest_1) {
-    auto array = NDArrayFactory::_create<float>('c', {8192, 1024});
+    auto array = NDArrayFactory::create<float>('c', {8192, 1024});
     array.linspace(1);
 
     auto lambda = LAMBDA_F(_x) {
@@ -69,8 +69,8 @@ TEST_F(PlaygroundTests, LambdaTest_1) {
 
 
 TEST_F(PlaygroundTests, LambdaTest_2) {
-    auto array = NDArrayFactory::_create<float>('c', {8192, 1024});
-    auto row = NDArrayFactory::_create<float>('c', {1, 1024});
+    auto array = NDArrayFactory::create<float>('c', {8192, 1024});
+    auto row = NDArrayFactory::create<float>('c', {1, 1024});
     array.linspace(1);
 
     auto lambda = LAMBDA_F(_x) {
@@ -94,7 +94,7 @@ TEST_F(PlaygroundTests, LambdaTest_2) {
 
 TEST_F(PlaygroundTests, NoCacheTest_1) {
     std::vector<NDArray*> pool(poolSize);
-    auto source = NDArrayFactory::_create<float>('c', {8192, 1024});
+    auto source = NDArrayFactory::create<float>('c', {8192, 1024});
     for (int e = 0; e < pool.size(); e++)
         pool[e] = source.dup();
 
@@ -126,7 +126,7 @@ TEST_F(PlaygroundTests, NoCacheTest_1) {
 TEST_F(PlaygroundTests, NoCacheTest_2) {
     std::vector<NDArray*> pool1(poolSize);
     std::vector<NDArray*> pool2(poolSize);
-    auto source = NDArrayFactory::_create<float>('c', {8192, 1024});
+    auto source = NDArrayFactory::create<float>('c', {8192, 1024});
     for (int e = 0; e < pool1.size(); e++) {
         pool1[e] = source.dup();
         pool2[e] = source.dup();
@@ -164,7 +164,7 @@ TEST_F(PlaygroundTests, NoCacheTest_2) {
 TEST_F(PlaygroundTests, ReductionTest_1) {
     std::vector<NDArray*> pool1(poolSize);
     std::vector<NDArray*> pool2(poolSize);
-    auto source = NDArrayFactory::_create<float>('c', {1, 100});
+    auto source = NDArrayFactory::create<float>('c', {1, 100});
     for (int e = 0; e < pool1.size(); e++) {
         pool1[e] = source.dup();
         pool2[e] = source.dup();
@@ -198,7 +198,7 @@ TEST_F(PlaygroundTests, ReductionTest_1) {
 TEST_F(PlaygroundTests, ScalarTest_1) {
     std::vector<NDArray*> pool1(poolSize);
     std::vector<NDArray*> pool2(poolSize);
-    auto source = NDArrayFactory::_create<float>('c', {1, 100});
+    auto source = NDArrayFactory::create<float>('c', {1, 100});
     for (int e = 0; e < pool1.size(); e++) {
         pool1[e] = source.dup();
         pool2[e] = source.dup();
@@ -237,7 +237,7 @@ TEST_F(PlaygroundTests, ScalarTest_1) {
 TEST_F(PlaygroundTests, ScalarTest_2) {
     std::vector<NDArray*> pool1(poolSize);
     std::vector<NDArray*> pool2(poolSize);
-    auto source = NDArrayFactory::_create<float>('c', {1, 100});
+    auto source = NDArrayFactory::create<float>('c', {1, 100});
     for (int e = 0; e < pool1.size(); e++) {
         pool1[e] = source.dup();
         pool2[e] = source.dup();
@@ -329,10 +329,10 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     int        oH=55, oW=55;
     int iterations = 1;
 
-    auto input = NDArrayFactory::_create<float>('c', {bS, iC, iH, iW});
-    auto output = NDArrayFactory::_create<float>('c', {bS, iC, kH, kW, oH, oW});
+    auto input = NDArrayFactory::create<float>('c', {bS, iC, iH, iW});
+    auto output = NDArrayFactory::create<float>('c', {bS, iC, kH, kW, oH, oW});
 
-    auto outputPermuted = NDArrayFactory::_create<float>('c', {bS, oH, oW, iC, kH, kW});
+    auto outputPermuted = NDArrayFactory::create<float>('c', {bS, oH, oW, iC, kH, kW});
     outputPermuted.permutei({0, 3, 4, 5, 1, 2});
 
     nd4j::ops::im2col op;
@@ -422,10 +422,10 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
 }
 
 TEST_F(PlaygroundTests, Test_Im2Col_2) {
-    auto input = NDArrayFactory::_create<float>('c', {16, 3, 224, 224});
-    auto output = NDArrayFactory::_create<float>('c', {16, 3, 11, 11, 55, 55});
+    auto input = NDArrayFactory::create<float>('c', {16, 3, 224, 224});
+    auto output = NDArrayFactory::create<float>('c', {16, 3, 11, 11, 55, 55});
 
-    auto outputPermuted = NDArrayFactory::_create<float>('c', {16, 55, 55, 3, 11, 11});
+    auto outputPermuted = NDArrayFactory::create<float>('c', {16, 55, 55, 3, 11, 11});
     outputPermuted.permutei({0, 3, 4, 5, 1, 2});
 
     nd4j::ops::im2col op;
@@ -448,12 +448,12 @@ TEST_F(PlaygroundTests, Test_Col2Im_1) {
     int        oH=55, oW=55;
     int iterations = 1;
 
-    auto input = NDArrayFactory::_create<float>('c', {bS, iC, kH, kW, oH, oW});
-    auto output = NDArrayFactory::_create<float>('c', {bS, iC, iH, iW});
+    auto input = NDArrayFactory::create<float>('c', {bS, iC, kH, kW, oH, oW});
+    auto output = NDArrayFactory::create<float>('c', {bS, iC, iH, iW});
     
-    auto inputPermuted = NDArrayFactory::_create<float>('c', {bS, oH, oW, iC, kH, kW});
+    auto inputPermuted = NDArrayFactory::create<float>('c', {bS, oH, oW, iC, kH, kW});
     inputPermuted.permutei({0, 3, 4, 5, 1, 2});
-    auto outputPermuted = NDArrayFactory::_create<float>('c', {bS, iH, iW, iC});
+    auto outputPermuted = NDArrayFactory::create<float>('c', {bS, iH, iW, iC});
     outputPermuted.permutei({0, 3, 1, 2});
 
     input = 10.;
@@ -494,12 +494,12 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
     int        oH=55, oW=55;
     int iterations = 1;
 
-    auto output = NDArrayFactory::_create<float>('c', {bS, iC, kH, kW, oH, oW});
-    auto input = NDArrayFactory::_create<float>('c', {bS, iC, iH, iW});
+    auto output = NDArrayFactory::create<float>('c', {bS, iC, kH, kW, oH, oW});
+    auto input = NDArrayFactory::create<float>('c', {bS, iC, iH, iW});
     
-    auto outputPermuted = NDArrayFactory::_create<float>('c', {bS, oH, oW, iC, kH, kW});
+    auto outputPermuted = NDArrayFactory::create<float>('c', {bS, oH, oW, iC, kH, kW});
     outputPermuted.permutei({0, 3, 4, 5, 1, 2});
-    auto inputPermuted = NDArrayFactory::_create<float>('c', {bS, iH, iW, iC});
+    auto inputPermuted = NDArrayFactory::create<float>('c', {bS, iH, iW, iC});
     inputPermuted.permutei({0, 3, 1, 2});
 
     input = 10.;
@@ -537,7 +537,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
 
 TEST_F(PlaygroundTests, loop_test_1) {
 
-    auto f = NDArrayFactory::_create<float>('c', {2}, {5000, 10000});
+    auto f = NDArrayFactory::create<float>('c', {2}, {5000, 10000});
     nd4j::ops::randomuniform op;
 
     auto result = op.execute({&f}, {-1.0f, 1.0f}, {});
@@ -620,8 +620,8 @@ TEST_F(PlaygroundTests, loop_test_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, ndarray_tile_test1) {
 
-    auto x = NDArrayFactory::_create<float>('c', {20, 30});
-    auto exp = NDArrayFactory::_create<float>('c', {2,40,60});
+    auto x = NDArrayFactory::create<float>('c', {20, 30});
+    auto exp = NDArrayFactory::create<float>('c', {2,40,60});
 
     auto timeStart = std::chrono::system_clock::now();
     auto tiled = x.tile({2,2,2});
@@ -636,8 +636,8 @@ TEST_F(PlaygroundTests, ndarray_tile_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, ndarray_tile_test2) {
 
-    auto x = NDArrayFactory::_create<float>('f', {20, 30});
-    auto exp = NDArrayFactory::_create<float>('f', {2,40,60});
+    auto x = NDArrayFactory::create<float>('f', {20, 30});
+    auto exp = NDArrayFactory::create<float>('f', {2,40,60});
 
     auto timeStart = std::chrono::system_clock::now();
     auto tiled = x.tile({2,2,2});

@@ -57,7 +57,7 @@ static void _matrixSetDiag(const NDArray* input, const NDArray* diagonal, NDArra
 // #pragma omp parallel for if(batchSize > Environment::getInstance()->elementwiseThreshold()) schedule(static) 
             for(int i = 0; i < batchSize; ++i )
                 for(int j = 0; j < lastSmallDim; ++j) {
-                    output->putScalar(i*last2DimSize + j*(lastDimSize + 1), diagonal->e<T>(i*lastSmallDim + j));
+                    output->p(i*last2DimSize + j*(lastDimSize + 1), diagonal->e<T>(i*lastSmallDim + j));
                 }
              
 

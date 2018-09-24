@@ -46,7 +46,7 @@ int _matrixDiagPart(const NDArray* input, NDArray* output) {
     // condition is hold: listOut->size() == listDiag->size()
     for(int i = 0; i < listOut->size(); ++i)       
         for(int j = 0; j < lastDimension; ++j)
-            listOut->at(i)->putScalar(j, listDiag->at(i)->e<T>(j, j));
+            listOut->at(i)->p(j, listDiag->at(i)->e<T>(j, j));
     
     delete listOut;
     delete listDiag;

@@ -42,7 +42,7 @@ namespace helpers {
                     idx = indices->e<int>(e);
                     val = input->e<T>(e);
                 }
-                output->putScalar<T>(idx, val);
+                output->p<T>(idx, val);
             }
         }
         else {
@@ -64,7 +64,7 @@ namespace helpers {
                 if (indices->e<int>(i) == idx) {
 #pragma omp parallel for
                     for (int e = 0; e < maxT->lengthOf(); e++) {
-                       maxT->putScalar<T>(e, nd4j::math::nd4j_max(maxT->e<T>(e), listOfTensors->at(i)->e<T>(e)));
+                       maxT->p<T>(e, nd4j::math::nd4j_max(maxT->e<T>(e), listOfTensors->at(i)->e<T>(e)));
                     }
                 }
                 else {
@@ -97,7 +97,7 @@ namespace helpers {
                     idx = indices->e<int>(e);
                     val = input->e<T>(e);
                 }
-                output->putScalar(idx, val);
+                output->p(idx, val);
             }
         }
         else {
@@ -119,7 +119,7 @@ namespace helpers {
                 if (indices->e<T>(i) == idx) {
 #pragma omp parallel for if(minT->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                     for (int e = 0; e < minT->lengthOf(); e++) {
-                       minT->putScalar(e, nd4j::math::nd4j_min(minT->e<T>(e), listOfTensors->at(i)->e<T>(e)));
+                       minT->p(e, nd4j::math::nd4j_min(minT->e<T>(e), listOfTensors->at(i)->e<T>(e)));
                     }
                 }
                 else {
@@ -147,12 +147,12 @@ namespace helpers {
                    count++;
                 }
                 else {
-                   output->putScalar<T>(idx, val / count);
+                   output->p<T>(idx, val / count);
                     idx = indices->e<int>(e);
                     val = input->e<T>(e);
                     count = 1;
                 }
-                output->putScalar<T>(idx, val / count);
+                output->p<T>(idx, val / count);
             }
         }
         else {
@@ -174,7 +174,7 @@ namespace helpers {
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
                     for (int e = 0; e < meanT->lengthOf(); e++) {
-                       meanV->putScalar<T>(e, meanV->e<T>(e) + listOfTensors->at(i)->e<T>(e));
+                       meanV->p<T>(e, meanV->e<T>(e) + listOfTensors->at(i)->e<T>(e));
                     }
                     count++;
                 }
@@ -211,7 +211,7 @@ namespace helpers {
                     idx = indices->e<int>(e);
                     val = input->e<T>(e);
                 }
-                output->putScalar(idx, val);
+                output->p(idx, val);
             }
         }
         else {
@@ -230,7 +230,7 @@ namespace helpers {
             for (int i = 0; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
                     for (int e = 0; e < sumT->lengthOf(); e++) {
-                       sumT->putScalar(e, sumT->e<T>(e) +listOfTensors->at(i)->e<T>(e));
+                       sumT->p(e, sumT->e<T>(e) +listOfTensors->at(i)->e<T>(e));
                     }
                 }
                 else {
@@ -261,7 +261,7 @@ namespace helpers {
                     idx = indices->e<int>(e);
                     val = input->e<T>(e);
                 }
-                output->putScalar(idx, val);
+                output->p(idx, val);
             }
         }
         else {
@@ -279,7 +279,7 @@ namespace helpers {
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i)  == idx) {
                     for (int e = 0; e < sumT->lengthOf(); e++) {
-                       sumT->putScalar(e, sumT->e<T>(e) * listOfTensors->at(i)->e<T>(e));
+                       sumT->p(e, sumT->e<T>(e) * listOfTensors->at(i)->e<T>(e));
                     }
                 }
                 else {
@@ -297,7 +297,7 @@ namespace helpers {
     static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArray& aoutput) {
             T val = indices->e<T>(0);
             for (int e = 1; e < indices->lengthOf(); e++) {
-                aoutput.putScalar<T>(Nd4jLong(0), indices->e<T>(e));
+                aoutput.p<T>(Nd4jLong(0), indices->e<T>(e));
                 if (val > aoutput.e<T>(0))
                     return false;
                 val = indices->e<T>(e);

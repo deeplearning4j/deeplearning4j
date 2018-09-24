@@ -38,9 +38,9 @@ public:
     nd4j::random::RandomBuffer *_rngA;
     nd4j::random::RandomBuffer *_rngB;
 
-    NDArray* nexp0 = NDArrayFactory::create<float>('c', {10, 10});
-    NDArray* nexp1 = NDArrayFactory::create<float>('c', {10, 10});
-    NDArray* nexp2 = NDArrayFactory::create<float>('c', {10, 10});
+    NDArray* nexp0 = NDArrayFactory::create_<float>('c', {10, 10});
+    NDArray* nexp1 = NDArrayFactory::create_<float>('c', {10, 10});
+    NDArray* nexp2 = NDArrayFactory::create_<float>('c', {10, 10});
 
     RNGTests() {
         _bufferA = new Nd4jLong[100000];
@@ -66,8 +66,8 @@ public:
 };
 
 TEST_F(RNGTests, Test_Dropout_1) {
-    auto x0 = NDArrayFactory::_create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     x0.linspace(1);
     x1.linspace(1);
@@ -86,8 +86,8 @@ TEST_F(RNGTests, Test_Dropout_1) {
 }
 
 TEST_F(RNGTests, Test_DropoutInverted_1) {
-    auto x0 = NDArrayFactory::_create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     x0.linspace(1);
     x1.linspace(1);
@@ -107,8 +107,8 @@ TEST_F(RNGTests, Test_DropoutInverted_1) {
 
 
 TEST_F(RNGTests, Test_Launcher_1) {
-    auto x0 = NDArrayFactory::_create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::applyDropOut(_rngA, &x0, 0.5f);
     RandomLauncher::applyDropOut(_rngB, &x1, 0.5f);
@@ -122,8 +122,8 @@ TEST_F(RNGTests, Test_Launcher_1) {
 
 
 TEST_F(RNGTests, Test_Launcher_2) {
-    auto x0 = NDArrayFactory::_create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::applyInvertedDropOut(_rngA, &x0, 0.5f);
     RandomLauncher::applyInvertedDropOut(_rngB, &x1, 0.5f);
@@ -137,8 +137,8 @@ TEST_F(RNGTests, Test_Launcher_2) {
 
 
 TEST_F(RNGTests, Test_Launcher_3) {
-    auto x0 = NDArrayFactory::_create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::applyAlphaDropOut(_rngA, &x0, 0.5f, 0.2f, 0.1f, 0.3f);
     RandomLauncher::applyAlphaDropOut(_rngB, &x1, 0.5f, 0.2f, 0.1f, 0.3f);
@@ -151,8 +151,8 @@ TEST_F(RNGTests, Test_Launcher_3) {
 }
 
 TEST_F(RNGTests, Test_Uniform_1) {
-    auto x0 = NDArrayFactory::_create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillUniform(_rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillUniform(_rngB, &x1, 1.0f, 2.0f);
@@ -170,8 +170,8 @@ TEST_F(RNGTests, Test_Uniform_1) {
 }
 
 TEST_F(RNGTests, Test_Bernoulli_1) {
-    auto x0 = NDArrayFactory::_create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillBernoulli(_rngA, &x0, 1.0f);
     RandomLauncher::fillBernoulli(_rngB, &x1, 1.0f);
@@ -184,8 +184,8 @@ TEST_F(RNGTests, Test_Bernoulli_1) {
 }
 
 TEST_F(RNGTests, Test_Gaussian_1) {
-    auto x0 = NDArrayFactory::_create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillGaussian(_rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillGaussian(_rngB, &x1, 1.0f, 2.0f);
@@ -199,8 +199,8 @@ TEST_F(RNGTests, Test_Gaussian_1) {
 
 
 TEST_F(RNGTests, Test_LogNormal_1) {
-    auto x0 = NDArrayFactory::_create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillLogNormal(_rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillLogNormal(_rngB, &x1, 1.0f, 2.0f);
@@ -213,8 +213,8 @@ TEST_F(RNGTests, Test_LogNormal_1) {
 }
 
 TEST_F(RNGTests, Test_Truncated_1) {
-    auto x0 = NDArrayFactory::_create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillTruncatedNormal(_rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillTruncatedNormal(_rngB, &x1, 1.0f, 2.0f);
@@ -228,8 +228,8 @@ TEST_F(RNGTests, Test_Truncated_1) {
 
 
 TEST_F(RNGTests, Test_Binomial_1) {
-    auto x0 = NDArrayFactory::_create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillBinomial(_rngA, &x0, 3, 2.0f);
     RandomLauncher::fillBinomial(_rngB, &x1, 3, 2.0f);
@@ -246,8 +246,8 @@ TEST_F(RNGTests, Test_Binomial_1) {
 
 
 TEST_F(RNGTests, Test_Uniform_2) {
-    auto input = NDArrayFactory::_create<float>('c', {1, 2}, {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillUniform(_rngB, &x1, 1.0f, 2.0f);
 
@@ -266,8 +266,8 @@ TEST_F(RNGTests, Test_Uniform_2) {
 }
 
 TEST_F(RNGTests, Test_Gaussian_2) {
-    auto input = NDArrayFactory::_create<float>('c', {1, 2}, {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillGaussian(_rngB, &x1, 1.0f, 2.0f);
 
@@ -286,8 +286,8 @@ TEST_F(RNGTests, Test_Gaussian_2) {
 }
 
 TEST_F(RNGTests, Test_LogNorm_2) {
-    auto input = NDArrayFactory::_create<float>('c', {1, 2}, {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillLogNormal(_rngB, &x1, 1.0f, 2.0f);
 
@@ -306,8 +306,8 @@ TEST_F(RNGTests, Test_LogNorm_2) {
 }
 
 TEST_F(RNGTests, Test_TruncatedNorm_2) {
-    auto input = NDArrayFactory::_create<float>('c', {1, 2}, {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillTruncatedNormal(_rngB, &x1, 1.0f, 2.0f);
 
@@ -327,8 +327,8 @@ TEST_F(RNGTests, Test_TruncatedNorm_2) {
 
 
 TEST_F(RNGTests, Test_Binomial_2) {
-    auto input = NDArrayFactory::_create<float>('c', {1, 2}, {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillBinomial(_rngB, &x1, 3, 0.5f);
 
@@ -348,8 +348,8 @@ TEST_F(RNGTests, Test_Binomial_2) {
 
 
 TEST_F(RNGTests, Test_Bernoulli_2) {
-    auto input = NDArrayFactory::_create<float>('c', {1, 2}, {10, 10});
-    auto x1 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillBernoulli(_rngB, &x1, 0.5f);
 
@@ -368,8 +368,8 @@ TEST_F(RNGTests, Test_Bernoulli_2) {
 }
 
 TEST_F(RNGTests, Test_GaussianDistribution_1) {
-    auto x = NDArrayFactory::_create<float>('c', {2}, {10, 10});
-    auto exp0 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x = NDArrayFactory::create<float>('c', {2}, {10, 10});
+    auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
 
     nd4j::ops::random_normal op;
@@ -389,8 +389,8 @@ TEST_F(RNGTests, Test_GaussianDistribution_1) {
 }
 
 TEST_F(RNGTests, Test_BernoulliDistribution_1) {
-    auto x = NDArrayFactory::_create<float>('c', {2}, {10, 10});
-    auto exp0 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x = NDArrayFactory::create<float>('c', {2}, {10, 10});
+    auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
 
     nd4j::ops::random_bernoulli op;
@@ -411,8 +411,8 @@ TEST_F(RNGTests, Test_BernoulliDistribution_1) {
 
 
 TEST_F(RNGTests, Test_ExponentialDistribution_1) {
-    auto x = NDArrayFactory::_create<float>('c', {2}, {10, 10});
-    auto exp0 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x = NDArrayFactory::create<float>('c', {2}, {10, 10});
+    auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
 
     nd4j::ops::random_exponential op;
@@ -432,9 +432,9 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1) {
 }
 
 TEST_F(RNGTests, Test_ExponentialDistribution_2) {
-    auto x = NDArrayFactory::_create<float>('c', {2}, {10, 10});
-    auto y = NDArrayFactory::_create<float>('c', {10, 10});
-    auto exp0 = NDArrayFactory::_create<float>('c', {10, 10});
+    auto x = NDArrayFactory::create<float>('c', {2}, {10, 10});
+    auto y = NDArrayFactory::create<float>('c', {10, 10});
+    auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
     y.assign(1.0);
 
@@ -462,7 +462,7 @@ namespace nd4j {
             ops.refreshBuffer(nullptr, seed, reinterpret_cast<Nd4jPointer>(rng));
             
             for (int i = 0; i < numberOfArrays; i++) {
-                auto array = NDArrayFactory::create<double>('c', shape);
+                auto array = NDArrayFactory::create_<double>('c', shape);
 
                 nd4j::ops::randomuniform op;
                 op.execute(rng, {array}, {array}, {0.0, 1.0}, {}, true);

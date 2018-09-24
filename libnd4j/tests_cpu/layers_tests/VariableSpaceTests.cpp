@@ -44,8 +44,8 @@ public:
 
 TEST_F(VariableSpaceTest, SettersGettersTest1) {
     auto space1 = new VariableSpace();
-    auto arrayA = NDArrayFactory::create<float>('c', {5, 5});
-    auto arrayB = NDArrayFactory::create<float>('c', {3, 3});
+    auto arrayA = NDArrayFactory::create_<float>('c', {5, 5});
+    auto arrayB = NDArrayFactory::create_<float>('c', {3, 3});
 
     space1->putVariable(1, arrayA);
     space1->putVariable(2, arrayB);
@@ -63,8 +63,8 @@ TEST_F(VariableSpaceTest, SettersGettersTest1) {
 
 TEST_F(VariableSpaceTest, SettersGettersTest2) {
     auto space1 = new VariableSpace();
-    auto arrayA = NDArrayFactory::create<float>('c', {5, 5});
-    auto arrayB = NDArrayFactory::create<float>('c', {3, 3});
+    auto arrayA = NDArrayFactory::create_<float>('c', {5, 5});
+    auto arrayB = NDArrayFactory::create_<float>('c', {3, 3});
 
     auto varA = new Variable(arrayA);
     auto varB = new Variable(arrayB);
@@ -88,7 +88,7 @@ TEST_F(VariableSpaceTest, EqualityTest1) {
 
     std::string name("myvar");
 
-    auto arrayA = NDArrayFactory::create<float>('c', {3, 3});
+    auto arrayA = NDArrayFactory::create_<float>('c', {3, 3});
     auto variableA = new Variable(arrayA, name.c_str());
 
     space.putVariable(1, variableA);
@@ -110,7 +110,7 @@ TEST_F(VariableSpaceTest, EqualityTest1) {
 TEST_F(VariableSpaceTest, EqualityTest2) {
     VariableSpace space;
 
-    auto arrayA = NDArrayFactory::create<float>('c', {3, 3});
+    auto arrayA = NDArrayFactory::create_<float>('c', {3, 3});
 
     space.putVariable(1, arrayA);
 
@@ -128,7 +128,7 @@ TEST_F(VariableSpaceTest, EqualityTest2) {
 TEST_F(VariableSpaceTest, CloneTests_1) {
     VariableSpace spaceA;
 
-    auto arrayA = NDArrayFactory::create<float>('c', {3, 3});
+    auto arrayA = NDArrayFactory::create_<float>('c', {3, 3});
     arrayA->assign(1.0);
 
     spaceA.putVariable(1, arrayA);
@@ -154,7 +154,7 @@ TEST_F(VariableSpaceTest, CloneTests_1) {
 TEST_F(VariableSpaceTest, CloneTests_2) {
     VariableSpace spaceA;
 
-    auto arrayA = NDArrayFactory::create<float>('c', {3, 3});
+    auto arrayA = NDArrayFactory::create_<float>('c', {3, 3});
     arrayA->assign(1.0);
 
     auto variableA = new Variable(arrayA, "alpha");
@@ -193,7 +193,7 @@ TEST_F(VariableSpaceTest, Test_DType_Conversion_1) {
     /*
     VariableSpace spaceA;
 
-    auto arrayA = NDArrayFactory::create<float>('c', {3, 3});
+    auto arrayA = NDArrayFactory::create_<float>('c', {3, 3});
     arrayA->assign(1.0);
 
     auto variableA = new Variable(arrayA, "alpha");

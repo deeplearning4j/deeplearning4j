@@ -51,8 +51,8 @@ namespace helpers {
                 auto _e1 = output->e<T>(sourceIndex);
 
                 //nd4j::math::nd4j_swap((*output)(e), (*output)(sourceIndex));
-                output->putScalar<T>(e, _e1);
-                output->putScalar<T>(sourceIndex, _e0);
+                output->p<T>(e, _e1);
+                output->p<T>(sourceIndex, _e0);
             }
 
             // stage 2) swap swapped actualShift elements with rest remainShiftCount times.
@@ -66,8 +66,8 @@ namespace helpers {
                     auto _e1 = output->e<T>(sourceIndex);
 
                     //nd4j::math::nd4j_swap((*output)(destinationIndex), (*output)(sourceIndex));
-                    output->putScalar<T>(destinationIndex, _e1);
-                    output->putScalar<T>(sourceIndex, _e0);
+                    output->p<T>(destinationIndex, _e1);
+                    output->p<T>(sourceIndex, _e0);
                 }
             }
             
@@ -79,8 +79,8 @@ namespace helpers {
 
                 //nd4j::math::nd4j_swap((*output)(i), (*output)(i + remainShift));
 
-                output->putScalar<T>(i, _e1);
-                output->putScalar<T>(i + remainShift, _e0);
+                output->p<T>(i, _e1);
+                output->p<T>(i + remainShift, _e0);
             }
         }
     }

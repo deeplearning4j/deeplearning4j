@@ -34,8 +34,8 @@ NDArray Householder<T>::evalHHmatrix(const NDArray& x) {
 	if(!x.isVector() && !x.isScalar())
 		throw std::runtime_error("ops::helpers::Householder::evalHHmatrix method: input array must be vector or scalar!");
 
-	auto w = NDArrayFactory::_create(x.ordering(),  {(int)x.lengthOf(), 1}, x.dataType(), x.getWorkspace());							// column-vector
-	auto wT = NDArrayFactory::_create(x.ordering(), {1, (int)x.lengthOf()}, x.dataType(), x.getWorkspace());							// row-vector (transposed w)
+	auto w = NDArrayFactory::create(x.ordering(),  {(int)x.lengthOf(), 1}, x.dataType(), x.getWorkspace());							// column-vector
+	auto wT = NDArrayFactory::create(x.ordering(), {1, (int)x.lengthOf()}, x.dataType(), x.getWorkspace());							// row-vector (transposed w)
 
 	T coeff;
 	T normX = x.reduceNumber(reduce::Norm2).e<T>(0);
@@ -57,10 +57,10 @@ NDArray Householder<T>::evalHHmatrix(const NDArray& x) {
 		w.assign(x / u0);		
 	}
 	
-	w.putScalar(Nd4jLong(0), 1.f);
+	w.p(Nd4jLong(0), 1.f);
 	wT.assign(&w);
 	
-	auto identity = NDArrayFactory::_create(x.ordering(), {(int)x.lengthOf(), (int)x.lengthOf()}, x.dataType(), x.getWorkspace());
+	auto identity = NDArrayFactory::create(x.ordering(), {(int)x.lengthOf(), (int)x.lengthOf()}, x.dataType(), x.getWorkspace());
 	identity.setIdentity();																			// identity matrix	
 
 	return identity - mmul(w, wT) * coeff;	
@@ -113,7 +113,7 @@ void Householder<T>::evalHHmatrixDataI(const NDArray& x, T& coeff, T& normX) {
 		num = 0;
 	}	
 	
-	auto tail = NDArrayFactory::_create(x.ordering(), {rows, 1}, x.dataType(), x.getWorkspace());
+	auto tail = NDArrayFactory::create(x.ordering(), {rows, 1}, x.dataType(), x.getWorkspace());
 	evalHHmatrixData(x, tail, coeff, normX);
 
 	if(x.isRowVector()) {

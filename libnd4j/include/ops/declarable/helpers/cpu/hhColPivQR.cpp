@@ -32,9 +32,9 @@ HHcolPivQR::HHcolPivQR(const NDArray& matrix) {
 
     _qr = matrix;
     _diagSize = math::nd4j_min<int>(matrix.sizeAt(0), matrix.sizeAt(1));    
-    _coeffs = NDArrayFactory::_create(matrix.ordering(), {1, _diagSize}, matrix.dataType(), matrix.getWorkspace());
+    _coeffs = NDArrayFactory::create(matrix.ordering(), {1, _diagSize}, matrix.dataType(), matrix.getWorkspace());
     
-    _permut = NDArrayFactory::_create(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace());
+    _permut = NDArrayFactory::create(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getWorkspace());
 
     evalData();    
 }
@@ -50,17 +50,17 @@ void HHcolPivQR::_evalData() {
     int rows = _qr.sizeAt(0);
     int cols = _qr.sizeAt(1);    
         
-    auto transp = NDArrayFactory::_create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
-    auto normsUpd = NDArrayFactory::_create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
-    auto normsDir = NDArrayFactory::_create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
+    auto transp = NDArrayFactory::create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
+    auto normsUpd = NDArrayFactory::create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
+    auto normsDir = NDArrayFactory::create(_qr.ordering(), {1, cols}, _qr.dataType(), _qr.getWorkspace());
           
     int transpNum = 0;
 
     for (int k = 0; k < cols; ++k) {
         
         T norm = _qr({0,0, k,k+1}).reduceNumber(reduce::Norm2).e<T>(0);
-        normsDir.putScalar<T>(k, norm);
-        normsUpd.putScalar<T>(k, norm);
+        normsDir.p<T>(k, norm);
+        normsUpd.p<T>(k, norm);
     }
 
     T normScaled = (normsUpd.reduceNumber(reduce::Max)).e<T>(0) * DataTypeUtils::eps<T>();
@@ -80,7 +80,7 @@ void HHcolPivQR::_evalData() {
         if(nonZeroPivots == (T)_diagSize && biggestColSqNorm < threshold1 * (T)(rows-k))
             nonZeroPivots = k;
         
-        transp.putScalar<T>(k, (T)biggestColIndex);
+        transp.p<T>(k, (T)biggestColIndex);
 
         if(k != biggestColIndex) {
         
@@ -94,14 +94,14 @@ void HHcolPivQR::_evalData() {
 
             T _e0 = normsUpd.e<T>(k);
             T _e1 = normsUpd.e<T>(biggestColIndex);
-            normsUpd.putScalar(k, _e1);
-            normsUpd.putScalar(biggestColIndex, _e0);
+            normsUpd.p(k, _e1);
+            normsUpd.p(biggestColIndex, _e0);
             //math::nd4j_swap<T>(normsUpd(k), normsUpd(biggestColIndex));
 
             _e0 = normsDir.e<T>(k);
             _e1 = normsDir.e<T>(biggestColIndex);
-            normsDir.putScalar(k, _e1);
-            normsDir.putScalar(biggestColIndex, _e0);
+            normsDir.p(k, _e1);
+            normsDir.p(biggestColIndex, _e0);
             //math::nd4j_swap<T>(normsDir(k), normsDir(biggestColIndex));
                         
             ++transpNum;
@@ -115,11 +115,11 @@ void HHcolPivQR::_evalData() {
 
         Householder<T>::evalHHmatrixDataI(*qrBlock, _x, normX);
 
-        _coeffs.putScalar<T>(k, _x);
+        _coeffs.p<T>(k, _x);
 
         delete qrBlock;        
 
-        _qr.putScalar<T>(k,k, normX);
+        _qr.p<T>(k,k, normX);
         
         if(math::nd4j_abs<T>(normX) > maxPivot) 
             maxPivot = math::nd4j_abs<T>(normX);
@@ -142,12 +142,12 @@ void HHcolPivQR::_evalData() {
                 
                 if (temp2 <= threshold2) {          
                     if(k+1 < rows && j < cols)
-                        normsDir.putScalar(j, _qr({k+1,rows, j,j+1}).reduceNumber(reduce::Norm2));
+                        normsDir.p(j, _qr({k+1,rows, j,j+1}).reduceNumber(reduce::Norm2));
 
-                    normsUpd.putScalar<T>(j, normsDir.e<T>(j));
+                    normsUpd.p<T>(j, normsDir.e<T>(j));
                 } 
                 else 
-                    normsUpd.putScalar<T>(j, normsUpd.e<T>(j) * math::nd4j_sqrt<T, T>(temp));
+                    normsUpd.p<T>(j, normsUpd.e<T>(j) * math::nd4j_sqrt<T, T>(temp));
             }
         }
     }

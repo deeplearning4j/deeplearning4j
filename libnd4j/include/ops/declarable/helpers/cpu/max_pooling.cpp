@@ -66,7 +66,7 @@ namespace helpers {
                 
                 for (int k = 0; k < total; )
                 for (int i = 0; i < part; i++) {
-                    indices->putScalar(k++, i);
+                    indices->p(k++, i);
                 }
             }
 

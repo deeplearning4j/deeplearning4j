@@ -30,7 +30,7 @@ namespace helpers {
         for (Nd4jLong i = 0; i < maxIndex; i++)
             for(Nd4jLong k = 0; k < input->lengthOf(); k++)
                 if (i < input->e<int>(k))
-                    output->putScalar<T>(k * maxIndex + i,  T(1.0f));
+                    output->p<T>(k * maxIndex + i,  T(1.0f));
     }
 
     void sequenceMask(NDArray* input, NDArray* output, int maxIndex) {

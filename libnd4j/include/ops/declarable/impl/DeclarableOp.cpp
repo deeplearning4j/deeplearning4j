@@ -264,12 +264,12 @@ namespace nd4j {
             Nd4jLong len = shape::length(shape);
             // if that's first run - we probably have nothing here
             if (var->getNDArray() == nullptr) {
-                var->setNDArray(NDArrayFactory::create(order, shape, block.dataType(), workspace));
+                var->setNDArray(NDArrayFactory::create_(order, shape, block.dataType(), workspace));
                 var->getNDArray()->triggerAllocationFlag(true, true);
             } else if(var->getNDArray()->lengthOf() != len) {
                 // if length not match - lets reallocate array
                 delete var->getNDArray();
-                var->setNDArray(NDArrayFactory::create(order, shape, block.dataType(), workspace));
+                var->setNDArray(NDArrayFactory::create_(order, shape, block.dataType(), workspace));
                 var->getNDArray()->triggerAllocationFlag(true, true);
             }
 

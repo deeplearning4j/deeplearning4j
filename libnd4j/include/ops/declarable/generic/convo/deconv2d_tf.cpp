@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
     REQUIRE_TRUE(gradIShape->lengthOf() == rank, 0, "CUSTOM DECONV2D_TF OP: length of array with output shape must be equal to 4, but got %i instead !", gradIShape->lengthOf());    
 
     // create empty conv2d input array        
-    auto input = NDArrayFactory::_create(gradO->ordering(), gradIShape->asVectorT<Nd4jLong>(), gradO->dataType(), block.getWorkspace());
+    auto input = NDArrayFactory::create(gradO->ordering(), gradIShape->asVectorT<Nd4jLong>(), gradO->dataType(), block.getWorkspace());
     
                                      
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;

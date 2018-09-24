@@ -116,11 +116,11 @@ static FORCEINLINE T zetaSlow(const T x, const T q) {
 template <typename T>
 static NDArray zeta_(const NDArray& x, const NDArray& q) {
 
-	auto result = NDArrayFactory::_create(&x, false, x.getWorkspace());
+	auto result = NDArrayFactory::create(&x, false, x.getWorkspace());
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
 	for(int i = 0; i < x.lengthOf(); ++i)
-		result.putScalar(i, zeta<T>(x.e<T>(i), q.e<T>(i)));
+		result.p(i, zeta<T>(x.e<T>(i), q.e<T>(i)));
 
 	return result;
 }

@@ -70,13 +70,13 @@ void triu(const NDArray& input, NDArray& output, const int diagonal) {
 template <typename T>
 static void triuBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
 
-    auto dOdI = NDArrayFactory::_create(&gradO);                // dO/dI
+    auto dOdI = NDArrayFactory::create(&gradO);                // dO/dI
     helpers::triu(input, dOdI, diagonal);
 
 #pragma omp parallel for if(dOdI.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
     for(int i = 0; i < dOdI.lengthOf(); ++i) {
         if(dOdI.e<T>(i) != (T)0.f)
-            dOdI.putScalar(i,  T(1.f));
+            dOdI.p(i,  T(1.f));
     }
 
     gradI.assign(dOdI * gradO);                          // chain rule: dLoss/dI = dO/dI * dLoss/dO 
@@ -99,7 +99,7 @@ static void trace_(const NDArray& input, NDArray& output) {
 
 #pragma omp parallel for if(setOfSubArrs->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
     for(int i = 0; i < setOfSubArrs->size(); ++i)
-        output.putScalar(i, setOfSubArrs->at(i)->getTrace());
+        output.p(i, setOfSubArrs->at(i)->getTrace());
 
     delete setOfSubArrs;
 }
@@ -134,22 +134,22 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
                 T _e0 = input.e<T>(i);
                 T _e1 = input.e<T>(r);
                 //math::nd4j_swap<T>(input(i), input(r));
-                input.putScalar<T>(i, _e1);
-                input.putScalar<T>(r, _e0);
+                input.p<T>(i, _e1);
+                input.p<T>(r, _e0);
             }        
         }
         else {        
             std::vector<int> indices(firstDim);        
             std::iota(indices.begin(), indices.end(), 0);        
-            output.putScalar<T>(Nd4jLong(0), input.e<T>(0));
+            output.p<T>(Nd4jLong(0), input.e<T>(0));
 #pragma omp parallel for if((firstDim-1) > Environment::getInstance()->elementwiseThreshold()) schedule(guided)       
             for(int i = firstDim-1; i > 0; --i) {
                 int r = rng.nextInt(0, i);
-                output.putScalar(i, input.e<T>(indices[r]));
+                output.p(i, input.e<T>(indices[r]));
                 if(i == r)
                     continue;
 
-                output.putScalar(r, input.e<T>(indices[i]));
+                output.p(r, input.e<T>(indices[i]));
                 math::nd4j_swap<int>(indices[i], indices[r]);
             }           
             rng.rewindH(firstDim-1);
@@ -252,16 +252,16 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
                 subArrIn.setBuffer(reinterpret_cast<T*>(input.getBuffer()) + tadIn.tadOffsets[inIdx + i - paddings.e<int>(dim, 0)]);
             }
             else {
-                subArrOut.putScalar(i, subArrIn.e<T>(i - leftOffset));
+                subArrOut.p(i, subArrIn.e<T>(i - leftOffset));
             }
             // most inner loop, corresponds to last dim = rank-1
             switch (mode) {
                 case 0:             // CONSTANT mode                    
                     for(int j = 0; j < subArrOut.lengthOf(); ++j)                   
                             if(j < leftOffset || j >= (subArrIn.lengthOf() + leftOffset) )                  // firstly fill with zeros outer ranges
-                                subArrOut.putScalar(j, (T)0.f);
+                                subArrOut.p(j, (T)0.f);
                             else
-                                subArrOut.putScalar(j, subArrIn.e<T>(j - leftOffset));   // fill middle with elements of input array
+                                subArrOut.p(j, subArrIn.e<T>(j - leftOffset));   // fill middle with elements of input array
                     break;
 
                 case 1:             // REFLECT mode                 
@@ -286,7 +286,7 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
         else {
 
              if (mode == 0 && input.rankOf() < 2)
-                 subArrOut.putScalar(i, subArrIn.e<T>(i - leftOffset));   // fill middle with elements of input array
+                 subArrOut.p(i, subArrIn.e<T>(i - leftOffset));   // fill middle with elements of input array
         }   
     }   
     // populate sub-array formed previously 
@@ -301,7 +301,7 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
                     subArrOut.assign(padValue);
                 }
                 else {
-                    subArrOut.putScalar(j - 1, padValue);
+                    subArrOut.p(j - 1, padValue);
                 }
             }
 //            output.printIndexedBuffer("Output at");
@@ -311,7 +311,7 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
                     subArrOut.assign(padValue);
                 }
                 else {
-                    subArrOut.putScalar(j, padValue);
+                    subArrOut.p(j, padValue);
                 }
             }
             break;
@@ -368,7 +368,7 @@ void invertPermutation(const NDArray& input, NDArray& output) {
         if(elem < 0 || elem > length - 1)
             throw  std::runtime_error("helpers::invertPermutation function: element of input array is out of range (0, length-1) !");
 
-        output.putScalar<int>(elem, i);
+        output.p<int>(elem, i);
     }
 }
 
@@ -421,7 +421,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
             outSubArr->assign(innerMostIn->at(currentInd0));
         }
         else
-            output.putScalar(i, input.e<T>(currentInd0));
+            output.p(i, input.e<T>(currentInd0));
     }
 
     delete innerMostInd;
@@ -467,7 +467,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
             // special case
 #pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
             for (int e = 0; e < indices->lengthOf(); e++)
-                output->putScalar(e, input->e<T>(indices->e<Nd4jLong>(e)));
+                output->p(e, input->e<T>(indices->e<Nd4jLong>(e)));
         }
         // second case: indices is vector
         else if(indices->isVector()) {      
@@ -624,7 +624,7 @@ static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output)
                 idx = i;
             }
         }
-        output.putScalar(e, idx);
+        output.p(e, idx);
     }
 }
     void mergeMaxIndex(const std::vector<NDArray*>& inArrs, NDArray& output) {
@@ -648,7 +648,7 @@ static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
             if (v > max)
                 max = v;
         }
-        output.putScalar(e, max);
+        output.p(e, max);
     }
 }
     void mergeMax(const std::vector<NDArray*>& inArrs, NDArray& output) {
@@ -672,7 +672,7 @@ static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
             T v = inArrs[i]->e<T>(e);
             sum += v;
         }
-        output.putScalar<T>(e, sum * factor);
+        output.p<T>(e, sum * factor);
     }
 }
     void mergeAvg(const std::vector<NDArray*>& inArrs, NDArray& output) {
@@ -696,7 +696,7 @@ static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
         for (int i = 0; i < numArgs; i++) 
             sum += inArrs[i]->e<T>(e);
 
-        output.putScalar(e, sum);
+        output.p(e, sum);
     }
 }
     void mergeAdd(const std::vector<NDArray*>& inArrs, NDArray& output) {
@@ -908,11 +908,11 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
         for(int i = 0; i < outLen; ++i) {
             
             for(int j = 0; j < leftSide; ++j)
-                output.putScalar(j, input.e<T>(inLen - leftSide + symmBorder - j));
+                output.p(j, input.e<T>(inLen - leftSide + symmBorder - j));
             for(int j = 0; j < inLen; ++j)
-                output.putScalar(j + leftSide, input.e<T>(j));
+                output.p(j + leftSide, input.e<T>(j));
             for(int j = 0; j < rightSide; ++j)
-                output.putScalar(leftSide + inLen + j, input.e<T>(inLen - 1 - symmBorder - j));
+                output.p(leftSide + inLen + j, input.e<T>(inLen - 1 - symmBorder - j));
         }  
     }
     else {
@@ -1056,14 +1056,14 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
 #pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
             auto idx = shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i);
-            gradI.putScalar(idx, gradI.e<T>(idx) + gradOBuff[i]);
+            gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i]);
         }
     }
     else if(gradO.ordering() == 'c' && gradOEWS > 1) {
 #pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
             auto idx = shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i);
-            gradI.putScalar(idx, gradI.e<T>(idx) + gradOBuff[i * gradOEWS]);
+            gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i * gradOEWS]);
         }
     }
     else {
@@ -1075,7 +1075,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
             shape::ind2subC(gradORank, gradOShape, i, gradOLen, idx);
             auto fidx = shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i);
-            gradI.putScalar(fidx, gradI.e<T>(fidx) + gradOBuff[shape::getOffset(0, gradOShape, gradOStrides, idx, gradORank)]);
+            gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[shape::getOffset(0, gradOShape, gradOStrides, idx, gradORank)]);
         }
     }
 }

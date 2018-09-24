@@ -55,7 +55,7 @@ TEST_F(SessionLocalTests, BasicTests_1) {
 TEST_F(SessionLocalTests, BasicTests_2) {
     VariableSpace variableSpace;
     SessionLocalStorage storage(&variableSpace, nullptr);
-    auto alpha = nd4j::NDArrayFactory::create<float>('c',{5,5});
+    auto alpha = nd4j::NDArrayFactory::create_<float>('c',{5,5});
     alpha->assign(0.0);
 
     variableSpace.putVariable(-1, alpha);
