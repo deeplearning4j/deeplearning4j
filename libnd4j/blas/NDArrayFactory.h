@@ -31,7 +31,7 @@ namespace nd4j {
     class NDArrayFactory {
     private:
         template <typename T>
-        static void _memcpy(void *ptr, const std::vector<T> &vector);
+        static void memcpy_(void *ptr, const std::vector<T> &vector);
     public:
         template <typename T>
         static NDArray* empty(nd4j::memory::Workspace* workspace = nullptr);
@@ -106,10 +106,7 @@ namespace nd4j {
         static NDArray create(const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray create(T* buffer, char order, std::initializer_list<Nd4jLong> shape, nd4j::memory::Workspace* workspace = nullptr);
-
-        template <typename T>
-        static NDArray* create_(T* buffer, char order, std::initializer_list<Nd4jLong> shape, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray create(T* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
         static NDArray create(const std::initializer_list<T>& values, nd4j::memory::Workspace* workspace = nullptr);

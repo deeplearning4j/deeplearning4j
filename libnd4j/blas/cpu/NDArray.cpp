@@ -90,7 +90,7 @@ namespace nd4j {
     BUILD_SINGLE_TEMPLATE(template NDArray* NDArray::asT, (), LIBND4J_TYPES);
 
     ////////////////////////////////////////////////////////////////////////
-    // default constructor, do not allocate memory, memory for array is passed from outside
+    // do not allocate memory, memory for array is passed from outside
     NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace) {
         _buffer    = reinterpret_cast<int8_t *>(buffer);
         _shapeInfo = shapeInfo;
@@ -116,12 +116,15 @@ namespace nd4j {
         _length = 0;
     }
 
-    NDArray::NDArray() {
+////////////////////////////////////////////////////////////////////////
+// default constructor
+ NDArray::NDArray() {
         
-        _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
-        _isShapeAlloc = false;
-    }
+    _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
+    _isShapeAlloc = false;
+}
 
+////////////////////////////////////////////////////////////////////////
     NDArray::NDArray(Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace) {
         auto dtype = ArrayOptions::dataType(shapeInfo);
         _length = shape::length(shapeInfo);

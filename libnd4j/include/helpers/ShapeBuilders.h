@@ -41,8 +41,9 @@ namespace nd4j {
         *   create shapeInfo for given order basing on shape stored in shapeOnly vector
         *   memory allocation for shapeInfo is on given workspace
         */
-        static Nd4jLong* createShapeInfo(const char order, const std::vector<Nd4jLong> shapeOnly, memory::Workspace* workspace);
-        static Nd4jLong* createShapeInfo(nd4j::DataType dataType, const char order, const std::vector<Nd4jLong> shapeOnly, memory::Workspace* workspace);
+        static Nd4jLong* createShapeInfo(const char order, const std::initializer_list<Nd4jLong>& shapeOnly, memory::Workspace* workspace);
+        static Nd4jLong* createShapeInfo(const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace);        
+        static Nd4jLong* createShapeInfo(nd4j::DataType dataType, const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace);
 
     };
 }
