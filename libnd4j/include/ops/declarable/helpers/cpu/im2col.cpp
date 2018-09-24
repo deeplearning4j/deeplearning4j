@@ -40,7 +40,7 @@ static void im2col_(graph::LaunchContext& context, const NDArray& input,  NDArra
     auto imShape        = shape::shapeOf(imShapeBuffer);
     auto imStride       = shape::stride(imShapeBuffer);
 
-    const T zeroPadVal =  arrZeroPadVal.getScalar<T>(0);
+    const T zeroPadVal =  arrZeroPadVal.e<T>(0);
 
     const int bS = imShape[0];
     const int iC = imShape[1];

@@ -199,7 +199,7 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     ASSERT_EQ(Status::OK(), status);
 
     // now we check provided result array
-    float sum = res0.reduceNumber(reduce::Sum).getScalar<float>(0);
+    float sum = res0.reduceNumber(reduce::Sum).e<float>(0);
 
     /*
      * Expected result is {1, 2, 3, 4} + {2} elementwise + {2} elementwise, which gives { 5, 6, 7, 8}, and sum should be 26

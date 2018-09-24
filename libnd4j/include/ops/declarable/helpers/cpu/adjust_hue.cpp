@@ -96,7 +96,7 @@ namespace helpers {
     void _adjust_hue(NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
         auto xType = array->dataType();
 
-        float d = delta->getScalar<float>(0);
+        float d = delta->e<float>(0);
         if (array->rankOf() == 4) {
             auto tadsIn = array->allTensorsAlongDimension({0});
             auto tadsOut = output->allTensorsAlongDimension({0});

@@ -74,7 +74,7 @@ TEST_F(NDArrayTest, AssignScalar1) {
     array->assign(2.0f);
 
     for (int i = 0; i < array->lengthOf(); i++) {
-        ASSERT_EQ(2.0f, array->getScalar<float>(i));
+        ASSERT_EQ(2.0f, array->e<float>(i));
     }
 
     delete array;
@@ -126,21 +126,21 @@ TEST_F(NDArrayTest, TestGetScalar1) {
 
     auto arrayC = new NDArray(c, cShape);
 
-    ASSERT_EQ(3.0f, arrayC->getScalar<float>(1, 0));
-    ASSERT_EQ(4.0f, arrayC->getScalar<float>(1, 1));
+    ASSERT_EQ(3.0f, arrayC->e<float>(1, 0));
+    ASSERT_EQ(4.0f, arrayC->e<float>(1, 1));
 
     auto arrayF = arrayC->dup('f');
 
-    ASSERT_EQ(3.0f, arrayF->getScalar<float>(1, 0));
-    ASSERT_EQ(4.0f, arrayF->getScalar<float>(1, 1));
+    ASSERT_EQ(3.0f, arrayF->e<float>(1, 0));
+    ASSERT_EQ(4.0f, arrayF->e<float>(1, 1));
 
 
     arrayF->putScalar(1, 0, 7.0f);
-    ASSERT_EQ(7.0f, arrayF->getScalar<float>(1, 0));
+    ASSERT_EQ(7.0f, arrayF->e<float>(1, 0));
 
 
     arrayC->putScalar(1, 1, 9.0f);
-    ASSERT_EQ(9.0f, arrayC->getScalar<float>(1, 1));
+    ASSERT_EQ(9.0f, arrayC->e<float>(1, 1));
 
     delete[] c;
     delete[] cShape;
@@ -205,7 +205,7 @@ TEST_F(NDArrayTest, TestTad1) {
 
     //row2->printBuffer();
 
-    ASSERT_NEAR(3.0f, array->sumNumber().getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(3.0f, array->sumNumber().e<float>(0), 1e-5);
 
     //array->printBuffer();
 
@@ -327,8 +327,8 @@ TEST_F(NDArrayTest, TestSum1) {
 
     auto array = new NDArray(c, cShape);
 
-    ASSERT_EQ(10.0f, array->sumNumber().getScalar<float>(0));
-    ASSERT_EQ(2.5f, array->meanNumber().getScalar<float>(0));
+    ASSERT_EQ(10.0f, array->sumNumber().e<float>(0));
+    ASSERT_EQ(2.5f, array->meanNumber().e<float>(0));
 
     delete[] c;
     delete array;
@@ -453,8 +453,8 @@ TEST_F(NDArrayTest, TestSumAlongDimension1) {
 
     ASSERT_EQ(2, res.lengthOf());
 
-    ASSERT_EQ(4.0f, res.getScalar<float>(0));
-    ASSERT_EQ(6.0f, res.getScalar<float>(1));
+    ASSERT_EQ(4.0f, res.e<float>(0));
+    ASSERT_EQ(6.0f, res.e<float>(1));
 
     delete[] c;
     delete array;
@@ -469,8 +469,8 @@ TEST_F(NDArrayTest, TestSumAlongDimension2) {
 
     ASSERT_EQ(2, res->lengthOf());
 
-    ASSERT_EQ(3.0f, res->getScalar<float>(0));
-    ASSERT_EQ(7.0f, res->getScalar<float>(1));
+    ASSERT_EQ(3.0f, res->e<float>(0));
+    ASSERT_EQ(7.0f, res->e<float>(1));
 
     delete[] c;
     delete array;
@@ -487,8 +487,8 @@ TEST_F(NDArrayTest, TestReduceAlongDimension1) {
 
     ASSERT_EQ(2, res->lengthOf());
 
-    ASSERT_EQ(3.0f, res->getScalar<float>(0));
-    ASSERT_EQ(7.0f, res->getScalar<float>(1));
+    ASSERT_EQ(3.0f, res->e<float>(0));
+    ASSERT_EQ(7.0f, res->e<float>(1));
 
     delete[] c;
     delete array;
@@ -519,7 +519,7 @@ TEST_F(NDArrayTest, TestReduceScalar1) {
     float *c = new float[4] {-1, -2, -3, -4};
     auto array = new NDArray(c, cShape);
 
-    ASSERT_EQ(-4, array->reduceNumber(reduce::Min, nullptr).getScalar<float>(0));
+    ASSERT_EQ(-4, array->reduceNumber(reduce::Min, nullptr).e<float>(0));
 
     delete[] c;
     delete array;
@@ -530,7 +530,7 @@ TEST_F(NDArrayTest, TestReduceScalar2) {
     float *c = new float[4] {-1, -2, -3, -4};
     auto array = new NDArray(c, cShape);
 
-    ASSERT_EQ(-10, array->reduceNumber(reduce::Sum, nullptr).getScalar<float>(0));
+    ASSERT_EQ(-10, array->reduceNumber(reduce::Sum, nullptr).e<float>(0));
 
     delete[] c;
     delete array;
@@ -540,7 +540,7 @@ TEST_F(NDArrayTest, TestReduceScalar2) {
 TEST_F(NDArrayTest, TestReduceScalar3) {
     auto array = new NDArray(arr1, shape1);
 
-    ASSERT_EQ(21, array->reduceNumber(reduce::Sum, nullptr).getScalar<float>(0));
+    ASSERT_EQ(21, array->reduceNumber(reduce::Sum, nullptr).e<float>(0));
 
     delete array;
 }
@@ -644,15 +644,15 @@ TEST_F(NDArrayTest, TestReductionAny1) {
 
     ASSERT_EQ(2, result0->lengthOf());
 
-    ASSERT_NEAR(1.0f, result0->getScalar<float>(0), 1e-5f);
-    ASSERT_NEAR(1.0f, result0->getScalar<float>(1), 1e-5f);
+    ASSERT_NEAR(1.0f, result0->e<float>(0), 1e-5f);
+    ASSERT_NEAR(1.0f, result0->e<float>(1), 1e-5f);
 
     auto result1 = array.reduceAlongDimension(reduce::Any, {1});
 
     ASSERT_EQ(2, result1->lengthOf());
 
-    ASSERT_NEAR(1.0f, result1->getScalar<float>(0), 1e-5f);
-    ASSERT_NEAR(0.0f, result1->getScalar<float>(1), 1e-5f);
+    ASSERT_NEAR(1.0f, result1->e<float>(0), 1e-5f);
+    ASSERT_NEAR(0.0f, result1->e<float>(1), 1e-5f);
 
     delete result0;
     delete result1;
@@ -669,15 +669,15 @@ TEST_F(NDArrayTest, TestReductionAll1) {
 
     ASSERT_EQ(2, result0->lengthOf());
 
-    ASSERT_NEAR(0.0f, result0->getScalar<float>(0), 1e-5f);
-    ASSERT_NEAR(0.0f, result0->getScalar<float>(1), 1e-5f);
+    ASSERT_NEAR(0.0f, result0->e<float>(0), 1e-5f);
+    ASSERT_NEAR(0.0f, result0->e<float>(1), 1e-5f);
 
     auto result1 = array.reduceAlongDimension(reduce::All, {1});
 
     ASSERT_EQ(2, result1->lengthOf());
 
-    ASSERT_NEAR(1.0f, result1->getScalar<float>(0), 1e-5f);
-    ASSERT_NEAR(0.0f, result1->getScalar<float>(1), 1e-5f);
+    ASSERT_NEAR(1.0f, result1->e<float>(0), 1e-5f);
+    ASSERT_NEAR(0.0f, result1->e<float>(1), 1e-5f);
 
     delete result0;
     delete result1;
@@ -802,7 +802,7 @@ TEST_F(NDArrayTest, TestMmulHelper1) {
     auto z = MmulHelper::mmul(x, y);
 
     ASSERT_EQ(1, z->lengthOf());
-    ASSERT_NEAR(28, z->getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(28, z->e<float>(0), 1e-5);
 
     delete z;
     delete[] xBuffer;
@@ -1244,7 +1244,7 @@ TEST_F(NDArrayTest, RSubScalarTest1) {
 
     array.applyScalar(scalar::ReverseSubtract, 1.0, &result);
 
-    ASSERT_NEAR(-1.0, result.meanNumber().getScalar<double>(0), 1e-5);
+    ASSERT_NEAR(-1.0, result.meanNumber().e<double>(0), 1e-5);
 }
 
 TEST_F(NDArrayTest, BroadcastOpsTest1) {
@@ -1330,7 +1330,7 @@ TEST_F(NDArrayTest, TestIndexing1) {
     ASSERT_EQ(2, sub->rows());
     ASSERT_EQ(5, sub->columns());
 
-    ASSERT_NEAR(10, sub->getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(10, sub->e<float>(0), 1e-5);
 
     delete sub;
 }
@@ -1353,7 +1353,7 @@ TEST_F(NDArrayTest, TestIndexing2) {
 
 
     ASSERT_EQ(64, sub->lengthOf());
-    ASSERT_NEAR(32, sub->getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(32, sub->e<float>(0), 1e-5);
     ASSERT_NEAR(112, sub->getIndexedScalar<float>(32), 1e-5);
 
     delete sub;
@@ -1369,7 +1369,7 @@ TEST_F(NDArrayTest, TestIndexing3) {
     ASSERT_EQ(2, sub.rows());
     ASSERT_EQ(5, sub.columns());
 
-    ASSERT_NEAR(10, sub.getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(10, sub.e<float>(0), 1e-5);
 }
 
 
@@ -1387,7 +1387,7 @@ TEST_F(NDArrayTest, TestIndexing4) {
 
 
     ASSERT_EQ(64, sub.lengthOf());
-    ASSERT_NEAR(32, sub.getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(32, sub.e<float>(0), 1e-5);
     ASSERT_NEAR(112, sub.getIndexedScalar<float>(32), 1e-5);
 }
 
@@ -1515,7 +1515,7 @@ TEST_F(NDArrayTest, TestStdDev1) {
     for (int e = 0; e < array.lengthOf(); e++)
         array.putScalar(e, e+1);
 
-    auto std = array.varianceNumber(variance::SummaryStatsStandardDeviation, true).getScalar<double>(0);
+    auto std = array.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
     ASSERT_NEAR(std, 1.58109, 1e-4);
 }
 
@@ -1529,9 +1529,9 @@ TEST_F(NDArrayTest, TestStdDev2) {
     for (int e = 0; e < tad->lengthOf(); e++)
         tad->putIndexedScalar(e, e+1);
 
-    ASSERT_NEAR(15, tad->sumNumber().getScalar<double>(0), 1e-5);
+    ASSERT_NEAR(15, tad->sumNumber().e<double>(0), 1e-5);
 
-    auto std = tad->varianceNumber(variance::SummaryStatsStandardDeviation, true).getScalar<double>(0);
+    auto std = tad->varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
     ASSERT_NEAR(std, 1.58109, 1e-4);
 
     delete tad;
@@ -1542,7 +1542,7 @@ TEST_F(NDArrayTest, TestStdDev3) {
     for (int e = 0; e < array.lengthOf(); e++)
         array.putScalar(e, 1.f + (e%2?0.5f:-0.5f));
 
-    auto std = array.varianceNumber(variance::SummaryStatsStandardDeviation, true).getScalar<double>(0);
+    auto std = array.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
     // nd4j_printf("Variance is %f\n", std);
     ASSERT_NEAR(std, 0.5f, 1.0e-5f);
 }
@@ -1558,20 +1558,20 @@ TEST_F(NDArrayTest, TestStdDev4) {
     }
     x = 0.f;
     for (int e = 0; e < total; ++e) {
-        x += array.getScalar<float>(e);
+        x += array.e<float>(e);
     }
     x /= array.lengthOf();
     float y = 0;
     double M2 = 0;
     for (int e = 0; e < total; ++e) {
     //    y += nd4j::math::nd4j_abs(array(e) - x);
-        M2 += (array.getScalar<float>(e) - x) * (array.getScalar<float>(e) - x);
+        M2 += (array.e<float>(e) - x) * (array.e<float>(e) - x);
     }
     //y /= total;
     M2 /= total;
     
     y = M2;
-    auto std = array.varianceNumber(variance::SummaryStatsStandardDeviation, false).getScalar<float>(0);
+    auto std = array.varianceNumber(variance::SummaryStatsStandardDeviation, false).e<float>(0);
 //    float bY = array.varianceNumber();
     float bY = 0.3333333f;
     // nd4j_printf("Variance is %f, res is %f, internal is %f\n, deviance is %f(%f)\n", std, x, bY, y, nd4j::math::nd4j_sqrt<double>(M2));
@@ -1585,8 +1585,8 @@ TEST_F(NDArrayTest, TestStdDev5) {
         array.putScalar(e, 1.f + (e%2?1/5.f:-1/5.f));
         arrayD.putScalar(e, 1.0 + (e%2?1/5.:-1/5.));
     }
-    float stdF = array.varianceNumber(variance::SummaryStatsStandardDeviation, false).getScalar<float>(0);
-    double stdD = arrayD.varianceNumber(variance::SummaryStatsStandardDeviation, false).getScalar<double>(0);
+    float stdF = array.varianceNumber(variance::SummaryStatsStandardDeviation, false).e<float>(0);
+    double stdD = arrayD.varianceNumber(variance::SummaryStatsStandardDeviation, false).e<double>(0);
     // nd4j_printf("Variance is %f(%f)\n", stdF, stdD);
     ASSERT_NEAR(stdD, 0.2, 1.0e-8); // 1/5 = 0.2
     ASSERT_NEAR(stdF, 0.2f, 1.0e-5f); // 1/5 = 0.2
@@ -1621,7 +1621,7 @@ TEST_F(NDArrayTest, applyReduce3Dot) {
     
     auto result = x.applyReduce3(reduce3::Dot, &y);
     ASSERT_TRUE(result->lengthOf() == 1);
-    ASSERT_NEAR(42, result->getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(42, result->e<float>(0), 1e-5);
     
     delete result;
 }

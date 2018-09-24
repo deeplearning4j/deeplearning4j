@@ -44,11 +44,11 @@ namespace helpers {
                 double quadSum = 0;
 
                 for (int pos = begin; pos < end; ++pos) {
-                    double val = listInput->at(c)->getScalar<double>(pos);
+                    double val = listInput->at(c)->e<double>(pos);
                     quadSum += val * val;
                 }
                 double dividor = nd4j::math::nd4j_pow<double, double, double>(bias + alpha * quadSum, beta);
-                listOut->at(c)->putScalar<double>(e,  listInput->at(c)->getScalar<double>(e) / dividor);
+                listOut->at(c)->putScalar<double>(e,  listInput->at(c)->e<double>(e) / dividor);
             }
         }
 

@@ -50,14 +50,14 @@ void HHsequence::_mulLeft(NDArray& matrix) {
     	if(_type == 'u') {
     		
     		block = matrix.subarray({{inRows - rows + _shift + i, inRows}, {}});
-    		T _x = _coeffs.getScalar<T>(i);
+    		T _x = _coeffs.e<T>(i);
     		Householder<T>::mulLeft(*block, _vectors({i + 1 + _shift, rows, i, i+1}, true), _x);
     		_coeffs.putScalar<T>(i, _x);
     	}
     	else {
 
     		block = matrix.subarray({{inRows - cols + _shift + i, inRows}, {}});
-            T _x = _coeffs.getScalar<T>(i);
+            T _x = _coeffs.e<T>(i);
     		Householder<T>::mulLeft(*block, _vectors({i, i+1, i + 1 + _shift, cols}, true), _x);
             _coeffs.putScalar<T>(i, _x);
     	}
@@ -96,7 +96,7 @@ void HHsequence::_applyTo(NDArray& dest) {
         if(curNum < 1 || (k + 1 + _shift) >= size )
             continue;
         auto block = dest.subarray({{dest.sizeAt(0)-curNum, dest.sizeAt(0)},{dest.sizeAt(1)-curNum, dest.sizeAt(1)}});
-        T _x = _coeffs.getScalar<T>(k);
+        T _x = _coeffs.e<T>(k);
 
         Householder<T>::mulLeft(*block, getTail(k), _x);
 

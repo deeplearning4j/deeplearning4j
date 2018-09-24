@@ -41,7 +41,7 @@ namespace ops {
         auto output = OUTPUT_VARIABLE(0);
 
         if (weights->isScalar()) {
-            posWeight = weights->getScalar(0);
+            posWeight = weights->e(0);
             auto mainRoutine = LAMBDA_TT(_x, _z, posWeight) {
                 T targetWeight = (1. + (posWeight - 1.) * _z);
                 return (1. - _z) * _x + 

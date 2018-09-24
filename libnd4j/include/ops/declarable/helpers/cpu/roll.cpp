@@ -47,8 +47,8 @@ namespace helpers {
             for (int e = 0; e < actualShift; ++e) {
                 int sourceIndex = fullLen - actualShift + e;
 
-                auto _e0 = output->getScalar<T>(e);
-                auto _e1 = output->getScalar<T>(sourceIndex);
+                auto _e0 = output->e<T>(e);
+                auto _e1 = output->e<T>(sourceIndex);
 
                 //nd4j::math::nd4j_swap((*output)(e), (*output)(sourceIndex));
                 output->putScalar<T>(e, _e1);
@@ -62,8 +62,8 @@ namespace helpers {
                     int destinationIndex = fullLen - (count + 1) * actualShift + e;
                     int sourceIndex = fullLen - count * actualShift + e;
 
-                    auto _e0 = output->getScalar<T>(destinationIndex);
-                    auto _e1 = output->getScalar<T>(sourceIndex);
+                    auto _e0 = output->e<T>(destinationIndex);
+                    auto _e1 = output->e<T>(sourceIndex);
 
                     //nd4j::math::nd4j_swap((*output)(destinationIndex), (*output)(sourceIndex));
                     output->putScalar<T>(destinationIndex, _e1);
@@ -74,8 +74,8 @@ namespace helpers {
             // stage 3) swap remainer of items.
             if (remainShift && shiftCount)
             for (int i = actualShift; i < 2 * actualShift; ++i) {
-                auto _e0 = output->getScalar<T>(i);
-                auto _e1 = output->getScalar<T>(i + remainShift);
+                auto _e0 = output->e<T>(i);
+                auto _e1 = output->e<T>(i + remainShift);
 
                 //nd4j::math::nd4j_swap((*output)(i), (*output)(i + remainShift));
 

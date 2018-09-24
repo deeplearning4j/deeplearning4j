@@ -38,15 +38,15 @@ namespace helpers {
         }
         int last = shape->lengthOf() - 1;
         
-        //functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
-        NativeOpExcutioner::execRandom(random::UniformDistribution, rng, output->buffer(), output->shapeInfo(), std::vector<T>({T(0.), shape->getScalar<T>(last)}).data());
+        //functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->e(last)}).data());
+        NativeOpExcutioner::execRandom(random::UniformDistribution, rng, output->buffer(), output->shapeInfo(), std::vector<T>({T(0.), shape->e<T>(last)}).data());
 
         Nd4jLong maxIndex = output->argMax();
-        Nd4jLong startPos = output->getScalar<Nd4jLong>(maxIndex);
+        Nd4jLong startPos = output->e<Nd4jLong>(maxIndex);
         int lastDim = input->sizeAt(-1);
         // nd4j_printf("Before processing: %i %i. Output length %i\n", maxIndex, startPos, output->lengthOf());
         int pos = 0;
-        Nd4jLong width = startPos + shape->getScalar<Nd4jLong>(last);
+        Nd4jLong width = startPos + shape->e<Nd4jLong>(last);
         if (width >= lastDim) {
             startPos -= (width - lastDim);
             width = lastDim;
@@ -55,7 +55,7 @@ namespace helpers {
 
         for (int i = 0; i < input->lengthOf(); i += lastDim) {
             for (Nd4jLong k = startPos; k < width && pos < output->lengthOf(); k++) {
-                output->putScalar(pos++, input->getScalar<T>(i + k));
+                output->putScalar(pos++, input->e<T>(i + k));
             }
         }
         return Status::OK();

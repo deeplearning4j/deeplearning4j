@@ -35,7 +35,7 @@ namespace nd4j {
             } else if (block.width() > 0) {
                 auto input = INPUT_VARIABLE(0);
                 REQUIRE_TRUE(input->isScalar(),0 ,"SetSeed: Seed operand should be scalar");
-                seed = input->getScalar<Nd4jLong>(0);
+                seed = input->e<Nd4jLong>(0);
             } else {
                 REQUIRE_TRUE(false, 0, "SetSeed: either IArg or scalr input should be provided");
             }

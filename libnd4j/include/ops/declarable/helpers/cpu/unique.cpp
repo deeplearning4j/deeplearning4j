@@ -32,7 +32,7 @@ namespace helpers {
         std::vector<T> values;
 
         for (int e = 0; e < input->lengthOf(); e++) {
-            T v = input->getScalar<T>(e);
+            T v = input->e<T>(e);
             if (std::find(values.begin(), values.end(), v) == values.end()) {
                 values.push_back(v);
                 count++;
@@ -56,7 +56,7 @@ namespace helpers {
         std::map<T, int> countsMap;
 
         for (int e = 0; e < input->lengthOf(); e++) {
-            T v = input->getScalar<T>(e);
+            T v = input->e<T>(e);
             if (std::find(valuesVector.begin(), valuesVector.end(), v) == valuesVector.end()) {
                 valuesVector.push_back(v);
                 indicesMap[v] = e;
@@ -76,7 +76,7 @@ namespace helpers {
 
 //#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < indices->lengthOf(); e++) {
-            auto posI = std::find(valuesVector.begin(), valuesVector.end(), input->getScalar<T>(e));
+            auto posI = std::find(valuesVector.begin(), valuesVector.end(), input->e<T>(e));
             auto dist = std::distance(valuesVector.begin(), posI);
             indices->putScalar(e, Nd4jLong(dist));//indicesMap[(*input)(e)];
         }

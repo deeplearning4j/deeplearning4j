@@ -65,7 +65,7 @@ TEST_F(GraphTests, SingleInput1) {
 
     auto node3 = graph->getVariableSpace()->getVariable(3)->getNDArray();
 
-    ASSERT_NEAR(0.4161468, node3->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(0.4161468, node3->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -98,7 +98,7 @@ TEST_F(GraphTests, DoubleInput1) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_NEAR(3.0, z->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(3.0, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -129,8 +129,8 @@ TEST_F(GraphTests, SingleInput3) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_NEAR(1.4142135, v0->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
-    ASSERT_NEAR(1.0, v1->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(1.4142135, v0->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
+    ASSERT_NEAR(1.0, v1->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -166,8 +166,8 @@ TEST_F(GraphTests, SingleInput4) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_NEAR(1.0, v0->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
-    ASSERT_NEAR(-1.4142135, v1->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(1.0, v0->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
+    ASSERT_NEAR(-1.4142135, v1->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -211,8 +211,8 @@ TEST_F(GraphTests, DoubleInput2) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_NEAR(-1.4142135, z0->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
-    ASSERT_NEAR(-1.0, z1->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(-1.4142135, z0->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
+    ASSERT_NEAR(-1.0, z1->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -265,10 +265,10 @@ TEST_F(GraphTests, DoubleInput3) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_NEAR(-1.4142135, z0->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
-    ASSERT_NEAR(-1.0, z1->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(-1.4142135, z0->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
+    ASSERT_NEAR(-1.0, z1->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
-    ASSERT_NEAR(2.4142135, w->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(2.4142135, w->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -321,7 +321,7 @@ TEST_F(GraphTests, QuadInput1) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_NEAR(6.0, z->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(6.0, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -369,7 +369,7 @@ TEST_F(GraphTests, InternalBranching1) {
 
     ASSERT_EQ(3, nodeZ->getLayer());
 
-    ASSERT_NEAR(3.0, z->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(3.0, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -402,7 +402,7 @@ TEST_F(GraphTests, ReductionsTest1) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_NEAR(2.0, z->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(2.0, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -435,7 +435,7 @@ TEST_F(GraphTests, IndexReductionsTest1) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_NEAR(4.0, z->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(4.0, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -469,7 +469,7 @@ TEST_F(GraphTests, AutoOutput1) {
 
     ASSERT_TRUE(outputs->at(0) != nullptr);
 
-    ASSERT_NEAR(-1.0, outputs->at(0)->getNDArray()->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(-1.0, outputs->at(0)->getNDArray()->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete outputs;
     delete graph;
@@ -508,8 +508,8 @@ TEST_F(GraphTests, AutoOutput2) {
 
     ASSERT_TRUE(outputs->at(0) != nullptr);
 
-    ASSERT_NEAR(-1.0, outputs->at(0)->getNDArray()->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
-    ASSERT_NEAR(-2.0, outputs->at(1)->getNDArray()->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(-1.0, outputs->at(0)->getNDArray()->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
+    ASSERT_NEAR(-2.0, outputs->at(1)->getNDArray()->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
     delete outputs;
@@ -540,7 +540,7 @@ TEST_F(GraphTests, BroadcastTest1) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_NEAR(-2.0, z->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(-2.0, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -570,7 +570,7 @@ TEST_F(GraphTests, ScalarTest1) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_NEAR(2.714213, z->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(2.714213, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -626,7 +626,7 @@ TEST_F(GraphTests, SymbolicLookupTest1) {
     ASSERT_TRUE(graph->getVariableSpace()->hasVariable(&p));
     ASSERT_TRUE(graph->getVariableSpace()->hasVariable(&t));
 
-    ASSERT_NEAR(1.4142135, z->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(1.4142135, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -704,7 +704,7 @@ TEST_F(GraphTests, OutputValidation2) {
 
     ASSERT_EQ(1, outputs->size());
 
-    ASSERT_NEAR(1.4142135, outputs->at(0)->getNDArray()->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(1.4142135, outputs->at(0)->getNDArray()->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
     delete outputs;
@@ -744,7 +744,7 @@ TEST_F(GraphTests, OutputValidation3) {
 
     ASSERT_EQ(1, outputs->size());
 
-    ASSERT_NEAR(1.4142135, outputs->at(0)->getNDArray()->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(1.4142135, outputs->at(0)->getNDArray()->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
     delete outputs;
@@ -789,7 +789,7 @@ TEST_F(GraphTests, OutputValidation4) {
 
     ASSERT_EQ(2, outputs->size());
 
-    ASSERT_NEAR(1.4142135, outputs->at(1)->getNDArray()->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(1.4142135, outputs->at(1)->getNDArray()->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
     delete outputs;
@@ -878,7 +878,7 @@ TEST_F(GraphTests, OutputValidation6) {
 
     ASSERT_EQ(4, outputs->size());
 
-    //ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(1)->getNDArray()->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    //ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(1)->getNDArray()->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
     delete graph;
     delete outputs;
 }
@@ -938,8 +938,8 @@ TEST_F(GraphTests, TestMultiOutput1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    ASSERT_NEAR(-2.0f, graph->getVariableSpace()->getVariable(21)->getNDArray()->meanNumber().getScalar<float>(0), 1e-5);
-    ASSERT_NEAR(-4.0f, graph->getVariableSpace()->getVariable(31)->getNDArray()->meanNumber().getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(-2.0f, graph->getVariableSpace()->getVariable(21)->getNDArray()->meanNumber().e<float>(0), 1e-5);
+    ASSERT_NEAR(-4.0f, graph->getVariableSpace()->getVariable(31)->getNDArray()->meanNumber().e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -1140,7 +1140,7 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
     Nd4jStatus status = GraphExecutioner::execute(&graphA);
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    float m = graphA.getVariableSpace()->getVariable(4)->getNDArray()->meanNumber().getScalar<float>(0);
+    float m = graphA.getVariableSpace()->getVariable(4)->getNDArray()->meanNumber().e<float>(0);
 
     //nd4j_printf("OpResult: %f\n", m);
 
@@ -1211,7 +1211,7 @@ TEST_F(GraphTests, TestGraphInGraph_2) {
     Nd4jStatus status = GraphExecutioner::execute(&graphA);
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    float m = graphA.getVariableSpace()->getVariable(4)->getNDArray()->meanNumber().getScalar<float>(0);
+    float m = graphA.getVariableSpace()->getVariable(4)->getNDArray()->meanNumber().e<float>(0);
 
     //nd4j_printf("OpResult: %f\n", m);
 

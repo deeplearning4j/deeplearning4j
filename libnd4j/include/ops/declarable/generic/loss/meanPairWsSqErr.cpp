@@ -62,7 +62,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 
 	NDArray numOfNonZeroWeights(sumSqrsDiffPerBatch.getShapeInfo(), block.getWorkspace());
 	if(weights->isScalar()) {
-		if((*weights).getScalar<double>(0) != 0.)
+		if((*weights).e<double>(0) != 0.)
 			numOfNonZeroWeights.assign((labels->lengthOf()/labels->sizeAt(0)));
 	}
 	else {
@@ -87,7 +87,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
     // multiply weightedLosses on weights
     weightedLosses *= (*weights);
  		
-	if(numOfNonZeroWeights.reduceNumber(reduce::Sum).getScalar<float>(0) == 0.f)
+	if(numOfNonZeroWeights.reduceNumber(reduce::Sum).e<float>(0) == 0.f)
 		(*output) = 0.f;
 	else
 		(*output) = weightedLosses.reduceNumber(reduce::Sum);

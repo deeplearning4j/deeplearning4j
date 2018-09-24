@@ -187,10 +187,10 @@ namespace ops {
             padding_shape.resize(padding->lengthOf());
 
             for (int e = 0; e < block_dims; e++)
-                block_shape[e] = blocks->getScalar<int>(e);
+                block_shape[e] = blocks->e<int>(e);
 
             for (int e = 0; e < padding->lengthOf(); e++)
-                padding_shape[e] = padding->getScalar<int>(e);
+                padding_shape[e] = padding->e<int>(e);
         } else if (block.numI() > 0) {
             int totalArgs = block.numI();
 

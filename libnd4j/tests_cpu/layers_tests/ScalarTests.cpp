@@ -50,7 +50,7 @@ TEST_F(ScalarTests, Test_Add_1) {
 
     x += 3.0f;
 
-    ASSERT_NEAR(5.0f, x.getScalar<float>(0), 1e-5f);
+    ASSERT_NEAR(5.0f, x.e<float>(0), 1e-5f);
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
 }
@@ -62,7 +62,7 @@ TEST_F(ScalarTests, Test_Add_2) {
 
     x += y;
 
-    ASSERT_NEAR(5.0f, x.getScalar<float>(0), 1e-5f);
+    ASSERT_NEAR(5.0f, x.e<float>(0), 1e-5f);
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
 }

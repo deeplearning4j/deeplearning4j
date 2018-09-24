@@ -169,7 +169,7 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
 
     //output.printBuffer("output");
 
-    ASSERT_NEAR(1423, output.getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(1423, output.e<float>(0), 1e-5);
         //nd4j_printf("Iter %i passed...\n", e);
 }
 
@@ -202,7 +202,7 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
 
     //output.printBuffer("output");
 
-    ASSERT_NEAR(1, output.getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(1, output.e<float>(0), 1e-5);
 }
 
 
@@ -311,7 +311,7 @@ TEST_F(JavaInteropTests, TestInplace_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
-    ASSERT_NEAR(1.0, input.meanNumber().getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(1.0, input.meanNumber().e<float>(0), 1e-5);
 }
 
 TEST_F(JavaInteropTests, Test_Synonyms_1) {

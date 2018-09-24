@@ -35,7 +35,7 @@ namespace ops {
             axis = INT_ARG(0);
         } else if (block.width() > 2){
             auto _a = INPUT_VARIABLE(2);
-            axis = _a->getScalar<int>(0);
+            axis = _a->e<int>(0);
         } 
 
         if (axis < 0)
@@ -45,7 +45,7 @@ namespace ops {
 
         int pos = 0;
         for (int e = 0; e < sizes->lengthOf(); e++) {
-            int c_size = sizes->getScalar<int>(e);
+            int c_size = sizes->e<int>(e);
             IndicesList indices;
 
             for (int d = 0; d < input->rankOf(); d++) {
@@ -84,7 +84,7 @@ namespace ops {
             axis = INT_ARG(0);
         else if (block.width() > 2) {
             auto _a = INPUT_VARIABLE(2);
-            axis = _a->getScalar<int>(0);
+            axis = _a->e<int>(0);
         }
 
         if (axis < 0)
@@ -96,7 +96,7 @@ namespace ops {
         auto length = sizes->lengthOf();
         int pos = 0;
         for (int e = 0; e < length; e++) {
-            int c_size = sizes->getScalar<int>(e);
+            int c_size = sizes->e<int>(e);
             Nd4jLong *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong);
 

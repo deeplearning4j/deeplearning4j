@@ -56,7 +56,7 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
 
             for (int e = 0; e < axisVector->lengthOf(); e++) {
-                int ca = axisVector->getScalar<int>(e);
+                int ca = axisVector->e<int>(e);
                 if (ca < 0)
                         ca += input->rankOf();
 

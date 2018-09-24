@@ -36,7 +36,7 @@ static void _diagFunctor(const NDArray* input, NDArray* output) {
 
 #pragma omp parallel for if(inLength > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
     for(int i = 0; i < inLength; ++i)
-        (*output).putScalar<T>(i * (inLength + 1), (*input).getScalar<T>(i));
+        (*output).putScalar<T>(i * (inLength + 1), (*input).e<T>(i));
 }
 
     void diagFunctor(const NDArray* input, NDArray* output) {

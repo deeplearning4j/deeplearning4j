@@ -42,7 +42,7 @@ namespace nd4j {
 
                 REQUIRE_TRUE(vec->isScalar(), 0, "ReadList: index operand should be a scalar");
                 
-                auto index = vec->getScalar<int>(0);
+                auto index = vec->e<int>(0);
 
                 REQUIRE_TRUE(list->isWritten(index), 0, "ReadList: requested index [%i] wasn't written yet", index);
 

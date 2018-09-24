@@ -42,17 +42,17 @@ namespace nd4j {
             if (block.numI() > 1) {
                 depth = INT_ARG(1);
             } else if (block.width() > 1) {
-                depth = INPUT_VARIABLE(1)->getScalar<int>(0);
+                depth = INPUT_VARIABLE(1)->e<int>(0);
             }
 
             REQUIRE_TRUE(depth > 0, 0, "OneHot: depth must be positive value");
 
 
             if (block.width() > 2) {
-                on = INPUT_VARIABLE(2)->getScalar<double>(0);
+                on = INPUT_VARIABLE(2)->e<double>(0);
 
                 if (block.width() > 3)
-                    off = INPUT_VARIABLE(3)->getScalar<double>(0);
+                    off = INPUT_VARIABLE(3)->e<double>(0);
             } else if (block.numT() > 0) {
                 on = T_ARG(0);
 
@@ -71,7 +71,7 @@ namespace nd4j {
                 auto tad = tads->at(e);
                 tad->assign(off);
 
-                int idx = input->getScalar<int>(e);
+                int idx = input->e<int>(e);
                 if (idx < 0 || idx >= tad->lengthOf())
                     continue;
 
@@ -95,7 +95,7 @@ namespace nd4j {
              if (block.numI() > 1) {
                 depth = INT_ARG(1);
             } else if (block.width() > 1) {
-                depth = INPUT_VARIABLE(1)->getScalar<int>(0);
+                depth = INPUT_VARIABLE(1)->e<int>(0);
             }
 
             REQUIRE_TRUE(depth > 0, 0, "OneHot: depth must be positive value");

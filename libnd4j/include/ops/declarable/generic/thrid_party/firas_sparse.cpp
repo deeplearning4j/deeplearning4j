@@ -78,7 +78,7 @@ namespace nd4j {
 
 
                     float value = row->getIndexedScalar<float>(e + 1);
-                    float current = z->getScalar<float>(r, denseIdx);
+                    float current = z->e<float>(r, denseIdx);
                     z->putScalar(r, denseIdx, value + current);
                 }
             }

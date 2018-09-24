@@ -32,15 +32,15 @@ namespace nd4j {
                 if(isStrictlyIncreasing) {
 #pragma omp parallel reduction(+:sum) num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
                     for (int i = 0; i < length - 1; i++) {
-                        auto val0 = input->getScalar<T>(i);
-                        auto val1 = input->getScalar<T>(i + 1);
+                        auto val0 = input->e<T>(i);
+                        auto val1 = input->e<T>(i + 1);
                         sum += val0 >= val1 ? -1 : 0;
                     }
                 } else {
 #pragma omp parallel reduction(+:sum) num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
                     for (int i = 0; i < length - 1; i++) {
-                        auto val0 = input->getScalar<T>(i);
-                        auto val1 = input->getScalar<T>(i + 1);
+                        auto val0 = input->e<T>(i);
+                        auto val1 = input->e<T>(i + 1);
                         sum += val0 > val1 ? -1 : 0;
                     }
                 }

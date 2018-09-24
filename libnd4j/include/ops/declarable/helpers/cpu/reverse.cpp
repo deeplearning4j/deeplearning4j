@@ -185,7 +185,7 @@ static void _reverseSequence(const NDArray* input, const NDArray* seqLengths, ND
         if((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
             output->assign(input);
         else
-            helpers::reverseArray<T>(const_cast<NDArray*>(input)->getBuffer(), const_cast<NDArray*>(input)->getShapeInfo(), output->getBuffer(), output->getShapeInfo(), seqLengths->getScalar<int>(0));
+            helpers::reverseArray<T>(const_cast<NDArray*>(input)->getBuffer(), const_cast<NDArray*>(input)->getShapeInfo(), output->getBuffer(), output->getShapeInfo(), seqLengths->e<int>(0));
     }
     else {
             
@@ -200,7 +200,7 @@ static void _reverseSequence(const NDArray* input, const NDArray* seqLengths, ND
 // #pragma omp parallel for schedule(guided)  if(inSubArrsSet->size() > Environment::getInstance()->elementwiseThreshold()) 
         for(int i = 0; i < inSubArrsSet->size(); ++i) {
 
-            Nd4jLong numOfElemsToReverse = seqLengths->getScalar<Nd4jLong>(i);
+            Nd4jLong numOfElemsToReverse = seqLengths->e<Nd4jLong>(i);
         
             if(numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
                 outSubArrsSet->at(i)->assign(inSubArrsSet->at(i));

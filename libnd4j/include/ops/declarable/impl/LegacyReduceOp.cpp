@@ -85,7 +85,7 @@ namespace nd4j {
                 std::vector<int> axis(indices->lengthOf());
                 for (int e = 0; e < indices->lengthOf(); e++) {
                     // lol otherwise we segfault on macOS
-                    int f = indices->getScalar<int>(e);
+                    int f = indices->e<int>(e);
                     axis[e] = f >= 0 ? f : f += x->rankOf();
                 }
 

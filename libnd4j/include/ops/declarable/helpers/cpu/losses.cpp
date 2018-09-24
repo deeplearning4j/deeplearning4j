@@ -45,7 +45,7 @@ void sparseSoftmaxCrossEntropyLossWithLogits(const NDArray& labels, const NDArra
         auto subArr = logSoftMax(i, dimsToExclude);
 
         // FIXME: double
-        output.putScalar(i, -subArr.getScalar<double>(labels.getScalar<Nd4jLong>(i)));
+        output.putScalar(i, -subArr.e<double>(labels.e<Nd4jLong>(i)));
     }
 }
 

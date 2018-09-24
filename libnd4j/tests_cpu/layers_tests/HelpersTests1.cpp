@@ -680,8 +680,8 @@ TEST_F(HelpersTests1, SVD_test10) {
     ops::helpers::SVD<double> svd(matrix3, 4, true, true, true, 't');        
     svd.perturb(col0, diag, permut, singVals, shifts,  mus, zhat);    
 
-    ASSERT_TRUE(expZhat.getScalar<double>(1) == zhat.getScalar<double>(1));
-    ASSERT_TRUE(expZhat.getScalar<double>(2) == zhat.getScalar<double>(2));
+    ASSERT_TRUE(expZhat.e<double>(1) == zhat.e<double>(1));
+    ASSERT_TRUE(expZhat.e<double>(2) == zhat.e<double>(2));
 }
 
 

@@ -159,5 +159,5 @@ TEST_F(ScopeTests, RealTests_1) {
 
     auto w = variableSpace->getVariable(12, 0)->getNDArray();
 
-    ASSERT_NEAR(40.f, w->sumNumber().getScalar<float>(0), 1e-5f);
+    ASSERT_NEAR(40.f, w->sumNumber().e<float>(0), 1e-5f);
 }

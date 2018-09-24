@@ -28,18 +28,18 @@ namespace helpers {
     static void _minMaxReduceFunctor(NDArray* input, NDArray* gradOut, NDArray* tempVals, NDArray* output, bool normalize) {
             if (tempVals->isScalar()) {
                 for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
-                    T compared = (normalize?nd4j::math::nd4j_abs(input->getScalar<T>(e)):input->getScalar<T>(e));
-                    if (nd4j::math::nd4j_abs(tempVals->getScalar<T>(0) - compared) < T(1.E-5f)) { // if input value equals to max
-                         output->putScalar<T>(e, (normalize ? gradOut->getScalar<T>(0) * nd4j::math::nd4j_sign(input->getScalar<T>(e)):gradOut->getScalar<T>(0)));
+                    T compared = (normalize?nd4j::math::nd4j_abs(input->e<T>(e)):input->e<T>(e));
+                    if (nd4j::math::nd4j_abs(tempVals->e<T>(0) - compared) < T(1.E-5f)) { // if input value equals to max
+                         output->putScalar<T>(e, (normalize ? gradOut->e<T>(0) * nd4j::math::nd4j_sign(input->e<T>(e)):gradOut->e<T>(0)));
                     }
                 }
             }
             else {
                 for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
                     for (Nd4jLong j = 0; j < tempVals->lengthOf(); j++) {
-                        T compared = (normalize?nd4j::math::nd4j_abs(input->getScalar<T>(e)):input->getScalar<T>(e));
-                        if (nd4j::math::nd4j_abs(tempVals->getScalar<T>(j) - compared) < T(1.E-5f))  // if input value equals to max
-                            output->putScalar(e, (normalize ? gradOut->getScalar<T>(j) * nd4j::math::nd4j_sign(input->getScalar<T>(e)): gradOut->getScalar<T>(j)));
+                        T compared = (normalize?nd4j::math::nd4j_abs(input->e<T>(e)):input->e<T>(e));
+                        if (nd4j::math::nd4j_abs(tempVals->e<T>(j) - compared) < T(1.E-5f))  // if input value equals to max
+                            output->putScalar(e, (normalize ? gradOut->e<T>(j) * nd4j::math::nd4j_sign(input->e<T>(e)): gradOut->e<T>(j)));
                     }
                 }
             }

@@ -54,11 +54,11 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
     }
     else if(argI->at(0) == 1)
 		for(int dim=0; dim < rank; ++dim)
-			REQUIRE_TRUE(paddings->getScalar<Nd4jLong>(dim,0) <= (input->shapeOf()[dim]-1) && paddings->getScalar<Nd4jLong>(dim,1) <= (input->shapeOf()[dim]-1), 0, "PAD op: wrong content of paddings array for REFLECT mode !");
+			REQUIRE_TRUE(paddings->e<Nd4jLong>(dim,0) <= (input->shapeOf()[dim]-1) && paddings->e<Nd4jLong>(dim,1) <= (input->shapeOf()[dim]-1), 0, "PAD op: wrong content of paddings array for REFLECT mode !");
 	// SYMMETRIC case
 	if(argI->at(0) == 2)				
 		for(int dim=0; dim < rank; ++dim)
-			REQUIRE_TRUE(paddings->getScalar<Nd4jLong>(dim,0) <= input->shapeOf()[dim] && paddings->getScalar<Nd4jLong>(dim,1)  <= input->shapeOf()[dim], 0, "PAD op: wrong content of paddings array for SYMMETRIC mode !");
+			REQUIRE_TRUE(paddings->e<Nd4jLong>(dim,0) <= input->shapeOf()[dim] && paddings->e<Nd4jLong>(dim,1)  <= input->shapeOf()[dim], 0, "PAD op: wrong content of paddings array for SYMMETRIC mode !");
 	// CONSTANT->0, REFLECT->1, SYMMETRIC->2
     REQUIRE_TRUE(!(argI->at(0) < 0 || argI->at(0) > 2), 0, "PAD op: unknown padding mode, there are only three possible legal values -> 0,1,2, but got %i instead !", argI->at(0));
 
@@ -86,7 +86,7 @@ DECLARE_SHAPE_FN(pad) {
     ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
     outShapeInfo[0] = rank;
     for(int i=1; i <= rank; ++i)
-    	outShapeInfo[i] = inputShapeInfo[i] + paddings->getScalar<Nd4jLong>(i-1,0) + paddings->getScalar<Nd4jLong>(i-1,1);
+    	outShapeInfo[i] = inputShapeInfo[i] + paddings->e<Nd4jLong>(i-1,0) + paddings->e<Nd4jLong>(i-1,1);
 	
     shape::updateStrides(outShapeInfo, shape::order(inputShapeInfo));    
 

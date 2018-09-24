@@ -82,7 +82,7 @@ namespace nd4j {
         // FIXME: we want to avoid put/get indexed scalars here really
 #pragma omp parallel for
         for (int e = 0; e < l; e++) {
-            result->putIndexedScalar(e, this->getScalar<T>(e));
+            result->putIndexedScalar(e, this->e<T>(e));
         }
 
         return result;
@@ -298,7 +298,7 @@ namespace nd4j {
         std::vector<T> vector(this->lengthOf());
 
         for (int e = 0; e < this->lengthOf(); e++) {
-            vector[e] = this->getScalar<T>(e);
+            vector[e] = this->e<T>(e);
         }
 
         return vector;
@@ -1065,15 +1065,15 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     bool NDArray::hasNaNs() {
-        return this->reduceNumber(nd4j::reduce::IsNan, nullptr).getScalar<int>(0) > 0;
+        return this->reduceNumber(nd4j::reduce::IsNan, nullptr).e<int>(0) > 0;
     }
 
     bool NDArray::hasInfs() {
-        return this->reduceNumber(nd4j::reduce::IsInf, nullptr).getScalar<int>(0) > 0;
+        return this->reduceNumber(nd4j::reduce::IsInf, nullptr).e<int>(0) > 0;
     }
 
     bool NDArray::isFinite() {
-        return this->reduceNumber(nd4j::reduce::IsInfOrNan, nullptr).getScalar<int>(0) == 0;
+        return this->reduceNumber(nd4j::reduce::IsInfOrNan, nullptr).e<int>(0) == 0;
     }
 
     template <typename T, typename Y>
@@ -1485,7 +1485,7 @@ NDArray NDArray::transp() const {
 
         RELEASE(reinterpret_cast<int8_t *>(ptr), _workspace);
 
-        if (tmp.getScalar<int>(0) > 0)
+        if (tmp.e<int>(0) > 0)
             return false;
 
         return true;
@@ -1833,7 +1833,7 @@ NDArray NDArray::transp() const {
             Nd4jLong max = 0;
             auto mv = -DataTypeUtils::max<float>();
             for (Nd4jLong e = 0; e < this->lengthOf(); e++) {
-                auto val = this->getScalar<float>(e);
+                auto val = this->e<float>(e);
                 if (mv < val) {
                     mv = val;
                     max = e;
@@ -2471,7 +2471,7 @@ NDArray NDArray::transp() const {
 		    for(int j=0; j<columns()-1; ++j)
 			    for(int k=j+1; k<columns(); ++k) {
 				    for(int i=0; i<rows(); ++i)
-					    dot += getScalar<double>(i,j)*getScalar<double>(i,k);
+					    dot += e<double>(i,j)*e<double>(i,k);
 
 				    if(nd4j::math::nd4j_abs(dot) > eps )
 					    return false;
@@ -2481,7 +2481,7 @@ NDArray NDArray::transp() const {
 
 			    for(int j=0; j<columns(); ++j)	{	// check whether norm of column vector = 1
 			        for(int i=0; i<rows(); ++i)
-				        dot += getScalar<double>(i,j)*getScalar<double>(i,j);
+				        dot += e<double>(i,j)*e<double>(i,j);
 			    if(dot != 0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<double, double>(dot) - 1.f) > eps)
 				    return false;
 
@@ -2492,7 +2492,7 @@ NDArray NDArray::transp() const {
 		    for(int i=0; i<rows()-1; ++i)
 			    for(int k=i+1; k<rows(); ++k) {
 				    for(int j=0; j<columns(); ++j)
-					    dot += getScalar<double>(i,j)*getScalar<double>(k,j);
+					    dot += e<double>(i,j)*e<double>(k,j);
 
 				    if(nd4j::math::nd4j_abs(dot) > eps )
 					    return false;
@@ -2502,7 +2502,7 @@ NDArray NDArray::transp() const {
 
 		        for(int i=0; i<rows(); ++i) {		// check whether norm of row vector = 1
 			        for(int j=0; j<columns(); ++j)
-					    dot += getScalar<double>(i,j)*getScalar<double>(i,j);
+					    dot += e<double>(i,j)*e<double>(i,j);
 
 			        if(dot!= 0. && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<double, double>(dot) - 1.) > eps)
 				        return false;
@@ -2532,7 +2532,7 @@ NDArray NDArray::transp() const {
 
 	    const double eps = 1e-5f;
 	    for(int i=0; i<rows(); ++i)
-		    if(nd4j::math::nd4j_abs(getScalar<double>(i,i) - 1.f) > eps)
+		    if(nd4j::math::nd4j_abs(e<double>(i,i) - 1.f) > eps)
 			    return false;
 
 	    for(int i=0; i<rows(); ++i)
@@ -2540,7 +2540,7 @@ NDArray NDArray::transp() const {
 			    if (i == j)
 			        continue;
 
-			    if(nd4j::math::nd4j_abs(getScalar<double>(i,j)) > eps)
+			    if(nd4j::math::nd4j_abs(e<double>(i,j)) > eps)
 				    return false;
 		    }
     	return true;
@@ -2565,10 +2565,10 @@ NDArray NDArray::transp() const {
     //////////////////////////////////////////////////////////////////////////
 // Return value from linear buffer
     template <typename T>
-    T NDArray::getScalar(const Nd4jLong i) const {
+    T NDArray::e(const Nd4jLong i) const {
         return getIndexedScalar<T>(i);
     }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::getScalar(const Nd4jLong) const, LIBND4J_TYPES);
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
     template <typename T>
@@ -2582,7 +2582,7 @@ NDArray NDArray::transp() const {
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes
     template <typename T>
-    T NDArray::getScalar(const Nd4jLong i, const Nd4jLong j) const {
+    T NDArray::e(const Nd4jLong i, const Nd4jLong j) const {
         if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
             throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
 
@@ -2592,12 +2592,12 @@ NDArray NDArray::transp() const {
         //return (*this)(i, j);
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
     }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::getScalar(const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 // returns value from 3D tensor by coordinates
     template <typename T>
-    T NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
+    T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
         //return (*this)(i, j, k);
         if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2])
             throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
@@ -2607,11 +2607,11 @@ NDArray NDArray::transp() const {
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
     }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::getScalar(const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
 
     // returns value from 3D tensor by coordinates
     template <typename T>
-    T NDArray::getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const {
+    T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const {
         //return (*this)(i, j, k);
         if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2] || l >= shapeOf()[3])
             throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=4 !");
@@ -2621,7 +2621,7 @@ NDArray NDArray::transp() const {
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
     }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::getScalar(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
     void NDArray::putIndexedScalar(const Nd4jLong i, const NDArray& value) {
@@ -2762,8 +2762,8 @@ NDArray NDArray::transp() const {
         // scalar subarray edge case
         if (idx.isScalar()) {
             auto pnt = idx.at(0)->getIndices().at(0);
-            //return new NDArray('c', {1, 1}, {this->getScalar(pnt)});
-            BUILD_SINGLE_SELECTOR(xType, return NDArrayFactory::scalar, (this->getScalar<float>(pnt), this->_workspace), LIBND4J_TYPES);
+            //return new NDArray('c', {1, 1}, {this->e(pnt)});
+            BUILD_SINGLE_SELECTOR(xType, return NDArrayFactory::scalar, (this->e<float>(pnt), this->_workspace), LIBND4J_TYPES);
         }
 
         if (idx.size() != this->rankOf())

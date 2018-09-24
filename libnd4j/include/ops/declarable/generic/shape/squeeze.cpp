@@ -42,7 +42,7 @@ namespace nd4j {
             else if (block.width() > 1) {
                 auto a = INPUT_VARIABLE(1);
                 for (int e = 0; e < a->lengthOf(); e++) {
-                    int _a = a->getScalar<int>(e);
+                    int _a = a->e<int>(e);
                     
                     if (_a < 0)
                         _a += input->rankOf();
@@ -113,7 +113,7 @@ namespace nd4j {
             else if (block.width() > 1) {
                 auto a = INPUT_VARIABLE(1);
                 for (int e = 0; e < a->lengthOf(); e++) {
-                    int _a = a->getScalar<int>(e);
+                    int _a = a->e<int>(e);
                     
                     if (_a < 0)
                         _a += rank;

@@ -43,7 +43,7 @@ namespace ops {
                 auto str = ShapeUtils::shapeAsString(_d);
                 REQUIRE_TRUE(_d->isScalar(), 0, "AdjustHue: delta should be scalar NDArray, but got %s instead", str.c_str());
             }
-            delta = _d->getScalar<double>(0);
+            delta = _d->e<double>(0);
         }
 
 

@@ -45,10 +45,10 @@ class ScatterHelper {
                 (input->isVector() && indices->isScalar() && updates->isScalar()) ) {
                 
                 for (int e = 0; e < indicesLength; e++) {
-                    int idx = indices->getScalar<int>(e);
+                    int idx = indices->e<int>(e);
                     
-                    T t0 = input->getScalar<T>(idx);
-                    T t1 = updates->getScalar<T>(e);
+                    T t0 = input->e<T>(idx);
+                    T t1 = updates->e<T>(e);
                     
                     output->putScalar(idx, OpClass::op(t0, t1, nullptr));
                 }
@@ -59,7 +59,7 @@ class ScatterHelper {
                 std::vector<int> idcU;
 
                 for (int e = 0; e < indicesLength; e++) {
-                    idc.push_back(indices->getScalar<int>(e));
+                    idc.push_back(indices->e<int>(e));
                     idcU.push_back(e);
                 }
 
@@ -91,7 +91,7 @@ class ScatterHelper {
                 auto tadsUpdates = _updates->allTensorsAlongDimension({1});
 
                 for (int e = 0; e < indicesLength; e++) {
-                    int idx = indices->getScalar<int>(e);
+                    int idx = indices->e<int>(e);
                     
                     auto t0 = tadsOperand->at(idx);
                     auto t1 = tadsUpdates->at(e);
@@ -124,7 +124,7 @@ class ScatterHelper {
 // #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
 #pragma omp parallel for schedule(guided)
                 for(Nd4jLong i = 0; i < indLen; ++i) {
-                    T& out = output(indices.getScalar<T>(i));                    
+                    T& out = output(indices.e<T>(i));                    
 #pragma omp critical                    
                     out = OpClass::op(out, updates(i), nullptr);
                 }

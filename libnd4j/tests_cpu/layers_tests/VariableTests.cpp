@@ -57,7 +57,7 @@ TEST_F(VariableTests, TestClone_1) {
     ASSERT_EQ(*var2->getName(), str);
     array2->assign(2.0);
 
-    ASSERT_NEAR(2.0, array2->meanNumber().getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(2.0, array2->meanNumber().e<float>(0), 1e-5);
 
     delete var2;
 }

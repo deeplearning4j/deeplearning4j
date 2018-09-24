@@ -29,18 +29,18 @@ namespace helpers {
     static void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = indices->getScalar<int>(0);
+        int idx = indices->e<int>(0);
         if (input->isVector()) {
-            T val = input->getScalar<T>(0);
+            T val = input->e<T>(0);
 //#pragma omp parallel for
             for (int e = 1; e < indices->lengthOf(); e++) {
-                if (idx == indices->getScalar<int>(e)) {
+                if (idx == indices->e<int>(e)) {
                    // max 
-                   val = nd4j::math::nd4j_max<T>(val, input->getScalar<T>(e));
+                   val = nd4j::math::nd4j_max<T>(val, input->e<T>(e));
                 }
                 else {
-                    idx = indices->getScalar<int>(e);
-                    val = input->getScalar<T>(e);
+                    idx = indices->e<int>(e);
+                    val = input->e<T>(e);
                 }
                 output->putScalar<T>(idx, val);
             }
@@ -61,14 +61,14 @@ namespace helpers {
             int pos = 0;
             maxT->assign(listOfTensors->at(0));
             for (int i = 1; i < indices->lengthOf(); i++) {
-                if (indices->getScalar<int>(i) == idx) {
+                if (indices->e<int>(i) == idx) {
 #pragma omp parallel for
                     for (int e = 0; e < maxT->lengthOf(); e++) {
-                       maxT->putScalar<T>(e, nd4j::math::nd4j_max(maxT->getScalar<T>(e), listOfTensors->at(i)->getScalar<T>(e)));
+                       maxT->putScalar<T>(e, nd4j::math::nd4j_max(maxT->e<T>(e), listOfTensors->at(i)->e<T>(e)));
                     }
                 }
                 else {
-                    idx = indices->getScalar<int>(i);
+                    idx = indices->e<int>(i);
                     maxT = listOfOutTensors->at(idx);
                     maxT->assign(listOfTensors->at(i));
                 }
@@ -84,18 +84,18 @@ namespace helpers {
     static void segmentMinFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = indices->getScalar<int>(0);
+        int idx = indices->e<int>(0);
         if (input->isVector()) {
-            T val = input->getScalar<T>(0);
+            T val = input->e<T>(0);
 //#pragma omp parallel for
             for (int e = 1; e < indices->lengthOf(); e++) {
-                if (idx == indices->getScalar<int>(e)) {
+                if (idx == indices->e<int>(e)) {
                    // min 
-                   val = nd4j::math::nd4j_min<T>(val, input->getScalar<T>(e));
+                   val = nd4j::math::nd4j_min<T>(val, input->e<T>(e));
                 }
                 else {
-                    idx = indices->getScalar<int>(e);
-                    val = input->getScalar<T>(e);
+                    idx = indices->e<int>(e);
+                    val = input->e<T>(e);
                 }
                 output->putScalar(idx, val);
             }
@@ -116,14 +116,14 @@ namespace helpers {
             int pos = 0;
             minT->assign(listOfTensors->at(0));
             for (int i = 1; i < indices->lengthOf(); i++) {
-                if (indices->getScalar<T>(i) == idx) {
+                if (indices->e<T>(i) == idx) {
 #pragma omp parallel for if(minT->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                     for (int e = 0; e < minT->lengthOf(); e++) {
-                       minT->putScalar(e, nd4j::math::nd4j_min(minT->getScalar<T>(e), listOfTensors->at(i)->getScalar<T>(e)));
+                       minT->putScalar(e, nd4j::math::nd4j_min(minT->e<T>(e), listOfTensors->at(i)->e<T>(e)));
                     }
                 }
                 else {
-                    idx = indices->getScalar<T>(i);
+                    idx = indices->e<T>(i);
                     minT = listOfOutTensors->at(idx);
                     minT->assign(listOfTensors->at(i));
                 }
@@ -136,20 +136,20 @@ namespace helpers {
     static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = indices->getScalar<int>(0);
+        int idx = indices->e<int>(0);
         if (input->isVector()) {
             T val = T(0.f);
             int count = 0;
             for (int e = 0; e < indices->lengthOf(); e++) {
-                if (idx == indices->getScalar<int>(e)) {
+                if (idx == indices->e<int>(e)) {
                    // mean 
-                   val += input->getScalar<T>(e);
+                   val += input->e<T>(e);
                    count++;
                 }
                 else {
                    output->putScalar<T>(idx, val / count);
-                    idx = indices->getScalar<int>(e);
-                    val = input->getScalar<T>(e);
+                    idx = indices->e<int>(e);
+                    val = input->e<T>(e);
                     count = 1;
                 }
                 output->putScalar<T>(idx, val / count);
@@ -172,16 +172,16 @@ namespace helpers {
             meanV->assign(listOfTensors->at(0));
 //#pragma omp parallel for
             for (int i = 1; i < indices->lengthOf(); i++) {
-                if (indices->getScalar<int>(i) == idx) {
+                if (indices->e<int>(i) == idx) {
                     for (int e = 0; e < meanT->lengthOf(); e++) {
-                       meanV->putScalar<T>(e, meanV->getScalar<T>(e) + listOfTensors->at(i)->getScalar<T>(e));
+                       meanV->putScalar<T>(e, meanV->e<T>(e) + listOfTensors->at(i)->e<T>(e));
                     }
                     count++;
                 }
                 else {
                     //meanT->assign(meanV);
                     meanV->applyScalar(scalar::Divide, count, meanT, nullptr);
-                    idx = indices->getScalar<int>(i);
+                    idx = indices->e<int>(i);
                     meanT = listOfOutTensors->at(idx);
                     meanV->assign(listOfTensors->at(i));
                     count = 1;
@@ -198,18 +198,18 @@ namespace helpers {
     static void segmentSumFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = indices->getScalar<int>(0);
+        int idx = indices->e<int>(0);
         if (input->isVector()) {
             T val = T(0.f);
             int count = 0;
             for (int e = 0; e < indices->lengthOf(); e++) {
-                if (idx == indices->getScalar<int>(e)) {
+                if (idx == indices->e<int>(e)) {
                    // sum 
-                   val += input->getScalar<T>(e);
+                   val += input->e<T>(e);
                 }
                 else {
-                    idx = indices->getScalar<int>(e);
-                    val = input->getScalar<T>(e);
+                    idx = indices->e<int>(e);
+                    val = input->e<T>(e);
                 }
                 output->putScalar(idx, val);
             }
@@ -228,13 +228,13 @@ namespace helpers {
             auto sumT = listOfOutTensors->at(idx);
 
             for (int i = 0; i < indices->lengthOf(); i++) {
-                if (indices->getScalar<int>(i) == idx) {
+                if (indices->e<int>(i) == idx) {
                     for (int e = 0; e < sumT->lengthOf(); e++) {
-                       sumT->putScalar(e, sumT->getScalar<T>(e) +listOfTensors->at(i)->getScalar<T>(e));
+                       sumT->putScalar(e, sumT->e<T>(e) +listOfTensors->at(i)->e<T>(e));
                     }
                 }
                 else {
-                    idx = indices->getScalar<int>(i);
+                    idx = indices->e<int>(i);
                     sumT = listOfOutTensors->at(idx);
                     sumT->assign(listOfTensors->at(i));
                 }
@@ -248,18 +248,18 @@ namespace helpers {
     static void segmentProdFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = indices->getScalar<int>(0);
+        int idx = indices->e<int>(0);
         if (input->isVector()) {
-            T val = input->getScalar<T>(0);
+            T val = input->e<T>(0);
             int count = 0;
             for (int e = 1; e < indices->lengthOf(); e++) {
-                if (idx == indices->getScalar<int>(e)) {
+                if (idx == indices->e<int>(e)) {
                    // sum 
-                   val *= input->getScalar<T>(e);
+                   val *= input->e<T>(e);
                 }
                 else {
-                    idx = indices->getScalar<int>(e);
-                    val = input->getScalar<T>(e);
+                    idx = indices->e<int>(e);
+                    val = input->e<T>(e);
                 }
                 output->putScalar(idx, val);
             }
@@ -277,13 +277,13 @@ namespace helpers {
             auto sumT = listOfOutTensors->at(idx);
             sumT->assign(listOfTensors->at(0));
             for (int i = 1; i < indices->lengthOf(); i++) {
-                if (indices->getScalar<int>(i)  == idx) {
+                if (indices->e<int>(i)  == idx) {
                     for (int e = 0; e < sumT->lengthOf(); e++) {
-                       sumT->putScalar(e, sumT->getScalar<T>(e) * listOfTensors->at(i)->getScalar<T>(e));
+                       sumT->putScalar(e, sumT->e<T>(e) * listOfTensors->at(i)->e<T>(e));
                     }
                 }
                 else {
-                    idx = indices->getScalar<int>(i);
+                    idx = indices->e<int>(i);
                     sumT = listOfOutTensors->at(idx);
                     sumT->assign(listOfTensors->at(i));
                 }
@@ -295,12 +295,12 @@ namespace helpers {
 
     template <typename T>
     static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArray& aoutput) {
-            T val = indices->getScalar<T>(0);
+            T val = indices->e<T>(0);
             for (int e = 1; e < indices->lengthOf(); e++) {
-                aoutput.putScalar<T>(Nd4jLong(0), indices->getScalar<T>(e));
-                if (val > aoutput.getScalar<T>(0))
+                aoutput.putScalar<T>(Nd4jLong(0), indices->e<T>(e));
+                if (val > aoutput.e<T>(0))
                     return false;
-                val = indices->getScalar<T>(e);
+                val = indices->e<T>(e);
             }
 
             return true;

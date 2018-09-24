@@ -38,7 +38,7 @@ namespace nd4j {
             if (block.width() == 2 && arguments->size() == 0) {
                 auto axis = INPUT_VARIABLE(1);
                 for (int e = 0; e < axis->lengthOf(); e++) {
-                    int ax = axis->getScalar<int>(e);
+                    int ax = axis->e<int>(e);
                     if (ax < 0)
                         ax += x->rankOf();
 

@@ -40,7 +40,7 @@ namespace nd4j {
             REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
 
             for (Nd4jLong e = 0; e < values->lengthOf(); e++) {
-                T v = values->getScalar(e);
+                T v = values->e(e);
                 T extras[] = {v, (T) 0.0f, (T) 10.0f};
                 auto idx = keep->indexReduceNumber(indexreduce::FirstIndex, extras);
                 if (idx < 0) {
@@ -84,7 +84,7 @@ namespace nd4j {
             // FIXME: must be moved to helpers
             /*
             for (int e = 0; e < values->lengthOf(); e++) {
-                T v = values->getScalar(e);
+                T v = values->e(e);
                 T extras[] = {v, (T) 0.0f, (T) 10.0f};
                 auto idx = keep->indexReduceNumber(indexreduce::FirstIndex, extras);
                 if (idx < 0)

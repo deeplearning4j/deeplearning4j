@@ -83,7 +83,7 @@ TEST_F(SingleDimTests, Test_Concat_1) {
 TEST_F(SingleDimTests, Test_Reduce_1) {
     auto x = NDArrayFactory::_create<float>('c', {3}, {1, 2, 3});
 
-    float r = x.reduceNumber(reduce::Sum).getScalar<float>(0);
+    float r = x.reduceNumber(reduce::Sum).e<float>(0);
 
     ASSERT_NEAR(6.0f, r, 1e-5f);
 }

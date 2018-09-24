@@ -31,9 +31,9 @@ namespace helpers {
 
 #pragma omp parallel for if(labels->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)                    
         for (int j = 0; j < labels->lengthOf(); ++j){
-            auto label = labels->getScalar<Nd4jLong>(j);
-            auto pred = predictions->getScalar<Nd4jLong>(j);
-            T value = (weights == nullptr ? (T)1.0f : weights->getScalar<T>(j));
+            auto label = labels->e<Nd4jLong>(j);
+            auto pred = predictions->e<Nd4jLong>(j);
+            T value = (weights == nullptr ? (T)1.0f : weights->e<T>(j));
             (*arrs->at(label)).putScalar<T>(pred, value);
         }
     }

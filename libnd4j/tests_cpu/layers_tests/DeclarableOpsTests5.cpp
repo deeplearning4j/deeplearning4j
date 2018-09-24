@@ -1208,8 +1208,8 @@ TEST_F(DeclarableOpsTests5, Test_Moments_1) {
 //    d->printIndexedBuffer("Result is ");
 
     ASSERT_TRUE(v->isScalar());
-    ASSERT_NEAR(expMean, v->getScalar<double>(0), inf);
-    ASSERT_NEAR(expDeviation, d->getScalar<double>(0), inf);
+    ASSERT_NEAR(expMean, v->e<double>(0), inf);
+    ASSERT_NEAR(expDeviation, d->e<double>(0), inf);
 
     delete result;
 }
@@ -1431,7 +1431,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test1) {
 
     bool haveZeros = false;
     for(int i = 0; i < output->lengthOf(); ++i)
-        if(output->getScalar<float>(i) == (float)0.)
+        if(output->e<float>(i) == (float)0.)
             haveZeros = true;
     
     ASSERT_EQ(Status::OK(), results->status());
@@ -1471,7 +1471,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test3) {
 
     bool haveZeros = false;
     for(int i = 0; i < output->lengthOf(); ++i)
-        if(output->getScalar<float>(i) == (float)0.)
+        if(output->e<float>(i) == (float)0.)
             haveZeros = true;
     
     ASSERT_EQ(Status::OK(), results->status());
@@ -1493,7 +1493,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test4) {
 
     bool haveZeros = false;
     for(int i = 0; i < output->lengthOf(); ++i)
-        if(output->getScalar<float>(i) == (float)0.)
+        if(output->e<float>(i) == (float)0.)
             haveZeros = true;
     
     ASSERT_EQ(Status::OK(), results->status());
@@ -1516,7 +1516,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test5) {
 
     bool haveZeros = false;
     for(int i = 0; i < output->lengthOf(); ++i)
-        if(output->getScalar<float>(i) == (float)0.)
+        if(output->e<float>(i) == (float)0.)
             haveZeros = true;
     
     ASSERT_EQ(Status::OK(), results->status());
@@ -1539,7 +1539,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test6) {
 
     bool haveZeros = false;
     for(int i = 0; i < output->lengthOf(); ++i)
-        if(output->getScalar<float>(i) == (float)0.)
+        if(output->e<float>(i) == (float)0.)
             haveZeros = true;
     
     ASSERT_EQ(Status::OK(), results->status());
@@ -2035,7 +2035,7 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_1) {
     
     ASSERT_EQ(Status::OK(), res->status());
     ASSERT_TRUE(res->at(0)->isScalar());
-    ASSERT_EQ(res->at(0)->getScalar<double>(0), 0.25f);
+    ASSERT_EQ(res->at(0)->e<double>(0), 0.25f);
     
     delete res;
 }
@@ -2050,7 +2050,7 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_2) {
     
     ASSERT_EQ(Status::OK(), res->status());
     ASSERT_TRUE(res->at(0)->isScalar());
-    ASSERT_EQ(res->at(0)->getScalar<double>(0), 0.375f);
+    ASSERT_EQ(res->at(0)->e<double>(0), 0.375f);
     
     delete res;
 }
@@ -2065,7 +2065,7 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_3) {
     
     ASSERT_EQ(Status::OK(), res->status());
     ASSERT_TRUE(res->at(0)->isScalar());
-    ASSERT_EQ(res->at(0)->getScalar<float>(0), 0.375f);
+    ASSERT_EQ(res->at(0)->e<float>(0), 0.375f);
     
     delete res;
 }
@@ -2375,7 +2375,7 @@ TEST_F(DeclarableOpsTests5, L2_Loss_1) {
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(output->isScalar());
-    ASSERT_EQ(output->getScalar<double>(0), exp);
+    ASSERT_EQ(output->e<double>(0), exp);
 
     delete results;
 }

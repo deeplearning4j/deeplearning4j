@@ -290,7 +290,7 @@ CUSTOM_OP_IMPL(conv2d_input_bp, 3, 1, false, 0, 9) {
     // create empty conv2d input array    
     std::vector<Nd4jLong> gradIShapeAsVector(rank);
     for(int i = 0; i < rank; ++i)        
-        gradIShapeAsVector[i] = gradIShape->getScalar<Nd4jLong>(i);
+        gradIShapeAsVector[i] = gradIShape->e<Nd4jLong>(i);
     auto input = NDArrayFactory::_create(gradO->ordering(), gradIShapeAsVector, gradO->dataType(), block.getWorkspace());
 
 

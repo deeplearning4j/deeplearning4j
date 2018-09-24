@@ -226,11 +226,11 @@ DECLARE_SHAPE_FN(matmul) {
             } else if (x->isVector() && y->isScalar()) {
                 // elementwise mul
 
-                x->template applyScalar<simdOps::Multiply<T>>(y->getScalar(0), z, nullptr);
+                x->template applyScalar<simdOps::Multiply<T>>(y->e(0), z, nullptr);
              } else if (x->isScalar() && y->isVector()) {
                 // elementwise mul, reverse op
 
-                y->template applyScalar<simdOps::Multiply<T>>(x->getScalar(0), z, nullptr);
+                y->template applyScalar<simdOps::Multiply<T>>(x->e(0), z, nullptr);
             }
 
             STORE_RESULT(*z);

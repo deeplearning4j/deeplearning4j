@@ -50,7 +50,7 @@ namespace helpers {
 
 #pragma omp parallel
             for( int i = 0; fit && (i < dims.size()); i++ ) {
-                dims[i] = reduceShape->getScalar<Nd4jLong>(i);
+                dims[i] = reduceShape->e<Nd4jLong>(i);
                 for (int e = 0; fit && (e < input->rankOf()); ++e)
                     if (input->sizeAt(e) % dims[i]) {
                         fit = false;

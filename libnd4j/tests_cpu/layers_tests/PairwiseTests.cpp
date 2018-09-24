@@ -43,5 +43,5 @@ TEST_F(EqualsTest,Eps) {
                                                                secondShapeBuffer,
                                                                val.buffer(),
                                                                val.shapeInfo());
-    ASSERT_TRUE(val.getScalar<float>(0) < 0.5);
+    ASSERT_TRUE(val.e<float>(0) < 0.5);
 }

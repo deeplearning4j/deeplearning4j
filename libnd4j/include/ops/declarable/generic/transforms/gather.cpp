@@ -72,7 +72,7 @@ DECLARE_SHAPE_FN(gather) {
 	int axis = 0;
 
 	if (block.width() > 2) {
-		axis = INPUT_VARIABLE(2)->getScalar<int>(0);
+		axis = INPUT_VARIABLE(2)->e<int>(0);
 	} else
 		axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
 

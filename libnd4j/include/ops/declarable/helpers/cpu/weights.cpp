@@ -27,12 +27,12 @@ namespace helpers {
     template <typename T>
     static void adjustWeights_(NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
             for (int e = 0; e < input->lengthOf(); e++) {
-                int val = input->getScalar<int>(e);
+                int val = input->e<int>(e);
                 if (val < maxLength) {
                     if (weights != nullptr)
-                        output->putScalar(val, output->getScalar<T>(val) + weights->getScalar<T>(e));
+                        output->putScalar(val, output->e<T>(val) + weights->e<T>(e));
                     else
-                        output->putScalar(val, output->getScalar<T>(val) + 1);
+                        output->putScalar(val, output->e<T>(val) + 1);
                 }
             }
     }

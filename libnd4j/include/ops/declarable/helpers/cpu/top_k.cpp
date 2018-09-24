@@ -45,7 +45,7 @@ namespace helpers {
                 for (int e = 0; e < lastDimList->size(); ++e) {
                     int maxPos = lastDimList->at(e)->argMax();
                     indeces->putScalar(e, maxPos); //topIndex;
-                    values->putScalar(e, lastDimList->at(e)->getScalar<T>(maxPos));
+                    values->putScalar(e, lastDimList->at(e)->e<T>(maxPos));
                 }
             }
             else { 
@@ -61,13 +61,13 @@ namespace helpers {
                     // fill up the first k elements
                     for (int pos = 0; pos < k; ++pos) {
                         topIndices[pos] = pos;
-                        topValues[pos] = trial->getScalar<T>(pos);
+                        topValues[pos] = trial->e<T>(pos);
                     }
                     std::vector<T> sortedVals(topValues);
                     std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
                     
                     for (int i = k; i < width; ++i) {
-                        T val = trial->getScalar<T>(i);
+                        T val = trial->e<T>(i);
                         if (sortedVals[0] < val) { // value should be inserted to top k
                             // only if it is not contained in 
                             if (sortedVals.end() == std::find(sortedVals.begin(), sortedVals.end(), val)) {    
@@ -88,7 +88,7 @@ namespace helpers {
 
                     for (int j = 0; j < width; j++)
                         for (int pos = 0; pos < k; ++pos)
-                            if (topValues[pos] == trial->getScalar<T>(j))
+                            if (topValues[pos] == trial->e<T>(j))
                                 topIndices[pos] = j;
 
                     for (int pos = 0; pos < k; ++pos, ++nextPos) {
@@ -119,7 +119,7 @@ namespace helpers {
                 for (int e = 0; e < target->lengthOf(); e++) {
                     bool found = false;
                     for (int j = 0; j < k; j++) {
-                        if (target->getScalar<T>(e) == indices->getScalar<T>(e * k + j)) {
+                        if (target->e<T>(e) == indices->e<T>(e * k + j)) {
                             found = true;
                             break;
                         }

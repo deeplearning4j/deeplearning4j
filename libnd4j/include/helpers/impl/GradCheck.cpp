@@ -74,7 +74,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 		
 		for(Nd4jLong j = idxStart; j < idxEnd; ++j) {			// loop through all elements for current array
 
-			auto f = inArrsFF[i]->getScalar<double>(j);
+			auto f = inArrsFF[i]->e<double>(j);
 			double& elem = f;
 			const double orig = elem;
 
@@ -86,7 +86,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 			auto tmpScalar = NDArrayFactory::_create(0.0);
 			for(int k = 0; k < numOutArrs; ++k) {                // loop through output array
 				NativeOpExcutioner::execReduceScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
-				scorePlus += tmpScalar.getScalar<double>(0);
+				scorePlus += tmpScalar.e<double>(0);
 			}
 			delete outArrsFF;
 
@@ -97,7 +97,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 
 			for(int k = 0; k < numOutArrs; ++k) {            // loop through output array
 				NativeOpExcutioner::execReduceScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
-				scoreMinus += tmpScalar.getScalar<double>(0);
+				scoreMinus += tmpScalar.e<double>(0);
 			}
 			delete outArrsFF;
 
@@ -112,7 +112,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 			}
 
 			// get analytical gradient 
-			const double analyticGrad = outArrsBP->at(i)->getScalar<double>(j);
+			const double analyticGrad = outArrsBP->at(i)->e<double>(j);
 			if(std::isnan(analyticGrad) || std::isinf(analyticGrad)) {
 				printf("GradCheck::checkGrad: got wrong value for analytical gradient for input array # %i and its element at position %lld ! \n", i, j);
 				throw std::runtime_error("");

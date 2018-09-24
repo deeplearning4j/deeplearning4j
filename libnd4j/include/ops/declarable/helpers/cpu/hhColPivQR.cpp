@@ -58,12 +58,12 @@ void HHcolPivQR::_evalData() {
 
     for (int k = 0; k < cols; ++k) {
         
-        T norm = _qr({0,0, k,k+1}).reduceNumber(reduce::Norm2).getScalar<T>(0);
+        T norm = _qr({0,0, k,k+1}).reduceNumber(reduce::Norm2).e<T>(0);
         normsDir.putScalar<T>(k, norm);
         normsUpd.putScalar<T>(k, norm);
     }
 
-    T normScaled = (normsUpd.reduceNumber(reduce::Max)).getScalar<T>(0) * DataTypeUtils::eps<T>();
+    T normScaled = (normsUpd.reduceNumber(reduce::Max)).e<T>(0) * DataTypeUtils::eps<T>();
     T threshold1 = normScaled * normScaled / (T)rows;     
     T threshold2 = math::nd4j_sqrt<T,T>(DataTypeUtils::eps<T>());
 
@@ -73,7 +73,7 @@ void HHcolPivQR::_evalData() {
     for(int k = 0; k < _diagSize; ++k) {
     
         int biggestColIndex = (int)(normsUpd({0,0, k,-1}).indexReduceNumber(indexreduce::IndexMax));
-        T biggestColNorm = normsUpd({0,0, k,-1}).reduceNumber(reduce::Max).getScalar<T>(0);
+        T biggestColNorm = normsUpd({0,0, k,-1}).reduceNumber(reduce::Max).e<T>(0);
         T biggestColSqNorm = biggestColNorm * biggestColNorm;
         biggestColIndex += k;
     
@@ -92,14 +92,14 @@ void HHcolPivQR::_evalData() {
             delete temp1;
             delete temp2;
 
-            T _e0 = normsUpd.getScalar<T>(k);
-            T _e1 = normsUpd.getScalar<T>(biggestColIndex);
+            T _e0 = normsUpd.e<T>(k);
+            T _e1 = normsUpd.e<T>(biggestColIndex);
             normsUpd.putScalar(k, _e1);
             normsUpd.putScalar(biggestColIndex, _e0);
             //math::nd4j_swap<T>(normsUpd(k), normsUpd(biggestColIndex));
 
-            _e0 = normsDir.getScalar<T>(k);
-            _e1 = normsDir.getScalar<T>(biggestColIndex);
+            _e0 = normsDir.e<T>(k);
+            _e1 = normsDir.e<T>(biggestColIndex);
             normsDir.putScalar(k, _e1);
             normsDir.putScalar(biggestColIndex, _e0);
             //math::nd4j_swap<T>(normsDir(k), normsDir(biggestColIndex));
@@ -111,7 +111,7 @@ void HHcolPivQR::_evalData() {
         NDArray* qrBlock = nullptr;
         qrBlock = _qr.subarray({{k, rows}, {k,k+1}});
 
-        T _x = _coeffs.getScalar<T>(k);
+        T _x = _coeffs.e<T>(k);
 
         Householder<T>::evalHHmatrixDataI(*qrBlock, _x, normX);
 
@@ -127,27 +127,27 @@ void HHcolPivQR::_evalData() {
         if(k < rows && (k+1) < cols) {
             qrBlock = _qr.subarray({{k, rows},{k+1, cols}});
             auto tail = _qr.subarray({{k+1, rows}, {k, k+1}});
-            Householder<T>::mulLeft(*qrBlock, *tail, _coeffs.getScalar<T>(k));
+            Householder<T>::mulLeft(*qrBlock, *tail, _coeffs.e<T>(k));
             delete qrBlock;
             delete tail;
         }
 
         for (int j = k + 1; j < cols; ++j) {            
             
-            if (normsUpd.getScalar<T>(j) != (T)0.f) {
-                T temp = math::nd4j_abs<T>(_qr.getScalar<T>(k, j)) / normsUpd.getScalar<T>(j);
+            if (normsUpd.e<T>(j) != (T)0.f) {
+                T temp = math::nd4j_abs<T>(_qr.e<T>(k, j)) / normsUpd.e<T>(j);
                 temp = (1. + temp) * (1. - temp);
                 temp = temp < (T)0. ? (T)0. : temp;
-                T temp2 = temp * normsUpd.getScalar<T>(j) * normsUpd.getScalar<T>(j) / (normsDir.getScalar<T>(j)*normsDir.getScalar<T>(j));
+                T temp2 = temp * normsUpd.e<T>(j) * normsUpd.e<T>(j) / (normsDir.e<T>(j)*normsDir.e<T>(j));
                 
                 if (temp2 <= threshold2) {          
                     if(k+1 < rows && j < cols)
                         normsDir.putScalar(j, _qr({k+1,rows, j,j+1}).reduceNumber(reduce::Norm2));
 
-                    normsUpd.putScalar<T>(j, normsDir.getScalar<T>(j));
+                    normsUpd.putScalar<T>(j, normsDir.e<T>(j));
                 } 
                 else 
-                    normsUpd.putScalar<T>(j, normsUpd.getScalar<T>(j) * math::nd4j_sqrt<T, T>(temp));
+                    normsUpd.putScalar<T>(j, normsUpd.e<T>(j) * math::nd4j_sqrt<T, T>(temp));
             }
         }
     }
@@ -156,7 +156,7 @@ void HHcolPivQR::_evalData() {
     
     for(int k = 0; k < _diagSize; ++k) {
 
-        int idx = transp.getScalar<int>(k);
+        int idx = transp.e<int>(k);
         auto temp1 = _permut.subarray({{}, {k, k+1}});
         auto temp2 = _permut.subarray({{}, {idx, idx+1}});
         auto  temp3 = *temp1;

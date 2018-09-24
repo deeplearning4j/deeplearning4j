@@ -164,7 +164,7 @@ TEST_F(RNGTests, Test_Uniform_1) {
     ASSERT_FALSE(x0.equalsTo(nexp2));
 
     for (int e = 0; e < x0.lengthOf(); e++) {
-        float v = x0.getScalar<float>(e);
+        float v = x0.e<float>(e);
         ASSERT_TRUE(v >= 1.0f && v <= 2.0f);
     }
 }

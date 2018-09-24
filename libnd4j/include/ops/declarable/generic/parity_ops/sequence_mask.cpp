@@ -30,7 +30,7 @@ namespace nd4j {
 
             //REQUIRE_TRUE(inRank >= 1, 0, "sequence_mask: input array must have rank >= 1, but %i given!", inRank);
             Nd4jLong maxInd = input->argMax();
-            float max = input->getScalar<float>(maxInd);
+            float max = input->e<float>(maxInd);
             if (block.getIArguments()->size() > 0) {
                 maxInd = INT_ARG(0);
                 if (maxInd < max)
@@ -39,7 +39,7 @@ namespace nd4j {
             else if (block.width() > 1) {
                 auto maxlen = INPUT_VARIABLE(1);
                 //REQUIRE_TRUE(maxlen->lengthOf() == 1, "sequence_mask: 2nd input (max length) should be a scalar array.");
-                float tmaxlen = maxlen->getScalar<float>(0);
+                float tmaxlen = maxlen->e<float>(0);
                 if (tmaxlen > max)
                     maxInd = static_cast<Nd4jLong>(tmaxlen);
             }
@@ -58,7 +58,7 @@ namespace nd4j {
             int outRank = shape::rank(in) + 1;
             auto input = INPUT_VARIABLE(0);
             Nd4jLong maxInd = input->argMax();
-            float max = input->getScalar<float>(maxInd);
+            float max = input->e<float>(maxInd);
             if (block.getIArguments()->size() > 0) {
                 maxInd = INT_ARG(0);
                 if (maxInd < max)
@@ -66,7 +66,7 @@ namespace nd4j {
             }
             else if (block.width() > 1) {
                 auto maxlen = INPUT_VARIABLE(1);
-                float tmaxlen = maxlen->getScalar<float>(0);
+                float tmaxlen = maxlen->e<float>(0);
                 if (tmaxlen > max)
                     maxInd = static_cast<Nd4jLong>(tmaxlen);
             }

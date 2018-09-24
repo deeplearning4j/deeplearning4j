@@ -28,7 +28,7 @@ namespace helpers {
     void adjustAxis(NDArray* input, NDArray* axisVector, std::vector<int>& output) {
         output.resize(axisVector->lengthOf());
         for (int e = 0; e < axisVector->lengthOf(); e++) {
-                auto ca = axisVector->getScalar<int>(e);
+                auto ca = axisVector->e<int>(e);
                 if (ca < 0)
                     ca += input->rankOf();
 

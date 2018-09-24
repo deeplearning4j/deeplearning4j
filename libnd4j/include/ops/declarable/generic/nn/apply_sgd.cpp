@@ -35,7 +35,7 @@ namespace nd4j {
 
             if (block.width() == 3) {
                 auto tarr = INPUT_VARIABLE(2);
-                lr = tarr->getScalar<double>(0);
+                lr = tarr->e<double>(0);
             } else if (block.getTArguments()->size() == 1) {
                 lr = T_ARG(0);
             } else {

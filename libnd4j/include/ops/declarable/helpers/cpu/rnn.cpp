@@ -81,7 +81,7 @@ void rnnTimeLoop(const std::vector<NDArray*>& inArrs, NDArray* h, NDArray* hFina
         // loop through time steps
         for (int t = 0; t < time; ++t) {                                 
 
-            int maxStep = maxTimeStep ? maxTimeStep->getScalar<int>(e) : time;
+            int maxStep = maxTimeStep ? maxTimeStep->e<int>(e) : time;
 
             auto xt   = (*x)({t,t+1, e,e+1, 0,0}, true);
             auto ht   = (*h)({t,t+1, e,e+1, 0,0}, true);

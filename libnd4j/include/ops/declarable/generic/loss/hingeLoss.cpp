@@ -78,9 +78,9 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
 			double sum;
 			if (weights->isScalar())
-				sum = weights->getScalar<double>(0) * weightedLosses.lengthOf();
+				sum = weights->e<double>(0) * weightedLosses.lengthOf();
 			else 
-				sum = weightsBroad->reduceNumber(reduce::Sum).getScalar<double>(0);
+				sum = weightsBroad->reduceNumber(reduce::Sum).e<double>(0);
 			
 			if (sum == 0.)
 				(*output) = 0.;
@@ -91,11 +91,11 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
 			Nd4jLong numOfNonZeroWeights = 0;
 			if(weights->isScalar()) {
-				if (weights->getScalar<double>(0) != 0.)
+				if (weights->e<double>(0) != 0.)
 					numOfNonZeroWeights = weightedLosses.lengthOf();
 			}
 			else {
-				numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).getScalar<Nd4jLong>(0);
+				numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<Nd4jLong>(0);
 			}
 
 			if (numOfNonZeroWeights == 0)

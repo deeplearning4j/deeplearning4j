@@ -52,7 +52,7 @@ namespace ops {
             if (w == 2 && a == 0) {
                 auto axis = INPUT_VARIABLE(1);
                 for (int e = 0; e < axis->lengthOf(); e++) {
-                    auto ax = axis->getScalar<int>(e);
+                    auto ax = axis->e<int>(e);
                     if (ax < 0)
                         ax += x->rankOf();
 

@@ -36,7 +36,7 @@ static void stack_(const std::vector<NDArray*>& inArrs, NDArray& outArr, const i
 
 #pragma omp parallel for if(inArrs.size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
 		for(int i=0; i < inArrs.size(); ++i)
-			outArr.putScalar(i, inArrs[i]->getScalar<T>(0));
+			outArr.putScalar(i, inArrs[i]->e<T>(0));
 	}
 	else {
 

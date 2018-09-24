@@ -32,20 +32,20 @@ namespace helpers {
         for ( ; e < output->lengthOf(); e++) {
             Nd4jLong val;
             if (x < x_shape->lengthOf() && y < y_shape->lengthOf()) {
-                val = nd4j::math::nd4j_max(x_shape->getScalar<Nd4jLong>(x++), y_shape->getScalar<Nd4jLong>(y++));
+                val = nd4j::math::nd4j_max(x_shape->e<Nd4jLong>(x++), y_shape->e<Nd4jLong>(y++));
             }
             else if (x < x_shape->lengthOf()) {
-                val = nd4j::math::nd4j_max(x_shape->getScalar<Nd4jLong>(x++), y_shape->getScalar<Nd4jLong>(y - 1));
+                val = nd4j::math::nd4j_max(x_shape->e<Nd4jLong>(x++), y_shape->e<Nd4jLong>(y - 1));
             }
             else if (y < y_shape->lengthOf()) {
-                val = nd4j::math::nd4j_max(x_shape->getScalar<Nd4jLong>(x - 1), y_shape->getScalar<Nd4jLong>(y++));
+                val = nd4j::math::nd4j_max(x_shape->e<Nd4jLong>(x - 1), y_shape->e<Nd4jLong>(y++));
             }
             else {
                 //REQUIRE_TRUE(e < 0, 0, "broadcast_dynamic_shape: Wrong value in a shape vector");
                 return ND4J_STATUS_OK;
             }
             if (e)
-                if (val != output->getScalar<Nd4jLong>(e - 1)) {
+                if (val != output->e<Nd4jLong>(e - 1)) {
                     nd4j_printf("broadcast_dynamic_shape: Input shapes should be compatible", "");
                     return Status::CODE(ND4J_STATUS_VALIDATION, "BDS validation failed!");
                 }

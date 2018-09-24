@@ -166,7 +166,7 @@ TEST_F(LegacyOpsTests, ReduceTests_1) {
     auto z = result->at(0);
 
     ASSERT_TRUE(z->isScalar());
-    ASSERT_NEAR(x.sumNumber().getScalar<float>(0), z->getScalar<float>(0), 1e-5f);
+    ASSERT_NEAR(x.sumNumber().e<float>(0), z->e<float>(0), 1e-5f);
 
     delete result;
 }
@@ -247,7 +247,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_1) {
     auto z = result->at(0);
 
     ASSERT_TRUE(z->isScalar());
-    ASSERT_EQ(24, z->getScalar<int>(0));
+    ASSERT_EQ(24, z->e<int>(0));
 
     delete result;
 }
@@ -265,11 +265,11 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
 
     auto z = result->at(0);
 
-    ASSERT_EQ(4, z->getScalar<int>(0));
-    ASSERT_EQ(4, z->getScalar<int>(1));
-    ASSERT_EQ(4, z->getScalar<int>(2));
-    ASSERT_EQ(4, z->getScalar<int>(3));
-    ASSERT_EQ(4, z->getScalar<int>(4));
+    ASSERT_EQ(4, z->e<int>(0));
+    ASSERT_EQ(4, z->e<int>(1));
+    ASSERT_EQ(4, z->e<int>(2));
+    ASSERT_EQ(4, z->e<int>(3));
+    ASSERT_EQ(4, z->e<int>(4));
 
     delete result;
 }

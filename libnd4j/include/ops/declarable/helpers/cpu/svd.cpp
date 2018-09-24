@@ -131,8 +131,8 @@ void SVD<T>::deflation1(int col1, int shift, int ind, int size) {
         throw std::runtime_error("ops::helpers::SVD::deflation1 method: input int must satisfy condition ind > 0 !");
 
     int first = col1 + shift;    
-    T cos = _m.getScalar<T>(first, first);
-    T sin = _m.getScalar<T>(first+ind, first);
+    T cos = _m.e<T>(first, first);
+    T sin = _m.e<T>(first+ind, first);
     T denom = math::nd4j_sqrt<T, T>(cos*cos + sin*sin);
 
     if (denom == (T)0.) {
@@ -173,20 +173,20 @@ void SVD<T>::deflation2(int col1U , int col1M, int row1W, int col1W, int ind1, i
     if(size <= 0)
         throw std::runtime_error("ops::helpers::SVD::deflation2 method: input size must satisfy condition size > 0 !");
 
-    T cos = _m.getScalar<T>(col1M+ind1, col1M);
-    T sin = _m.getScalar<T>(col1M+ind2, col1M);
+    T cos = _m.e<T>(col1M+ind1, col1M);
+    T sin = _m.e<T>(col1M+ind2, col1M);
     T denom = math::nd4j_sqrt<T,T>(cos*cos + sin*sin);
     
     if (denom == (T)0.)  {
       
-      _m.putScalar(col1M + ind1, col1M + ind1, _m.getScalar<T>(col1M + ind2, col1M + ind2));
+      _m.putScalar(col1M + ind1, col1M + ind1, _m.e<T>(col1M + ind2, col1M + ind2));
       return;
     }
 
     cos /= denom;
     sin /= denom;
     _m.putScalar(col1M + ind1, col1M, denom);
-    _m.putScalar(col1M + ind2, col1M + ind2, _m.getScalar<T>(col1M + ind1, col1M + ind1));
+    _m.putScalar(col1M + ind2, col1M + ind2, _m.e<T>(col1M + ind1, col1M + ind1));
     _m.putScalar(col1M + ind2, col1M, 0.f);
     
     auto rotation = NDArrayFactory::_create<T>(_m.ordering(), {2, 2}, _m.getWorkspace());
@@ -226,33 +226,33 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
     const T almostZero = DataTypeUtils::min<T>();
     T maxElem;
     if(len == 1)
-        maxElem = math::nd4j_abs<T>(diagInterval->template getScalar<T>(0));
+        maxElem = math::nd4j_abs<T>(diagInterval->template e<T>(0));
     else
-        maxElem = (*diagInterval)({1,-1, 0,0}, true).reduceNumber(reduce::AMax).template getScalar<T>(0);
-    T maxElem0 = colVec0->reduceNumber(reduce::AMax).template getScalar<T>(0);
+        maxElem = (*diagInterval)({1,-1, 0,0}, true).reduceNumber(reduce::AMax).template e<T>(0);
+    T maxElem0 = colVec0->reduceNumber(reduce::AMax).template e<T>(0);
 
     T eps = math::nd4j_max<T>(almostZero, DataTypeUtils::eps<T>() * maxElem);
     T epsBig = (T)8. * DataTypeUtils::eps<T>() * math::nd4j_max<T>(maxElem0, maxElem);        
 
-    if(diagInterval->template getScalar<T>(0) < epsBig)
+    if(diagInterval->template e<T>(0) < epsBig)
         diagInterval->putScalar(Nd4jLong(0), epsBig);
   
     for(int i=1; i < len; ++i)
-        if(math::nd4j_abs<T>(colVec0->template getScalar<T>(i)) < eps)
+        if(math::nd4j_abs<T>(colVec0->template e<T>(i)) < eps)
             colVec0->putScalar(i, 0.f);
 
     for(int i=1; i < len; i++)
-        if(diagInterval->template getScalar<T>(i) < epsBig) {
+        if(diagInterval->template e<T>(i) < epsBig) {
             deflation1(col1, shift, i, len);    
             for(int i = 0; i < len; ++i)
-                diagInterval->putScalar(i, _m.getScalar<T>(col1+shift+i,col1+shift+i));
+                diagInterval->putScalar(i, _m.e<T>(col1+shift+i,col1+shift+i));
         }
     
     {
         
         bool totDefl = true;    
         for(int i=1; i < len; i++)
-            if(colVec0->template getScalar<T>(i) >= almostZero) {
+            if(colVec0->template e<T>(i) >= almostZero) {
                 totDefl = false;
                 break;
             }
@@ -264,7 +264,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
             int p = 1;          
             
             for(int i=1; i<len; ++i)
-                if(math::nd4j_abs<T>(diagInterval->template getScalar<T>(i)) < almostZero)
+                if(math::nd4j_abs<T>(diagInterval->template e<T>(i)) < almostZero)
                     permut[p++] = i;            
             
             int k = 1, m = ind+1;
@@ -274,7 +274,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
                     permut[p] = m++;                
                 else if(m >= len)
                     permut[p] = k++;
-                else if(diagInterval->template getScalar<T>(k) < diagInterval->template getScalar<T>(m))
+                else if(diagInterval->template e<T>(k) < diagInterval->template e<T>(m))
                     permut[p] = m++;
                 else                        
                     permut[p] = k++;
@@ -284,7 +284,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
         if(totDefl) {
             for(int i=1; i<len; ++i) {
                 int ki = permut[i];
-                if(math::nd4j_abs<T>(diagInterval->template getScalar<T>(ki)) < almostZero || diagInterval->template getScalar<T>(0) < diagInterval->template getScalar<T>(ki))
+                if(math::nd4j_abs<T>(diagInterval->template e<T>(ki)) < almostZero || diagInterval->template e<T>(0) < diagInterval->template e<T>(ki))
                     permut[i-1] = permut[i];
                 else {
                     permut[i-1] = 0;
@@ -306,15 +306,15 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
             const int ki = permut[len - (totDefl ? i+1 : i)];
             const int jac = tCol[ki];
 
-            T _e0 = diagInterval->template getScalar<T>(jac);
+            T _e0 = diagInterval->template e<T>(jac);
             //math::nd4j_swap<T>(diagInterval)(i), (*diagInterval)(jac));
-            diagInterval->putScalar(jac, diagInterval->template getScalar<T>(i));
+            diagInterval->putScalar(jac, diagInterval->template e<T>(i));
             diagInterval->putScalar(i, _e0);
 
             if(i!=0 && jac!=0) {
-                _e0 = colVec0->template getScalar<T>(jac);
+                _e0 = colVec0->template e<T>(jac);
                 //math::nd4j_swap<T>((*colVec0)(i), (*colVec0)(jac));
-                colVec0->putScalar(jac, colVec0->template getScalar<T>(i));
+                colVec0->putScalar(jac, colVec0->template e<T>(i));
                 colVec0->putScalar(i, _e0);
             }
       
@@ -359,12 +359,12 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
     {
         int i = len-1;
         
-        while(i > 0 && (math::nd4j_abs<T>(diagInterval->template getScalar<T>(i)) < almostZero || math::nd4j_abs<T>(colVec0->template getScalar<T>(i)) < almostZero))
+        while(i > 0 && (math::nd4j_abs<T>(diagInterval->template e<T>(i)) < almostZero || math::nd4j_abs<T>(colVec0->template e<T>(i)) < almostZero))
             --i;
         
         for(; i > 1; --i) {
-            if( (diagInterval->template getScalar<T>(i) - diagInterval->template getScalar<T>(i-1)) < DataTypeUtils::eps<T>()*maxElem ) {
-                if (math::nd4j_abs<T>(diagInterval->template getScalar<T>(i) - diagInterval->template getScalar<T>(i-1)) >= epsBig)
+            if( (diagInterval->template e<T>(i) - diagInterval->template e<T>(i-1)) < DataTypeUtils::eps<T>()*maxElem ) {
+                if (math::nd4j_abs<T>(diagInterval->template e<T>(i) - diagInterval->template e<T>(i-1)) >= epsBig)
                     throw std::runtime_error("ops::helpers::SVD::deflation: diagonal elements are not properly sorted !");
                 deflation2(col1, col1 + shift, row1W, col1W, i-1, i, len);
             }
@@ -384,9 +384,9 @@ T SVD<T>::secularEq(const T diff, const NDArray& col0, const NDArray& diag, cons
     T res = 1.;
     T item;
     for(int i=0; i<len; ++i) {
-        auto j = permut.getScalar<int>(i);
-        item = col0.getScalar<T>(j) / ((diagShifted.getScalar<T>(j) - diff) * (diag.getScalar<T>(j) + shift + diff));
-        res += item * col0.getScalar<T>(j);
+        auto j = permut.e<int>(i);
+        item = col0.e<T>(j) / ((diagShifted.e<T>(j) - diff) * (diag.e<T>(j) + shift + diff));
+        res += item * col0.e<T>(j);
     }
   
     return res;
@@ -400,34 +400,34 @@ void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArra
     auto len = col0.lengthOf();
     auto curLen = len;
     
-    while(curLen > 1 && col0.getScalar<T>(curLen-1) == (T)0.f)
+    while(curLen > 1 && col0.e<T>(curLen-1) == (T)0.f)
         --curLen;
 
     for (int k = 0; k < len; ++k)  {
     
-        if (col0.getScalar<T>(k) == (T)0.f || curLen==1) {
+        if (col0.e<T>(k) == (T)0.f || curLen==1) {
     
-            singVals.putScalar(k, k==0 ? col0.getScalar<T>(0) : diag.getScalar<T>(k));
+            singVals.putScalar(k, k==0 ? col0.e<T>(0) : diag.e<T>(k));
             mus.putScalar(k, 0.f);
-            shifts.putScalar(k, k==0 ? col0.getScalar<T>(0) : diag.getScalar<T>(k));
+            shifts.putScalar(k, k==0 ? col0.e<T>(0) : diag.e<T>(k));
             continue;
         } 
     
-        T left = diag.getScalar<T>(k);
+        T left = diag.e<T>(k);
         T right;
     
         if(k==curLen-1)
-            right = diag.getScalar<T>(curLen-1) + col0.reduceNumber(reduce::Norm2).getScalar<T>(0);
+            right = diag.e<T>(curLen-1) + col0.reduceNumber(reduce::Norm2).e<T>(0);
         else {
       
             int l = k+1;
-            while(col0.getScalar<T>(l) == (T)0.f) {
+            while(col0.e<T>(l) == (T)0.f) {
                 ++l; 
                 if(l >= curLen)
                     throw std::runtime_error("ops::helpers::SVD::calcSingVals method: l >= curLen !");
             }
         
-            right = diag.getScalar<T>(l);
+            right = diag.e<T>(l);
         }
     
         T mid = left + (right - left) / (T)2.;
@@ -531,25 +531,25 @@ void SVD<T>::perturb(const NDArray& col0, const NDArray& diag, const NDArray& pe
         return;
     }
     
-    int last = permut.getScalar<int>(m-1);
+    int last = permut.e<int>(m-1);
   
     for (int k = 0; k < n; ++k) {
         
-        if (col0.getScalar<T>(k) == (T)0.f)
+        if (col0.e<T>(k) == (T)0.f)
             zhat.putScalar(k, (T)0.f);
         else {            
-            T dk   = diag.getScalar<T>(k);
-            T prod = (singVals.getScalar<T>(last) + dk) * (mus.getScalar<T>(last) + (shifts.getScalar<T>(last) - dk));
+            T dk   = diag.e<T>(k);
+            T prod = (singVals.e<T>(last) + dk) * (mus.e<T>(last) + (shifts.e<T>(last) - dk));
 
             for(int l = 0; l<m; ++l) {
-                int i = permut.getScalar<int>(l);
+                int i = permut.e<int>(l);
                 if(i!=k) {
-                    int j = i<k ? i : permut.getScalar<int>(l-1);
-                    prod *= ((singVals.getScalar<T>(j)+dk) / ((diag.getScalar<T>(i)+dk))) * ((mus.getScalar<T>(j)+(shifts.getScalar<T>(j)-dk)) / ((diag.getScalar<T>(i)-dk)));
+                    int j = i<k ? i : permut.e<int>(l-1);
+                    prod *= ((singVals.e<T>(j)+dk) / ((diag.e<T>(i)+dk))) * ((mus.e<T>(j)+(shifts.e<T>(j)-dk)) / ((diag.e<T>(i)-dk)));
                 }
             }
         T tmp = math::nd4j_sqrt<T,T>(prod);
-        zhat.putScalar(k, col0.getScalar<T>(k) > (T)0.f ? tmp : -tmp);
+        zhat.putScalar(k, col0.e<T>(k) > (T)0.f ? tmp : -tmp);
         }  
     }
 }
@@ -574,7 +574,7 @@ void SVD<T>::calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArra
             *colV = 0.;
         }
 
-        if (zhat.getScalar<T>(k) == (T)0.f) {
+        if (zhat.e<T>(k) == (T)0.f) {
             colU->putScalar(k, 1.f);
             
             if (_calcV)            
@@ -583,8 +583,8 @@ void SVD<T>::calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArra
         else {
       
             for(int l = 0; l < m; ++l) {
-                int i = perm.getScalar<int>(l);
-                U.putScalar(i,k, zhat.getScalar<T>(i)/(((diag.getScalar<T>(i) - shifts.getScalar<T>(k)) - mus.getScalar<T>(k)) )/( (diag.getScalar<T>(i) + singVals.getScalar<T>(k))));
+                int i = perm.e<int>(l);
+                U.putScalar(i,k, zhat.e<T>(i)/(((diag.e<T>(i) - shifts.e<T>(k)) - mus.e<T>(k)) )/( (diag.e<T>(i) + singVals.e<T>(k))));
             }
             U.putScalar(n,k, 0.f);
             *colU /= colU->reduceNumber(reduce::Norm2);
@@ -592,8 +592,8 @@ void SVD<T>::calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArra
             if (_calcV) {
         
                 for(int l = 1; l < m; ++l){
-                    int i = perm.getScalar<T>(l);
-                    V.putScalar(i,k, diag.getScalar<T>(i) * zhat.getScalar<T>(i) / (((diag.getScalar<T>(i) - shifts.getScalar<T>(k)) - mus.getScalar<T>(k)) )/( (diag.getScalar<T>(i) + singVals.getScalar<T>(k))));
+                    int i = perm.e<T>(l);
+                    V.putScalar(i,k, diag.e<T>(i) * zhat.e<T>(i) / (((diag.e<T>(i) - shifts.e<T>(k)) - mus.e<T>(k)) )/( (diag.e<T>(i) + singVals.e<T>(k))));
                 }
                 V.putScalar(0,k, -1.f);
                 *colV /= colV->reduceNumber(reduce::Norm2);
@@ -628,13 +628,13 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
         V = NDArrayFactory::_create<T>(_v.ordering(), {size, size}, _v.getWorkspace());
     
     int curSize = size;
-    while(curSize > 1 && diag.template getScalar<T>(curSize-1) == (T)0.f)
+    while(curSize > 1 && diag.template e<T>(curSize-1) == (T)0.f)
         --curSize;
     
     int m = 0; 
     std::vector<T> indices;
     for(int k = 0; k < curSize; ++k)
-        if(math::nd4j_abs<T>(col0.template getScalar<T>(k)) > almostZero)
+        if(math::nd4j_abs<T>(col0.template e<T>(k)) > almostZero)
             indices.push_back((T)k);            
   
     auto permut = NDArrayFactory::_create<T>(_m.ordering(), {1, (int)indices.size()}, indices, _m.getWorkspace());
@@ -648,9 +648,9 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
         
     for(int i=0; i<curSize-1; ++i) {        
         
-        if(singVals.getScalar<T>(i) > singVals.getScalar<T>(i+1)) {
-            T _e0 = singVals.getScalar<T>(i);
-            T _e1 = singVals.getScalar<T>(i+1);
+        if(singVals.e<T>(i) > singVals.e<T>(i+1)) {
+            T _e0 = singVals.e<T>(i);
+            T _e1 = singVals.e<T>(i+1);
             //math::nd4j_swap<T>(singVals(i),singVals(i+1));
             singVals.putScalar(i, _e1);
             singVals.putScalar(i+1, _e0);
@@ -677,8 +677,8 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
     
     auto temp1 = singVals.subarray({{0, curSize},{}});
     for (int e = 0; e < curSize / 2; ++e) {
-        T tmp = temp1->getScalar<T>(e);
-        temp1->putScalar(e, temp1->getScalar<T>(curSize-1-e));
+        T tmp = temp1->e<T>(e);
+        temp1->putScalar(e, temp1->e<T>(curSize-1-e));
         temp1->putScalar(curSize-1-e, tmp);
     }
     delete temp1;
@@ -760,19 +760,19 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
         return;
     }
       
-    alphaK = _m.getScalar<T>(col1 + k, col1 + k);
-    betaK  = _m.getScalar<T>(col1 + k + 1, col1 + k);
+    alphaK = _m.e<T>(col1 + k, col1 + k);
+    betaK  = _m.e<T>(col1 + k + 1, col1 + k);
   
     DivideAndConquer(k + 1 + col1, col2, k + 1 + row1W, k + 1 + col1W, shift);
     DivideAndConquer(col1, k - 1 + col1, row1W, col1W + 1, shift + 1);
 
     if (_calcU) {
-        lambda = _u.getScalar<T>(col1 + k, col1 + k);
-        phi    = _u.getScalar<T>(col1 + k + 1, col2 + 1);
+        lambda = _u.e<T>(col1 + k, col1 + k);
+        phi    = _u.e<T>(col1 + k + 1, col2 + 1);
     } 
     else {
-        lambda = _u.getScalar<T>(1, col1 + k);
-        phi    = _u.getScalar<T>(0, col2 + 1);
+        lambda = _u.e<T>(1, col1 + k);
+        phi    = _u.e<T>(0, col2 + 1);
     }
     
     r0 = math::nd4j_sqrt<T, T>((math::nd4j_abs<T>(alphaK * lambda) * math::nd4j_abs<T>(alphaK * lambda)) + math::nd4j_abs<T>(betaK * phi) * math::nd4j_abs<T>(betaK * phi));
@@ -830,15 +830,15 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     } 
     else  {
     
-        T q1 = _u.getScalar<T>(0, col1 + k);
+        T q1 = _u.e<T>(0, col1 + k);
     
         for (int i = col1 + k - 1; i >= col1; --i) 
-            _u.putScalar(0, i+1, _u.getScalar<T>(0, i));
+            _u.putScalar(0, i+1, _u.e<T>(0, i));
 
         _u.putScalar(0, col1, q1 * c0);
         _u.putScalar(0, col2+1, -q1*s0);
-        _u.putScalar(1, col1, _u.getScalar<T>(1, col2+1) * s0);
-        _u.putScalar(1, col2 + 1,  _u.getScalar<T>(1, col2 + 1) * c0);
+        _u.putScalar(1, col1, _u.e<T>(1, col2+1) * s0);
+        _u.putScalar(1, col2 + 1,  _u.e<T>(1, col2 + 1) * c0);
         _u({1,2,  col1+1, col1+k+1}, true) = 0.f;
         _u({0,1,  col1+k+1, col1+n}, true) = 0.f;
     }
@@ -935,7 +935,7 @@ void SVD<T>::evalData(const NDArray& matrix) {
         return;
     }
           
-    T scale = matrix.reduceNumber(reduce::AMax).getScalar<T>(0);
+    T scale = matrix.reduceNumber(reduce::AMax).e<T>(0);
     
     if(scale == (T)0.) 
         scale = 1.;
@@ -945,7 +945,7 @@ void SVD<T>::evalData(const NDArray& matrix) {
         copy = NDArrayFactory::_create<T>(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(0)}, matrix.getWorkspace());
         for(int i = 0; i < copy.sizeAt(0); ++i)
             for(int j = 0; j < copy.sizeAt(1); ++j)
-                copy.putScalar<T>(i, j, matrix.getScalar<T>(j,i) / scale);
+                copy.putScalar<T>(i, j, matrix.e<T>(j,i) / scale);
     }
     else
         copy = matrix / scale;
@@ -968,7 +968,7 @@ void SVD<T>::evalData(const NDArray& matrix) {
     DivideAndConquer(0, _diagSize - 1, 0, 0, 0);      
     
     for (int i = 0; i < _diagSize; ++i) {
-        T a = math::nd4j_abs<T>(_m.getScalar<T>(i, i));
+        T a = math::nd4j_abs<T>(_m.e<T>(i, i));
         _s.putScalar(i, a * scale);
         if (a < almostZero) {            
             auto temp = _s.subarray({{i+1, _diagSize}, {}});

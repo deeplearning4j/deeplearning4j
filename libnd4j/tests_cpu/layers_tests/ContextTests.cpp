@@ -54,8 +54,8 @@ TEST_F(ContextTests, Basic_Test_1) {
     ASSERT_TRUE(variableSpace.hasVariable(2, 0));
     ASSERT_TRUE(variableSpace.hasVariable(2, 1));
 
-    ASSERT_NEAR(1.0f, block.variable(0)->getNDArray()->meanNumber().getScalar<float>(0), 1e-5);
-    ASSERT_NEAR(2.0f, block.variable(1)->getNDArray()->meanNumber().getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(1.0f, block.variable(0)->getNDArray()->meanNumber().e<float>(0), 1e-5);
+    ASSERT_NEAR(2.0f, block.variable(1)->getNDArray()->meanNumber().e<float>(0), 1e-5);
 }
 
 
@@ -82,8 +82,8 @@ TEST_F(ContextTests, Basic_Test_2) {
     ASSERT_TRUE(variableSpace.hasVariable(-1));
     ASSERT_TRUE(variableSpace.hasVariable(-2));
 
-    ASSERT_NEAR(1.0f, block.variable(0)->getNDArray()->meanNumber().getScalar<float>(0), 1e-5);
-    ASSERT_NEAR(2.0f, block.variable(1)->getNDArray()->meanNumber().getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(1.0f, block.variable(0)->getNDArray()->meanNumber().e<float>(0), 1e-5);
+    ASSERT_NEAR(2.0f, block.variable(1)->getNDArray()->meanNumber().e<float>(0), 1e-5);
 }
 
 

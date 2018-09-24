@@ -39,7 +39,7 @@ namespace nd4j {
             //STORE_2_RESULTS(*input, *input);
 
             // but we'll ensure only one node is active, and other is disabled
-            if (condition->getScalar<int>(0) == 0) {
+            if (condition->e<int>(0) == 0) {
                 block.setBranch(0);
                 this->storeResult(block, 0, input->dup());
             } else {

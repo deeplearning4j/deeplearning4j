@@ -100,7 +100,7 @@ TEST_F(DeclarableOpsTests1, BasicInitialization1) {
 
     ASSERT_EQ(25, nodeVar->getNDArray()->lengthOf());
 
-    ASSERT_NEAR(25.0, nodeVar->getNDArray()->reduceNumber(reduce::Sum).getScalar<double>(0), 1e-5);
+    ASSERT_NEAR(25.0, nodeVar->getNDArray()->reduceNumber(reduce::Sum).e<double>(0), 1e-5);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
@@ -1503,9 +1503,9 @@ TEST_F(DeclarableOpsTests1, TestLegacyExecution1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    ASSERT_NEAR(2.0, y->meanNumber().getScalar<float>(0), 1e-5);
-    ASSERT_NEAR(1.0, x->meanNumber().getScalar<float>(0), 1e-5);
-    ASSERT_NEAR(3.0, z->meanNumber().getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(2.0, y->meanNumber().e<float>(0), 1e-5);
+    ASSERT_NEAR(1.0, x->meanNumber().e<float>(0), 1e-5);
+    ASSERT_NEAR(3.0, z->meanNumber().e<float>(0), 1e-5);
 
     delete x;
     delete y;
@@ -1550,8 +1550,8 @@ TEST_F(DeclarableOpsTests1, TestLegacyExecution2) {
 
     nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, true);
 
-    ASSERT_NEAR(2.0, y->meanNumber().getScalar<float>(0), 1e-5);
-    ASSERT_NEAR(3.0, x->meanNumber().getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(2.0, y->meanNumber().e<float>(0), 1e-5);
+    ASSERT_NEAR(3.0, x->meanNumber().e<float>(0), 1e-5);
 
 
     delete x;
@@ -3382,7 +3382,7 @@ TEST_F(DeclarableOpsTests1, FillAs_1) {
 
     ASSERT_TRUE(x.isSameShape(result->at(0)));
 
-    ASSERT_NEAR(scalar, result->at(0)->meanNumber().getScalar<float>(0), 1e-5f);
+    ASSERT_NEAR(scalar, result->at(0)->meanNumber().e<float>(0), 1e-5f);
 
     delete result;
 }

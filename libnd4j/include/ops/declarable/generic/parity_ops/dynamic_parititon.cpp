@@ -61,7 +61,7 @@ namespace ops {
         auto idx = inputShape->at(1);
         for (int i = 0; i < numPartition; i++) {
             for (int e = 0; e < indices->lengthOf(); ++e)
-                if (indices->getScalar<Nd4jLong>(e) == i)
+                if (indices->e<Nd4jLong>(e) == i)
                     partitionSizes[i]++;
         }
 

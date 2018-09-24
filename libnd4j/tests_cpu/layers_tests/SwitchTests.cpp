@@ -119,7 +119,7 @@ TEST_F(SwitchTests, SwitchTest1) {
     auto output = variableSpace->getVariable(expectedResultIndex)->getNDArray();
 
     // and veryfing it against known expected value
-    ASSERT_NEAR(-118.0f, output->getScalar<float>(0), 1e-5f);
+    ASSERT_NEAR(-118.0f, output->e<float>(0), 1e-5f);
 }
 
 TEST_F(SwitchTests, SwitchTest2) {
@@ -185,7 +185,7 @@ TEST_F(SwitchTests, SwitchTest2) {
     auto z = graph.getVariableSpace()->getVariable(7)->getNDArray();
 
     // abs(-119) = 119; 1 - 119 = -118
-    ASSERT_NEAR(-118.f, z->getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(-118.f, z->e<float>(0), 1e-5);
 }
 
 TEST_F(SwitchTests, SwitchTest3) {
@@ -251,5 +251,5 @@ TEST_F(SwitchTests, SwitchTest3) {
     auto z = graph.getVariableSpace()->getVariable(6)->getNDArray();
 
     // abs(-119) = 119; Neg(119) = 119
-    ASSERT_NEAR(-119.f, z->getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(-119.f, z->e<float>(0), 1e-5);
 }

@@ -425,7 +425,7 @@ TEST_F(DeclarableOpsTests6, SufficientStatistics_1) {
     auto ress = op.execute({&x, &axis}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-    ASSERT_EQ(ress->at(0)->getScalar<double>(0), count);
+    ASSERT_EQ(ress->at(0)->e<double>(0), count);
     ASSERT_TRUE(sumExp.equalsTo(ress->at(1)));
     ASSERT_TRUE(sqrExp.equalsTo(ress->at(2)));
 
@@ -465,7 +465,7 @@ TEST_F(DeclarableOpsTests6, SufficientStatistics_2) {
     auto ress = op.execute({&x, &axis}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-    ASSERT_EQ(ress->at(0)->getScalar<double>(0), count);
+    ASSERT_EQ(ress->at(0)->e<double>(0), count);
     ASSERT_TRUE(sumExp.equalsTo(ress->at(1)));
     ASSERT_TRUE(sqrExp.equalsTo(ress->at(2)));
 

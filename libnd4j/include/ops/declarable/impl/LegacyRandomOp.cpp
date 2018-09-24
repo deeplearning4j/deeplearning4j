@@ -70,8 +70,8 @@ namespace nd4j {
                         REQUIRE_TRUE(arg1->isScalar(), 0, "Uniform: Second argument must be scalar");
                         REQUIRE_TRUE(arg2->isScalar(), 0, "Uniform: Third argument must be scalar");
 
-                        from = arg1->getScalar<T>(0);
-                        to = arg2->getScalar<T>(0);
+                        from = arg1->e<T>(0);
+                        to = arg2->e<T>(0);
                     } else if (block.getTArguments()->size() == 2) {
                         from = T_ARG(0);
                         to = T_ARG(1);
@@ -82,7 +82,7 @@ namespace nd4j {
                     REQUIRE_TRUE(input->isVector(), 0, "Uniform requires pure shape as first argument");
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = input->getScalar<Nd4jLong>(e);
+                        shape[e] = input->e<Nd4jLong>(e);
 
                     auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
 
@@ -100,7 +100,7 @@ namespace nd4j {
                         auto arg = INPUT_VARIABLE(1);
                         REQUIRE_TRUE(arg->isScalar(), 0, "DropOut: Second argument must be scalar");
 
-                        prob = arg->getScalar<T>(0);
+                        prob = arg->e<T>(0);
                     } else if (block.getTArguments()->size() > 0) {
                         prob = T_ARG(0);
                     } else {
@@ -121,7 +121,7 @@ namespace nd4j {
                         auto arg = INPUT_VARIABLE(1);
                         REQUIRE_TRUE(arg->isScalar(), 0, "InvertedDropOut: Second argument must be scalar");
 
-                        prob = arg->getScalar<T>(0);
+                        prob = arg->e<T>(0);
                     } else if (block.getTArguments()->size() == 1) {
                         prob = T_ARG(0);
                     } else {
@@ -143,8 +143,8 @@ namespace nd4j {
                         REQUIRE_TRUE(arg1->isScalar(), 0, "Gaussian: Second argument must be scalar");
                         REQUIRE_TRUE(arg2->isScalar(), 0, "Gaussian: Third argument must be scalar");
 
-                        mean = arg1->getScalar<T>(0);
-                        stdev = arg2->getScalar<T>(0);
+                        mean = arg1->e<T>(0);
+                        stdev = arg2->e<T>(0);
                     } else if (block.getTArguments()->size() == 2) {
                         mean = T_ARG(0);
                         stdev = T_ARG(1);
@@ -156,7 +156,7 @@ namespace nd4j {
 
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = input->getScalar<Nd4jLong>(e);
+                        shape[e] = input->e<Nd4jLong>(e);
 
                     auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
 
@@ -173,7 +173,7 @@ namespace nd4j {
                         auto arg1 = INPUT_VARIABLE(1);
                         REQUIRE_TRUE(arg1->isScalar(), 0, "Bernoulli: Second argument must be scalar");
 
-                        prob = arg1->getScalar<T>(0);
+                        prob = arg1->e<T>(0);
                     } else if (block.getTArguments()->size() > 0) {
                         prob = T_ARG(0);
                     } else {
@@ -184,7 +184,7 @@ namespace nd4j {
 
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = input->getScalar<Nd4jLong>(e);
+                        shape[e] = input->e<Nd4jLong>(e);
 
                     auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
 
@@ -204,8 +204,8 @@ namespace nd4j {
                         REQUIRE_TRUE(arg1->isScalar(), 0, "Binomial: Second argument must be scalar");
                         REQUIRE_TRUE(arg2->isScalar(), 0, "Binomial: Third argument must be scalar");
 
-                        trials = arg1->getScalar<int>(0);
-                        prob = arg2->getScalar<T>(0);
+                        trials = arg1->e<int>(0);
+                        prob = arg2->e<T>(0);
                     } else if (block.getTArguments()->size() == 1 && block.getIArguments()->size() == 1) {
                         trials = INT_ARG(0);
                         prob = T_ARG(0);
@@ -217,7 +217,7 @@ namespace nd4j {
 
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = input->getScalar<Nd4jLong>(e);
+                        shape[e] = input->e<Nd4jLong>(e);
 
                     auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
 
@@ -236,8 +236,8 @@ namespace nd4j {
                         REQUIRE_TRUE(arg1->isScalar(), 0, "LogNormal: Second argument must be scalar");
                         REQUIRE_TRUE(arg2->isScalar(), 0, "LogNormal: Third argument must be scalar");
 
-                        mean = arg1->getScalar<T>(0);
-                        stdev = arg2->getScalar<T>(0);
+                        mean = arg1->e<T>(0);
+                        stdev = arg2->e<T>(0);
                     } else if (block.getTArguments()->size() == 2) {
                         mean = T_ARG(0);
                         stdev = T_ARG(1);
@@ -249,7 +249,7 @@ namespace nd4j {
 
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = input->getScalar<Nd4jLong>(e);
+                        shape[e] = input->e<Nd4jLong>(e);
 
                     auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
 
@@ -268,8 +268,8 @@ namespace nd4j {
                         REQUIRE_TRUE(arg1->isScalar(), 0, "TruncatedNormal: Second argument must be scalar");
                         REQUIRE_TRUE(arg2->isScalar(), 0, "TruncatedNormal: Third argument must be scalar");
 
-                        mean = arg1->getScalar<T>(0);
-                        stdev = arg2->getScalar<T>(0);
+                        mean = arg1->e<T>(0);
+                        stdev = arg2->e<T>(0);
                     } else if (block.getTArguments()->size() == 2) {
                         mean = T_ARG(0);
                         stdev = T_ARG(1);
@@ -281,7 +281,7 @@ namespace nd4j {
 
                     std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = input->getScalar<Nd4jLong>(e);
+                        shape[e] = input->e<Nd4jLong>(e);
 
                     auto z = NDArrayFactory::create<T>('c', shape, block.getWorkspace());
 
@@ -305,10 +305,10 @@ namespace nd4j {
                         REQUIRE_TRUE(arg3->isScalar(), 0, "AlphaDropOut: Fourth argument must be scalar");
                         REQUIRE_TRUE(arg4->isScalar(), 0, "AlphaDropOut: Fifth argument must be scalar");
 
-                        prob = arg1->getScalar<T>(0);
-                        a = arg2->getScalar<T>(0);
-                        b = arg3->getScalar<T>(0);
-                        pa = arg4->getScalar<T>(0);
+                        prob = arg1->e<T>(0);
+                        a = arg2->e<T>(0);
+                        b = arg3->e<T>(0);
+                        pa = arg4->e<T>(0);
                     } else if (block.getTArguments()->size() == 4) {
                         prob = T_ARG(0);
                         a = T_ARG(1);

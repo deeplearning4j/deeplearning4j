@@ -689,19 +689,19 @@ TEST_F(NDArrayTest2, TestStdDev3) {
 
     double sum = 0.;
     for(int i=0; i < len; ++i)
-        sum += array.getScalar<double>(i);
+        sum += array.e<double>(i);
 
     const double mean = sum / len;
 
     double diffSquared = 0.;
     for(int i=0; i < len; ++i)
-        diffSquared += (array.getScalar<double>(i) - mean) * (array.getScalar<double>(i) - mean);
+        diffSquared += (array.e<double>(i) - mean) * (array.e<double>(i) - mean);
 
     const double trueVariance     = math::nd4j_sqrt<double, double>(diffSquared / len);
     const double trueVarianceCorr = math::nd4j_sqrt<double, double>(diffSquared / (len - 1));
 
-    const double variance     = array.varianceNumber(variance::SummaryStatsStandardDeviation, false).getScalar<double>(0);
-    const double varianceCorr = array.varianceNumber(variance::SummaryStatsStandardDeviation, true).getScalar<double>(0);
+    const double variance     = array.varianceNumber(variance::SummaryStatsStandardDeviation, false).e<double>(0);
+    const double varianceCorr = array.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
 
     // printf("%s  expected %.10f    calculated %.10f\n","variance          :", trueVariance, variance );
     // printf("%s  expected %.10f    calculated %.10f\n","variance corrected:", trueVarianceCorr, varianceCorr);

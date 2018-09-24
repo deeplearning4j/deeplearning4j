@@ -172,10 +172,10 @@ namespace helpers {
 #pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i = 0; i < inputLen; ++i) {
              // FIXME: double!
-            double x = input.getScalar<double>(i);
+            double x = input.e<double>(i);
             if(x < 0.0) {
                 // FIXME: double
-                output.putScalar(i, (x * alpha.getScalar<double>(ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i))));
+                output.putScalar(i, (x * alpha.e<double>(ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i))));
             } else
                 output.putScalar(i, x);
         }
@@ -193,12 +193,12 @@ namespace helpers {
 #pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i = 0; i < inputLen; ++i) {
             // FIXME: double
-            double x   = input.getScalar<double>(i);
-            double grO = dLdO.getScalar<double>(i);
+            double x   = input.e<double>(i);
+            double grO = dLdO.e<double>(i);
             if(x < 0.0) {
                 Nd4jLong alphaInd = ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i);
-                dLdI.putScalar(i, grO * alpha.getScalar<double>(alphaInd));
-                dLdA.putScalar(i, dLdA.getScalar<double>(i) + (grO * x));
+                dLdI.putScalar(i, grO * alpha.e<double>(alphaInd));
+                dLdA.putScalar(i, dLdA.e<double>(i) + (grO * x));
             }
             else
                 dLdI.putScalar(i, grO);

@@ -100,7 +100,7 @@ namespace nd4j {
                     result->printBuffer("Result of the last node:");
 
                 // if result evaluates to 0.0 - condition returned FALSE
-                if (result->getScalar<int>(0) == 0)
+                if (result->e<int>(0) == 0)
                     break;
                 else {
                     auto scopeBody = graph->scopeById(scopeBodyIndex);

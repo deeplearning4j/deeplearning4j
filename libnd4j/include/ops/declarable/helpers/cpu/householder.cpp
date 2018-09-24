@@ -38,21 +38,21 @@ NDArray Householder<T>::evalHHmatrix(const NDArray& x) {
 	auto wT = NDArrayFactory::_create(x.ordering(), {1, (int)x.lengthOf()}, x.dataType(), x.getWorkspace());							// row-vector (transposed w)
 
 	T coeff;
-	T normX = x.reduceNumber(reduce::Norm2).getScalar<T>(0);
+	T normX = x.reduceNumber(reduce::Norm2).e<T>(0);
 	
-	if(normX*normX - x.getScalar<T>(0) * x.getScalar<T>(0) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
+	if(normX*normX - x.e<T>(0) * x.e<T>(0) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
 
-		normX = x.getScalar<T>(0);
+		normX = x.e<T>(0);
 		coeff = 0.f;
 		w = 0.f;
 		
 	} 	
 	else {
 		
-		if(x.getScalar<T>(0) >= (T)0.f)
+		if(x.e<T>(0) >= (T)0.f)
 			normX = -normX;									// choose opposite sign to lessen roundoff error
 		
-		T u0 = x.getScalar<T>(0) - normX;
+		T u0 = x.e<T>(0) - normX;
 		coeff = -u0 / normX;				
 		w.assign(x / u0);		
 	}
@@ -78,20 +78,20 @@ void Householder<T>::evalHHmatrixData(const NDArray& x, NDArray& tail, T& coeff,
 	if(!x.isScalar() && x.lengthOf() != tail.lengthOf() + 1)
 		throw std::runtime_error("ops::helpers::Householder::evalHHmatrixData method: input tail vector must have length less than unity compared to input x vector!");
 
-	normX = x.reduceNumber(reduce::Norm2, nullptr).getScalar<T>(0);
+	normX = x.reduceNumber(reduce::Norm2, nullptr).e<T>(0);
 		
-	if(normX*normX - x.getScalar<T>(0) * x.getScalar<T>(0) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
+	if(normX*normX - x.e<T>(0) * x.e<T>(0) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
 
-		normX = x.getScalar<T>(0);
+		normX = x.e<T>(0);
 		coeff = (T)0.f;
 		tail = (T)0.f;
 	}
 	else {
 		
-		if(x.getScalar<T>(0) >= (T)0.f)
+		if(x.e<T>(0) >= (T)0.f)
 			normX = -normX;									// choose opposite sign to lessen roundoff error
 		
-		T u0 = x.getScalar<T>(0) - normX;
+		T u0 = x.e<T>(0) - normX;
 		coeff = -u0 / normX;				
 
 		if(x.isRowVector())

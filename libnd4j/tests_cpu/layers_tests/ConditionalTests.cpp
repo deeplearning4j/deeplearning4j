@@ -104,7 +104,7 @@ TEST_F(ConditionalTests, BasicTests_1) {
     auto conditionalResult = variableSpace->getVariable(10, 0)->getNDArray();
     ASSERT_NE(nullptr, conditionalResult);
 
-    ASSERT_NEAR(6.0, conditionalResult->meanNumber().getScalar<double>(0), 1e-5);
+    ASSERT_NEAR(6.0, conditionalResult->meanNumber().e<double>(0), 1e-5);
 }
 
 /**

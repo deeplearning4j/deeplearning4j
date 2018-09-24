@@ -156,7 +156,7 @@ DECLARE_SHAPE_FN(multiply_bp) {
 
             } else if (y->isScalar()) {
                 // scalar case
-                T _y = y->getScalar(0);
+                T _y = y->e(0);
                 auto lambdaS = LAMBDA_T(_e, _y) {
                     return _e * _y;
                 };

@@ -52,7 +52,7 @@ namespace nd4j {
 
 #pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                         for (int e = 0; e < indices->lengthOf(); ++e)
-                            if ((*indices).getScalar<Nd4jLong>(e) == i)
+                            if ((*indices).e<Nd4jLong>(e) == i)
                                 listOutForCurrent->at(outputs[i].second++)->assign(listOfTensors->at(e));
                     }
 
@@ -62,8 +62,8 @@ namespace nd4j {
                         outputs[i].first = outputList[i];
                         outputs[i].second = 0;
                         for (int e = 0; e < indices->lengthOf(); ++e)
-                            if (indices->getScalar<Nd4jLong>(e) == i)
-                                outputs[i].first->putScalar(outputs[i].second++, input->getScalar<T>(e));
+                            if (indices->e<Nd4jLong>(e) == i)
+                                outputs[i].first->putScalar(outputs[i].second++, input->e<T>(e));
                     }
             }
             template <typename T>
@@ -76,7 +76,7 @@ namespace nd4j {
                         auto data = inputs[e];
                         auto index = indices[e];
                         for (int i = 0; i < index->lengthOf(); i++) {
-                            Nd4jLong pos = index->getScalar<Nd4jLong>(i);
+                            Nd4jLong pos = index->e<Nd4jLong>(i);
                             if (pos < 0) {
                                 nd4j_printf("dynamic_stitch: Index value should be non-negative. But %i was given", pos);
                                 return ND4J_STATUS_VALIDATION;
@@ -86,7 +86,7 @@ namespace nd4j {
                                             output->lengthOf(), pos);
                                 return ND4J_STATUS_VALIDATION;
                             }
-                            output->putScalar<T>(pos, data->getScalar<T>(i));
+                            output->putScalar<T>(pos, data->e<T>(i));
                         }
                     }
                 }
@@ -107,7 +107,7 @@ namespace nd4j {
                         std::unique_ptr<ResultSet> listOfTensors(data->allTensorsAlongDimension(sourceDims));
 
                         for (int i = 0; i < index->lengthOf(); i++) {
-                            auto pos = index->getScalar<Nd4jLong>(i);
+                            auto pos = index->e<Nd4jLong>(i);
                             if (pos < 0) {
                                 nd4j_printf("dynamic_stitch: Index value should be non-negative. But %i was given", pos);
                                 return ND4J_STATUS_VALIDATION;
@@ -156,7 +156,7 @@ namespace nd4j {
 
 //#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                         for (int e = 0; e < indices->lengthOf(); ++e)
-                            if (indices->getScalar<Nd4jLong>(e) == i)
+                            if (indices->e<Nd4jLong>(e) == i)
                                 listOfTensors->at(e)->assign(listOutForCurrent->at(outputs[i].second++));
                     }
                 }
@@ -167,8 +167,8 @@ namespace nd4j {
                         outputs[i].first = inputGradientList[i];
                         outputs[i].second = 0;
                         for (int e = 0; e < indices->lengthOf(); ++e)
-                            if (indices->getScalar<Nd4jLong>(e) == i)
-                                output->putScalar<T>(e, outputs[i].first->getScalar<T>(outputs[i].second++));
+                            if (indices->e<Nd4jLong>(e) == i)
+                                output->putScalar<T>(e, outputs[i].first->e<T>(outputs[i].second++));
                     }
                 }
 

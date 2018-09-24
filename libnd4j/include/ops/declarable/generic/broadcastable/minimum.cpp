@@ -71,7 +71,7 @@ namespace nd4j {
                 epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
 
             } else if (y->isScalar()) {
-                T s = y->getScalar(0);
+                T s = y->e(0);
                 auto lambdaS = LAMBDA_TT(_e, _x, s) {
                     return _x <= s ? _e : (T) 0.;
                 };

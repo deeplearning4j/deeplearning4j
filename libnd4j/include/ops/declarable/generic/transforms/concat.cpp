@@ -168,7 +168,7 @@ DECLARE_SHAPE_FN(concat) {
         //     if (block.numI() > 0)
         //         _dimension = INT_ARG(0);
         //     else {
-        //         _dimension = (int) last->getScalar(0);
+        //         _dimension = (int) last->e(0);
         //     }
 
         //     // we want to ensure that all

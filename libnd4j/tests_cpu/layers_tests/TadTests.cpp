@@ -140,7 +140,7 @@ TEST_F(TadTests, TestEdgeCase_2) {
     for (int e = 0 ; e < array.lengthOf(); e++) {
         auto tad = array.tensorAlongDimension(e, {2});
 
-        ASSERT_NEAR(tad->getScalar<float>(0), array.getIndexedScalar<float>(e), 1e-5);
+        ASSERT_NEAR(tad->e<float>(0), array.getIndexedScalar<float>(e), 1e-5);
 
         delete tad;
     }

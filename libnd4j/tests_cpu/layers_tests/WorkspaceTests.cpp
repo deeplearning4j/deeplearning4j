@@ -53,7 +53,7 @@ TEST_F(WorkspaceTests, BasicInitialization2) {
     array.putScalar(5, 1.0f);
 
     auto v = array.reduceNumber(reduce::Sum);
-    auto f = v.getScalar<float>(0);
+    auto f = v.e<float>(0);
     v.printShapeInfo("v shape");
 
     ASSERT_NEAR(2.0f, f, 1e-5);
@@ -73,10 +73,10 @@ TEST_F(WorkspaceTests, BasicInitialization3) {
     array.putScalar(5, 1.0f);
 
     auto v = array.reduceNumber(reduce::Sum);
-    auto f = v.getScalar<float>(0);
+    auto f = v.e<float>(0);
     v.printShapeInfo("v shape");
 
-    ASSERT_NEAR(2.0f, array.reduceNumber(reduce::Sum).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(2.0f, array.reduceNumber(reduce::Sum).e<float>(0), 1e-5);
 
     ASSERT_TRUE(workspace.getCurrentOffset() == 0);
 }
@@ -97,7 +97,7 @@ TEST_F(WorkspaceTests, ResetTest1) {
         array2.putScalar(0, 1.0f);
         array2.putScalar(5, 1.0f);
 
-        ASSERT_NEAR(2.0f, array2.reduceNumber(reduce::Sum).getScalar<float>(0), 1e-5);
+        ASSERT_NEAR(2.0f, array2.reduceNumber(reduce::Sum).e<float>(0), 1e-5);
 
         workspace.scopeOut();
     }
@@ -247,7 +247,7 @@ TEST_F(WorkspaceTests, Test_Externalized_1) {
 
     x.assign(2.0);
 
-    float m = x.meanNumber().getScalar<float>(0);
+    float m = x.meanNumber().e<float>(0);
     ASSERT_NEAR(2.0f, m, 1e-5);
 }
 

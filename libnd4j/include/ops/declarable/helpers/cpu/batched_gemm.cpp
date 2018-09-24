@@ -93,8 +93,8 @@ namespace nd4j {
                         auto A = reinterpret_cast<T*>(vA.at(p)->buffer());
                         auto B = reinterpret_cast<T*>(vB.at(p)->buffer());
                         auto C = reinterpret_cast<T*>(vC.at(p)->buffer());
-                        auto alpha = alphas->getScalar<T>(p);
-                        auto beta = betas->getScalar<T>(p);
+                        auto alpha = alphas->e<T>(p);
+                        auto beta = betas->e<T>(p);
                         for (int m = 0; m < M; ++m) {
                             for (int n = 0; n < N; ++n) {
                                 T c_mnp = 0;

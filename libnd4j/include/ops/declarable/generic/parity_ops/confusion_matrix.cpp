@@ -41,8 +41,8 @@ namespace nd4j {
             }
             auto output = OUTPUT_VARIABLE(0);
 
-            int minPrediction = predictions->reduceNumber(reduce::Min).getScalar<int>(0);
-            int minLabel = labels->reduceNumber(reduce::Min).getScalar<int>(0);
+            int minPrediction = predictions->reduceNumber(reduce::Min).e<int>(0);
+            int minLabel = labels->reduceNumber(reduce::Min).e<int>(0);
 
             REQUIRE_TRUE(minLabel >=0, 0, "CONFUSION_MATRIX: Labels contains negative values !");
             REQUIRE_TRUE(minPrediction >=0, 0, "CONFUSION_MATRIX: Predictions contains negative values !");
@@ -65,8 +65,8 @@ namespace nd4j {
                 numClasses = INT_ARG(0);
             }
             else  {
-                int maxPrediction = predictions->reduceNumber(reduce::Max).getScalar<int>(0);
-                int maxLabel = labels->reduceNumber(reduce::Max).getScalar<int>(0);
+                int maxPrediction = predictions->reduceNumber(reduce::Max).e<int>(0);
+                int maxLabel = labels->reduceNumber(reduce::Max).e<int>(0);
                 numClasses = (maxPrediction >= maxLabel) ?  maxPrediction+1 : maxLabel+1;
             }
 

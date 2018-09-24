@@ -196,7 +196,7 @@ NDArray betaIncT(const NDArray& a, const NDArray& b, const NDArray& x) {
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
 	for(int i = 0; i < x.lengthOf(); ++i) {
-		result.putScalar(i, betaIncTA<T>(a.getScalar<T>(i), b.getScalar<T>(i), x.getScalar<T>(i)));
+		result.putScalar(i, betaIncTA<T>(a.e<T>(i), b.e<T>(i), x.e<T>(i)));
 	}
 
 	return result;

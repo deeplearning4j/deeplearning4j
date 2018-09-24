@@ -85,8 +85,8 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
     
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistributionInv<double>>(rng, x.getBuffer(), x.getShapeInfo(), extraParams);
-    const double actualMean = x.meanNumber().getScalar<double>(0);
-    const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).getScalar<double>(0);
+    const double actualMean = x.meanNumber().e<double>(0);
+    const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
  
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);    
@@ -118,8 +118,8 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
     
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistributionInv<double>>(rng, y.getBuffer(), y.getShapeInfo(), x.getBuffer(), x.getShapeInfo(), extraParams);
 
-    const double actualMean = x.meanNumber().getScalar<double>(0);
-    const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).getScalar<double>(0);
+    const double actualMean = x.meanNumber().e<double>(0);
+    const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
 
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);    
@@ -147,8 +147,8 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test1: RNG initialization failed !");
     
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, x.getBuffer(), x.getShapeInfo(), extraParams);
-    const double actualMean = x.meanNumber().getScalar<double>(0);
-    const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).getScalar<double>(0);
+    const double actualMean = x.meanNumber().e<double>(0);
+    const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
  
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);    
@@ -179,8 +179,8 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
     
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, y.getBuffer(), y.getShapeInfo(), x.getBuffer(), x.getShapeInfo(), extraParams);
 
-    const double actualMean = x.meanNumber().getScalar<double>(0);
-    const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).getScalar<double>(0);
+    const double actualMean = x.meanNumber().e<double>(0);
+    const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
 
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);    
@@ -1153,7 +1153,7 @@ TEST_F(DeclarableOpsTests9, clipbynorm_test12) {
 
     for (int j = 0; j < nOut; ++j) {
         auto yCol = y({0,0, j,j+1});
-        const double norm2Col = yCol.reduceNumber(reduce::Norm2).getScalar<double>(0);
+        const double norm2Col = yCol.reduceNumber(reduce::Norm2).e<double>(0);
         if (norm2Col <= clip) 
             expect({0,0, j,j+1}).assign(yCol);
         else 

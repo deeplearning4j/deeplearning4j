@@ -54,7 +54,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR_LARGE) {
 
     auto z = result->at(1);
     auto array = *z;
-    ASSERT_EQ(148,array.getScalar<double>(0));
+    ASSERT_EQ(148,array.e<double>(0));
     //ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;
@@ -77,7 +77,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR_ZERO) {
 
     auto z = result->at(1);
     auto array = *z;
-    ASSERT_EQ(3,array.getScalar<double>(0));
+    ASSERT_EQ(3,array.e<double>(0));
     //ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;
@@ -214,7 +214,7 @@ TEST_F(DeclarableOpsTests7, TEST_WHERE) {
     auto result = op.execute({&maskArr,&x,&putArr},{&resultArr}, {},{3},false);
     // ASSERT_EQ(Status::OK(), result->status());
     for(int i = 0; i < 4; i++)
-        ASSERT_EQ(assertion[i],resultArr.getScalar<double>(i));
+        ASSERT_EQ(assertion[i],resultArr.e<double>(i));
     // auto z = result->at(0);
     //ASSERT_EQ(4,z->lengthOf());
     //ASSERT_TRUE(exp.isSameShape(z));
@@ -281,7 +281,7 @@ TEST_F(DeclarableOpsTests7, TEST_WHERE_SCALAR) {
     auto result = op.execute({&maskArr,&x,&putArr},{&resultArr}, {},{3},false);
     // ASSERT_EQ(Status::OK(), result->status());
     for(int i = 0; i < 4; i++)
-        ASSERT_EQ(assertion[i],resultArr.getScalar<double>(i));
+        ASSERT_EQ(assertion[i],resultArr.e<double>(i));
     // auto z = result->at(0);
     //ASSERT_EQ(4,z->lengthOf());
     //ASSERT_TRUE(exp.isSameShape(z));
@@ -2202,7 +2202,7 @@ TEST_F(DeclarableOpsTests7, clipbynorm_test3) {
     auto z = result->at(0);
 
     auto zNorm1 = z->reduceAlongDims(reduce::Norm2, {1}, true);
-    auto exp = NDArrayFactory::_create<double>('c', {3, 1}, {1., 1., xNorm1.getScalar<double>(2)});
+    auto exp = NDArrayFactory::_create<double>('c', {3, 1}, {1., 1., xNorm1.e<double>(2)});
         
     ASSERT_TRUE(exp.isSameShape(&zNorm1));
     ASSERT_TRUE(exp.equalsTo(&zNorm1));
@@ -3932,9 +3932,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_2) {
     nd4j::ops::reduce_prod op_exp;
     auto res = op_exp.execute({&input}, {}, {});
     auto result = op.execute({&input, &eps}, {}, {});
-    exp.assign(res->at(0)->getScalar<double>(0));
+    exp.assign(res->at(0)->e<double>(0));
     exp /= input;
-    exp *= eps.getScalar<double>(0);
+    exp *= eps.e<double>(0);
     ASSERT_EQ(Status::OK(), result->status());
     auto z = result->at(0);    
     //z->printIndexedBuffer("Result is ");
@@ -4018,10 +4018,10 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_1) {
     auto x = NDArrayFactory::_create<double>('c', {2, 3, 4});
     auto eps = NDArrayFactory::_create<double>('c', {4}, {1.f, 2.f, 3.f, 4.f});
     auto exp = NDArrayFactory::_create<double>('c', {2, 3, 4});
-    exp.putScalar(0, eps.getScalar<double>(0));
-    exp.putScalar(1, eps.getScalar<double>(1));
-    exp.putScalar(2, eps.getScalar<double>(2));
-    exp.putScalar(3, eps.getScalar<double>(3));
+    exp.putScalar(0, eps.e<double>(0));
+    exp.putScalar(1, eps.e<double>(1));
+    exp.putScalar(2, eps.e<double>(2));
+    exp.putScalar(3, eps.e<double>(3));
     x.linspace(1);
 //    x.printIndexedBuffer("Input is");
 //    exp.printIndexedBuffer("Expected ");
@@ -4043,10 +4043,10 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_2) {
     auto x = NDArrayFactory::_create<double>('c', {2, 3, 4});
     auto eps = NDArrayFactory::_create<double>('c', {1, 1, 4}, {1.f, 2.f, 3.f, 4.f});
     auto exp = NDArrayFactory::_create<double>('c', {2, 3, 4});
-    exp.putScalar(0, eps.getScalar<double>(0));
-    exp.putScalar(1, eps.getScalar<double>(1));
-    exp.putScalar(2, eps.getScalar<double>(2));
-    exp.putScalar(3, eps.getScalar<double>(3));
+    exp.putScalar(0, eps.e<double>(0));
+    exp.putScalar(1, eps.e<double>(1));
+    exp.putScalar(2, eps.e<double>(2));
+    exp.putScalar(3, eps.e<double>(3));
     x.linspace(1);
 //    x.printIndexedBuffer("Input is");
 //    exp.printIndexedBuffer("Expected ");
@@ -4174,10 +4174,10 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_1) {
     auto x = NDArrayFactory::_create<double>('c', {2, 3, 4});
     auto eps = NDArrayFactory::_create<double>('c', {4}, {21.f, 22.f, 23.f, 24.f});
     auto exp = NDArrayFactory::_create<double>('c', {2, 3, 4});
-    exp.putScalar(20, eps.getScalar<double>(0));
-    exp.putScalar(21, eps.getScalar<double>(1));
-    exp.putScalar(22, eps.getScalar<double>(2));
-    exp.putScalar(23, eps.getScalar<double>(3));
+    exp.putScalar(20, eps.e<double>(0));
+    exp.putScalar(21, eps.e<double>(1));
+    exp.putScalar(22, eps.e<double>(2));
+    exp.putScalar(23, eps.e<double>(3));
     x.linspace(1);
 //    x.printIndexedBuffer("Input is");
 //    exp.printIndexedBuffer("Expected ");
@@ -4199,10 +4199,10 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_2) {
     auto x = NDArrayFactory::_create<double>('c', {2, 3, 4});
     auto eps = NDArrayFactory::_create<double>('c', {1, 1, 4}, {21.f, 22.f, 23.f, 24.f});
     auto exp = NDArrayFactory::_create<double>('c', {2, 3, 4});
-    exp.putScalar(20, eps.getScalar<double>(0));
-    exp.putScalar(21, eps.getScalar<double>(1));
-    exp.putScalar(22, eps.getScalar<double>(2));
-    exp.putScalar(23, eps.getScalar<double>(3));
+    exp.putScalar(20, eps.e<double>(0));
+    exp.putScalar(21, eps.e<double>(1));
+    exp.putScalar(22, eps.e<double>(2));
+    exp.putScalar(23, eps.e<double>(3));
     x.linspace(1);
 //    x.printIndexedBuffer("Input is");
 //    exp.printIndexedBuffer("Expected ");
@@ -4287,8 +4287,8 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_1) {
     x.putScalar(12, -2.f);
     x.putScalar(20, -3.f);
     exp.assign(5.f);
-    exp.putScalar(12, -exp.getScalar<double>(12));
-    exp.putScalar(20, -exp.getScalar<double>(20));
+    exp.putScalar(12, -exp.e<double>(12));
+    exp.putScalar(20, -exp.e<double>(20));
     nd4j::ops::reduce_norm1_bp op;
     auto result = op.execute({&x, &eps}, {}, {});
     auto output = result->at(0);

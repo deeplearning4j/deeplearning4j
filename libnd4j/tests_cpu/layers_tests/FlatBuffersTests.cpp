@@ -181,7 +181,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     ASSERT_TRUE(var != nullptr);
 
-    ASSERT_EQ(-2.0, var->reduceNumber(reduce::Mean).getScalar<float>(0));
+    ASSERT_EQ(-2.0, var->reduceNumber(reduce::Mean).e<float>(0));
 
     nd4j::graph::GraphExecutioner::execute(&graph);
 
@@ -197,7 +197,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto var0 = new Variable(flatResults->variables()->Get(0));
     //auto var1 = new Variable<float>(flatResults->variables()->Get(1));
 
-    ASSERT_NEAR(-0.4161468, var0->getNDArray()->reduceNumber(reduce::Mean).getScalar<float>(0), 1e-5);
+    ASSERT_NEAR(-0.4161468, var0->getNDArray()->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     //ASSERT_TRUE(var->equalsTo(var0->getNDArray()));
 
@@ -334,7 +334,7 @@ TEST_F(FlatBuffersTest, ReadFile1) {
 
     auto result = restoredGraph->getVariableSpace()->getVariable(2)->getNDArray();
     ASSERT_EQ(1, result->lengthOf());
-    ASSERT_EQ(8, result->getScalar(0));
+    ASSERT_EQ(8, result->e(0));
 
     delete[] data;
     delete restoredGraph;
@@ -348,7 +348,7 @@ TEST_F(FlatBuffersTest, ReadFile2) {
 
     ASSERT_EQ(1, arrays.size());
     ASSERT_EQ(1, arrays.at(0)->lengthOf());
-    ASSERT_EQ(8, arrays.at(0)->getScalar(0));
+    ASSERT_EQ(8, arrays.at(0)->e(0));
 
     delete[] data;
     delete[] (char *) result;
@@ -363,7 +363,7 @@ TEST_F(FlatBuffersTest, ReadFile3) {
     auto z = graph->getVariableSpace()->getVariable(2)->getNDArray();
 
     ASSERT_EQ(1, z->lengthOf());
-    ASSERT_EQ(8, z->getScalar(0));
+    ASSERT_EQ(8, z->e(0));
 
     delete graph;
 }
@@ -384,8 +384,8 @@ TEST_F(FlatBuffersTest, ReadInception1) {
     auto argMax = lastNode->argMax();
 
     //nd4j_printf("Predicted class: %i\n", (int) argMax);
-    //nd4j_printf("Probability: %f\n", lastNode->getScalar(argMax));
-    //nd4j_printf("Probability ipod: %f\n", lastNode->getScalar(980));
+    //nd4j_printf("Probability: %f\n", lastNode->e(argMax));
+    //nd4j_printf("Probability ipod: %f\n", lastNode->e(980));
     //lastNode->printBuffer("Whole output");
 
     ASSERT_EQ(561, (int) argMax);
@@ -531,7 +531,7 @@ TEST_F(FlatBuffersTest, ReadStridedSlice_1) {
 
     auto z = graph->getVariableSpace()->getVariable(7)->getNDArray();
 
-    ASSERT_NEAR(73.5f, z->getScalar(0), 1e-5);
+    ASSERT_NEAR(73.5f, z->e(0), 1e-5);
 
     delete graph;
 }

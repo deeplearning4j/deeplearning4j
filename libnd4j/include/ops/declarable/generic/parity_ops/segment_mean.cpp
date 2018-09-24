@@ -33,7 +33,7 @@ namespace nd4j {
             auto expected = NDArrayFactory::_scalar(0.f, block.getWorkspace());
             auto wrong = NDArrayFactory::_scalar(0.f, block.getWorkspace());
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_mean: segment indices should be arranged, but %2.1f > %2.1f", expected.getScalar<float>(0), wrong.getScalar<float>(0));
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_mean: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
 
             helpers::segmentMeanFunctor(input, idxSegments, segmentedOutput);
 
@@ -46,7 +46,7 @@ namespace nd4j {
             auto in = inputShape->at(0);
             int outRank = shape::rank(in);
             Nd4jLong* outputShape = nullptr;
-            int val = (*idxVector).getScalar<int>(idxVector->lengthOf() - 1);
+            int val = (*idxVector).e<int>(idxVector->lengthOf() - 1);
 
             int numOfClasses = val + 1;
 

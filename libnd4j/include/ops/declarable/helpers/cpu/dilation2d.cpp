@@ -51,7 +51,7 @@ namespace helpers {
                                 for (int w = 0; w < filter_cols; ++w) {
                                     const int w_in = w_beg + w * rate_cols;
                                     if (w_in >= 0 && w_in < input_cols) {
-                                        const Y val = (*input).getScalar<Y>(b, h_in, w_in, d) + (*weights).getScalar<Y>(h, w, d);
+                                        const Y val = (*input).e<Y>(b, h_in, w_in, d) + (*weights).e<Y>(h, w, d);
                                         if (val > cur_val) {
                                             cur_val = val;
                                         }

@@ -60,7 +60,7 @@ namespace nd4j {
 
             newShape[0] = len;
             for (int e = 0; e < shapeArray->lengthOf(); e++)
-                newShape[e+1] = shapeArray->getScalar<Nd4jLong>(e);
+                newShape[e+1] = shapeArray->e<Nd4jLong>(e);
             
             shape::updateStrides(newShape, 'c');
 

@@ -40,7 +40,7 @@ namespace nd4j {
                 axis.resize(axisVector->lengthOf());
                 helpers::adjustAxis(input, axisVector, axis);
 //                for (int e = 0; e < axisVector->lengthOf(); e++) {
-//                    int ca = (int) axisVector->getScalar(e);
+//                    int ca = (int) axisVector->e(e);
 //                    if (ca < 0)
 //                        ca += input->rankOf();
 //
@@ -65,7 +65,7 @@ namespace nd4j {
                 auto axisVector = INPUT_VARIABLE(1);
 
                 for (int e = 0; e < axisVector->lengthOf(); e++) {
-                    int ca = axisVector->getScalar<int>(e);
+                    int ca = axisVector->e<int>(e);
                     if (ca < 0)
                         ca += input->rankOf();
 

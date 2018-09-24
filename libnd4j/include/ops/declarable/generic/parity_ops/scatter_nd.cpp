@@ -75,7 +75,7 @@ DECLARE_SHAPE_FN(scatter_nd) {
 
     outShapeInfo[0] = shape->lengthOf();
     for(int i = 0; i < outShapeInfo[0]; ++i)
-        outShapeInfo[i + 1] = shape->getScalar<Nd4jLong>(i);
+        outShapeInfo[i + 1] = shape->e<Nd4jLong>(i);
 
     shape::updateStrides(outShapeInfo, shape::order(updShapeInfo));
         

@@ -29,7 +29,7 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
 
-            if (x->getScalar<double>(0) == y->getScalar<double>(0))
+            if (x->e<double>(0) == y->e<double>(0))
                 return ND4J_STATUS_TRUE;
             else
                 return ND4J_STATUS_FALSE;

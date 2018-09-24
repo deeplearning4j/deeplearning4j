@@ -565,7 +565,7 @@ NDArray* MmulHelper::simpleMMul(const NDArray* a, const NDArray* b, NDArray* c, 
     for(int row = 0; row < M; ++row)
         for(int col = 0; col < N; ++col)
             for(int j = 0; j < K; ++j)
-                    dot->putScalar(row,col, a->getScalar<double>(row,j) * b->getScalar<double>(j,col));
+                    dot->putScalar(row,col, a->e<double>(row,j) * b->e<double>(j,col));
 
     if(alpha != 1.)
         dot->applyScalar(scalar::Multiply, alpha, dot, nullptr);

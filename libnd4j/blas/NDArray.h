@@ -1137,7 +1137,7 @@ namespace nd4j {
         *  i - element index in array
         */
         template <typename T>
-        T getScalar(const Nd4jLong i) const;
+        T e(const Nd4jLong i) const;
 
         /** 
         *  returns array element with given index, takes into account offset between elements (element-wise-stride)
@@ -1152,7 +1152,7 @@ namespace nd4j {
         *  j - number of column
         */
         template <typename T>
-        T getScalar(const Nd4jLong i, const Nd4jLong j) const;
+        T e(const Nd4jLong i, const Nd4jLong j) const;
 
         /** 
         *  returns element with given indexes from 3D array 
@@ -1161,13 +1161,13 @@ namespace nd4j {
         *  k - depth
         */
         template <typename T>
-        T getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
+        T e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
 
         /**
         *  returns element with given indexes from DD array
         */
         template <typename T>
-        T getScalar(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
+        T e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
         
         /** 
         *  assigns given scalar to array element by given index, takes into account offset between elements (element-wise-stride)

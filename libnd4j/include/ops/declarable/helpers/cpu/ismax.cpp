@@ -40,12 +40,12 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
             int eleStride = shape::elementWiseStride(input->getShapeInfo());
             if (eleStride == 1) {
                 int maxIdx = 0;
-                T currMax = input->getScalar<T>(0);
+                T currMax = input->e<T>(0);
                 if (length < ELEMENT_THRESHOLD) {
 //#pragma omp simd reduction(max:maxIdx,currMax)
                     for (int i = 0; i < length; i++) {
-                        if (currMax < input->getScalar<T>(i)) {
-                            currMax = input->getScalar<T>(i);
+                        if (currMax < input->e<T>(i)) {
+                            currMax = input->e<T>(i);
                             maxIdx = i;
                         }
                         output->putScalar<T>(i, 0.f);
@@ -58,8 +58,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                         T currMaxLocal = currMax;
 //#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
                         for (int i = 0; i < length; i++) {
-                            if (currMaxLocal < input->getScalar<T>(i)) {
-                                currMaxLocal = input->getScalar<T>(i);
+                            if (currMaxLocal < input->e<T>(i)) {
+                                currMaxLocal = input->e<T>(i);
                                 maxIdxLocal = i;
                             }
                             output->putScalar<T>(i, 0.f);
@@ -77,12 +77,12 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
             }
             else {
                 int maxIdx = 0;
-                T currMax = input->getScalar<T>(0);
+                T currMax = input->e<T>(0);
                 if (length < ELEMENT_THRESHOLD) {
 //#pragma omp parallel for reduction(max:maxIdx,currMax) proc_bind(AFFINITY)
                     for (int i = 0; i < length; i++) {
-                        if (currMax < input->getScalar<T>(i*eleStride)) {
-                            currMax = input->getScalar<T>(i*eleStride);
+                        if (currMax < input->e<T>(i*eleStride)) {
+                            currMax = input->e<T>(i*eleStride);
                             maxIdx = i;
                         }
                         output->putScalar<T>(i, 0.f);
@@ -95,8 +95,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                         T currMaxLocal = currMax;
 //#pragma omp parallel for reduction(max:maxIdx,currMax)  proc_bind(AFFINITY)
                         for (int i = 0; i < length; i++) {
-                            if (currMaxLocal < input->getScalar<T>(i*eleStride)) {
-                                currMaxLocal = input->getScalar<T>(i*eleStride);
+                            if (currMaxLocal < input->e<T>(i*eleStride)) {
+                                currMaxLocal = input->e<T>(i*eleStride);
                                        maxIdxLocal = i;
                             }
                             output->putScalar<T>(i, 0.f);

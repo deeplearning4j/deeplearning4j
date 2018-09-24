@@ -72,7 +72,7 @@ namespace nd4j {
             bool isReturn = false;
 
             // now we're executing one of the scopes, depending on condition evaluation
-            if (result->getScalar<int>(0) ==  0) {
+            if (result->e<int>(0) ==  0) {
                 auto scopeFalse = graph->scopeById(scopeFalseIndex);
                 lastNode = 0;
                 int nodes = scopeFalse->nodes()->size();
