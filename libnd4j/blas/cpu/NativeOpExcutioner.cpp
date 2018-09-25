@@ -31,10 +31,11 @@
 * @param result
 * @param resultShapeInfo
 */
-Nd4jLong NativeOpExcutioner::execIndexReduceScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams) {
+Nd4jLong NativeOpExcutioner::execIndexReduceScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo) {
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto z = reinterpret_cast<Nd4jLong*>(vz);
 
-    BUILD_SINGLE_SELECTOR(xType,return functions::indexreduce::IndexReduce, ::execScalar(opNum, x,xShapeInfo,extraParams), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, z[0] = functions::indexreduce::IndexReduce, ::execScalar(opNum, x,xShapeInfo,extraParams), FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

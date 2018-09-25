@@ -52,7 +52,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    static Nd4jLong execIndexReduceScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams);
+    static Nd4jLong execIndexReduceScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo);
 
     /**
      *

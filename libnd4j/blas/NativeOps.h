@@ -94,11 +94,13 @@ public:
        * @param xShapeInfo
        * @param extraParams
        */
-    Nd4jLong execIndexReduceScalar(Nd4jPointer *extraPointers,
+    void execIndexReduceScalar(Nd4jPointer *extraPointers,
                                          int opNum,
                                          void *x,
                                          Nd4jLong *xInfo,
-                                         void *extraParams);
+                                         void *extraParams,
+                                         void *z,
+                                         Nd4jLong *zShapeInfo);
 
     /**
      *

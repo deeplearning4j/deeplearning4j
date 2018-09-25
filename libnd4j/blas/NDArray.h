@@ -202,7 +202,7 @@ namespace nd4j {
          * @param offset
          * @return
          */
-        void *bufferWithOffset(Nd4jLong offset);
+        void *bufferWithOffset(Nd4jLong offset) const;
 
         /**
         *  copy assignment operator
@@ -490,7 +490,7 @@ namespace nd4j {
         *  returns element index which corresponds to some condition imposed by operation
         *  extraParams - extra parameters for operation
         */ 
-        Nd4jLong indexReduceNumber(nd4j::indexreduce::Ops op, void *extraParams = nullptr);
+        NDArray indexReduceNumber(nd4j::indexreduce::Ops op, void *extraParams = nullptr);
 
         /**
         *  returns index of max element in a given array (optionally: along given dimension(s))

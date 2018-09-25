@@ -1055,8 +1055,8 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         this->_workspace = workspace;
     }
 
-    void* NDArray::bufferWithOffset(Nd4jLong offset) {
-        BUILD_SINGLE_SELECTOR(this->dataType(), return templatedPointerShift, (this->buffer(), offset), LIBND4J_TYPES);
+    void* NDArray::bufferWithOffset(Nd4jLong offset) const {
+        BUILD_SINGLE_SELECTOR(this->dataType(), return templatedPointerShift, (this->getBuffer(), offset), LIBND4J_TYPES);
     }
 /*
     template <typename T>
@@ -1164,8 +1164,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         return result;
     }
 
-    Nd4jLong NDArray::indexReduceNumber(nd4j::indexreduce::Ops op, void *extraParams) {
-        return NativeOpExcutioner::execIndexReduceScalar(op, _buffer, _shapeInfo, extraParams);
+    NDArray NDArray::indexReduceNumber(nd4j::indexreduce::Ops op, void *extraParams) {
+        auto res = NDArrayFactory::create<Nd4jLong>(0);
+        NativeOpExcutioner::execIndexReduceScalar(op, _buffer, _shapeInfo, extraParams, res.buffer(), res.shapeInfo());
+        return res;
     }
 
 // perform array transformation
@@ -2837,7 +2839,7 @@ NDArray NDArray::transp() const {
 
         if (target->isScalar()) {
             //target->_buffer[0] = functions::indexreduce::IndexReduce<T>::template execScalar<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams));
-            reinterpret_cast<Nd4jLong *>(target->_buffer)[0] = NativeOpExcutioner::execIndexReduceScalar(op, _buffer, _shapeInfo, const_cast<void *>(extraParams));
+            NativeOpExcutioner::execIndexReduceScalar(op, _buffer, _shapeInfo, const_cast<void *>(extraParams), target->getBuffer(), target->getShapeInfo());
         } else {
             std::vector<int> copy(dimensions);
             if (dimensions.size() > 1)
@@ -2866,8 +2868,7 @@ NDArray NDArray::transp() const {
         RELEASE(newShape, _workspace);
 
         if (rankOf() == copy.size()) {
-            const auto res = NativeOpExcutioner::execIndexReduceScalar(op, _buffer, _shapeInfo, const_cast<void *>(extraParams));
-            result->assign(res);
+            NativeOpExcutioner::execIndexReduceScalar(op, _buffer, _shapeInfo, const_cast<void *>(extraParams), result->getBuffer(), result->getShapeInfo());
         } else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
@@ -3883,7 +3884,7 @@ NDArray NDArray::transp() const {
         std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
 
         for (int idx = 0; idx < numTads; idx++ ) {
-            auto buffer = templatedPointerShift(_buffer, (tad->tadOffsets[idx], this->dataType());
+            auto buffer = bufferWithOffset(tad->tadOffsets[idx]);
             auto array = new NDArray(buffer, shapeInfo);
             result->push_back(array);
         }

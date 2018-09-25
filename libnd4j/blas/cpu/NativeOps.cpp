@@ -88,13 +88,14 @@ void NativeOps::setTADThreshold(int num) {
  * @param xShapeInfo
  * @param extraParams
  */
-Nd4jLong NativeOps::execIndexReduceScalar(Nd4jPointer *extraPointers,
+void NativeOps::execIndexReduceScalar(Nd4jPointer *extraPointers,
                                                 int opNum,
                                                 void *x,
                                                 Nd4jLong *xShapeInfo,
-                                                void *extraParams) {
-    return NativeOpExcutioner::execIndexReduceScalar(opNum, x, xShapeInfo, extraParams);
-
+                                                void *extraParams,
+                                                void *z,
+                                                Nd4jLong *zShapeInfo) {
+    NativeOpExcutioner::execIndexReduceScalar(opNum, x, xShapeInfo, extraParams, z, zShapeInfo);
 }
 
 /**
