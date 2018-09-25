@@ -191,6 +191,12 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
     _workspace = workspace;    
     triggerAllocationFlag(true, true);
 
+    auto d = const_cast<double *>(data.data());
+
+    for(Nd4jLong i=0; i < _length; ++i) {
+        BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<void *>(d), i), LIBND4J_TYPES);
+    }
+
 // #pragma omp parallel for simd schedule(static)
 //     for(Nd4jLong i=0; i < _length; ++i)
 //         templatedSet<double>(_buffer, i, dtype, const_cast<std::vector<double>&>(data).data());
