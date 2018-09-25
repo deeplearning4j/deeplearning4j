@@ -3322,6 +3322,22 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype);
 
         /**
+        * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
+        */
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data);
+
+        /**
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
         */
         public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, workspace); }
@@ -3613,6 +3629,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @ByVal NDArray meanNumber();
 
 // #ifndef __JAVACPP_HACK__
+
 // #endif
 
         /**
@@ -3807,78 +3824,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 		public native @Cast("bool") boolean isUnitary(); 
                         
-        /**
-        *  reduces dimensions in this array relying on index operation OpName
-        *  dimensions - vector of dimensions to reduce along
-        *  extraArgs - extra parameters for operation
-        */
-        public native NDArray applyIndexReduce(@ByVal Ops op, @StdVector IntPointer dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native NDArray applyIndexReduce(@ByVal Ops op, @StdVector IntPointer dimensions);
-        public native NDArray applyIndexReduce(@ByVal Ops op, @StdVector IntBuffer dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native NDArray applyIndexReduce(@ByVal Ops op, @StdVector IntBuffer dimensions);
-        public native NDArray applyIndexReduce(@ByVal Ops op, @StdVector int[] dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native NDArray applyIndexReduce(@ByVal Ops op, @StdVector int[] dimensions);
-
-        /**
-        *  reduces dimensions in array relying on index operation OpName
-        *  target - where to store result
-        *  dimensions - vector of dimensions to reduce along
-        *  extraArgs - extra parameters for operation
-        */
-        public native void applyIndexReduce(@ByVal Ops op, @Const NDArray target, @StdVector IntPointer dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native void applyIndexReduce(@ByVal Ops op, @Const NDArray target, @StdVector IntPointer dimensions);
-        public native void applyIndexReduce(@ByVal Ops op, @Const NDArray target, @StdVector IntBuffer dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native void applyIndexReduce(@ByVal Ops op, @Const NDArray target, @StdVector IntBuffer dimensions);
-        public native void applyIndexReduce(@ByVal Ops op, @Const NDArray target, @StdVector int[] dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native void applyIndexReduce(@ByVal Ops op, @Const NDArray target, @StdVector int[] dimensions);
-
-        /**
-        *  apply reduce3 operation OpName to this and other array, return result in new output array
-        *  other - input array
-        *  extraArgs - extra parameters for operation
-        */
-        public native NDArray applyReduce3(@ByVal Ops op, @Const NDArray other, @Const Pointer extraParams/*=nullptr*/);
-        public native NDArray applyReduce3(@ByVal Ops op, @Const NDArray other);
-
-        /**
-        *  apply reduce3 operation OpName to this and other array, return result in new output array
-        *  other - input array
-        *  dimensions - vector of dimensions to reduce along (tads not axis)
-        *  extraArgs - extra parameters for operation
-        */
-        public native NDArray applyAllReduce3(@ByVal Ops op, @Const NDArray other, @StdVector IntPointer dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native NDArray applyAllReduce3(@ByVal Ops op, @Const NDArray other, @StdVector IntPointer dimensions);
-        public native NDArray applyAllReduce3(@ByVal Ops op, @Const NDArray other, @StdVector IntBuffer dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native NDArray applyAllReduce3(@ByVal Ops op, @Const NDArray other, @StdVector IntBuffer dimensions);
-        public native NDArray applyAllReduce3(@ByVal Ops op, @Const NDArray other, @StdVector int[] dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native NDArray applyAllReduce3(@ByVal Ops op, @Const NDArray other, @StdVector int[] dimensions);
-                
-        /**
-        *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
-        *  other - input array
-        *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
-        *  extraArgs - extra parameters for operation
-        */
-        public native NDArray applyReduce3(@ByVal Ops op, @Const NDArray other, @StdVector IntPointer dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native NDArray applyReduce3(@ByVal Ops op, @Const NDArray other, @StdVector IntPointer dimensions);
-        public native NDArray applyReduce3(@ByVal Ops op, @Const NDArray other, @StdVector IntBuffer dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native NDArray applyReduce3(@ByVal Ops op, @Const NDArray other, @StdVector IntBuffer dimensions);
-        public native NDArray applyReduce3(@ByVal Ops op, @Const NDArray other, @StdVector int[] dimensions, @Const Pointer extraParams/*=nullptr*/);
-        public native NDArray applyReduce3(@ByVal Ops op, @Const NDArray other, @StdVector int[] dimensions);
-
-
-        /**
-        *  returns variance along given dimensions
-        *  biasCorrected -  if true bias correction will be applied
-        *  dimensions - vector of dimensions to calculate variance along
-        */
-        public native NDArray varianceAlongDimension(@ByVal Ops op, @Cast("const bool") boolean biasCorrected, @StdVector IntPointer dimensions);
-        public native NDArray varianceAlongDimension(@ByVal Ops op, @Cast("const bool") boolean biasCorrected, @StdVector IntBuffer dimensions);
-        public native NDArray varianceAlongDimension(@ByVal Ops op, @Cast("const bool") boolean biasCorrected, @StdVector int[] dimensions);
-
-        public native void varianceAlongDimension(@ByVal Ops op, @Const NDArray target, @Cast("const bool") boolean biasCorrected, @StdVector IntPointer dimensions);
-        public native void varianceAlongDimension(@ByVal Ops op, @Const NDArray target, @Cast("const bool") boolean biasCorrected, @StdVector IntBuffer dimensions);
-        public native void varianceAlongDimension(@ByVal Ops op, @Const NDArray target, @Cast("const bool") boolean biasCorrected, @StdVector int[] dimensions);
 
         /**
         *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
