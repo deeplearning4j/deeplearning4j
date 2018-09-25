@@ -96,9 +96,8 @@ namespace nd4j {
         R templatedGetIndex(void *buffer, Nd4jLong *indices) const;
 */
         template <typename T>
-        void* templatedPointerShift(void *buffer, const Nd4jLong offset) const;
-
-        void* templatedPointerShift(void *buffer, Nd4jLong offset, nd4j::DataType dtype) const;
+        void* templatedPointerShift(const Nd4jLong offset) const;
+    
     protected:
 
        /**
@@ -202,7 +201,7 @@ namespace nd4j {
          * @param offset
          * @return
          */
-        void *bufferWithOffset(Nd4jLong offset);
+        void *bufferWithOffset(Nd4jLong offset) const;
 
         /**
         *  copy assignment operator
@@ -1322,8 +1321,8 @@ namespace nd4j {
 
         NDArray* detach();
 
-
         FORCEINLINE bool operator == (const NDArray &other) const;
+
     };
 
 
