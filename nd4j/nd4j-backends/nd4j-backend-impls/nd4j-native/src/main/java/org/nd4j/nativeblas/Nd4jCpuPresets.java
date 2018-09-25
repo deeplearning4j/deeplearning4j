@@ -62,6 +62,8 @@ import java.util.Scanner;
                                               "helpers/OpArgsHolder.h",
                                               "array/ShapeList.h",
                                               "op_boilerplate.h",
+                                              "enum_boilerplate.h",
+                                              "op_enums.h",
                                               "ops/InputType.h",
                                               "ops/declarable/OpDescriptor.h",
                                               "ops/declarable/BroadcastableOp.h",                                              

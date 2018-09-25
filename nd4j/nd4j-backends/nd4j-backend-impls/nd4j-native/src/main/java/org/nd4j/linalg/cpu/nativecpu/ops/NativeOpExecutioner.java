@@ -1924,7 +1924,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val newMap = new LinkedHashMap<String, INDArray>();
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            val result = (Nd4jCpu.FloatVariablesSet) loop.executeStoredGraphFloat(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+            val result = (Nd4jCpu.VariablesSet) loop.executeStoredGraphFloat(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
 
             val status = OpStatus.byNumber(result.status());
 
@@ -1962,7 +1962,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
             loop.deleteVariablesSetFloat(result);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            val result = (Nd4jCpu.DoubleVariablesSet) loop.executeStoredGraphDouble(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+            val result = (Nd4jCpu.VariablesSet) loop.executeStoredGraphDouble(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
 
             val status = OpStatus.byNumber(result.status());
 
