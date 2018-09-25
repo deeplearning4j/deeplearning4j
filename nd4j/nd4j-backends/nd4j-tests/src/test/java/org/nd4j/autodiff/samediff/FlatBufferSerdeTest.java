@@ -76,23 +76,48 @@ public class FlatBufferSerdeTest {
 
     @Test
     public void testSimple() throws Exception {
-        for( int i=0; i<4; i++ ) {
+        for( int i=0; i<10; i++ ) {
             for(boolean execFirst : new boolean[]{false, true}) {
+                log.info("Starting test: i={}, execFirst={}", i, execFirst);
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", Nd4j.linspace(1, 12, 12).reshape(3, 4));
                 SDVariable x;
                 switch (i) {
                     case 0:
+                        //Custom op
                         x = sd.cumsum("out", in, false, false, 1);
                         break;
                     case 1:
+                        //Transform
                         x = sd.tanh("out", in);
                         break;
                     case 2:
-                        x = sd.mean("x", in, true, 1);
-                        break;
                     case 3:
+                        //Reduction
+                        x = sd.mean("x", in, i == 2, 1);
+                        break;
+                    case 4:
+                        //Transform
                         x = sd.square(in);
+                        break;
+                    case 5:
+                    case 6:
+                        //Index reduction
+                        x = sd.argmax("x", in, i == 5, 1);
+                        break;
+                    case 7:
+                        //Scalar:
+                        x = in.add(10);
+                        break;
+                    case 8:
+                        //Reduce 3:
+                        SDVariable y = sd.var("in2", Nd4j.linspace(1,12,12).muli(0.1).addi(0.5).reshape(3,4));
+                        x = sd.cosineSimilarity(in, y);
+                        break;
+                    case 9:
+                        //Reduce 3 (along dim)
+                        SDVariable z = sd.var("in2", Nd4j.linspace(1,12,12).muli(0.1).addi(0.5).reshape(3,4));
+                        x = sd.cosineSimilarity(in, z, 1);
                         break;
                     default:
                         throw new RuntimeException();

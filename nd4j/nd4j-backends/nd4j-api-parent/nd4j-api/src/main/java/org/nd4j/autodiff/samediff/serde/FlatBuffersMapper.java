@@ -6,10 +6,8 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.ScalarOp;
+import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.impl.accum.BaseReduction;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -304,7 +302,7 @@ public class FlatBuffersMapper {
             }
 
             return op;
-        } else if (opType == Op.Type.SCALAR || opType == Op.Type.TRANSFORM) {
+        } else { //if (opType == Op.Type.SCALAR || opType == Op.Type.TRANSFORM) {
             Class<?> c = LegacyOpMapper.getLegacyOpClassForId(opType, (int)opNum);
             Op op;
             try {
@@ -317,11 +315,20 @@ public class FlatBuffersMapper {
             if(opType == Op.Type.SCALAR){
                 ScalarOp sOp = (ScalarOp)op;
                 sOp.setScalar(scalar);
+            } else if(opType == Op.Type.REDUCE){
+                BaseAccumulation ba = (BaseAccumulation)op;
+                ba.setDimensions(dimensions);
+                ba.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
+            } else if(opType == Op.Type.INDEXREDUCE){
+                BaseIndexAccumulation bia = (BaseIndexAccumulation)op;
+                bia.setDimensions(dimensions);
+                bia.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
             }
             return (DifferentialFunction)op;
-        } else {
-            throw new UnsupportedOperationException("Not yet implemented: op type " + opType);
         }
+//        else {
+//            throw new UnsupportedOperationException("Not yet implemented: op type " + opType);
+//        }
 
     }
 }

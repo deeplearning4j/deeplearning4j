@@ -11001,7 +11001,6 @@ public class SameDiff {
 
 
         val inputs = node.args();
-        log.trace("");
         for (val input : inputs) {
             //for (int i = 0; i < outputVertexId.length; i++) {
             val pair = parseVariable(input.getVarName());
@@ -11027,7 +11026,12 @@ public class SameDiff {
         int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         reverseMap.put(node.getOwnName(), ownId);
 
-        val dims = node.opType() == Op.Type.REDUCE && node.getDimensions() != null ? node.getDimensions() : new int[]{};
+        int[] dims;
+        if(node.opType() == Op.Type.REDUCE || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3){
+            dims = node.getDimensions();
+        } else {
+            dims = new int[]{};
+        }
         // TODO: Adam, just put your props here, instead of empty list, and they will be saved
         List<FunctionProperties> props = new ArrayList<>();
         int properties = FunctionProperties.asFlatProperties(bufferBuilder, props);
