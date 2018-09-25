@@ -3037,6 +3037,12 @@ NDArray NDArray::transp() const {
          varianceAlongDimension(op, target, biasCorrected, std::vector<int>(dimensions));
     }
 
+    void* NDArray::templatedPointerShift(void *buffer, Nd4jLong offset, nd4j::DataType dtype) const {
+        void *ptr;
+        BUILD_SINGLE_SELECTOR(dtype, ptr = templatedPointerShift, (_buffer, offset), LIBND4J_TYPES);
+        return ptr;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // operator returns sub-array with buffer pointing at this->_buffer + certain offset
     NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
@@ -3065,10 +3071,9 @@ NDArray NDArray::transp() const {
             }
         }
 
-        void *ptr;
-        BUILD_SINGLE_SELECTOR(this->dataType(), ptr = templatedPointerShift, (_buffer, offset), LIBND4J_TYPES);
 
-        NDArray result(ptr, newShape, _workspace);
+
+        NDArray result(templatedPointerShift(_buffer, offset, this->dataType()), newShape, _workspace);
         result._isShapeAlloc = true;
 
         if(!keepUnitiesInShape) {

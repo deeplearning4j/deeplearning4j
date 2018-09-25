@@ -97,6 +97,8 @@ namespace nd4j {
 */
         template <typename T>
         void* templatedPointerShift(void *buffer, const Nd4jLong offset) const;
+
+        void* templatedPointerShift(void *buffer, Nd4jLong offset, nd4j::DataType dtype) const;
     protected:
 
        /**
