@@ -937,6 +937,8 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable result = sameDiff.shape(x);
         SDVariable loss = sameDiff.standardDeviation(result, true);
 
+        System.out.println(sameDiff.summary());
+
         String err = OpValidation.validate(new TestCase(sameDiff)
                 .expected(result, Nd4j.create(new double[]{2,3}, new long[]{2})));
 

@@ -53,7 +53,7 @@ public class IAMin extends BaseIndexAccumulation {
 
     @Override
     public int opNum() {
-        return 1;
+        return 3;
     }
 
     @Override

@@ -11000,37 +11000,64 @@ public class SameDiff {
         }
 
 
-        val inputs = node.args();
-        for (val input : inputs) {
+        SDVariable[] inputs = node.args();
+        for (SDVariable input : inputs) {
             //for (int i = 0; i < outputVertexId.length; i++) {
-            val pair = parseVariable(input.getVarName());
-            if (!reverseMap.containsKey(pair.getFirst())) {
-                if (pair.getFirst().contains("NextIteration")) {
+//            Pair<String,Integer> pair = parseVariable(input.getVarName());
+//            String inName = pair.getFirst();
+            String varName = input.getVarName();
+            int outIdx;
+            if(functionOutputFor.containsKey(varName)){
+                DifferentialFunction df = functionOutputFor.get(varName).get(0);
+                outIdx = ArrayUtils.indexOf(outgoingArgsReverse.get(df.getOwnName()), varName);
+            } else {
+                outIdx = 0;
+            }
+
+//            if (!reverseMap.containsKey(pair.getFirst())) {
+//                if (pair.getFirst().contains("NextIteration")) {
+//                    // forward declaration: Merge node in case of loop will be referring to NextIteration node, which wasn't announced yet
+//                    int fwdNodeId = idCounter.incrementAndGet();
+//                    forwardMap.put(pair.getFirst(), fwdNodeId);
+//                    reverseMap.put(pair.getFirst(), fwdNodeId);
+
+            if (!reverseMap.containsKey(varName)) {
+                if (varName.contains("NextIteration")) {
                     // forward declaration: Merge node in case of loop will be referring to NextIteration node, which wasn't announced yet
                     int fwdNodeId = idCounter.incrementAndGet();
-                    forwardMap.put(pair.getFirst(), fwdNodeId);
-                    reverseMap.put(pair.getFirst(), fwdNodeId);
+                    forwardMap.put(varName, fwdNodeId);
+                    reverseMap.put(varName, fwdNodeId);
                 } else {
-                    throw new ND4JIllegalStateException("Unknown variable used in input: [" + pair.getFirst() + "]");
+//                    throw new ND4JIllegalStateException("Unknown variable used in input: [" + pair.getFirst() + "]");
+                    throw new ND4JIllegalStateException("Unknown variable used in input: [" + varName + "]");
                 }
             }
 
-            int nodeId = reverseMap.get(pair.getFirst());
-            int outputIndex = pair.getSecond();
+            int nodeId = reverseMap.get(varName);
+//            int outputIndex = pair.getSecond();
 
-            inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outputIndex));
+//            inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outputIndex));
+            inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outIdx));
             //}
         }
 
         log.debug("Own Name: {}", node.getOwnName());
         int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
-        reverseMap.put(node.getOwnName(), ownId);
+//        reverseMap.put(node.getOwnName(), ownId);
+        String[] outNames = node.outputVariablesNames();
+        for(String s : outNames){
+            if(!reverseMap.containsKey(s)){
+                reverseMap.put(s, ownId);
+            }
+        }
 
         int[] dims;
         if(node.opType() == Op.Type.REDUCE || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3){
             dims = node.getDimensions();
+            if(dims == null)
+                dims = new int[0];
         } else {
-            dims = new int[]{};
+            dims = new int[0];
         }
         // TODO: Adam, just put your props here, instead of empty list, and they will be saved
         List<FunctionProperties> props = new ArrayList<>();
@@ -11115,9 +11142,11 @@ public class SameDiff {
             }
 
 
-            val pair = parseVariable(variable.getVarName());
-            reverseMap.put(pair.getFirst(), idCounter.incrementAndGet());
-            log.debug("Adding [{}] as [{}]", pair.getFirst(), idCounter.get());
+//            Pair<String,Integer> pair = parseVariable(variable.getVarName());
+//            reverseMap.put(pair.getFirst(), idCounter.incrementAndGet());
+            reverseMap.put(variable.getVarName(), idCounter.incrementAndGet());
+//            log.debug("Adding [{}] as [{}]", pair.getFirst(), idCounter.get());
+            log.debug("Adding [{}] as [{}]", variable.getVarName(), idCounter.get());
 
             val arr = variable.getArr();
 
@@ -11313,7 +11342,6 @@ public class SameDiff {
             }
 
             IntPair id = v.id();    //First value: node (op) id. Second: output number
-//            varIds.put(v.id().first(), var);
             variablesByNodeAndOutNum.put(new Pair<>(id.first(), id.second()), var);
 
             if(!variablesByName.containsKey(n)){
@@ -11327,6 +11355,13 @@ public class SameDiff {
         for(FlatNode fn : ops){
             DifferentialFunction df = FlatBuffersMapper.fromFlatNode(fn);
             String name = fn.name();
+            int outLength = fn.outputLength();
+            int[] outs = new int[outLength];
+            for( int i=0; i<outLength; i++ ){
+                outs[i] = fn.output(i);
+            }
+
+            int opId = fn.id();
 
             //Work out inputs and outputs:
             int[] output = new int[fn.outputLength()];
@@ -11349,16 +11384,13 @@ public class SameDiff {
                 int nodeId = inputPaired[i].first();
                 int nodeOutNum = inputPaired[i].second();
                 SDVariable varIn = variablesByNodeAndOutNum.get(new Pair<>(nodeId, nodeOutNum));
+                if(varIn == null){
+                    //The variable corresponding to this op was not
+                }
                 inputNames[i] = varIn.getVarName();
             }
             sd.incomingArgsReverse.put(df.getOwnName(), inputNames);
 
-//            String[] outputNames = new String[output.length];
-//            for( int i=0; i<outputNames.length; i++ ){
-//                Pair<Integer,Integer> p = new Pair<>(fn.id(), i);
-//                SDVariable outVar = variablesByNodeAndOutNum.get(p);
-//                outputNames[i] = outVar.getVarName();
-//            }
             List<SDVariable> varsForOp = variablesByName.get(name);
 
             //Can't assume that variables for the op have all been defined. For example, if we export before execution in SameDiff
@@ -11395,43 +11427,12 @@ public class SameDiff {
                             .shape(null)
                             .build();
                     sd.variableMap.put(varName, var);
+                    variablesByNodeAndOutNum.put(new Pair<>(opId, i), var);
                 }
                 sd.outgoingArgsReverse.put(df.getOwnName(), varNames.toArray(new String[varNames.size()]));
             }
 
             sd.functionInstancesById.put(name, df);
-
-//            int id = fn.id();
-//            String name = fn.name();
-//            Op.Type opType = FlatBuffersMapper.getTypeFromByte(fn.opType());
-//            long opNum = fn.opNum();
-//            FlatProperties properties = fn.propertiesLength() > 0 ? fn.properties(0) : null;
-//            int[] input = new int[fn.inputLength()];
-//            for( int i=0; i<input.length; i++ ){
-//                input[i] = fn.input(i);
-//            }
-//            IntPair[] inputPaired = new IntPair[fn.inputPairedLength()];
-//            for( int i=0; i<inputPaired.length; i++ ){
-//                inputPaired[i] = fn.inputPaired(i);
-//            }
-////            DataBuffer.Type dt = SameDiff.getDataTypeFromByte(fn.dataType());
-//            int[] output = new int[fn.outputLength()];
-//            for( int i=0; i<output.length; i++ ){
-//                output[i] = fn.output(i);
-//            }
-//            double[] extraParams = new double[fn.extraParamsLength()];
-//            for( int i=0; i<extraParams.length; i++ ){
-//                extraParams[i] = fn.extraParams(i);
-//            }
-//            long[] extraInteger = new long[fn.extraIntegerLength()];
-//            for( int i=0; i<extraInteger.length; i++ ){
-//                extraInteger[i] = fn.extraInteger(i);
-//            }
-//            int[] dimensions = new int[fn.dimensionsLength()];
-//            for( int i=0; i<dimensions.length; i++ ){
-//                dimensions[i] = fn.dimensions(i);
-//            }
-//            float scalar = fn.scalar();
         }
 
         return sd;

@@ -6,7 +6,13 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.impl.*;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.Max;
+import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMax;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMin;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMax;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMin;
 import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
@@ -20,8 +26,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.Min;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.random.impl.*;
 
@@ -125,13 +129,13 @@ public class LegacyOpMapper {
             case 12:
                 return NotEqualTo.class;
             case 13:
-                return Min.class;
+                return BroadcastMin.class;
             case 14:
-                return Max.class;
+                return BroadcastMax.class;
             case 15:
-                return AMin.class;
+                return BroadcastAMin.class;
             case 16:
-                return AMax.class;
+                return BroadcastAMax.class;
             case 17:
                 return SquaredDifferenceOp.class;
             case 18:
