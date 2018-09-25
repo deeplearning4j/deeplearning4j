@@ -191,17 +191,9 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
     _workspace = workspace;    
     triggerAllocationFlag(true, true);
 
-    auto d = const_cast<double *>(data.data());
-
     for(Nd4jLong i=0; i < _length; ++i) {
-        BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<void *>(d), i), LIBND4J_TYPES);
+        BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<const void *>(data.data()), i), LIBND4J_TYPES);
     }
-
-// #pragma omp parallel for simd schedule(static)
-//     for(Nd4jLong i=0; i < _length; ++i)
-//         templatedSet<double>(_buffer, i, dtype, const_cast<std::vector<double>&>(data).data());
-
-    // memcpy(_buffer, data.data(), _length * sizeof(double));
 }
 
 
@@ -246,13 +238,13 @@ NDArray::NDArray(const Nd4jLong* shapeInfo, const bool copyStrides, nd4j::memory
 
 
     template <typename T>
-    void NDArray::templatedAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const {
-        auto x = reinterpret_cast<T *>(xBuffer);
-        auto y = reinterpret_cast<T *>(yBuffer);
+    void NDArray::templatedAssign(void *xBuffer, Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const {
+        auto x = reinterpret_cast<T *>(xBuffer);        
+        const auto y = reinterpret_cast<const T*>(yBuffer);
 
         x[xOffset] = y[yOffset];
     }
-    BUILD_SINGLE_TEMPLATE(template void NDArray::templatedAssign, (void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void NDArray::templatedAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES);
 
     bool NDArray::isC() const {
         // TODO: this method must be implemented once we add support for complex numbers
@@ -788,13 +780,13 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 
     template <typename X, typename Y>
-    void NDArray::templatedDoubleAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const {
+    void NDArray::templatedDoubleAssign(void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const {
         auto x = reinterpret_cast<X *>(xBuffer);
-        auto y = reinterpret_cast<Y *>(yBuffer);
+        const auto y = reinterpret_cast<const Y *>(yBuffer);
 
         x[xOffset] = static_cast<X>(y[yOffset]);
     }
-    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedDoubleAssign, (void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const, LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedDoubleAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES, LIBND4J_TYPES);
 
 // This method assigns values of given NDArray to this one, wrt order
     void NDArray::assign(NDArray *other) {
@@ -1040,23 +1032,23 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     template <typename T, typename Y>
-    void NDArray::templatedSet(void *buffer, const Nd4jLong *indices, void *value) {
+    void NDArray::templatedSet(void *buffer, const Nd4jLong *indices, const void *value) {
         auto t = reinterpret_cast<T *>(buffer);
-        auto y = *(reinterpret_cast<Y *>(value));
+        const auto y = *(reinterpret_cast<const Y *>(value));        
 
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), indices, rankOf());
         t[xOffset] = static_cast<T>(y);
     }
-    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, void *value), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, const void *value), LIBND4J_TYPES, LIBND4J_TYPES);
 
     template <typename T, typename Y>
-    void NDArray::templatedSet(void *buffer, const Nd4jLong offset, void *value) {
+    void NDArray::templatedSet(void *buffer, const Nd4jLong offset, const void *value) {
         auto t = reinterpret_cast<T *>(buffer);
-        auto y = *(reinterpret_cast<Y *>(value));
+        const auto y = *(reinterpret_cast<const Y *>(value));
 
         t[offset] = static_cast<T>(y);
     }
-    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong offset, void *value), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong offset, const void *value), LIBND4J_TYPES, LIBND4J_TYPES);
 
 
     void NDArray::setWorkspace(memory::Workspace* workspace) {
@@ -3508,10 +3500,10 @@ NDArray NDArray::transp() const {
     }
 
     template <typename T>
-    void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value) {
+    void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, const void *value) {
         BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedSet< , T>(buffer, xOfsset, value), LIBND4J_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, const void *value), LIBND4J_TYPES);
 
 
 

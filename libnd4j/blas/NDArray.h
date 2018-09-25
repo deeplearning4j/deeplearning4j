@@ -72,31 +72,31 @@ namespace nd4j {
          * @param value
          */
         template <typename T, typename Y>
-        void templatedSet(void *buffer, const Nd4jLong *indices, void *value);
+        void templatedSet(void *buffer, const Nd4jLong *indices, const void *value);
 
         template <typename T, typename Y>
-        void templatedSet(void *buffer, const Nd4jLong xOffset, void *value);
+        void templatedSet(void *buffer, const Nd4jLong xOffset, const void *value);
 
         template <typename T>
-        void templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value);
+        void templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, const void *value);
 
         template <typename T>
-        void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length);
+        void templatedSwap(void *xBuffer, void *yBuffer, const Nd4jLong length);
 
         template <typename T>
-        void templatedAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const;
+        void templatedAssign(void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const;
 
         template <typename X, typename Y>
-        void templatedDoubleAssign(void *xBuffer, Nd4jLong xOffset, void *yBuffer, Nd4jLong yOffset) const;
+        void templatedDoubleAssign(void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const;
 
         template <typename T, typename R>
-        FORCEINLINE R templatedGet(void *buffer, Nd4jLong index) const;
+        FORCEINLINE R templatedGet(void *buffer, const Nd4jLong index) const;
 /*
         template <typename T, typename R>
         R templatedGetIndex(void *buffer, Nd4jLong *indices) const;
 */
         template <typename T>
-        void* templatedPointerShift(void *buffer, Nd4jLong offset) const;
+        void* templatedPointerShift(void *buffer, const Nd4jLong offset) const;
     protected:
 
        /**
