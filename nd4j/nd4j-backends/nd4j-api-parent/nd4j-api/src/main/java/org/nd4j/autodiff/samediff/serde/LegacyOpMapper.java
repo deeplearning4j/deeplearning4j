@@ -52,11 +52,14 @@ public class LegacyOpMapper {
                 return reduce3OpClass(opNum);
             case RANDOM:
                 return randomOpClass(opNum);
+            case AGGREGATION:
+                return aggregateOpClass(opNum);
+            case VARIANCE:  //Intentional fall-through
+            case SUMMARYSTATS:
+                return varianceOpClass(opNum);
             case SPECIAL:
-            case VARIANCE:
             case GRID:
             case META:
-            case AGGREGATION:
             case CUSTOM:
             case GRADIENT:
             case SHAPE:
@@ -69,7 +72,6 @@ public class LegacyOpMapper {
             case EXIT:
             case NEXT_ITERATION:
             case MERGE:
-            case SUMMARYSTATS:
             default:
                 throw new UnsupportedOperationException("Unable to map op " + opNum + " of type " + opType);
         }
@@ -660,6 +662,17 @@ public class LegacyOpMapper {
                 return LastIndex.class;
             default:
                 throw new UnsupportedOperationException("No known index reduce op for op number: " + opNum);
+        }
+    }
+
+    public static Class<?> varianceOpClass(int opNum){
+        switch (opNum){
+            case 0:
+                return Variance.class;
+            case 1:
+                return StandardDeviation.class;
+            default:
+                throw new UnsupportedOperationException("No known variance op for op number: " + opNum);
         }
     }
 

@@ -132,6 +132,23 @@ public class AvgPooling2D extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
+        if(config == null && iArguments.size() > 0){
+            //Perhaps loaded from FlatBuffers - hence we have IArgs but not Config object
+            config = Pooling2DConfig.builder()
+                    .kW(iArguments.get(0))
+                    .kH(iArguments.get(1))
+                    .sW(iArguments.get(2))
+                    .sH(iArguments.get(3))
+                    .pH(iArguments.get(4))
+                    .pW(iArguments.get(5))
+                    .dH(iArguments.get(6))
+                    .dW(iArguments.get(7))
+                    .isSameMode(iArguments.get(8) == 1)
+                    .extra(iArguments.get(9))
+                    .isNHWC(iArguments.get(10) == 1)
+                    .type(Pooling2D.Pooling2DType.AVG)
+                    .build();
+        }
         return config.toProperties();
     }
 

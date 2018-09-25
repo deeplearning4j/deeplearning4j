@@ -156,16 +156,4 @@ public class FlatBufferSerdeTest {
             }
         }
     }
-
-//    @Test
-//    public void temp() throws Exception {
-//        URI u = new URI("");
-//        File source = new File(u.toURL().toURI());
-//        ClassPathResource cpr = new ClassPathResource("testdir\\inner");
-//        File to = testDir.newFolder();
-//        cpr.copyDirectory(to);
-//        for(File f : to.listFiles()){
-//            System.out.println(f.getAbsolutePath());
-//        }
-//    }
 }

@@ -195,6 +195,8 @@ public class FlatBuffersMapper {
                 return OpType.INDEX_ACCUMULATION;
             case RANDOM:
                 return OpType.RANDOM;
+            case VARIANCE:
+                return OpType.SUMMARYSTATS;
             case MERGE:
             case CONDITIONAL:
             case LOOP:
@@ -315,8 +317,8 @@ public class FlatBuffersMapper {
             if(opType == Op.Type.SCALAR){
                 ScalarOp sOp = (ScalarOp)op;
                 sOp.setScalar(scalar);
-            } else if(opType == Op.Type.REDUCE){
-                BaseAccumulation ba = (BaseAccumulation)op;
+            } else if(opType == Op.Type.REDUCE || opType == Op.Type.REDUCE3){
+                BaseAccumulation ba = (BaseAccumulation)op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
                 ba.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
             } else if(opType == Op.Type.INDEXREDUCE){
@@ -326,9 +328,5 @@ public class FlatBuffersMapper {
             }
             return (DifferentialFunction)op;
         }
-//        else {
-//            throw new UnsupportedOperationException("Not yet implemented: op type " + opType);
-//        }
-
     }
 }

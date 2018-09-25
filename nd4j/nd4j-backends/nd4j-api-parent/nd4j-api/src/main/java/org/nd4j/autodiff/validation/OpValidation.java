@@ -23,6 +23,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -66,6 +67,7 @@ import org.tensorflow.framework.OpDef;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.Set;
 
@@ -125,6 +127,12 @@ public class OpValidation {
         //First: collect coverage information
         collectCoverageInformation(testCase);
 
+        //Check serialization
+        ByteBuffer serializedBeforeExec = null;
+        if(testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH){
+            serializedBeforeExec = testCase.sameDiff().asFlatBuffers();
+            Preconditions.checkNotNull(serializedBeforeExec, "Serialization failed? Null output");
+        }
 
         //Check forward pass:
         if (testCase.fwdTestFns() != null && testCase.fwdTestFns().size() > 0) {
@@ -159,6 +167,17 @@ public class OpValidation {
                     return testCase.testNameErrMsg() + ": Variable " + e.getKey() + " failed: " + error;
                 }
             }
+
+            ByteBuffer serializedAfterExec = null;
+            if(testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH){
+                serializedAfterExec = testCase.sameDiff().asFlatBuffers();
+                Preconditions.checkNotNull(serializedAfterExec, "Serialization failed? Null output");
+            }
+
+            //Now: deserialize, and check the results
+            if(serializedBeforeExec != null){
+                checkDeserializedEquality(sd, serializedBeforeExec);
+            }
         }
 
         //Check gradients:
@@ -176,6 +195,43 @@ public class OpValidation {
         }
 
         return null;    //OK - passed
+    }
+
+    public static void checkDeserializedEquality(SameDiff original, ByteBuffer bbSerialized) {
+        SameDiff deserialized;
+        try{
+           deserialized = SameDiff.fromFlatBuffers(bbSerialized);
+        } catch (IOException e){
+            throw new RuntimeException("IOException deserializing from FlatBuffers", e);
+        }
+
+        //Check variables:
+        List<SDVariable> vars = original.variables();
+        List<SDVariable> varsDe = deserialized.variables();
+        Preconditions.checkState(vars.size() == varsDe.size(), "Number of variables differs: expected %s, got %s", vars.size(), varsDe.size());
+        for( int i=0; i<vars.size(); i++ ){
+            SDVariable vO = vars.get(i);
+            SDVariable vD = varsDe.get(i);
+            Preconditions.checkState(vO.getVarName().equals(vD.getVarName()), "Names should be equal for variable %s: expected %s vs %s",
+                    i, vO.getVarName(), vD.getVarName());
+        }
+
+        //Check ops:
+        DifferentialFunction[] dfOrig = original.functions();
+        DifferentialFunction[] dfDe = deserialized.functions();
+        Preconditions.checkState(dfOrig.length == dfDe.length, "Number of functions differs: %s vs. %s", dfOrig.length, dfDe.length);
+        for( int i=0; i<dfOrig.length; i++ ){
+            Preconditions.checkState(dfOrig[i].getClass().equals(dfDe[i].getClass()), "Different classes: op %s - %s vs %s",
+                    i, dfOrig[i].getClass(), dfDe[i].getClass());
+        }
+
+        //Finally: check execution/output
+        INDArray[] outOrig = original.execAndEndResults();
+        INDArray[] outDe = deserialized.execAndEndResults();
+        Preconditions.checkState(outOrig.length == outDe.length, "Different number of outputs: %s expected vs. %s actual", outOrig.length, outDe.length);
+        for(int i=0; i<outOrig.length; i++ ){
+            Preconditions.checkState(outOrig[i].equals(outDe[i]), "Output array %s differs - \"%ndSInfo\" vs \"%ndSInfo\"", i, outOrig[i], outDe[i]);
+        }
     }
 
     /**

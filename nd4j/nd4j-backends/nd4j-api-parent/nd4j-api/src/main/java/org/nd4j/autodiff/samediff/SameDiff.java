@@ -11253,10 +11253,14 @@ public class SameDiff {
 
     public static SameDiff fromFlatFile(@NonNull File file) throws IOException {
         byte[] bytes;
-        try(InputStream is = new BufferedInputStream(new FileInputStream(file))){
+        try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
             bytes = IOUtils.toByteArray(is);
         }
         ByteBuffer bbIn = ByteBuffer.wrap(bytes);
+        return fromFlatBuffers(bbIn);
+    }
+
+    public static SameDiff fromFlatBuffers(ByteBuffer bbIn) throws IOException {
 
         FlatGraph fg = FlatGraph.getRootAsFlatGraph(bbIn);
 
