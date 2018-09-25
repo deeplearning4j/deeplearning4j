@@ -113,6 +113,20 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
+        if(config == null && !iArguments.isEmpty()){
+            config = Conv2DConfig.builder()
+                    .kH(iArguments.get(0))
+                    .kW(iArguments.get(1))
+                    .sH(iArguments.get(2))
+                    .sW(iArguments.get(3))
+                    .pH(iArguments.get(4))
+                    .pW(iArguments.get(5))
+                    .dH(iArguments.get(6))
+                    .dW(iArguments.get(7))
+                    .isSameMode(iArguments.get(8) == 1)
+                    .dataFormat(iArguments.get(9) == 1 ? Conv2DConfig.NHWC : Conv2DConfig.NCHW)
+                    .build();
+        }
         return config.toProperties();
     }
 

@@ -93,14 +93,28 @@ public class Conv3D extends DynamicCustomOp {
                 getConfig().isValidMode() ? 0 : 1,
                 getConfig().isNCDHW() ? 0 : 1
         );
-
     }
 
 
     @Override
     public Object getValue(Field property) {
-        if (config == null) {
-            config = Conv3DConfig.builder().build();
+        if (config == null && !iArguments.isEmpty()) {
+            config = Conv3DConfig.builder()
+                    .kD(iArguments.get(0))
+                    .kH(iArguments.get(1))
+                    .kW(iArguments.get(2))
+                    .sD(iArguments.get(3))
+                    .sH(iArguments.get(4))
+                    .sW(iArguments.get(5))
+                    .pD(iArguments.get(6))
+                    .pH(iArguments.get(7))
+                    .pW(iArguments.get(8))
+                    .dD(iArguments.get(9))
+                    .dH(iArguments.get(10))
+                    .dW(iArguments.get(11))
+                    .isValidMode(iArguments.get(12) == 0)
+                    .dataFormat(iArguments.get(13) == 1 ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
+                    .build();
         }
 
         return config.getValue(property);
