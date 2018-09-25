@@ -1048,11 +1048,16 @@ TEST_F(DeclarableOpsTests5, Test_TopK_4) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Test_TopK_5) {
     auto x = NDArrayFactory::create<double>('f', {2, 3}, {1.1, 11.1, 3.1, 14.2, 5.2, 6.2});
-    auto expV = NDArrayFactory::create<double>('f', {2, 2}, {3.1, 11.1, 6.2, 14.2});
+    auto expV = NDArrayFactory::create<double>('f', {2, 2}, {11.1, 3.1, 14.2, 6.2});
     auto expI = NDArrayFactory::create<Nd4jLong>('f', {2, 2}, {1, 2, 2, 0});
 
     nd4j::ops::top_k op;
     auto result = op.execute({&x}, {}, {2, 1});
+    for (Nd4jLong r = 0; r < 2; r++) {
+        for (Nd4jLong c = 0; c < 3; c++)
+            nd4j_printf("%f, ", x.e<double>(r,c));
+        nd4j_printf("\n", "");
+    }
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     ASSERT_EQ(2, result->size());

@@ -3883,7 +3883,7 @@ NDArray NDArray::transp() const {
         std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
 
         for (int idx = 0; idx < numTads; idx++ ) {
-            auto buffer = templatedPointerShift(_buffer, (tad->tadOffsets[idx], this->dataType());
+            auto buffer = templatedPointerShift(_buffer, tad->tadOffsets[idx], this->dataType());
             auto array = new NDArray(buffer, shapeInfo);
             result->push_back(array);
         }
