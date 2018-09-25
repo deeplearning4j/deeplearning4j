@@ -91,7 +91,7 @@ TEST_F(SingleDimTests, Test_Reduce_1) {
 TEST_F(SingleDimTests, Test_IndexReduce_1) {
     auto x = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
 
-    auto r = x.indexReduceNumber(indexreduce::IndexMax);
+    auto r = x.indexReduceNumber(indexreduce::IndexMax).e<int>(0);
 
     ASSERT_NEAR(2, r, 1e-5f);
 }
