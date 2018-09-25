@@ -365,11 +365,11 @@ public abstract class NativeOps extends Pointer {
      * @param tadPointers
      * @param tadOffsets
      */
-    public abstract void concatDouble(PointerPointer extraPointers, int dimension, int numArrays, PointerPointer data,
+    public abstract void concat(PointerPointer extraPointers, int dimension, int numArrays, PointerPointer data,
                                       PointerPointer inputShapeInfo, Pointer results, @Cast("Nd4jLong *") LongPointer resultShapeInfo,
                                       PointerPointer tadPointers, PointerPointer tadOffsets);
 
-    public abstract void specialConcatDouble(PointerPointer extraPointers, int dimension, int numArrays,
+    public abstract void specialConcat(PointerPointer extraPointers, int dimension, int numArrays,
                                              PointerPointer data, PointerPointer inputShapeInfo, Pointer results,
                                              @Cast("Nd4jLong *") LongPointer resultShapeInfo, PointerPointer tadPointers, PointerPointer tadOffsets);
 
@@ -470,7 +470,7 @@ public abstract class NativeOps extends Pointer {
 
     ///////////////
 
-    public abstract void pullRowsDouble(PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo,
+    public abstract void pullRows(PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo,
                                         Pointer z, @Cast("Nd4jLong *") LongPointer zShapeInfo, long n, @Cast("Nd4jLong *") LongPointer indexes, @Cast("Nd4jLong *") LongPointer tadShapeInfo,
                                         @Cast("Nd4jLong *") LongPointer tadOffsets, @Cast("Nd4jLong *") LongPointer zTadShapeInfo,
                                         @Cast("Nd4jLong *") LongPointer zTadOffsets);
@@ -478,12 +478,12 @@ public abstract class NativeOps extends Pointer {
 
     ///////////////////////
 
-    public abstract void average(PointerPointer extraPointers, PointerPointer x, DoublePointer z, int n,
+    public abstract void average(PointerPointer extraPointers, PointerPointer x, Pointer z, int n,
                                  long length, boolean propagate);
 
     ///////////////////////
 
-    public abstract void accumulate(PointerPointer extraPointers, PointerPointer x, DoublePointer z, int n,
+    public abstract void accumulate(PointerPointer extraPointers, PointerPointer x, Pointer z, int n,
                                     long length);
 
     ///////////////////////
@@ -544,7 +544,7 @@ public abstract class NativeOps extends Pointer {
                                     @Cast("Nd4jLong *") LongPointer zShapeBuffer, Pointer extraArguments);
 
     public abstract void execRandom(PointerPointer extraPointers, int opNum, Pointer state, Pointer x,
-                                    @Cast("Nd4jLong *") LongPointer xShapeBuffer, DoublePointer z, @Cast("Nd4jLong *") LongPointer zShapeBuffer, Pointer extraArguments);
+                                    @Cast("Nd4jLong *") LongPointer xShapeBuffer, Pointer z, @Cast("Nd4jLong *") LongPointer zShapeBuffer, Pointer extraArguments);
 
     ////////////////////
 
@@ -690,23 +690,23 @@ public abstract class NativeOps extends Pointer {
     public abstract Pointer pointerForAddress(long address);
 
 
-    public abstract void tearDouble(PointerPointer extras, Pointer tensor, @Cast("Nd4jLong *") LongPointer xShapeInfo,
+    public abstract void tear(PointerPointer extras, Pointer tensor, @Cast("Nd4jLong *") LongPointer xShapeInfo,
                                     PointerPointer targets, @Cast("Nd4jLong *") LongPointer zShapeInfo, @Cast("Nd4jLong *") LongPointer tadShapeInfo,
                                     @Cast("Nd4jLong *") LongPointer tadOffsets);
 
 
     public abstract long encodeBitmap(PointerPointer extraPointers, Pointer dx, long N, IntPointer dz, float threshold);
 
-    public abstract void decodeBitmap(PointerPointer extraPointers, Pointer dx, long N, DoublePointer dz);
+    public abstract void decodeBitmap(PointerPointer extraPointers, Pointer dx, long N, Pointer dz);
 
 
-    public abstract void encodeThresholdP1(PointerPointer extraPointers, DoublePointer dx, long N, IntPointer dz, float threshold);
+    public abstract void encodeThresholdP1(PointerPointer extraPointers, Pointer dx, long N, IntPointer dz, float threshold);
 
     public abstract void encodeThresholdP2Int(PointerPointer extraPointers, IntPointer dx, long N, IntPointer dz);
 
-    public abstract void encodeThresholdP3(PointerPointer extraPointers, DoublePointer dx, IntPointer offsets, long N, IntPointer dz);
+    public abstract void encodeThresholdP3(PointerPointer extraPointers, Pointer dx, IntPointer offsets, long N, IntPointer dz);
 
-    public abstract void decodeThreshold(PointerPointer extraPointers, Pointer dx, long N, DoublePointer dz);
+    public abstract void decodeThreshold(PointerPointer extraPointers, Pointer dx, long N, Pointer dz);
 
     public abstract void sort(PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong *") LongPointer xShapeInfo, boolean descending);
 
@@ -733,7 +733,7 @@ public abstract class NativeOps extends Pointer {
 
     public abstract Pointer calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs);
 
-    public abstract Pointer calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs);
+    public abstract Pointer calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputBunffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs);
 
     public abstract int registerGraph(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
 

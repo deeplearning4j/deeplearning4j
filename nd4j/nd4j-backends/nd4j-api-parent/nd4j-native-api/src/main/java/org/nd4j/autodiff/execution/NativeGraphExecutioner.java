@@ -106,7 +106,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
         log.info("Buffer length: {}", buffer.limit());
 
-        val res  = NativeOpsHolder.getInstance().getDeviceNativeOps().executeFlatGraphFloat(null, bPtr);
+        val res  = NativeOpsHolder.getInstance().getDeviceNativeOps().executeFlatGraph(null, bPtr);
         if (res == null)
             throw new ND4JIllegalStateException("Graph execution failed");
 
