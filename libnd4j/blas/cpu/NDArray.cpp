@@ -3038,9 +3038,7 @@ NDArray NDArray::transp() const {
     }
 
     void* NDArray::templatedPointerShift(void *buffer, Nd4jLong offset, nd4j::DataType dtype) const {
-        void *ptr;
-        BUILD_SINGLE_SELECTOR(dtype, ptr = templatedPointerShift, (_buffer, offset), LIBND4J_TYPES);
-        return ptr;
+        return reinterpret_cast<int8_t*>(buffer) + (offset * DataTypeUtils::sizeOf(dtype));
     }
 
     ////////////////////////////////////////////////////////////////////////
