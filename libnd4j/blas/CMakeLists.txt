@@ -189,7 +189,7 @@ if(CUDA_BLAS)
                 ../include/loops/cuda/reduce.cu ../include/loops/cuda/indexreduce.cu ../include/loops/cuda/scalar.cu ../include/loops/cuda/broadcasting.cu ../include/loops/cuda/transform.cu
                 ../include/loops/cuda/grid_strided.cu   ../include/loops/cuda/pairwise_transform.cu ../include/loops/cuda/random.cu ${CUSTOMOPS_HELPERS_SOURCES}
                 ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
-                cpu/GraphExecutioner.cpp cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp
+                cpu/GraphExecutioner.cpp cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
                 Environment.cpp Environment.h ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES} ${OPS_SOURCES})
         target_link_libraries(${LIBND4J_NAME} ${CUDA_LIBRARIES})
@@ -220,7 +220,7 @@ elseif(CPU_BLAS)
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
     add_library(nd4jobj OBJECT cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
-            cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp
+            cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
             ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
             Environment.cpp Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
