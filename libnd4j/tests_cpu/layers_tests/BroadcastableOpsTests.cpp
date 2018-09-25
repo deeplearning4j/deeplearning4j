@@ -278,7 +278,7 @@ TEST_F(BroadcastableOpsTests, Test_Shape_5) {
 
 TEST_F(BroadcastableOpsTests, Test_Scalar_Add_1) {
     auto x = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto y  = NDArrayFactory::_scalar<float>(2.0f);
+    auto y  = NDArrayFactory::scalar<float>(2.0f);
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {3, 4, 5, 6});
 
     nd4j::ops::add op;
@@ -317,7 +317,7 @@ TEST_F(BroadcastableOpsTests, Test_Inplace_Output_1) {
 
 TEST_F(BroadcastableOpsTests, Test_Subtract_1) {
 
-    auto x = NDArrayFactory::_scalar<float>(1.0f);
+    auto x = NDArrayFactory::scalar<float>(1.0f);
     auto y = NDArrayFactory::create<float>('c', {2}, {0.0f, 1.0f});
     auto e = NDArrayFactory::create<float>('c', {2}, {1.0f, 0.0f});
 

@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 	auto newLabels = labels;
 	if(labelsSmoothing != 0.) {
 		auto numClasses = labels->sizeAt(1);
-		auto ts = NDArrayFactory::_scalar(1.f - labelsSmoothing);
+		auto ts = NDArrayFactory::scalar(1.f - labelsSmoothing);
 		//auto smooth = LAMBDA_T(value, labelsSmoothing, numClasses) { return value * ((T)1. - labelsSmoothing) + labelsSmoothing/numClasses; };
     	newLabels = new NDArray(*labels);
     	//newLabels->applyLambda(smooth);

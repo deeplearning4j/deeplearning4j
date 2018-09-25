@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", expectedPaddingsShape.c_str(), currentPaddingsShape.c_str());
 
 	// FIXME: double
-	auto padValue = NDArrayFactory::_scalar(0.f);
+	auto padValue = NDArrayFactory::scalar(0.f);
 	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 
 	// REFLECT case
 	if (argI->at(0) == 0) { // CONSTAND mode

@@ -62,7 +62,7 @@ namespace nd4j {
             };
             */
 
-            auto ts = NDArrayFactory::_scalar<int>(2);
+            auto ts = NDArrayFactory::scalar<int>(2);
 
 
             if (x->isSameShape(y)) {

@@ -31,7 +31,7 @@ namespace helpers {
 static FORCEINLINE NDArray activation(const NDArray& arr) {
     
     // return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Tanh<T>>();    
-    auto result = NDArrayFactory::create(&arr, false, arr.getWorkspace());
+    auto result = NDArray(&arr, false, arr.getWorkspace());
     (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, &result);
     return result;
 }

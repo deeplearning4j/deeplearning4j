@@ -32,8 +32,8 @@ public:
 
 
 TEST_F(BooleanOpsTests, LtTest_1) {
-    auto x = NDArrayFactory::scalar(1.0f);
-    auto y = NDArrayFactory::scalar(2.0f);
+    auto x = NDArrayFactory::scalar_(1.0f);
+    auto y = NDArrayFactory::scalar_(2.0f);
 
     nd4j::ops::lt_scalar op;
 
@@ -45,8 +45,8 @@ TEST_F(BooleanOpsTests, LtTest_1) {
 }
 
 TEST_F(BooleanOpsTests, LtTest_2) {
-    auto x = NDArrayFactory::scalar(2.0f);
-    auto y = NDArrayFactory::scalar(1.0f);
+    auto x = NDArrayFactory::scalar_(2.0f);
+    auto y = NDArrayFactory::scalar_(1.0f);
 
     nd4j::ops::lt_scalar op;
 
