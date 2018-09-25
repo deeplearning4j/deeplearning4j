@@ -190,7 +190,12 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
     ALLOCATE(_buffer, workspace, _length * DataTypeUtils::sizeOf(dtype), int8_t);        
     _workspace = workspace;    
     triggerAllocationFlag(true, true);
-    memcpy(_buffer, data.data(), _length * sizeof(double));
+
+// #pragma omp parallel for simd schedule(static)
+//     for(Nd4jLong i=0; i < _length; ++i)
+//         templatedSet<double>(_buffer, i, dtype, const_cast<std::vector<double>&>(data).data());
+
+    // memcpy(_buffer, data.data(), _length * sizeof(double));
 }
 
 
@@ -820,16 +825,18 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 // This method assigns values of given NDArray to this one
     void NDArray::assign(NDArray& other) {
+
+        if (this == &other) 
+            return;
+
         if (this->isScalar() && other.isScalar()) {
             BUILD_DOUBLE_SELECTOR(this->dataType(), other.dataType(), templatedDoubleAssign, (this->buffer(), 0, other.buffer(), 0), LIBND4J_TYPES, LIBND4J_TYPES);
             return;
         } else if (other.isScalar()) {
             NativeOpExcutioner::execScalar(scalar::Copy, this->buffer(), this->shapeInfo(), this->buffer(), this->shapeInfo(), other.buffer(), other.shapeInfo(), nullptr);
-            return;;
-        }
-
-        if (this == &other) 
             return;
+        }
+                
         if (other.lengthOf() != lengthOf()) {
             auto shapeThis = ShapeUtils::shapeAsString(this);
             auto shapeThat = ShapeUtils::shapeAsString(&other);
