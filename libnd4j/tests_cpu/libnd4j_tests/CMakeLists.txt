@@ -105,7 +105,8 @@ message("CPU BLAS")
 add_definitions(-D__CPUBLAS__=true)
 
 
-file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/*.cpp ../layers_tests/*.h)
+# file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/*.cpp ../layers_tests/*.h)
+file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/HelpersTests1.cpp)
 
 # Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
 set (EXCLUDE_DIR "/CMakeFiles/")

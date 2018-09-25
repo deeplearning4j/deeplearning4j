@@ -28,9 +28,11 @@ namespace helpers {
 
     template <typename T>
     static int topKFunctor_(NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
-        int width = input->sizeAt(-1);
-        std::unique_ptr<ResultSet> lastDimList(input->allTensorsAlongDimension({input->rankOf() - 1}));
-
+        Nd4jLong width = input->sizeAt(-1);
+//        Nd4jLong lastDim = input->rankOf() - 1;
+//      FIX ME: lastDim should be Nd4Long not int only?
+        int lastDim = input->rankOf() - 1;
+        std::unique_ptr<ResultSet> lastDimList(input->allTensorsAlongDimension({lastDim}));
 // ----------------------------------------------------------------------------------------------- //
 // this assumption is right:
 //        if (values->lengthOf() != k * lastDimList->size()) {
@@ -50,24 +52,32 @@ namespace helpers {
             }
             else { 
                 int nextPos = 0;
+                std::vector<int> dimsToExclude(input->rankOf() - 1);
+                for (int d = 0; d < dimsToExclude.size(); ++d)
+                    dimsToExclude[d] = d;
 
+                const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input->getShapeInfo(), dimsToExclude);
 //#pragma omp parallel for if(lastDimList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
-                for (int e = 0; e < lastDimList->size(); ++e) {
-                    auto trial = lastDimList->at(e); // a vector to be search
+                for (Nd4jLong e = 0; e < numOfSubArrs; ++e) {
+                    auto trial = (*input)(e, dimsToExclude);
 
+                    auto trialTo = lastDimList->at(e); // a vector to be search
+                    nd4j_printf("%i: ", e);
+                    trial.printIndexedBuffer("TRIAL:");
+                    trialTo->printIndexedBuffer("TOTRI:");
                     std::vector<Nd4jLong> topIndices(k);
                     std::vector<T> topValues(k);
 
                     // fill up the first k elements
                     for (Nd4jLong pos = 0; pos < k; ++pos) {
                         topIndices[pos] = pos;
-                        topValues[pos] = trial->e<T>(pos);
+                        topValues[pos] = trial.e<T>(pos);
                     }
                     std::vector<T> sortedVals(topValues);
                     std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
                     
                     for (int i = k; i < width; ++i) {
-                        T val = trial->e<T>(i);
+                        T val = trial.e<T>(i);
                         if (sortedVals[0] < val) { // value should be inserted to top k
                             // only if it is not contained in 
                             if (sortedVals.end() == std::find(sortedVals.begin(), sortedVals.end(), val)) {    
@@ -88,7 +98,7 @@ namespace helpers {
 
                     for (int j = 0; j < width; j++)
                         for (int pos = 0; pos < k; ++pos)
-                            if (topValues[pos] == trial->e<T>(j))
+                            if (topValues[pos] == trial.e<T>(j))
                                 topIndices[pos] = j;
 
                     for (int pos = 0; pos < k; ++pos, ++nextPos) {

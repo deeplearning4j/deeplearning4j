@@ -1056,8 +1056,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     void* NDArray::bufferWithOffset(Nd4jLong offset) const {
-        BUILD_SINGLE_SELECTOR(this->dataType(), return templatedPointerShift, (this->getBuffer(), offset), LIBND4J_TYPES);
+        // FIXME, use this instead -> _buffer + (offset * DataTypeUtils::sizeOf(_dataType));
+        _buffer + (offset * DataTypeUtils::sizeOf(dataType()));
     }
+
 /*
     template <typename T>
     void NDArray::p(const Nd4jLong* indices, const T value) {
@@ -1326,12 +1328,6 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
-        // shape::printShapeInfoLinear(tad.tadOnlyShapeInfo);
-
-        void *buffer = nullptr;//this->_buffer + tad.tadOffsets[index];
-        auto xType = this->dataType();
-        BUILD_SINGLE_SELECTOR(xType, buffer = templatedPointerShift, (this->_buffer, tad.tadOffsets[index]), LIBND4J_TYPES);
-
         Nd4jLong* shapeInfo;
         if (_workspace == nullptr) {
             shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad.tadOnlyShapeInfo)];
@@ -1340,7 +1336,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         }
         std::memcpy(shapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
 
-        auto array = new NDArray(buffer, shapeInfo, _workspace);
+        auto array = new NDArray(bufferWithOffset(tad.tadOffsets[index]), shapeInfo, _workspace);
         array->_isBuffAlloc = false;
         array->_isShapeAlloc = true;
         array->_isView = true;
@@ -1349,10 +1345,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     template <typename T>
-    void* NDArray::templatedPointerShift(void *buffer, Nd4jLong offset) const {
-        return reinterpret_cast<T*>(buffer) + offset;
+    void* NDArray::templatedPointerShift(const Nd4jLong offset) const {
+        return reinterpret_cast<T*>(_buffer) + offset;
     }
-    BUILD_SINGLE_TEMPLATE(template void* NDArray::templatedPointerShift, (void *buffer, Nd4jLong offset) const, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void* NDArray::templatedPointerShift, (const Nd4jLong offset) const, LIBND4J_TYPES);
 
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected 
     NDArray* NDArray::transpose() const {
@@ -2747,7 +2743,7 @@ NDArray NDArray::transp() const {
 
         //shape::printShapeInfoLinear(newShape);
 
-        auto result = new NDArray(templatedPointerShift(_buffer, offset, this->dataType()), newShape, this->_workspace);
+        auto result = new NDArray(bufferWithOffset(offset), newShape, this->_workspace);
         result->_isShapeAlloc = true;
 
         return result;
@@ -2782,7 +2778,7 @@ NDArray NDArray::transp() const {
             ++d;
         }
 
-        auto result = new NDArray(templatedPointerShift(_buffer, offset, this->dataType()), newShape, this->_workspace);
+        auto result = new NDArray(bufferWithOffset(offset), newShape, this->_workspace);
         result->_isShapeAlloc = true;
 
         for (auto v: idx) {
@@ -2817,7 +2813,7 @@ NDArray NDArray::transp() const {
             }
         }
 
-        auto result = new NDArray(templatedPointerShift(this->_buffer, offset, this->dataType()), newShape, this->_workspace);
+        auto result = new NDArray(bufferWithOffset(offset), newShape, this->_workspace);
         result->_isShapeAlloc = true;
 
         return result;
@@ -3038,10 +3034,6 @@ NDArray NDArray::transp() const {
          varianceAlongDimension(op, target, biasCorrected, std::vector<int>(dimensions));
     }
 
-    void* NDArray::templatedPointerShift(void *buffer, Nd4jLong offset, nd4j::DataType dtype) const {
-        return reinterpret_cast<int8_t*>(buffer) + (offset * DataTypeUtils::sizeOf(dtype));
-    }
-
     ////////////////////////////////////////////////////////////////////////
     // operator returns sub-array with buffer pointing at this->_buffer + certain offset
     NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
@@ -3072,7 +3064,7 @@ NDArray NDArray::transp() const {
 
 
 
-        NDArray result(templatedPointerShift(_buffer, offset, this->dataType()), newShape, _workspace);
+        NDArray result(bufferWithOffset(offset), newShape, _workspace);
         result._isShapeAlloc = true;
 
         if(!keepUnitiesInShape) {
@@ -3843,8 +3835,7 @@ NDArray NDArray::transp() const {
                 throw std::runtime_error("Bad index");
             }
 
-            auto buffer = templatedPointerShift(_buffer, (tad->tadOffsets[idx]), this->dataType());
-            auto array = new NDArray(buffer, shapeInfo);
+            auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), shapeInfo);
             result->push_back(array);
         }
 
@@ -3884,8 +3875,7 @@ NDArray NDArray::transp() const {
         std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
 
         for (int idx = 0; idx < numTads; idx++ ) {
-            auto buffer = bufferWithOffset(tad->tadOffsets[idx]);
-            auto array = new NDArray(buffer, shapeInfo);
+            auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), shapeInfo);
             result->push_back(array);
         }
 
