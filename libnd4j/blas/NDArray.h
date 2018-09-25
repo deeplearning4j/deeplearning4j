@@ -437,6 +437,7 @@ namespace nd4j {
         */
         NDArray meanNumber() const;
 
+#ifndef __JAVACPP_HACK__
 
         /**
          * This method explicitly enforces new shape for this NDArray, old shape/stride information is lost
@@ -564,7 +565,6 @@ namespace nd4j {
         void applyScalar(nd4j::scalar::Ops op, NDArray* scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
 
 
-#ifndef __JAVACPP_HACK__
         /**
         *  apply operation "func" to an array
         *  func - what operation to apply
