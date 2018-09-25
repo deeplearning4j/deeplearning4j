@@ -439,7 +439,7 @@ nd4j::NDArray* MmulHelper::mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDA
 
     auto xType = A->dataType();
     auto yType = B->dataType();
-    auto zType = C->dataType();
+    auto zType = result->dataType();
 
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     // TODO: put proper _gemm here

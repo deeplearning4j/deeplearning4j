@@ -180,6 +180,11 @@ namespace nd4j {
         NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
+        * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
+        */
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype = DataType_DOUBLE, nd4j::memory::Workspace* workspace = nullptr);
+
+        /**
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
         */
         NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
@@ -437,6 +442,7 @@ namespace nd4j {
         */
         NDArray meanNumber() const;
 
+#ifndef __JAVACPP_HACK__
 
         /**
          * This method explicitly enforces new shape for this NDArray, old shape/stride information is lost
@@ -564,7 +570,6 @@ namespace nd4j {
         void applyScalar(nd4j::scalar::Ops op, NDArray* scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
 
 
-#ifndef __JAVACPP_HACK__
         /**
         *  apply operation "func" to an array
         *  func - what operation to apply

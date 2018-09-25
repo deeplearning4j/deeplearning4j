@@ -114,11 +114,12 @@ DECLARE_SHAPE_FN(static_rnn) {
     ALLOCATE(hShapeInfo,     block.getWorkspace(), shape::shapeInfoLength(inRank), Nd4jLong);
     ALLOCATE(hPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), Nd4jLong);
             
-    hShapeInfo[0]     = inRank;
-    hPrevShapeInfo[0] = inRank-1;
-    hShapeInfo[1]     = time;
-    hShapeInfo[2]     = hPrevShapeInfo[1] = bS;
-    hShapeInfo[3]     = hPrevShapeInfo[2] = numUnits;
+    hShapeInfo[0]            = inRank;
+    hPrevShapeInfo[0]        = inRank-1;
+    hShapeInfo[1]            = time;
+    hShapeInfo[2]            = hPrevShapeInfo[1] = bS;
+    hShapeInfo[3]            = hPrevShapeInfo[2] = numUnits;
+    hShapeInfo[2*inRank + 1] = hPrevShapeInfo[2*inRank - 1] = ArrayOptions::dataType(xShapeInfo);
 
     shape::updateStrides(hShapeInfo,     shape::order(xShapeInfo));    
     shape::updateStrides(hPrevShapeInfo, shape::order(xShapeInfo));

@@ -175,6 +175,26 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 }
 
 ////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
+        
+    if ((int) shape.size() > MAX_RANK)
+        throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+    setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, workspace));
+
+    if (_length != data.size()) {
+        nd4j_printf("NDArray constructor: data size [%i] doesn't match shape length [%i]\n", data.size(), _length);
+        throw std::runtime_error("Data size doesn't match shape");
+    }
+
+    ALLOCATE(_buffer, workspace, _length * DataTypeUtils::sizeOf(dtype), int8_t);        
+    _workspace = workspace;    
+    triggerAllocationFlag(true, true);
+    memcpy(_buffer, data.data(), _length * sizeof(double));
+}
+
+
+////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::memory::Workspace* workspace) {
     
     ALLOCATE(_buffer, workspace, other->_length * DataTypeUtils::sizeOf(other->dataType()), int8_t);

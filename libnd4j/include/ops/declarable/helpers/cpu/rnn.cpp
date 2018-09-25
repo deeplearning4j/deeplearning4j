@@ -77,7 +77,7 @@ void rnnTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wh, const N
     // loop through batch of inputs           
     for (int e = 0; e < bS; ++e) {                  
         // loop through time steps
-        for (int t = 0; t < time; ++t) {                                 
+        for (int t = 0; t < time; ++t) {
 
             int maxStep = maxTimeStep ? maxTimeStep->e<int>(e) : time;
 
