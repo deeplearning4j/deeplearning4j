@@ -1337,7 +1337,8 @@ namespace nd4j {
     template <typename T, typename R>
     FORCEINLINE R NDArray::templatedGet(void *buffer, Nd4jLong index) const {
             auto b = reinterpret_cast<T*>(buffer);
-            return static_cast<R>(b[index]);
+            auto v = static_cast<R>(b[index]);
+            return v;
     }
 
     //////////////////////////////////////////////////////////////////////////

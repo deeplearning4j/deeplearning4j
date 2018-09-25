@@ -1917,8 +1917,9 @@ TEST_F(HelpersTests1, checkGrad_test6) {
 TEST_F(HelpersTests1, rnnCell_test10) {
     
     NDArray b('c', {8}, {0.05,0.05,0.05,0.05,  0.1,0.2,0.3,0.4});
+    b.printIndexedBuffer("b");
     NDArray arr = b({{4, 8}});
-    arr.printIndexedBuffer();
+    arr.printIndexedBuffer("a");
     
     ASSERT_TRUE(1);
 }

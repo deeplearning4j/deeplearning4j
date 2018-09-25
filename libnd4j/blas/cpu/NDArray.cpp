@@ -3065,7 +3065,10 @@ NDArray NDArray::transp() const {
             }
         }
 
-        NDArray result(_buffer + offset, newShape, _workspace);
+        void *ptr;
+        BUILD_SINGLE_SELECTOR(this->dataType(), ptr = templatedPointerShift, (_buffer, offset), LIBND4J_TYPES);
+
+        NDArray result(ptr, newShape, _workspace);
         result._isShapeAlloc = true;
 
         if(!keepUnitiesInShape) {
