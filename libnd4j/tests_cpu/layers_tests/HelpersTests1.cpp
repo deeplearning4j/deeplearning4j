@@ -1913,3 +1913,12 @@ TEST_F(HelpersTests1, checkGrad_test6) {
     ASSERT_TRUE(isGradCorrect);
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, rnnCell_test10) {
+    
+    NDArray b('c', {8}, {0.05,0.05,0.05,0.05,  0.1,0.2,0.3,0.4});
+    NDArray arr = b({{4, 8}});
+    arr.printIndexedBuffer();
+    
+    ASSERT_TRUE(1);
+}
