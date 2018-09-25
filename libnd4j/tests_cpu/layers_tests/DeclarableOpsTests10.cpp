@@ -177,7 +177,7 @@ TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
 TEST_F(DeclarableOpsTests10, Where_SGO_Test_1) {
     auto input = NDArrayFactory::create<double>('c', {3, 3}, {1., 0., 0., 1., 1., 0., 1., 1., 1.});
     //auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
-    auto exp = NDArrayFactory::create<double>('c', {6, 2}, {0., 0., 1., 0., 1., 1., 2., 0., 2., 1., 2., 2.});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {6, 2}, {0LL, 0LL, 1LL, 0LL, 1LL, 1LL, 2LL, 0LL, 2LL, 1LL, 2LL, 2LL});
 
     nd4j::ops::Where op;
     auto res = op.execute({&input}, {}, {});
@@ -192,28 +192,32 @@ TEST_F(DeclarableOpsTests10, Where_SGO_Test_1) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_1) {
-    auto cond3d = NDArrayFactory::create<double>('c', {2, 2, 2}, {1., 0., 0., 1., 1., 1., 1., 0.});
+//    auto cond3d = NDArrayFactory::create<bool>('c', {2, 2, 2}, {1, 0, 0, 1, 1, 1, 1, 0}); // bool not implemented yet
+    auto cond3d = NDArrayFactory::create<bool>('c', {2, 2, 2}, {true, false, false, true, true, true, true, false});
 //    auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
-    auto exp1 = NDArrayFactory::create<double>({0., 0., 1., 1., 1.});
-    auto exp2 = NDArrayFactory::create<double>({0., 1., 0., 0., 1.});
-    auto exp3 = NDArrayFactory::create<double>({0., 1., 0., 1., 0.});
+    auto exp1 = NDArrayFactory::create<Nd4jLong>({0, 0, 1, 1, 1});
+    auto exp2 = NDArrayFactory::create<Nd4jLong>({0, 1, 0, 0, 1});
+    auto exp3 = NDArrayFactory::create<Nd4jLong>({0, 1, 0, 1, 0});
     nd4j::ops::where_np op;
     auto res = op.execute({&cond3d}, {}, {});
     ASSERT_TRUE(res->size() == 3);
-    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-    ASSERT_TRUE(exp1.equalsTo(res->at(0)));
-    ASSERT_TRUE(exp2.equalsTo(res->at(1)));
-    ASSERT_TRUE(exp3.equalsTo(res->at(2)));
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto res1 = res->at(0);
+    auto res2 = res->at(1);
+    auto res3 = res->at(2);
+    ASSERT_TRUE(exp1.equalsTo(res1));
+    ASSERT_TRUE(exp2.equalsTo(res2));
+    ASSERT_TRUE(exp3.equalsTo(res3));
     //ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
     delete res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_2) {
-    auto cond2d = NDArrayFactory::create<double>('c', {3, 5}, {1., 1., 0., 0., 1., 1., 1., 1., 1., 1., 0., 1., 1., 1., 1.});
-//    auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
-    auto exp1 = NDArrayFactory::create<double>({0., 0., 0., 1., 1., 1., 1., 1., 2., 2., 2., 2.});
-    auto exp2 = NDArrayFactory::create<double>({0., 1., 4., 0., 1., 2., 3., 4., 1., 2., 3., 4.});
+    auto cond2d = NDArrayFactory::create<bool>('c', {3, 5}, {1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1});
+//    auto expIdx({0, 1, 0, 2, 0, 3, 4, 1, 4, 1});
+    auto exp1 = NDArrayFactory::create<Nd4jLong>({0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2});
+    auto exp2 = NDArrayFactory::create<Nd4jLong>({0, 1, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4});
     nd4j::ops::where_np op;
     auto res = op.execute({&cond2d}, {}, {});
     ASSERT_TRUE(res->size() == 2);

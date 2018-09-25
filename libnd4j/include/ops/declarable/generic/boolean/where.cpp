@@ -99,7 +99,10 @@ namespace nd4j {
                 // output shape is the 2D tensor num_true x rankOf (inShape)
                 auto condition = INPUT_VARIABLE(0);
                 auto inShape = inputShape->at(0);
-                Nd4jLong numOfTrue = condition->reduceNumber(reduce::CountNonZero, nullptr).e<Nd4jLong>(0);
+                Nd4jLong numOfTrue = 0; //condition->reduceNumber(reduce::CountNonZero, nullptr).e<Nd4jLong>(0);
+                for (Nd4jLong i = 0; i < condition->lengthOf(); i++)
+                    if (condition->e<bool>(i)) numOfTrue++;
+
                 Nd4jLong *newshape;
                 ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
