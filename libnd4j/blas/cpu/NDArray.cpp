@@ -2745,7 +2745,7 @@ NDArray NDArray::transp() const {
 
         //shape::printShapeInfoLinear(newShape);
 
-        auto result = new NDArray(this->_buffer + offset, newShape, this->_workspace);
+        auto result = new NDArray(templatedPointerShift(_buffer, offset, this->dataType()), newShape, this->_workspace);
         result->_isShapeAlloc = true;
 
         return result;
@@ -2780,7 +2780,7 @@ NDArray NDArray::transp() const {
             ++d;
         }
 
-        auto result = new NDArray(this->_buffer + offset, newShape, this->_workspace);
+        auto result = new NDArray(templatedPointerShift(_buffer, offset, this->dataType()), newShape, this->_workspace);
         result->_isShapeAlloc = true;
 
         for (auto v: idx) {
@@ -2815,7 +2815,7 @@ NDArray NDArray::transp() const {
             }
         }
 
-        auto result = new NDArray(this->_buffer + offset, newShape, this->_workspace);
+        auto result = new NDArray(templatedPointerShift(this->_buffer, offset, this->dataType()), newShape, this->_workspace);
         result->_isShapeAlloc = true;
 
         return result;
@@ -3844,7 +3844,7 @@ NDArray NDArray::transp() const {
                 throw std::runtime_error("Bad index");
             }
 
-            int8_t* buffer = _buffer + (tad->tadOffsets[idx] * sizeOfT());
+            auto buffer = templatedPointerShift(_buffer, (tad->tadOffsets[idx]), this->dataType());
             auto array = new NDArray(buffer, shapeInfo);
             result->push_back(array);
         }
@@ -3885,7 +3885,7 @@ NDArray NDArray::transp() const {
         std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
 
         for (int idx = 0; idx < numTads; idx++ ) {
-            auto buffer = _buffer + (tad->tadOffsets[idx] * sizeOfT());
+            auto buffer = templatedPointerShift(_buffer, (tad->tadOffsets[idx], this->dataType());
             auto array = new NDArray(buffer, shapeInfo);
             result->push_back(array);
         }
