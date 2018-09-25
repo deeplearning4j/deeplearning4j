@@ -51,7 +51,7 @@
 // regular 32 bit float
 #define ARRAY_FLOAT 8192
 
-// regular 64 biy float
+// regular 64 bit float
 #define ARRAY_DOUBLE 16384
 
 // 8 bit integer
