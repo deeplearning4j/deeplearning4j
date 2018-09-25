@@ -55,11 +55,11 @@ namespace helpers {
                 for (int e = 0; e < lastDimList->size(); ++e) {
                     auto trial = lastDimList->at(e); // a vector to be search
 
-                    std::vector<int> topIndices(k);
+                    std::vector<Nd4jLong> topIndices(k);
                     std::vector<T> topValues(k);
 
                     // fill up the first k elements
-                    for (int pos = 0; pos < k; ++pos) {
+                    for (Nd4jLong pos = 0; pos < k; ++pos) {
                         topIndices[pos] = pos;
                         topValues[pos] = trial->e<T>(pos);
                     }
@@ -93,11 +93,12 @@ namespace helpers {
 
                     for (int pos = 0; pos < k; ++pos, ++nextPos) {
                         if (values != nullptr)
-                            values->p(nextPos, topValues[pos]);
+                            values->p<T>(nextPos, topValues[pos]);
 
-                        indeces->p(nextPos, topIndices[pos]);
+                        indeces->p<Nd4jLong>(nextPos, topIndices[pos]);
                     }
                 }
+                indeces->printIndexedBuffer("Indices as is");
         }
         return Status::OK();
     }

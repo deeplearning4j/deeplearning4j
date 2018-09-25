@@ -45,7 +45,10 @@ namespace nd4j {
             REQUIRE_TRUE(k <= x->sizeAt(-1), 0, "top_k: k should not be greater than last dimension");
             REQUIRE_TRUE(k >=0, 0, "top_k: k should be non-negative");
 
-            return helpers::topKFunctor(x, values, indeces, k, needSort);
+            int res =  helpers::topKFunctor(x, values, indeces, k, needSort);
+            values->printIndexedBuffer("Values");
+            indeces->printIndexedBuffer("Indeces");
+            return res;
         }
 
         DECLARE_SHAPE_FN(top_k) {
@@ -59,19 +62,16 @@ namespace nd4j {
             }
 
             for (int e = 0; e < 2; e++) { // 2 element tuple at output
-                Nd4jLong* newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), Nd4jLong);
-                std::vector<Nd4jLong> internalShape(shapeRank);
-                for (int e = 0 ; e < shapeRank - 1; ++e)
-                    internalShape[e] = shape::sizeAt(in, e);
-                internalShape[shapeRank - 1] = k;
+                Nd4jLong* aShape;
+                ALLOCATE(aShape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), Nd4jLong);
+                aShape[0] = shapeRank;
+                for (int i = 1 ; i < shapeRank; ++i)
+                    aShape[i] = shape::sizeAt(in, i - 1);
+                aShape[shapeRank] = k;
 
-                if (shape::order(in) == 'c')
-                    shape::shapeBuffer(shapeRank, block.dataType(), internalShape.data(),  newshape);
-                else
-                    shape::shapeBufferFortran(shapeRank, block.dataType(), internalShape.data(),  newshape);
-
-                shapeList->push_back(newshape); 
+                shape::updateStrides(aShape, shape::order(in));
+                ArrayOptions::setDataType(aShape, (e == 0?ArrayOptions::dataType(in):nd4j::DataType::DataType_INT64));
+                shapeList->push_back(aShape);
             }
             return shapeList;
         }
