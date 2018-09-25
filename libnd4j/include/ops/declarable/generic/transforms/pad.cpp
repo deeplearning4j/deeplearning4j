@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", expectedPaddingsShape.c_str(), currentPaddingsShape.c_str());
 
 	// FIXME: double
-	auto padValue = NDArrayFactory::scalar(0.f);
+	auto padValue = NDArrayFactory::scalar(0.);
 	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 
 	// REFLECT case
 	if (argI->at(0) == 0) { // CONSTAND mode
@@ -88,8 +88,9 @@ DECLARE_SHAPE_FN(pad) {
     for(int i=1; i <= rank; ++i)
     	outShapeInfo[i] = inputShapeInfo[i] + paddings->e<Nd4jLong>(i-1,0) + paddings->e<Nd4jLong>(i-1,1);
 	
-    shape::updateStrides(outShapeInfo, shape::order(inputShapeInfo));    
-
+    shape::updateStrides(outShapeInfo, shape::order(inputShapeInfo));
+    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShapeInfo));
+//    ArrayOptions::setDataType(outShapeInfo, block.dataType());
     return SHAPELIST(outShapeInfo);
     
 }
