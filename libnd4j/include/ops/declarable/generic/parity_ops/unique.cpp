@@ -45,6 +45,7 @@ namespace nd4j {
 
             // all output shapes are 1D arrays (vectors)
             valuesShape = ShapeBuilders::createVectorShapeInfo(block.dataType(), uniqueCount, block.workspace());
+            ArrayOptions::setDataType(valuesShape, ArrayOptions::dataType(in));
 
             // second output is always LONG
             indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, source->lengthOf(), block.workspace());

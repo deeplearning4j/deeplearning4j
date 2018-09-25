@@ -156,16 +156,20 @@ TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
     auto input = NDArrayFactory::create<double>({3., 4., 3., 1., 3., 0., 2., 4., 2., 4.});
-    auto expIdx = NDArrayFactory::create<double>({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    auto expIdx = NDArrayFactory::create<Nd4jLong>({0, 1, 0, 2, 0, 3, 4, 1, 4, 1});
     auto exp = NDArrayFactory::create<double>({3., 4., 1., 0., 2.});
 
     nd4j::ops::unique op;
     auto res = op.execute({&input}, {}, {});
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-    //res->at(0)->printIndexedBuffer("Unique values");
-    //res->at(1)->printIndexedBuffer("Unique idxs");
-    ASSERT_TRUE(exp.equalsTo(res->at(0)));
-    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    auto res1 = res->at(0);
+    auto res2 = res->at(1);
+
+    res1->printIndexedBuffer("Unique values");
+    res2->printIndexedBuffer("Unique idxs");
+
+    ASSERT_TRUE(exp.equalsTo(res1));
+    ASSERT_TRUE(expIdx.equalsTo(res2));
     delete res;
 }
 
