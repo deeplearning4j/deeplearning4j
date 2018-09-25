@@ -156,12 +156,11 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
                .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
                .put(new Info("std::vector<std::vector<Nd4jLong> >").pointerTypes("LongVectorVector").define())
-               .put(new Info("std::vector<nd4j::NDArray<float>*>").pointerTypes("FloatNDArrayVector").define())
-               .put(new Info("std::vector<nd4j::NDArray<float16>*>").pointerTypes("HalfNDArrayVector").define())
-               .put(new Info("std::vector<nd4j::NDArray<double>*>").pointerTypes("DoubleNDArrayVector").define())
+               .put(new Info("std::vector<nd4j::NDArray*>").pointerTypes("NDArrayVector").define())
                .put(new Info("nd4j::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                .put(new Info("nd4j::IndicesList").purify());
 
+        /*
         String classTemplates[] = {
                 "nd4j::NDArray",
                 "nd4j::NDArrayList",
@@ -187,6 +186,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                    .put(new Info(t + "<float16>").pointerTypes("Half" + s))
                    .put(new Info(t + "<double>").pointerTypes("Double" + s));
         }
+        */
 
         // pick up custom operations automatically from CustomOperations.h and headers in libnd4j
         String separator = properties.getProperty("platform.path.separator");
@@ -226,6 +226,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
             }
         }
         logger.info("Ops found in CustomOperations.h and headers: " + opTemplates);
+        /*
         String floatOps = "", halfOps = "", doubleOps = "";
         for (String t : opTemplates) {
             String s = "nd4j::ops::" + t;
@@ -235,12 +236,13 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
             floatOps  += "\n        float_" + t + ".class,";
             halfOps   += "\n        half_" + t + ".class,";
             doubleOps += "\n        double_" + t + ".class,";
+
         }
         infoMap.put(new Info().javaText("\n"
                                       + "    Class[] floatOps = {" + floatOps + "};" + "\n"
                                       + "    Class[] halfOps = {" + halfOps + "};" + "\n"
                                       + "    Class[] doubleOps = {" + doubleOps + "};"));
-
+        */
         infoMap.put(new Info("nd4j::ops::OpRegistrator::updateMSVC").skip());
     }
 }
