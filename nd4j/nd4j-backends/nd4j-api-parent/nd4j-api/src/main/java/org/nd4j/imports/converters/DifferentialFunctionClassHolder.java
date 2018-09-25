@@ -44,7 +44,7 @@ public class DifferentialFunctionClassHolder {
     private Map<String,DifferentialFunction> tensorFlowNames = new HashMap<>();
     private Map<String,DifferentialFunction> onnxNames = new HashMap<>();
     private Map<Long,Class<?>> customOpHashToClass = new HashMap<>();
-    private Map<Op.Type,Map<Long,Class<?>>> opIdToClassByType = new HashMap<>();
+//    private Map<Op.Type,Map<Long,Class<?>>> opIdToClassByType = new HashMap<>();
     private List<String> missingOps = new ArrayList<>();
 
     private Map<String,OpDescriptor> onnxOpDescriptors;
@@ -284,44 +284,44 @@ public class DifferentialFunctionClassHolder {
         countTotalMappedOps = nodeConverters.size();
 
         //All (non-custom) ops to ID by type
-        for(DifferentialFunction df : nodeConverters.values()){
-            Op.Type opType;
-            try{
-                opType = df.opType();
-            } catch (Throwable t){
-                log.warn("Exception for op class: " + df.getClass().getName(), t);
-                continue;
-            }
-            if(opType == null)
-                continue;
-
-            if(!(df instanceof Op)){
-                continue;
-            }
-
-            if(df instanceof BaseGradientOp){
-                continue;
-            }
-
-            if(!opIdToClassByType.containsKey(opType)){
-                opIdToClassByType.put(opType, new HashMap<Long, Class<?>>());
-            }
-            Map<Long,Class<?>> opTypeMap = opIdToClassByType.get(opType);
-            Op op = (Op)df;
-            int opNum;
-            try{
-                opNum = op.opNum();
-            } catch (Throwable t){
-                log.warn("Exception thrown by opNum() method for class: {}", op.getClass().getName());
-                continue;
-            }
-
-            if(opTypeMap.containsKey((long)opNum)){
-                throw new IllegalStateException("Op number " + opNum + " already exists for op " + opTypeMap.get((long)opNum).getName() +
-                        " - duplicate op: " + df.getClass().getName());
-            }
-            opTypeMap.put((long)opNum, df.getClass());
-        }
+//        for(DifferentialFunction df : nodeConverters.values()){
+//            Op.Type opType;
+//            try{
+//                opType = df.opType();
+//            } catch (Throwable t){
+//                log.warn("Exception for op class: " + df.getClass().getName(), t);
+//                continue;
+//            }
+//            if(opType == null)
+//                continue;
+//
+//            if(!(df instanceof Op)){
+//                continue;
+//            }
+//
+//            if(df instanceof BaseGradientOp){
+//                continue;
+//            }
+//
+//            if(!opIdToClassByType.containsKey(opType)){
+//                opIdToClassByType.put(opType, new HashMap<Long, Class<?>>());
+//            }
+//            Map<Long,Class<?>> opTypeMap = opIdToClassByType.get(opType);
+//            Op op = (Op)df;
+//            int opNum;
+//            try{
+//                opNum = op.opNum();
+//            } catch (Throwable t){
+//                log.warn("Exception thrown by opNum() method for class: {}", op.getClass().getName());
+//                continue;
+//            }
+//
+//            if(opTypeMap.containsKey((long)opNum)){
+//                throw new IllegalStateException("Op number " + opNum + " already exists for op " + opTypeMap.get((long)opNum).getName() +
+//                        " - duplicate op: " + df.getClass().getName());
+//            }
+//            opTypeMap.put((long)opNum, df.getClass());
+//        }
 
 
         //Get custom ops - map from hash to class
@@ -410,10 +410,10 @@ public class DifferentialFunctionClassHolder {
         return customOpHashToClass.get(customOpHash);
     }
 
-    public Class<?> legacyOpClassForId(Op.Type opType, long opNum){
-        //TODO checks for op type
-        return opIdToClassByType.get(opType).get(opNum);
-    }
+//    public Class<?> legacyOpClassForId(Op.Type opType, long opNum){
+//        //TODO checks for op type
+//        return opIdToClassByType.get(opType).get(opNum);
+//    }
 
     public static DifferentialFunctionClassHolder getInstance() {
         return INSTANCE;

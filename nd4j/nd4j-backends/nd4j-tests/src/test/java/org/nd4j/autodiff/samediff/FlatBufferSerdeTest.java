@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.samediff;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -17,8 +18,10 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+@Slf4j
 public class FlatBufferSerdeTest {
 
     @Rule
@@ -73,7 +76,7 @@ public class FlatBufferSerdeTest {
 
     @Test
     public void testSimple() throws Exception {
-        for( int i=0; i<2; i++ ) {
+        for( int i=0; i<4; i++ ) {
             for(boolean execFirst : new boolean[]{false, true}) {
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", Nd4j.linspace(1, 12, 12).reshape(3, 4));
@@ -140,5 +143,4 @@ public class FlatBufferSerdeTest {
 //            System.out.println(f.getAbsolutePath());
 //        }
 //    }
-
 }

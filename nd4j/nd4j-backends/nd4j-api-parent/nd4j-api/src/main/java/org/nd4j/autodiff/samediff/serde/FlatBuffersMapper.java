@@ -118,7 +118,7 @@ public class FlatBuffersMapper {
             case VARIANCE:
             case REDUCE3:
             case RANDOM:
-                return DifferentialFunctionClassHolder.getInstance().legacyOpClassForId(type, idHash);
+                return LegacyOpMapper.getLegacyOpClassForId(type, (int)idHash);
 
             case LOOP:
             case RETURN:
@@ -305,7 +305,7 @@ public class FlatBuffersMapper {
 
             return op;
         } else if (opType == Op.Type.SCALAR || opType == Op.Type.TRANSFORM) {
-            Class<?> c = DifferentialFunctionClassHolder.getInstance().legacyOpClassForId(opType, opNum);
+            Class<?> c = LegacyOpMapper.getLegacyOpClassForId(opType, (int)opNum);
             Op op;
             try {
                 op = (Op) c.newInstance();
