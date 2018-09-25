@@ -1382,7 +1382,10 @@ public class SameDiff {
     public long numElements() {
         long ret = 0;
         for (SDVariable variable : variables()) {
-            ret += ArrayUtil.prod(variable.getShape());
+            long[] shape = variable.getShape();
+            if(shape != null) {
+                ret += ArrayUtil.prod(shape);
+            }
         }
         return ret;
     }
@@ -10919,7 +10922,8 @@ public class SameDiff {
                 0,
                 0,
                 -1,
-                0.0f, 0, 0);
+                0.0f, 0, 0,
+                0);
 
         return flatNode;
     }
@@ -10956,7 +10960,8 @@ public class SameDiff {
         }
     }
 
-    protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables, Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter) {
+    protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables,
+                             Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter) {
         val opName = node.opName();
         val hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
@@ -11079,6 +11084,15 @@ public class SameDiff {
         if (node.opType() == null)
             log.warn("Null-op node: {}", node);
 
+
+        String[] outVarNames = node.getSameDiff().outgoingArgsReverse.get(node.getOwnName());
+        int[] outVarNamesStringsOffsets = new int[outVarNames == null ? 0 : outVarNames.length];
+        for( int i=0; i<outVarNamesStringsOffsets.length; i++ ){
+            outVarNamesStringsOffsets[i] = bufferBuilder.createString(outVarNames[i]);
+        }
+        int outVarNamesOffset = FlatNode.createOutputNamesVector(bufferBuilder, outVarNamesStringsOffsets);
+
+
         int flatNode = FlatNode.createFlatNode(
                 bufferBuilder,
                 ownId,
@@ -11094,7 +11108,8 @@ public class SameDiff {
                 integerArgs,
                 dimensions,
                 -1,
-                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().floatValue() : 0.0f, 0, scopeName);
+                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().floatValue() : 0.0f, 0, scopeName,
+                outVarNamesOffset);
 
         return flatNode;
     }
@@ -11355,6 +11370,8 @@ public class SameDiff {
         for(FlatNode fn : ops){
             DifferentialFunction df = FlatBuffersMapper.fromFlatNode(fn);
             String name = fn.name();
+            df.setSameDiff(sd);
+            sd.functionInstancesById.put(name, df);
             int outLength = fn.outputLength();
             int[] outs = new int[outLength];
             for( int i=0; i<outLength; i++ ){
@@ -11409,30 +11426,24 @@ public class SameDiff {
                 sd.outgoingArgsReverse.put(df.getOwnName(), varNames);
             } else {
                 //We're missing some variables...
-                List<String> varNames = new ArrayList<>(numOutputs);
-                if(varsForOp != null && varsForOp.size() > 0){
-                    for(SDVariable sdv : varsForOp){
-                        varNames.add(sdv.getVarName());
+                int outputNamesLength = fn.outputNamesLength();
+                String[] varNames = new String[outputNamesLength];
+                for( int i=0; i<outputNamesLength; i++ ){
+                    String n = fn.outputNames(i);
+                    varNames[i] = n;
+                    if(!sd.variableMap.containsKey(n)){
+                        //Need to create the variable - perhaps it wasn't exported
+                        SDVariable var = SDVariable.builder()
+                                .varName(n)
+                                .sameDiff(sd)
+                                .shape(null)
+                                .build();
+                        sd.variableMap.put(n, var);
+                        variablesByNodeAndOutNum.put(new Pair<>(opId, i), var);
                     }
                 }
-                //TODO naming here is NOT safe, could easily cause collisions under some circumstances
-                for( int i=varNames.size(); i<numOutputs; i++ ){
-                    String varName = name  + (i == 0 ? "" : "_" + i);
-                    varNames.add(varName);
-                    //Create and add variable:
-
-                    SDVariable var = SDVariable.builder()
-                            .varName(varName)
-                            .sameDiff(sd)
-                            .shape(null)
-                            .build();
-                    sd.variableMap.put(varName, var);
-                    variablesByNodeAndOutNum.put(new Pair<>(opId, i), var);
-                }
-                sd.outgoingArgsReverse.put(df.getOwnName(), varNames.toArray(new String[varNames.size()]));
+                sd.outgoingArgsReverse.put(df.getOwnName(), varNames);
             }
-
-            sd.functionInstancesById.put(name, df);
         }
 
         return sd;
