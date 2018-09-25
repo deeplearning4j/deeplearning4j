@@ -432,13 +432,8 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
         if (x.isScalar())
             return x;
 
-        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().sortFloat(null, (FloatPointer) x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(), descending);
-        } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().sortDouble(null, (DoublePointer) x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(), descending);
-        } else {
-            throw new UnsupportedOperationException("Unknown dataype " + x.data().dataType());
-        }
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sort(null,  x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(), descending);
+
         return x;
     }
 
@@ -450,27 +445,16 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
         Arrays.sort(dimension);
         Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, dimension);
 
-        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().sortTadFloat(null,
-                    (FloatPointer) x.data().addressPointer(),
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortTad(null,
+                    x.data().addressPointer(),
                     (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
                     new IntPointer(dimension),
                     dimension.length,
                     (LongPointer) tadBuffers.getFirst().addressPointer(),
                     new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                     descending);
-        } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().sortTadDouble(null,
-                    (DoublePointer) x.data().addressPointer(),
-                    (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
-                    new IntPointer(dimension),
-                    dimension.length,
-                    (LongPointer) tadBuffers.getFirst().addressPointer(),
-                    new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
-                    descending);
-        } else {
-            throw new UnsupportedOperationException("Unknown datatype " + x.data().dataType());
-        }
+
 
         return x;
     }
@@ -486,16 +470,9 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
         DataBuffer idx = array.getIndices();
         long length = val.length();
         int rank = array.underlyingRank();
-        switch(val.dataType()){
-            case FLOAT:
-                NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) idx.addressPointer(), (FloatPointer) val.addressPointer(), length, rank);
-                break;
-            case DOUBLE:
-                NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesDouble(null, (LongPointer) idx.addressPointer(), (DoublePointer) val.addressPointer(), length, rank);
-                break;
-            default:
-                throw new UnsupportedOperationException("Unknown datatype " + x.data().dataType());
-        }
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(), val.addressPointer(), length, rank);
+
 
         return array;
     }

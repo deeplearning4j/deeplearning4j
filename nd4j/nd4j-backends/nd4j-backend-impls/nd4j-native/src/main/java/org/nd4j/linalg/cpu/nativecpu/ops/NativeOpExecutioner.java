@@ -199,14 +199,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Pointer z = op.z().data().addressPointer();
 
         if (op.z().isScalar()) {
-            int res = (int) loop.execIndexReduceScalar(dummy, op.opNum(),
+            loop.execIndexReduceScalar(dummy, op.opNum(),
                         op.x().data().addressPointer(),
                         (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                        getPointerForExtraArgs(op));
-
-
-                op.setFinalResult(res);
-                op.z().putScalar(0, (float) res);
+                        getPointerForExtraArgs(op), op.z().data().addressPointer(),
+                        (LongPointer) op.z().shapeInfoDataBuffer().addressPointer());
             } else {
                 loop.execIndexReduce(dummy, op.opNum(),
                         x,
@@ -733,12 +730,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             validateDataType(Nd4j.dataType(), op);
 
-            op.setFinalResult((int) loop.execIndexReduceScalar(null, op.opNum(),
+            loop.execIndexReduceScalar(null, op.opNum(),
                         op.x().data().addressPointer(),
                         (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                        getPointerForExtraArgs(op)));
-
-            op.z().assign(op.getFinalResult());
+                        getPointerForExtraArgs(op),
+                        op.z().data().addressPointer(),
+                        (LongPointer) op.z().shapeInfoDataBuffer().addressPointer());
 
             profilingHookOut(op, st);
         }

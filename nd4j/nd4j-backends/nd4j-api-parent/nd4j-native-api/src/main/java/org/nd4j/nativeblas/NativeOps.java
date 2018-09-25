@@ -92,8 +92,9 @@ public abstract class NativeOps extends Pointer {
      * @param xShapeInfo
      * @param extraParams
      */
-    public abstract double execIndexReduceScalar(PointerPointer extraPointers, int opNum, Pointer x,
-                                                 @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams);
+    public abstract void execIndexReduceScalar(PointerPointer extraPointers, int opNum, Pointer x,
+                                                 @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer z,
+                                                 @Cast("Nd4jLong *") LongPointer zShapeInfo);
 
     /**
      * @param opNum
