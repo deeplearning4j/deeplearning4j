@@ -113,8 +113,8 @@ namespace nd4j {
                 for (Nd4jLong outNext = 0; outNext < width; ++outNext) {
                     auto output = OUTPUT_VARIABLE(outNext);
                     for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
-                        //(*output)(e) =  (*whereTrue)(e, outNext);
-                        throw std::runtime_error("Not implemented");
+                        output->p<Nd4jLong>(e, whereTrue->e<Nd4jLong>(e, outNext));
+                        //throw std::runtime_error("Not implemented");
                     }
                 }
 //                auto result = list.stack();
@@ -137,13 +137,17 @@ namespace nd4j {
             } else {
                 auto condition = INPUT_VARIABLE(0);
 
-                auto numOfTrue = condition->reduceNumber(reduce::CountNonZero).e<Nd4jLong>(0);
+                Nd4jLong numOfTrue = 0LL; //condition->reduceNumber(reduce::CountNonZero).e<Nd4jLong>(0);
+                for (Nd4jLong i = 0; i < condition->lengthOf(); ++i)
+                    if (condition->e<bool>(i)) numOfTrue++;
+
                 // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
                 for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
                     Nd4jLong *newShape;
 //                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
   //                  shape::shapeVector(numOfTrue, newShape);
-                    newShape = ShapeBuilders::createVectorShapeInfo(numOfTrue, block.getWorkspace());
+                    newShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, numOfTrue, block.workspace());
+                    //ArrayOptions::setDataType(newShape, nd4j::DataType::DataType_INT64);
                     shapes->push_back(newShape);
                 }
             }
