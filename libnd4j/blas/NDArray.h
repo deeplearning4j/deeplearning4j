@@ -1758,5 +1758,5 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
         return this->equalsTo(&other);
     }
 }
-
+ 
 #endif

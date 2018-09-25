@@ -1054,10 +1054,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     void NDArray::setWorkspace(memory::Workspace* workspace) {
         this->_workspace = workspace;
     }
-
+        
     void* NDArray::bufferWithOffset(Nd4jLong offset) const {
         // FIXME, use this instead -> _buffer + (offset * DataTypeUtils::sizeOf(_dataType));
-        _buffer + (offset * DataTypeUtils::sizeOf(dataType()));
+        _buffer + (offset * DataTypeUtils::sizeOf(dataType()));        
     }
 
 /*
@@ -3873,7 +3873,7 @@ NDArray NDArray::transp() const {
         auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
         std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
 
-        for (int idx = 0; idx < numTads; idx++ ) {            
+        for (int idx = 0; idx < numTads; idx++ ) {             
             auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), shapeInfo);
             result->push_back(array);
         }
