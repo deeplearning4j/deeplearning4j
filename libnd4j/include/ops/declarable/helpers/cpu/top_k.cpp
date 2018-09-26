@@ -76,14 +76,14 @@ namespace helpers {
                     trial.printIndexedBuffer("TRIAL:");
                     //trialTo->printIndexedBuffer("TOTRI:");
                     std::vector<Nd4jLong> topIndices(k);
-                    std::vector<T> topValues(k);
+                    std::vector<double> topValues(k);
 
                     // fill up the first k elements
                     for (Nd4jLong pos = 0; pos < k; ++pos) {
                         topIndices[pos] = pos;
                         topValues[pos] = trial.e<T>(pos);
                     }
-                    std::vector<T> sortedVals(topValues);
+                    std::vector<double> sortedVals(topValues);
                     std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
                     
                     for (int i = k; i < width; ++i) {
@@ -101,7 +101,7 @@ namespace helpers {
                     }
 
                     if (needSort) {
-                        std::sort(topValues.begin(), topValues.end(), [](T a, T b) {
+                        std::sort(topValues.begin(), topValues.end(), [](double a, double b) {
                             return a > b;   
                         });
                     }
