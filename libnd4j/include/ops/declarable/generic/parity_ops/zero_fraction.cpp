@@ -34,13 +34,13 @@ namespace nd4j {
 //            for (int e = 0; e < input->lengthOf(); e++)
 //                if ((*input)(e) == T(0))
 //                    numZeros++;
-            auto fraction = input->reduceNumber(reduce::CountZero) / input->lengthOf();//((T)(0) + numZeros) / input->lengthOf();
-            output->assign(fraction);
+            (*output) = input->reduceNumber(reduce::CountZero);
+            (*output) /= double(input->lengthOf());
 
             return Status::OK();
         }
         DECLARE_SHAPE_FN(zero_fraction) {
-            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(block.dataType(), block.workspace()));
+            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::DataType_DOUBLE, block.workspace()));
         }
     }
 }

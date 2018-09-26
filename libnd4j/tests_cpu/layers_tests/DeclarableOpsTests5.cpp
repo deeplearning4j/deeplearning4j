@@ -1089,8 +1089,8 @@ TEST_F(DeclarableOpsTests5, Test_TopK_5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Test_InTopK_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 3}, {1.0, 11.0, 3.0, 14.0, 5.0, 6.0});
-    auto y = NDArrayFactory::create<double>('c', {2}, {1, 1});
-    auto expV = NDArrayFactory::create<double>('c', {2}, {1, 0});
+    auto y = NDArrayFactory::create<Nd4jLong>('c', {2}, {1, 1});
+    auto expV = NDArrayFactory::create<bool>('c', {2}, {true, false});
 
     nd4j::ops::in_top_k op;
     auto result = op.execute({&x, &y}, {}, {2});
@@ -1100,11 +1100,11 @@ TEST_F(DeclarableOpsTests5, Test_InTopK_1) {
 
     auto v = result->at(0);
 
-    // v->printShapeInfo("InTopK: shape v");
-    // expV.printShapeInfo("InTopK: shape expV");
+     v->printShapeInfo("InTopK: shape v");
+     expV.printShapeInfo("InTopK: shape expV");
 
-    // v->printIndexedBuffer("v");
-    // expV.printIndexedBuffer("expV");
+     v->printIndexedBuffer("v");
+     expV.printIndexedBuffer("expV");
 
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
@@ -1122,8 +1122,8 @@ TEST_F(DeclarableOpsTests5, Test_InTopK_2) {
                                    16.0, 9.0, 13.5, 7.0}
     );
 
-    auto y = NDArrayFactory::create<double>('c', {6}, {0, 0, 0, 0, 0, 0});
-    auto expV = NDArrayFactory::create<double>('c', {6}, {1, 0, 1, 0, 0, 1 });
+    auto y = NDArrayFactory::create<Nd4jLong>('c', {6}, {0, 0, 0, 0, 0, 0});
+    auto expV = NDArrayFactory::create<bool>('c', {6}, {true, false, true, false, false, true});
 
     nd4j::ops::in_top_k op;
     auto result = op.execute({&x, &y}, {}, {2});
@@ -1156,8 +1156,8 @@ TEST_F(DeclarableOpsTests5, Test_InTopK_3) {
                                    16.0, 9.0, 13.5, 7.0}
     );
 
-    auto y = NDArrayFactory::create<double>('f', {6}, {0, 0, 0, 0, 0, 0});
-    auto expV = NDArrayFactory::create<double>('f', {6}, {1, 0, 0, 0, 0, 0 });
+    auto y = NDArrayFactory::create<Nd4jLong>('f', {6}, {0, 0, 0, 0, 0, 0});
+    auto expV = NDArrayFactory::create<bool>('f', {6}, {1, 0, 0, 0, 0, 0 });
 
     nd4j::ops::in_top_k op;
     auto result = op.execute({&x, &y}, {}, {2});
@@ -2040,7 +2040,7 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_1) {
     
     ASSERT_EQ(Status::OK(), res->status());
     ASSERT_TRUE(res->at(0)->isScalar());
-    ASSERT_EQ(res->at(0)->e<double>(0), 0.25f);
+    ASSERT_EQ(res->at(0)->e<double>(0), 0.25);
     
     delete res;
 }
@@ -2048,14 +2048,14 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, ZeroFraction_2) {
     
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {5.5f, 0.f, 0.3f, 5.5f, 8.6f, 0.f, 0.f, 0.4f});
+    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {5.5, 0., 0.3, 5.5, 8.6, 0., 0., 0.4});
 
     nd4j::ops::zero_fraction op;
     auto res = op.execute({&x}, {}, {});
     
     ASSERT_EQ(Status::OK(), res->status());
     ASSERT_TRUE(res->at(0)->isScalar());
-    ASSERT_EQ(res->at(0)->e<double>(0), 0.375f);
+    ASSERT_EQ(res->at(0)->e<double>(0), 0.375);
     
     delete res;
 }
@@ -2063,14 +2063,14 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, ZeroFraction_3) {
     
-    auto x = NDArrayFactory::create<double>('f', {2, 2, 2}, {5.5f, 0.f, 0.3f, 5.5f, 8.6f, 0.f, 0.f, 0.4f});
+    auto x = NDArrayFactory::create<double>('f', {2, 2, 2}, {5.5, 0., 0.3, 5.5, 8.6, 0., 0., 0.4});
 
     nd4j::ops::zero_fraction op;
     auto res = op.execute({&x}, {}, {});
     
     ASSERT_EQ(Status::OK(), res->status());
     ASSERT_TRUE(res->at(0)->isScalar());
-    ASSERT_EQ(res->at(0)->e<float>(0), 0.375f);
+    ASSERT_EQ(res->at(0)->e<float>(0), 0.375);
     
     delete res;
 }
@@ -2380,6 +2380,7 @@ TEST_F(DeclarableOpsTests5, L2_Loss_1) {
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(output->isScalar());
+    output->printIndexedBuffer("L2_Loss output");
     ASSERT_EQ(output->e<double>(0), exp);
 
     delete results;

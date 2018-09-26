@@ -32,13 +32,13 @@ namespace nd4j {
             REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
             // FIXME: output should be used directly here, to avoid sum
-            auto sum = input->reduceNumber(reduce::SquaredNorm) / 2;
-            (*output) = sum;
+            (*output) = input->reduceNumber(reduce::SquaredNorm);
+            (*output) /= 2.;
 
             return Status::OK();
         }
         DECLARE_SHAPE_FN(l2_loss) {
-            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(block.dataType(), block.workspace()));
+            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace()));
         }
     }
 }
