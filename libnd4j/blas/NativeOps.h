@@ -146,31 +146,6 @@ public:
             int *dimension,
             int dimensionLength);
 
-
-
-    /**
-     *
-     * @param opNum
-     * @param dx
-     * @param xStride
-     * @param y
-     * @param yStride
-     * @param result
-     * @param resultStride
-     * @param extraParams
-     * @param n
-     */
-    void   execPairwiseTransform(Nd4jPointer *extraPointers,
-                                       int opNum,
-                                       void *dx,
-                                       Nd4jLong xStride,
-                                       void *y,
-                                       Nd4jLong yStride,
-                                       void *result,
-                                       Nd4jLong resultStride,
-                                       void *extraParams,
-                                       Nd4jLong n);
-
     /**
      *
      * @param opNum
