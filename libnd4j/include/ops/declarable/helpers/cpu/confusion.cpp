@@ -39,7 +39,7 @@ namespace helpers {
     }
 
     void confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
-        auto xType = weights->dataType();
+        auto xType = output->dataType(); // weights can be null
 
         BUILD_SINGLE_SELECTOR(xType, _confusionFunctor, (labels, predictions, weights, output), FLOAT_TYPES);
     }
