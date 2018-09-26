@@ -176,6 +176,7 @@ TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
     auto z = result->at(0);
     z->printShapeInfo("RES shape");
     x.printShapeInfo("EXP shape");
+    z->printIndexedBuffer("RES output");
     ASSERT_TRUE(x.isSameShape(z));
 
     delete result;

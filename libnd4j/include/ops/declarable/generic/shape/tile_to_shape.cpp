@@ -65,7 +65,8 @@ namespace ops {
         auto axisX = ShapeUtils::evalBroadcastBackwardAxis(input->shapeInfo(), epsNext->shapeInfo());
         // FIX ME: reduceAlongDims should have a signature with result pass to to avoid assigning twice
         if (!axisX.empty()) {
-            (*gradX) = epsNext->reduceAlongDims(reduce::Sum, axisX);
+            auto tempRes = epsNext->reduceAlongDims(reduce::Sum, axisX);
+            gradX->assign(tempRes);
         } else
             gradX->assign(epsNext);
 
