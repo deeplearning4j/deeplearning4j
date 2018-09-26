@@ -284,7 +284,7 @@ namespace ops {
         ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) external_output_shape.size()), Nd4jLong);
 
         // we always give out C order here
-        shape::shapeBuffer((int) external_output_shape.size(), block.dataType(), external_output_shape.data(), newShape);
+        shape::shapeBuffer((int) external_output_shape.size(), ArrayOptions::dataType(in), external_output_shape.data(), newShape);
 
         return SHAPELIST(newShape);
     }
