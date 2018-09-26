@@ -897,37 +897,9 @@ public:
      * @param realArguments
      * @param numRealArguments
      */
-    void execAggregateFloat(Nd4jPointer *extraPointers,
-                            int opNum,
-                            float **arguments,
-                            int numArguments,
-                            Nd4jLong **shapeArguments,
-                            int numShapeArguments,
-                            int *indexArguments,
-                            int numIndexArguments,
-                            int **intArrays,
-                            int numIntArrays,
-                            float *realArguments,
-                            int numRealArguments);
-
-    /**
-     *
-     * @param extraPointers
-     * @param opNum
-     * @param arguments
-     * @param numArguments
-     * @param shapeArguments
-     * @param numShapeArguments
-     * @param indexArguments
-     * @param numIndexArguments
-     * @param intArrays
-     * @param numIntArrays
-     * @param realArguments
-     * @param numRealArguments
-     */
-    void execAggregateDouble(Nd4jPointer *extraPointers,
+    void execAggregate(Nd4jPointer *extraPointers,
                              int opNum,
-                             double **arguments,
+                             void **arguments,
                              int numArguments,
                              Nd4jLong **shapeArguments,
                              int numShapeArguments,
@@ -935,76 +907,25 @@ public:
                              int numIndexArguments,
                              int **intArrays,
                              int numIntArrays,
-                             double *realArguments,
-                             int numRealArguments);
-
-    /**
-     *
-     * @param extraPointers
-     * @param opNum
-     * @param arguments
-     * @param numArguments
-     * @param shapeArguments
-     * @param numShapeArguments
-     * @param indexArguments
-     * @param numIndexArguments
-     * @param intArrays
-     * @param numIntArrays
-     * @param realArguments
-     * @param numRealArguments
-     */
-    void execAggregateHalf(Nd4jPointer *extraPointers,
-                           int opNum,
-                           float16 **arguments,
-                           int numArguments,
-                           Nd4jLong **shapeArguments,
-                           int numShapeArguments,
-                           int *indexArguments,
-                           int numIndexArguments,
-                           int **intArrays,
-                           int numIntArrays,
-                           float16 *realArguments,
-                           int numRealArguments);
+                             void *realArguments,
+                             int numRealArguments,
+                             nd4j::DataType dtype);
 
 
-    /**
-     *
-     * @param extraPointers
-     * @param numAggregates
-     * @param opNum
-     * @param maxArgs
-     * @param maxShapes
-     * @param maxIntArrays
-     * @param maxIntArraySize
-     * @param maxIdx
-     * @param maxReals
-     * @param ptrToArguments
-     */
-    void execAggregateBatchFloat(Nd4jPointer *extraPointers,
-                                 int numAggregates,
-                                 int opNum,
-                                 int maxArgs,
-                                 int maxShapes,
-                                 int maxIntArrays,
-                                 int maxIntArraySize,
-                                 int maxIdx,
-                                 int maxReals,
-                                 void *ptrToArguments);
+    template <typename T>
+    void _batchExecutor(Nd4jPointer *extraPointers,
+                                   int numAggregates,
+                                   int opNum,
+                                   int maxArgs,
+                                   int maxShapes,
+                                   int maxIntArrays,
+                                   int maxIntArraySize,
+                                   int maxIdx,
+                                   int maxReals,
+                                   void *ptrToArguments,
+                                   nd4j::DataType dtype);
 
-    /**
-     *
-     * @param extraPointers
-     * @param numAggregates
-     * @param opNum
-     * @param maxArgs
-     * @param maxShapes
-     * @param maxIntArrays
-     * @param maxIntArraySize
-     * @param maxIdx
-     * @param maxReals
-     * @param ptrToArguments
-     */
-    void execAggregateBatchDouble(Nd4jPointer *extraPointers,
+    void execAggregateBatch(Nd4jPointer *extraPointers,
                                   int numAggregates,
                                   int opNum,
                                   int maxArgs,
@@ -1013,31 +934,8 @@ public:
                                   int maxIntArraySize,
                                   int maxIdx,
                                   int maxReals,
-                                  void *ptrToArguments);
-
-    /**
-     *
-     * @param extraPointers
-     * @param numAggregates
-     * @param opNum
-     * @param maxArgs
-     * @param maxShapes
-     * @param maxIntArrays
-     * @param maxIntArraySize
-     * @param maxIdx
-     * @param maxReals
-     * @param ptrToArguments
-     */
-    void execAggregateBatchHalf(Nd4jPointer *extraPointers,
-                                int numAggregates,
-                                int opNum,
-                                int maxArgs,
-                                int maxShapes,
-                                int maxIntArrays,
-                                int maxIntArraySize,
-                                int maxIdx,
-                                int maxReals,
-                                void *ptrToArguments);
+                                  void *ptrToArguments,
+                                  nd4j::DataType dtype);
 
     /**
      * Random operations

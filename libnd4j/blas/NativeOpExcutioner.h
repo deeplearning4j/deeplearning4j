@@ -385,7 +385,7 @@ public:
 
     template <typename X>
     static FORCEINLINE void execAggregate(int opNum,
-                              X **arguments,
+                              void **varguments,
                               int numArguments,
                               Nd4jLong **shapeArguments,
                               int numShapeArguments,
@@ -393,8 +393,12 @@ public:
                               int numIndexArguments,
                               int **intArrays,
                               int numIntArrays,
-                              X *realArguments,
+                              void *vrealArguments,
                               int numRealArguments) {
+
+        auto arguments = reinterpret_cast<X **>(varguments);
+        auto realArguments = reinterpret_cast<X *>(vrealArguments);
+
         functions::aggregate::AggregatedFunction<X>::exec(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
     }
 

@@ -1533,73 +1533,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param realArguments
      * @param numRealArguments
      */
-    public native void execAggregateFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                int opNum,
-                                @Cast("float**") PointerPointer arguments,
-                                int numArguments,
-                                @Cast("Nd4jLong**") PointerPointer shapeArguments,
-                                int numShapeArguments,
-                                IntPointer indexArguments,
-                                int numIndexArguments,
-                                @Cast("int**") PointerPointer intArrays,
-                                int numIntArrays,
-                                FloatPointer realArguments,
-                                int numRealArguments);
-    public native void execAggregateFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                int opNum,
-                                @ByPtrPtr FloatPointer arguments,
-                                int numArguments,
-                                @Cast("Nd4jLong**") @ByPtrPtr LongPointer shapeArguments,
-                                int numShapeArguments,
-                                IntPointer indexArguments,
-                                int numIndexArguments,
-                                @ByPtrPtr IntPointer intArrays,
-                                int numIntArrays,
-                                FloatPointer realArguments,
-                                int numRealArguments);
-    public native void execAggregateFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                int opNum,
-                                @ByPtrPtr FloatBuffer arguments,
-                                int numArguments,
-                                @Cast("Nd4jLong**") @ByPtrPtr LongBuffer shapeArguments,
-                                int numShapeArguments,
-                                IntBuffer indexArguments,
-                                int numIndexArguments,
-                                @ByPtrPtr IntBuffer intArrays,
-                                int numIntArrays,
-                                FloatBuffer realArguments,
-                                int numRealArguments);
-    public native void execAggregateFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                int opNum,
-                                @ByPtrPtr float[] arguments,
-                                int numArguments,
-                                @Cast("Nd4jLong**") @ByPtrPtr long[] shapeArguments,
-                                int numShapeArguments,
-                                int[] indexArguments,
-                                int numIndexArguments,
-                                @ByPtrPtr int[] intArrays,
-                                int numIntArrays,
-                                float[] realArguments,
-                                int numRealArguments);
-
-    /**
-     *
-     * @param extraPointers
-     * @param opNum
-     * @param arguments
-     * @param numArguments
-     * @param shapeArguments
-     * @param numShapeArguments
-     * @param indexArguments
-     * @param numIndexArguments
-     * @param intArrays
-     * @param numIntArrays
-     * @param realArguments
-     * @param numRealArguments
-     */
-    public native void execAggregateDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                 @Cast("double**") PointerPointer arguments,
+                                 @Cast("void**") PointerPointer arguments,
                                  int numArguments,
                                  @Cast("Nd4jLong**") PointerPointer shapeArguments,
                                  int numShapeArguments,
@@ -1607,11 +1543,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIndexArguments,
                                  @Cast("int**") PointerPointer intArrays,
                                  int numIntArrays,
-                                 DoublePointer realArguments,
-                                 int numRealArguments);
-    public native void execAggregateDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                 Pointer realArguments,
+                                 int numRealArguments,
+                                 @ByVal DataType dtype);
+    public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                 @ByPtrPtr DoublePointer arguments,
+                                 @Cast("void**") @ByPtrPtr Pointer arguments,
                                  int numArguments,
                                  @Cast("Nd4jLong**") @ByPtrPtr LongPointer shapeArguments,
                                  int numShapeArguments,
@@ -1619,11 +1556,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIndexArguments,
                                  @ByPtrPtr IntPointer intArrays,
                                  int numIntArrays,
-                                 DoublePointer realArguments,
-                                 int numRealArguments);
-    public native void execAggregateDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                 Pointer realArguments,
+                                 int numRealArguments,
+                                 @ByVal DataType dtype);
+    public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                 @ByPtrPtr DoubleBuffer arguments,
+                                 @Cast("void**") @ByPtrPtr Pointer arguments,
                                  int numArguments,
                                  @Cast("Nd4jLong**") @ByPtrPtr LongBuffer shapeArguments,
                                  int numShapeArguments,
@@ -1631,11 +1569,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIndexArguments,
                                  @ByPtrPtr IntBuffer intArrays,
                                  int numIntArrays,
-                                 DoubleBuffer realArguments,
-                                 int numRealArguments);
-    public native void execAggregateDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                 Pointer realArguments,
+                                 int numRealArguments,
+                                 @ByVal DataType dtype);
+    public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
-                                 @ByPtrPtr double[] arguments,
+                                 @Cast("void**") @ByPtrPtr Pointer arguments,
                                  int numArguments,
                                  @Cast("Nd4jLong**") @ByPtrPtr long[] shapeArguments,
                                  int numShapeArguments,
@@ -1643,112 +1582,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIndexArguments,
                                  @ByPtrPtr int[] intArrays,
                                  int numIntArrays,
-                                 double[] realArguments,
-                                 int numRealArguments);
+                                 Pointer realArguments,
+                                 int numRealArguments,
+                                 @ByVal DataType dtype);
 
-    /**
-     *
-     * @param extraPointers
-     * @param opNum
-     * @param arguments
-     * @param numArguments
-     * @param shapeArguments
-     * @param numShapeArguments
-     * @param indexArguments
-     * @param numIndexArguments
-     * @param intArrays
-     * @param numIntArrays
-     * @param realArguments
-     * @param numRealArguments
-     */
-    public native void execAggregateHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                               int opNum,
-                               @Cast("float16**") PointerPointer arguments,
-                               int numArguments,
-                               @Cast("Nd4jLong**") PointerPointer shapeArguments,
-                               int numShapeArguments,
-                               IntPointer indexArguments,
-                               int numIndexArguments,
-                               @Cast("int**") PointerPointer intArrays,
-                               int numIntArrays,
-                               @Cast("float16*") ShortPointer realArguments,
-                               int numRealArguments);
-    public native void execAggregateHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                               int opNum,
-                               @Cast("float16**") @ByPtrPtr ShortPointer arguments,
-                               int numArguments,
-                               @Cast("Nd4jLong**") @ByPtrPtr LongPointer shapeArguments,
-                               int numShapeArguments,
-                               IntPointer indexArguments,
-                               int numIndexArguments,
-                               @ByPtrPtr IntPointer intArrays,
-                               int numIntArrays,
-                               @Cast("float16*") ShortPointer realArguments,
-                               int numRealArguments);
-    public native void execAggregateHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                               int opNum,
-                               @Cast("float16**") @ByPtrPtr ShortBuffer arguments,
-                               int numArguments,
-                               @Cast("Nd4jLong**") @ByPtrPtr LongBuffer shapeArguments,
-                               int numShapeArguments,
-                               IntBuffer indexArguments,
-                               int numIndexArguments,
-                               @ByPtrPtr IntBuffer intArrays,
-                               int numIntArrays,
-                               @Cast("float16*") ShortBuffer realArguments,
-                               int numRealArguments);
-    public native void execAggregateHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                               int opNum,
-                               @Cast("float16**") @ByPtrPtr short[] arguments,
-                               int numArguments,
-                               @Cast("Nd4jLong**") @ByPtrPtr long[] shapeArguments,
-                               int numShapeArguments,
-                               int[] indexArguments,
-                               int numIndexArguments,
-                               @ByPtrPtr int[] intArrays,
-                               int numIntArrays,
-                               @Cast("float16*") short[] realArguments,
-                               int numRealArguments);
-
-
-    /**
-     *
-     * @param extraPointers
-     * @param numAggregates
-     * @param opNum
-     * @param maxArgs
-     * @param maxShapes
-     * @param maxIntArrays
-     * @param maxIntArraySize
-     * @param maxIdx
-     * @param maxReals
-     * @param ptrToArguments
-     */
-    public native void execAggregateBatchFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                     int numAggregates,
-                                     int opNum,
-                                     int maxArgs,
-                                     int maxShapes,
-                                     int maxIntArrays,
-                                     int maxIntArraySize,
-                                     int maxIdx,
-                                     int maxReals,
-                                     Pointer ptrToArguments);
-
-    /**
-     *
-     * @param extraPointers
-     * @param numAggregates
-     * @param opNum
-     * @param maxArgs
-     * @param maxShapes
-     * @param maxIntArrays
-     * @param maxIntArraySize
-     * @param maxIdx
-     * @param maxReals
-     * @param ptrToArguments
-     */
-    public native void execAggregateBatchDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execAggregateBatch(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                       int numAggregates,
                                       int opNum,
                                       int maxArgs,
@@ -1757,31 +1595,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                       int maxIntArraySize,
                                       int maxIdx,
                                       int maxReals,
-                                      Pointer ptrToArguments);
-
-    /**
-     *
-     * @param extraPointers
-     * @param numAggregates
-     * @param opNum
-     * @param maxArgs
-     * @param maxShapes
-     * @param maxIntArrays
-     * @param maxIntArraySize
-     * @param maxIdx
-     * @param maxReals
-     * @param ptrToArguments
-     */
-    public native void execAggregateBatchHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                    int numAggregates,
-                                    int opNum,
-                                    int maxArgs,
-                                    int maxShapes,
-                                    int maxIntArrays,
-                                    int maxIntArraySize,
-                                    int maxIdx,
-                                    int maxReals,
-                                    Pointer ptrToArguments);
+                                      Pointer ptrToArguments,
+                                      @ByVal DataType dtype);
 
     /**
      * Random operations

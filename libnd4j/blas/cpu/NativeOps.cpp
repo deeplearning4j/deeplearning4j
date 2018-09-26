@@ -1297,34 +1297,8 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 }
 
 
-void NativeOps::execAggregateFloat(Nd4jPointer *extraPointers,int opNum,
-                                   float **arguments,
-                                   int numArguments,
-                                   Nd4jLong **shapeArguments,
-                                   int numShapeArguments,
-                                   int *indexArguments,
-                                   int numIndexArguments,
-                                   int **intArrays,
-                                   int numIntArrays,
-                                   float *realArguments,
-                                   int numRealArguments) {
-/*
-    NativeOpExcutioner<float>::execAggregate(opNum,
-                                             arguments,
-                                             numArguments,
-                                             shapeArguments,
-                                             numShapeArguments,
-                                             indexArguments,
-                                             numIndexArguments,
-                                             intArrays,
-                                             numIntArrays,
-                                             realArguments,
-                                             numRealArguments);
-    */
-}
-
-void NativeOps::execAggregateDouble(Nd4jPointer *extraPointers,int opNum,
-                                    double **arguments,
+void NativeOps::execAggregate(Nd4jPointer *extraPointers,int opNum,
+                                    void **arguments,
                                     int numArguments,
                                     Nd4jLong **shapeArguments,
                                     int numShapeArguments,
@@ -1332,113 +1306,30 @@ void NativeOps::execAggregateDouble(Nd4jPointer *extraPointers,int opNum,
                                     int numIndexArguments,
                                     int **intArrays,
                                     int numIntArrays,
-                                    double *realArguments,
-                                    int numRealArguments) {
-/*
-    NativeOpExcutioner<double>::execAggregate(opNum,
-                                              arguments,
-                                              numArguments,
-                                              shapeArguments,
-                                              numShapeArguments,
-                                              indexArguments,
-                                              numIndexArguments,
-                                              intArrays,
-                                              numIntArrays,
-                                              realArguments,
-                                              numRealArguments);
-    */
+                                    void *realArguments,
+                                    int numRealArguments,
+                                    nd4j::DataType dtype) {
+
+    BUILD_SINGLE_SELECTOR(dtype, NativeOpExcutioner::execAggregate, (opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), FLOAT_TYPES);
+
 }
 
-void NativeOps::execAggregateHalf(Nd4jPointer *extraPointers,int opNum,
-                                  float16 **arguments,
-                                  int numArguments,
-                                  Nd4jLong **shapeArguments,
-                                  int numShapeArguments,
-                                  int *indexArguments,
-                                  int numIndexArguments,
-                                  int **intArrays,
-                                  int numIntArrays,
-                                  float16 *realArguments,
-                                  int numRealArguments) {
-
-    // TODO: add this at some point
-    //NativeOpExcutioner<float16>::execAggregate(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
-}
-
-
-
-void NativeOps::execAggregateBatchFloat(Nd4jPointer *extraPointers,
-                                        int numAggregates,
-                                        int opNum,
-                                        int maxArgs,
-                                        int maxShapes,
-                                        int maxIntArrays,
-                                        int maxIntArraySize,
-                                        int maxIdx,
-                                        int maxReals,
-                                        void *ptrToArguments) {
-
-    //nd4j_printf("numAggregates: [%i]; opNum: [%i]; maxArgs: [%i]; maxShapes: [%i]; maxIntArrays: [%i]; maxIntArraySize: [%i]; maxIdx: [%i]; maxReals: [%i];\n", numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals);
-
+template <typename T>
+void NativeOps::_batchExecutor(Nd4jPointer *extraPointers,
+                           int numAggregates,
+                           int opNum,
+                           int maxArgs,
+                           int maxShapes,
+                           int maxIntArrays,
+                           int maxIntArraySize,
+                           int maxIdx,
+                           int maxReals,
+                           void *ptrToArguments,
+                           nd4j::DataType dtype) {
     // probably, we don't want too much threads as usually
     int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
 
-    nd4j::PointersHelper<float> helper(ptrToArguments,
-                                       numAggregates,
-                                       maxArgs,
-                                       maxShapes,
-                                       maxIntArrays,
-                                       maxIntArraySize,
-                                       maxIdx,
-                                       maxReals);
-
-    // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(close) default(shared)
-    for (int i = 0; i < numAggregates; i++) {
-        auto intArrays = new int *[maxIntArrays];
-
-        auto arguments = helper.getArguments(i);
-        auto shapes = helper.getShapeArguments(i);
-        auto idxArg = helper.getIndexArguments(i);
-        auto realArg = helper.getRealArguments(i);
-
-        for (int e = 0; e < maxIntArrays; e++) {
-            intArrays[e] = helper.getIntArrayArguments(i, e);
-        }
-
-        execAggregateFloat(extraPointers,
-                           opNum,
-                           arguments,
-                           helper.getNumArguments(i),
-                           shapes,
-                           helper.getNumShapeArguments(i),
-                           idxArg,
-                           helper.getNumIndexArguments(i),
-                           reinterpret_cast<int **>(intArrays),
-                           helper.getNumIntArrayArguments(i),
-                           realArg,
-                           helper.getNumRealArguments(i));
-
-        delete [] intArrays;
-    }
-}
-
-
-void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers,
-                                         int numAggregates,
-                                         int opNum,
-                                         int maxArgs,
-                                         int maxShapes,
-                                         int maxIntArrays,
-                                         int maxIntArraySize,
-                                         int maxIdx,
-                                         int maxReals,
-                                         void *ptrToArguments) {
-
-    // probably, we don't want too much threads as usually
-    int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
-
-    nd4j::PointersHelper<double> helper(ptrToArguments,
+    nd4j::PointersHelper<T> helper(ptrToArguments,
                                         numAggregates,
                                         maxArgs,
                                         maxShapes,
@@ -1461,38 +1352,39 @@ void NativeOps::execAggregateBatchDouble(Nd4jPointer *extraPointers,
             intArrays[e] = helper.getIntArrayArguments(i, e);
         }
 
-        execAggregateDouble(extraPointers,
-                            opNum,
-                            arguments,
-                            helper.getNumArguments(i),
-                            shapes,
-                            helper.getNumShapeArguments(i),
-                            idxArg,
-                            helper.getNumIndexArguments(i),
-                            intArrays,
-                            helper.getNumIntArrayArguments(i),
-                            realArg,
-                            helper.getNumRealArguments(i));
+        execAggregate(extraPointers,
+                      opNum,
+                      reinterpret_cast<void **>(arguments),
+                      helper.getNumArguments(i),
+                      shapes,
+                      helper.getNumShapeArguments(i),
+                      idxArg,
+                      helper.getNumIndexArguments(i),
+                      intArrays,
+                      helper.getNumIntArrayArguments(i),
+                      realArg,
+                      helper.getNumRealArguments(i),
+                      dtype);
 
         delete [] intArrays;
     }
+}
+BUILD_SINGLE_TEMPLATE(template void NativeOps::_batchExecutor, (Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments, nd4j::DataType dtype), FLOAT_TYPES);
+
+void NativeOps::execAggregateBatch(Nd4jPointer *extraPointers,
+                                         int numAggregates,
+                                         int opNum,
+                                         int maxArgs,
+                                         int maxShapes,
+                                         int maxIntArrays,
+                                         int maxIntArraySize,
+                                         int maxIdx,
+                                         int maxReals,
+                                         void *ptrToArguments,
+                                         nd4j::DataType dtype) {
 
 
 }
-
-void NativeOps::execAggregateBatchHalf(Nd4jPointer *extraPointers,
-                                       int numAggregates,
-                                       int opNum,
-                                       int maxArgs,
-                                       int maxShapes,
-                                       int maxIntArrays,
-                                       int maxIntArraySize,
-                                       int maxIdx,
-                                       int maxReals,
-                                       void *ptrToArguments) {
-    // TODO: add support for fp16
-}
-
 
 
 void NativeOps::execRandom(Nd4jPointer *extraPointers,
