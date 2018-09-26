@@ -143,18 +143,30 @@ public abstract class DifferentialFunction {
      * @return
      */
     public Map<String,Object> propertiesForFunction() {
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        Map<String,Field> fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
         Map<String,Object> ret = new LinkedHashMap<>();
 
         for(val entry : fields.entrySet()) {
             try {
                 ret.put(entry.getKey(),fields.get(entry.getKey()).get(this));
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                throw new RuntimeException("Unable to get property for field: " + entry.getKey(), e);
             }
         }
 
         return ret;
+    }
+
+    public void setPropertiesForFunction(Map<String,Object> properties){
+        Map<String,Field> fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        for(String s : properties.keySet()){
+            Field f = fields.get(s);
+            if(f == null){
+                log.warn("No fields found for property name {} for class {}", s, this.getClass().getName());
+                continue;
+            }
+            setValueFor(f, properties.get(s));
+        }
     }
 
 
@@ -182,16 +194,64 @@ public abstract class DifferentialFunction {
      * @param value the value to set
      */
     public void setValueFor(Field target, Object value) {
-        if(value == null) {
-            throw new ND4JIllegalStateException("Unable to set field " + target + " using null value!");
+        if(value == null && target.getType().isPrimitive()) {
+            throw new ND4JIllegalStateException("Unable to set primitive field " + target + " of type " + target.getClass()
+                    + " using null value!");
         }
 
-        value = ensureProperType(target,value);
+        if(value != null) {
+            value = ensureProperType(target, value);
+        }
 
-        try {
-            target.set(this,value);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
+        if(isConfigProperties()){
+            String propertyName = configFieldName();
+            if(propertyName == null)
+                propertyName = "config";
+            Field f = null;
+            Class<?> currClass = getClass();
+            try{
+                f = currClass.getDeclaredField(propertyName);
+            } catch (NoSuchFieldException e){
+                //OK, try superclass
+            }
+            while(f == null && currClass.getSuperclass() != null){
+                currClass = currClass.getSuperclass();
+                try{
+                    f = currClass.getDeclaredField(propertyName);
+                } catch (NoSuchFieldException e){
+                    //OK, try superclass
+                }
+            }
+
+            if(f == null){
+                throw new IllegalStateException("Could not find field \"" + propertyName + "\" for class " + getClass().getName());
+            }
+
+            try {
+                f.setAccessible(true);
+                Object o = f.get(this);
+                if(o == null){
+                    //Null config class - try to create one...
+                    Class<?> c = f.getType();
+                    try {
+                        o = c.newInstance();
+                    } catch (InstantiationException e){
+                        throw new RuntimeException("Error creating new instance of configuration object type " + c.getName(), e);
+                    }
+                    f.set(this, o);
+                }
+                target.set(o, value);
+            } catch (IllegalAccessException e){
+                throw new RuntimeException("Error setting configuration field \"" + propertyName + "\" for config field \"" + propertyName
+                    + "\" on class " + getClass().getName());
+            }
+
+        } else {
+            try {
+                target.set(this,value);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("Error setting property for function " + getClass().getName(), e);
+            }
         }
     }
 
@@ -199,8 +259,18 @@ public abstract class DifferentialFunction {
     private Object ensureProperType(Field targetType,Object value) {
         val firstClass = targetType.getType();
         val valueType = value.getClass();
+
         if(!firstClass.equals(valueType)) {
-            if(firstClass.equals(int[].class)) {
+            if(firstClass.isEnum()){
+                Object[] enumConstants = firstClass.getEnumConstants();
+                for( int i=0; i<enumConstants.length; i++ ){
+                    if(enumConstants[i].toString().equalsIgnoreCase((String)value)){
+                        return enumConstants[i];
+                    }
+                }
+                throw new IllegalStateException("Could not find enum constant value for value \"" + value
+                        + "\" for enum class " + firstClass.getName());
+            } else if(firstClass.equals(int[].class)) {
                 if(value instanceof Number) {
                     Number number = (Number) value;
                     value = number.intValue();

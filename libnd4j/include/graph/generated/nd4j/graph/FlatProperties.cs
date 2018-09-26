@@ -30,11 +30,14 @@ public struct FlatProperties : IFlatbufferObject
   public ArraySegment<byte>? GetDBytes() { return __p.__vector_as_arraysegment(10); }
   public FlatArray? A(int j) { int o = __p.__offset(12); return o != 0 ? (FlatArray?)(new FlatArray()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int ALength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public string S(int j) { int o = __p.__offset(14); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
-  public int SLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public int Shape(int j) { int o = __p.__offset(16); return o != 0 ? __p.bb.GetInt(__p.__vector(o) + j * 4) : (int)0; }
-  public int ShapeLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public ArraySegment<byte>? GetShapeBytes() { return __p.__vector_as_arraysegment(16); }
+  public bool B(int j) { int o = __p.__offset(14); return o != 0 ? 0!=__p.bb.Get(__p.__vector(o) + j * 1) : false; }
+  public int BLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public ArraySegment<byte>? GetBBytes() { return __p.__vector_as_arraysegment(14); }
+  public string S(int j) { int o = __p.__offset(16); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
+  public int SLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public int Shape(int j) { int o = __p.__offset(18); return o != 0 ? __p.bb.GetInt(__p.__vector(o) + j * 4) : (int)0; }
+  public int ShapeLength { get { int o = __p.__offset(18); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public ArraySegment<byte>? GetShapeBytes() { return __p.__vector_as_arraysegment(18); }
 
   public static Offset<FlatProperties> CreateFlatProperties(FlatBufferBuilder builder,
       StringOffset nameOffset = default(StringOffset),
@@ -42,11 +45,13 @@ public struct FlatProperties : IFlatbufferObject
       VectorOffset lOffset = default(VectorOffset),
       VectorOffset dOffset = default(VectorOffset),
       VectorOffset aOffset = default(VectorOffset),
+      VectorOffset bOffset = default(VectorOffset),
       VectorOffset sOffset = default(VectorOffset),
       VectorOffset shapeOffset = default(VectorOffset)) {
-    builder.StartObject(7);
+    builder.StartObject(8);
     FlatProperties.AddShape(builder, shapeOffset);
     FlatProperties.AddS(builder, sOffset);
+    FlatProperties.AddB(builder, bOffset);
     FlatProperties.AddA(builder, aOffset);
     FlatProperties.AddD(builder, dOffset);
     FlatProperties.AddL(builder, lOffset);
@@ -55,7 +60,7 @@ public struct FlatProperties : IFlatbufferObject
     return FlatProperties.EndFlatProperties(builder);
   }
 
-  public static void StartFlatProperties(FlatBufferBuilder builder) { builder.StartObject(7); }
+  public static void StartFlatProperties(FlatBufferBuilder builder) { builder.StartObject(8); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(0, nameOffset.Value, 0); }
   public static void AddI(FlatBufferBuilder builder, VectorOffset iOffset) { builder.AddOffset(1, iOffset.Value, 0); }
   public static VectorOffset CreateIVector(FlatBufferBuilder builder, int[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddInt(data[i]); return builder.EndVector(); }
@@ -69,10 +74,13 @@ public struct FlatProperties : IFlatbufferObject
   public static void AddA(FlatBufferBuilder builder, VectorOffset aOffset) { builder.AddOffset(4, aOffset.Value, 0); }
   public static VectorOffset CreateAVector(FlatBufferBuilder builder, Offset<FlatArray>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static void StartAVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddS(FlatBufferBuilder builder, VectorOffset sOffset) { builder.AddOffset(5, sOffset.Value, 0); }
+  public static void AddB(FlatBufferBuilder builder, VectorOffset bOffset) { builder.AddOffset(5, bOffset.Value, 0); }
+  public static VectorOffset CreateBVector(FlatBufferBuilder builder, bool[] data) { builder.StartVector(1, data.Length, 1); for (int i = data.Length - 1; i >= 0; i--) builder.AddBool(data[i]); return builder.EndVector(); }
+  public static void StartBVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(1, numElems, 1); }
+  public static void AddS(FlatBufferBuilder builder, VectorOffset sOffset) { builder.AddOffset(6, sOffset.Value, 0); }
   public static VectorOffset CreateSVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static void StartSVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddShape(FlatBufferBuilder builder, VectorOffset shapeOffset) { builder.AddOffset(6, shapeOffset.Value, 0); }
+  public static void AddShape(FlatBufferBuilder builder, VectorOffset shapeOffset) { builder.AddOffset(7, shapeOffset.Value, 0); }
   public static VectorOffset CreateShapeVector(FlatBufferBuilder builder, int[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddInt(data[i]); return builder.EndVector(); }
   public static void StartShapeVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static Offset<FlatProperties> EndFlatProperties(FlatBufferBuilder builder) {

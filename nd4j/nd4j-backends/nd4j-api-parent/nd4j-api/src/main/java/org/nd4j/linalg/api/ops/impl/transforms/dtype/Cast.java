@@ -57,24 +57,6 @@ public class Cast extends BaseDynamicTransformOp {
         addArgs();
     }
 
-
-    @Override
-    public void setValueFor(Field target, Object value) {
-        if(value == null) {
-            throw new ND4JIllegalStateException("Unable to set field " + target + " using null value!");
-        }
-
-        // FIXME!
-        if (!(value instanceof DataBuffer.Type))
-            return;
-
-        try {
-            target.set(this, (DataBuffer.Type) value);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);

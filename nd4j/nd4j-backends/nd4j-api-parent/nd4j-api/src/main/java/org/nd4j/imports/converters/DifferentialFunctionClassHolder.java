@@ -51,8 +51,22 @@ public class DifferentialFunctionClassHolder {
     private Map<String,OpDef> tensorflowOpDescriptors;
     private Map<String,Map<String,Field>> fieldsForFunction;
 
-    private Set<String>  fieldNamesOpsIgnore;
-    private Set<String> classesWithConfig = new LinkedHashSet<String>(){{
+    private static final Set<String>  fieldNamesOpsIgnore = new LinkedHashSet<String>(){{
+        add("extraArgs");
+        add("arrayInitialized");
+        add("log");
+        add("inputArguments");
+        add("outputArguments");
+        add("outputShapes");
+        add("outputVariables");
+        add("tArguments");
+        add("iArguments");
+        add("hash");
+        add("opName");
+        add("sameDiff");
+        add("ownName");
+    }};
+    private static final Set<String> classesWithConfig = new LinkedHashSet<String>(){{
         add(AvgPooling2D.class.getName());
         add(Conv2D.class.getName());
         add(Conv3D.class.getName());
@@ -64,6 +78,12 @@ public class DifferentialFunctionClassHolder {
         add(DepthwiseConv2D.class.getName());
         add(DeConv2DTF.class.getName());
     }};
+    //When determining fields/properties, where should we terminate the search?
+    //We don't wan to include every single field from every single superclass
+    private static final Set<Class> classesToIgnore = new HashSet<>(Arrays.<Class>asList(
+            Object.class,
+            BaseOp.class    //Exclude x/y/z, n, numProcessed, extraArgs, etc
+    ));
 
     @Getter
     private int countTotalTfOps;
@@ -129,21 +149,7 @@ public class DifferentialFunctionClassHolder {
     }
 
     private DifferentialFunctionClassHolder() {
-        fieldNamesOpsIgnore = new LinkedHashSet<String>(){{
-            add("extraArgs");
-            add("arrayInitialized");
-            add("log");
-            add("inputArguments");
-            add("outputArguments");
-            add("outputShapes");
-            add("outputVariables");
-            add("tArguments");
-            add("iArguments");
-            add("hash");
-            add("opName");
-            add("sameDiff");
-            add("ownName");
-        }};
+
 
 
         //Scan classpath to find all DifferentialFunction instances, so tensorflow/onnx mappings can be made
@@ -214,7 +220,7 @@ public class DifferentialFunctionClassHolder {
                     Map<String,Field> fieldNames = new LinkedHashMap<>();
                     Class<? extends DifferentialFunction> current = node.getClass();
                     val fields = new ArrayList<Field>();
-                    while(current.getSuperclass() != null) {
+                    while(current.getSuperclass() != null && !classesToIgnore.contains(current.getSuperclass())) {
                         if(classesWithConfig.contains(current.getName())) {
 
                             val fieldName = "config";
@@ -227,7 +233,7 @@ public class DifferentialFunctionClassHolder {
                             val configFieldClass = configField.getType();
 
                             for(val field : configFieldClass.getDeclaredFields()) {
-                                if(!fieldNamesOpsIgnore.contains(field.getName())) {
+                                if(!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName())) {
                                     fields.add(field);
                                     field.setAccessible(true);
                                     fieldNames.put(field.getName(),field);
@@ -235,8 +241,8 @@ public class DifferentialFunctionClassHolder {
                             }
                         }
                         else {
-                            for(val field : current.getDeclaredFields()) {
-                                if(!fieldNamesOpsIgnore.contains(field.getName())) {
+                            for(Field field : current.getDeclaredFields()) {
+                                if(!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName())) {
                                     fields.add(field);
                                     field.setAccessible(true);
                                     fieldNames.put(field.getName(),field);
@@ -282,47 +288,6 @@ public class DifferentialFunctionClassHolder {
 
         countTotalTfOps = tensorflowOpDescriptors.size();
         countTotalMappedOps = nodeConverters.size();
-
-        //All (non-custom) ops to ID by type
-//        for(DifferentialFunction df : nodeConverters.values()){
-//            Op.Type opType;
-//            try{
-//                opType = df.opType();
-//            } catch (Throwable t){
-//                log.warn("Exception for op class: " + df.getClass().getName(), t);
-//                continue;
-//            }
-//            if(opType == null)
-//                continue;
-//
-//            if(!(df instanceof Op)){
-//                continue;
-//            }
-//
-//            if(df instanceof BaseGradientOp){
-//                continue;
-//            }
-//
-//            if(!opIdToClassByType.containsKey(opType)){
-//                opIdToClassByType.put(opType, new HashMap<Long, Class<?>>());
-//            }
-//            Map<Long,Class<?>> opTypeMap = opIdToClassByType.get(opType);
-//            Op op = (Op)df;
-//            int opNum;
-//            try{
-//                opNum = op.opNum();
-//            } catch (Throwable t){
-//                log.warn("Exception thrown by opNum() method for class: {}", op.getClass().getName());
-//                continue;
-//            }
-//
-//            if(opTypeMap.containsKey((long)opNum)){
-//                throw new IllegalStateException("Op number " + opNum + " already exists for op " + opTypeMap.get((long)opNum).getName() +
-//                        " - duplicate op: " + df.getClass().getName());
-//            }
-//            opTypeMap.put((long)opNum, df.getClass());
-//        }
-
 
         //Get custom ops - map from hash to class
         Map<String,CustomOpDescriptor> descriptorMap = Nd4j.getExecutioner().getCustomOperations();

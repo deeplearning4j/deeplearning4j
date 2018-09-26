@@ -112,8 +112,30 @@ class FlatProperties(object):
         return 0
 
     # FlatProperties
-    def S(self, j):
+    def B(self, j):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
+        if o != 0:
+            a = self._tab.Vector(o)
+            return self._tab.Get(flatbuffers.number_types.BoolFlags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1))
+        return 0
+
+    # FlatProperties
+    def BAsNumpy(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
+        if o != 0:
+            return self._tab.GetVectorAsNumpy(flatbuffers.number_types.BoolFlags, o)
+        return 0
+
+    # FlatProperties
+    def BLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+    # FlatProperties
+    def S(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
         if o != 0:
             a = self._tab.Vector(o)
             return self._tab.String(a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4))
@@ -121,14 +143,14 @@ class FlatProperties(object):
 
     # FlatProperties
     def SLength(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
 
     # FlatProperties
     def Shape(self, j):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
         if o != 0:
             a = self._tab.Vector(o)
             return self._tab.Get(flatbuffers.number_types.Int32Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4))
@@ -136,19 +158,19 @@ class FlatProperties(object):
 
     # FlatProperties
     def ShapeAsNumpy(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
         if o != 0:
             return self._tab.GetVectorAsNumpy(flatbuffers.number_types.Int32Flags, o)
         return 0
 
     # FlatProperties
     def ShapeLength(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
 
-def FlatPropertiesStart(builder): builder.StartObject(7)
+def FlatPropertiesStart(builder): builder.StartObject(8)
 def FlatPropertiesAddName(builder, name): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(name), 0)
 def FlatPropertiesAddI(builder, i): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(i), 0)
 def FlatPropertiesStartIVector(builder, numElems): return builder.StartVector(4, numElems, 4)
@@ -158,8 +180,10 @@ def FlatPropertiesAddD(builder, d): builder.PrependUOffsetTRelativeSlot(3, flatb
 def FlatPropertiesStartDVector(builder, numElems): return builder.StartVector(8, numElems, 8)
 def FlatPropertiesAddA(builder, a): builder.PrependUOffsetTRelativeSlot(4, flatbuffers.number_types.UOffsetTFlags.py_type(a), 0)
 def FlatPropertiesStartAVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def FlatPropertiesAddS(builder, s): builder.PrependUOffsetTRelativeSlot(5, flatbuffers.number_types.UOffsetTFlags.py_type(s), 0)
+def FlatPropertiesAddB(builder, b): builder.PrependUOffsetTRelativeSlot(5, flatbuffers.number_types.UOffsetTFlags.py_type(b), 0)
+def FlatPropertiesStartBVector(builder, numElems): return builder.StartVector(1, numElems, 1)
+def FlatPropertiesAddS(builder, s): builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(s), 0)
 def FlatPropertiesStartSVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def FlatPropertiesAddShape(builder, shape): builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(shape), 0)
+def FlatPropertiesAddShape(builder, shape): builder.PrependUOffsetTRelativeSlot(7, flatbuffers.number_types.UOffsetTFlags.py_type(shape), 0)
 def FlatPropertiesStartShapeVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def FlatPropertiesEnd(builder): return builder.EndObject()

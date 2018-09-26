@@ -31,7 +31,6 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.functions.FunctionProperties;
 import org.nd4j.autodiff.samediff.flow.FlowPath;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
@@ -10966,9 +10965,15 @@ public class SameDiff {
         val hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
-        double[] extras = node.getExtraArgs() != null ? new double[node.getExtraArgs().length] : new double[0];
-        for (int e = 0; e < extras.length; e++) {
-            extras[e] = ((Number) node.getExtraArgs()[e]).doubleValue();
+        double[] extras;
+        if(node.opType() == Op.Type.CUSTOM){
+            CustomOp op = (CustomOp)node;
+            extras = op.tArgs();
+        } else {
+            extras = node.getExtraArgs() != null ? new double[node.getExtraArgs().length] : new double[0];
+            for (int e = 0; e < extras.length; e++) {
+                extras[e] = ((Number) node.getExtraArgs()[e]).doubleValue();
+            }
         }
 
         long[] extraBits = null;
@@ -11007,9 +11012,6 @@ public class SameDiff {
 
         SDVariable[] inputs = node.args();
         for (SDVariable input : inputs) {
-            //for (int i = 0; i < outputVertexId.length; i++) {
-//            Pair<String,Integer> pair = parseVariable(input.getVarName());
-//            String inName = pair.getFirst();
             String varName = input.getVarName();
             int outIdx;
             if(functionOutputFor.containsKey(varName)){
@@ -11019,13 +11021,6 @@ public class SameDiff {
                 outIdx = 0;
             }
 
-//            if (!reverseMap.containsKey(pair.getFirst())) {
-//                if (pair.getFirst().contains("NextIteration")) {
-//                    // forward declaration: Merge node in case of loop will be referring to NextIteration node, which wasn't announced yet
-//                    int fwdNodeId = idCounter.incrementAndGet();
-//                    forwardMap.put(pair.getFirst(), fwdNodeId);
-//                    reverseMap.put(pair.getFirst(), fwdNodeId);
-
             if (!reverseMap.containsKey(varName)) {
                 if (varName.contains("NextIteration")) {
                     // forward declaration: Merge node in case of loop will be referring to NextIteration node, which wasn't announced yet
@@ -11033,22 +11028,16 @@ public class SameDiff {
                     forwardMap.put(varName, fwdNodeId);
                     reverseMap.put(varName, fwdNodeId);
                 } else {
-//                    throw new ND4JIllegalStateException("Unknown variable used in input: [" + pair.getFirst() + "]");
                     throw new ND4JIllegalStateException("Unknown variable used in input: [" + varName + "]");
                 }
             }
 
             int nodeId = reverseMap.get(varName);
-//            int outputIndex = pair.getSecond();
-
-//            inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outputIndex));
             inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outIdx));
-            //}
         }
 
         log.debug("Own Name: {}", node.getOwnName());
         int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
-//        reverseMap.put(node.getOwnName(), ownId);
         String[] outNames = node.outputVariablesNames();
         for(String s : outNames){
             if(!reverseMap.containsKey(s)){
@@ -11064,9 +11053,9 @@ public class SameDiff {
         } else {
             dims = new int[0];
         }
-        // TODO: Adam, just put your props here, instead of empty list, and they will be saved
-        List<FunctionProperties> props = new ArrayList<>();
-        int properties = FunctionProperties.asFlatProperties(bufferBuilder, props);
+        Map<String,Object> fnProps = node.propertiesForFunction();
+        int[] flatProperties = FlatBuffersMapper.mapFunctionPropertiesToFlatProperties(bufferBuilder, fnProps);
+        int propIdx = FlatNode.createPropertiesVector(bufferBuilder, flatProperties);
 
         int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
         int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
@@ -11099,7 +11088,7 @@ public class SameDiff {
                 fname,
                 FlatBuffersMapper.getFlatOpType(node.opType()),
                 hash,
-                properties,
+                propIdx,
                 nodesIn,
                 nodesInPaired,
                 (byte) 0,
@@ -11367,6 +11356,7 @@ public class SameDiff {
             DifferentialFunction df = FlatBuffersMapper.fromFlatNode(fn);
             String name = fn.name();
             df.setSameDiff(sd);
+            df.setOwnName(name);
             sd.functionInstancesById.put(name, df);
             int outLength = fn.outputLength();
             int[] outs = new int[outLength];

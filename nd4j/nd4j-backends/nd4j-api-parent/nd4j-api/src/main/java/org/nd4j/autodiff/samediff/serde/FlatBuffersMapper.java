@@ -15,10 +15,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class FlatBuffersMapper {
 
@@ -259,7 +256,6 @@ public class FlatBuffersMapper {
         String name = fn.name();        //Name of the node, NOT the name of the op
         Op.Type opType = FlatBuffersMapper.getTypeFromByte(fn.opType());
         long opNum = fn.opNum();        //Op num: hash for custom, number for legacy
-        FlatProperties properties = fn.propertiesLength() > 0 ? fn.properties(0) : null;
         int[] input = new int[fn.inputLength()];
         for( int i=0; i<input.length; i++ ){
             input[i] = fn.input(i);
@@ -268,16 +264,18 @@ public class FlatBuffersMapper {
         for( int i=0; i<inputPaired.length; i++ ){
             inputPaired[i] = fn.inputPaired(i);
         }
-//            DataBuffer.Type dt = SameDiff.getDataTypeFromByte(fn.dataType());
         int[] output = new int[fn.outputLength()];
         for( int i=0; i<output.length; i++ ){
             output[i] = fn.output(i);
         }
-//        double[] extraParams = new double[fn.extraParamsLength()];
-        Object[] extraParams = new Object[fn.extraParamsLength()];
+        double[] extraParams = new double[fn.extraParamsLength()];
         for( int i=0; i<extraParams.length; i++ ){
             extraParams[i] = fn.extraParams(i);
         }
+//        Object[] extraParams = new Object[fn.extraParamsLength()];
+//        for( int i=0; i<extraParams.length; i++ ){
+//            extraParams[i] = fn.extraParams(i);
+//        }
         long[] extraInteger = new long[fn.extraIntegerLength()];
         for( int i=0; i<extraInteger.length; i++ ){
             extraInteger[i] = fn.extraInteger(i);
@@ -288,8 +286,14 @@ public class FlatBuffersMapper {
         }
         float scalar = fn.scalar();
 
+        FlatProperties[] flatProperties = new FlatProperties[fn.propertiesLength()];
+        for( int i=0; i<flatProperties.length; i++ ){
+            flatProperties[i] = fn.properties(i);
+        }
+        Map<String,Object> props = FlatBuffersMapper.mapFlatPropertiesToFunctionProperties(Arrays.asList(flatProperties));
+
+
         if(opType == Op.Type.CUSTOM) {
-//            DifferentialFunction df = DifferentialFunctionClassHolder.getInstance().getInstance(name);
             Class<?> c = DifferentialFunctionClassHolder.getInstance().customOpClassForHash(opNum);
 
             Preconditions.checkNotNull(c, "Could not find class for hash %s", opNum);
@@ -305,13 +309,12 @@ public class FlatBuffersMapper {
 
             //Set args:
             //op.addTArgument();
-            if (op instanceof CustomOp) {
-                //TODO where are T args?
-                ((CustomOp) op).addIArgument(extraInteger);
-            }
+            ((CustomOp) op).addIArgument(extraInteger);
+            ((CustomOp) op).addTArgument(extraParams);
 
+            op.setPropertiesForFunction(props);
             return op;
-        } else { //if (opType == Op.Type.SCALAR || opType == Op.Type.TRANSFORM) {
+        } else {
             Class<?> c = LegacyOpMapper.getLegacyOpClassForId(opType, (int)opNum);
             Op op;
             try {
@@ -320,7 +323,11 @@ public class FlatBuffersMapper {
                 throw new RuntimeException("Error creating differential function (Op) instance of type " + c);
             }
 
-            op.setExtraArgs(extraParams);
+            Object[] extraParamsObj = new Object[extraParams.length];
+            for( int i=0; i<extraParams.length; i++ ){
+                extraParamsObj[i] = extraParams[i];
+            }
+            op.setExtraArgs(extraParamsObj);
             if(opType == Op.Type.SCALAR){
                 ScalarOp sOp = (ScalarOp)op;
                 sOp.setScalar(scalar);
@@ -333,10 +340,13 @@ public class FlatBuffersMapper {
                 bia.setDimensions(dimensions);
                 bia.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
             }
+
+            ((DifferentialFunction)op).setPropertiesForFunction(props);
             return (DifferentialFunction)op;
         }
     }
 
+    private static final boolean[] EMPTY_BOOLEAN = new boolean[0];
     private static final int[] EMPTY_INT = new int[0];
     private static final long[] EMPTY_LONG = new long[0];
     private static final double[] EMPTY_DOUBLE = new double[0];
@@ -354,10 +364,17 @@ public class FlatBuffersMapper {
             long[] l = null;
             double[] d = null;
             int[] aIdx = null;
+            boolean[] b = null;
             int[] sIdx = null;
             int[] shape = null;
 
-            if(v instanceof Number) {
+
+
+            if(v == null) {
+                //No op
+            } else if(v instanceof Boolean){
+                b = new boolean[]{(Boolean)v};
+            } else if(v instanceof Number) {
                 if (v instanceof Double) {
                     d = new double[]{(Double) v};
                 } else if (v instanceof Integer) {
@@ -376,7 +393,10 @@ public class FlatBuffersMapper {
                 aIdx = new int[]{arr.toFlatArray(fbb)};
             } else if(v.getClass().isArray()){
                 if(v.getClass().getComponentType().isPrimitive()){
-                    if(v instanceof double[]){
+                    if(v instanceof boolean[]) {
+                        b = (boolean[])v;
+                        shape = new int[]{b.length};
+                    } else if(v instanceof double[]){
                         d = (double[])v;
                         shape = new int[]{d.length};
                     } else if(v instanceof int[]){
@@ -412,16 +432,17 @@ public class FlatBuffersMapper {
             int idxI = FlatProperties.createIVector(fbb, i != null ? i : EMPTY_INT);
             int idxL = FlatProperties.createLVector(fbb, l != null ? l : EMPTY_LONG);
             int idxA = FlatProperties.createAVector(fbb, aIdx != null ? aIdx : EMPTY_INT);
+            int idxB = FlatProperties.createBVector(fbb, b != null ? b : EMPTY_BOOLEAN);
             int idxS = FlatProperties.createSVector(fbb, sIdx != null ? sIdx : EMPTY_INT);
             int idxShape = FlatProperties.createShapeVector(fbb, shape != null ? shape : EMPTY_INT);
 
-            outIdxs[count++] = FlatProperties.createFlatProperties(fbb, iname, idxI, idxL, idxD, idxA, idxS, idxShape);
+            outIdxs[count++] = FlatProperties.createFlatProperties(fbb, iname, idxI, idxL, idxD, idxA, idxB, idxS, idxShape);
 
         }
         return outIdxs;
     }
 
-    public static Map<String,Object> mapFlatPropertiesToFunctionProperties(List<FlatProperties> list){
+    public static Map<String,Object> mapFlatPropertiesToFunctionProperties(Iterable<FlatProperties> list){
         Map<String,Object> out = new HashMap<>();
         for(FlatProperties p : list){
 
@@ -449,12 +470,18 @@ public class FlatBuffersMapper {
                         dArr[i] = p.d(i);
                     }
                     out.put(name, dArr);
-                } else if(p.dLength() > 0){
+                } else if(p.dLength() > 0) {
                     long[] lArr = new long[p.lLength()];
-                    for( int i=0; i<lArr.length; i++ ){
+                    for (int i = 0; i < lArr.length; i++) {
                         lArr[i] = p.l(i);
                     }
                     out.put(name, lArr);
+                } else if(p.bLength() > 0){
+                    boolean[] bArr = new boolean[p.bLength()];
+                    for( int i=0; i<bArr.length; i++ ){
+                        bArr[i] = p.b(i);
+                    }
+                    out.put(name, bArr);
                 } else if(p.sLength() > 0){
                     String[] sArr = new String[p.sLength()];
                     for( int i=0; i<sArr.length; i++ ){
@@ -469,11 +496,14 @@ public class FlatBuffersMapper {
                     }
                     out.put(name, iArr);
                 }  else {
-                    throw new UnsupportedOperationException("No data for property: " + name);
+                    //null property case
+                    out.put(name, null);
                 }
             } else {
                 //non-array primitive, String or INDArray
-                if(p.iLength() > 0){
+                if(p.bLength() > 0) {
+                    out.put(name, p.b(0));
+                } else if(p.iLength() > 0){
                     out.put(name, p.i(0));
                 } else if(p.lLength() > 0){
                     out.put(name, p.l(0));
@@ -485,11 +515,11 @@ public class FlatBuffersMapper {
                     FlatArray fa = p.a(0);
                     out.put(name, Nd4j.createFromFlatArray(fa));
                 } else {
-                    throw new UnsupportedOperationException("No data for property: " + name);
+                    //null property case
+                    out.put(name, null);
                 }
             }
         }
-
         return out;
     }
 }
