@@ -11155,12 +11155,7 @@ public class SameDiff {
                 //addAsPlaceHolder(variable.getVarName());
                 continue;
             }
-
-
-//            Pair<String,Integer> pair = parseVariable(variable.getVarName());
-//            reverseMap.put(pair.getFirst(), idCounter.incrementAndGet());
             reverseMap.put(variable.getVarName(), idCounter.incrementAndGet());
-//            log.debug("Adding [{}] as [{}]", pair.getFirst(), idCounter.get());
             log.debug("Adding [{}] as [{}]", variable.getVarName(), idCounter.get());
 
             val arr = variable.getArr();
@@ -11180,17 +11175,18 @@ public class SameDiff {
         }
 
         // we're dumping scopes now
-        for (val scope : sameDiffFunctionInstances.entrySet()) {
+        for (Map.Entry<String, SameDiff> scope : sameDiffFunctionInstances.entrySet()) {
+            if(scope.getKey().equalsIgnoreCase("grad")){
+                //Skip the gradient function for export
+                continue;
+            }
+
             flatNodes.add(asFlatNode(scope.getKey(), scope.getValue(), bufferBuilder));
             val currVarList = new ArrayList<SDVariable>(scope.getValue().variables());
             // converting all ops from node
             for (val node : scope.getValue().variables()) {
                 INDArray arr = node.getArr();
                 if (arr == null) {
-                    //val otherArr = Nd4j.scalar(1.0);
-                    //scope.getValue().putArrayForVarName(node.getVarName(), otherArr);
-                    //log.warn("Adding placeholder for export for var name {}", node.getVarName());
-                    //arr = otherArr;
                     continue;
                 }
 
