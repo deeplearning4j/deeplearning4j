@@ -86,7 +86,7 @@ public class SortCooTests extends BaseNd4jTest {
 
         log.info("Old indices: {}", Arrays.toString(idx.asInt()));
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) idx.addressPointer(),
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
                         (FloatPointer) val.addressPointer(), 4, 3);
 
 
@@ -118,7 +118,7 @@ public class SortCooTests extends BaseNd4jTest {
         DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
         DataBuffer val = Nd4j.createBuffer(values);
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) idx.addressPointer(),
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
                         (FloatPointer) val.addressPointer(), 3, 3);
 
         assertArrayEquals(expIndices, idx.asInt());
@@ -155,7 +155,7 @@ public class SortCooTests extends BaseNd4jTest {
         DataBuffer valueBuffer = Nd4j.createBuffer(values);
         INDArray indMatrix = Nd4j.create(indiceBuffer).reshape(new long[]{nnz, shape.length});
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) indiceBuffer.addressPointer(),
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) indiceBuffer.addressPointer(),
                 (FloatPointer) valueBuffer.addressPointer(), nnz, 3);
 
         for (long i = 1; i < nnz; ++i){
@@ -272,7 +272,7 @@ public class SortCooTests extends BaseNd4jTest {
         DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
         DataBuffer val = Nd4j.createBuffer(values);
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) idx.addressPointer(),
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
                 (FloatPointer) val.addressPointer(), 40, 3);
 
         // just check the indices. sortSparseCooIndicesSort1 and sortSparseCooIndicesSort2 checks that
