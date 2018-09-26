@@ -1075,6 +1075,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        ArrayOptions::setDataType(newShape, this->dataType());
         auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
