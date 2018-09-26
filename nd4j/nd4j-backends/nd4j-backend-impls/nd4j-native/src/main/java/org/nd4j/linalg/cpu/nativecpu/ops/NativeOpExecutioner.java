@@ -1170,7 +1170,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         //val condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
         //long t1 = System.currentTimeMillis();
-        int cntAbs = loop.estimateThreshold(null, input.data().addressPointer(), (int) input.length(), (float) threshold);
+        int cntAbs = loop.estimateThreshold(null,
+                input.data().addressPointer(),
+                (LongPointer) input.shapeInfoDataBuffer().addressPointer(),
+                (int) input.length(),
+                (float) threshold);
         //long t2 = System.currentTimeMillis();
 
         if (cntAbs < 2)
@@ -1256,7 +1260,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         // format id
         buffer.put(3, ThresholdCompression.BITMAP_ENCODING);
 
-        long affected = loop.encodeBitmap(null, (DoublePointer) indArray.data().addressPointer(), length, (IntPointer) buffer.addressPointer(), (float) threshold);
+        long affected = loop.encodeBitmap(null,
+                indArray.data().addressPointer(),
+                (LongPointer) indArray.shapeInfoDataBuffer().addressPointer(),
+                length,
+                (IntPointer) buffer.addressPointer(),
+                (float) threshold);
 
         return affected;
     }
@@ -1267,7 +1276,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         loop.decodeBitmap(null,
                 encoded.data().addressPointer(),
                 target.length(),
-                target.data().addressPointer());
+                target.data().addressPointer(),
+                (LongPointer) target.shapeInfoDataBuffer().addressPointer()
+        );
 
         return target;
     }

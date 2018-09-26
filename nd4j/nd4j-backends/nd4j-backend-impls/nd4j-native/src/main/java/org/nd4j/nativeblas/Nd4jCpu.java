@@ -2571,63 +2571,25 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jLong") long encodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongPointer xShapeInfo, @Cast("Nd4jLong") long N, IntPointer dz, float threshold);
     public native @Cast("Nd4jLong") long encodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongBuffer xShapeInfo, @Cast("Nd4jLong") long N, IntBuffer dz, float threshold);
     public native @Cast("Nd4jLong") long encodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") long[] xShapeInfo, @Cast("Nd4jLong") long N, int[] dz, float threshold);
-
-    public native void decodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, FloatPointer dz);
-    public native void decodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, FloatBuffer dz);
-    public native void decodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, float[] dz);
-
-    public native void decodeBitmapDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, DoublePointer dz);
-    public native void decodeBitmapDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, DoubleBuffer dz);
-    public native void decodeBitmapDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, double[] dz);
-
-    public native void decodeBitmapHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, @Cast("float16*") ShortPointer dz);
-    public native void decodeBitmapHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, @Cast("float16*") ShortBuffer dz);
-    public native void decodeBitmapHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, @Cast("float16*") short[] dz);
+    public native void decodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") LongPointer zShapeInfo);
+    public native void decodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") LongBuffer zShapeInfo);
+    public native void decodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") long[] zShapeInfo);
 
 
-    public native void encodeThresholdP1Double(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoublePointer dx, @Cast("Nd4jLong") long N, IntPointer dz, float threshold);
-    public native void encodeThresholdP1Double(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoubleBuffer dx, @Cast("Nd4jLong") long N, IntBuffer dz, float threshold);
-    public native void encodeThresholdP1Double(@Cast("Nd4jPointer*") PointerPointer extraPointers, double[] dx, @Cast("Nd4jLong") long N, int[] dz, float threshold);
-
-    public native void encodeThresholdP1Half(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer dx, @Cast("Nd4jLong") long N, IntPointer dz, float threshold);
-    public native void encodeThresholdP1Half(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer dx, @Cast("Nd4jLong") long N, IntBuffer dz, float threshold);
-    public native void encodeThresholdP1Half(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] dx, @Cast("Nd4jLong") long N, int[] dz, float threshold);
-
-    public native void encodeThresholdP1Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer dx, @Cast("Nd4jLong") long N, IntPointer dz, float threshold);
-    public native void encodeThresholdP1Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer dx, @Cast("Nd4jLong") long N, IntBuffer dz, float threshold);
-    public native void encodeThresholdP1Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] dx, @Cast("Nd4jLong") long N, int[] dz, float threshold);
-
-
+    public native void encodeThresholdP1(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongPointer xShapeInfo, @Cast("Nd4jLong") long N, IntPointer dz, float threshold);
+    public native void encodeThresholdP1(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongBuffer xShapeInfo, @Cast("Nd4jLong") long N, IntBuffer dz, float threshold);
+    public native void encodeThresholdP1(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") long[] xShapeInfo, @Cast("Nd4jLong") long N, int[] dz, float threshold);
     public native void encodeThresholdP2Int(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntPointer dx, @Cast("Nd4jLong") long N, IntPointer dz);
     public native void encodeThresholdP2Int(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntBuffer dx, @Cast("Nd4jLong") long N, IntBuffer dz);
     public native void encodeThresholdP2Int(@Cast("Nd4jPointer*") PointerPointer extraPointers, int[] dx, @Cast("Nd4jLong") long N, int[] dz);
+    public native void encodeThresholdP3(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongPointer xShapeInfo, IntPointer offsets, @Cast("Nd4jLong") long N, IntPointer dz);
+    public native void encodeThresholdP3(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongBuffer xShapeInfo, IntBuffer offsets, @Cast("Nd4jLong") long N, IntBuffer dz);
+    public native void encodeThresholdP3(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") long[] xShapeInfo, int[] offsets, @Cast("Nd4jLong") long N, int[] dz);
 
 
-    public native void encodeThresholdP3Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer dx, IntPointer offsets, @Cast("Nd4jLong") long N, IntPointer dz);
-    public native void encodeThresholdP3Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer dx, IntBuffer offsets, @Cast("Nd4jLong") long N, IntBuffer dz);
-    public native void encodeThresholdP3Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] dx, int[] offsets, @Cast("Nd4jLong") long N, int[] dz);
-
-    public native void encodeThresholdP3Double(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoublePointer dx, IntPointer offsets, @Cast("Nd4jLong") long N, IntPointer dz);
-    public native void encodeThresholdP3Double(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoubleBuffer dx, IntBuffer offsets, @Cast("Nd4jLong") long N, IntBuffer dz);
-    public native void encodeThresholdP3Double(@Cast("Nd4jPointer*") PointerPointer extraPointers, double[] dx, int[] offsets, @Cast("Nd4jLong") long N, int[] dz);
-
-    public native void encodeThresholdP3Half(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer dx, IntPointer offsets, @Cast("Nd4jLong") long N, IntPointer dz);
-    public native void encodeThresholdP3Half(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer dx, IntBuffer offsets, @Cast("Nd4jLong") long N, IntBuffer dz);
-    public native void encodeThresholdP3Half(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] dx, int[] offsets, @Cast("Nd4jLong") long N, int[] dz);
-
-
-    public native void decodeThresholdFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, FloatPointer dz);
-    public native void decodeThresholdFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, FloatBuffer dz);
-    public native void decodeThresholdFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, float[] dz);
-
-    public native void decodeThresholdDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, DoublePointer dz);
-    public native void decodeThresholdDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, DoubleBuffer dz);
-    public native void decodeThresholdDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, double[] dz);
-
-    public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, @Cast("float16*") ShortPointer dz);
-    public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, @Cast("float16*") ShortBuffer dz);
-    public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, @Cast("float16*") short[] dz);
-
+    public native void decodeThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") LongPointer zShapeInfo);
+    public native void decodeThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") LongBuffer zShapeInfo);
+    public native void decodeThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") long[] zShapeInfo);
 
 
     public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo, @Cast("bool") boolean descending);
@@ -2694,9 +2656,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     public native void deleteResultWrapper(@Cast("Nd4jPointer") Pointer ptr);
 
-    public native int estimateThresholdFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, int N, float threshold);
-    public native int estimateThresholdDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, int N, float threshold);
-    public native int estimateThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, int N, float threshold);
+    public native int estimateThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo, int N, float threshold);
+    public native int estimateThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo, int N, float threshold);
+    public native int estimateThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo, int N, float threshold);
 
     // this method executes op that requires scope to be present: if/while/cond/whatever
     public native @Cast("Nd4jStatus") int execCustomOpWithScope(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongPointer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);

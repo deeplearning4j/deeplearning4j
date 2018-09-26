@@ -696,18 +696,18 @@ public abstract class NativeOps extends Pointer {
                                     @Cast("Nd4jLong *") LongPointer tadOffsets);
 
 
-    public abstract long encodeBitmap(PointerPointer extraPointers, Pointer dx, long N, IntPointer dz, float threshold);
+    public abstract long encodeBitmap(PointerPointer extraPointers, Pointer dx, LongPointer xShapeInfo, long N, IntPointer dz, float threshold);
 
-    public abstract void decodeBitmap(PointerPointer extraPointers, Pointer dx, long N, Pointer dz);
+    public abstract void decodeBitmap(PointerPointer extraPointers, Pointer dx, long N, Pointer dz, LongPointer zShapeInfo);
 
 
-    public abstract void encodeThresholdP1(PointerPointer extraPointers, Pointer dx, long N, IntPointer dz, float threshold);
+    public abstract void encodeThresholdP1(PointerPointer extraPointers, Pointer dx, LongPointer xShapeInfo, long N, IntPointer dz, float threshold);
 
     public abstract void encodeThresholdP2Int(PointerPointer extraPointers, IntPointer dx, long N, IntPointer dz);
 
-    public abstract void encodeThresholdP3(PointerPointer extraPointers, Pointer dx, IntPointer offsets, long N, IntPointer dz);
+    public abstract void encodeThresholdP3(PointerPointer extraPointers, Pointer dx, LongPointer xShapeInfo, IntPointer offsets, long N, IntPointer dz);
 
-    public abstract void decodeThreshold(PointerPointer extraPointers, Pointer dx, long N, Pointer dz);
+    public abstract void decodeThreshold(PointerPointer extraPointers, Pointer dx, long N, Pointer dz, LongPointer zShapeInfo);
 
     public abstract void sort(PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong *") LongPointer xShapeInfo, boolean descending);
 
@@ -757,7 +757,7 @@ public abstract class NativeOps extends Pointer {
 
     public abstract void deleteGraphState(Pointer state);
 
-    public abstract int estimateThreshold(PointerPointer extraPointers, Pointer x, int N, float threshold);
+    public abstract int estimateThreshold(PointerPointer extraPointers, Pointer x, LongPointer xShapeInfo, int N, float threshold);
 
     // this method executes op that requires scope to be present: if/while/cond/whatever
     public abstract int execCustomOpWithScope(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);
