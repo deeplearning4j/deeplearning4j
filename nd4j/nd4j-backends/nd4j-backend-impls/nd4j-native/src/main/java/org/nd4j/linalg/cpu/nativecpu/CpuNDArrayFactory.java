@@ -697,7 +697,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
 
-        nativeOps.accumulate(null, dataPointers, (DoublePointer) target.data().addressPointer(), arrays.length, len);
+        nativeOps.accumulate(null, dataPointers, (DoublePointer) target.data().addressPointer(), (LongPointer) target.shapeInfoDataBuffer().addressPointer(), arrays.length, len);
 
         return target;
     }
@@ -734,7 +734,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
 
-        nativeOps.average(null, dataPointers, target == null ? null : target.data().addressPointer(), arrays.length,
+        nativeOps.average(null, dataPointers, target == null ? null : target.data().addressPointer(), target == null ? null : (LongPointer) target.shapeInfoDataBuffer().addressPointer(), arrays.length,
                     len, true);
 
         return target;
