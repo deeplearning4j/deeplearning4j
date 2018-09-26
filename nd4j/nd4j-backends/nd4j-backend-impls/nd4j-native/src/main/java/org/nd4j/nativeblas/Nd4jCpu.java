@@ -219,23 +219,23 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
 // #define ND4J_DATATYPE_H
     /** enum nd4j::DataType */
     public static final int
-        DataType_INHERIT = 0,
-        DataType_BOOL = 1,
-        DataType_FLOAT8 = 2,
-        DataType_HALF = 3,
-        DataType_HALF2 = 4,
-        DataType_FLOAT = 5,
-        DataType_DOUBLE = 6,
-        DataType_INT8 = 7,
-        DataType_INT16 = 8,
-        DataType_INT32 = 9,
-        DataType_INT64 = 10,
-        DataType_UINT8 = 11,
-        DataType_UINT16 = 12,
-        DataType_UINT32 = 13,
-        DataType_UINT64 = 14,
-        DataType_QINT8 = 15,
-        DataType_QINT16 = 16;
+        INHERIT = 0,
+        BOOL = 1,
+        FLOAT8 = 2,
+        HALF = 3,
+        HALF2 = 4,
+        FLOAT32 = 5,
+        DOUBLE = 6,
+        INT8 = 7,
+        INT16 = 8,
+        INT32 = 9,
+        INT64 = 10,
+        UINT8 = 11,
+        UINT16 = 12,
+        UINT32 = 13,
+        UINT64 = 14,
+        QINT8 = 15,
+        QINT16 = 16;
 
 
 // #endif
@@ -454,31 +454,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 @Cast("Nd4jLong*") long[] resultShapeInfo,
                 int[] dimension,
                 int dimensionLength);
-
-
-
-    /**
-     *
-     * @param opNum
-     * @param dx
-     * @param xStride
-     * @param y
-     * @param yStride
-     * @param result
-     * @param resultStride
-     * @param extraParams
-     * @param n
-     */
-    public native void execPairwiseTransform(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                           int opNum,
-                                           Pointer dx,
-                                           @Cast("Nd4jLong") long xStride,
-                                           Pointer y,
-                                           @Cast("Nd4jLong") long yStride,
-                                           Pointer result,
-                                           @Cast("Nd4jLong") long resultStride,
-                                           Pointer extraParams,
-                                           @Cast("Nd4jLong") long n);
 
     /**
      *
@@ -2619,16 +2594,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  do not allocate memory, memory for array is passed from outside 
         */
-        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
-        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, Workspace workspace/*=nullptr*/);
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace, isBuffAlloc, isShapeAlloc); }
+        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
         public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo);
-        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
-        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, Workspace workspace/*=nullptr*/);
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace, isBuffAlloc, isShapeAlloc); }
+        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
         public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo);
-        public NDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
-        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, Workspace workspace/*=nullptr*/);
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace, isBuffAlloc, isShapeAlloc); }
+        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
         public NDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo);
 
@@ -2685,16 +2660,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
         */
-        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
-        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/);
         public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data);
-        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
-        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/);
         public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data);
-        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
-        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DataType_DOUBLE*/, Workspace workspace/*=nullptr*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/);
         public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data);
 
@@ -2950,7 +2925,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  this method assigns values of given array to this one
         */ 
-        public native void assign(NDArray other);
+        public native void assign(@Const NDArray other);
 
         /**
         *  this method assigns values of given array to this one
@@ -3982,6 +3957,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <map>
 // #include <NDArray.h>
 // #include <memory/Workspace.h>
+// #include <dll.h>
     @Namespace("nd4j") @NoOffset public static class NDArrayList extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -4053,7 +4029,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 // #include <vector>
 // #include <graph/generated/result_generated.h>
-// #include <pointercast.h> // forward declaration of template class NDArray
+// #include <pointercast.h>
+// #include <dll.h> // forward declaration of template class NDArray
     
     @Namespace("nd4j") @NoOffset public static class ResultSet extends Pointer {
         static { Loader.load(); }
@@ -5350,6 +5327,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 // #include <vector>
 // #include <array/DataType.h>
+// #include <dll.h>
 
         @Namespace("nd4j::graph") @NoOffset public static class ContextPrototype extends Pointer {
             static { Loader.load(); }
@@ -7423,6 +7401,7 @@ public static final int PREALLOC_SIZE = 33554432;
 
 
 // #include <NDArray.h>
+// #include <dll.h>
  
 @Namespace("nd4j") @NoOffset public static class OpArgsHolder extends Pointer {
     static { Loader.load(); }
@@ -7496,6 +7475,7 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #include <vector>
 // #include <shape.h>
+// #include <dll.h>
     @Namespace("nd4j") @NoOffset public static class ShapeList extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -9197,7 +9177,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define REGISTER_C(NAME)
 // #endif
 
-// #define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   class NAME: public nd4j::ops::DeclarableOp {
+// #define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   class ND4J_EXPORT NAME: public nd4j::ops::DeclarableOp {
 //                                                 public:
 //                                                     NAME();
 //                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block);
@@ -9206,7 +9186,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 };
 //                                                 REGISTER_H(NAME)
 
-// #define DECLARE_BOOLEAN_OP(NAME, NIN, SCALAR)   class NAME: public nd4j::ops::BooleanOp {
+// #define DECLARE_BOOLEAN_OP(NAME, NIN, SCALAR)   class ND4J_EXPORT NAME: public nd4j::ops::BooleanOp {
 //                                                 public:
 //                                                     NAME();
 //                                                 protected:
@@ -9218,7 +9198,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 REGISTER_C(NAME)
 //                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
 
-// #define DECLARE_LIST_OP(NAME, NIN, NOUT, TARGS, IARGS)      class NAME: public nd4j::ops::DeclarableListOp {
+// #define DECLARE_LIST_OP(NAME, NIN, NOUT, TARGS, IARGS)      class ND4J_EXPORT  NAME: public nd4j::ops::DeclarableListOp {
 //                                                             public:
 //                                                                 NAME();
 //                                                             protected:
@@ -9230,7 +9210,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                             REGISTER_C(NAME)
 //                                                             Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
 
-// #define DECLARE_LOGIC_OP(NAME)      class NAME: public nd4j::ops::LogicOp {
+// #define DECLARE_LOGIC_OP(NAME)      class ND4J_EXPORT NAME: public nd4j::ops::LogicOp {
 //                                     public:
 //                                         NAME();
 //                                     protected:
@@ -9277,7 +9257,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                         };
 //                                         static nd4j::ops::__registratorSynonym_##NAME<ORIGINAL> zzz_register_opd_##NAME(#NAME, #ORIGINAL)
 
-// #define DECLARE_DIVERGENT_OP(NAME, NIN, NOUT, INPLACEABLE)  class NAME: public nd4j::ops::DeclarableOp {
+// #define DECLARE_DIVERGENT_OP(NAME, NIN, NOUT, INPLACEABLE)  class ND4J_EXPORT NAME: public nd4j::ops::DeclarableOp {
 //                                                             public:
 //                                                                 NAME();
 //                                                                 nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block);
@@ -9299,7 +9279,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                             }
 //                                                             Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
 
-// #define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     class NAME: public nd4j::ops::DeclarableOp {
+// #define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     class ND4J_EXPORT NAME: public nd4j::ops::DeclarableOp {
 //                                                                                 public:
 //                                                                                     NAME();
 //                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block);
@@ -9325,7 +9305,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 }
 //                                                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(Context& block)
 
-// #define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        class NAME: public nd4j::ops::DeclarableReductionOp {
+// #define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        class ND4J_EXPORT NAME: public nd4j::ops::DeclarableReductionOp {
 //                                                                                 public:
 //                                                                                     NAME();
 //                                                                                 protected:
@@ -9338,7 +9318,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
 
 
-// #define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           class NAME: public nd4j::ops::DeclarableCustomOp {
+// #define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           class ND4J_EXPORT NAME: public nd4j::ops::DeclarableCustomOp {
 //                                                                                 protected:
 //                                                                                     Nd4jStatus validateAndExecute(Context& block);
 //                                                                                 public:
@@ -9354,7 +9334,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // this declaration MUST follow DECLARE_CUSTOM_OP
 // #define DECLARE_SHAPE_FN(NAME)                                                  nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block)
 
-// #define DECLARE_BROADCASTABLE_OP(NAME,TARGS, IARGS)                             class NAME: public nd4j::ops::BroadcastableOp {
+// #define DECLARE_BROADCASTABLE_OP(NAME,TARGS, IARGS)                             class ND4J_EXPORT NAME: public nd4j::ops::BroadcastableOp {
 //                                                                                 protected:
 //                                                                                     Nd4jStatus validateAndExecute(Context& block);
 //                                                                                 public:
