@@ -32,7 +32,7 @@ namespace helpers {
 //        Nd4jLong lastDim = input->rankOf() - 1;
 //      FIX ME: lastDim should be Nd4Long not int only?
         int lastDim = input->rankOf() - 1;
-        std::unique_ptr<ResultSet> lastDimList(input->allTensorsAlongDimension({lastDim}));
+//        std::unique_ptr<ResultSet> lastDimList(input->allTensorsAlongDimension({lastDim}));
 // ----------------------------------------------------------------------------------------------- //
 // this assumption is right:
 //        if (values->lengthOf() != k * lastDimList->size()) {
@@ -40,31 +40,41 @@ namespace helpers {
 //                values->lengthOf(), k * lastDimList->size());
 //        }
 // ----------------------------------------------------------------------------------------------- //
+        std::vector<int> dimsToExclude(input->rankOf() - 1);
+        for (int d = 0; d < dimsToExclude.size(); ++d)
+            dimsToExclude[d] = d;
+
+        const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input->getShapeInfo(), dimsToExclude);
 
             if (k == 1) {
                 int pos = 0;
-#pragma omp parallel for if(lastDimList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
-                for (int e = 0; e < lastDimList->size(); ++e) {
-                    int maxPos = lastDimList->at(e)->argMax();
+//#pragma omp parallel for if(numOfSubArrs > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                for (Nd4jLong e = 0; e < numOfSubArrs; ++e) {
+                    auto trial = (*input)(e, dimsToExclude);
+                    //int maxPos = //lastDimList->at(e)->argMax();
+                    Nd4jLong maxPos = 0;
+                    trial.printIndexedBuffer("TRIAL:");
+                    T maxVal = trial.e<T>(0);
+                    for (Nd4jLong pos = 1; pos < trial.lengthOf(); pos++)
+                        if (maxVal < trial.e<T>(pos)) {
+                            maxPos = pos;
+                            maxVal = trial.e<T>(pos);
+                        }
                     indeces->p(e, maxPos); //topIndex;
-                    values->p(e, lastDimList->at(e)->e<T>(maxPos));
+                    values->p(e, maxVal);
                 }
             }
             else { 
                 int nextPos = 0;
-                std::vector<int> dimsToExclude(input->rankOf() - 1);
-                for (int d = 0; d < dimsToExclude.size(); ++d)
-                    dimsToExclude[d] = d;
 
-                const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input->getShapeInfo(), dimsToExclude);
 //#pragma omp parallel for if(lastDimList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                 for (Nd4jLong e = 0; e < numOfSubArrs; ++e) {
                     auto trial = (*input)(e, dimsToExclude);
 
-                    auto trialTo = lastDimList->at(e); // a vector to be search
+                    //auto trialTo = lastDimList->at(e); // a vector to be search
                     nd4j_printf("%i: ", e);
                     trial.printIndexedBuffer("TRIAL:");
-                    trialTo->printIndexedBuffer("TOTRI:");
+                    //trialTo->printIndexedBuffer("TOTRI:");
                     std::vector<Nd4jLong> topIndices(k);
                     std::vector<T> topValues(k);
 

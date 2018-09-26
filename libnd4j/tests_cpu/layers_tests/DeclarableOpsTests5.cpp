@@ -1089,8 +1089,8 @@ TEST_F(DeclarableOpsTests5, Test_TopK_5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Test_InTopK_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 3}, {1.0, 11.0, 3.0, 14.0, 5.0, 6.0});
-    auto y = NDArrayFactory::create<double>('c', {2}, {1, 1});
-    auto expV = NDArrayFactory::create<double>('c', {2}, {1, 0});
+    auto y = NDArrayFactory::create<Nd4jLong>('c', {2}, {1, 1});
+    auto expV = NDArrayFactory::create<bool>('c', {2}, {true, false});
 
     nd4j::ops::in_top_k op;
     auto result = op.execute({&x, &y}, {}, {2});
@@ -1100,11 +1100,11 @@ TEST_F(DeclarableOpsTests5, Test_InTopK_1) {
 
     auto v = result->at(0);
 
-    // v->printShapeInfo("InTopK: shape v");
-    // expV.printShapeInfo("InTopK: shape expV");
+     v->printShapeInfo("InTopK: shape v");
+     expV.printShapeInfo("InTopK: shape expV");
 
-    // v->printIndexedBuffer("v");
-    // expV.printIndexedBuffer("expV");
+     v->printIndexedBuffer("v");
+     expV.printIndexedBuffer("expV");
 
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
@@ -1122,8 +1122,8 @@ TEST_F(DeclarableOpsTests5, Test_InTopK_2) {
                                    16.0, 9.0, 13.5, 7.0}
     );
 
-    auto y = NDArrayFactory::create<double>('c', {6}, {0, 0, 0, 0, 0, 0});
-    auto expV = NDArrayFactory::create<double>('c', {6}, {1, 0, 1, 0, 0, 1 });
+    auto y = NDArrayFactory::create<Nd4jLong>('c', {6}, {0, 0, 0, 0, 0, 0});
+    auto expV = NDArrayFactory::create<bool>('c', {6}, {true, false, true, false, false, true});
 
     nd4j::ops::in_top_k op;
     auto result = op.execute({&x, &y}, {}, {2});
@@ -1156,8 +1156,8 @@ TEST_F(DeclarableOpsTests5, Test_InTopK_3) {
                                    16.0, 9.0, 13.5, 7.0}
     );
 
-    auto y = NDArrayFactory::create<double>('f', {6}, {0, 0, 0, 0, 0, 0});
-    auto expV = NDArrayFactory::create<double>('f', {6}, {1, 0, 0, 0, 0, 0 });
+    auto y = NDArrayFactory::create<Nd4jLong>('f', {6}, {0, 0, 0, 0, 0, 0});
+    auto expV = NDArrayFactory::create<bool>('f', {6}, {1, 0, 0, 0, 0, 0 });
 
     nd4j::ops::in_top_k op;
     auto result = op.execute({&x, &y}, {}, {2});
