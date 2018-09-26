@@ -30,7 +30,7 @@
 
 namespace nd4j {
     namespace graph {
-        class ND4J_EXPORT ND4J_EXPORT KeyPair {
+        class ND4J_EXPORT KeyPair {
             int _node;
             std::string _name;
         public:
@@ -39,7 +39,7 @@ namespace nd4j {
             bool operator<(const KeyPair& other) const;
         };
 
-        class Stash {
+        class ND4J_EXPORT Stash {
         protected:
             std::map<nd4j::graph::KeyPair, nd4j::NDArray*> _stash;
             std::vector<nd4j::NDArray*> _handles;

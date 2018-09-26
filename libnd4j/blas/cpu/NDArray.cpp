@@ -2791,6 +2791,14 @@ NDArray NDArray::transp() const {
         BUILD_SINGLE_SELECTOR(dtype, return asT, (), LIBND4J_TYPES);
     }
 
+    template <typename T>
+    NDArray* NDArray::cast() {
+        return this->asT<T>();
+    }
+    NDArray* NDArray::cast(DataType dtype) {
+        return this->asT(dtype);
+    }
+
     void NDArray::cast(NDArray* target, DataType dtype) {
         // TODO: to be implemented properly
         target->assign(this);

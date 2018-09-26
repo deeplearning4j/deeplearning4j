@@ -23,10 +23,11 @@
 
 
 #include <NDArray.h>
+#include <dll.h>
 
 namespace nd4j {
  
-class OpArgsHolder {
+class ND4J_EXPORT OpArgsHolder {
 
 private: 
 	std::vector<NDArray*> _inArrs = std::vector<NDArray*>();

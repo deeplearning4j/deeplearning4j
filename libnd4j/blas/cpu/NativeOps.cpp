@@ -1105,6 +1105,10 @@ void NativeOps::checkP2P() {
     // no-op
 }
 
+void NativeOps::decodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo) {
+    NativeOpExcutioner::decodeBitmap(dx, N, dz, zShapeInfo);
+}
+
 template<typename T>
 void shuffleGeneric(void **dx, Nd4jLong **xShapeInfo, void **dz, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
 
