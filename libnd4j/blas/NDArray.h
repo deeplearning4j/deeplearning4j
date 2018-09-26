@@ -59,7 +59,7 @@ namespace nd4j {
     ND4J_EXPORT NDArray operator/(const double, const NDArray&);
     ND4J_EXPORT NDArray operator/(const int, const NDArray&);
 
-    NDArray mmul(const NDArray&, const NDArray&);
+    ND4J_EXPORT NDArray mmul(const NDArray&, const NDArray&);
 
     class ND4J_EXPORT NDArray {
     private:
