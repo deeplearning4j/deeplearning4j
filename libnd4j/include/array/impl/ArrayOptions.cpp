@@ -19,8 +19,8 @@
 #include <stdexcept>
 
 namespace nd4j {
-    bool ArrayOptions::isNewFormat(Nd4jLong *shapeInfo) {
-        return (shape::extra(shapeInfo) != 0);
+    bool ArrayOptions::isNewFormat(const Nd4jLong *shapeInfo) {
+        return (shape::extra(const_cast<Nd4jLong*>(shapeInfo)) != 0);
     }
 
 
@@ -32,11 +32,11 @@ namespace nd4j {
         return hasPropertyBitSet(shapeInfo, ARRAY_EXTRAS);
     }
 
-    bool ArrayOptions::hasPropertyBitSet(Nd4jLong *shapeInfo, int property) {
+    bool ArrayOptions::hasPropertyBitSet(const Nd4jLong *shapeInfo, int property) {
         if (!isNewFormat(shapeInfo))
             return false;
 
-        return ((shape::extra(shapeInfo) & property) == property);
+        return ((shape::extra(const_cast<Nd4jLong*>(shapeInfo)) & property) == property);
     }
 
     bool ArrayOptions::isUnsigned(Nd4jLong *shapeInfo) {
@@ -47,10 +47,6 @@ namespace nd4j {
     }
 
     nd4j::DataType ArrayOptions::dataType(const Nd4jLong *shapeInfo) {
-        return dataType(const_cast<Nd4jLong *>(shapeInfo));
-    }
-
-    nd4j::DataType ArrayOptions::dataType(Nd4jLong *shapeInfo) {
         /*if (hasPropertyBitSet(shapeInfo, ARRAY_QUANTIZED))
             return nd4j::DataType::QINT8;
         else */if (hasPropertyBitSet(shapeInfo, ARRAY_FLOAT))
@@ -71,7 +67,7 @@ namespace nd4j {
             else if (hasPropertyBitSet(shapeInfo, ARRAY_LONG))
                 return nd4j::DataType ::UINT64;
             else {
-                shape::printShapeInfoLinear("Bad unsigned datatype (not)stored in shape", shapeInfo);
+                shape::printShapeInfoLinear("Bad unsigned datatype (not)stored in shape", const_cast<Nd4jLong*>(shapeInfo));
                 throw std::runtime_error("Bad datatype");
             }
         }
@@ -84,7 +80,7 @@ namespace nd4j {
         else if (hasPropertyBitSet(shapeInfo, ARRAY_LONG))
             return nd4j::DataType ::INT64;
         else {
-            shape::printShapeInfoLinear("Bad signed datatype (not)stored in shape", shapeInfo);
+            shape::printShapeInfoLinear("Bad signed datatype (not)stored in shape", const_cast<Nd4jLong*>(shapeInfo));
             throw std::runtime_error("Bad datatype");
         }
     }
@@ -205,4 +201,11 @@ namespace nd4j {
         else
             throw std::runtime_error("Can't set unknown data type");
     }
+
+////////////////////////////////////////////////////////////////////////////////
+void ArrayOptions::copyDataType(Nd4jLong* to, const Nd4jLong* from) {
+
+    setDataType(to, dataType(from));
+}
+
 }

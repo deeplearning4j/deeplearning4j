@@ -119,7 +119,8 @@ DECLARE_SHAPE_FN(static_rnn) {
     hShapeInfo[1]            = time;
     hShapeInfo[2]            = hPrevShapeInfo[1] = bS;
     hShapeInfo[3]            = hPrevShapeInfo[2] = numUnits;
-    hShapeInfo[2*inRank + 1] = hPrevShapeInfo[2*inRank - 1] = ArrayOptions::dataType(xShapeInfo);
+    ArrayOptions::copyDataType(hShapeInfo, xShapeInfo);
+    ArrayOptions::copyDataType(hPrevShapeInfo, xShapeInfo);
 
     shape::updateStrides(hShapeInfo,     shape::order(xShapeInfo));    
     shape::updateStrides(hPrevShapeInfo, shape::order(xShapeInfo));

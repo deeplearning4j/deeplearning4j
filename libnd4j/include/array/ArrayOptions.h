@@ -81,8 +81,8 @@ namespace nd4j {
     class ND4J_EXPORT ArrayOptions {
 
     public:
-        static bool isNewFormat(Nd4jLong *shapeInfo);
-        static bool hasPropertyBitSet(Nd4jLong *shapeInfo, int property);
+        static bool isNewFormat(const Nd4jLong *shapeInfo);
+        static bool hasPropertyBitSet(const Nd4jLong *shapeInfo, int property);
         static bool togglePropertyBit(Nd4jLong *shapeInfo, int property);
         static void unsetPropertyBit(Nd4jLong *shapeInfo, int property);
         static void setPropertyBit(Nd4jLong *shapeInfo, int property);
@@ -91,7 +91,6 @@ namespace nd4j {
         static bool isSparseArray(Nd4jLong *shapeInfo);
         static bool isUnsigned(Nd4jLong *shapeInfo);
 
-        static nd4j::DataType dataType(Nd4jLong *shapeInfo);
         static nd4j::DataType dataType(const Nd4jLong *shapeInfo);
 
         static SpaceType spaceType(Nd4jLong *shapeInfo);
@@ -108,6 +107,8 @@ namespace nd4j {
 
         static void resetDataType(Nd4jLong *shapeInfo);
         static void setDataType(Nd4jLong *shapeInfo, nd4j::DataType dataType);
+
+        static void copyDataType(Nd4jLong* to, const Nd4jLong* from);
     };
 }
 
