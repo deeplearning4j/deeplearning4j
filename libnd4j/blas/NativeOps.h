@@ -118,7 +118,7 @@ public:
             void *x,
             Nd4jLong *xInfo,
             void *extraParams,
-            Nd4jLong *result,
+            void *result,
             Nd4jLong *resultShapeInfoBuffer,
             int *dimension,
             int dimensionLength);
@@ -1045,41 +1045,8 @@ public:
      * Grid operations
      */
 
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param N
-     * @param dx
-     * @param xStride
-     * @param dy
-     * @param yStride
-     * @param dz
-     * @param zStride
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     */
-    void execMetaPredicateStridedFloat(Nd4jPointer *extras,
-                                       const int opTypeA,
-                                       const int opNumA,
-                                       const int opTypeB,
-                                       const int opNumB,
-                                       Nd4jLong N,
-                                       float *dx,
-                                       Nd4jLong xStride,
-                                       float *dy,
-                                       Nd4jLong yStride,
-                                       float *dz,
-                                       Nd4jLong zStride,
-                                       float *extraA,
-                                       float *extraB,
-                                       float scalarA,
-                                       float scalarB);
+
+
 
     /**
      *
@@ -1100,211 +1067,22 @@ public:
      * @param scalarA
      * @param scalarB
      */
-    void execMetaPredicateShapeFloat(Nd4jPointer *extras,
-                                     const int opTypeA,
-                                     const int opNumA,
-                                     const int opTypeB,
-                                     const int opNumB,
-                                     Nd4jLong N,
-                                     float *dx,
-                                     Nd4jLong *xShapeInfo,
-                                     float *dy,
-                                     Nd4jLong *yShapeInfo,
-                                     float *dz,
-                                     Nd4jLong *zShapeInfo,
-                                     float *extraA,
-                                     float *extraB,
-                                     float scalarA,
-                                     float scalarB);
-
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param N
-     * @param dx
-     * @param xStride
-     * @param dy
-     * @param yStride
-     * @param dz
-     * @param zStride
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     */
-    void execMetaPredicateStridedDouble(Nd4jPointer *extras,
-                                        const int opTypeA,
-                                        const int opNumA,
-                                        const int opTypeB,
-                                        const int opNumB,
-                                        Nd4jLong N,
-                                        double *dx,
-                                        Nd4jLong xStride,
-                                        double *dy,
-                                        Nd4jLong yStride,
-                                        double *dz,
-                                        Nd4jLong zStride,
-                                        double *extraA,
-                                        double *extraB,
-                                        double scalarA,
-                                        double scalarB);
-
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param N
-     * @param dx
-     * @param xShapeInfo
-     * @param dy
-     * @param yShapeInfo
-     * @param dz
-     * @param zShapeInfo
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     */
-    void execMetaPredicateShapeDouble(Nd4jPointer *extras,
+    void execMetaPredicateShape(Nd4jPointer *extras,
                                       const int opTypeA,
                                       const int opNumA,
                                       const int opTypeB,
                                       const int opNumB,
                                       Nd4jLong N,
-                                      double *dx,
+                                      void *dx,
                                       Nd4jLong *xShapeInfo,
-                                      double *dy,
+                                      void *dy,
                                       Nd4jLong *yShapeInfo,
-                                      double *dz,
+                                      void *dz,
                                       Nd4jLong *zShapeInfo,
-                                      double *extraA,
-                                      double *extraB,
+                                      void *extraA,
+                                      void *extraB,
                                       double scalarA,
                                       double scalarB);
-
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param N
-     * @param dx
-     * @param xStride
-     * @param dy
-     * @param yStride
-     * @param dz
-     * @param zStride
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     */
-    void execMetaPredicateStridedHalf(Nd4jPointer *extras,
-                                      const int opTypeA,
-                                      const int opNumA,
-                                      const int opTypeB,
-                                      const int opNumB,
-                                      Nd4jLong N,
-                                      float16 *dx,
-                                      Nd4jLong xStride,
-                                      float16 *dy,
-                                      Nd4jLong yStride,
-                                      float16 *dz,
-                                      Nd4jLong zStride,
-                                      float16 *extraA,
-                                      float16 *extraB,
-                                      float scalarA,
-                                      float scalarB);
-
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param N
-     * @param dx
-     * @param xShapeInfo
-     * @param dy
-     * @param yShapeInfo
-     * @param dz
-     * @param zShapeInfo
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     */
-    void execMetaPredicateShapeHalf(Nd4jPointer *extras,
-                                    const int opTypeA,
-                                    const int opNumA,
-                                    const int opTypeB,
-                                    const int opNumB,
-                                    Nd4jLong N,
-                                    float16 *dx,
-                                    Nd4jLong *xShapeInfo,
-                                    float16 *dy,
-                                    Nd4jLong *yShapeInfo,
-                                    float16 *dz,
-                                    Nd4jLong *zShapeInfo,
-                                    float16 *extraA,
-                                    float16 *extraB,
-                                    float scalarA,
-                                    float scalarB);
-
-
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param dx
-     * @param xShapeInfo
-     * @param dy
-     * @param yShapeInfo
-     * @param dz
-     * @param zShapeInfo
-     * @param dimension
-     * @param dimensionLength
-     * @param tadShapeInfo
-     * @param tadOffsets
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     * @param scalarReturned
-     */
-    void execMetaPredicateReduceFloat(Nd4jPointer *extras,
-                                      const int opTypeA,
-                                      const int opNumA,
-                                      const int opTypeB,
-                                      const int opNumB,
-                                      float *dx,
-                                      Nd4jLong *xShapeInfo,
-                                      float *dy,
-                                      Nd4jLong *yShapeInfo,
-                                      float *dz,
-                                      Nd4jLong *zShapeInfo,
-                                      int *dimension,
-                                      int dimensionLength,
-                                      Nd4jLong *tadShapeInfo,
-                                      Nd4jLong *tadOffsets,
-                                      float *extraA,
-                                      float *extraB,
-                                      float scalarA,
-                                      float scalarB,
-                                      bool scalarReturned);
 
 
 /**

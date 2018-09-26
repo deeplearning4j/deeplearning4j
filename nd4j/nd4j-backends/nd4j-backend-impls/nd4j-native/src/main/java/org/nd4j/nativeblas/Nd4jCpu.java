@@ -193,6 +193,53 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
     }
 }
 
+// Parsed from array/DataType.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef ND4J_DATATYPE_H
+// #define ND4J_DATATYPE_H
+    /** enum nd4j::DataType */
+    public static final int
+        DataType_INHERIT = 0,
+        DataType_BOOL = 1,
+        DataType_FLOAT8 = 2,
+        DataType_HALF = 3,
+        DataType_HALF2 = 4,
+        DataType_FLOAT = 5,
+        DataType_DOUBLE = 6,
+        DataType_INT8 = 7,
+        DataType_INT16 = 8,
+        DataType_INT32 = 9,
+        DataType_INT64 = 10,
+        DataType_UINT8 = 11,
+        DataType_UINT16 = 12,
+        DataType_UINT32 = 13,
+        DataType_UINT64 = 14,
+        DataType_QINT8 = 15,
+        DataType_QINT16 = 16;
+
+
+// #endif
+
 // Parsed from NativeOps.h
 
 /*******************************************************************************
@@ -340,7 +387,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer x,
                 @Cast("Nd4jLong*") LongPointer xInfo,
                 Pointer extraParams,
-                @Cast("Nd4jLong*") LongPointer result,
+                Pointer result,
                 @Cast("Nd4jLong*") LongPointer resultShapeInfoBuffer,
                 IntPointer dimension,
                 int dimensionLength);
@@ -349,7 +396,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer x,
                 @Cast("Nd4jLong*") LongBuffer xInfo,
                 Pointer extraParams,
-                @Cast("Nd4jLong*") LongBuffer result,
+                Pointer result,
                 @Cast("Nd4jLong*") LongBuffer resultShapeInfoBuffer,
                 IntBuffer dimension,
                 int dimensionLength);
@@ -358,7 +405,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer x,
                 @Cast("Nd4jLong*") long[] xInfo,
                 Pointer extraParams,
-                @Cast("Nd4jLong*") long[] result,
+                Pointer result,
                 @Cast("Nd4jLong*") long[] resultShapeInfoBuffer,
                 int[] dimension,
                 int dimensionLength);
@@ -1545,7 +1592,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIntArrays,
                                  Pointer realArguments,
                                  int numRealArguments,
-                                 @ByVal DataType dtype);
+                                 @Cast("nd4j::DataType") int dtype);
     public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  @Cast("void**") @ByPtrPtr Pointer arguments,
@@ -1558,7 +1605,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIntArrays,
                                  Pointer realArguments,
                                  int numRealArguments,
-                                 @ByVal DataType dtype);
+                                 @Cast("nd4j::DataType") int dtype);
     public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  @Cast("void**") @ByPtrPtr Pointer arguments,
@@ -1571,7 +1618,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIntArrays,
                                  Pointer realArguments,
                                  int numRealArguments,
-                                 @ByVal DataType dtype);
+                                 @Cast("nd4j::DataType") int dtype);
     public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  @Cast("void**") @ByPtrPtr Pointer arguments,
@@ -1584,7 +1631,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIntArrays,
                                  Pointer realArguments,
                                  int numRealArguments,
-                                 @ByVal DataType dtype);
+                                 @Cast("nd4j::DataType") int dtype);
 
     public native void execAggregateBatch(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                       int numAggregates,
@@ -1596,7 +1643,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                       int maxIdx,
                                       int maxReals,
                                       Pointer ptrToArguments,
-                                      @ByVal DataType dtype);
+                                      @Cast("nd4j::DataType") int dtype);
 
     /**
      * Random operations
@@ -1754,73 +1801,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * Grid operations
      */
 
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param N
-     * @param dx
-     * @param xStride
-     * @param dy
-     * @param yStride
-     * @param dz
-     * @param zStride
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     */
-    public native void execMetaPredicateStridedFloat(@Cast("Nd4jPointer*") PointerPointer extras,
-                                           int opTypeA,
-                                           int opNumA,
-                                           int opTypeB,
-                                           int opNumB,
-                                           @Cast("Nd4jLong") long N,
-                                           FloatPointer dx,
-                                           @Cast("Nd4jLong") long xStride,
-                                           FloatPointer dy,
-                                           @Cast("Nd4jLong") long yStride,
-                                           FloatPointer dz,
-                                           @Cast("Nd4jLong") long zStride,
-                                           FloatPointer extraA,
-                                           FloatPointer extraB,
-                                           float scalarA,
-                                           float scalarB);
-    public native void execMetaPredicateStridedFloat(@Cast("Nd4jPointer*") PointerPointer extras,
-                                           int opTypeA,
-                                           int opNumA,
-                                           int opTypeB,
-                                           int opNumB,
-                                           @Cast("Nd4jLong") long N,
-                                           FloatBuffer dx,
-                                           @Cast("Nd4jLong") long xStride,
-                                           FloatBuffer dy,
-                                           @Cast("Nd4jLong") long yStride,
-                                           FloatBuffer dz,
-                                           @Cast("Nd4jLong") long zStride,
-                                           FloatBuffer extraA,
-                                           FloatBuffer extraB,
-                                           float scalarA,
-                                           float scalarB);
-    public native void execMetaPredicateStridedFloat(@Cast("Nd4jPointer*") PointerPointer extras,
-                                           int opTypeA,
-                                           int opNumA,
-                                           int opTypeB,
-                                           int opNumB,
-                                           @Cast("Nd4jLong") long N,
-                                           float[] dx,
-                                           @Cast("Nd4jLong") long xStride,
-                                           float[] dy,
-                                           @Cast("Nd4jLong") long yStride,
-                                           float[] dz,
-                                           @Cast("Nd4jLong") long zStride,
-                                           float[] extraA,
-                                           float[] extraB,
-                                           float scalarA,
-                                           float scalarB);
+
+
 
     /**
      *
@@ -1841,411 +1823,54 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param scalarA
      * @param scalarB
      */
-    public native void execMetaPredicateShapeFloat(@Cast("Nd4jPointer*") PointerPointer extras,
-                                         int opTypeA,
-                                         int opNumA,
-                                         int opTypeB,
-                                         int opNumB,
-                                         @Cast("Nd4jLong") long N,
-                                         FloatPointer dx,
-                                         @Cast("Nd4jLong*") LongPointer xShapeInfo,
-                                         FloatPointer dy,
-                                         @Cast("Nd4jLong*") LongPointer yShapeInfo,
-                                         FloatPointer dz,
-                                         @Cast("Nd4jLong*") LongPointer zShapeInfo,
-                                         FloatPointer extraA,
-                                         FloatPointer extraB,
-                                         float scalarA,
-                                         float scalarB);
-    public native void execMetaPredicateShapeFloat(@Cast("Nd4jPointer*") PointerPointer extras,
-                                         int opTypeA,
-                                         int opNumA,
-                                         int opTypeB,
-                                         int opNumB,
-                                         @Cast("Nd4jLong") long N,
-                                         FloatBuffer dx,
-                                         @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-                                         FloatBuffer dy,
-                                         @Cast("Nd4jLong*") LongBuffer yShapeInfo,
-                                         FloatBuffer dz,
-                                         @Cast("Nd4jLong*") LongBuffer zShapeInfo,
-                                         FloatBuffer extraA,
-                                         FloatBuffer extraB,
-                                         float scalarA,
-                                         float scalarB);
-    public native void execMetaPredicateShapeFloat(@Cast("Nd4jPointer*") PointerPointer extras,
-                                         int opTypeA,
-                                         int opNumA,
-                                         int opTypeB,
-                                         int opNumB,
-                                         @Cast("Nd4jLong") long N,
-                                         float[] dx,
-                                         @Cast("Nd4jLong*") long[] xShapeInfo,
-                                         float[] dy,
-                                         @Cast("Nd4jLong*") long[] yShapeInfo,
-                                         float[] dz,
-                                         @Cast("Nd4jLong*") long[] zShapeInfo,
-                                         float[] extraA,
-                                         float[] extraB,
-                                         float scalarA,
-                                         float scalarB);
-
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param N
-     * @param dx
-     * @param xStride
-     * @param dy
-     * @param yStride
-     * @param dz
-     * @param zStride
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     */
-    public native void execMetaPredicateStridedDouble(@Cast("Nd4jPointer*") PointerPointer extras,
-                                            int opTypeA,
-                                            int opNumA,
-                                            int opTypeB,
-                                            int opNumB,
-                                            @Cast("Nd4jLong") long N,
-                                            DoublePointer dx,
-                                            @Cast("Nd4jLong") long xStride,
-                                            DoublePointer dy,
-                                            @Cast("Nd4jLong") long yStride,
-                                            DoublePointer dz,
-                                            @Cast("Nd4jLong") long zStride,
-                                            DoublePointer extraA,
-                                            DoublePointer extraB,
-                                            double scalarA,
-                                            double scalarB);
-    public native void execMetaPredicateStridedDouble(@Cast("Nd4jPointer*") PointerPointer extras,
-                                            int opTypeA,
-                                            int opNumA,
-                                            int opTypeB,
-                                            int opNumB,
-                                            @Cast("Nd4jLong") long N,
-                                            DoubleBuffer dx,
-                                            @Cast("Nd4jLong") long xStride,
-                                            DoubleBuffer dy,
-                                            @Cast("Nd4jLong") long yStride,
-                                            DoubleBuffer dz,
-                                            @Cast("Nd4jLong") long zStride,
-                                            DoubleBuffer extraA,
-                                            DoubleBuffer extraB,
-                                            double scalarA,
-                                            double scalarB);
-    public native void execMetaPredicateStridedDouble(@Cast("Nd4jPointer*") PointerPointer extras,
-                                            int opTypeA,
-                                            int opNumA,
-                                            int opTypeB,
-                                            int opNumB,
-                                            @Cast("Nd4jLong") long N,
-                                            double[] dx,
-                                            @Cast("Nd4jLong") long xStride,
-                                            double[] dy,
-                                            @Cast("Nd4jLong") long yStride,
-                                            double[] dz,
-                                            @Cast("Nd4jLong") long zStride,
-                                            double[] extraA,
-                                            double[] extraB,
-                                            double scalarA,
-                                            double scalarB);
-
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param N
-     * @param dx
-     * @param xShapeInfo
-     * @param dy
-     * @param yShapeInfo
-     * @param dz
-     * @param zShapeInfo
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     */
-    public native void execMetaPredicateShapeDouble(@Cast("Nd4jPointer*") PointerPointer extras,
+    public native void execMetaPredicateShape(@Cast("Nd4jPointer*") PointerPointer extras,
                                           int opTypeA,
                                           int opNumA,
                                           int opTypeB,
                                           int opNumB,
                                           @Cast("Nd4jLong") long N,
-                                          DoublePointer dx,
+                                          Pointer dx,
                                           @Cast("Nd4jLong*") LongPointer xShapeInfo,
-                                          DoublePointer dy,
+                                          Pointer dy,
                                           @Cast("Nd4jLong*") LongPointer yShapeInfo,
-                                          DoublePointer dz,
+                                          Pointer dz,
                                           @Cast("Nd4jLong*") LongPointer zShapeInfo,
-                                          DoublePointer extraA,
-                                          DoublePointer extraB,
+                                          Pointer extraA,
+                                          Pointer extraB,
                                           double scalarA,
                                           double scalarB);
-    public native void execMetaPredicateShapeDouble(@Cast("Nd4jPointer*") PointerPointer extras,
+    public native void execMetaPredicateShape(@Cast("Nd4jPointer*") PointerPointer extras,
                                           int opTypeA,
                                           int opNumA,
                                           int opTypeB,
                                           int opNumB,
                                           @Cast("Nd4jLong") long N,
-                                          DoubleBuffer dx,
+                                          Pointer dx,
                                           @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-                                          DoubleBuffer dy,
+                                          Pointer dy,
                                           @Cast("Nd4jLong*") LongBuffer yShapeInfo,
-                                          DoubleBuffer dz,
+                                          Pointer dz,
                                           @Cast("Nd4jLong*") LongBuffer zShapeInfo,
-                                          DoubleBuffer extraA,
-                                          DoubleBuffer extraB,
+                                          Pointer extraA,
+                                          Pointer extraB,
                                           double scalarA,
                                           double scalarB);
-    public native void execMetaPredicateShapeDouble(@Cast("Nd4jPointer*") PointerPointer extras,
+    public native void execMetaPredicateShape(@Cast("Nd4jPointer*") PointerPointer extras,
                                           int opTypeA,
                                           int opNumA,
                                           int opTypeB,
                                           int opNumB,
                                           @Cast("Nd4jLong") long N,
-                                          double[] dx,
+                                          Pointer dx,
                                           @Cast("Nd4jLong*") long[] xShapeInfo,
-                                          double[] dy,
+                                          Pointer dy,
                                           @Cast("Nd4jLong*") long[] yShapeInfo,
-                                          double[] dz,
+                                          Pointer dz,
                                           @Cast("Nd4jLong*") long[] zShapeInfo,
-                                          double[] extraA,
-                                          double[] extraB,
+                                          Pointer extraA,
+                                          Pointer extraB,
                                           double scalarA,
                                           double scalarB);
-
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param N
-     * @param dx
-     * @param xStride
-     * @param dy
-     * @param yStride
-     * @param dz
-     * @param zStride
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     */
-    public native void execMetaPredicateStridedHalf(@Cast("Nd4jPointer*") PointerPointer extras,
-                                          int opTypeA,
-                                          int opNumA,
-                                          int opTypeB,
-                                          int opNumB,
-                                          @Cast("Nd4jLong") long N,
-                                          @Cast("float16*") ShortPointer dx,
-                                          @Cast("Nd4jLong") long xStride,
-                                          @Cast("float16*") ShortPointer dy,
-                                          @Cast("Nd4jLong") long yStride,
-                                          @Cast("float16*") ShortPointer dz,
-                                          @Cast("Nd4jLong") long zStride,
-                                          @Cast("float16*") ShortPointer extraA,
-                                          @Cast("float16*") ShortPointer extraB,
-                                          float scalarA,
-                                          float scalarB);
-    public native void execMetaPredicateStridedHalf(@Cast("Nd4jPointer*") PointerPointer extras,
-                                          int opTypeA,
-                                          int opNumA,
-                                          int opTypeB,
-                                          int opNumB,
-                                          @Cast("Nd4jLong") long N,
-                                          @Cast("float16*") ShortBuffer dx,
-                                          @Cast("Nd4jLong") long xStride,
-                                          @Cast("float16*") ShortBuffer dy,
-                                          @Cast("Nd4jLong") long yStride,
-                                          @Cast("float16*") ShortBuffer dz,
-                                          @Cast("Nd4jLong") long zStride,
-                                          @Cast("float16*") ShortBuffer extraA,
-                                          @Cast("float16*") ShortBuffer extraB,
-                                          float scalarA,
-                                          float scalarB);
-    public native void execMetaPredicateStridedHalf(@Cast("Nd4jPointer*") PointerPointer extras,
-                                          int opTypeA,
-                                          int opNumA,
-                                          int opTypeB,
-                                          int opNumB,
-                                          @Cast("Nd4jLong") long N,
-                                          @Cast("float16*") short[] dx,
-                                          @Cast("Nd4jLong") long xStride,
-                                          @Cast("float16*") short[] dy,
-                                          @Cast("Nd4jLong") long yStride,
-                                          @Cast("float16*") short[] dz,
-                                          @Cast("Nd4jLong") long zStride,
-                                          @Cast("float16*") short[] extraA,
-                                          @Cast("float16*") short[] extraB,
-                                          float scalarA,
-                                          float scalarB);
-
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param N
-     * @param dx
-     * @param xShapeInfo
-     * @param dy
-     * @param yShapeInfo
-     * @param dz
-     * @param zShapeInfo
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     */
-    public native void execMetaPredicateShapeHalf(@Cast("Nd4jPointer*") PointerPointer extras,
-                                        int opTypeA,
-                                        int opNumA,
-                                        int opTypeB,
-                                        int opNumB,
-                                        @Cast("Nd4jLong") long N,
-                                        @Cast("float16*") ShortPointer dx,
-                                        @Cast("Nd4jLong*") LongPointer xShapeInfo,
-                                        @Cast("float16*") ShortPointer dy,
-                                        @Cast("Nd4jLong*") LongPointer yShapeInfo,
-                                        @Cast("float16*") ShortPointer dz,
-                                        @Cast("Nd4jLong*") LongPointer zShapeInfo,
-                                        @Cast("float16*") ShortPointer extraA,
-                                        @Cast("float16*") ShortPointer extraB,
-                                        float scalarA,
-                                        float scalarB);
-    public native void execMetaPredicateShapeHalf(@Cast("Nd4jPointer*") PointerPointer extras,
-                                        int opTypeA,
-                                        int opNumA,
-                                        int opTypeB,
-                                        int opNumB,
-                                        @Cast("Nd4jLong") long N,
-                                        @Cast("float16*") ShortBuffer dx,
-                                        @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-                                        @Cast("float16*") ShortBuffer dy,
-                                        @Cast("Nd4jLong*") LongBuffer yShapeInfo,
-                                        @Cast("float16*") ShortBuffer dz,
-                                        @Cast("Nd4jLong*") LongBuffer zShapeInfo,
-                                        @Cast("float16*") ShortBuffer extraA,
-                                        @Cast("float16*") ShortBuffer extraB,
-                                        float scalarA,
-                                        float scalarB);
-    public native void execMetaPredicateShapeHalf(@Cast("Nd4jPointer*") PointerPointer extras,
-                                        int opTypeA,
-                                        int opNumA,
-                                        int opTypeB,
-                                        int opNumB,
-                                        @Cast("Nd4jLong") long N,
-                                        @Cast("float16*") short[] dx,
-                                        @Cast("Nd4jLong*") long[] xShapeInfo,
-                                        @Cast("float16*") short[] dy,
-                                        @Cast("Nd4jLong*") long[] yShapeInfo,
-                                        @Cast("float16*") short[] dz,
-                                        @Cast("Nd4jLong*") long[] zShapeInfo,
-                                        @Cast("float16*") short[] extraA,
-                                        @Cast("float16*") short[] extraB,
-                                        float scalarA,
-                                        float scalarB);
-
-
-    /**
-     *
-     * @param extras
-     * @param opTypeA
-     * @param opNumA
-     * @param opTypeB
-     * @param opNumB
-     * @param dx
-     * @param xShapeInfo
-     * @param dy
-     * @param yShapeInfo
-     * @param dz
-     * @param zShapeInfo
-     * @param dimension
-     * @param dimensionLength
-     * @param tadShapeInfo
-     * @param tadOffsets
-     * @param extraA
-     * @param extraB
-     * @param scalarA
-     * @param scalarB
-     * @param scalarReturned
-     */
-    public native void execMetaPredicateReduceFloat(@Cast("Nd4jPointer*") PointerPointer extras,
-                                          int opTypeA,
-                                          int opNumA,
-                                          int opTypeB,
-                                          int opNumB,
-                                          FloatPointer dx,
-                                          @Cast("Nd4jLong*") LongPointer xShapeInfo,
-                                          FloatPointer dy,
-                                          @Cast("Nd4jLong*") LongPointer yShapeInfo,
-                                          FloatPointer dz,
-                                          @Cast("Nd4jLong*") LongPointer zShapeInfo,
-                                          IntPointer dimension,
-                                          int dimensionLength,
-                                          @Cast("Nd4jLong*") LongPointer tadShapeInfo,
-                                          @Cast("Nd4jLong*") LongPointer tadOffsets,
-                                          FloatPointer extraA,
-                                          FloatPointer extraB,
-                                          float scalarA,
-                                          float scalarB,
-                                          @Cast("bool") boolean scalarReturned);
-    public native void execMetaPredicateReduceFloat(@Cast("Nd4jPointer*") PointerPointer extras,
-                                          int opTypeA,
-                                          int opNumA,
-                                          int opTypeB,
-                                          int opNumB,
-                                          FloatBuffer dx,
-                                          @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-                                          FloatBuffer dy,
-                                          @Cast("Nd4jLong*") LongBuffer yShapeInfo,
-                                          FloatBuffer dz,
-                                          @Cast("Nd4jLong*") LongBuffer zShapeInfo,
-                                          IntBuffer dimension,
-                                          int dimensionLength,
-                                          @Cast("Nd4jLong*") LongBuffer tadShapeInfo,
-                                          @Cast("Nd4jLong*") LongBuffer tadOffsets,
-                                          FloatBuffer extraA,
-                                          FloatBuffer extraB,
-                                          float scalarA,
-                                          float scalarB,
-                                          @Cast("bool") boolean scalarReturned);
-    public native void execMetaPredicateReduceFloat(@Cast("Nd4jPointer*") PointerPointer extras,
-                                          int opTypeA,
-                                          int opNumA,
-                                          int opTypeB,
-                                          int opNumB,
-                                          float[] dx,
-                                          @Cast("Nd4jLong*") long[] xShapeInfo,
-                                          float[] dy,
-                                          @Cast("Nd4jLong*") long[] yShapeInfo,
-                                          float[] dz,
-                                          @Cast("Nd4jLong*") long[] zShapeInfo,
-                                          int[] dimension,
-                                          int dimensionLength,
-                                          @Cast("Nd4jLong*") long[] tadShapeInfo,
-                                          @Cast("Nd4jLong*") long[] tadOffsets,
-                                          float[] extraA,
-                                          float[] extraB,
-                                          float scalarA,
-                                          float scalarB,
-                                          @Cast("bool") boolean scalarReturned);
 
 
 /**
@@ -2764,53 +2389,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 // #endif //LIBND4J_INDICESLIST_H
 
-
-// Parsed from array/DataType.h
-
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
-
-//
-// @author raver119@gmail.com
-//
-
-// #ifndef ND4J_DATATYPE_H
-// #define ND4J_DATATYPE_H
-    /** enum nd4j::DataType */
-    public static final int
-        DataType_INHERIT = 0,
-        DataType_BOOL = 1,
-        DataType_FLOAT8 = 2,
-        DataType_HALF = 3,
-        DataType_HALF2 = 4,
-        DataType_FLOAT = 5,
-        DataType_DOUBLE = 6,
-        DataType_INT8 = 7,
-        DataType_INT16 = 8,
-        DataType_INT32 = 9,
-        DataType_INT64 = 10,
-        DataType_UINT8 = 11,
-        DataType_UINT16 = 12,
-        DataType_UINT32 = 13,
-        DataType_UINT64 = 14,
-        DataType_QINT8 = 15,
-        DataType_QINT16 = 16;
-
-
-// #endif
 
 // Parsed from graph/VariableType.h
 
