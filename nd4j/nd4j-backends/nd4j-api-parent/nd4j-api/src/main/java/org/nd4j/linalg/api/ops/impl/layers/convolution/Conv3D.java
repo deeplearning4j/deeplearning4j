@@ -121,16 +121,6 @@ public class Conv3D extends DynamicCustomOp {
     }
 
     @Override
-    public void setValueFor(Field target, Object value) {
-        if (config == null) {
-            config = Conv3DConfig.builder().build();
-        }
-
-        if (target != null)
-            config.setValueFor(target, value);
-    }
-
-    @Override
     public long[] iArgs() {
         if (iArguments.size() == 0)
             addArgs();

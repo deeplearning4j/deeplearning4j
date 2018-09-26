@@ -104,14 +104,6 @@ public class DepthwiseConv2D extends DynamicCustomOp {
     }
 
     @Override
-    public void setValueFor(Field target, Object value) {
-        if (config == null) {
-            config = Conv2DConfig.builder().build();
-        }
-        config.setValueFor(target, value);
-    }
-
-    @Override
     public Map<String, Object> propertiesForFunction() {
         if(config == null && !iArguments.isEmpty()){
             config = Conv2DConfig.builder()

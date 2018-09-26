@@ -133,14 +133,6 @@ public class DeConv2DTF extends DynamicCustomOp {
         return config.getValue(property);
     }
 
-    @Override
-    public void setValueFor(Field target, Object value) {
-        if (config == null) {
-            config = DeConv2DConfig.builder().build();
-        }
-        config.setValueFor(target, value);
-    }
-
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {

@@ -106,11 +106,6 @@ public class Conv1D extends DynamicCustomOp {
     }
 
     @Override
-    public void setValueFor(Field target, Object value) {
-        config.setValueFor(target, value);
-    }
-
-    @Override
     public Map<String, Object> propertiesForFunction() {
         return config.toProperties();
     }

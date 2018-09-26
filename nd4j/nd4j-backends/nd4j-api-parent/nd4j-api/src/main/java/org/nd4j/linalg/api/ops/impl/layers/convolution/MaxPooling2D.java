@@ -77,11 +77,6 @@ public class MaxPooling2D extends DynamicCustomOp {
         return "config";
     }
 
-    @Override
-    public void setValueFor(Field target, Object value) {
-        config.setValueFor(target, value);
-    }
-
 
     @Override
     public Map<String, Object> propertiesForFunction() {

@@ -130,11 +130,6 @@ public class DeConv2D extends DynamicCustomOp {
         return config.getValue(property);
     }
 
-    @Override
-    public void setValueFor(Field target, Object value) {
-        config.setValueFor(target, value);
-    }
-
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
