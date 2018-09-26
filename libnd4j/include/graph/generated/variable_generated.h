@@ -94,7 +94,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<IntPair> id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
-    DataType dtype = INHERIT,
+    DataType dtype = DataType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0) {
@@ -112,7 +112,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<IntPair> id = 0,
     const char *name = nullptr,
-    DataType dtype = INHERIT,
+    DataType dtype = DataType_INHERIT,
     const std::vector<int64_t> *shape = nullptr,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0) {
