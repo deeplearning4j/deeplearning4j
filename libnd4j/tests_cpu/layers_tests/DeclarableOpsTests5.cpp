@@ -2380,6 +2380,7 @@ TEST_F(DeclarableOpsTests5, L2_Loss_1) {
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(output->isScalar());
+    output->printIndexedBuffer("L2_Loss output");
     ASSERT_EQ(output->e<double>(0), exp);
 
     delete results;
