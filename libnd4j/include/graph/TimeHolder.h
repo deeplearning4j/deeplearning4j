@@ -23,6 +23,7 @@
 
 #include <map>
 #include <pointercast.h>
+#include <dll.h>
 
 namespace nd4j {
     namespace graph {
