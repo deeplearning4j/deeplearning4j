@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// Created by george@skymind.io on 26.01.2018.
+// Created by sgazeos@gmail.com on 26.01.2018.
 //
 
 #include <op_boilerplate.h>
@@ -78,6 +78,8 @@ namespace nd4j {
     
             auto meanShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
             auto varianceShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
+            ArrayOptions::setDataType(meanShape, input->dataType());
+            ArrayOptions::setDataType(varianceShape, input->dataType());
             return SHAPELIST(meanShape, varianceShape); 
         }
     }

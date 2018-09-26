@@ -1222,16 +1222,16 @@ TEST_F(DeclarableOpsTests5, Test_Moments_1) {
 }
 
 TEST_F(DeclarableOpsTests5, Test_Moments_2) {
-    auto x = NDArrayFactory::create<double>('c', {2, 3, 4}, {11.0f, 3.0f, 14.0f, 5.0f,
-                                   6.0f, 9.0f, 3.5f, 7.0f,
-                                   21.0f, 3.0f, 14.0f, 15.0f,
-                                   6.0f, 9.0f, 3.5f, 7.0f,
-                                   11.0f, 13.0f, 14.0f, 5.0f,
-                                   16.0f, 9.0f, 13.5f, 7.0f}
+    NDArray x('c', {2, 3, 4}, {11.0, 3.0, 14.0, 5.0,
+                                   6.0, 9.0, 3.5, 7.0,
+                                   21.0, 3.0, 14.0, 15.0,
+                                   6.0, 9.0, 3.5, 7.0,
+                                   11.0, 13.0, 14.0, 5.0,
+                                   16.0, 9.0, 13.5, 7.0}
     );
 
-    auto expV = NDArrayFactory::create<double>('c', {4}, {11.833333f, 7.6666665f, 10.416667f, 7.6666665f});
-    auto expD = NDArrayFactory::create<double>('c', {4}, {28.472221f, 12.888889f, 23.951387f, 11.555554f});
+    NDArray expV('c', {4}, {11.833333, 7.6666665, 10.416667, 7.6666665});
+    NDArray expD('c', {4}, {28.472221, 12.888889, 23.951387, 11.555554});
 
     nd4j::ops::moments op;
     auto result = op.execute({&x}, {}, {0, 1});
