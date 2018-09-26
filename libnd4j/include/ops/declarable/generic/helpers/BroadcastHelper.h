@@ -23,7 +23,7 @@
 
 #include <NDArray.h>
 #include <helpers/ShapeUtils.h>
-#include <BroadcastOpsTuple.h>
+#include <ops/BroadcastOpsTuple.h>
 #include <NDArrayFactory.h>
 
 namespace nd4j {

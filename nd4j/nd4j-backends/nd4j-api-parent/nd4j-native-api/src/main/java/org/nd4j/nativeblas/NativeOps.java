@@ -129,22 +129,6 @@ public abstract class NativeOps extends Pointer {
     /**
      * @param opNum
      * @param dx
-     * @param xStride
-     * @param y
-     * @param yStride
-     * @param result
-     * @param resultStride
-     * @param extraParams
-     * @param n
-     */
-    public abstract void execPairwiseTransform(PointerPointer extraPointers, int opNum, Pointer dx,
-                                               long xStride, Pointer y, long yStride, Pointer result, long resultStride,
-                                               Pointer extraParams, long n);
-
-
-    /**
-     * @param opNum
-     * @param dx
      * @param xShapeInfo
      * @param y
      * @param yShapeInfo
@@ -183,16 +167,6 @@ public abstract class NativeOps extends Pointer {
      * @param opNum
      * @param x
      * @param xShapeInfo
-     * @param extraParams
-     * @return
-     */
-    public abstract void execReduceScalar(PointerPointer extraPointers, int opNum, Pointer x,
-                                          @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams);
-
-    /**
-     * @param opNum
-     * @param x
-     * @param xShapeInfo
      * @param extraParamsVals
      * @param y
      * @param yShapeInfo
@@ -212,7 +186,7 @@ public abstract class NativeOps extends Pointer {
      * @param yShapeInfo
      */
     public abstract void execReduce3Scalar(PointerPointer extraPointers, int opNum, Pointer x,
-                                           @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParamsVals, Pointer y, @Cast("Nd4jLong *") LongPointer yShapeInfo);
+                                           @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParamsVals, Pointer y, @Cast("Nd4jLong *") LongPointer yShapeInfo, Pointer z, @Cast("Nd4jLong *") LongPointer zShapeInfo);
 
     /**
      * @param opNum
@@ -240,19 +214,6 @@ public abstract class NativeOps extends Pointer {
     /**
      * @param opNum
      * @param x
-     * @param xStride
-     * @param result
-     * @param resultStride
-     * @param scalar
-     * @param extraParams
-     * @param n
-     */
-    public abstract void execScalar(PointerPointer extraPointers, int opNum, Pointer x, long xStride,
-                                    Pointer result, long resultStride, double scalar, Pointer extraParams, long n);
-
-    /**
-     * @param opNum
-     * @param x
      * @param xShapeInfo
      * @param result
      * @param resultShapeInfo
@@ -260,8 +221,7 @@ public abstract class NativeOps extends Pointer {
      * @param extraParams
      */
     public abstract void execScalar(PointerPointer extraPointers, int opNum, Pointer x,
-                                    @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, double scalar,
-                                    Pointer extraParams);
+                                    @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, Pointer scalar, LongPointer scalarShapeInfo,Pointer extraParams);
 
     /**
      * @param opNum
@@ -300,17 +260,6 @@ public abstract class NativeOps extends Pointer {
                                           @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer result,
                                           @Cast("Nd4jLong *") LongPointer resultShapeInfoBuffer, IntPointer dimension, int dimensionLength, boolean biasCorrected);
 
-    /**
-     * @param opNum
-     * @param dx
-     * @param xStride
-     * @param result
-     * @param resultStride
-     * @param extraParams
-     * @param n
-     */
-    public abstract void execTransform(PointerPointer extraPointers, int opNum, Pointer dx, long xStride,
-                                       Pointer result, long resultStride, Pointer extraParams, long n);
 
     /**
      * @param extraPointers
@@ -340,7 +289,7 @@ public abstract class NativeOps extends Pointer {
      * @param dimensionLength
      */
     public abstract void execScalar(PointerPointer extraPointers, int opNum, Pointer x,
-                                    @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer z, @Cast("Nd4jLong *") LongPointer zShapeInfo, Pointer scalars,
+                                    @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer z, @Cast("Nd4jLong *") LongPointer zShapeInfo, Pointer scalars, @Cast("Nd4jLong *") LongPointer scalarShapeInfo,
                                     Pointer extraParams, IntPointer dimension, int dimensionLength);
 
     /**
@@ -479,13 +428,11 @@ public abstract class NativeOps extends Pointer {
 
     ///////////////////////
 
-    public abstract void average(PointerPointer extraPointers, PointerPointer x, Pointer z, int n,
-                                 long length, boolean propagate);
+    public abstract void average(PointerPointer extraPointers, PointerPointer x, Pointer z, LongPointer zShapeInfo, int n, long length, boolean propagate);
 
     ///////////////////////
 
-    public abstract void accumulate(PointerPointer extraPointers, PointerPointer x, Pointer z, int n,
-                                    long length);
+    public abstract void accumulate(PointerPointer extraPointers, PointerPointer x, Pointer z, LongPointer zShapeInfo, int n, long length);
 
     ///////////////////////
 
@@ -512,11 +459,6 @@ public abstract class NativeOps extends Pointer {
 
 
     // MetaOps
-
-    public abstract void execMetaPredicateStrided(PointerPointer extras, int opTypeA, int opNumA, int opTypeB,
-                                                  int opNumB, long N, Pointer dx, long xStride, Pointer dy, long yStride, Pointer dz,
-                                                  long zStride, Pointer extraA, Pointer extraB, double scalarA, double scalarB);
-
     public abstract void execMetaPredicateShape(PointerPointer extras, int opTypeA, int opNumA, int opTypeB,
                                                 int opNumB, long N, Pointer dx, @Cast("Nd4jLong *") LongPointer xShape, Pointer dy, @Cast("Nd4jLong *") LongPointer yShape,
                                                 Pointer dz, @Cast("Nd4jLong *") LongPointer zShape, Pointer extraA, Pointer extraB, double scalarA,
@@ -526,14 +468,21 @@ public abstract class NativeOps extends Pointer {
     /////////////////////////
 
     public abstract void execAggregate(PointerPointer extras, int opNum,
-                                       @Cast("double **") PointerPointer arguments, int numArguments,
-                                       @Cast("Nd4jLong **") PointerPointer shapes, int numShapes, IntPointer indexArguments,
-                                       int numIndexArguments, @Cast("int **") PointerPointer intArrays, int numIntArrays,
-                                       DoublePointer realArguments, int numRealArguments);
+                                       PointerPointer arguments,
+                                       int numArguments,
+                                       @Cast("Nd4jLong **") PointerPointer shapes,
+                                       int numShapes,
+                                       IntPointer indexArguments,
+                                       int numIndexArguments,
+                                       @Cast("int **") PointerPointer intArrays,
+                                       int numIntArrays,
+                                       Pointer realArguments,
+                                       int numRealArguments,
+                                       @Cast("nd4j::DataType") int dataType);
 
     public abstract void execAggregateBatch(PointerPointer extras, int numAggregates, int opNum, int maxArgs,
                                             int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals,
-                                            Pointer ptrToArguments);
+                                            Pointer ptrToArguments, @Cast("nd4j::DataType") int dataType);
 
 
     //////////////

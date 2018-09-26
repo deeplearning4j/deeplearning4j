@@ -113,12 +113,13 @@ void  NativeOps::execIndexReduce(Nd4jPointer *extraPointers,int opNum,
                                         void *x,
                                         Nd4jLong *xShapeInfo,
                                         void *extraParams,
-                                        Nd4jLong *result,
+                                        void *vresult,
                                         Nd4jLong *resultShapeInfo,
                                         int *dimension,
                                         int dimensionLength) {
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+    auto result = reinterpret_cast<Nd4jLong*>(vresult);
 
     NativeOpExcutioner::execIndexReduce(opNum,
             x,
@@ -1187,59 +1188,19 @@ void NativeOps::shuffle(Nd4jPointer *extras,
     BUILD_SINGLE_SELECTOR(xType, shuffleGeneric, (dx, xShape, dz, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
 }
 
-void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras,
-                                             const int opTypeA,
-                                             const int opNumA,
-                                             const int opTypeB,
-                                             const int opNumB,
-                                             float *dx,
-                                             Nd4jLong *xShapeInfo,
-                                             float *dy,
-                                             Nd4jLong *yShapeInfo,
-                                             float *dz,
-                                             Nd4jLong *zShapeInfo,
-                                             int *dimension,
-                                             int dimensionLength,
-                                             Nd4jLong *tadShapeInfo,
-                                             Nd4jLong *tadOffsets,
-                                             float *extraA,
-                                             float *extraB,
-                                             float scalarA,
-                                             float scalarB,
-                                             bool scalarReturned) {
-    // no-op
-}
 
 bool NativeOps::isExperimentalEnabled() {
     return experimentalSupport;
 }
 
-void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, float *dx, Nd4jLong *xShapeInfo, float *dy, Nd4jLong *yShapeInfo, float *dz, Nd4jLong *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
-    // no-op;
-}
 
 void NativeOps::setOmpMinThreads(int threads) {
     // TODO: to be implemented
 }
 
-void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, float *dx, Nd4jLong xStride, float *dy, Nd4jLong yStride, float *dz, Nd4jLong zStride, float *extraA, float *extraB, float scalarA, float scalarB) {
-    // no-op
-}
 
-void NativeOps::execMetaPredicateShapeDouble(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, double *dx, Nd4jLong *xShapeInfo, double *dy, Nd4jLong *yShapeInfo, double *dz, Nd4jLong *zShapeInfo, double *extraA, double *extraB, double scalarA, double scalarB) {
+void NativeOps::execMetaPredicateShape(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, void *dx, Nd4jLong *xShapeInfo, void *dy, Nd4jLong *yShapeInfo, void *dz, Nd4jLong *zShapeInfo, void *extraA, void *extraB, double scalarA, double scalarB) {
     // no-op;
-}
-
-void NativeOps::execMetaPredicateStridedDouble(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, double *dx, Nd4jLong xStride, double *dy, Nd4jLong yStride, double *dz, Nd4jLong zStride, double *extraA, double *extraB, double scalarA, double scalarB) {
-    // no-op
-}
-
-void NativeOps::execMetaPredicateShapeHalf(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, float16 *dx, Nd4jLong *xShapeInfo, float16 *dy, Nd4jLong *yShapeInfo, float16 *dz, Nd4jLong *zShapeInfo, float16 *extraA, float16 *extraB, float scalarA, float scalarB) {
-    // no-op;
-}
-
-void NativeOps::execMetaPredicateStridedHalf(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, float16 *dx, Nd4jLong xStride, float16 *dy, Nd4jLong yStride, float16 *dz, Nd4jLong zStride, float16 *extraA, float16 *extraB, float scalarA, float scalarB) {
-    // no-op
 }
 
 int NativeOps::getDevice() {
@@ -1382,8 +1343,7 @@ void NativeOps::execAggregateBatch(Nd4jPointer *extraPointers,
                                          int maxReals,
                                          void *ptrToArguments,
                                          nd4j::DataType dtype) {
-
-
+    BUILD_SINGLE_SELECTOR(dtype, _batchExecutor, (extraPointers, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments, dtype), FLOAT_TYPES);
 }
 
 
