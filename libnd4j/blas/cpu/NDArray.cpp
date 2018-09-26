@@ -96,9 +96,8 @@ NDArray::NDArray(const NDArray& other) {
     this->_length = shape::length(other._shapeInfo);
     auto shapeLength = shape::shapeInfoByteLength(other._shapeInfo);
 
-    _workspace = other._workspace;
-    auto tLen = nd4j::DataTypeUtils::sizeOf(ArrayOptions::dataType(other._shapeInfo));
-    ALLOCATE(_buffer, other._workspace, this->_length * tLen, int8_t);
+    _workspace = other._workspace;    
+    ALLOCATE(_buffer, other._workspace, this->_length * other.sizeOfT(), int8_t);
     ALLOCATE(_shapeInfo, other._workspace, shape::shapeInfoLength(other._shapeInfo), Nd4jLong);
 
     REPLICATE_SHAPE(other._shapeInfo, this->shapeInfo());
@@ -129,11 +128,11 @@ NDArray::NDArray(NDArray&& other) noexcept {
 
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
-NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace) {
+NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace, const bool isBuffAlloc, const bool isShapeAlloc) {
     _buffer    = reinterpret_cast<int8_t *>(buffer);
     _shapeInfo = shapeInfo;
-    _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
-    _isShapeAlloc = false;
+    _isBuffAlloc = isBuffAlloc;                                  // indicate that memory for array is passed from outside
+    _isShapeAlloc = isShapeAlloc;
     _workspace = workspace;
 
     if (shapeInfo != nullptr) {
@@ -936,41 +935,14 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 ////////////////////////////////////////////////////////////////////////
 // This method returns new copy of this NDArray, optionally in different order
     NDArray* NDArray::dup(const char newOrder) {
-    // op
-    Nd4jLong newLength = shape::length(_shapeInfo);
-    void* newBuffer;
-    Nd4jLong* newShapeInfo;
 
-    char order = newOrder;
+    char order = newOrder == 'a' ? ordering() : newOrder;     
 
-    if (order == 'a')
-        order = this->ordering();
+    auto outShapeInfo = ShapeBuilders::createShapeInfo(_dataType, order, getShapeAsVector(), _workspace);
+    void* outBuffer = nullptr;
+    ALLOCATE(outBuffer, _workspace, _length * sizeOfT(), int8_t);
 
-    if (_workspace == nullptr) {
-        newBuffer = new int8_t[newLength * sizeOfT()];
-
-        if (order == 'f')
-            newShapeInfo = shape::shapeBufferFortran(rankOf(), dataType(), shapeOf());
-        else
-            newShapeInfo = shape::shapeBuffer(rankOf(), dataType(), shapeOf());
-
-    } else {
-        newBuffer = _workspace->allocateBytes(newLength * sizeOfT());
-        newShapeInfo = reinterpret_cast<Nd4jLong *>(_workspace->allocateBytes(shape::shapeInfoByteLength(this->rankOf())));
-
-        if (order == 'f')
-            shape::shapeBufferFortran(rankOf(), dataType(), shapeOf(), newShapeInfo);
-        else
-            shape::shapeBuffer(rankOf(), dataType(), shapeOf(), newShapeInfo);
-    }
-    // FIXME: we know that EWS is always 1 after dup() result
-    newShapeInfo[rankOf() * 2 + 2] = 1;
-
-    auto result = new NDArray(newBuffer, newShapeInfo, _workspace);
-    // this values should be set, to avoid memleak
-    result->_isBuffAlloc = true;
-    result->_isShapeAlloc = true;
-
+    auto result = new NDArray(outBuffer, outShapeInfo, _workspace, true, true);
     result->assign(this);
 
     return result;

@@ -151,7 +151,7 @@ namespace nd4j {
         /**
         *  do not allocate memory, memory for array is passed from outside 
         */
-        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::memory::Workspace* workspace = nullptr, const bool isBuffAlloc = false, const bool isShapeAlloc = false);
 
         /**
         *  copy constructor
