@@ -38,7 +38,7 @@
 
 namespace nd4j {
     namespace graph {
-        class VariableSpace {
+        class ND4J_EXPORT VariableSpace {
         protected:
 
             nd4j::memory::Workspace _workspace;

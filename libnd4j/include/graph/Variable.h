@@ -31,7 +31,7 @@
 
 namespace nd4j {
     namespace graph {
-        class Variable {
+        class ND4J_EXPORT Variable {
         protected:
             int _id = 0;
             int _index = 0;

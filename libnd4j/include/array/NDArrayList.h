@@ -28,9 +28,10 @@
 #include <map>
 #include <NDArray.h>
 #include <memory/Workspace.h>
+#include <dll.h>
 
 namespace nd4j {
-    class NDArrayList {
+    class ND4J_EXPORT NDArrayList {
     private:
         // workspace where chunks belong to
         nd4j::memory::Workspace* _workspace = nullptr;

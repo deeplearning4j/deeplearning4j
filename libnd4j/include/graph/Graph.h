@@ -38,7 +38,7 @@
 namespace nd4j {
     namespace graph {
 
-        class Graph {
+        class ND4J_EXPORT Graph {
         protected:
             ExecutorConfiguration *_configuration;
             VariableSpace *_variableSpace;

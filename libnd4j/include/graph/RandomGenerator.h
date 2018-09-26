@@ -27,7 +27,7 @@
 
 namespace nd4j {
     namespace graph {
-        class RandomGenerator {
+        class ND4J_EXPORT RandomGenerator {
         private:
             // GRAPH-LEVEL STATE
             u64 _rootState;

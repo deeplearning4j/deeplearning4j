@@ -43,7 +43,7 @@ namespace nd4j {
         /**
          * This class defines input desired for any given node/operation within graph
          */
-        class Context : public nd4j::graph::ContextPrototype {
+        class ND4J_EXPORT Context : public nd4j::graph::ContextPrototype {
         protected:
             nd4j::memory::Workspace* _workspace = nullptr;
             nd4j::graph::VariableSpace* _variableSpace = nullptr;

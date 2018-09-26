@@ -28,10 +28,11 @@
 #include <types/float16.h>
 #include <helpers/BitwiseUtils.h>
 #include <loops/type_conversions.h>
+#include <dll.h>
 
 namespace nd4j {
     template <typename T>
-    class DataTypeConversions {
+    class ND4J_EXPORT DataTypeConversions {
     public:
         static FORCEINLINE void convertType(void* vbuffer, void* src, DataType dataType, ByteOrder order, Nd4jLong length) {
             auto buffer = reinterpret_cast<T *>(vbuffer);

@@ -21,9 +21,11 @@
 #ifndef LIBND4J_CUDACONTEXT_H
 #define LIBND4J_CUDACONTEXT_H
 
+#include <dll.h>
+
 namespace nd4j {
     namespace graph {
-        class LaunchContext {
+        class ND4J_EXPORT LaunchContext {
         public:
             LaunchContext();
             ~LaunchContext() = default;

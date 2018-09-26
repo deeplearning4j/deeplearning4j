@@ -36,7 +36,7 @@ namespace nd4j {
 
         class Graph;
 
-        class Node {
+        class ND4J_EXPORT Node {
         protected:
             nd4j::DataType _dataType;
             OpType _opType;

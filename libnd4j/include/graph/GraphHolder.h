@@ -27,7 +27,7 @@
 
 namespace nd4j {
     namespace graph {
-        class GraphHolder {
+        class ND4J_EXPORT GraphHolder {
         private:
             static GraphHolder *_INSTANCE;
             std::map<Nd4jLong, Graph *> _graphF;

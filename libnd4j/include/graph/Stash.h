@@ -30,7 +30,7 @@
 
 namespace nd4j {
     namespace graph {
-        class ND4J_EXPORT KeyPair {
+        class ND4J_EXPORT ND4J_EXPORT KeyPair {
             int _node;
             std::string _name;
         public:

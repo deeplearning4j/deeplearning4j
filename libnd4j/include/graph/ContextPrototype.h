@@ -23,11 +23,12 @@
 
 #include <vector>
 #include <array/DataType.h>
+#include <dll.h>
 
 namespace nd4j {
     namespace graph {
 
-        class ContextPrototype {
+        class ND4J_EXPORT ContextPrototype {
         protected:
             // int ids of the input nodes
             std::vector<std::pair<int, int>> _inputs;

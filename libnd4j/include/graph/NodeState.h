@@ -22,10 +22,11 @@
 #define LIBND4J_NODESTATE_H
 
 #include <pointercast.h>
+#include <dll.h>
 
 namespace nd4j {
     namespace graph {
-        class NodeState {
+        class ND4J_EXPORT NodeState {
         private:
             // inner time spent on specific node
             Nd4jLong _inner = 0;

@@ -25,9 +25,10 @@
 #include <array/DataType.h>
 #include <graph/generated/array_generated.h>
 #include <op_boilerplate.h>
+#include <dll.h>
 
 namespace nd4j {
-    class DataTypeUtils {
+    class ND4J_EXPORT DataTypeUtils {
     public:
         static int asInt(DataType type);
         static DataType fromInt(int dtype);

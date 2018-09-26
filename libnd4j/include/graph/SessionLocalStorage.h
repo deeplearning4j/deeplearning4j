@@ -29,7 +29,7 @@
 
 namespace nd4j{
     namespace graph {
-        class SessionLocalStorage {
+        class ND4J_EXPORT SessionLocalStorage {
         protected:
             std::atomic<Nd4jLong> _sessionCounter;
             std::map<Nd4jLong, Nd4jLong> _threadSession;

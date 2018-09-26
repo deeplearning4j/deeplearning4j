@@ -28,7 +28,7 @@
 
 
 namespace nd4j {
-    class NDArrayFactory {
+    class ND4J_EXPORT NDArrayFactory {
     private:
         template <typename T>
         static void memcpyFromVector(void *ptr, const std::vector<T> &vector);

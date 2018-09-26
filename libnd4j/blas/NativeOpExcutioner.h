@@ -35,13 +35,14 @@
 #include <ops/specials.h>
 #include <ops/specials_sparse.h>
 #include <types/types.h>
+#include <dll.h>
 
 /**
  * Native op executioner:
  *
  */
 
-class NativeOpExcutioner {
+class ND4J_EXPORT NativeOpExcutioner {
 public:
     /**
      *

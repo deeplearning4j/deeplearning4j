@@ -27,7 +27,7 @@
 
 namespace nd4j {
     namespace ops {
-        class OpTuple {
+        class ND4J_EXPORT OpTuple {
         public:
             const char * _opName;
             std::vector<nd4j::NDArray*> _inputs;

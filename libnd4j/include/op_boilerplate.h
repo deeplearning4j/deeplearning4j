@@ -1255,7 +1255,7 @@
 #define REGISTER_C(NAME)
 #endif
 
-#define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   class NAME: public nd4j::ops::DeclarableOp { \
+#define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   class ND4J_EXPORT NAME: public nd4j::ops::DeclarableOp { \
                                                 public:\
                                                     NAME(); \
                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block); \
@@ -1264,7 +1264,7 @@
                                                 };\
                                                 REGISTER_H(NAME)
 
-#define DECLARE_BOOLEAN_OP(NAME, NIN, SCALAR)   class NAME: public nd4j::ops::BooleanOp { \
+#define DECLARE_BOOLEAN_OP(NAME, NIN, SCALAR)   class ND4J_EXPORT NAME: public nd4j::ops::BooleanOp { \
                                                 public:\
                                                     NAME(); \
                                                 protected: \
@@ -1276,7 +1276,7 @@
                                                 REGISTER_C(NAME) \
                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
 
-#define DECLARE_LIST_OP(NAME, NIN, NOUT, TARGS, IARGS)      class NAME: public nd4j::ops::DeclarableListOp { \
+#define DECLARE_LIST_OP(NAME, NIN, NOUT, TARGS, IARGS)      class ND4J_EXPORT  NAME: public nd4j::ops::DeclarableListOp { \
                                                             public:\
                                                                 NAME(); \
                                                             protected: \
@@ -1288,7 +1288,7 @@
                                                             REGISTER_C(NAME) \
                                                             Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
 
-#define DECLARE_LOGIC_OP(NAME)      class NAME: public nd4j::ops::LogicOp { \
+#define DECLARE_LOGIC_OP(NAME)      class ND4J_EXPORT NAME: public nd4j::ops::LogicOp { \
                                     public:\
                                         NAME(); \
                                     protected: \
@@ -1335,7 +1335,7 @@
                                         };\
                                         static nd4j::ops::__registratorSynonym_##NAME<ORIGINAL> zzz_register_opd_##NAME(#NAME, #ORIGINAL)
 
-#define DECLARE_DIVERGENT_OP(NAME, NIN, NOUT, INPLACEABLE)  class NAME: public nd4j::ops::DeclarableOp { \
+#define DECLARE_DIVERGENT_OP(NAME, NIN, NOUT, INPLACEABLE)  class ND4J_EXPORT NAME: public nd4j::ops::DeclarableOp { \
                                                             public:\
                                                                 NAME(); \
                                                                 nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block); \
@@ -1357,7 +1357,7 @@
                                                             } \
                                                             Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
 
-#define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     class NAME: public nd4j::ops::DeclarableOp { \
+#define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     class ND4J_EXPORT NAME: public nd4j::ops::DeclarableOp { \
                                                                                 public:\
                                                                                     NAME(); \
                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block); \
@@ -1383,7 +1383,7 @@
                                                                                 } \
                                                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(Context& block)
 
-#define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        class NAME: public nd4j::ops::DeclarableReductionOp { \
+#define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        class ND4J_EXPORT NAME: public nd4j::ops::DeclarableReductionOp { \
                                                                                 public:\
                                                                                     NAME(); \
                                                                                 protected: \
@@ -1396,7 +1396,7 @@
                                                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
 
 
-#define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           class NAME: public nd4j::ops::DeclarableCustomOp { \
+#define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           class ND4J_EXPORT NAME: public nd4j::ops::DeclarableCustomOp { \
                                                                                 protected: \
                                                                                     Nd4jStatus validateAndExecute(Context& block); \
                                                                                 public:\
@@ -1412,7 +1412,7 @@
 // this declaration MUST follow DECLARE_CUSTOM_OP
 #define DECLARE_SHAPE_FN(NAME)                                                  nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block)
 
-#define DECLARE_BROADCASTABLE_OP(NAME,TARGS, IARGS)                             class NAME: public nd4j::ops::BroadcastableOp { \
+#define DECLARE_BROADCASTABLE_OP(NAME,TARGS, IARGS)                             class ND4J_EXPORT NAME: public nd4j::ops::BroadcastableOp { \
                                                                                 protected: \
                                                                                     Nd4jStatus validateAndExecute(Context& block); \
                                                                                 public:\

@@ -28,7 +28,7 @@
 namespace nd4j {
 namespace graph {
 
-class GraphUtils {
+class ND4J_EXPORT GraphUtils {
 public:
     typedef std::vector<OpDescriptor> OpList;
 

@@ -26,7 +26,7 @@
 
 namespace nd4j {
     namespace graph {
-        class TimeHolder {
+        class ND4J_EXPORT TimeHolder {
         private:
             std::map<int, Nd4jLong> _outer;
             std::map<int, Nd4jLong> _inner;

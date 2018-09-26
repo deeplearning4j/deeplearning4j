@@ -31,6 +31,7 @@
 #include <graph/ResultWrapper.h>
 #include <sys/stat.h>
 #include <graph/ExecutionResult.h>
+#include <dll.h>
 
 #define TF_INPUT "Placeholder"
 #define TF_CONST "Const"
@@ -39,7 +40,7 @@
 namespace nd4j {
     namespace graph {
 
-    class GraphExecutioner {
+    class ND4J_EXPORT GraphExecutioner {
     protected:
 
 

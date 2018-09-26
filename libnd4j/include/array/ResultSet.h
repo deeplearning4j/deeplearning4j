@@ -28,12 +28,13 @@
 #include <vector>
 #include <graph/generated/result_generated.h>
 #include <pointercast.h>
+#include <dll.h>
 
 namespace  nd4j {
 
     class NDArray; // forward declaration of template class NDArray
     
-    class ResultSet {
+    class ND4J_EXPORT ResultSet {
     private:
         std::vector<nd4j::NDArray *> _content;
         Nd4jStatus _status = ND4J_STATUS_OK;
