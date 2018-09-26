@@ -316,19 +316,6 @@ public abstract class DifferentialFunction {
     }
 
 
-
-    /**
-     * Return function properties for the given function
-     * @return
-     */
-    public FunctionProperties asProperties() {
-        return FunctionProperties.builder()
-                .name(opName())
-                .fieldNames(propertiesForFunction())
-                .build();
-    }
-
-
     /**
      *
      * @param sameDiff

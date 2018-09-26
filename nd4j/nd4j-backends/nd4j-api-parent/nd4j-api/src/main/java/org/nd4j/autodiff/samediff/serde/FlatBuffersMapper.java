@@ -1,17 +1,24 @@
 package org.nd4j.autodiff.samediff.serde;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.BaseReduction;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class FlatBuffersMapper {
 
@@ -328,5 +335,161 @@ public class FlatBuffersMapper {
             }
             return (DifferentialFunction)op;
         }
+    }
+
+    private static final int[] EMPTY_INT = new int[0];
+    private static final long[] EMPTY_LONG = new long[0];
+    private static final double[] EMPTY_DOUBLE = new double[0];
+
+    public static int[] mapFunctionPropertiesToFlatProperties(FlatBufferBuilder fbb, Map<String,Object> fnProps){
+
+        int[] outIdxs = new int[fnProps.size()];
+        int count = 0;
+        for(Map.Entry<String,Object> e : fnProps.entrySet()){
+            //Possible types here: primitives (as Number objects), primitive arrays, Strings, String arrays, multi-dimensional string/primitives
+            Object v = e.getValue();
+            int iname = fbb.createString(e.getKey());
+
+            int[] i = null;
+            long[] l = null;
+            double[] d = null;
+            int[] aIdx = null;
+            int[] sIdx = null;
+            int[] shape = null;
+
+            if(v instanceof Number) {
+                if (v instanceof Double) {
+                    d = new double[]{(Double) v};
+                } else if (v instanceof Integer) {
+                    i = new int[]{(Integer) v};
+                } else if (v instanceof Long) {
+                    l = new long[]{(Long) v};
+                } else {
+                    throw new UnsupportedOperationException("Unable to map property \"" + e.getKey() + "\" of type " + v.getClass());
+                }
+            } else if(v instanceof String) {
+                String str = (String) v;
+                int strOffset = fbb.createString(str);
+                sIdx = new int[]{strOffset};
+            } else if(v instanceof INDArray){
+                INDArray arr = (INDArray)v;
+                aIdx = new int[]{arr.toFlatArray(fbb)};
+            } else if(v.getClass().isArray()){
+                if(v.getClass().getComponentType().isPrimitive()){
+                    if(v instanceof double[]){
+                        d = (double[])v;
+                        shape = new int[]{d.length};
+                    } else if(v instanceof int[]){
+                        i = (int[])v;
+                        shape = new int[]{i.length};
+                    } else if(v instanceof long[]){
+                        l = (long[])v;
+                        shape = new int[]{l.length};
+                    } else {
+                        throw new UnsupportedOperationException("Unable to map property \"" + e.getKey() + "\" of type " + v.getClass());
+                    }
+                } else if (v instanceof String[]) {
+                    //String[]
+                    String[] strArr = (String[]) v;
+                    sIdx = new int[strArr.length];
+                    for (int j = 0; j < strArr.length; j++) {
+                        sIdx[j] = fbb.createString(strArr[j]);
+                    }
+                    shape = new int[]{strArr.length};
+                } else if (v instanceof INDArray[]){
+                    INDArray[] arrArr = (INDArray[])v;
+                    aIdx = new int[arrArr.length];
+                    for( int j=0; j<arrArr.length; j++){
+                        aIdx[j] = arrArr[j].toFlatArray(fbb);
+                    }
+                } else if(v.getClass().getComponentType().isArray()){
+                    //Multi-dimensional array
+                    throw new UnsupportedOperationException("Multi-dimensional array not yet implemented");
+                }
+            }
+
+            int idxD = FlatProperties.createDVector(fbb, d != null ? d : EMPTY_DOUBLE);
+            int idxI = FlatProperties.createIVector(fbb, i != null ? i : EMPTY_INT);
+            int idxL = FlatProperties.createLVector(fbb, l != null ? l : EMPTY_LONG);
+            int idxA = FlatProperties.createAVector(fbb, aIdx != null ? aIdx : EMPTY_INT);
+            int idxS = FlatProperties.createSVector(fbb, sIdx != null ? sIdx : EMPTY_INT);
+            int idxShape = FlatProperties.createShapeVector(fbb, shape != null ? shape : EMPTY_INT);
+
+            outIdxs[count++] = FlatProperties.createFlatProperties(fbb, iname, idxI, idxL, idxD, idxA, idxS, idxShape);
+
+        }
+        return outIdxs;
+    }
+
+    public static Map<String,Object> mapFlatPropertiesToFunctionProperties(List<FlatProperties> list){
+        Map<String,Object> out = new HashMap<>();
+        for(FlatProperties p : list){
+
+            String name = p.name();
+            //Work out type:
+            if(p.shapeLength() > 0){
+                //Array type
+                int[] shape = new int[p.shapeLength()];
+                for( int i=0; i<shape.length; i++ ){
+                    shape[i] = p.shape(i);
+                }
+                if(shape.length != 1){
+                    throw new IllegalStateException("Multi-dimensional arrays not yet implemented");
+                }
+
+                if(p.iLength() > 0){
+                    int[] iArr = new int[p.iLength()];
+                    for( int i=0; i<iArr.length; i++ ){
+                        iArr[i] = p.i(i);
+                    }
+                    out.put(name, iArr);
+                } else if(p.lLength() > 0){
+                    double[] dArr = new double[p.dLength()];
+                    for( int i=0; i<dArr.length; i++ ){
+                        dArr[i] = p.d(i);
+                    }
+                    out.put(name, dArr);
+                } else if(p.dLength() > 0){
+                    long[] lArr = new long[p.lLength()];
+                    for( int i=0; i<lArr.length; i++ ){
+                        lArr[i] = p.l(i);
+                    }
+                    out.put(name, lArr);
+                } else if(p.sLength() > 0){
+                    String[] sArr = new String[p.sLength()];
+                    for( int i=0; i<sArr.length; i++ ){
+                        sArr[i] = p.s(i);
+                    }
+                    out.put(name, sArr);
+                } else if(p.aLength() > 0){
+                    INDArray[] iArr = new INDArray[p.aLength()];
+                    for( int i=0; i<iArr.length; i++ ){
+                        FlatArray fa = p.a(0);
+                        iArr[i] = Nd4j.createFromFlatArray(fa);
+                    }
+                    out.put(name, iArr);
+                }  else {
+                    throw new UnsupportedOperationException("No data for property: " + name);
+                }
+            } else {
+                //non-array primitive, String or INDArray
+                if(p.iLength() > 0){
+                    out.put(name, p.i(0));
+                } else if(p.lLength() > 0){
+                    out.put(name, p.l(0));
+                } else if(p.dLength() > 0){
+                    out.put(name, p.d(0));
+                } else if(p.sLength() > 0){
+                    out.put(name, p.s(0));
+                } else if(p.aLength() > 0){
+                    FlatArray fa = p.a(0);
+                    out.put(name, Nd4j.createFromFlatArray(fa));
+                } else {
+                    throw new UnsupportedOperationException("No data for property: " + name);
+                }
+            }
+        }
+
+        return out;
     }
 }
