@@ -293,7 +293,7 @@ namespace nd4j {
                 auto fBuffer = builder.CreateVector(array->asByteVector());
 
                 // packing array
-                auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DataType::FLOAT);
+                auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DataType::DataType_FLOAT);
 
                 // packing id/index of this var
                 auto fVid = CreateIntPair(builder, this->_id, this->_index);
