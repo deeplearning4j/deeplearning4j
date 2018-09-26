@@ -236,13 +236,13 @@ namespace functions {
                 auto numTads = shape::length(xShapeInfo) / tadLength;
                 auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 
-                int tadsPerThread = resultLength / TAD_THRESHOLD;
-                int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+   //             int tadsPerThread = resultLength / TAD_THRESHOLD;
+  //              int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+    //            num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
                 if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+//#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                     for (int i = 0; i < resultLength; i++) {
                         auto iter = x + tadOffsets[i];
                         auto start = OpType::startingValue(iter);
@@ -268,7 +268,7 @@ namespace functions {
                     auto tadStride = shape::stride(tadOnlyShapeInfo);
                     int tadRank = shape::rank(tadOnlyShapeInfo);
 
-#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+//#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                     for (int i = 0; i < resultLength; i++) {
                         auto offset = tadOffsets[i];
                         Nd4jLong xCoord[MAX_RANK];

@@ -174,7 +174,8 @@ TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-
+    z->printShapeInfo("RES shape");
+    x.printShapeInfo("EXP shape");
     ASSERT_TRUE(x.isSameShape(z));
 
     delete result;
