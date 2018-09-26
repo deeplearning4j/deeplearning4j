@@ -58,6 +58,10 @@ namespace nd4j {
         DECLARE_SHAPE_FN(confusion_matrix) {
             auto labels = INPUT_VARIABLE(0);
             auto predictions = INPUT_VARIABLE(1);
+            auto dtype = block.dataType();
+            dtype = nd4j::DataType::INT64; // dtype - should be a param with int argument
+            if (block.numI() > 1)
+                dtype = (nd4j::DataType)INT_ARG(1);
 
             int numClasses = 0;
 
@@ -73,7 +77,7 @@ namespace nd4j {
             Nd4jLong *newShape;
             std::array<Nd4jLong, 2> shape = {{numClasses,numClasses}};
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-            shape::shapeBuffer(2, block.dataType(), shape.data(), newShape);
+            shape::shapeBuffer(2, dtype, shape.data(), newShape);
 
             return SHAPELIST(newShape);
         }
