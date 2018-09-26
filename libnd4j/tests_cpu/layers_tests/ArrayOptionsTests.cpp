@@ -90,8 +90,8 @@ TEST_F(ArrayOptionsTests, TestShape_Basic_6) {
 }
 
 TEST_F(ArrayOptionsTests, TestShape_Basic_7) {
-    ArrayOptions::setDataType(shape, nd4j::DataType::FLOAT);
-    ArrayOptions::setDataType(shape, nd4j::DataType::FLOAT);
+    ArrayOptions::setDataType(shape, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape, nd4j::DataType::FLOAT32);
 
-    ASSERT_EQ(nd4j::DataType::FLOAT, ArrayOptions::dataType(shape));
+    ASSERT_EQ(nd4j::DataType::FLOAT32, ArrayOptions::dataType(shape));
 }

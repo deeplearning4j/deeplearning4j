@@ -54,7 +54,7 @@ namespace nd4j {
         /*if (hasPropertyBitSet(shapeInfo, ARRAY_QUANTIZED))
             return nd4j::DataType::QINT8;
         else */if (hasPropertyBitSet(shapeInfo, ARRAY_FLOAT))
-            return nd4j::DataType::FLOAT;
+            return nd4j::DataType::FLOAT32;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_DOUBLE))
             return nd4j::DataType::DOUBLE;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_HALF))
@@ -182,7 +182,7 @@ namespace nd4j {
             setPropertyBit(shapeInfo, ARRAY_BOOL);
         else if (dataType == nd4j::DataType::HALF)
             setPropertyBit(shapeInfo, ARRAY_HALF);
-        else if (dataType == nd4j::DataType::FLOAT)
+        else if (dataType == nd4j::DataType::FLOAT32)
             setPropertyBit(shapeInfo, ARRAY_FLOAT);
         else if (dataType == nd4j::DataType::DOUBLE)
             setPropertyBit(shapeInfo, ARRAY_DOUBLE);

@@ -28,7 +28,7 @@ namespace nd4j {
         FLOAT8 = 2,
         HALF = 3,
         HALF2 = 4,
-        FLOAT = 5,
+        FLOAT32 = 5,
         DOUBLE = 6,
         INT8 = 7,
         INT16 = 8,

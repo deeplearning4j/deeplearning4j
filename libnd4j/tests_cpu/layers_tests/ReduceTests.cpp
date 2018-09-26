@@ -81,7 +81,7 @@ TEST_F(EuclideanDistanceTest,Test1) {
 
 
 TEST_F(StdTest,MultiDimTest) {
-    auto xShapeInfo = shape::shapeBuffer(4, nd4j::DataType::FLOAT, examplesShape);
+    auto xShapeInfo = shape::shapeBuffer(4, nd4j::DataType::FLOAT32, examplesShape);
     //int *resultShapeInfo = shape::computeResultShape(xShapeInfo,dimensionsForStd,dimensionLength);
     auto resultShapeInfo = nd4j::ShapeUtils::evalReduceShapeInfo('c', dimsForStd, xShapeInfo, false, true, nullptr);
     int resultLengthAssertion = 5;
@@ -120,7 +120,7 @@ TEST_F(StdTest,MultiDimTest) {
 
 TEST_F(ReduceTest,MatrixTest) {
     int opNum = 4;
-    auto xShapeInfo = shape::shapeBuffer(2,  nd4j::DataType::FLOAT, shape);
+    auto xShapeInfo = shape::shapeBuffer(2,  nd4j::DataType::FLOAT32, shape);
     //int *resultShapeInfo = shape::computeResultShape(xShapeInfo,dimension,dimensionLength);
     auto resultShapeInfo = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, xShapeInfo, false, true, nullptr);
     int resultLengthAssertion = 3;

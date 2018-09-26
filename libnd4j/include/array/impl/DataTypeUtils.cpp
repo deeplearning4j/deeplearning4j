@@ -51,7 +51,7 @@ namespace nd4j {
             case INT32:
             case UINT32:
             case HALF2:
-            case FLOAT: return (size_t) 4;
+            case FLOAT32: return (size_t) 4;
 
             case UINT64:
             case INT64:
@@ -71,7 +71,7 @@ namespace nd4j {
 
     template <>
     DataType DataTypeUtils::fromT<float>() {
-        return FLOAT;
+        return FLOAT32;
     }
 
     template <>

@@ -253,7 +253,7 @@ NDArray::NDArray(const Nd4jLong* shapeInfo, const bool copyStrides, nd4j::memory
 
     bool NDArray::isR() const {
         auto xType = ArrayOptions::dataType(this->_shapeInfo);
-        return xType == FLOAT || xType == HALF || xType == DOUBLE || xType == FLOAT8;
+        return xType == FLOAT32 || xType == HALF || xType == DOUBLE || xType == FLOAT8;
     }
 
     bool NDArray::isZ() const {

@@ -140,7 +140,7 @@ namespace nd4j {
         /**
         *  type of array elements
         */  
-        nd4j::DataType _dataType = FLOAT;
+        nd4j::DataType _dataType = FLOAT32;
 
         template<typename T>
         std::string toStringValue(T value);

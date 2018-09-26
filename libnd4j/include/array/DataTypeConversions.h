@@ -40,7 +40,7 @@ namespace nd4j {
             bool canKeep = (isBe && order == ByteOrder::BE) || (!isBe && order == ByteOrder::LE);
 
             switch (dataType) {
-                case FLOAT: {
+                case FLOAT32: {
                         if (std::is_same<T, float>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));
                         } else {

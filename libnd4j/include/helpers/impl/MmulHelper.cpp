@@ -445,7 +445,7 @@ nd4j::NDArray* MmulHelper::mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDA
     // TODO: put proper _gemm here
     if (xType == yType && yType == zType && BlasHelper::getInstance()->template hasGEMM<X>()) {
         nd4j_debug("Using provided GEMM pointer\n","");
-        if (xType == FLOAT)
+        if (xType == FLOAT32)
             BlasHelper::getInstance()->sgemm()(CblasColMajor, transA, transB, M, N, K, (float) alpha, reinterpret_cast<float *>(pA->getBuffer()), lda, reinterpret_cast<float *>(pB->getBuffer()), ldb, (float) beta, reinterpret_cast<float *>(pC->getBuffer()), ldc);
         else if (xType == DOUBLE)
             BlasHelper::getInstance()->dgemm()(CblasColMajor, transA, transB, M, N, K, (double) alpha, reinterpret_cast<double *>(pA->getBuffer()), lda, reinterpret_cast<double *>(pB->getBuffer()), ldb, (double) beta, reinterpret_cast<double *>(pC->getBuffer()), ldc);

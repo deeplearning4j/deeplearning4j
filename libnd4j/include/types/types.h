@@ -33,7 +33,7 @@
 
 #define LIBND4J_TYPES \
         (nd4j::DataType::HALF, float16), \
-        (nd4j::DataType::FLOAT, float), \
+        (nd4j::DataType::FLOAT32, float), \
         (nd4j::DataType::DOUBLE, double), \
         (nd4j::DataType::BOOL, bool), \
         (nd4j::DataType::INT8, int8_t), \
@@ -48,7 +48,7 @@
 
 #define FLOAT_TYPES \
         (nd4j::DataType::HALF, float16), \
-        (nd4j::DataType::FLOAT, float), \
+        (nd4j::DataType::FLOAT32, float), \
         (nd4j::DataType::DOUBLE, double)
 
 #define INTEGER_TYPES \
@@ -61,7 +61,7 @@
 
 #define NUMERIC_TYPES \
         (nd4j::DataType::HALF, float16), \
-        (nd4j::DataType::FLOAT, float), \
+        (nd4j::DataType::FLOAT32, float), \
         (nd4j::DataType::DOUBLE, double), \
         (nd4j::DataType::INT8, int8_t), \
         (nd4j::DataType::UINT8, uint8_t), \
@@ -74,7 +74,7 @@
 ///
 #define LIBND4J_TYPES_0 \
         (nd4j::DataType::HALF, float16), \
-        (nd4j::DataType::FLOAT, float), \
+        (nd4j::DataType::FLOAT32, float), \
         (nd4j::DataType::DOUBLE, double)
 
 #define LIBND4J_TYPES_1 \
