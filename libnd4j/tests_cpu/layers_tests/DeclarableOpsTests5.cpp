@@ -2040,7 +2040,7 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_1) {
     
     ASSERT_EQ(Status::OK(), res->status());
     ASSERT_TRUE(res->at(0)->isScalar());
-    ASSERT_EQ(res->at(0)->e<double>(0), 0.25f);
+    ASSERT_EQ(res->at(0)->e<double>(0), 0.25);
     
     delete res;
 }
@@ -2048,14 +2048,14 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, ZeroFraction_2) {
     
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {5.5f, 0.f, 0.3f, 5.5f, 8.6f, 0.f, 0.f, 0.4f});
+    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {5.5, 0., 0.3, 5.5, 8.6, 0., 0., 0.4});
 
     nd4j::ops::zero_fraction op;
     auto res = op.execute({&x}, {}, {});
     
     ASSERT_EQ(Status::OK(), res->status());
     ASSERT_TRUE(res->at(0)->isScalar());
-    ASSERT_EQ(res->at(0)->e<double>(0), 0.375f);
+    ASSERT_EQ(res->at(0)->e<double>(0), 0.375);
     
     delete res;
 }
@@ -2063,14 +2063,14 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, ZeroFraction_3) {
     
-    auto x = NDArrayFactory::create<double>('f', {2, 2, 2}, {5.5f, 0.f, 0.3f, 5.5f, 8.6f, 0.f, 0.f, 0.4f});
+    auto x = NDArrayFactory::create<double>('f', {2, 2, 2}, {5.5, 0., 0.3, 5.5, 8.6, 0., 0., 0.4});
 
     nd4j::ops::zero_fraction op;
     auto res = op.execute({&x}, {}, {});
     
     ASSERT_EQ(Status::OK(), res->status());
     ASSERT_TRUE(res->at(0)->isScalar());
-    ASSERT_EQ(res->at(0)->e<float>(0), 0.375f);
+    ASSERT_EQ(res->at(0)->e<float>(0), 0.375);
     
     delete res;
 }
