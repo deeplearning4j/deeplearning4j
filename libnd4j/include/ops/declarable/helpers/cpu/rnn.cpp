@@ -47,17 +47,8 @@ void rnnCell(const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDAr
 
     const int numUnits  = ht_1->sizeAt(1);
     
-    // ht is current cell output [bS x numUnits], that is at current time step t        
-    NDArray arr = (*b)({{numUnits, 2*numUnits}});
-    arr.printShapeInfo();
-    arr.printIndexedBuffer();    
-
-    NDArray temp = mmul(*xt, *Wx) + (*b)({{0, numUnits}})  +  mmul(*ht_1, *Wh) + (*b)({{numUnits, 2*numUnits}});
-    NDArray temp2 = activation(temp);
-    // temp2.printShapeInfo();
-    // ht->printShapeInfo();
-    printf("!!!!!!!!!!!!\n");
-    ht->assign(temp2);      // [bS x numUnits] + [numUnits]  +  [bS x numUnits] + [numUnits] = [bS x numUnits]        
+    // ht is current cell output [bS x numUnits], that is at current time step t                
+    ht->assign(activation(mmul(*xt, *Wx) + (*b)({{0, numUnits}})  +  mmul(*ht_1, *Wh) + (*b)({{numUnits, 2*numUnits}})));     // [bS x numUnits] + [numUnits]  +  [bS x numUnits] + [numUnits] = [bS x numUnits]
 }
 
 

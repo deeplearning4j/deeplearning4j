@@ -400,14 +400,12 @@ namespace nd4j {
         /**
         *  this method assigns values of given array to this one
         */ 
-        void assign(NDArray* other);
-
         void assign(const NDArray* other);
 
         /**
         *  this method assigns values of given array to this one
         */ 
-        void assign(NDArray& other);
+        void assign(const NDArray& other);
 
         /**
         *  this method assigns given value to all elements in array
@@ -1430,9 +1428,8 @@ namespace nd4j {
     //////////////////////////////////////////////////////////////////////////
 
     size_t NDArray::sizeOfT() const {
-        auto v = this->dataType();
-        auto s = DataTypeUtils::sizeOfElement(v);
-        return s;
+        
+        return DataTypeUtils::sizeOfElement(_dataType);
     }
 
     //////////////////////////////////////////////////////////////////////////

@@ -1357,20 +1357,19 @@ TEST_F(HelpersTests1, rnnCell_test1) {
     const int inSize   = 4;
     const int numUnits = 4;
 
-    auto xt = NDArrayFactory::create<double>('c', {bS, inSize});
-    auto ht_1 = NDArrayFactory::create<double>('c', {bS, numUnits});
-    auto Wx = NDArrayFactory::create<double>('c', {inSize, numUnits});
-    auto Wh = NDArrayFactory::create<double>('c', {numUnits, numUnits});
-    auto b  = NDArrayFactory::create<double>('c', {2*numUnits}, {0.0,0.0,0.0,0.0,  0.1,0.2,0.3,0.4});
-
-    auto ht = NDArrayFactory::create<double>('c', {bS, numUnits});
+    NDArray xt('c', {bS, inSize}, nd4j::DataType::DataType_DOUBLE);
+    NDArray ht_1('c', {bS, numUnits}, nd4j::DataType::DataType_DOUBLE);
+    NDArray Wx('c', {inSize, numUnits}, nd4j::DataType::DataType_DOUBLE);
+    NDArray Wh('c', {numUnits, numUnits}, nd4j::DataType::DataType_DOUBLE);
+    NDArray b ('c', {2*numUnits}, {0.0,0.0,0.0,0.0,  0.1,0.2,0.3,0.4});
+    NDArray ht('c', {bS, numUnits}, nd4j::DataType::DataType_DOUBLE);
 
     xt.assign(0.1);
     ht_1.assign(0.2);
     Wx.assign(0.3);
     Wh.assign(0.4);
 
-    auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.492988, 0.56489956, 0.6291452 , 0.6858091,0.492988, 0.56489956, 0.6291452 , 0.6858091});
+    NDArray expHt('c', {bS, numUnits}, {0.492988, 0.56489956, 0.6291452 , 0.6858091,0.492988, 0.56489956, 0.6291452 , 0.6858091});
 
     ops::helpers::rnnCell(&xt, &Wx, &Wh, &b, &ht_1, &ht);
 
@@ -1463,8 +1462,6 @@ TEST_F(HelpersTests1, rnnCell_test4) {
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
 }
-
-
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmulHelper_test_1) {

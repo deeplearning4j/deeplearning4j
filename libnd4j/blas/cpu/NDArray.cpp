@@ -789,16 +789,16 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedDoubleAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES, LIBND4J_TYPES);
 
 // This method assigns values of given NDArray to this one, wrt order
-    void NDArray::assign(NDArray *other) {
+    void NDArray::assign(const NDArray *other) {
         if (this->isScalar() && other->isScalar()) {
-            BUILD_DOUBLE_SELECTOR(this->dataType(), other->dataType(), templatedDoubleAssign, (this->buffer(), 0, other->buffer(), 0), LIBND4J_TYPES, LIBND4J_TYPES);
+            BUILD_DOUBLE_SELECTOR(this->_dataType, other->_dataType, templatedDoubleAssign, (_buffer, 0, other->_buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
             return;
         } else if (other->isScalar()) {
-            NativeOpExcutioner::execScalar(scalar::Copy, this->buffer(), this->shapeInfo(), this->buffer(), this->shapeInfo(), other->buffer(), other->shapeInfo(), nullptr);
+            NativeOpExcutioner::execScalar(scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, other->_buffer, other->_shapeInfo, nullptr);
             return;
         }
 
-        if (other->lengthOf() != lengthOf()) {
+        if (other->_length != _length) {
             auto shapeThis = ShapeUtils::shapeAsString(this);
             auto shapeThat = ShapeUtils::shapeAsString(other);
             nd4j_printf("Can't assign new value to the array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());
@@ -806,36 +806,29 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         }
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other->ordering() && this->dataType() == other->dataType() && shape::elementWiseStride(this->_shapeInfo) == 1 && shape::elementWiseStride(other->_shapeInfo) == 1) {
-            auto l = lengthOf();
-            auto s = sizeOfT();
-
-            memcpy(_buffer, other->_buffer, lengthOf() * sizeOfT());
+        if (ordering() == other->ordering() && _dataType == other->_dataType && shape::elementWiseStride(this->_shapeInfo) == 1 && shape::elementWiseStride(other->_shapeInfo) == 1) {
+            memcpy(_buffer, other->_buffer, _length * sizeOfT());
         } else {
             // now we invoke dup pwt against target buffer
             NativeOpExcutioner::execPairwiseTransform(1, _buffer, _shapeInfo, other->_buffer, other->_shapeInfo, _buffer, _shapeInfo, nullptr);
         }
-    }
-
-    void NDArray::assign(const NDArray *other) {
-        this->assign(const_cast<NDArray*>(other));
-    }
+    }    
 
 // This method assigns values of given NDArray to this one
-    void NDArray::assign(NDArray& other) {
+    void NDArray::assign(const NDArray& other) {
 
         if (this == &other) 
             return;
 
         if (this->isScalar() && other.isScalar()) {
-            BUILD_DOUBLE_SELECTOR(this->dataType(), other.dataType(), templatedDoubleAssign, (this->buffer(), 0, other.buffer(), 0), LIBND4J_TYPES, LIBND4J_TYPES);
+            BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign, (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
             return;
         } else if (other.isScalar()) {
-            NativeOpExcutioner::execScalar(scalar::Copy, this->buffer(), this->shapeInfo(), this->buffer(), this->shapeInfo(), other.buffer(), other.shapeInfo(), nullptr);
+            NativeOpExcutioner::execScalar(scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, _buffer, other._shapeInfo, nullptr);
             return;
         }
                 
-        if (other.lengthOf() != lengthOf()) {
+        if (other._length != _length) {
             auto shapeThis = ShapeUtils::shapeAsString(this);
             auto shapeThat = ShapeUtils::shapeAsString(&other);
             nd4j_printf("Can't assign new value to the array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());
@@ -843,9 +836,9 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         }
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other.ordering() && this->dataType() == other.dataType() && shape::elementWiseStride(_shapeInfo) == 1 && shape::elementWiseStride(other._shapeInfo) == 1) {
+        if (ordering() == other.ordering() && _dataType == other._dataType && shape::elementWiseStride(_shapeInfo) == 1 && shape::elementWiseStride(other._shapeInfo) == 1) {
             
-            memcpy(_buffer, other._buffer, lengthOf() * sizeOfT());
+            memcpy(_buffer, other._buffer, _length * sizeOfT());
         } else {
             // now we invoke dup pwt against target buffer
             NativeOpExcutioner::execPairwiseTransform(1, _buffer, _shapeInfo, other._buffer, other._shapeInfo, _buffer, _shapeInfo, nullptr);
