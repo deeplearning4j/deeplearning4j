@@ -83,32 +83,34 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
 
     const int restSizeMinusOne = (restSize > 1) ? (restSize - 1) : 1;
     // FIXME: float?
-    const float restSizeInv = 1.0f / restSize;
-    const float restSizeAdjust = (float)restSize / restSizeMinusOne;
+    const double restSizeInv = 1.0 / restSize;
+    const double restSizeAdjust = (double)restSize / restSizeMinusOne;
 
     if(isTraining) {
-        auto sum = xAffected.reduceAlongDimension(reduce::Sum, {0});
-        mean->assign((*sum) * restSizeInv);
+        auto sum = xAffected.reduceAlongDims(reduce::Sum, {0});
+        sum *= restSizeInv;
+        mean->assign(sum);
         *batchMean = *mean;
-        delete sum;
+        //delete sum;
     }
     else 
-        *batchMean = 0.f;
+        *batchMean = 0.;
     
     xAffected -= *mean;
 
     if(isTraining) {        
         int power = 2;
         xAffected.applyScalar(scalar::Pow, power);
-        auto sum = xAffected.reduceAlongDimension(reduce::Sum, {0});
-        variance->assign((*sum) * restSizeInv);
+        auto sum = xAffected.reduceAlongDims(reduce::Sum, {0});
+        sum *= restSizeInv;
+        variance->assign(sum);
         *batchVar  = (*variance) * restSizeAdjust;
-        delete sum;
+        //delete sum;
     }
     else 
         *batchVar  = 0.;      
-
-    y->assign( xAffected * (*variance + epsilon).transform(transform::RSqrt) * (*scale) + (*offset) );
+    xAffected *= (*variance + epsilon).transform(transform::RSqrt) * (*scale) + (*offset);
+    y->assign( xAffected );
 
     if(isTraining) {
         delete mean;
