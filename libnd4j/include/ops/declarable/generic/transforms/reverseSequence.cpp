@@ -44,7 +44,7 @@ CUSTOM_OP_IMPL(reverse_sequence, 2, 1, false, 0, 2) {
     REQUIRE_TRUE(seqDim < input->rankOf(), 0, "REVERSE_SEQUENSE operation: input integer parameter seqDim must be smaller than input array rank, but got %i  and %i correspondingly !", seqDim, input->rankOf());        
 
     auto maxElem = seqLengths->reduceNumber(reduce::Max);
-    REQUIRE_TRUE(maxElem <= input->sizeAt(seqDim), 0, "REVERSE_SEQUENSE operation: max element in seqLengths array must be not greater than value of seqDim dimension of input array !");
+    REQUIRE_TRUE(maxElem.e<Nd4jLong>(0) <= input->sizeAt(seqDim), 0, "REVERSE_SEQUENSE operation: max element in seqLengths array must be not greater than value of seqDim dimension of input array !");
     
     helpers::reverseSequence(input, seqLengths, output, seqDim, batchDim);
 
