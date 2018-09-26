@@ -564,7 +564,7 @@ TEST_F(PlaygroundTests, loop_test_1) {
     FloatBits fb;
     float threshold = 0.99f;
     fb.f_ = threshold;
-    int le = ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
+    int le = ops.estimateThreshold(nullptr, reinterpret_cast<void *>(array->buffer()), array->shapeInfo(), static_cast<int>(array->lengthOf()), threshold);
 
     t[0] = le;
     t[1] = length;
@@ -576,7 +576,7 @@ TEST_F(PlaygroundTests, loop_test_1) {
 
     for (int x = 0; x < iterations; x++) {
         auto permStart = std::chrono::system_clock::now();
-        ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
+        ops.estimateThreshold(nullptr, reinterpret_cast<void *>(array->buffer()), array->shapeInfo(), static_cast<int>(array->lengthOf()), threshold);
         TypeCast::convertToThreshold<float>(nullptr, buffer, array->lengthOf(), t);
 
         /*

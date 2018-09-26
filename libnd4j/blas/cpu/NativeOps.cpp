@@ -1073,15 +1073,9 @@ void NativeOps::enableP2P(bool enable) {
     // no-op
 }
 
-void NativeOps::encodeThresholdP1Half(Nd4jPointer *extraPointers, float16 *dx, Nd4jLong N, int *dz, float threshold) {
-    // TODO: to be implemented
-}
 
-void NativeOps::encodeThresholdP1Float(Nd4jPointer *extraPointers, float *dx, Nd4jLong N, int *dz, float threshold) {
-    // TODO: to be implemented
-}
 
-void NativeOps::encodeThresholdP1Double(Nd4jPointer *extraPointers, double *dx, Nd4jLong N, int *dz, float threshold) {
+void NativeOps::encodeThresholdP1(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
     // TODO: to be implemented
 }
 
@@ -1090,33 +1084,14 @@ void NativeOps::encodeThresholdP2Int(Nd4jPointer *extraPointers, int *dx, Nd4jLo
     // TODO: to be implemented
 }
 
-void NativeOps::encodeThresholdP3Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jLong N, int *dz){
+
+void NativeOps::encodeThresholdP3(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, int *offsets, Nd4jLong N, int *dz){
     // offsets won't be used here
 
     // TODO: to be implemented
 }
 
-void NativeOps::encodeThresholdP3Double(Nd4jPointer *extraPointers, double *dx, int *offsets, Nd4jLong N, int *dz){
-    // offsets won't be used here
-
-    // TODO: to be implemented
-}
-
-void NativeOps::encodeThresholdP3Half(Nd4jPointer *extraPointers, float16 *dx, int *offsets, Nd4jLong N, int *dz){
-    // offsets won't be used here
-
-    // TODO: to be implemented
-}
-
-void NativeOps::decodeThresholdFloat(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float *dz){
-    // TODO: to be implemented
-}
-
-void NativeOps::decodeThresholdHalf(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float16 *dz){
-    // TODO: to be implemented
-}
-
-void NativeOps::decodeThresholdDouble(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, double *dz){
+void NativeOps::decodeThreshold(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo){
     // TODO: to be implemented
 }
 
@@ -1640,9 +1615,6 @@ Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong 
     return NativeOpExcutioner::encodeBitmap(dx, xShapeInfo, N, dz, threshold);
 }
 
-void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float16 *dz) {
-    //NativeOpExcutioner<float16>::decodeBitmap(dx, N, dz);
-}
 
 
 Nd4jLong* NativeOps::mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length) {
@@ -1716,17 +1688,13 @@ FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer
     return cnt;
 }
 
-int NativeOps::estimateThresholdFloat(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
-    return estimateThresholdGeneric<float>(extraPointers, x, N, threshold);
+
+int NativeOps::estimateThreshold(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jLong *xShapeInfo, int N, float threshold) {
+    auto xType = ArrayOptions::dataType(xShapeInfo);
+    BUILD_SINGLE_SELECTOR(xType, return estimateThresholdGeneric, (extraPointers, x, N, threshold), FLOAT_TYPES);
 }
 
-int NativeOps::estimateThresholdDouble(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
-    return estimateThresholdGeneric<double>(extraPointers, x, N, threshold);
-}
 
-int NativeOps::estimateThresholdHalf(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
-    return estimateThresholdGeneric<float16>(extraPointers, x, N, threshold);
-}
 
 void NativeOps::deleteShapeList(Nd4jPointer shapeList) {
     auto list = reinterpret_cast<nd4j::ShapeList*>(shapeList);

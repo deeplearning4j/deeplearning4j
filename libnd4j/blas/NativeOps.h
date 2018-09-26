@@ -1651,37 +1651,15 @@ public:
     void tear(Nd4jPointer *extraPointers, void *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
     Nd4jLong encodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold);
-
-    void decodeBitmapFloat(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float *dz);
-
-    void decodeBitmapDouble(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, double *dz);
-
-    void decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float16 *dz);
+    void decodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
 
 
-    void encodeThresholdP1Double(Nd4jPointer *extraPointers, double *dx, Nd4jLong N, int *dz, float threshold);
-
-    void encodeThresholdP1Half(Nd4jPointer *extraPointers, float16 *dx, Nd4jLong N, int *dz, float threshold);
-
-    void encodeThresholdP1Float(Nd4jPointer *extraPointers, float *dx, Nd4jLong N, int *dz, float threshold);
-
-
+    void encodeThresholdP1(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold);
     void encodeThresholdP2Int(Nd4jPointer *extraPointers, int *dx, Nd4jLong N, int *dz);
+    void encodeThresholdP3(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, int *offsets, Nd4jLong N, int *dz);
 
 
-    void encodeThresholdP3Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jLong N, int *dz);
-
-    void encodeThresholdP3Double(Nd4jPointer *extraPointers, double *dx, int *offsets, Nd4jLong N, int *dz);
-
-    void encodeThresholdP3Half(Nd4jPointer *extraPointers, float16 *dx, int *offsets, Nd4jLong N, int *dz);
-
-
-    void decodeThresholdFloat(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float *dz);
-
-    void decodeThresholdDouble(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, double *dz);
-
-    void decodeThresholdHalf(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, float16 *dz);
-
+    void decodeThreshold(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
 
 
     void sort(Nd4jPointer *extraPointers, void *x, Nd4jLong *xShapeInfo, bool descending);
@@ -1731,9 +1709,7 @@ public:
 
     void deleteResultWrapper(Nd4jPointer ptr);
 
-    int estimateThresholdFloat(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold);
-    int estimateThresholdDouble(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold);
-    int estimateThresholdHalf(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold);
+    int estimateThreshold(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jLong *xShapeInfo, int N, float threshold);
 
     // this method executes op that requires scope to be present: if/while/cond/whatever
     Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs);
