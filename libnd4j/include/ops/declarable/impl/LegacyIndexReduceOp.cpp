@@ -73,7 +73,7 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
-            if (z->dataType() != DataType_INT64) {
+            if (z->dataType() != INT64) {
                 throw std::runtime_error("IndexReduce operations require output to be INT64");
             }
 

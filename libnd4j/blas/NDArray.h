@@ -140,7 +140,7 @@ namespace nd4j {
         /**
         *  type of array elements
         */  
-        nd4j::DataType _dataType = DataType_FLOAT;
+        nd4j::DataType _dataType = FLOAT;
 
         template<typename T>
         std::string toStringValue(T value);
@@ -183,7 +183,7 @@ namespace nd4j {
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype = DataType_DOUBLE, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype = DOUBLE, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
@@ -1351,7 +1351,7 @@ namespace nd4j {
             this->_length = shape::length(shapeInfo);
             this->_dataType = ArrayOptions::dataType(shapeInfo);
         } else {
-            this->_dataType = nd4j::DataType::DataType_INHERIT;
+            this->_dataType = nd4j::DataType::INHERIT;
         }
     }
 

@@ -36,7 +36,7 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SHAPE_FN(size) {
-            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::DataType_INT64, block.workspace()));
+            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.workspace()));
         }
     }
 }

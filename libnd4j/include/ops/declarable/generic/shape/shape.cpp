@@ -42,7 +42,7 @@ namespace nd4j {
             auto inShape = inputShape->at(0);
 
             // always LONG
-            return SHAPELIST(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, shape::rank(inShape), block.workspace()));
+            return SHAPELIST(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, shape::rank(inShape), block.workspace()));
         };
     }
 }

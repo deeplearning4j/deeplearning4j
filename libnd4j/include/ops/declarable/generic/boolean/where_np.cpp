@@ -146,8 +146,8 @@ namespace nd4j {
                     Nd4jLong *newShape;
 //                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
   //                  shape::shapeVector(numOfTrue, newShape);
-                    newShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, numOfTrue, block.workspace());
-                    //ArrayOptions::setDataType(newShape, nd4j::DataType::DataType_INT64);
+                    newShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, numOfTrue, block.workspace());
+                    //ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
                     shapes->push_back(newShape);
                 }
             }

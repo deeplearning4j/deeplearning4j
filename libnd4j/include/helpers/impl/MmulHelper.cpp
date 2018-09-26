@@ -445,9 +445,9 @@ nd4j::NDArray* MmulHelper::mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDA
     // TODO: put proper _gemm here
     if (xType == yType && yType == zType && BlasHelper::getInstance()->template hasGEMM<X>()) {
         nd4j_debug("Using provided GEMM pointer\n","");
-        if (xType == DataType_FLOAT)
+        if (xType == FLOAT)
             BlasHelper::getInstance()->sgemm()(CblasColMajor, transA, transB, M, N, K, (float) alpha, reinterpret_cast<float *>(pA->getBuffer()), lda, reinterpret_cast<float *>(pB->getBuffer()), ldb, (float) beta, reinterpret_cast<float *>(pC->getBuffer()), ldc);
-        else if (xType == DataType_DOUBLE)
+        else if (xType == DOUBLE)
             BlasHelper::getInstance()->dgemm()(CblasColMajor, transA, transB, M, N, K, (double) alpha, reinterpret_cast<double *>(pA->getBuffer()), lda, reinterpret_cast<double *>(pB->getBuffer()), ldb, (double) beta, reinterpret_cast<double *>(pC->getBuffer()), ldc);
         else {
             BUILD_TRIPLE_SELECTOR(xType, yType, zType, nd4j::blas::GEMM, ::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);

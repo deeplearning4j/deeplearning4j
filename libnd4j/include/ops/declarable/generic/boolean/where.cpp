@@ -115,7 +115,7 @@ namespace nd4j {
                 newshape[7] = 99;
 
                 // always long in this case
-                ArrayOptions::setDataType(newshape, nd4j::DataType::DataType_INT64);
+                ArrayOptions::setDataType(newshape, nd4j::DataType::INT64);
 
                 return SHAPELIST(newshape);
             }

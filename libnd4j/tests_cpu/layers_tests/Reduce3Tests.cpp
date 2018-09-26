@@ -39,8 +39,8 @@ public:
 };
 
 TEST_F(EuclideanTest,Test1) {
-    auto shapeBuffer = shape::shapeBuffer(2, nd4j::DataType::DataType_FLOAT, yShape);
-    auto xShapeBuffer = shape::shapeBuffer(2, nd4j::DataType::DataType_FLOAT, xShape);
+    auto shapeBuffer = shape::shapeBuffer(2, nd4j::DataType::FLOAT, yShape);
+    auto xShapeBuffer = shape::shapeBuffer(2, nd4j::DataType::FLOAT, xShape);
 
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
     auto tadShapeBuffer = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);

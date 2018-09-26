@@ -37,25 +37,25 @@ namespace nd4j {
 
     size_t DataTypeUtils::sizeOfElement(DataType type) {
         switch (type) {
-            case DataType_UINT8:
-            case DataType_INT8:
-            case DataType_FLOAT8:
-            case DataType_QINT8:
-            case DataType_BOOL: return (size_t) 1;
+            case UINT8:
+            case INT8:
+            case FLOAT8:
+            case QINT8:
+            case BOOL: return (size_t) 1;
             
-            case DataType_HALF:
-            case DataType_INT16:
-            case DataType_QINT16:
-            case DataType_UINT16: return (size_t) 2;
+            case HALF:
+            case INT16:
+            case QINT16:
+            case UINT16: return (size_t) 2;
 
-            case DataType_INT32:
-            case DataType_UINT32:
-            case DataType_HALF2:
-            case DataType_FLOAT: return (size_t) 4;
+            case INT32:
+            case UINT32:
+            case HALF2:
+            case FLOAT: return (size_t) 4;
 
-            case DataType_UINT64:
-            case DataType_INT64:
-            case DataType_DOUBLE: return (size_t) 8;
+            case UINT64:
+            case INT64:
+            case DOUBLE: return (size_t) 8;
 
             default: {
                 nd4j_printf("Unknown DataType used: [%i]\n", asInt(type));
@@ -66,61 +66,61 @@ namespace nd4j {
 
     template <>
     DataType DataTypeUtils::fromT<bool>() {
-        return DataType_BOOL;
+        return BOOL;
     }
 
     template <>
     DataType DataTypeUtils::fromT<float>() {
-        return DataType_FLOAT;
+        return FLOAT;
     }
 
     template <>
     DataType DataTypeUtils::fromT<float16>() {
-        return DataType_HALF;
+        return HALF;
     }
 
     template <>
     DataType DataTypeUtils::fromT<double>() {
-        return DataType_DOUBLE;
+        return DOUBLE;
     }
 
     template <>
     DataType DataTypeUtils::fromT<int8_t>() {
-        return DataType_INT8;
+        return INT8;
     }
 
     template <>
     DataType DataTypeUtils::fromT<int16_t>() {
-        return DataType_INT16;
+        return INT16;
     }
 
     template <>
     DataType DataTypeUtils::fromT<int>() {
-        return DataType_INT32;
+        return INT32;
     }
 
     template <>
     DataType DataTypeUtils::fromT<Nd4jLong>() {
-        return DataType_INT64;
+        return INT64;
     }
 
     template <>
     DataType DataTypeUtils::fromT<Nd4jULong>() {
-        return DataType_UINT64;
+        return UINT64;
     }
 
     template <>
     DataType DataTypeUtils::fromT<uint32_t >() {
-        return DataType_UINT32;
+        return UINT32;
     }
 
     template <>
     DataType DataTypeUtils::fromT<uint16_t >() {
-        return DataType_UINT16;
+        return UINT16;
     }
 
     template <>
     DataType DataTypeUtils::fromT<uint8_t >() {
-        return DataType_UINT8;
+        return UINT8;
     }
 }

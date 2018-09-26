@@ -40,7 +40,7 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SHAPE_FN(zero_fraction) {
-            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::DataType_DOUBLE, block.workspace()));
+            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::DOUBLE, block.workspace()));
         }
     }
 }

@@ -34,7 +34,7 @@ namespace nd4j {
             int _nodeId;
             std::vector<double> _tArgs;
             std::vector<int> _iArgs;            
-			nd4j::DataType _dataType = nd4j::DataType::DataType_FLOAT;
+			nd4j::DataType _dataType = nd4j::DataType::FLOAT;
 			bool _isInplace;
 
             // opNum for legacy XYZ ops

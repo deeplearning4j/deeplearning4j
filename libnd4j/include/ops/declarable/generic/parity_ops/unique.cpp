@@ -48,7 +48,7 @@ namespace nd4j {
             ArrayOptions::setDataType(valuesShape, ArrayOptions::dataType(in));
 
             // second output is always LONG
-            indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, source->lengthOf(), block.workspace());
+            indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, source->lengthOf(), block.workspace());
 
             //COPY_SHAPE_EX(in, indicesShape, block.getWorkspace());
 
@@ -75,10 +75,10 @@ namespace nd4j {
             auto valuesShape = ShapeBuilders::createVectorShapeInfo(block.dataType(), uniqueCount, block.workspace());
 
             // second output is always LONG
-            auto indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, source->lengthOf(), block.workspace());
+            auto indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, source->lengthOf(), block.workspace());
 
             // third one as well
-            auto countsShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, source->lengthOf(), block.workspace());
+            auto countsShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, source->lengthOf(), block.workspace());
 
             return SHAPELIST(valuesShape, indicesShape, countsShape);
         }

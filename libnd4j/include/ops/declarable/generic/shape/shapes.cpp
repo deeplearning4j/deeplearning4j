@@ -43,7 +43,7 @@ namespace nd4j {
 
             for (int e = 0; e < inputShape->size(); e++) {
                 auto inShape = inputShape->at(e);
-                shapeList->push_back(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::DataType_INT64, shape::rank(inShape), block.workspace()));
+                shapeList->push_back(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, shape::rank(inShape), block.workspace()));
             }
 
             return shapeList;

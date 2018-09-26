@@ -94,10 +94,10 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
     auto fBuffer = builder.CreateVector(array->asByteVector());
 
-    auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DataType::DataType_FLOAT);
+    auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DataType::FLOAT);
     auto fVid = CreateIntPair(builder, -1);
 
-    auto fVar = CreateFlatVariable(builder, fVid, 0, nd4j::graph::DataType::DataType_FLOAT, 0, fArray);
+    auto fVar = CreateFlatVariable(builder, fVid, 0, nd4j::graph::DataType::FLOAT, 0, fArray);
 
     std::vector<int> outputs1, outputs2, inputs1, inputs2;
     outputs1.push_back(2);
@@ -116,8 +116,8 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto name1 = builder.CreateString("wow1");
     auto name2 = builder.CreateString("wow2");
 
-    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, 0, in1, 0, nd4j::graph::DataType::DataType_FLOAT, vec1);
-    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM, 2, 0, in2, 0, nd4j::graph::DataType::DataType_FLOAT, vec2);
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, 0, in1, 0, nd4j::graph::DataType::FLOAT, vec1);
+    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM, 2, 0, in2, 0, nd4j::graph::DataType::FLOAT, vec2);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fVar);
@@ -265,7 +265,7 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
 
     auto name1 = builder.CreateString("wow1");
 
-    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, 0, nd4j::graph::DataType::DataType_FLOAT);
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, 0, nd4j::graph::DataType::FLOAT);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fXVar);

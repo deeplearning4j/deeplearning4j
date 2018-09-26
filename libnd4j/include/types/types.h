@@ -32,60 +32,60 @@
 #include <type_boilerplate.h>
 
 #define LIBND4J_TYPES \
-        (nd4j::DataType::DataType_HALF, float16), \
-        (nd4j::DataType::DataType_FLOAT, float), \
-        (nd4j::DataType::DataType_DOUBLE, double), \
-        (nd4j::DataType::DataType_BOOL, bool), \
-        (nd4j::DataType::DataType_INT8, int8_t), \
-        (nd4j::DataType::DataType_UINT8, uint8_t), \
-        (nd4j::DataType::DataType_INT16, int16_t), \
-        (nd4j::DataType::DataType_INT32, int32_t), \
-        (nd4j::DataType::DataType_INT64, Nd4jLong)
+        (nd4j::DataType::HALF, float16), \
+        (nd4j::DataType::FLOAT, float), \
+        (nd4j::DataType::DOUBLE, double), \
+        (nd4j::DataType::BOOL, bool), \
+        (nd4j::DataType::INT8, int8_t), \
+        (nd4j::DataType::UINT8, uint8_t), \
+        (nd4j::DataType::INT16, int16_t), \
+        (nd4j::DataType::INT32, int32_t), \
+        (nd4j::DataType::INT64, Nd4jLong)
 
-        //(nd4j::DataType::DataType_UINT16, uint16_t), \
-        //(nd4j::DataType::DataType_UINT64, Nd4jULong)
-        //(nd4j::DataType::DataType_UINT32, uint32_t), \
+        //(nd4j::DataType::UINT16, uint16_t), \
+        //(nd4j::DataType::UINT64, Nd4jULong)
+        //(nd4j::DataType::UINT32, uint32_t), \
 
 #define FLOAT_TYPES \
-        (nd4j::DataType::DataType_HALF, float16), \
-        (nd4j::DataType::DataType_FLOAT, float), \
-        (nd4j::DataType::DataType_DOUBLE, double)
+        (nd4j::DataType::HALF, float16), \
+        (nd4j::DataType::FLOAT, float), \
+        (nd4j::DataType::DOUBLE, double)
 
 #define INTEGER_TYPES \
-        (nd4j::DataType::DataType_INT8, int8_t), \
-        (nd4j::DataType::DataType_UINT8, uint8_t), \
-        (nd4j::DataType::DataType_INT16, int16_t), \
-        (nd4j::DataType::DataType_INT32, int32_t), \
-        (nd4j::DataType::DataType_INT64, Nd4jLong)
+        (nd4j::DataType::INT8, int8_t), \
+        (nd4j::DataType::UINT8, uint8_t), \
+        (nd4j::DataType::INT16, int16_t), \
+        (nd4j::DataType::INT32, int32_t), \
+        (nd4j::DataType::INT64, Nd4jLong)
 
 
 #define NUMERIC_TYPES \
-        (nd4j::DataType::DataType_HALF, float16), \
-        (nd4j::DataType::DataType_FLOAT, float), \
-        (nd4j::DataType::DataType_DOUBLE, double), \
-        (nd4j::DataType::DataType_INT8, int8_t), \
-        (nd4j::DataType::DataType_UINT8, uint8_t), \
-        (nd4j::DataType::DataType_INT16, int16_t), \
-        (nd4j::DataType::DataType_INT32, int32_t), \
-        (nd4j::DataType::DataType_INT64, Nd4jLong)
+        (nd4j::DataType::HALF, float16), \
+        (nd4j::DataType::FLOAT, float), \
+        (nd4j::DataType::DOUBLE, double), \
+        (nd4j::DataType::INT8, int8_t), \
+        (nd4j::DataType::UINT8, uint8_t), \
+        (nd4j::DataType::INT16, int16_t), \
+        (nd4j::DataType::INT32, int32_t), \
+        (nd4j::DataType::INT64, Nd4jLong)
 
 
 
 ///
 #define LIBND4J_TYPES_0 \
-        (nd4j::DataType::DataType_HALF, float16), \
-        (nd4j::DataType::DataType_FLOAT, float), \
-        (nd4j::DataType::DataType_DOUBLE, double)
+        (nd4j::DataType::HALF, float16), \
+        (nd4j::DataType::FLOAT, float), \
+        (nd4j::DataType::DOUBLE, double)
 
 #define LIBND4J_TYPES_1 \
-        (nd4j::DataType::DataType_BOOL, bool), \
-        (nd4j::DataType::DataType_INT8, int8_t), \
-        (nd4j::DataType::DataType_UINT8, uint8_t)
+        (nd4j::DataType::BOOL, bool), \
+        (nd4j::DataType::INT8, int8_t), \
+        (nd4j::DataType::UINT8, uint8_t)
 
 #define LIBND4J_TYPES_2 \
-        (nd4j::DataType::DataType_INT16, int16_t), \
-        (nd4j::DataType::DataType_INT32, int32_t), \
-        (nd4j::DataType::DataType_INT64, Nd4jLong)
+        (nd4j::DataType::INT16, int16_t), \
+        (nd4j::DataType::INT32, int32_t), \
+        (nd4j::DataType::INT64, Nd4jLong)
 
 
 

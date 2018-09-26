@@ -39,7 +39,7 @@ namespace nd4j {
             bool canKeep = (isBe && order == ByteOrder::BE) || (!isBe && order == ByteOrder::LE);
 
             switch (dataType) {
-                case DataType_FLOAT: {
+                case FLOAT: {
                         if (std::is_same<T, float>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));
                         } else {
@@ -63,7 +63,7 @@ namespace nd4j {
                         }
                     }
                     break;
-                case DataType_DOUBLE: {
+                case DOUBLE: {
                         if (std::is_same<T, double>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));
                         } else {
@@ -87,7 +87,7 @@ namespace nd4j {
                         }
                     }
                     break;
-                case DataType_HALF: {
+                case HALF: {
 
                         if (std::is_same<T, float16>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));

@@ -106,6 +106,7 @@ add_definitions(-D__CPUBLAS__=true)
 
 
 file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/*.cpp ../layers_tests/*.h)
+# file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/DeclarableOpsTests6.cpp ../layers_tests/*.h)
 
 
 # Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.

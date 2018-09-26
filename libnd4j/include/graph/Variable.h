@@ -46,7 +46,7 @@ namespace nd4j {
             // for now we're setting default to numeric
             // in future we'll be fetching it right from the array, 
             //InputType _variableType = InputType_UNDEFINED;
-            //DataType _dataType = DataType_INHERIT;
+            //DataType _dataType = INHERIT;
 
             nd4j::NDArrayList *_list = nullptr;
 

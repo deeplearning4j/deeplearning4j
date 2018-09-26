@@ -3762,7 +3762,7 @@ template <typename T>
 
     INLINEDEF _CUDA_HD Nd4jLong *shapeBufferOfNpy(int rank, unsigned int* shape,bool fortranOrder) {
         if(fortranOrder) {
-            Nd4jLong *shapeBufferRet = shape::shapeBufferFortran(rank, nd4j::DataType_FLOAT,(Nd4jLong *) shape);
+            Nd4jLong *shapeBufferRet = shape::shapeBufferFortran(rank, nd4j::FLOAT,(Nd4jLong *) shape);
             return shapeBufferRet;
         }
         else {
@@ -3771,7 +3771,7 @@ template <typename T>
                 newShape[i] = shape[i];
             }
 
-            Nd4jLong *shapeBufferRet = shape::shapeBuffer(rank, nd4j::DataType_FLOAT, newShape);
+            Nd4jLong *shapeBufferRet = shape::shapeBuffer(rank, nd4j::FLOAT, newShape);
             delete[] newShape;
             return shapeBufferRet;
 

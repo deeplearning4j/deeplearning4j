@@ -70,7 +70,7 @@ TEST_F(ArrayOptionsTests, TestShape_Basic_4) {
     auto dtype = ArrayOptions::dataType(shape);
 
     ASSERT_FALSE(ArrayOptions::isSparseArray(shape));
-    ASSERT_TRUE(nd4j::DataType::DataType_HALF == ArrayOptions::dataType(shape));
+    ASSERT_TRUE(nd4j::DataType::HALF == ArrayOptions::dataType(shape));
     ASSERT_EQ(nd4j::ArrayType::DENSE, ArrayOptions::arrayType(shape));
     ASSERT_EQ(nd4j::SpaceType::QUANTIZED, ArrayOptions::spaceType(shape));
 }
@@ -79,7 +79,7 @@ TEST_F(ArrayOptionsTests, TestShape_Basic_5) {
     ArrayOptions::setPropertyBits(shape, {ARRAY_SPARSE, ARRAY_INT, ARRAY_CSC});
 
     ASSERT_TRUE(ArrayOptions::isSparseArray(shape));
-    ASSERT_TRUE(nd4j::DataType::DataType_INT32 == ArrayOptions::dataType(shape));
+    ASSERT_TRUE(nd4j::DataType::INT32 == ArrayOptions::dataType(shape));
     ASSERT_EQ(nd4j::SparseType::CSC, ArrayOptions::sparseType(shape));
 }
 
@@ -90,8 +90,8 @@ TEST_F(ArrayOptionsTests, TestShape_Basic_6) {
 }
 
 TEST_F(ArrayOptionsTests, TestShape_Basic_7) {
-    ArrayOptions::setDataType(shape, nd4j::DataType::DataType_FLOAT);
-    ArrayOptions::setDataType(shape, nd4j::DataType::DataType_FLOAT);
+    ArrayOptions::setDataType(shape, nd4j::DataType::FLOAT);
+    ArrayOptions::setDataType(shape, nd4j::DataType::FLOAT);
 
-    ASSERT_EQ(nd4j::DataType::DataType_FLOAT, ArrayOptions::dataType(shape));
+    ASSERT_EQ(nd4j::DataType::FLOAT, ArrayOptions::dataType(shape));
 }

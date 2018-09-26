@@ -253,7 +253,7 @@ NDArray::NDArray(const Nd4jLong* shapeInfo, const bool copyStrides, nd4j::memory
 
     bool NDArray::isR() const {
         auto xType = ArrayOptions::dataType(this->_shapeInfo);
-        return xType == DataType_FLOAT || xType == DataType_HALF || xType == DataType_DOUBLE || xType == DataType_FLOAT8;
+        return xType == FLOAT || xType == HALF || xType == DOUBLE || xType == FLOAT8;
     }
 
     bool NDArray::isZ() const {
@@ -262,7 +262,7 @@ NDArray::NDArray(const Nd4jLong* shapeInfo, const bool copyStrides, nd4j::memory
     }
 
     bool NDArray::isB() const {
-        return ArrayOptions::dataType(this->_shapeInfo) == DataType_BOOL;
+        return ArrayOptions::dataType(this->_shapeInfo) == BOOL;
     }
 
 
@@ -2825,7 +2825,7 @@ NDArray NDArray::transp() const {
     }
 
     void NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, const NDArray* target, const std::vector<int>& dimensions, const void *extraParams) const {
-        if (target->dataType() != nd4j::DataType::DataType_INT64)
+        if (target->dataType() != nd4j::DataType::INT64)
             throw std::runtime_error("IndexReduce operations return INT64");
 
         if (target->isScalar()) {

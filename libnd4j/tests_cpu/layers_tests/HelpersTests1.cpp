@@ -1357,12 +1357,12 @@ TEST_F(HelpersTests1, rnnCell_test1) {
     const int inSize   = 4;
     const int numUnits = 4;
 
-    NDArray xt('c', {bS, inSize}, nd4j::DataType::DataType_DOUBLE);
-    NDArray ht_1('c', {bS, numUnits}, nd4j::DataType::DataType_DOUBLE);
-    NDArray Wx('c', {inSize, numUnits}, nd4j::DataType::DataType_DOUBLE);
-    NDArray Wh('c', {numUnits, numUnits}, nd4j::DataType::DataType_DOUBLE);
+    NDArray xt('c', {bS, inSize}, nd4j::DataType::DOUBLE);
+    NDArray ht_1('c', {bS, numUnits}, nd4j::DataType::DOUBLE);
+    NDArray Wx('c', {inSize, numUnits}, nd4j::DataType::DOUBLE);
+    NDArray Wh('c', {numUnits, numUnits}, nd4j::DataType::DOUBLE);
     NDArray b ('c', {2*numUnits}, {0.0,0.0,0.0,0.0,  0.1,0.2,0.3,0.4});
-    NDArray ht('c', {bS, numUnits}, nd4j::DataType::DataType_DOUBLE);
+    NDArray ht('c', {bS, numUnits}, nd4j::DataType::DOUBLE);
 
     xt.assign(0.1);
     ht_1.assign(0.2);

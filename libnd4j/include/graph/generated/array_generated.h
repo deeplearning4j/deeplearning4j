@@ -41,46 +41,46 @@ inline const char *EnumNameByteOrder(ByteOrder e) {
 }
 
 enum DataType {
-  DataType_INHERIT = 0,
-  DataType_BOOL = 1,
-  DataType_FLOAT8 = 2,
-  DataType_HALF = 3,
-  DataType_HALF2 = 4,
-  DataType_FLOAT = 5,
-  DataType_DOUBLE = 6,
-  DataType_INT8 = 7,
-  DataType_INT16 = 8,
-  DataType_INT32 = 9,
-  DataType_INT64 = 10,
-  DataType_UINT8 = 11,
-  DataType_UINT16 = 12,
-  DataType_UINT32 = 13,
-  DataType_UINT64 = 14,
-  DataType_QINT8 = 15,
-  DataType_QINT16 = 16,
-  DataType_MIN = DataType_INHERIT,
-  DataType_MAX = DataType_QINT16
+  INHERIT = 0,
+  BOOL = 1,
+  FLOAT8 = 2,
+  HALF = 3,
+  HALF2 = 4,
+  FLOAT = 5,
+  DOUBLE = 6,
+  INT8 = 7,
+  INT16 = 8,
+  INT32 = 9,
+  INT64 = 10,
+  UINT8 = 11,
+  UINT16 = 12,
+  UINT32 = 13,
+  UINT64 = 14,
+  QINT8 = 15,
+  QINT16 = 16,
+  DataType_MIN = INHERIT,
+  DataType_MAX = QINT16
 };
 
 inline const DataType (&EnumValuesDataType())[17] {
   static const DataType values[] = {
-    DataType_INHERIT,
-    DataType_BOOL,
-    DataType_FLOAT8,
-    DataType_HALF,
-    DataType_HALF2,
-    DataType_FLOAT,
-    DataType_DOUBLE,
-    DataType_INT8,
-    DataType_INT16,
-    DataType_INT32,
-    DataType_INT64,
-    DataType_UINT8,
-    DataType_UINT16,
-    DataType_UINT32,
-    DataType_UINT64,
-    DataType_QINT8,
-    DataType_QINT16
+    INHERIT,
+    BOOL,
+    FLOAT8,
+    HALF,
+    HALF2,
+    FLOAT,
+    DOUBLE,
+    INT8,
+    INT16,
+    INT32,
+    INT64,
+    UINT8,
+    UINT16,
+    UINT32,
+    UINT64,
+    QINT8,
+    QINT16
   };
   return values;
 }
@@ -176,7 +176,7 @@ inline flatbuffers::Offset<FlatArray> CreateFlatArray(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<flatbuffers::Vector<int8_t>> buffer = 0,
-    DataType dtype = DataType_INHERIT,
+    DataType dtype = INHERIT,
     ByteOrder byteOrder = ByteOrder_LE) {
   FlatArrayBuilder builder_(_fbb);
   builder_.add_buffer(buffer);
@@ -190,7 +190,7 @@ inline flatbuffers::Offset<FlatArray> CreateFlatArrayDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int64_t> *shape = nullptr,
     const std::vector<int8_t> *buffer = nullptr,
-    DataType dtype = DataType_INHERIT,
+    DataType dtype = INHERIT,
     ByteOrder byteOrder = ByteOrder_LE) {
   return nd4j::graph::CreateFlatArray(
       _fbb,
