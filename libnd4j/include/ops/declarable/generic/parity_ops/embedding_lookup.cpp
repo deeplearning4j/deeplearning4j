@@ -73,7 +73,7 @@ DECLARE_SHAPE_FN(embedding_lookup) {
         shape::shapeBuffer(outRank, block.dataType(), shapeInfo.data(),  outShapeInfo);
     else
         shape::shapeBufferFortran(outRank, block.dataType(), shapeInfo.data(),  outShapeInfo);
-
+    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfo));
     return SHAPELIST(outShapeInfo);    
 }
 
