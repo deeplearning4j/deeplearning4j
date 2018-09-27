@@ -1965,10 +1965,10 @@ namespace simdOps {
 		}
 	};
 
-    template <typename X, typename Y>
+    template <typename X, typename Y, typename Z>
     class SXELogitsSmoother {
     public:
-        op_def static X op(X d1, Y d2, X *params) {
+        op_def static Z op(X d1, Y d2, Z *params) {
             return d1 * ((X)1.f - (X) d2) + (X)(0.5f) * (X) d2;
         }
     };
@@ -4140,7 +4140,7 @@ namespace simdOps {
         }
     };
 
-	template <typename X, typename Y>
+	template <typename X, typename Y, typename Z>
 	class CompareAndSet {
 	public:
         // op definition for Transform
@@ -4229,7 +4229,7 @@ namespace simdOps {
 		}
 
         // op definition for PairWise Transform
-        op_def static X op(X d1, Y dY, X *params) {
+        op_def static Z op(X d1, Y dY, Z *params) {
 		    X d2 = static_cast<X>(dY);
             auto compare = params[0];
 			auto eps = params[2];

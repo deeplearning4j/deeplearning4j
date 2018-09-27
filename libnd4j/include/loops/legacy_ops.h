@@ -206,12 +206,12 @@
         (34, PowDerivative) ,\
         (35, CompareAndSet) ,\
         (36, SXELogitsSmoother), \
-        (20, LeakyRELU), \
-        (21, LeakyRELUDerivative), \
-        (26, DropOutInverted), \
-        (27, ReplaceNans) ,\
-        (33, LogX) ,\
-        (37, LstmClip)
+        (37, LeakyRELU), \
+        (38, LeakyRELUDerivative), \
+        (39, DropOutInverted), \
+        (40, ReplaceNans) ,\
+        (41, LogX) ,\
+        (42, LstmClip)
 
 
 
