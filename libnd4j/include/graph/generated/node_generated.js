@@ -293,10 +293,19 @@ nd4j.graph.FlatNode.prototype.outputNamesLength = function() {
 };
 
 /**
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array|null}
+ */
+nd4j.graph.FlatNode.prototype.opName = function(optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 38);
+  return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatNode.startFlatNode = function(builder) {
-  builder.startObject(17);
+  builder.startObject(18);
 };
 
 /**
@@ -601,6 +610,14 @@ nd4j.graph.FlatNode.createOutputNamesVector = function(builder, data) {
  */
 nd4j.graph.FlatNode.startOutputNamesVector = function(builder, numElems) {
   builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} opNameOffset
+ */
+nd4j.graph.FlatNode.addOpName = function(builder, opNameOffset) {
+  builder.addFieldOffset(17, opNameOffset, 0);
 };
 
 /**

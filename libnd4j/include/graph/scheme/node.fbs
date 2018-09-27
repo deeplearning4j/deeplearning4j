@@ -28,6 +28,7 @@ table FlatNode {
 
     // Additional metadata for helping SameDiff deserialization
     outputNames:[string];       //Name of the SameDiff variable names corresponding to the outputs of this op
+    opName:string;              //Used to help resolving the class. In a few cases, multiple classes/opNames are mapped to same hash, and might have different config/properties/differentiability
 }
 
 root_type FlatNode;

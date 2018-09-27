@@ -44,7 +44,7 @@ public class DifferentialFunctionClassHolder {
     private Map<String,DifferentialFunction> tensorFlowNames = new HashMap<>();
     private Map<String,DifferentialFunction> onnxNames = new HashMap<>();
     private Map<Long,Class<?>> customOpHashToClass = new HashMap<>();
-//    private Map<Op.Type,Map<Long,Class<?>>> opIdToClassByType = new HashMap<>();
+    private Map<Long,Map<String,Class<?>>> customOpHashToClasses = new HashMap<>(); //Only contains ops with 1 hash to multiple classes
     private List<String> missingOps = new ArrayList<>();
 
     private Map<String,OpDescriptor> onnxOpDescriptors;
@@ -306,29 +306,44 @@ public class DifferentialFunctionClassHolder {
 
         //Get custom ops - map from hash to class
         Map<String,CustomOpDescriptor> descriptorMap = Nd4j.getExecutioner().getCustomOperations();
-        for(Map.Entry<String,CustomOpDescriptor> e : descriptorMap.entrySet()){
+        Set<Long> multiClassHashes = new HashSet<>();
+        for (Map.Entry<String, CustomOpDescriptor> e : descriptorMap.entrySet()) {
             String name = e.getKey();
             DifferentialFunction df = getInstance(name);
 
-            if(df == null){
+            if (df == null) {
                 //Can be no class for 2 reasons:
                 //(a) op name aliases
                 //(b) libnd4j ops with no corresponding ND4J op class
                 continue;
             }
 
-            if(!CustomOp.class.isAssignableFrom(df.getClass())){
+            if (!CustomOp.class.isAssignableFrom(df.getClass())) {
                 //Not a custom op class
                 continue;
             }
 
             long h = e.getValue().getHash();
-            if(customOpHashToClass.containsKey(h) && customOpHashToClass.get(h) != df.getClass()){
-//                throw new IllegalStateException("Custom op with hash " + h + " mapped to multiple classes: " + customOpHashToClass.get(h)
-//                        + " and " + df.getClass());
-                log.warn("Multiple custom ops map to hash {} - only latter one will be used: {} and {}", h, customOpHashToClass.get(h), df.getClass() );
+            if (customOpHashToClass.containsKey(h)) {
+                //One op hash mapped to multiple classes
+                multiClassHashes.add(h);
             }
             customOpHashToClass.put(e.getValue().getHash(), df.getClass());
+        }
+
+        for (Map.Entry<String, CustomOpDescriptor> e : descriptorMap.entrySet()) {
+            long h = e.getValue().getHash();
+            if (multiClassHashes.contains(h)) {
+                if (!customOpHashToClasses.containsKey(h)) {
+                    customOpHashToClasses.put(h, new HashMap<String, Class<?>>());
+                }
+                Map<String, Class<?>> m = customOpHashToClasses.get(h);
+                String name = e.getKey();
+                DifferentialFunction df = getInstance(name);
+                if(df == null)
+                    continue;
+                m.put(e.getKey(), df.getClass());
+            }
         }
     }
 
@@ -386,14 +401,15 @@ public class DifferentialFunctionClassHolder {
         return nodeConverters.get(name);
     }
 
-    public Class<?> customOpClassForHash(long customOpHash){
-        return customOpHashToClass.get(customOpHash);
+    public Class<?> customOpClassForHashAndName(long customOpHash, String name){
+        if(customOpHashToClasses.containsKey(customOpHash)){
+            return customOpHashToClasses.get(customOpHash).get(name);
+        } else if(customOpHashToClass.containsKey(customOpHash)){
+            return customOpHashToClass.get(customOpHash);
+        } else {
+            throw new IllegalStateException("No op known for hash: " + customOpHash);
+        }
     }
-
-//    public Class<?> legacyOpClassForId(Op.Type opType, long opNum){
-//        //TODO checks for op type
-//        return opIdToClassByType.get(opType).get(opNum);
-//    }
 
     public static DifferentialFunctionClassHolder getInstance() {
         return INSTANCE;

@@ -33,7 +33,8 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_SCALAR = 30,
     VT_SCOPE_ID = 32,
     VT_SCOPE_NAME = 34,
-    VT_OUTPUTNAMES = 36
+    VT_OUTPUTNAMES = 36,
+    VT_OPNAME = 38
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -86,6 +87,9 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *outputNames() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_OUTPUTNAMES);
   }
+  const flatbuffers::String *opName() const {
+    return GetPointer<const flatbuffers::String *>(VT_OPNAME);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
@@ -118,6 +122,8 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_OUTPUTNAMES) &&
            verifier.Verify(outputNames()) &&
            verifier.VerifyVectorOfStrings(outputNames()) &&
+           VerifyOffset(verifier, VT_OPNAME) &&
+           verifier.Verify(opName()) &&
            verifier.EndTable();
   }
 };
@@ -176,6 +182,9 @@ struct FlatNodeBuilder {
   void add_outputNames(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputNames) {
     fbb_.AddOffset(FlatNode::VT_OUTPUTNAMES, outputNames);
   }
+  void add_opName(flatbuffers::Offset<flatbuffers::String> opName) {
+    fbb_.AddOffset(FlatNode::VT_OPNAME, opName);
+  }
   explicit FlatNodeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -206,9 +215,11 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     float scalar = 0.0f,
     int32_t scope_id = 0,
     flatbuffers::Offset<flatbuffers::String> scope_name = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputNames = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputNames = 0,
+    flatbuffers::Offset<flatbuffers::String> opName = 0) {
   FlatNodeBuilder builder_(_fbb);
   builder_.add_opNum(opNum);
+  builder_.add_opName(opName);
   builder_.add_outputNames(outputNames);
   builder_.add_scope_name(scope_name);
   builder_.add_scope_id(scope_id);
@@ -246,7 +257,8 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     float scalar = 0.0f,
     int32_t scope_id = 0,
     const char *scope_name = nullptr,
-    const std::vector<flatbuffers::Offset<flatbuffers::String>> *outputNames = nullptr) {
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *outputNames = nullptr,
+    const char *opName = nullptr) {
   return nd4j::graph::CreateFlatNode(
       _fbb,
       id,
@@ -265,7 +277,8 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
       scalar,
       scope_id,
       scope_name ? _fbb.CreateString(scope_name) : 0,
-      outputNames ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*outputNames) : 0);
+      outputNames ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*outputNames) : 0,
+      opName ? _fbb.CreateString(opName) : 0);
 }
 
 inline const nd4j::graph::FlatNode *GetFlatNode(const void *buf) {

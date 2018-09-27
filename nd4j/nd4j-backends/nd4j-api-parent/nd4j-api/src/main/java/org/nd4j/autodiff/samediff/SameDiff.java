@@ -10922,6 +10922,7 @@ public class SameDiff {
                 0,
                 -1,
                 0.0f, 0, 0,
+                0,
                 0);
 
         return flatNode;
@@ -11081,6 +11082,7 @@ public class SameDiff {
         }
         int outVarNamesOffset = FlatNode.createOutputNamesVector(bufferBuilder, outVarNamesStringsOffsets);
 
+        int opNameOffset = bufferBuilder.createString(opName);
 
         int flatNode = FlatNode.createFlatNode(
                 bufferBuilder,
@@ -11098,7 +11100,8 @@ public class SameDiff {
                 dimensions,
                 -1,
                 node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().floatValue() : 0.0f, 0, scopeName,
-                outVarNamesOffset);
+                outVarNamesOffset,
+                opNameOffset);
 
         return flatNode;
     }

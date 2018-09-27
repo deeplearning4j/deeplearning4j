@@ -246,7 +246,14 @@ class FlatNode(object):
             return self._tab.VectorLen(o)
         return 0
 
-def FlatNodeStart(builder): builder.StartObject(17)
+    # FlatNode
+    def OpName(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(38))
+        if o != 0:
+            return self._tab.String(o + self._tab.Pos)
+        return bytes()
+
+def FlatNodeStart(builder): builder.StartObject(18)
 def FlatNodeAddId(builder, id): builder.PrependInt32Slot(0, id, 0)
 def FlatNodeAddName(builder, name): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(name), 0)
 def FlatNodeAddOpType(builder, opType): builder.PrependInt8Slot(2, opType, 0)
@@ -272,4 +279,5 @@ def FlatNodeAddScopeId(builder, scopeId): builder.PrependInt32Slot(14, scopeId, 
 def FlatNodeAddScopeName(builder, scopeName): builder.PrependUOffsetTRelativeSlot(15, flatbuffers.number_types.UOffsetTFlags.py_type(scopeName), 0)
 def FlatNodeAddOutputNames(builder, outputNames): builder.PrependUOffsetTRelativeSlot(16, flatbuffers.number_types.UOffsetTFlags.py_type(outputNames), 0)
 def FlatNodeStartOutputNamesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def FlatNodeAddOpName(builder, opName): builder.PrependUOffsetTRelativeSlot(17, flatbuffers.number_types.UOffsetTFlags.py_type(opName), 0)
 def FlatNodeEnd(builder): return builder.EndObject()

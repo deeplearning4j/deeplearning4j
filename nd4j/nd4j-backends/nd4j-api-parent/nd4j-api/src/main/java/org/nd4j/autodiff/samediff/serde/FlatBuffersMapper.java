@@ -106,38 +106,6 @@ public class FlatBuffersMapper {
             return (long) Nd4j.getOpFactory().getOpNumByName(name);
     }
 
-    public static Class<?> getOpClass(long idHash, Op.Type type){
-        switch (type){
-            case CUSTOM:
-                return DifferentialFunctionClassHolder.getInstance().customOpClassForHash(idHash);
-            case SCALAR:
-            case TRANSFORM:
-            case PAIRWISE:
-            case SPECIAL:
-            case BROADCAST:
-            case REDUCE:
-            case INDEXREDUCE:
-            case VARIANCE:
-            case REDUCE3:
-            case RANDOM:
-                return LegacyOpMapper.getLegacyOpClassForId(type, (int)idHash);
-
-            case LOOP:
-            case RETURN:
-            case IF:
-            case CONDITIONAL:
-            case MERGE:
-            case LOOP_COND:
-            case NEXT_ITERATION:
-            case EXIT:
-            case ENTER:
-            default:
-                throw new UnsupportedOperationException("Not supported or not implemneted: op type " + type + ", id/hash " + idHash );
-        }
-    }
-
-
-
 
     /**
      * This method converts enums for Op.Type
@@ -294,7 +262,8 @@ public class FlatBuffersMapper {
 
 
         if(opType == Op.Type.CUSTOM) {
-            Class<?> c = DifferentialFunctionClassHolder.getInstance().customOpClassForHash(opNum);
+            String opName = fn.opName();
+            Class<?> c = DifferentialFunctionClassHolder.getInstance().customOpClassForHashAndName(opNum, opName);
 
             Preconditions.checkNotNull(c, "Could not find class for hash %s", opNum);
 
