@@ -26,8 +26,8 @@ using namespace simdOps;
 namespace functions {
     namespace pairwise_transforms {
 
-        template <typename X, typename Y>
-        void PairWiseTransform<X, Y>::exec(
+        template <typename X, typename Y, typename Z>
+        void PairWiseTransform<X, Y, Z>::exec(
                 const int opNum,
                 void *dx,
                 Nd4jLong *xShapeBuffer,
@@ -47,9 +47,9 @@ namespace functions {
         };
 
 
-        template <typename X, typename Y>
+        template <typename X, typename Y, typename Z>
         template <typename OpType>
-        void PairWiseTransform<X, Y>::exec(
+        void PairWiseTransform<X, Y, Z>::exec(
                 void *vx,
                 Nd4jLong* xShapeBuffer,
                 void *vy,
@@ -59,8 +59,8 @@ namespace functions {
                 void *vextraParams) {
             auto dx = reinterpret_cast<X *>(vx);
             auto y = reinterpret_cast<Y *>(vy);
-            auto result = reinterpret_cast<X *>(vresult);
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
+            auto result = reinterpret_cast<Z *>(vresult);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
             auto n = shape::length(xShapeBuffer);
             auto xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
@@ -173,7 +173,7 @@ namespace functions {
                     auto resultStrideLocal = resultStride + 1;
 
                     int dim;
-                    if (PrepareThreeRawArrayIter<X, Y>(rankLocal,
+                    if (PrepareThreeRawArrayIter<X, Y, Z>(rankLocal,
                                                        xShapeLocal,
                                                        dxLocal,
                                                        xStrideLocal,

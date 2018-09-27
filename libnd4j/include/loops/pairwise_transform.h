@@ -56,7 +56,7 @@ namespace functions {
 /**
  * Transforms involving 2 arrays
  */
-        template<typename X, typename Y>
+        template<typename X, typename Y, typename Z>
         class PairWiseTransform {
         public:
 

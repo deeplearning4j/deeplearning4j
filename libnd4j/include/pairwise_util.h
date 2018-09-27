@@ -448,18 +448,18 @@ int _CUDA_HD PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
  *
  * Returns 0 on success, -1 on failure.
  */
-template <typename X, typename Y>
+template <typename X, typename Y, typename Z>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
 int  PrepareThreeRawArrayIter(int ndim, Nd4jLong shape[],
                               X *dataA, Nd4jLong *stridesA,
                               Y *dataB, Nd4jLong *stridesB,
-                              X *dataC, Nd4jLong *stridesC,
+                              Z *dataC, Nd4jLong *stridesC,
                               int &out_ndim, Nd4jLong *outShape,
                               X **out_dataA, Nd4jLong outStridesA[],
                               Y **out_dataB, Nd4jLong outStridesB[],
-                              X **out_dataC, Nd4jLong outStridesC[])
+                              Z **out_dataC, Nd4jLong outStridesC[])
 {
 
     /* Special case 0 and 1 dimensions */
