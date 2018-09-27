@@ -161,7 +161,7 @@ namespace helpers {
             *permutation = *permutationMatrix;
 
 
-        return NDArrayFactory::scalar<T>(determinant, input->getWorkspace());
+        return NDArrayFactory::create<T>(determinant, input->getWorkspace());
     }
 
     BUILD_SINGLE_TEMPLATE(template NDArray _lup, (NDArray* input, NDArray* output, NDArray* permutation), LIBND4J_TYPES);

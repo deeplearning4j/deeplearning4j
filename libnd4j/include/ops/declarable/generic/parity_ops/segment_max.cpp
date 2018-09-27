@@ -31,8 +31,8 @@ namespace nd4j {
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_max: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
 
-            auto expected = NDArrayFactory::scalar(0.f, block.getWorkspace());
-            auto wrong = NDArrayFactory::scalar(0.f, block.getWorkspace());
+            auto expected = NDArrayFactory::create(0.f, block.getWorkspace());
+            auto wrong = NDArrayFactory::create(0.f, block.getWorkspace());
 
             REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_max: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
 

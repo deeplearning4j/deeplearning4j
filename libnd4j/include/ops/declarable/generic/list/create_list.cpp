@@ -45,7 +45,7 @@ namespace nd4j {
 
             OVERWRITE_RESULT(list);
 
-            auto scalar = NDArrayFactory::scalar_(list->counter());
+            auto scalar = NDArrayFactory::create_(list->counter());
             block.pushNDArrayToVariableSpace(block.getNodeId(), 1, scalar);
 
             return ND4J_STATUS_OK;

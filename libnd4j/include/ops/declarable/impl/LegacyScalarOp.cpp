@@ -62,11 +62,11 @@ namespace nd4j {
 
                 NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y->buffer(), y->shapeInfo(), block.getTArguments()->data() + offset);
             } else if (block.getTArguments()->size() > 0) {
-                auto y = NDArrayFactory::scalar(T_ARG(0), block.getWorkspace());
+                auto y = NDArrayFactory::create(T_ARG(0), block.getWorkspace());
                 offset++;
                 NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y.buffer(), y.shapeInfo(), block.getTArguments()->data() + offset);
             } else {
-                auto y = NDArrayFactory::scalar(_scalar, block.getWorkspace());
+                auto y = NDArrayFactory::create(_scalar, block.getWorkspace());
 
                 NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y.buffer(), y.shapeInfo(), block.getTArguments()->data() + offset);
             }

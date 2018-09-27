@@ -35,7 +35,7 @@ namespace nd4j {
 
                 Nd4jStatus result = list->write(idx, input->dup());
 
-                auto res = NDArrayFactory::scalar_(list->counter(), block.workspace());
+                auto res = NDArrayFactory::create_(list->counter(), block.workspace());
                 OVERWRITE_RESULT(res);
 
                 return result;
@@ -47,7 +47,7 @@ namespace nd4j {
 
                 Nd4jStatus result = list->write(idx->e<int>(0), input->dup());
 
-                auto res = NDArrayFactory::scalar_(list->counter(), block.workspace());
+                auto res = NDArrayFactory::create_(list->counter(), block.workspace());
                 OVERWRITE_RESULT(res);
 
                 return result;
