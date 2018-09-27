@@ -1126,8 +1126,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 //
     NDArray NDArray::reduceNumber(nd4j::reduce::Ops op, void *extraParams) const {
-        auto shape = ShapeBuilders::createScalarShapeInfo(this->dataType(), this->_workspace);
-        NDArray result(shape, this->_workspace);
+        auto result = NDArrayFactory::create(_dataType, _workspace);        
 
         NativeOpExcutioner::execReduceScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
         return result;
