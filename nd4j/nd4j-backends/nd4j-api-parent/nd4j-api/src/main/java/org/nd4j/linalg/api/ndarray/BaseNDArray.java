@@ -566,7 +566,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(double[] data, int[] shape, char ordering) {
-        this(internalCreateBuffer(data), shape, ordering);
+        this(Nd4j.createBuffer(data), shape, ordering);
     }
 
     public BaseNDArray(double[] data, long[] shape, char ordering) {
@@ -872,7 +872,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(double[] data, int[] shape, int[] stride, long offset) {
-        this(internalCreateBuffer(data), shape, stride, offset);
+        this(data, shape, stride, offset, Nd4j.order());
     }
 
 
@@ -6256,6 +6256,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
+        if(isView()){
+            return dup(this.ordering()).toFlatArray(builder);
+        }
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
         int buffer = this.isEmpty() ? 0 : FlatArray.createBufferVector(builder, this.data().asBytes());
         val type = this.isEmpty() ? FlatBuffersMapper.getDataTypeAsByte(Nd4j.dataType()) : FlatBuffersMapper.getDataTypeAsByte(this.data().dataType());
