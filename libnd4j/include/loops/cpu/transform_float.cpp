@@ -130,7 +130,7 @@ namespace functions {
                              void *vextraParams,
                              const Nd4jLong n) {
                 auto dx = reinterpret_cast<X *>(vx);
-                auto result = reinterpret_cast<X *>(vresult);
+                auto result = reinterpret_cast<Z *>(vresult);
                 auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
                 int elementsPerThread = n / ELEMENT_THRESHOLD;
