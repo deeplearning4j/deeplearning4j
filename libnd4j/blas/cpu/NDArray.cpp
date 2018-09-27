@@ -1022,7 +1022,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
     void* NDArray::bufferWithOffset(Nd4jLong offset) const {
         // FIXME, use this instead -> _buffer + (offset * DataTypeUtils::sizeOf(_dataType));
-        return _buffer + (offset * DataTypeUtils::sizeOf(dataType()));
+        return _buffer + (offset * sizeOfT());
     }
 
 /*
@@ -3037,26 +3037,21 @@ NDArray NDArray::transp() const {
             }
         }
 
-
-
-        NDArray result(bufferWithOffset(offset), newShape, _workspace);
-        result._isShapeAlloc = true;
+        NDArray result(bufferWithOffset(offset), newShape, _workspace, false, true);        
 
         if(!keepUnitiesInShape) {
-            // check whether units are present in newShape, if yes then remove them by applying corresponding reshape
-            // for example if result has shape {1,a,1,b} then after reshaping it acquire new shape {a,b}
-            
-            // std::vector<Nd4jLong > nonUnitDims;
-            // for(int i = 0; i < result.rankOf(); ++i)
-            //     if(newShape[i+1] != 1)
-            //         nonUnitDims.push_back(newShape[i+1]);
 
+            std::vector<Nd4jLong> nonUnitDims;
+            for (int d = 0; d < rank; ++d) {
+                if(!(idx[2*d] != idx[2*d+1] && newShape[d+1] == 1))
+                    nonUnitDims.push_back(newShape[d+1]);
+            }
+            if(nonUnitDims.size() != rank)
+                result.reshapei(nonUnitDims);
+
+            // std::vector<Nd4jLong> nonUnitDims = ShapeUtils<T>::evalDimsWithoutUnities(newShape);
             // if(nonUnitDims.size() != result.rankOf())
             //     result.reshapei(nonUnitDims);
-
-            std::vector<Nd4jLong> nonUnitDims = ShapeUtils::evalDimsWithoutUnities(newShape);
-            if(nonUnitDims.size() != result.rankOf())
-                result.reshapei(nonUnitDims);
         }
 
         return result;
