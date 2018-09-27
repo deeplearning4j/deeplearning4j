@@ -52,7 +52,7 @@ namespace functions {
  * for broadcasting a smaller tensor
  * along long a bigger one.
  */
-        template<typename X, typename Y>
+        template<typename X, typename Y, typename Z>
         class Broadcast {
         public:
 

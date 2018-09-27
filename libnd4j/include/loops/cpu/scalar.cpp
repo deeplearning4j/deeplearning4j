@@ -36,7 +36,7 @@ namespace functions {
             auto x = reinterpret_cast<X *>(vx);
             auto z = reinterpret_cast<X *>(vz);
             auto scalars = reinterpret_cast<Y *>(vscalars);
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
             if (tadShapeInfoZ == nullptr) {
                 tadShapeInfoZ = tadShapeInfo;
@@ -140,7 +140,7 @@ namespace functions {
             auto x = reinterpret_cast<X *>(vx);
             auto result = reinterpret_cast<X *>(vz);
             auto scalar = reinterpret_cast<Y *>(vscalar)[0];
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
             char xOrdering = shape::order(xShapeInfo);
             char resultOrdering = shape::order(resultShapeInfo);
@@ -251,7 +251,7 @@ namespace functions {
                 auto x = reinterpret_cast<X *>(vx);
                 auto result = reinterpret_cast<X *>(vz);
                 auto scalar = reinterpret_cast<Y *>(vscalar)[0];
-                auto extraParams = reinterpret_cast<X *>(vextraParams);
+                auto extraParams = reinterpret_cast<Z *>(vextraParams);
 /*
                 Nd4jLong elementsPerThread = n / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
@@ -304,12 +304,8 @@ namespace functions {
             }
 
 
-        //template class ND4J_EXPORT ScalarTransform<float>;
-        //template class ND4J_EXPORT ScalarTransform<float16>;
-        //template class ND4J_EXPORT ScalarTransform<double>;
-        //BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , LIBND4J_TYPES, LIBND4J_TYPES);
         BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_1)
-        //BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_2)
-        //BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_3)
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_2)
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_3)
     }
 }

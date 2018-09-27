@@ -316,20 +316,20 @@ namespace simdOps {
     class FloorDiv {
     public:
         op_def static Z op(X d1, Y d2) {
-            return nd4j::math::nd4j_floor<X>(d1 / d2);
+            return nd4j::math::nd4j_floor<X,Z>(d1 / d2);
         }
 
         op_def static Z op(X d1, Y d2, Z *params) {
-            return nd4j::math::nd4j_floor<X>(d1 / d2);
+            return nd4j::math::nd4j_floor<X,Z>(d1 / d2);
         }
 
         op_def static Z op(X d1) {
-            return nd4j::math::nd4j_floor<X>(d1);
+            return nd4j::math::nd4j_floor<X,Z>(d1);
         }
 
         // op for MetaOps
         op_def static Z op(X d1, Y *params) {
-            return nd4j::math::nd4j_floor<X>(d1 / params[0]);
+            return nd4j::math::nd4j_floor<X,Z>(d1 / params[0]);
         }
     };
 
@@ -861,7 +861,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_ceil<X>(d1);
+			return nd4j::math::nd4j_ceil<X,X>(d1);
 		}
 	};
 
@@ -927,7 +927,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_floor<X>(d1);
+			return nd4j::math::nd4j_floor<X,X>(d1);
 		}
 	};
 
@@ -1503,11 +1503,10 @@ namespace simdOps {
 				return d1;
 			if (min == static_cast<X>(0) && max == static_cast<X>(1)) {
 				auto val = static_cast<X>(1) / (static_cast<X>(1) + nd4j::math::nd4j_exp<X, X>(-d1));
-				return (nd4j::math::nd4j_floor<X>(val * (max - min)) + min);
+				return (nd4j::math::nd4j_floor<X,Z>(val * (max - min)) + min);
 			}
 
-			auto ret = (nd4j::math::nd4j_floor<X>(d1 * (max - min)) + min);
-			return ret;
+			return (nd4j::math::nd4j_floor<X,Z>(d1 * (max - min)) + min);
 		}
 	};
 

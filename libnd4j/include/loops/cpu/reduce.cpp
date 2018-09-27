@@ -27,9 +27,9 @@ using namespace simdOps;
 
 namespace functions {
     namespace reduce {
-        template <typename X>
+        template <typename X, typename Z>
         template <typename OpType>
-        void _CUDA_H ReduceFunction<X>::execScalar(void *vx,
+        void _CUDA_H ReduceFunction<X,Z>::execScalar(void *vx,
                                                 Nd4jLong *xShapeInfo,
                                                 void *vextraParams,
                                                 void *vz,
@@ -85,9 +85,9 @@ namespace functions {
         }
 
 
-        template <typename X>
+        template <typename X, typename Z>
         template <typename OpType>
-            X _CUDA_H ReduceFunction<X>::execScalar(void *vx,
+            X _CUDA_H ReduceFunction<X, Z>::execScalar(void *vx,
                     Nd4jLong *xShapeInfo,
                     void *vextraParams) {
                 auto x = reinterpret_cast<X *>(vx);
@@ -139,26 +139,26 @@ namespace functions {
                 }
             }
 
-        template <typename X>
-        X ReduceFunction<X>::execScalar(const int opNum,
+        template <typename X, typename Y>
+        Y ReduceFunction<X, Y>::execScalar(const int opNum,
                 void *x,
                 Nd4jLong *xShapeInfo,
                 void *extraParams) {
-                RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_OPS);
+                RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_OPS);
         }
 
-        template <typename X>
-        void ReduceFunction<X>::execScalar(const int opNum,
+        template <typename X, typename Y>
+        void ReduceFunction<X, Y>::execScalar(const int opNum,
                                         void *x,
                                         Nd4jLong *xShapeInfo,
                                         void *extraParams,
                                         void *z,
                                         Nd4jLong *zShapeInfo) {
-            DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_OPS);
+            DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_OPS);
         }
 
-        template <typename X>
-        void ReduceFunction<X>::exec(const int opNum,
+        template <typename X, typename Y>
+        void ReduceFunction<X, Y>::exec(const int opNum,
                              void *x,
                              Nd4jLong *xShapeInfo,
                              void *extraParams,
@@ -168,7 +168,7 @@ namespace functions {
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
                              Nd4jLong *tadOffset) {
-                DISPATCH_BY_OPNUM_T(exec, PARAMS(x,
+                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
                                                xShapeInfo,
                                                extraParams,
                                                result,
@@ -180,9 +180,9 @@ namespace functions {
                                   REDUCE_OPS);
         }
 
-        template <typename X>
+        template <typename X, typename Z>
         template <typename OpType>
-        void _CUDA_H ReduceFunction<X>::exec(void *vx,
+        void _CUDA_H ReduceFunction<X,Z>::exec(void *vx,
                              Nd4jLong *xShapeInfo,
                              void *vextraParams,
                              void *vresult,
@@ -193,8 +193,8 @@ namespace functions {
                              Nd4jLong *tadOffset) {
 
                 auto x = reinterpret_cast<X *>(vx);
-                auto result = reinterpret_cast<X *>(vresult);
-                auto extraParams = reinterpret_cast<X *>(vextraParams);
+                auto result = reinterpret_cast<Z *>(vresult);
+                auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
                 auto resultLength = shape::length(resultShapeInfoBuffer);
 
@@ -291,25 +291,26 @@ namespace functions {
             }
 
 
-        template <typename X>
+        template <typename X, typename Z>
         template<typename OpType>
-        void _CUDA_H ReduceFunction<X>::exec(void *x,
+        void _CUDA_H ReduceFunction<X,Z>::exec(void *x,
                              Nd4jLong *xShapeInfo,
                              void *extraParams,
-                             void *result,
+                             void *vresult,
                              Nd4jLong *resultShapeInfo) {
                 // FIXME: wtf???
-                return execScalar<OpType>(x, xShapeInfo, extraParams);
+                auto result = reinterpret_cast<Z*>(vresult);
+                result[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
         }
 
-        template <typename X>
+        template <typename X, typename Z>
         template <typename OpType>
-        X _CUDA_H ReduceFunction<X>::execScalar(void *vx,
+        Z _CUDA_H ReduceFunction<X, Z>::execScalar(void *vx,
                 Nd4jLong xElementWiseStride,
                 Nd4jLong length,
                 void *vextraParams) {
                 auto x = reinterpret_cast<X *>(vx);
-                auto extraParams = reinterpret_cast<X *>(vextraParams);
+                auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
                 auto startingVal = OpType::startingValue(x);
                 if (xElementWiseStride == 1) {
@@ -322,9 +323,7 @@ namespace functions {
                             local = OpType::update(local, curr, extraParams);
 
                         }
-                        local = OpType::postProcess(local, length, extraParams);
-
-                        return local;
+                        return OpType::postProcess(local, length, extraParams);
                     }
 
                     else {
@@ -428,7 +427,7 @@ namespace functions {
             }
 
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT ReduceFunction, , FLOAT_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceFunction, , FLOAT_TYPES, FLOAT_TYPES);
 
         //template void ReduceFunction<float16>::exec<simdOps::LogSumExp<float16>>(float16*, int*, float16*, float16*, int*, int*, int, int*, Nd4jLong*);
         //template void ReduceFunction<float>::exec<simdOps::LogSumExp<float>>(float*, int*, float*, float*, int*, int*, int, int*, Nd4jLong*);

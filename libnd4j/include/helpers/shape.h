@@ -3347,7 +3347,7 @@ template <typename T>
  *
  */
     INLINEDEF _CUDA_HD int tadsPerBlock(int blockSize, int tads) {
-        return (int) nd4j::math::nd4j_ceil<double>(tads / (double) blockSize);
+        return  nd4j::math::nd4j_ceil<double, int>(tads / (double) blockSize);
     }
 
 /**

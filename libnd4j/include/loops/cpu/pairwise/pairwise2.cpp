@@ -26,8 +26,8 @@ using namespace simdOps;
 namespace functions {
     namespace pairwise_transforms {
 
-        template <typename X, typename Y>
-        void PairWiseTransform<X, Y>::exec(
+        template <typename X, typename Y, typename Z>
+        void PairWiseTransform<X, Y, Z>::exec(
                 const int opNum,
                 void *dx,
                 Nd4jLong xStride,
@@ -37,7 +37,7 @@ namespace functions {
                 Nd4jLong resultStride,
                 void *extraParams,
                 Nd4jLong n) {
-            DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx,
+            DISPATCH_BY_OPNUM_TTT(exec, PARAMS(dx,
                                               xStride,
                                               y,
                                               yStride,
@@ -49,9 +49,9 @@ namespace functions {
 
 
 
-        template <typename X, typename Y>
+        template <typename X, typename Y, typename Z>
         template <typename OpType>
-        void PairWiseTransform<X, Y>::exec(void *vx,
+        void PairWiseTransform<X, Y, Z>::exec(void *vx,
                   Nd4jLong xStride,
                   void *vy,
                   Nd4jLong yStride,
@@ -62,7 +62,7 @@ namespace functions {
             auto dx = reinterpret_cast<X *>(vx);
             auto y = reinterpret_cast<Y *>(vy);
             auto result = reinterpret_cast<X *>(vresult);
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
             int elementsPerThread = n / ELEMENT_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
@@ -114,6 +114,8 @@ namespace functions {
         }
 
 
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , PAIRWISE_TYPES_0);
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , PAIRWISE_TYPES_1);
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , PAIRWISE_TYPES_2);
     }
 }
