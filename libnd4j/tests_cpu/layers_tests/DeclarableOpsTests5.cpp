@@ -2100,10 +2100,10 @@ TEST_F(DeclarableOpsTests5, XWPlusB_1) {
 
     auto output = result->at(0);
 
-    // output->printShapeInfo("Output shape> ");
-    // exp.printShapeInfo("Expected shape> ");
-    // output->printIndexedBuffer("Output data> ");
-    // exp.printIndexedBuffer("Expected res>");    
+    output->printShapeInfo("Output shape> ");
+    exp.printShapeInfo("Expected shape> ");
+    output->printIndexedBuffer("Output data> ");
+    exp.printIndexedBuffer("Expected res>");
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
