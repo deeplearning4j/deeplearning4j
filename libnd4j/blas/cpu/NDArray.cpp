@@ -76,7 +76,7 @@ namespace nd4j {
 
     template <typename T>
     NDArray* NDArray::asT() {
-        auto result  = NDArrayFactory::create_(this->ordering(), this->getShapeAsVector(), DataTypeUtils::fromT<T>());
+        auto result = new NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>());
         auto l = this->lengthOf();
 
         // FIXME: we want to avoid put/get indexed scalars here really
@@ -233,6 +233,16 @@ NDArray::NDArray(const Nd4jLong* shapeInfo, const bool copyStrides, nd4j::memory
 
     triggerAllocationFlag(true, true);        
     _workspace = workspace;
+}
+
+////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
+    
+    setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, workspace));
+    ALLOCATE(_buffer, workspace, DataTypeUtils::sizeOfElement(dtype), int8_t);
+    memset(_buffer, 0, DataTypeUtils::sizeOfElement(dtype));
+    _workspace = workspace;    
+    triggerAllocationFlag(true, true);    
 }
 
 
@@ -949,7 +959,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 }
 
     NDArray NDArray::varianceNumber(nd4j::variance::Ops op, bool biasCorrected) {
-        auto res = NDArrayFactory::create(this->dataType(), this->_workspace);
+        NDArray res(_dataType, _workspace);
         NativeOpExcutioner::execSummaryStats(op,this->getBuffer(), this->getShapeInfo(), nullptr, res.buffer(), res.shapeInfo(), biasCorrected);
         return res;
     }
@@ -957,14 +967,14 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 //////////////////////////////////////////////////////////////////////////
 // This method returns sum of all elements of this NDArray
     NDArray NDArray::sumNumber() const {
-        auto res = NDArrayFactory::create(this->dataType(), this->_workspace);
+        NDArray res(_dataType, _workspace);
         NativeOpExcutioner::execReduceScalar(1, _buffer, _shapeInfo, nullptr, res.buffer(), res.shapeInfo());
     }
 
 //////////////////////////////////////////////////////////////////////////
 // This method returns mean number of this NDArray
     NDArray NDArray::meanNumber() const {
-        auto res = NDArrayFactory::create(this->dataType(), this->_workspace);
+        NDArray res(_dataType, _workspace);
         NativeOpExcutioner::execReduceScalar(0, _buffer, _shapeInfo, nullptr, res.buffer(), res.shapeInfo());
         return res;
     }
@@ -1126,7 +1136,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 //
     NDArray NDArray::reduceNumber(nd4j::reduce::Ops op, void *extraParams) const {
-        auto result = NDArrayFactory::create(_dataType, _workspace);        
+        NDArray result(_dataType, _workspace);        
 
         NativeOpExcutioner::execReduceScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
         return result;
