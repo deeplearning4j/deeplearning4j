@@ -59,7 +59,7 @@ namespace helpers {
     void softSignDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     void softPlusDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     void sigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void hardSigmoidDerivative(NDArray* theFirst, NDArray const* theSecond, NDArray* theOutput);
+    void hardSigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
 
 }
 }
