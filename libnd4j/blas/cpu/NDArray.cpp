@@ -1045,7 +1045,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         RELEASE(newShape, _workspace);
 
         if(rankOf() == copy.size() || copy.empty())
-            //result->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
+            //result->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
             NativeOpExcutioner::execReduceScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, result->buffer(), result->shapeInfo());
         else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
@@ -1070,7 +1070,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         RELEASE(newShape, _workspace);
 
         if(rankOf() == copy.size() || copy.empty())
-            //result._buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
+            //result._buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
             NativeOpExcutioner::execReduceScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, result.buffer(), result.shapeInfo());
         else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
@@ -1079,7 +1079,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
             NativeOpExcutioner::execReduce(op, this->getBuffer(), this->getShapeInfo(), nullptr, result.getBuffer(), result.getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
             /*
-            functions::reduce::ReduceFunction<T>::template exec<OpName>(_buffer, _shapeInfo, nullptr, result._buffer,
+            functions::reduce::ReduceFloatFunction<T>::template exec<OpName>(_buffer, _shapeInfo, nullptr, result._buffer,
                                                                         result._shapeInfo, copy.data(), copy.size(),
                                                                         tad.tadOnlyShapeInfo, tad.tadOffsets);
                                                                         */
@@ -1102,7 +1102,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         RELEASE(newShape, _workspace);
 
         if(rankOf() == copy.size() || copy.empty())
-            //target->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
+            //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
             NativeOpExcutioner::execReduceScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->buffer(), target->shapeInfo());
         else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
@@ -1111,7 +1111,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
             NativeOpExcutioner::execReduce(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
             /*
-            functions::reduce::ReduceFunction<T>::template exec<OpName>(_buffer, _shapeInfo, extras, target->_buffer,
+            functions::reduce::ReduceFloatFunction<T>::template exec<OpName>(_buffer, _shapeInfo, extras, target->_buffer,
                                                                         target->_shapeInfo, copy.data(), copy.size(),
                                                                         tad.tadOnlyShapeInfo, tad.tadOffsets);
             */

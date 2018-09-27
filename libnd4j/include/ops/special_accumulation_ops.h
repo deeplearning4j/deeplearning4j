@@ -28,7 +28,7 @@
 
 namespace simdOps {
 
-    template<typename T>
+    template<typename T, typename Z>
     class LogSumExp {
     public:
         static const bool requiresSpecialAccumulation = true;
@@ -149,8 +149,8 @@ namespace simdOps {
 
         static void execSpecial(T *x,
                          Nd4jLong *xShapeInfo,
-                         T *extraParams,
-                         T *result,
+                         Z *extraParams,
+                         Z *result,
                          Nd4jLong *resultShapeInfoBuffer,
                          int *dimension,
                          int dimensionLength,
@@ -211,7 +211,7 @@ namespace simdOps {
                 auto tadStride = shape::stride(tadOnlyShapeInfo);
                 auto tadRank = shape::rank(tadOnlyShapeInfo);
 
-#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(close) default(shared)
                 for (int i = 0; i < resultLength; i++) {
 
                     auto offset = tadOffsets[i];

@@ -228,39 +228,46 @@
         (6, JaccardDistance) ,\
         (7, SimpleHammingDistance)
 
+#define REDUCE_LONG_OPS \
+        (0, CountNonZero), \
+        (1, CountZero), \
+        (2, MatchCondition) ,\
+
+#define REDUCE_BOOL_OPS \
+        (0, Any) ,\
+        (1, All), \
+        (2, IsFinite), \
+        (3, IsInfOrNan), \
+        (4, IsNan), \
+        (5, IsInf)
+
+#define REDUCE_SAME_OPS \
+        (0, Sum), \
+        (1, Max), \
+        (2, Min), \
+        (3, Prod), \
+        (4, ASum), \
+        (5, AMax) ,\
+        (6, AMin)
 
 
-#define REDUCE_OPS \
+
+#define REDUCE_FLOAT_OPS \
         (0, Mean), \
-        (1, Sum), \
-        (3, Max), \
-        (4, Min), \
-        (5, Norm1), \
-        (6, Norm2), \
-        (7, NormMax), \
-        (8, Prod), \
-        (9, StandardDeviation), \
-        (10, Variance), \
-        (11, ASum), \
-        (12, MatchCondition) ,\
-        (13, AMax) ,\
-        (14, AMin) ,\
-        (15, AMean) ,\
-        (16, Entropy) ,\
-        (17, LogEntropy) ,\
-        (18, ShannonEntropy) ,\
-        (19, LogSumExp) ,\
-        (20, Any) ,\
-        (21, All), \
-        (22, CountNonZero), \
-        (23, NormFrobenius), \
-        (24, NormP), \
-        (25, SquaredNorm), \
-        (26, CountZero), \
-        (27, IsFinite), \
-        (28, IsInfOrNan), \
-        (29, IsNan), \
-        (30, IsInf)
+        (1, Norm1), \
+        (2, Norm2), \
+        (3, NormMax), \
+        (4, StandardDeviation), \
+        (5, Variance), \
+        (7, AMean) ,\
+        (8, Entropy) ,\
+        (9, LogEntropy) ,\
+        (10, ShannonEntropy) ,\
+        (11, LogSumExp) ,\
+        (13, NormFrobenius), \
+        (14, NormP), \
+        (15, SquaredNorm)
+
 
 
 

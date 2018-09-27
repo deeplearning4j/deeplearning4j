@@ -16,7 +16,7 @@
 
 #pragma once
 #include <ops/ops.h>
-#include <loops/reduce.h>
+#include <loops/reduce_float.h>
 #include <loops/scalar.h>
 #include <loops/indexreduce.h>
 #include <loops/broadcasting.h>
@@ -37,7 +37,7 @@ namespace functions {
 
 	namespace reduce {
 		template <typename X>
-		class ReduceFunction;
+		class ReduceFloatFunction;
 	}
 }
 
@@ -1423,7 +1423,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			}
 			__syncthreads();
 
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
@@ -1435,7 +1435,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
@@ -1467,7 +1467,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					maxResult[i] = 0.0;
 				Nd4jLong maxShape[2] = { shape[0], 1 };
 				auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::ArrayOptions::dataType(xShapeBuffer), maxShape);
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Max<X>>(reinterpret_cast<void *>(dx), xShapeBuffer, reinterpret_cast<void *>(extraParams), reinterpret_cast<void *>(maxResult.data()), maxResultShapeBuffer, maxDimension, 1,  nullptr, nullptr);
+				functions::reduce::ReduceFloatFunction<X>::template exec<simdOps::Max<X>>(reinterpret_cast<void *>(dx), xShapeBuffer, reinterpret_cast<void *>(extraParams), reinterpret_cast<void *>(maxResult.data()), maxResultShapeBuffer, maxDimension, 1,  nullptr, nullptr);
 
 				//subtract max of each row
 				functions::broadcast::Broadcast<X, X>::template exec<simdOps::Subtract<X,X>>(dx, xShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
@@ -1476,7 +1476,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				functions::transform::Transform<X>::template exec<simdOps::Exp<X>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceFloatFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//divide by the sum
 				functions::broadcast::Broadcast<X,X>::template exec<simdOps::Divide<X,X>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
@@ -1574,7 +1574,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
 			__syncthreads();
 
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
@@ -1586,7 +1586,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
@@ -1622,7 +1622,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 				Nd4jLong maxShape[2] = { shape[0], 1 };
 				auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::ArrayOptions::dataType(xShapeBuffer), maxShape);
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Max<X>>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceFloatFunction<X>::template exec<simdOps::Max<X>>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//subtract max of each row
 				functions::broadcast::Broadcast<X,X>::template exec<simdOps::Subtract<X,X>>(dx, xShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
@@ -1631,7 +1631,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				functions::transform::Transform<X>::template exec<simdOps::Exp<X>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceFloatFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//divide by the sum
 				functions::broadcast::Broadcast<X,X>::template exec<simdOps::Divide<X,X>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
@@ -1736,7 +1736,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
 			__syncthreads();
 
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
@@ -1748,7 +1748,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
@@ -1791,7 +1791,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 				Nd4jLong maxShape[2] = { shape[0], 1 };
 				auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::ArrayOptions::dataType(xShapeBuffer), maxShape);
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Max<X>>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceFloatFunction<X>::template exec<simdOps::Max<X>>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//subtract max of each row
 				functions::broadcast::Broadcast<X,X>::template exec<simdOps::Subtract<X,X>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
@@ -1800,7 +1800,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				functions::transform::Transform<X>::template exec<simdOps::Exp<X>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceFloatFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//divide by the sum
 				functions::broadcast::Broadcast<X,X>::template exec<simdOps::Divide<X,X>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);

@@ -209,68 +209,22 @@ namespace nd4j {
         template<typename T, typename Z>
         math_def inline Z nd4j_tan(T val);
 
-		template<typename T, typename Z>
-		math_def inline Z nd4j_atan2(T val1, T val2);
+		template<typename X, typename Z>
+		math_def inline Z nd4j_atan2(X val1, X val2);
 
-		template<>
-		math_def inline float16 nd4j_atan2<float16>(float16 value1, float16 value2) {
-			return (float16) atan2f((float) value1, (float) value2);
+		template<typename X, typename Z>
+		math_def inline Z nd4j_atan2(X val1, X val2) {
+			if (std::is_same<X, float16>::value) {
+				return static_cast<Z>(atan2f((float) val1, (float) val2));
+			} else if (std::is_same<X, double>::value) {
+				return static_cast<Z>(atan2(val1, val2));
+			} else if (std::is_same<X, float>::value) {
+				return static_cast<Z>(atan2(val1, val2));
+			} else {
+                return static_cast<Z>(atan2((float) val1, (float) val2));
+            }
 		}
 
-		template<>
-		math_def inline float nd4j_atan2<float>(float value1, float value2) {
-			return atan2f(value1, value2);
-		}
-
-		template<>
-		math_def inline double nd4j_atan2<double>(double value1, double value2) {
-			return atan2(value1, value2);
-		}
-
-		template<>
-		math_def inline int nd4j_atan2<int>(int value1, int value2) {
-			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
-		}
-
-		template<>
-		math_def inline uint8_t nd4j_atan2<uint8_t>(uint8_t value1, uint8_t value2) {
-			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
-		}
-
-		template<>
-		math_def inline bool nd4j_atan2<bool>(bool value1, bool value2) {
-			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
-		}
-
-		template<>
-		math_def inline uint16_t nd4j_atan2<uint16_t>(uint16_t value1, uint16_t value2) {
-			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
-		}
-
-		template<>
-		math_def inline uint32_t nd4j_atan2<uint32_t>(uint32_t value1, uint32_t value2) {
-			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
-		}
-
-		template<>
-		math_def inline int8_t nd4j_atan2<int8_t>(int8_t value1, int8_t value2) {
-			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
-		}
-
-		template<>
-		math_def inline int16_t nd4j_atan2<int16_t>(int16_t value1, int16_t value2) {
-			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
-		}
-
-		template<>
-		math_def inline Nd4jLong nd4j_atan2<Nd4jLong>(Nd4jLong value1, Nd4jLong value2) {
-			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
-		}
-
-		template<>
-		math_def inline Nd4jULong nd4j_atan2<Nd4jULong>(Nd4jULong value1, Nd4jULong value2) {
-			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
-		}
 
         template<typename T, typename Z>
         math_def inline Z nd4j_tan(T val) {
@@ -629,99 +583,40 @@ namespace nd4j {
 		}
 
 
-		template<>
-        math_def inline float16 nd4j_ceil<float16>(float16 val) {
+		template <typename X, typename Z>
+        math_def inline Z nd4j_ceil(X val) {
+            if (std::is_same<X, float16>::value) {
 #ifdef NATIVE_HALFS
-            return hceil(val.data);
+                return static_cast<Z>(hceil(val.data));
 #else
-			return ceilf((float) val);
+                return static_cast<Z>(ceilf((float) val));
 #endif
+            } else if (std::is_same<X, double>::value) {
+                return static_cast<Z>(ceil(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(ceilf(val));
+            } else {
+                return static_cast<Z>(ceilf((float) val));
+            }
 		}
 
-		template<>
-        math_def inline float nd4j_ceil<float>(float val1) {
-			return ceilf(val1);
-		}
-
-		template<>
-        math_def inline double nd4j_ceil<double>(double val) {
-			return ceil(val);
-		}
-
-		template<>
-        math_def inline int nd4j_ceil<int>(int val) {
-			return ceil((float) val);
-		}
-
-		template<>
-        math_def inline bool nd4j_ceil<bool>(bool val) {
-			return ceil((float) val);
-		}
-
-		template<>
-        math_def inline unsigned char nd4j_ceil<unsigned char>(unsigned char val) {
-			return ceil((float) val);
-		}
-		
-		template<>
-        math_def inline signed char nd4j_ceil<signed char>(signed char val) {
-			return ceil((float) val);
-		}
-
-		template<>
-        math_def inline short int nd4j_ceil<short int>(short int val) {
-			return ceil((float) val);
-		}
-
-		template<>
-        math_def inline long long int nd4j_ceil<long long int>(long long int val) {
-			return ceil((float) val);
-		}
-
-		template<>
-        math_def inline float16 nd4j_cos<float16>(float16 val) {
+		template <typename X, typename Z>
+        math_def inline Z nd4j_cos(X val) {
+            if (std::is_same<X, float16>::value) {
 #ifdef NATIVE_HALFS
-			return hcos(val.data);
+			return static_cast<Z>(hcos(val.data));
 #else
-			return cosf((float) val);
+			return static_cast<Z>(cosf((float) val));
 #endif
+			} else if (std::is_same<X, double>::value) {
+				return static_cast<Z>(cos(val));
+			} else if (std::is_same<X, float>::value) {
+				return static_cast<Z>(cosf(val));
+			} else {
+				return static_cast<Z>(cosf((float) val));
+			}
 		}
 
-		template<>
-        math_def inline float nd4j_cos<float>(float val) {
-			return cosf(val);
-		}
-
-		template<>
-        math_def inline double nd4j_cos<double>(double val) {
-			return cos(val);
-		}
-
-		template<>
-        math_def inline int nd4j_cos<int>(int val) {
-			return cosf((float) val);
-		}
-
-
-        template<>
-        math_def inline float16 nd4j_cosh<float16>(float16 val) {
-            return coshf((float) val);
-        }
-
-        template<>
-        math_def inline float nd4j_cosh<float>(float val) {
-            return coshf(val);
-        }
-
-        template<>
-        math_def inline double nd4j_cosh<double>(double val) {
-            return cosh(val);
-        }
-
-        template<>
-        math_def inline int nd4j_cosh<int>(int val) {
-            return coshf((float) val);
-        }
 
 
 		template <typename X, typename Z>
@@ -741,70 +636,23 @@ namespace nd4j {
             }
         }
 
-		template<>
-        math_def inline float16 nd4j_floor<float16>(float16 val) {
+		template<typename X, typename Z>
+        math_def inline Z nd4j_floor(X val) {
+            if (std::is_same<X, float16>::value) {
 #ifdef NATIVE_HALFS
-            return hfloor(val.data);
+                return hfloor(val.data);
 #else
-			return (float16) floorf((float) val);
+                return static_cast<Z>(floorf((float) val));
 #endif
+            } else if (std::is_same<X, double>::value) {
+                return static_cast<Z>(floor(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(floorf(val));
+            } else {
+                return static_cast<Z>(floorf((float) val));
+            }
 		}
 
-
-		template<>
-        math_def inline float nd4j_floor<float>(float val) {
-			return floorf(val);
-		}
-
-		template<>
-        math_def inline double nd4j_floor<double>(double val) {
-			return floor(val);
-		}
-
-		template<>
-        math_def inline int nd4j_floor<int>(int val) {
-			return val;
-		}
-
-		template<>
-		math_def inline int8_t nd4j_floor<int8_t>(int8_t val) {
-			return val;
-		}
-
-		template<>
-		math_def inline bool nd4j_floor<bool>(bool val) {
-			return val;
-		}
-
-		template<>
-		math_def inline uint8_t nd4j_floor<uint8_t>(uint8_t val) {
-			return val;
-		}
-
-		template<>
-		math_def inline int16_t nd4j_floor<int16_t>(int16_t val) {
-			return val;
-		}
-
-		template<>
-		math_def inline uint16_t nd4j_floor<uint16_t>(uint16_t val) {
-			return val;
-		}
-
-		template<>
-		math_def inline uint32_t nd4j_floor<uint32_t>(uint32_t val) {
-			return val;
-		}
-
-		template<>
-		math_def inline Nd4jULong nd4j_floor<Nd4jULong>(Nd4jULong val) {
-			return val;
-		}
-
-		template<>
-		math_def inline Nd4jLong nd4j_floor<Nd4jLong>(Nd4jLong val) {
-			return val;
-		}
 
 		template<typename X, typename Z>
         math_def inline Z nd4j_log(X val) {

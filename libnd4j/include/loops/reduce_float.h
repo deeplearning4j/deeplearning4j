@@ -58,7 +58,7 @@ namespace functions {
  * elements.
  */
         template<typename X, typename Z>
-        class ReduceFunction {
+        class ReduceFloatFunction {
         public:
 #ifdef __CUDACC__
             template<typename OpType>

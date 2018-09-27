@@ -20,7 +20,7 @@
 
 #include <types/types.h>
 #include <op_boilerplate.h>
-#include <loops/reduce.h>
+#include <loops/reduce_float.h>
 #include <loops/legacy_ops.h>
 
 using namespace simdOps;
@@ -29,7 +29,7 @@ namespace functions {
     namespace reduce {
         template <typename X, typename Z>
         template <typename OpType>
-        void _CUDA_H ReduceFunction<X,Z>::execScalar(void *vx,
+        void _CUDA_H ReduceFloatFunction<X,Z>::execScalar(void *vx,
                                                 Nd4jLong *xShapeInfo,
                                                 void *vextraParams,
                                                 void *vz,
@@ -87,7 +87,7 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-            X _CUDA_H ReduceFunction<X, Z>::execScalar(void *vx,
+            Z _CUDA_H ReduceFloatFunction<X, Z>::execScalar(void *vx,
                     Nd4jLong *xShapeInfo,
                     void *vextraParams) {
                 auto x = reinterpret_cast<X *>(vx);
@@ -140,25 +140,25 @@ namespace functions {
             }
 
         template <typename X, typename Y>
-        Y ReduceFunction<X, Y>::execScalar(const int opNum,
+        Y ReduceFloatFunction<X, Y>::execScalar(const int opNum,
                 void *x,
                 Nd4jLong *xShapeInfo,
                 void *extraParams) {
-                RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_OPS);
+                RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_FLOAT_OPS);
         }
 
         template <typename X, typename Y>
-        void ReduceFunction<X, Y>::execScalar(const int opNum,
+        void ReduceFloatFunction<X, Y>::execScalar(const int opNum,
                                         void *x,
                                         Nd4jLong *xShapeInfo,
                                         void *extraParams,
                                         void *z,
                                         Nd4jLong *zShapeInfo) {
-            DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_OPS);
+            DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_FLOAT_OPS);
         }
 
         template <typename X, typename Y>
-        void ReduceFunction<X, Y>::exec(const int opNum,
+        void ReduceFloatFunction<X, Y>::exec(const int opNum,
                              void *x,
                              Nd4jLong *xShapeInfo,
                              void *extraParams,
@@ -177,12 +177,12 @@ namespace functions {
                                                dimensionLength,
                                                tadShapeInfo,
                                                tadOffset),
-                                  REDUCE_OPS);
+                                  REDUCE_FLOAT_OPS);
         }
 
         template <typename X, typename Z>
         template <typename OpType>
-        void _CUDA_H ReduceFunction<X,Z>::exec(void *vx,
+        void _CUDA_H ReduceFloatFunction<X,Z>::exec(void *vx,
                              Nd4jLong *xShapeInfo,
                              void *vextraParams,
                              void *vresult,
@@ -293,7 +293,7 @@ namespace functions {
 
         template <typename X, typename Z>
         template<typename OpType>
-        void _CUDA_H ReduceFunction<X,Z>::exec(void *x,
+        void _CUDA_H ReduceFloatFunction<X,Z>::exec(void *x,
                              Nd4jLong *xShapeInfo,
                              void *extraParams,
                              void *vresult,
@@ -305,7 +305,7 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-        Z _CUDA_H ReduceFunction<X, Z>::execScalar(void *vx,
+        Z _CUDA_H ReduceFloatFunction<X, Z>::execScalar(void *vx,
                 Nd4jLong xElementWiseStride,
                 Nd4jLong length,
                 void *vextraParams) {
@@ -427,20 +427,20 @@ namespace functions {
             }
 
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceFunction, , FLOAT_TYPES, FLOAT_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceFloatFunction, , LIBND4J_TYPES, FLOAT_TYPES);
 
-        //template void ReduceFunction<float16>::exec<simdOps::LogSumExp<float16>>(float16*, int*, float16*, float16*, int*, int*, int, int*, Nd4jLong*);
-        //template void ReduceFunction<float>::exec<simdOps::LogSumExp<float>>(float*, int*, float*, float*, int*, int*, int, int*, Nd4jLong*);
-        //template void ReduceFunction<double>::exec<simdOps::LogSumExp<double>>(double*, int*, double*, double*, int*, int*, int, int*, Nd4jLong*);
+        //template void ReduceFloatFunction<float16>::exec<simdOps::LogSumExp<float16>>(float16*, int*, float16*, float16*, int*, int*, int, int*, Nd4jLong*);
+        //template void ReduceFloatFunction<float>::exec<simdOps::LogSumExp<float>>(float*, int*, float*, float*, int*, int*, int, int*, Nd4jLong*);
+        //template void ReduceFloatFunction<double>::exec<simdOps::LogSumExp<double>>(double*, int*, double*, double*, int*, int*, int, int*, Nd4jLong*);
 
         /*
-        BUILD_CALL_1(template void ReduceFunction<float>::exec, float, (float*, Nd4jLong*, float*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
-        BUILD_CALL_1(template void ReduceFunction<float16>::exec, float16, (float16*, Nd4jLong*, float16*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
-        BUILD_CALL_1(template void ReduceFunction<double>::exec, double, (double*, Nd4jLong*, double*, double*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
+        BUILD_CALL_1(template void ReduceFloatFunction<float>::exec, float, (float*, Nd4jLong*, float*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
+        BUILD_CALL_1(template void ReduceFloatFunction<float16>::exec, float16, (float16*, Nd4jLong*, float16*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
+        BUILD_CALL_1(template void ReduceFloatFunction<double>::exec, double, (double*, Nd4jLong*, double*, double*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
 
-        BUILD_CALL_1(template float ReduceFunction<float>::execScalar, float, (float *x, Nd4jLong *, float*), REDUCE_OPS)
-        BUILD_CALL_1(template float16 ReduceFunction<float16>::execScalar, float16, (float16 *x, Nd4jLong *, float16*), REDUCE_OPS)
-        BUILD_CALL_1(template double ReduceFunction<double>::execScalar, double, (double *x, Nd4jLong *, double*), REDUCE_OPS)
+        BUILD_CALL_1(template float ReduceFloatFunction<float>::execScalar, float, (float *x, Nd4jLong *, float*), REDUCE_OPS)
+        BUILD_CALL_1(template float16 ReduceFloatFunction<float16>::execScalar, float16, (float16 *x, Nd4jLong *, float16*), REDUCE_OPS)
+        BUILD_CALL_1(template double ReduceFloatFunction<double>::execScalar, double, (double *x, Nd4jLong *, double*), REDUCE_OPS)
          */
     }
 }

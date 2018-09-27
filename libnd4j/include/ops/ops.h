@@ -39,7 +39,7 @@
 #define no_op_exec_special_bool 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_same 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, X *result, Nd4jLong *resultShapeBuffer, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_accumulation 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
+#define no_op_exec_special_accumulation 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, Z *extraParams, Z *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
 #ifdef __CUDACC__
 #include <helpers/sharedmem.h>
 #define no_op_exec_special_cuda static __device__ void execSpecialCuda(T *dx, Nd4jLong *xShapeBuffer,T *result, Nd4jLong *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
@@ -407,12 +407,12 @@ namespace simdOps {
     public:
         op_def static Z op(X d1, Y d2) {
 			auto m = nd4j::math::nd4j_fmod<X, Y, Z>(d1, d2);;
-            return (d1 < static_cast<X>(0)) == (d2 < static_cast<Y>(0)) ? m : nd4j::math::nd4j_fmod<X, Y, X>(m + d2, d2);
+            return (d1 < static_cast<X>(0)) == (d2 < static_cast<Y>(0)) ? m : nd4j::math::nd4j_fmod<X, Y, Z>(m + d2, d2);
         }
 
         op_def static Z op(X d1, Y d2, Z *params) {
             auto m = nd4j::math::nd4j_fmod<X, Y, Z>(d1, d2);
-			return (d1 < static_cast<X>(0.0f)) == (d2 < static_cast<Y>(0)) ? m : nd4j::math::nd4j_fmod<X, Y, X>(m + d2, d2);
+			return (d1 < static_cast<X>(0.0f)) == (d2 < static_cast<Y>(0)) ? m : nd4j::math::nd4j_fmod<X, Y, Z>(m + d2, d2);
         }
 
         op_def static Z op(X d1) {
@@ -2219,7 +2219,7 @@ namespace simdOps {
         no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Y d2) {
-			return nd4j::math::nd4j_atan2<X>(d2, d1);
+			return nd4j::math::nd4j_atan2<X, Z>(d2, d1);
 		}
 
         op_def static Z op(X d1, Y d2, Z *params) {
@@ -2317,7 +2317,7 @@ namespace simdOps {
 
 
 
-    template <typename X>
+    template <typename X, typename Z>
     class ShannonEntropy {
     public:
         no_op_exec_special_accumulation
@@ -2345,7 +2345,7 @@ namespace simdOps {
     };
 
 
-    template <typename X>
+    template <typename X, typename Z>
     class LogEntropy {
     public:
         no_op_exec_special_accumulation
@@ -2373,7 +2373,7 @@ namespace simdOps {
         }
     };
 
-    template <typename X>
+    template <typename X, typename Z>
     class Entropy {
     public:
         no_op_exec_special_accumulation
@@ -2429,7 +2429,7 @@ namespace simdOps {
     };
 
 
-    template <typename X>
+    template <typename X, typename Z>
     class CountNonZero {
     public:
         no_op_exec_special_accumulation
@@ -2457,7 +2457,7 @@ namespace simdOps {
     };
 
 
-    template <typename X>
+    template <typename X, typename Z>
     class CountZero {
     public:
         no_op_exec_special_accumulation
@@ -2512,7 +2512,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Any {
 	public:
 		no_op_exec_special_accumulation
@@ -2534,13 +2534,13 @@ namespace simdOps {
 			return d1;
 		}
 
-		op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
-			return reduction > static_cast<X>(0) ? static_cast<X>(1) : static_cast<X>(0) ;
+		op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
+			return reduction > static_cast<X>(0) ? static_cast<Z>(1) : static_cast<Z>(0) ;
 		}
 	};
 
 
-    template <typename X>
+    template <typename X, typename Z>
     class All {
     public:
         no_op_exec_special_accumulation
@@ -2562,12 +2562,12 @@ namespace simdOps {
             return d1;
         }
 
-        op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
-            return reduction > static_cast<X>(0) ? static_cast<X>(1) : static_cast<X>(0);
+        op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
+            return reduction > static_cast<X>(0) ? static_cast<Z>(1) : static_cast<Z>(0);
         }
     };
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Mean {
 	public:
         no_op_exec_special_accumulation
@@ -2589,13 +2589,13 @@ namespace simdOps {
 			return d1;
 		}
 
-		op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
-			return reduction / (int) n;
+		op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
+			return (Z)( reduction / (Z) n);
 		}
 	};
 
 
-    template <typename X>
+    template <typename X, typename Z>
     class AMean {
     public:
         no_op_exec_special_accumulation
@@ -2622,7 +2622,7 @@ namespace simdOps {
         }
     };
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Max {
 	public:
         no_op_exec_special_accumulation
@@ -2709,7 +2709,7 @@ namespace simdOps {
 		}
 	};
 
-    template <typename X>
+    template <typename X, typename Z>
     class AMax {
     public:
         no_op_exec_special_accumulation
@@ -2740,13 +2740,13 @@ namespace simdOps {
             return nd4j::math::nd4j_abs<X>(d1);
         }
 
-        op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
+        op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
             return nd4j::math::nd4j_abs<X>(reduction);
         }
     };
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class AMin {
 	public:
         no_op_exec_special_accumulation
@@ -2782,7 +2782,7 @@ namespace simdOps {
 		}
 	};
 
-    template <typename X>
+    template <typename X, typename Z>
     class Min {
     public:
         no_op_exec_special_accumulation
@@ -2819,7 +2819,7 @@ namespace simdOps {
     };
 
 
-    template <typename X>
+    template <typename X, typename Z>
 	class Norm1 {
 	public:
         no_op_exec_special_accumulation
@@ -2849,7 +2849,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Norm2 {
 	public:
         no_op_exec_special_accumulation
@@ -2878,7 +2878,7 @@ namespace simdOps {
         }
     };
 
-	template <typename X>
+	template <typename X, typename Z>
 	class SquaredNorm {
 	public:
         no_op_exec_special_accumulation
@@ -2906,7 +2906,7 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class NormFrobenius {
 	public:
         no_op_exec_special_accumulation
@@ -2935,7 +2935,7 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class NormP {
 	public:
         no_op_exec_special_accumulation
@@ -2962,7 +2962,7 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class NormMax {
 	public:
         no_op_exec_special_accumulation
@@ -2992,7 +2992,7 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Variance {
 	public:
         no_op_exec_special_accumulation
@@ -3027,7 +3027,7 @@ namespace simdOps {
 	/**
 	* Standard deviation of a buffer
 	*/
-	template <typename X>
+	template <typename X, typename Z>
 	class StandardDeviation {
 	public:
         no_op_exec_special_accumulation
