@@ -47,7 +47,7 @@ TEST_F(ConditionalTests, BasicTests_1) {
     auto x  =     NDArrayFactory::valueOf({2, 2}, 1.0f);
     auto y0 =     NDArrayFactory::valueOf({2, 2}, 5.0f);
     auto y1 =     NDArrayFactory::valueOf({2, 2}, -5.0f);
-    auto scalar = NDArrayFactory::scalar_(1.0f);
+    auto scalar = NDArrayFactory::create_(1.0f);
 
     auto variableSpace = graph.getVariableSpace();
 

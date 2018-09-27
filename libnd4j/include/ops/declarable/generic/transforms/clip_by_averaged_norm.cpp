@@ -33,7 +33,7 @@ CONFIGURABLE_OP_IMPL(clipbyavgnorm, 1, 1, true, 1, 0) {
     auto output = OUTPUT_VARIABLE(0);
 
     const bool isInplace = block.isInplace();
-    auto ts = NDArrayFactory::scalar(T_ARG(0));
+    auto ts = NDArrayFactory::create(T_ARG(0));
 
     helpers::clipByAveraged(*input, *output, *block.getIArguments(), ts, isInplace);
 

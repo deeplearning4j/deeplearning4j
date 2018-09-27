@@ -88,7 +88,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    NDArray* NDArrayFactory::scalar_(T scalar, nd4j::memory::Workspace* workspace) {
+    NDArray* NDArrayFactory::create_(const T scalar, nd4j::memory::Workspace* workspace) {
         
         auto res = new NDArray();        
 
@@ -104,36 +104,19 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 
         return res;
     }
-    template NDArray* NDArrayFactory::scalar_(double scalar, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::scalar_(float scalar, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::scalar_(float16 scalar, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::scalar_(Nd4jLong scalar, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::scalar_(int scalar, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::scalar_(bool scalar, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::scalar_(int8_t scalar, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::scalar_(uint8_t scalar, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::scalar_(int16_t scalar, nd4j::memory::Workspace* workspace);
+    template NDArray* NDArrayFactory::create_(double scalar, nd4j::memory::Workspace* workspace);
+    template NDArray* NDArrayFactory::create_(float scalar, nd4j::memory::Workspace* workspace);
+    template NDArray* NDArrayFactory::create_(float16 scalar, nd4j::memory::Workspace* workspace);
+    template NDArray* NDArrayFactory::create_(Nd4jLong scalar, nd4j::memory::Workspace* workspace);
+    template NDArray* NDArrayFactory::create_(int scalar, nd4j::memory::Workspace* workspace);
+    template NDArray* NDArrayFactory::create_(bool scalar, nd4j::memory::Workspace* workspace);
+    template NDArray* NDArrayFactory::create_(int8_t scalar, nd4j::memory::Workspace* workspace);
+    template NDArray* NDArrayFactory::create_(uint8_t scalar, nd4j::memory::Workspace* workspace);
+    template NDArray* NDArrayFactory::create_(int16_t scalar, nd4j::memory::Workspace* workspace);
 
-////////////////////////////////////////////////////////////////////////
-    template <>
-    NDArray NDArrayFactory::scalar(nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
-        
-        NDArray res;
-        
-        int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, 1 * DataTypeUtils::sizeOfElement(dataType), int8_t); 
-
-        res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(dataType, workspace));
-        res.setBuffer(buffer);
-        res.triggerAllocationFlag(true, true);
-        res.setWorkspace(workspace);
-        res.assign(0.0f);
-
-        return res;
-    }
 
     template <typename T>
-    NDArray NDArrayFactory::scalar(T scalar, nd4j::memory::Workspace* workspace) {
+    NDArray NDArrayFactory::create(const T scalar, nd4j::memory::Workspace* workspace) {
 
         NDArray res;
 
@@ -149,21 +132,6 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 
         return res;
     }
-    template NDArray NDArrayFactory::scalar(double scalar, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::scalar(float scalar, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::scalar(float16 scalar, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::scalar(Nd4jLong scalar, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::scalar(int scalar, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::scalar(int8_t scalar, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::scalar(uint8_t scalar, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::scalar(int16_t scalar, nd4j::memory::Workspace* workspace);
-    template NDArray NDArrayFactory::scalar(bool scalar, nd4j::memory::Workspace* workspace);
-
-
-    template <typename T>
-    NDArray NDArrayFactory::create(T scalar, nd4j::memory::Workspace* workspace) {
-        return NDArrayFactory::scalar<T>(scalar, workspace);
-    }
     template NDArray NDArrayFactory::create(double scalar, nd4j::memory::Workspace* workspace);
     template NDArray NDArrayFactory::create(float scalar, nd4j::memory::Workspace* workspace);
     template NDArray NDArrayFactory::create(float16 scalar, nd4j::memory::Workspace* workspace);
@@ -173,6 +141,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template NDArray NDArrayFactory::create(uint8_t scalar, nd4j::memory::Workspace* workspace);
     template NDArray NDArrayFactory::create(int16_t scalar, nd4j::memory::Workspace* workspace);
     template NDArray NDArrayFactory::create(bool scalar, nd4j::memory::Workspace* workspace);
+
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -347,21 +316,6 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::memory::Workspace* wo
     
     return res;
 }
-
-////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    NDArray* NDArrayFactory::create_(const T value, nd4j::memory::Workspace* workspace) {
-        return NDArrayFactory::scalar_<T>(value, workspace);
-    }
-    template NDArray* NDArrayFactory::create_(const double value, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const float value, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const float16 value, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const Nd4jLong value, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const int value, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const int16_t value, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const int8_t value, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const uint8_t value, nd4j::memory::Workspace* workspace);
-    template NDArray* NDArrayFactory::create_(const bool value, nd4j::memory::Workspace* workspace);
 
 
 ////////////////////////////////////////////////////////////////////////
