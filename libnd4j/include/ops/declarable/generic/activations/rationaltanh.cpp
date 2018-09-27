@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_rationaltanh)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j {
     namespace ops {
@@ -41,8 +42,8 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            input->applyPairwiseTransform(pairwise::RationalTanhDerivativeE, epsilon, z, nullptr);
-
+            //input->applyPairwiseTransform(pairwise::RationalTanhDerivativeE, epsilon, z, nullptr);
+            helpers::rationalTanhDerivative(input, epsilon, z);
             return Status::OK();
         }
     }

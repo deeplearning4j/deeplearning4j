@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_sigm_cross_entropy_loss)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j {
     namespace ops {
@@ -67,8 +68,8 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 	//auto sigm_cross_entropy_lossWithLogits = LAMBDA_TT(x, z) { return nd4j::math::nd4j_max(x, (T)0.) - x * z + nd4j::math::nd4j_log((T)1. + nd4j::math::nd4j_exp(-nd4j::math::nd4j_abs(x))); };
 	//logits->applyPairwiseLambda(newLabels, sigm_cross_entropy_lossWithLogits, &weightedLosses);
 
-	logits->applyPairwiseTransform(pairwise::SXELossWithLogits, newLabels, &weightedLosses, nullptr);
-
+	//logits->applyPairwiseTransform(pairwise::SXELossWithLogits, newLabels, &weightedLosses, nullptr);
+	helpers::sxeLossWithLogits(logits, newLabels, &weightedLosses);
     // multiply weightedLosses on weights
     weightedLosses *= (*weights);
 

@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_elu)
 
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/legacy_helpers.h>
 namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(elu, 1, 1, true, 0, 0) {
@@ -41,8 +41,8 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            input->applyPairwiseTransform(pairwise::ELUDerivativeE, epsilon, z, nullptr);
-
+            //input->applyPairwiseTransform(pairwise::ELUDerivativeE, epsilon, z, nullptr);
+            helpers::eluDerivative(input, epsilon, z);
             return Status::OK();
         }
     }

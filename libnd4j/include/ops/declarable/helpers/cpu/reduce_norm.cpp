@@ -19,7 +19,8 @@
 //
 
 #include <ResultSet.h>
-#include <ops/declarable/helpers/reduce_product.h>
+//#include <ops/declarable/helpers/reduce_product.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j {
 namespace ops {
@@ -36,7 +37,8 @@ namespace helpers {
         std::unique_ptr<ResultSet> outList(output->allTensorsAlongDimension(dimensions));
         std::unique_ptr<ResultSet> inList(input->allTensorsAlongDimension(dimensions));
         for (int e = 0; e < outList->size(); ++e) {
-            inList->at(e)->applyPairwiseTransform(pairwise::ReduceNorm1E, epsilon, outList->at(e), nullptr);
+            //inList->at(e)->applyPairwiseTransform(pairwise::ReduceNorm1E, epsilon, outList->at(e), nullptr);
+            helpers::reduceNorm1(inList->at(e), epsilon, outList->at(e));
         }
     }
 

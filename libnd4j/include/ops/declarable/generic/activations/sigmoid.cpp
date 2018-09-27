@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_sigmoid)
 
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/legacy_helpers.h>
 namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(sigmoid, 1, 1, true, 0, 0) {
@@ -42,8 +42,8 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            input->applyPairwiseTransform(pairwise::SigmoidDerivativeE, epsilon, z, nullptr);
-
+            //input->applyPairwiseTransform(pairwise::SigmoidDerivativeE, epsilon, z, nullptr);
+            helpers::sigmoidDerivative(input, epsilon, z);
             return Status::OK();
         }
     }

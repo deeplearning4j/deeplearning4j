@@ -794,7 +794,7 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
                 return cn * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
             };
 
-            (const_cast<NDArray&>(input)).applyPairwiseLambda<T>(&gradO, lambda, &gradI);
+            (const_cast<NDArray&>(input)).applyPairwiseLambda<T>(const_cast<NDArray*>(&gradO), lambda, &gradI);
         }
         else 
             gradI.assign(gradO);

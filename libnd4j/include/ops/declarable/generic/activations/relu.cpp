@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_relu)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j {
     namespace ops {
@@ -42,8 +43,8 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            input->applyPairwiseTransform(pairwise::RELUDerivativeE, epsilon, z, nullptr);
-
+            //input->applyPairwiseTransform(pairwise::RELUDerivativeE, epsilon, z, nullptr);
+            helpers::reluDerivative(input, epsilon, z);
             return Status::OK();
         }
         DECLARE_SYN(ReluGrad, relu_bp);

@@ -23,7 +23,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
-
+#include <ops/declarable/helpers/legacy_helpers.h>
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(crelu, 1, 1, false, 0, 0) {
@@ -82,8 +82,8 @@ namespace nd4j {
             auto actv = tmpResult->at(0);
 
             // now we do RELU backward pass
-            actv->applyPairwiseTransform(pairwise::RELUDerivativeE, epsilon, nullptr);
-
+            //actv->applyPairwiseTransform(pairwise::RELUDerivativeE, epsilon, nullptr);
+            helpers::reluDerivative(actv, epsilon);
             // now we split updated array into 2 chunks along last dimension
             nd4j::ops::concat_bp opc;
             auto dec = opc.execute({input, input, actv}, {},{-1});

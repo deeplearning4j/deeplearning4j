@@ -23,6 +23,7 @@
 #if NOT_EXCLUDED(OP_cube)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j {
     namespace ops {
@@ -43,8 +44,8 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            input->applyPairwiseTransform(pairwise::CUBEDerivativeE, epsilon, z, nullptr);
-
+            //input->applyPairwiseTransform(pairwise::CUBEDerivativeE, epsilon, z, nullptr);
+            helpers::cubeDerivative(input, epsilon, z);
             return Status::OK();
         }
     }

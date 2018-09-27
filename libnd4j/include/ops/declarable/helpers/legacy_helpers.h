@@ -26,40 +26,40 @@ namespace ops {
 namespace helpers {
 /*
     FORCEINLINE void reluDerivative(NDArray* theFirst, NDArray const* theSecond);
-    FORCEINLINE void reluDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void relu6Derivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void leakyReluDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void eluDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void seluDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void cubeDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void reduceNorm1(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void sxeLossWithLogits(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void tanhDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void hardTanhDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void rationalTanhDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void rectifiedTanhDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void softSignDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void softPlusDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void sigmoidDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    FORCEINLINE void hardSigmoidDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
+    FORCEINLINE void reluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void relu6Derivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void leakyReluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void eluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void seluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void cubeDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void reduceNorm1(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void sxeLossWithLogits(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void tanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void hardTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void rationalTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void rectifiedTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void softSignDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void softPlusDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void sigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    FORCEINLINE void hardSigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
 */
     void reluDerivative(NDArray* theFirst, NDArray* theSecond);
     void reluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void relu6Derivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void leakyReluDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void eluDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void seluDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void cubeDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void reduceNorm1(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void sxeLossWithLogits(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void tanhDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void hardTanhDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void rationalTanhDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void rectifiedTanhDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void softSignDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void softPlusDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void sigmoidDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
-    void hardSigmoidDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput);
+    void relu6Derivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void leakyReluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void eluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void seluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void cubeDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void reduceNorm1(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void sxeLossWithLogits(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void tanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void hardTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void rationalTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void rectifiedTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void softSignDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void softPlusDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void sigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void hardSigmoidDerivative(NDArray* theFirst, NDArray const* theSecond, NDArray* theOutput);
 
 }
 }

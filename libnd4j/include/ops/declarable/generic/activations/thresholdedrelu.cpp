@@ -23,7 +23,7 @@
 #if NOT_EXCLUDED(OP_thresholdedrelu)
 
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/legacy_helpers.h>
 namespace nd4j {
 namespace ops  {
 
@@ -66,8 +66,8 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
 */
 
     // FIXME: we should have proper extra set here
-    input->applyPairwiseTransform(pairwise::RELUDerivativeE, dLdO, dLdI, nullptr);
-
+    //input->applyPairwiseTransform(pairwise::RELUDerivativeE, dLdO, dLdI, nullptr);
+    helpers::reluDerivative(input, dLdO, dLdI);
     return Status::OK();
 }
 

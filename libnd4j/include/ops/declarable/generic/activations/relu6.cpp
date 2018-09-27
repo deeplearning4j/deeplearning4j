@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_relu6)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j {
 namespace ops  {
@@ -44,8 +45,8 @@ CONFIGURABLE_OP_IMPL(relu6_bp, 2, 1, true, 0, 0) {
     auto gradO = INPUT_VARIABLE(1);
     auto gradI = OUTPUT_VARIABLE(0);
 
-    input->applyPairwiseTransform(pairwise::RELU6DerivativeE, gradO, gradI, nullptr);
-
+    //input->applyPairwiseTransform(pairwise::RELU6DerivativeE, gradO, gradI, nullptr);
+    helpers::relu6Derivative(input, gradO, gradI);
     return Status::OK();
 }
 

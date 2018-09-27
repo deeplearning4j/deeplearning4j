@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_selu)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j {
     namespace ops {
@@ -42,8 +43,8 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            input->applyPairwiseTransform(pairwise::SELUDerivativeE, epsilon, z, nullptr);
-
+            //input->applyPairwiseTransform(pairwise::SELUDerivativeE, epsilon, z, nullptr);
+            helpers::seluDerivative(input, epsilon, z);
             return Status::OK();
         }
     }
