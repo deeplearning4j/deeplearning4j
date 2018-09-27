@@ -35,10 +35,14 @@
         (DATA_UINT8, uint8_t) ,\
         (DATA_UINT16, uint16_t)
 
+#define PWT_LIST \
+    (float, long, float),\
+    (float, long, long)        
 
-//BUILD_PAIRWISE_TEMPLATE(functionName, (signature), DATA_TYPES, Y_TYPES);
 
-BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES);
+BUILD_PAIRWISE_TEMPLATE(functionName, (signature), PWT_LIST);
+
+//BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES);
 
 //BUILD_SINGLE_UNCHAINED_TEMPLATE(functionName , (signature), Y_TYPES);
 
