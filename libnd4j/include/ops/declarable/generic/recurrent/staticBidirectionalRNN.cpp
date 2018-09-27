@@ -85,12 +85,12 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     auto hFW = new NDArray(x->ordering(), {time, bS, numUnitsFW}, x->dataType(), block.getWorkspace());
     helpers::rnnTimeLoop(x, WxFW, WhFW, bFW, h0FW, maxTimeStep, hFW, hFWFinal);    
 
-    auto seqLen = maxTimeStep;
-    if(seqLen == nullptr) {    	
+    auto seqLen = maxTimeStep;    
+    if(seqLen == nullptr) {    	        
     	seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, x->dataType(), block.getWorkspace());	  // [bS]
-    	*seqLen = x->sizeAt(0);														                  // set each element of seqLen to be equal to time
-    }
-
+        *seqLen = x->sizeAt(0);                                 			                  // set each element of seqLen to be equal to time
+    }    
+    
     // reverse x 
     auto revOut = new NDArray(x, false, block.getWorkspace());
     helpers::reverseSequence(x, seqLen, revOut, 0, 1);    
@@ -100,13 +100,13 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     
     helpers::rnnTimeLoop(revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep, hBW, hBWFinal);
 
-    // reverse hBW 
-    auto hBWcopy = new NDArray(*hBW);     
+    // reverse hBW     
+    auto hBWcopy = new NDArray(*hBW);  
     helpers::reverseSequence(hBWcopy, seqLen, hBW, 0, 1);
 
     // concatenate hFW and hBW along last third dimension
     // NDArrayFactory<T>::concat({hFW, hBW}, 2, h);
-    helpers::concat({hFW, hBW}, *h, 2);
+    helpers::concat({hFW, hBW}, *h, 2);    
 
     delete hBW;
     delete hFW;
