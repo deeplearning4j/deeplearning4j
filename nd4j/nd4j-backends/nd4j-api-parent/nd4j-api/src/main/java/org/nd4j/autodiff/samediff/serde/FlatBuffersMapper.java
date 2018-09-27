@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ops.impl.accum.BaseReduction;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.ByteOrder;
 import java.util.*;
@@ -393,8 +394,27 @@ public class FlatBuffersMapper {
                         aIdx[j] = arrArr[j].toFlatArray(fbb);
                     }
                 } else if(v.getClass().getComponentType().isArray()){
+                    shape = ArrayUtil.arrayShape(v, true);
                     //Multi-dimensional array
-                    throw new UnsupportedOperationException("Multi-dimensional array not yet implemented");
+                    if(v instanceof boolean[][]) {
+                        b = ArrayUtil.flatten((boolean[][]) v);
+                    } else if(v instanceof boolean[][][]){
+                        b = ArrayUtil.flatten((boolean[][][]) v);
+                    } else if(v instanceof double[][]){
+                        d = ArrayUtil.flatten((double[][]) v);
+                    } else if(v instanceof double[][][]){
+                        d = ArrayUtil.flatten((double[][][]) v);
+                    } else if(v instanceof int[][]){
+                        i = ArrayUtil.flatten((int[][])v);
+                    } else if(v instanceof int[][][]){
+                        i = ArrayUtil.flatten((int[][][])v);
+                    } else if(v instanceof long[][]){
+                        l = ArrayUtil.flatten((long[][])v);
+                    } else if(v instanceof long[][][]){
+                        l = ArrayUtil.flatten((long[][][])v);
+                    } else {
+                        throw new UnsupportedOperationException("Unable to map multidimensional array property \"" + e.getKey() + "\" of type " + v.getClass());
+                    }
                 }
             }
 
@@ -424,47 +444,84 @@ public class FlatBuffersMapper {
                 for( int i=0; i<shape.length; i++ ){
                     shape[i] = p.shape(i);
                 }
-                if(shape.length != 1){
-                    throw new IllegalStateException("Multi-dimensional arrays not yet implemented");
-                }
+//                if(shape.length != 1){
+//
+//                    throw new IllegalStateException("Multi-dimensional arrays not yet implemented");
+//                }
 
                 if(p.iLength() > 0){
                     int[] iArr = new int[p.iLength()];
                     for( int i=0; i<iArr.length; i++ ){
                         iArr[i] = p.i(i);
                     }
-                    out.put(name, iArr);
+                    if(shape.length == 0 || shape.length == 1) {
+                        out.put(name, iArr);
+                    } else if(shape.length == 2){
+                        out.put(name, ArrayUtil.reshapeInt(iArr, shape[0], shape[1]));
+                    } else if(shape.length == 3){
+                        out.put(name, ArrayUtil.reshapeInt(iArr, shape[0], shape[1], shape[2]));
+                    }
                 } else if(p.dLength() > 0){
                     double[] dArr = new double[p.dLength()];
                     for( int i=0; i<dArr.length; i++ ){
                         dArr[i] = p.d(i);
                     }
-                    out.put(name, dArr);
+                    if(shape.length == 0 || shape.length == 1) {
+                        out.put(name, dArr);
+                    } else if(shape.length == 2){
+                        out.put(name, ArrayUtil.reshapeDouble(dArr, shape[0], shape[1]));
+                    } else if(shape.length == 3){
+                        out.put(name, ArrayUtil.reshapeDouble(dArr, shape[0], shape[1], shape[2]));
+                    }
                 } else if(p.lLength() > 0) {
                     long[] lArr = new long[p.lLength()];
                     for (int i = 0; i < lArr.length; i++) {
                         lArr[i] = p.l(i);
                     }
-                    out.put(name, lArr);
+                    if(shape.length == 0 || shape.length == 1) {
+                        out.put(name, lArr);
+                    } else if(shape.length == 2){
+                        out.put(name, ArrayUtil.reshapeLong(lArr, shape[0], shape[1]));
+                    } else if(shape.length == 3){
+                        out.put(name, ArrayUtil.reshapeLong(lArr, shape[0], shape[1], shape[2]));
+                    }
                 } else if(p.bLength() > 0){
                     boolean[] bArr = new boolean[p.bLength()];
                     for( int i=0; i<bArr.length; i++ ){
                         bArr[i] = p.b(i);
                     }
-                    out.put(name, bArr);
+                    if(shape.length == 0 || shape.length == 1) {
+                        out.put(name, bArr);
+                    } else if(shape.length == 2){
+                        out.put(name, ArrayUtil.reshapeBoolean(bArr, shape[0], shape[1]));
+                    } else if(shape.length == 3){
+                        out.put(name, ArrayUtil.reshapeBoolean(bArr, shape[0], shape[1], shape[2]));
+                    }
                 } else if(p.sLength() > 0){
                     String[] sArr = new String[p.sLength()];
                     for( int i=0; i<sArr.length; i++ ){
                         sArr[i] = p.s(i);
                     }
-                    out.put(name, sArr);
+                    if(shape.length == 0 || shape.length == 1) {
+                        out.put(name, sArr);
+                    } else if(shape.length == 2){
+                        out.put(name, ArrayUtil.reshapeObject(sArr, shape[0], shape[1]));
+                    } else if(shape.length == 3){
+                        out.put(name, ArrayUtil.reshapeObject(sArr, shape[0], shape[1], shape[2]));
+                    }
                 } else if(p.aLength() > 0){
                     INDArray[] iArr = new INDArray[p.aLength()];
                     for( int i=0; i<iArr.length; i++ ){
                         FlatArray fa = p.a(0);
                         iArr[i] = Nd4j.createFromFlatArray(fa);
                     }
-                    out.put(name, iArr);
+                    if(shape.length == 0 || shape.length == 1) {
+                        out.put(name, iArr);
+                    } else if(shape.length == 2){
+                        out.put(name, ArrayUtil.reshapeObject(iArr, shape[0], shape[1]));
+                    } else if(shape.length == 3){
+                        out.put(name, ArrayUtil.reshapeObject(iArr, shape[0], shape[1], shape[2]));
+                    }
                 }  else {
                     //null property case
                     out.put(name, null);
