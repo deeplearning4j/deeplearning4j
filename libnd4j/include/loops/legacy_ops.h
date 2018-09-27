@@ -80,16 +80,16 @@
         (11,Reciprocal), \
         (12,Square), \
         (13,RELU), \
-        (14,Identity), \
-        (15,Step), \
-        (16,Ceiling), \
-        (17,Floor), \
-        (18,ClipByValue) ,\
-        (19,Stabilize), \
-        (20,StabilizeFP16) ,\
-        (21,DropOut), \
-        (22,Reverse) ,\
-        (23,RELU6)
+        (14,RELU6), \
+        (15,Identity), \
+        (16,Step), \
+        (17,Ceiling), \
+        (18,Floor), \
+        (19,ClipByValue) ,\
+        (20,Stabilize), \
+        (21,StabilizeFP16) ,\
+        (22,DropOut), \
+        (23,Reverse)
 
 // these ops return bool
 #define TRANSFORM_BOOL_OPS \
@@ -123,45 +123,40 @@
         (17,HardTanhDerivative), \
         (18,SigmoidDerivative), \
         (19,SoftSignDerivative), \
-        (20,LeakyRELU), \
-        (21,LeakyRELUDerivative), \
-        (22,SoftMax), \
-        (23,SoftMaxDerivative), \
-        (24,LogSoftMax), \
-        (25,SpecialDerivative), \
-        (26,DropOutInverted), \
-        (27,ReplaceNans) ,\
-        (28,Histogram), \
-        (29,HardSigmoid), \
-        (30,HardSigmoidDerivative) ,\
-        (31,RationalTanh) ,\
-        (32,RationalTanhDerivative) ,\
-        (33,LogX) ,\
-        (34,RectifiedTanh) ,\
-        (35,RectifiedTanhDerivative) ,\
-        (36,Sinh) ,\
-        (37,Cosh) ,\
-        (38,Tan) ,\
-        (39,TanDerivative) ,\
-        (40,SELU) ,\
-        (41,SELUDerivative) ,\
-        (42,Pooling2D) ,\
-        (43,Swish) ,\
-        (44,SwishDerivative) ,\
-        (45,RSqrt), \
-        (46,Log1p), \
-        (47,Erf), \
-        (48,ACosh), \
-        (49,ACoshDerivative) ,\
-        (50,ASinh), \
-        (51,ASinhDerivative) ,\
-        (52,SinhDerivative), \
-        (53,Rint), \
-        (54,LogSigmoid), \
-        (55,LogSigmoidDerivative) ,\
-        (56,Erfc) ,\
-        (57,Expm1), \
-        (58,ATanh)
+        (20,SoftMax), \
+        (21,SoftMaxDerivative), \
+        (22,LogSoftMax), \
+        (23,SpecialDerivative), \
+        (24,Histogram), \
+        (25,HardSigmoid), \
+        (26,HardSigmoidDerivative) ,\
+        (27,RationalTanh) ,\
+        (28,RationalTanhDerivative) ,\
+        (29,RectifiedTanh) ,\
+        (30,RectifiedTanhDerivative) ,\
+        (31,Sinh) ,\
+        (32,Cosh) ,\
+        (33,Tan) ,\
+        (34,TanDerivative) ,\
+        (35,SELU) ,\
+        (36,SELUDerivative) ,\
+        (37,Pooling2D) ,\
+        (38,Swish) ,\
+        (39,SwishDerivative) ,\
+        (40,RSqrt), \
+        (41,Log1p), \
+        (42,Erf), \
+        (43,ACosh), \
+        (44,ACoshDerivative) ,\
+        (45,ASinh), \
+        (46,ASinhDerivative) ,\
+        (47,SinhDerivative), \
+        (48,Rint), \
+        (49,LogSigmoid), \
+        (50,LogSigmoidDerivative) ,\
+        (51,Erfc) ,\
+        (52,Expm1), \
+        (53,ATanh)
 
 
 
@@ -211,7 +206,13 @@
         (34, PowDerivative) ,\
         (35, CompareAndSet) ,\
         (36, SXELogitsSmoother), \
+        (20, LeakyRELU), \
+        (21, LeakyRELUDerivative), \
+        (26, DropOutInverted), \
+        (27, ReplaceNans) ,\
+        (33, LogX) ,\
         (37, LstmClip)
+
 
 
 

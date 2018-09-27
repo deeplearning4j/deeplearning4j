@@ -897,7 +897,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Z *params) {
-			return ((d1 >= static_cast<X>(-1) && d1 <= static_cast<X>(1)) ? static_cast<X>(1) : static_cast<X>(0));
+			return ((d1 >= static_cast<X>(-1) && d1 <= static_cast<X>(1)) ? static_cast<Z>(1) : static_cast<Z>(0));
 		}
 	};
 
@@ -954,14 +954,12 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X, typename Y, typename Z>
 	class LogX {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_log<X, Z>(d1) / nd4j::math::nd4j_log<X, Z>(params[0]) ;
+		op_def static Z op(X d1, Y d2, Z *params) {
+			return nd4j::math::nd4j_log<X, Z>(d1) / nd4j::math::nd4j_log<Y, Z>(d2) ;
 		}
 	};
 
@@ -1021,7 +1019,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_erf<X>(d1);
+			return nd4j::math::nd4j_erf<X,Z>(d1);
 		}
 	};
 
@@ -1033,7 +1031,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_erfc<Z>(d1);
+			return nd4j::math::nd4j_erfc<X,Z>(d1);
 		}
 	};
 
@@ -1379,8 +1377,8 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Z *params) {
-			X ex = nd4j::math::nd4j_pow<X, X, X>(static_cast<X>(M_E), d1);
-			return (ex * (d1 + ex + static_cast<Z>(1))) / nd4j::math::nd4j_pow<X, X, Z>((ex + static_cast<X>(1)) , static_cast<X>(2));
+			Z ex = nd4j::math::nd4j_pow<X, X, Z>(static_cast<X>(M_E), d1);
+			return (ex * (d1 + ex + static_cast<Z>(1))) / nd4j::math::nd4j_pow<Z, X, Z>((ex + static_cast<Z>(1)) , static_cast<X>(2));
 		}
 	};
 
@@ -1392,7 +1390,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_log<X, Z>(nd4j::math::nd4j_sigmoid<X, Z>(d1));
+			return nd4j::math::nd4j_log<Z, Z>(nd4j::math::nd4j_sigmoid<X, Z>(d1));
 		}
 	};
 
@@ -1403,8 +1401,8 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Z *params) {
-			X ex = nd4j::math::nd4j_pow<X, X, Z>(M_E, d1);
-			return static_cast<X>(1) / (ex + static_cast<X>(1));
+			Z ex = nd4j::math::nd4j_pow<X, X, Z>(M_E, d1);
+			return static_cast<Z>(1) / (ex + static_cast<Z>(1));
 		}
 	};
 
@@ -2081,14 +2079,14 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X, typename Y, typename Z>
 	class LeakyRELU {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_leakyrelu<X,Z>(d1, params[0]);
+		op_def static Z op(X d1, Y d2, Z *params) {
+			return nd4j::math::nd4j_leakyrelu<X,Z>(d1, d2);
 		}
 	};
 
@@ -2122,17 +2120,17 @@ namespace simdOps {
         }
     };
 
-	template <typename X, typename Z>
+	template <typename X, typename Y, typename Z>
 	class LeakyRELUDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static Z op(X d1, Z *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			if (d1 >= static_cast<X>(0))
 				return static_cast<Z>(1);
 			else
-				return params[0];
+				return static_cast<Z>(d2);
 		}
 	};
 
@@ -4023,7 +4021,7 @@ namespace simdOps {
 		}
 	};
 
-    template <typename X, typename Z>
+    template <typename X, typename Y, typename Z>
 	class DropOutInverted {
 	public:
 		no_op_exec_special
@@ -4032,8 +4030,8 @@ namespace simdOps {
 #ifdef __CUDACC__
     __device__
 #endif
-        inline static Z op(X d1, Z *params) {
-			X prob = params[0];
+        inline static Z op(X d1, Y d2, Z *params) {
+			Y prob = d2;
 #ifdef __CUDACC__
 			X length = params[1];
 			X tid = gridDim.x * blockDim.x + threadIdx.x;
@@ -4046,15 +4044,14 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X, typename Y, typename Z>
 	class ReplaceNans {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			X replacement = params[0];
-			return nd4j::math::nd4j_isnan(d1) ? replacement : d1 ;
+		op_def static Z op(X d1, Y d2, Z *params) {
+			return nd4j::math::nd4j_isnan(d1) ? d2 : d1 ;
 		}
 	};
 
