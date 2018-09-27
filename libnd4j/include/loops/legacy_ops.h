@@ -94,11 +94,12 @@
 // these ops return bool
 #define TRANSFORM_BOOL_OPS \
         (0,IsMax), \
-        (1,Not) ,\
+        (1,Not), \
         (2,IsInf), \
         (3,IsNan), \
         (4,IsFinite), \
-        (5,MatchCondition)
+        (5,IsInfOrNan), \
+        (6,MatchConditionBool)
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \

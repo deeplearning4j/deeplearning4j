@@ -1903,7 +1903,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 	};
 
 
-	template<typename X>
+	template<typename X, typename Z>
 	class IsMax {
 	public:
 		static const bool requiresSpecial = true;
@@ -1963,7 +1963,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		static void doAll(
 			X *dx,
 			Nd4jLong *xShapeBuffer,
-            bool *result,
+            Z *result,
 			Nd4jLong *resultShapeBuffer,
 			X *extraParams) {
 
@@ -2106,7 +2106,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 						}
 
 						idx++;
-						result[0] = 0.0;
+						result[0] = (Z) 0;
 
 					}
 					ND4J_RAW_ITER_TWO_NEXT(
@@ -2123,9 +2123,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					if (shape::order(resultShapeBuffer) == 'c' || (shape::order(resultShapeBuffer) == 'f' &&
 						maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
 						shape::length(resultShapeBuffer)))
-						originalResult[maxIdx] = 1.0;
+						originalResult[maxIdx] = (Z)1;
 					else
-						originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = 1.0;
+						originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = (Z)1;
 				}
 			}
 
@@ -2155,7 +2155,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		static void execSpecial(
 			X *dx,
 			Nd4jLong *xShapeBuffer,
-			X *result,
+			Z *result,
 			Nd4jLong *resultShapeBuffer,
 			X *extraParams,
 			Nd4jLong *tadShapeInfo,
@@ -2407,7 +2407,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             }
 		}
 
-		op_def static X op(X d1, Z *params) {
+		op_def static Z op(X d1, X *params) {
 			return nd4j::math::softplus<X>(d1);
 		}
 	};

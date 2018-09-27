@@ -20,7 +20,7 @@
 
 #include <op_boilerplate.h>
 #include <types/types.h>
-#include <loops/transform_same.h>
+#include <loops/transform_bool.h>
 #include <loops/legacy_ops.h>
 
 using namespace simdOps;
@@ -28,19 +28,19 @@ using namespace simdOps;
 namespace functions {
     namespace transform {
 
-        template <typename X>
-        void TransformSame<X>::exec(int opNum,
+        template <typename X, typename Y>
+        void TransformBool<X, Y>::exec(int opNum,
                 void *dx,
                 Nd4jLong xStride,
                 void *result,
                 Nd4jLong resultStride,
                 void *extraParams,
                 const Nd4jLong n) {
-            DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_SAME_OPS);
+            DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_BOOL_OPS);
 		}
 
-        template <typename X>
-        void TransformSame<X>::exec(
+        template <typename X, typename Y>
+        void TransformBool<X, Y>::exec(
 				int opNum,
 				void *dx,
 				Nd4jLong *xShapeInfo,
@@ -49,12 +49,12 @@ namespace functions {
 				void *extraParams,
 				Nd4jLong *tadShapeInfo,
 				Nd4jLong *tadOffsets) {
-                    DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_SAME_OPS);
+                    DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_BOOL_OPS);
 		}
 
-        template <typename X>
+        template <typename X, typename Z>
         template<typename OpType>
-		void _CUDA_H TransformSame<X>::exec(
+		void _CUDA_H TransformBool<X, Z>::exec(
                     void *vx,
                     Nd4jLong *xShapeInfo,
                     void *vresult,
@@ -64,11 +64,11 @@ namespace functions {
                     Nd4jLong *tadOffsets) {
 
 		        auto dx = reinterpret_cast<X *>(vx);
-		        auto result = reinterpret_cast<X *>(vresult);
+		        auto result = reinterpret_cast<Z *>(vresult);
 		        auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 if(OpType::requiresSpecial) {
-                    OpType::execSpecial(dx, xShapeInfo, result,resultShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+                    OpType::execSpecial(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets);
                     return;
                 }
 
@@ -89,7 +89,7 @@ namespace functions {
                     auto xStride = shape::stride(xShapeInfo);
                     auto resultStride = shape::stride(resultShapeInfo);
                     int rank = shape::rank(xShapeInfo);
-                    if(PrepareTwoRawArrayIter<X>(rank,
+                    if(PrepareTwoRawArrayIter<X, Z>(rank,
                                                  xShape,
                                                  dx,
                                                  xStride,
@@ -121,16 +121,16 @@ namespace functions {
             }
         }
 
-        template <typename X>
+        template <typename X, typename Z>
         template <typename OpType>
-		void _CUDA_H TransformSame<X>::exec(void *vx,
+		void _CUDA_H TransformBool<X, Z>::exec(void *vx,
                              Nd4jLong xStride,
                              void *vresult,
                              Nd4jLong resultStride,
                              void *vextraParams,
                              const Nd4jLong n) {
                 auto dx = reinterpret_cast<X *>(vx);
-                auto result = reinterpret_cast<X *>(vresult);
+                auto result = reinterpret_cast<Z *>(vresult);
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 int elementsPerThread = n / ELEMENT_THRESHOLD;
@@ -172,6 +172,6 @@ namespace functions {
             }
         }
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TransformSame, , LIBND4J_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformBool, , LIBND4J_TYPES, BOOL_TYPES);
     }
 }

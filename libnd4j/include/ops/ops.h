@@ -36,7 +36,7 @@
 #define DOUBLE_PI_T T(2.0 * 3.14159265358979323846)
 #define DOUBLE_PI_X X(2.0 * 3.14159265358979323846)
 
-#define no_op_exec_special_bool 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, bool *result, Nd4jLong *resultShapeBuffer, bool *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_bool 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_same 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, X *result, Nd4jLong *resultShapeBuffer, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_accumulation 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
@@ -574,7 +574,7 @@ namespace simdOps {
 		no_op_exec_special_bool
 		no_op_exec_special_cuda
 
-		op_def static Z op(X d1, Z *params) {
+		op_def static Z op(X d1, X *params) {
 			auto comp = params[0];
 
 			return d1 == comp ? static_cast<Z>(1) : static_cast<Z>(0);
@@ -1190,7 +1190,7 @@ namespace simdOps {
 	template <typename X, typename Z>
 	class IsNan {
 	public:
-		no_op_exec_special
+		no_op_exec_special_bool
 		no_op_exec_special_cuda
 
 		no_op_exec_special_accumulation
@@ -1234,14 +1234,14 @@ namespace simdOps {
 	template <typename X, typename Z>
 	class IsInf {
 	public:
-		no_op_exec_special
+		no_op_exec_special_bool
 		no_op_exec_special_cuda
 
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
 
 		op_def static Z op(X d1, X *params) {
-			return nd4j::math::nd4j_isinf<X>(d1) ? static_cast<X>(1) : static_cast<X>(0);
+			return nd4j::math::nd4j_isinf<X>(d1) ? static_cast<Z>(1) : static_cast<Z>(0);
 		}
 
         op_def static Z startingValue(const X *input) {
@@ -1267,14 +1267,14 @@ namespace simdOps {
 	template <typename X, typename Z>
 	class IsInfOrNan{
 	public:
-		no_op_exec_special
+		no_op_exec_special_bool
 		no_op_exec_special_cuda
 
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_isfin<X>(d1) ? static_cast<X>(0) : static_cast<X>(1);
+		op_def static Z op(X d1, X *params) {
+			return nd4j::math::nd4j_isfin<X>(d1) ? static_cast<Z>(0) : static_cast<Z>(1);
 		}
 
 		op_def static X startingValue(const X *input) {
@@ -1300,7 +1300,7 @@ namespace simdOps {
 	template <typename X, typename Z>
 	class IsFinite {
 	public:
-		no_op_exec_special
+		no_op_exec_special_bool
 		no_op_exec_special_cuda
 
 		no_op_exec_special_accumulation
@@ -1809,6 +1809,57 @@ namespace simdOps {
 			return nd4j::math::nd4j_softsignderivative<X,Z>(d1);
 		}
 	};
+
+    template <typename X, typename Z>
+    class MatchConditionBool {
+    public:
+        no_op_exec_special_bool
+        no_op_exec_special_cuda
+
+        // this op return 1.0 if condition met, 0.0 otherwise
+        op_def static Z op(X d1, X *extraParams) {
+            X compare = extraParams[0];
+            X eps = extraParams[1];
+
+            auto mode = static_cast<int>(extraParams[2]);
+            //nd4j_printf("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
+
+            switch (mode) {
+                case 0: // equals
+                    return nd4j::math::nd4j_abs<X>(d1 - compare) <= eps ? true : false;
+                case 1: // not equals
+                    return nd4j::math::nd4j_abs<X>(d1 - compare) > eps ? true : false;
+                case 2: // less_than
+                    return d1 < compare ? true : false;
+                case 3: // greater_than
+                    return d1 > compare ? true : false;
+                case 4: // less_or_equals_than
+                    return d1 <= compare ? true : false;
+                case 5: // greater_or_equals_than
+                    return d1 >= compare ? true : false;
+                case 6: // abs_less_than
+                    return nd4j::math::nd4j_abs<X>(d1) < compare ? true : false;
+                case 7: // abs_greater_than
+                    return nd4j::math::nd4j_abs<X>(d1) > compare ? true : false;
+                case 8: // is inf
+                    return nd4j::math::nd4j_isinf(d1) ? true : false;
+                case 9: // is nan
+                    return nd4j::math::nd4j_isnan(d1) ? true : false;
+                case 10:
+                    return (d1 == compare) ? true : false;
+                case 11:
+                    return (d1 != compare) ? true : false;
+                case 12: // abs_greater_or_equals_than
+                    return nd4j::math::nd4j_abs<X>(d1) >= compare ? true : false;
+                case 13: // abs_less_or_equals_than
+                    return nd4j::math::nd4j_abs<X>(d1) <= compare ? true : false;
+                default:
+                    printf("Undefined match condition: [%i]\n", mode);
+            }
+
+            return d1;
+        }
+    };
 
     template <typename X>
     class MatchCondition {
