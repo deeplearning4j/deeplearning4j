@@ -81,28 +81,27 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     if(maxTimeStep)
         REQUIRE_TRUE(ShapeUtils::shapeAsString(maxTimeStep)  == ShapeUtils::shapeAsString({bS}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but got %s instead !", bS, ShapeUtils::shapeAsString(maxTimeStep).c_str());
 
-    // FIXME: constructors
-    /*
-    // forward steps
-    auto hFW = new NDArray({time, bS, numUnitsFW}, block.getWorkspace());
-    helpers::rnnTimeLoop({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, hFW, hFWFinal);
+    // forward steps 
+    auto hFW = new NDArray(x->ordering(), {time, bS, numUnitsFW}, x->dataType(), block.getWorkspace());
+    helpers::rnnTimeLoop(x, WxFW, WhFW, bFW, h0FW, maxTimeStep, hFW, hFWFinal);    
 
     auto seqLen = maxTimeStep;
     if(seqLen == nullptr) {    	
-    	seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, block.getWorkspace());	// [bS]
-    	*seqLen = x->sizeAt(0);														// set each element of seqLen to be equal to time
+    	seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, x->dataType(), block.getWorkspace());	  // [bS]
+    	*seqLen = x->sizeAt(0);														                  // set each element of seqLen to be equal to time
     }
 
     // reverse x 
     auto revOut = new NDArray(x, false, block.getWorkspace());
-    helpers::reverseSequence<T>(x, seqLen, revOut, 0, 1);
+    helpers::reverseSequence(x, seqLen, revOut, 0, 1);    
 
     // backward steps    
-    auto hBW = new NDArray({time, bS, numUnitsBW}, block.getWorkspace());
-    helpers::rnnTimeLoop({revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep}, hBW, hBWFinal);
+    auto hBW = new NDArray(x->ordering(), {time, bS, numUnitsBW}, x->dataType(), block.getWorkspace());
+    
+    helpers::rnnTimeLoop(revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep, hBW, hBWFinal);
 
     // reverse hBW 
-    auto hBWcopy = new NDArray(*hBW);
+    auto hBWcopy = new NDArray(*hBW);     
     helpers::reverseSequence(hBWcopy, seqLen, hBW, 0, 1);
 
     // concatenate hFW and hBW along last third dimension
@@ -117,7 +116,7 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     if(seqLen != maxTimeStep)
     	delete seqLen;
 
-    */
+    
     return Status::OK();
 }
 
@@ -186,6 +185,9 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
     hShapeInfo[3]     		 = numUnitsFW + numUnitsBW;
     hFWFinalPrevShapeInfo[2] = numUnitsFW;
     hBWFinalPrevShapeInfo[2] = numUnitsBW;
+    ArrayOptions::copyDataType(hShapeInfo, xShapeInfo);
+    ArrayOptions::copyDataType(hFWFinalPrevShapeInfo, xShapeInfo);
+    ArrayOptions::copyDataType(hBWFinalPrevShapeInfo, xShapeInfo);
 
     shape::updateStrides(hShapeInfo,            shape::order(xShapeInfo));
     shape::updateStrides(hFWFinalPrevShapeInfo, shape::order(xShapeInfo));

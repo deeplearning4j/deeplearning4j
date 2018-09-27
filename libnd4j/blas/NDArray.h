@@ -269,11 +269,6 @@ namespace nd4j {
         void repeat(int dimension, NDArray& target) const;
 
         /**
-        *  return _dataType;
-        */
-        DataType dataType() const;
-
-        /**
         *  creates array which is view of this array
         */
         NDArray* getView();
@@ -429,12 +424,6 @@ namespace nd4j {
         *  returns new copy of this array, optionally in different order
         */
         NDArray *dup(const char newOrder = 'a');
-
-        /**
-         * Returns data type of this array
-         * @return
-         */
-        nd4j::DataType dataType();
 
         /** 
         *  returns sum of all elements of array
@@ -1239,6 +1228,12 @@ namespace nd4j {
         FORCEINLINE bool isScalar() const;
 
         /**
+        * Returns data type of this array
+        * @return
+        */
+        FORCEINLINE DataType dataType() const;
+
+        /**
          * This method returns true if value is from Integer space
          * @return
          */
@@ -1723,42 +1718,51 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
         return true;
     }
 
-    //////////////////////////////////////////////////////////////////////////
-    bool NDArray::isSameShape(const NDArray *other) const {
-        if (this->isEmpty() != other->isEmpty())
-            return false;
+//////////////////////////////////////////////////////////////////////////
+bool NDArray::isSameShape(const NDArray *other) const {
+    if (this->isEmpty() != other->isEmpty())
+        return false;
 
-        return isSameShape(std::vector<Nd4jLong>(other->_shapeInfo+1, other->_shapeInfo+1+other->_shapeInfo[0]));
-    }
+    return isSameShape(std::vector<Nd4jLong>(other->_shapeInfo+1, other->_shapeInfo+1+other->_shapeInfo[0]));
+}
 
-    //////////////////////////////////////////////////////////////////////////
-    bool NDArray::isSameShape(NDArray &other) const {
-        return isSameShape(&other);
-    }
+//////////////////////////////////////////////////////////////////////////
+bool NDArray::isSameShape(NDArray &other) const {
+    return isSameShape(&other);
+}
 
-    //////////////////////////////////////////////////////////////////////////
-    bool NDArray::isSameShape(const std::initializer_list<Nd4jLong>& other) const {
-        return isSameShape(std::vector<Nd4jLong>(other));
-    }
+//////////////////////////////////////////////////////////////////////////
+bool NDArray::isSameShape(const std::initializer_list<Nd4jLong>& other) const {
+    return isSameShape(std::vector<Nd4jLong>(other));
+}
 
-    //////////////////////////////////////////////////////////////////////////
-    // returns true if these two NDArrays have same _shapeInfo
-    // still the definition of inline function must be in header file
+//////////////////////////////////////////////////////////////////////////
+// returns true if these two NDArrays have same _shapeInfo
+// still the definition of inline function must be in header file
 
-    bool NDArray::isSameShapeStrict(const NDArray *other) const {
-        return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
-    }
+bool NDArray::isSameShapeStrict(const NDArray *other) const {
+    return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
+}
 
-    bool NDArray::isEmpty() const {
-        return ArrayOptions::arrayType(this->getShapeInfo()) == ArrayType::EMPTY;
-    }
+//////////////////////////////////////////////////////////////////////////
+bool NDArray::isEmpty() const {
+    return ArrayOptions::arrayType(this->getShapeInfo()) == ArrayType::EMPTY;
+}
 
-    bool NDArray::operator ==(const NDArray &other) const {
-        if (!this->isSameShape(&other))
-            return false;
+//////////////////////////////////////////////////////////////////////////
+bool NDArray::operator ==(const NDArray &other) const {
+    if (!this->isSameShape(&other))
+        return false;
 
-        return this->equalsTo(&other);
-    }
+    return this->equalsTo(&other);
+}
+    
+//////////////////////////////////////////////////////////////////////////
+DataType NDArray::dataType() const {
+    return _dataType;
+    // return ArrayOptions::dataType(_shapeInfo);    
+}
+
 }
  
 #endif
