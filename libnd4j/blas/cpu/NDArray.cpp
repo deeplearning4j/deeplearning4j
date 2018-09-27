@@ -93,7 +93,7 @@ namespace nd4j {
 // copy constructor
 NDArray::NDArray(const NDArray& other) {
 
-    this->_length = shape::length(other._shapeInfo);
+    _length = other._length;
     auto shapeLength = shape::shapeInfoByteLength(other._shapeInfo);
 
     _workspace = other._workspace;    
@@ -104,6 +104,8 @@ NDArray::NDArray(const NDArray& other) {
 
     _isBuffAlloc = true; 
     _isShapeAlloc = true;
+    _dataType = other._dataType;
+
     this->assign(&other);
 }
 
@@ -684,10 +686,6 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     void NDArray::setSpecialBuffers(void * buffer, Nd4jLong *shape) {
         _bufferD = reinterpret_cast<int8_t *>(buffer);
         _shapeInfoD = shape;
-    }
-
-    nd4j::DataType NDArray::dataType() {
-        return nd4j::ArrayOptions::dataType(this->shapeInfo());
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3512,10 +3510,6 @@ NDArray NDArray::transp() const {
         NDArray result(*ptr);
         delete ptr;
         return result;
-    }
-
-    DataType NDArray::dataType() const {
-        return ArrayOptions::dataType(this->getShapeInfo());
     }
 
     ////////////////////////////////////////////////////////////////////////
