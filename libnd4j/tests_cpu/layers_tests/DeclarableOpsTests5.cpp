@@ -195,14 +195,14 @@ TEST_F(DeclarableOpsTests5, Test_Rdiv_bp_1) {
 
     auto z_ff = result_ff->at(0);
     ASSERT_TRUE(eps.isSameShape(z_ff));
-/*
+
     nd4j::ops::reversedivide_bp op_bp;
     auto result_bp = op_bp.execute({&x, &y, &eps}, {}, {});
     ASSERT_EQ(Status::OK(), result_bp->status());
 
     auto z_bp = result_bp->at(0);
     ASSERT_TRUE(x.isSameShape(z_bp));
-*/
+
     delete result_ff;
 //    delete result_bp;
 }
@@ -1349,6 +1349,8 @@ TEST_F(DeclarableOpsTests5, trace_test1) {
     
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(exp.isSameShape(output));
+    exp.printIndexedBuffer("EXP TRACE");
+    output->printIndexedBuffer("OUT TRACE");
     ASSERT_TRUE(exp.equalsTo(output));
 
     delete results;
@@ -1692,10 +1694,10 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_2) {
     auto x = NDArrayFactory::create<double>('c', {2, 4}, {0.1f, -1.f, 5.2f, 4.3f, -1.f, 7.4f, 0.0f, -2.2f});
     auto y = NDArrayFactory::create<double>('c', {2, 4}, {1, 2, 1, 2, 1, 2, 3, 0});
 
-    std::vector<NDArray> exp( {NDArrayFactory::create<double>({-2.2f}),
-                               NDArrayFactory::create<double>('c', {3}, {0.1f, 5.2f, -1.f}),
-                               NDArrayFactory::create<double>('c', {3}, {-1.f, 4.3f, 7.4f}),
-                               NDArrayFactory::create<double>({0.0f})});
+    std::vector<NDArray> exp( {NDArrayFactory::create<double>({-2.2}),
+                               NDArrayFactory::create<double>('c', {3}, {0.1, 5.2, -1.}),
+                               NDArrayFactory::create<double>('c', {3}, {-1., 4.3, 7.4}),
+                               NDArrayFactory::create<double>({0.0})});
 
     nd4j::ops::dynamic_partition op;
     int numPartition = 4;
@@ -1706,9 +1708,10 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_2) {
 
     for (int e = 0; e < result->size(); e++) {
         auto output = result->at(e);
-        // output->printShapeInfo("Output shape> ");
-        // exp[e].printShapeInfo("Expected shape> ");
-        // output->printIndexedBuffer("Output data> ");
+         nd4j_printf("%i: ", e);
+         output->printShapeInfo("Output shape> ");
+         exp[e].printShapeInfo("Expected shape> ");
+         output->printIndexedBuffer("Output data> ");
 
         ASSERT_TRUE(exp[e].isSameShape(output));
         ASSERT_TRUE(exp[e].equalsTo(output));
@@ -1979,10 +1982,12 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test1) {
 
     nd4j::ops::confusion_matrix op;
     auto results = op.execute({&labels, &predictions}, {}, {});
-    auto output = results->at(0);
-    // output->printIndexedBuffer();
-
     ASSERT_EQ(Status::OK(), results->status());
+
+    auto output = results->at(0);
+    output->printIndexedBuffer("CM output");
+    expected.printIndexedBuffer("CM expected");
+
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
@@ -1994,15 +1999,17 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test2) {
 
     auto labels = NDArrayFactory::create<double>('c', {1, 2}, {1, 2});
     auto predictions = NDArrayFactory::create<double>('c', {1, 2}, {0, 2});
-    auto expected = NDArrayFactory::create<double>('c', {3, 3}, {0, 0, 0, 1, 0, 0, 0, 0, 1});
+    auto expected = NDArrayFactory::create<Nd4jLong>('c', {3, 3}, {0, 0, 0, 1, 0, 0, 0, 0, 1});
 
     nd4j::ops::confusion_matrix op;
     auto results = op.execute({&labels, &predictions}, {}, {3});
-    auto output = results->at(0);
-    // output->printIndexedBuffer();
-
-
     ASSERT_EQ(Status::OK(), results->status());
+
+    auto output = results->at(0);
+    output->printIndexedBuffer("CM2 output");
+    expected.printIndexedBuffer("CM2 expected");
+
+
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 

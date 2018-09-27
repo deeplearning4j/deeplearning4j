@@ -41,10 +41,10 @@ namespace helpers {
     void confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         auto xType = output->dataType(); // weights can be null
 
-        BUILD_SINGLE_SELECTOR(xType, _confusionFunctor, (labels, predictions, weights, output), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, _confusionFunctor, (labels, predictions, weights, output), NUMERIC_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _confusionFunctor, (NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output);, FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _confusionFunctor, (NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output);, NUMERIC_TYPES);
 
 }
 }
