@@ -2623,10 +2623,10 @@ namespace simdOps {
         }
     };
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Max {
 	public:
-        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_same
         no_op_exec_special_accumulation_cuda
 
 		op_def static X startingValue(const X *input) {
@@ -2710,10 +2710,10 @@ namespace simdOps {
 		}
 	};
 
-    template <typename X, typename Z>
+    template <typename X>
     class AMax {
     public:
-        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_same
         no_op_exec_special_accumulation_cuda
 
         op_def static X startingValue(const X *input) {
@@ -2741,16 +2741,16 @@ namespace simdOps {
             return nd4j::math::nd4j_abs<X>(d1);
         }
 
-        op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
+        op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
             return nd4j::math::nd4j_abs<X>(reduction);
         }
     };
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class AMin {
 	public:
-        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_same
         no_op_exec_special_accumulation_cuda
 
 		op_def static X startingValue(const X *input) {
@@ -2783,10 +2783,10 @@ namespace simdOps {
 		}
 	};
 
-    template <typename X, typename Z>
+    template <typename X>
     class Min {
     public:
-        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_same
         no_op_exec_special_accumulation_cuda
 
         op_def static X startingValue(const X *input) {
@@ -4051,7 +4051,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return nd4j::math::nd4j_isnan(d1) ? d2 : d1 ;
+			return nd4j::math::nd4j_isnan(d1) ? static_cast<Z>(d2) : static_cast<Z>(d1) ;
 		}
 	};
 
