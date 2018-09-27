@@ -587,7 +587,7 @@ namespace nd4j {
         *  target - where to store result
         */
         template <typename T>
-        void applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target = nullptr);
+        void applyPairwiseLambda(NDArray* other, const std::function<T(T, T)>& func, NDArray* target = nullptr);
 
         template <typename T>
         void applyIndexedPairwiseLambda(NDArray* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray* target = nullptr);

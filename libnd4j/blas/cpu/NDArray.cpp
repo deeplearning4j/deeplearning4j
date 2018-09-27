@@ -434,7 +434,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 
 
     template<typename T>
-    void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target) {
+    void NDArray::applyPairwiseLambda(NDArray* other, const std::function<T(T, T)>& func, NDArray* target) {
         if (target == nullptr)
             target = this;
 

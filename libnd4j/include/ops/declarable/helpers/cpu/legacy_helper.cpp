@@ -27,30 +27,31 @@ namespace helpers {
     template <typename T>
     static void reluDerivative__(NDArray* theFirst, NDArray* theSecond) {
         auto functor = LAMBDA_TT(x, y){
-            return (double(x) > 0.)?y:T(0.);
+            return x > (T) 0.f ? y : T(0.f);
         };
 
-        theFirst->applyPairwiseLambda(theSecond, functor, nullptr);
+        theFirst->applyPairwiseLambda<T>(theSecond, functor, nullptr);
     }
+    BUILD_SINGLE_TEMPLATE(template void reluDerivative__, (NDArray* input, NDArray* epsilon), FLOAT_TYPES);
 
-    void reluDerivative(NDArray* theFirst, NDArray const* theSecond) {
-        BUILD_SINGLE_SELECTOR(theFirst->dataType(), reluDerivative__, (theFirst, theSecond), NUMERIC_TYPES);
+    void reluDerivative(NDArray* theFirst, NDArray * theSecond) {
+        BUILD_SINGLE_SELECTOR(theFirst->dataType(), reluDerivative__, (theFirst, theSecond), FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void reluDerivative__, (NDArray* input, NDArray* epsilon);, NUMERIC_TYPES);
 
     template <typename T>
     static void reluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-        auto functor = [](T x, T y) -> T{
-            return (double(x) > 0.)?y:T(0.);
+        auto functor = LAMBDA_TT(x, y){
+            return x > (T)0.f ? y : T(0.f);
         };
 
-        input->applyPairwiseLambda(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(epsilon, functor, output);
     }
+    BUILD_SINGLE_TEMPLATE(template void reluDerivative_, (NDArray* input, NDArray* epsilon, NDArray *output);, FLOAT_TYPES);
 
     void reluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
-        BUILD_SINGLE_SELECTOR(theFirst->dataType(), reluDerivative_, (theFirst, theSecond, theOutput), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(theFirst->dataType(), reluDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void reluDerivative_, (NDArray* input, NDArray* epsilon, NDArray *output);, LIBND4J_TYPES);
+
 
     void relu6Derivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput) {}
     void leakyReluDerivative(NDArray const* theFirst, NDArray const* theSecond, NDArray* theOutput) {}
