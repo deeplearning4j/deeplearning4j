@@ -64,99 +64,103 @@
        (29, LogicalNot) ,\
        (30, LogicalAnd)
 
+// these ops return same data type as input
+#define TRANSFORM_SAME_OPS \
+        (0, Abs), \
+        (1,Sign), \
+        (2,Ones), \
+        (3, Neg), \
+        (4, Round), \
+        (5,TimesOneMinus), \
+        (6,Cube), \
+        (7,OneMinus), \
+        (8,Col2Im), \
+        (9,Im2col),\
+        (10,CubeDerivative) , \
+        (11,Reciprocal), \
+        (12,Square), \
+        (13,RELU), \
+        (14,Identity), \
+        (15,Step), \
+        (16, Ceiling), \
+        (17, Floor), \
+        (18,ClipByValue) ,\
+        (19,Stabilize), \
+        (20,StabilizeFP16) ,\
+        (21,DropOut), \
+        (22,Reverse)
 
+// these ops return bool
+#define TRANSFORM_BOOL_OPS \
+        (0,IsMax), \
+        (1,Not) ,\
+        (2,IsInf), \
+        (3,IsNan), \
+        (4,IsFinite), \
+        (5,MatchCondition)
 
-
-#define TRANSFORM_OPS \
-	(0, Abs), \
-        (1, Ceiling), \
-        (2, Cosine), \
-        (3, Exp), \
-        (4, Floor), \
-        (5, Log), \
-        (6, Neg), \
-        (8, Round), \
-        (9, SetRange), \
-        (10,Sigmoid), \
-        (11,Sign), \
-        (12,Sin), \
-        (13,SoftPlus), \
-        (14,Sqrt), \
-        (15,Tanh), \
-        (16,ACos), \
-        (17,ASin), \
-        (18,ATan), \
-        (19,HardTanh), \
-        (20,SoftSign), \
-        (21,ELU), \
-        (22,ELUDerivative), \
-        (23,TanhDerivative), \
-        (24,TimesOneMinus), \
-        (25,HardTanhDerivative), \
-        (26,Ones), \
-        (27,Identity), \
-        (28,Stabilize), \
-        (29,SigmoidDerivative), \
-        (30,SoftSignDerivative), \
-        (31,LeakyRELU), \
-        (32,LeakyRELUDerivative), \
-        (33,RELU), \
-        (34,Step), \
-        (35,OneMinus), \
-        (36,Col2Im), \
-        (37,Im2col), \
-        (38,SoftMax), \
-        (39,SoftMaxDerivative), \
-        (40,LogSoftMax), \
-        (41,IsMax), \
-        (42,SpecialDerivative), \
-        (43,DropOut), \
-        (44,DropOutInverted), \
-        (46,ReplaceNans) ,\
-        (47,StabilizeFP16) ,\
-        (48,Histogram), \
-        (49,Cube), \
-        (50,CubeDerivative) , \
-        (51,HardSigmoid), \
-        (52,HardSigmoidDerivative) ,\
-        (53,RationalTanh) ,\
-        (54,RationalTanhDerivative) ,\
-        (55,LogX) ,\
-        (59,Not) ,\
-        (61,RectifiedTanh) ,\
-        (62,RectifiedTanhDerivative) ,\
-        (63,Sinh) ,\
-        (64,Cosh) ,\
-        (65,Tan) ,\
-        (66,TanDerivative) ,\
-        (67,SELU) ,\
-        (68,SELUDerivative) ,\
-        (70,Reverse) ,\
-        (71,Pooling2D) ,\
-        (72,MatchCondition) ,\
-        (73,ClipByValue) ,\
-        (74,Swish) ,\
-        (75,SwishDerivative) ,\
-        (76,RSqrt), \
-        (77,Log1p), \
-        (78,Erf), \
-        (79,IsInf), \
-        (80,IsNan), \
-        (81,IsFinite), \
-        (82,ACosh), \
-        (83,ACoshDerivative) ,\
-        (84,ASinh), \
-        (85,ASinhDerivative) ,\
-        (86,SinhDerivative), \
-        (87,Rint), \
-        (88,LogSigmoid), \
-        (89,LogSigmoidDerivative) ,\
-        (90,Erfc) ,\
-        (91,Expm1), \
-        (93,ATanh), \
-        (94,Reciprocal), \
-        (95,Square), \
-        (96,RELU6)
+// these ops return one of FLOAT data types
+#define TRANSFORM_FLOAT_OPS \
+        (0, Cosine), \
+        (1, Exp), \
+        (2, Log), \
+        (3, SetRange), \
+        (4,Sigmoid), \
+        (5,Sin), \
+        (6,SoftPlus), \
+        (7,Sqrt), \
+        (8,Tanh), \
+        (9,ACos), \
+        (10,ASin), \
+        (11,ATan), \
+        (12,HardTanh), \
+        (13,SoftSign), \
+        (14,ELU), \
+        (15,ELUDerivative), \
+        (16,TanhDerivative), \
+        (17,HardTanhDerivative), \
+        (18,SigmoidDerivative), \
+        (19,SoftSignDerivative), \
+        (20,LeakyRELU), \
+        (21,LeakyRELUDerivative), \
+        (22,SoftMax), \
+        (23,SoftMaxDerivative), \
+        (24,LogSoftMax), \
+        (25,SpecialDerivative), \
+        (26,DropOutInverted), \
+        (27,ReplaceNans) ,\
+        (28,Histogram), \
+        (29,HardSigmoid), \
+        (30,HardSigmoidDerivative) ,\
+        (31,RationalTanh) ,\
+        (32,RationalTanhDerivative) ,\
+        (33,LogX) ,\
+        (34,RectifiedTanh) ,\
+        (35,RectifiedTanhDerivative) ,\
+        (36,Sinh) ,\
+        (37,Cosh) ,\
+        (38,Tan) ,\
+        (39,TanDerivative) ,\
+        (40,SELU) ,\
+        (41,SELUDerivative) ,\
+        (42,Pooling2D) ,\
+        (43,Swish) ,\
+        (44,SwishDerivative) ,\
+        (45,RSqrt), \
+        (46,Log1p), \
+        (47,Erf), \
+        (48,ACosh), \
+        (49,ACoshDerivative) ,\
+        (50,ASinh), \
+        (51,ASinhDerivative) ,\
+        (52,SinhDerivative), \
+        (53,Rint), \
+        (54,LogSigmoid), \
+        (55,LogSigmoidDerivative) ,\
+        (56,Erfc) ,\
+        (57,Expm1), \
+        (58,ATanh), \
+        (59,RELU6)
 
 
 

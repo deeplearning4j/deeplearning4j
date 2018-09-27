@@ -20,7 +20,7 @@
 
 #include <op_boilerplate.h>
 #include <types/types.h>
-#include <loops/transform.h>
+#include <loops/transform_same.h>
 #include <loops/legacy_ops.h>
 
 using namespace simdOps;
@@ -29,18 +29,18 @@ namespace functions {
     namespace transform {
 
         template <typename X>
-        void Transform<X>::exec(int opNum,
+        void TransformSame<X>::exec(int opNum,
                 void *dx,
                 Nd4jLong xStride,
                 void *result,
                 Nd4jLong resultStride,
                 void *extraParams,
                 const Nd4jLong n) {
-            DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_OPS);
+            DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_SAME_OPS);
 		}
 
         template <typename X>
-        void Transform<X>::exec(
+        void TransformSame<X>::exec(
 				int opNum,
 				void *dx,
 				Nd4jLong *xShapeInfo,
@@ -49,12 +49,12 @@ namespace functions {
 				void *extraParams,
 				Nd4jLong *tadShapeInfo,
 				Nd4jLong *tadOffsets) {
-                    DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
+                    DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_SAME_OPS);
 		}
 
         template <typename X>
         template<typename OpType>
-		void _CUDA_H Transform<X>::exec(
+		void _CUDA_H TransformSame<X>::exec(
                     void *vx,
                     Nd4jLong *xShapeInfo,
                     void *vresult,
@@ -123,7 +123,7 @@ namespace functions {
 
         template <typename X>
         template <typename OpType>
-		void _CUDA_H Transform<X>::exec(void *vx,
+		void _CUDA_H TransformSame<X>::exec(void *vx,
                              Nd4jLong xStride,
                              void *vresult,
                              Nd4jLong resultStride,
@@ -172,7 +172,7 @@ namespace functions {
             }
         }
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT Transform, , FLOAT_TYPES);
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TransformSame, , LIBND4J_TYPES);
 
         /*
         BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)

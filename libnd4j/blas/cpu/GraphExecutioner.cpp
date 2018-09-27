@@ -33,7 +33,7 @@
 #include <graph/TimeHolder.h>
 #include <loops/scalar.h>
 #include <loops/pairwise_transform.h>
-#include <loops/transform.h>
+#include <loops/transform_same.h>
 #include <ops/declarable/DeclarableOp.h>
 
 //#include <google/protobuf/text_format.h>

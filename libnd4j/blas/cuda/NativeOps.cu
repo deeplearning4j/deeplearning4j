@@ -29,7 +29,7 @@
 #include <loops/reduce.h>
 #include <loops/indexreduce.h>
 #include <loops/pairwise_transform.h>
-#include <loops/transform.h>
+#include <loops/transform_same.h>
 #include <loops/scalar.h>
 #include <loops/broadcasting.h>
 #include <loops/summarystatsreduce.h>

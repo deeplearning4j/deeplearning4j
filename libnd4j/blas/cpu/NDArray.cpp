@@ -29,7 +29,7 @@
 #include <memory>
 #include <helpers/logger.h>
 #include <loops/pairwise_transform.h>
-#include <loops/transform.h>
+#include <loops/transform_same.h>
 #include <loops/random.h>
 #include <loops/broadcasting.h>
 #include <indexing/NDIndex.h>

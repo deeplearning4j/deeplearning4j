@@ -56,8 +56,8 @@
 namespace functions {
     namespace transform {
 
-        template<typename X>
-        class Transform {
+        template<typename X, typename Z>
+        class TransformFloat {
         public:
 
 #ifdef __CUDACC__

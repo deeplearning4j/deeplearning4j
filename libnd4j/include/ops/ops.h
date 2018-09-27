@@ -860,13 +860,13 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Ceiling {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static Z op(X d1, X *params) {
+		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_ceil<X>(d1);
 		}
 	};
@@ -926,13 +926,13 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Floor {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static Z op(X d1, X *params) {
+		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_floor<X>(d1);
 		}
 	};
@@ -971,15 +971,15 @@ namespace simdOps {
 		}
 	};
 
-    template <typename X, typename Z>
+    template <typename X>
     class StabilizeFP16 {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static Z op(X d1, X *params) {
+        op_def static X op(X d1, X *params) {
             if (d1 <= static_cast<X>(0))
-            	return static_cast<Z>(nd4j::DataTypeUtils::min<float16>());
+            	return static_cast<X>(nd4j::DataTypeUtils::min<float16>());
             else return d1;
         }
     };
@@ -1009,13 +1009,13 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Neg {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static Z op(X d1, X *params) {
+		op_def static X op(X d1, X *params) {
 			return -d1;
 		}
 	};
@@ -1043,7 +1043,7 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Reciprocal {
 	public:
 		no_op_exec_special
@@ -1052,7 +1052,7 @@ namespace simdOps {
 //			return (T(1.0f) / d1);
 //		}
 		// op for MetaOps
-		op_def static Z op(X d1, X *params) {
+		op_def static X op(X d1, X *params) {
 			return (static_cast<X>(1) / d1);
 		}
 	};
@@ -1186,13 +1186,13 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Round {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static Z op(X d1, X *params) {
+		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_round<X>(d1);
 		}
 	};
@@ -1339,7 +1339,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class ClipByValue {
 	public:
 		no_op_exec_special

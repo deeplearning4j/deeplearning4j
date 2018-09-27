@@ -27,7 +27,7 @@
 #include <loops/reduce.h>
 #include <loops/reduce3.h>
 #include <loops/summarystatsreduce.h>
-#include <loops/transform.h>
+#include <loops/transform_same.h>
 #include <loops/scalar.h>
 #include <loops/aggregates.h>
 #include <loops/random.h>
