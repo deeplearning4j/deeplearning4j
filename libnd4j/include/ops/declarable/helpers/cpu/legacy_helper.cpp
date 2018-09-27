@@ -187,16 +187,107 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template void hardTanhDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
 
     void hardTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
-        BUILD_SINGLE_SELECTOR(theFirst->dataType(), tanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(theFirst->dataType(), hardTanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
-    void rationalTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {}
-    void rectifiedTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {}
+    template <typename T>
+    static void rationalTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+        auto functor = LAMBDA_TT(x, y){
+            return y * simdOps::RationalTanhDerivative<T>::op(x, nullptr);
+        };
 
-    void softSignDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {}
-    void softPlusDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {}
-    void sigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {}
-    void hardSigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {}
+        input->applyPairwiseLambda<T>(epsilon, functor, output);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void rationalTanhDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
+
+    void rationalTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+        BUILD_SINGLE_SELECTOR(theFirst->dataType(), rationalTanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+    }
+
+    template <typename T>
+    static void rectifiedTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+        auto functor = LAMBDA_TT(x, y){
+            return x > (T) 0.0f ? y * (nd4j::math::nd4j_tanhderivative<T>(x)) : (T) 0.0f;
+        };
+
+        input->applyPairwiseLambda<T>(epsilon, functor, output);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void rectifiedTanhDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
+
+    void rectifiedTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+        BUILD_SINGLE_SELECTOR(theFirst->dataType(), rectifiedTanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+    }
+
+    //            X f = (X) 1.0f + nd4j::math::nd4j_abs<X>(d1);
+    //            return (X) d2 * ((X) 1.0f / (f * f));
+
+    template <typename T>
+    static void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+        auto functor = LAMBDA_TT(x, y){
+            T ss = (T)1.f + nd4j::math::nd4j_abs<T>(x);
+            return y * ((T) 1.0f  / (ss * ss));
+        };
+
+        input->applyPairwiseLambda<T>(epsilon, functor, output);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void softSignDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
+
+    void softSignDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+        BUILD_SINGLE_SELECTOR(theFirst->dataType(), softSignDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+    }
+
+    template <typename T>
+    static void softPlusDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+        auto functor = LAMBDA_TT(x, y){
+            T p = nd4j::math::nd4j_pow<T, T, T>(static_cast<T>(M_E), x);
+            return y * (p / (p + 1.));
+        };
+
+        input->applyPairwiseLambda<T>(epsilon, functor, output);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void softPlusDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
+
+    void softPlusDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+        BUILD_SINGLE_SELECTOR(theFirst->dataType(), softPlusDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+    }
+///
+/// \param theFirst
+/// \param theSecond
+/// \param theOutput
+    template <typename T>
+    static void sigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+        auto functor = LAMBDA_TT(x, y){
+            T s = nd4j::math::nd4j_sigmoid<T>(x);
+            return y * (s * ((T) 1.0f - s));
+        };
+
+        input->applyPairwiseLambda<T>(epsilon, functor, output);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void sigmoidDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
+
+    void sigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+        BUILD_SINGLE_SELECTOR(theFirst->dataType(), sigmoidDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+    }
+
+    template <typename T>
+    static void hardSigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+        auto functor = LAMBDA_TT(x, y){
+            return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr);
+        };
+
+        input->applyPairwiseLambda<T>(epsilon, functor, output);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void hardSigmoidDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
+
+    void hardSigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+        BUILD_SINGLE_SELECTOR(theFirst->dataType(), hardSigmoidDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+    }
 
 
 }
