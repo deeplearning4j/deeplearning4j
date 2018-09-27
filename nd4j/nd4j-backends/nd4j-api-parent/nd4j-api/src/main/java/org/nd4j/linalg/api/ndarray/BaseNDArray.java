@@ -2555,7 +2555,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             And it's possible to be not a view, and have non-empty originalBuffer
          */
         // length/data.length can be different in case of Threshold conversion
-        return Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
+        return !isEmpty() || Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
                 || (length() < data().length() && data.dataType() != DataBuffer.Type.INT)
                 || data().originalDataBuffer() != null;
     }
