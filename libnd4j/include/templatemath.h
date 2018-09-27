@@ -88,7 +88,7 @@ namespace nd4j {
 		template<typename T>
 		math_def inline T nd4j_abs(T value);
 
-template<typename T>
+        template<typename T>
         math_def inline void nd4j_swap(T &val1, T &val2);
 
 		template<typename T>
@@ -97,22 +97,22 @@ template<typename T>
 		template<typename T>
         math_def inline T nd4j_min(T val1, T val2);
 
-		template<typename T>
-		math_def inline T nd4j_re(T val1, T val2);
+		template<typename T, typename Z>
+		math_def inline Z nd4j_re(T val1, T val2);
 
-		template<typename T>
-        math_def inline T nd4j_rint(T val1);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_rint(T val1);
 
-		template<typename T>
-		math_def inline T nd4j_copysign(T val1, T val2);
+		template<typename T, typename Z>
+		math_def inline Z nd4j_copysign(T val1, T val2);
 
 //#ifndef __CUDACC__
         template<typename X, typename Y, typename Z>
         math_def inline Z nd4j_dot(X *x, Y *y, int length);
 //#endif
 
-		template<typename T>
-        math_def inline T nd4j_ceil(T val1);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_ceil(T val1);
 
 		template<typename T>
         math_def inline bool nd4j_isnan(T val1);
@@ -123,17 +123,17 @@ template<typename T>
 		template<typename T>
         math_def inline bool nd4j_isfin(T val1);
 
-		template<typename T>
-        math_def inline T nd4j_cos(T val);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_cos(T val);
 
-        template<typename T>
-        math_def inline T nd4j_cosh(T val);
+        template<typename T, typename Z>
+        math_def inline Z nd4j_cosh(T val);
 
 		template<typename X, typename Z>
         math_def inline Z nd4j_exp(X val);
 
-		template<typename T>
-        math_def inline T nd4j_floor(T val);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_floor(T val);
 
 		template<typename X, typename Z>
         math_def inline Z nd4j_log(X val);
@@ -141,8 +141,8 @@ template<typename T>
 		template<typename X, typename Y, typename Z>
         math_def inline Z nd4j_pow(X val, Y val2);
 
-		template<typename T>
-        math_def inline T nd4j_round(T val);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_round(T val);
 
         template<typename X, typename Y, typename Z>
         math_def inline Z nd4j_remainder(X num, Y denom);
@@ -150,50 +150,53 @@ template<typename T>
         template<typename X, typename Y, typename Z>
         math_def inline Z nd4j_fmod(X num, Y denom);
 
-		template<typename T>
-        math_def inline T nd4j_erf(T num);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_erf(T num);
 
-		template<typename T>
-        math_def inline T nd4j_erfc(T num);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_erfc(T num);
 
-		template<typename T>
-        math_def inline T nd4j_sigmoid(T val) {
-			return (T) 1.0 / ((T) 1.0 + nd4j_exp<T, T>(-val));
+		template<typename T, typename Z>
+        math_def inline Z nd4j_sigmoid(T val) {
+			return (Z) 1.0f / ((Z) 1.0f + nd4j_exp<T, Z>(-val));
 		}
 
-		template<typename T>
-        math_def inline T nd4j_elu(T val) {
-			if (val >= (T) 0.0) return val;
-			else return nd4j_exp<T, T>(val) - (T) 1.0;
+		template<typename T, typename Z>
+        math_def inline Z nd4j_elu(T val) {
+			if (val >= (T) 0.f) return val;
+			else return nd4j_exp<T, Z>(val) - (Z) 1.0f;
 			//return val >= 0.0 ? val : (nd4j_exp<T>(val) - 1.0);
 		}
 
 
-		template<typename T>
-        math_def inline T nd4j_leakyrelu(T val,T alpha) {
-			if (val < (T) 0.0f) return alpha * val;
-			else return val;
-			//return val < 0 ?  alpha * val : val;
+		template<typename T, typename Z>
+        math_def inline Z nd4j_leakyrelu(T val,T alpha) {
+			if (val < (T) 0.0f)
+			    return alpha * val;
+			else
+			    return val;
 		}
 
 
-		template<typename T>
-        math_def inline T nd4j_eluderivative(T val) {
-			if (val >= (T) 0.0f) return (T) 1.0f;
-			else return nd4j_exp<T, T>(val);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_eluderivative(T val) {
+			if (val >= (T) 0.0f) return (Z) 1.0f;
+			else return nd4j_exp<T, Z>(val);
 			//return val >= 0.0 ? 1.0 : nd4j_exp(val);
 		}
-		template<typename T>
-        math_def inline T nd4j_sin(T val);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_sin(T val);
 
-		template<typename T>
-		math_def inline T nd4j_sinh(T val);
-		template<typename T>
-        math_def inline T softplus(T val) {
-			return nd4j_log<T, T>((T) 1.0f + nd4j_exp<T, T>(val));
+		template<typename T, typename Z>
+		math_def inline Z nd4j_sinh(T val);
+
+		template<typename T, typename Z>
+        math_def inline Z softplus(T val) {
+			return nd4j_log<T, Z>((Z) 1.0f + nd4j_exp<T, Z>(val));
 		}
-		template<typename T>
-        math_def inline T nd4j_softsign(T val) {
+
+		template<typename T, typename Z>
+        math_def inline Z nd4j_softsign(T val) {
 			return val / ((T) 1.0f + nd4j::math::nd4j_abs<T>(val));
 		}
 
@@ -203,11 +206,11 @@ template<typename T>
 		template<typename X, typename Z>
         math_def inline Z nd4j_tanh(X val);
 
-        template<typename T>
-        math_def inline T nd4j_tan(T val);
+        template<typename T, typename Z>
+        math_def inline Z nd4j_tan(T val);
 
-		template<typename T>
-		math_def inline T nd4j_atan2(T val1, T val2);
+		template<typename T, typename Z>
+		math_def inline Z nd4j_atan2(T val1, T val2);
 
 		template<>
 		math_def inline float16 nd4j_atan2<float16>(float16 value1, float16 value2) {
@@ -269,42 +272,41 @@ template<typename T>
 			return atan2f(static_cast<float>(value1), static_cast<float>(value2));
 		}
 
-        template<typename T>
-        math_def inline T nd4j_tan(T val) {
-            return nd4j_log<T, T>((val + 1 / (1 - val)) * 0.5);
+        template<typename T, typename Z>
+        math_def inline Z nd4j_tan(T val) {
+            return nd4j_log<Z, Z>((val + (Z)1.f / ((Z) 1.f - val)) * (Z) 0.5f);
         }
 
-        template<typename T>
-        math_def inline T nd4j_tanhderivative(T val) {
-			T tanh = nd4j_tanh<T,T>(val);
-			return (T) 1.0f - tanh * tanh;
+        template<typename T, typename Z>
+        math_def inline Z nd4j_tanhderivative(T val) {
+			Z tanh = nd4j_tanh<T,Z>(val);
+			return (Z) 1.0f - tanh * tanh;
 		}
-		template<typename T>
+		template <typename T, typename Z>
         math_def inline T nd4j_sigmoidderivative(T val) {
-			T sigmoid = nd4j_sigmoid(val);
-			T out = sigmoid * ((T) 1.0f - sigmoid);
-			return out;
+			Z sigmoid = nd4j_sigmoid<T,Z>(val);
+			return sigmoid * ((Z) 1.0f - sigmoid);
 		}
 
-		template<typename T>
+		template<typename T, typename Z>
         math_def inline T nd4j_softsignderivative(T val) {
 			T y = (T) 1.0f + nd4j_abs(val);
-			return (T) 1.0f / (y * y);
+			return (Z) 1.0f / (y * y);
 		}
 
-        template<typename T>
+        template<typename T, typename Z>
         math_def inline T nd4j_sgn(T val) {
-            return val < (T) 0.0f ? (T) -1.0f : val > (T) 0.0f ? (T) 1.0f : (T) 0.0f;
+            return val < (T) 0.0f ? (Z) -1.0f : val > (T) 0.0f ? (Z) 1.0f : (Z) 0.0f;
         }
 
-        template<typename T>
-        math_def inline T nd4j_sign(T val) {
-            return nd4j_sgn<T>(val);
+        template<typename T, typename Z>
+        math_def inline Z nd4j_sign(T val) {
+            return nd4j_sgn<T, Z>(val);
         }
 
-        template<typename T>
-        math_def inline T nd4j_signum(T val) {
-            return nd4j_sgn<T>(val);
+        template<typename T, typename Z>
+        math_def inline Z nd4j_signum(T val) {
+            return nd4j_sgn<T, Z>(val);
         }
 
 //#ifndef __CUDACC__
@@ -335,29 +337,29 @@ template<typename T>
 		}
 //#endif
 
-		template<typename T>
-        math_def inline T nd4j_acos(T val);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_acos(T val);
 
-		template<typename T>
-		math_def inline T nd4j_acosh(T val);
+		template<typename T, typename Z>
+		math_def inline Z nd4j_acosh(T val);
 
-		template<typename T>
-        math_def inline T nd4j_asin(T val);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_asin(T val);
 
-		template<typename T>
-		math_def inline T nd4j_asinh(T val);
+		template<typename T, typename Z>
+		math_def inline Z nd4j_asinh(T val);
 
-        template<typename T>
-        math_def inline T nd4j_asinh(T val) {
+        template<typename T, typename Z>
+        math_def inline Z nd4j_asinh(T val) {
             //Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x)
-            return nd4j_log<T, T>(nd4j_sqrt<T, T>(nd4j_pow<T,T,T>(val, (T) 2) + (T) 1) + val);
+            return nd4j_log<T, Z>(nd4j_sqrt<T, Z>(nd4j_pow<T,T,Z>(val, (T) 2) + (T) 1) + val);
         }
 
-		template<typename T>
-        math_def inline T nd4j_atan(T val);
+		template<typename T, typename Z>
+        math_def inline Z nd4j_atan(T val);
 
-        template<typename T>
-        math_def inline T nd4j_atanh(T val);
+        template<typename T, typename Z>
+        math_def inline Z nd4j_atanh(T val);
 
 
         template<>

@@ -1118,86 +1118,86 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, X *params) {
 			X d2 = params[0];
 			X thresholdRelative = params[1];
 			X thresholdAbsolute = params[2];
 			return nd4j::math::nd4j_re<X>(d1, d2) > thresholdRelative ? (nd4j::math::nd4j_abs<X>(d1 - d2) < thresholdAbsolute ? static_cast<X>(0) : static_cast<X>(1)) : static_cast<X>(0);
  		}
 
-		op_def static X op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, X *params) {
 			X thresholdRelative = params[0];
 			X thresholdAbsolute = params[1];
 			return nd4j::math::nd4j_re<X>(d1, d2) > thresholdRelative ? (nd4j::math::nd4j_abs<X>(d1 - d2) < thresholdAbsolute ? static_cast<X>(0) : static_cast<X>(1)) : static_cast<X>(0);
 		}
 
-		op_def static X op(X d1) {
-			return static_cast<X>(0);
+		op_def static Z op(X d1) {
+			return static_cast<Z>(0);
 		}
 	};
 
 
 
-	template <typename X, typename Y>
+	template <typename X, typename Y, typename Z>
 	class Pow {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, X *params) {
 			return nd4j::math::nd4j_pow<X, X, X>(d1, params[0]);
 		}
 
-		op_def static X op(X d1, Y d2) {
+		op_def static Z op(X d1, Y d2) {
 			return nd4j::math::nd4j_pow<X, Y, X>(d1, d2);
 		}
 
-		op_def static X op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, X *params) {
 			return nd4j::math::nd4j_pow<X, Y, X>(d1, d2);
 		}
 
-		op_def static X op(X d1) {
+		op_def static Z op(X d1) {
 			return d1;
 		}
 	};
 
 
-	template <typename X, typename Y>
+	template <typename X, typename Y, typename Z>
 	class PowDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return params[0] * nd4j::math::nd4j_pow<X, X, X>(d1, params[0] - static_cast<X>(1));
+		op_def static Z op(X d1, X *params) {
+			return params[0] * nd4j::math::nd4j_pow<X, X, Z>(d1, params[0] - static_cast<X>(1));
 		}
 
-		op_def static X op(X d1, Y d2) {
+		op_def static Z op(X d1, Y d2) {
+			return d2 * nd4j::math::nd4j_pow<X, Y, Z>(d1, d2 - static_cast<Y>(1));
+		}
+
+		op_def static Z op(X d1, Y d2, X *params) {
 			return d2 * nd4j::math::nd4j_pow<X, Y, X>(d1, d2 - static_cast<Y>(1));
 		}
 
-		op_def static X op(X d1, Y d2, X *params) {
-			return d2 * nd4j::math::nd4j_pow<X, Y, X>(d1, d2 - static_cast<Y>(1));
-		}
-
-		op_def static X op(X d1) {
+		op_def static Z op(X d1) {
 			return d1;
 		}
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Round {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, X *params) {
 			return nd4j::math::nd4j_round<X>(d1);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IsNan {
 	public:
 		no_op_exec_special
@@ -1206,42 +1206,42 @@ namespace simdOps {
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, X *params) {
 			return nd4j::math::nd4j_isnan(d1) ? static_cast<X>(1) : static_cast<X>(0);
 		}
 
-        op_def static X startingValue(const X *input) {
+        op_def static Z startingValue(const X *input) {
             return static_cast<X>(0);
         }
 
-        op_def static X merge(X old, X opOutput, X *extraParams) {
+        op_def static Z merge(X old, X opOutput, X *extraParams) {
             return opOutput + old;
         }
 
 
-        op_def static X update(X old, X opOutput, X *extraParams) {
+        op_def static Z update(X old, X opOutput, X *extraParams) {
             return opOutput + old;
         }
 
 
-        op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
+        op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
             return reduction;
         }
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Expm1 {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_exp<X, X>(d1) - static_cast<X>(1);
+		op_def static Z op(X d1, X *params) {
+			return nd4j::math::nd4j_exp<X, Z>(d1) - static_cast<Z>(1);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IsInf {
 	public:
 		no_op_exec_special
@@ -1250,31 +1250,31 @@ namespace simdOps {
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, X *params) {
 			return nd4j::math::nd4j_isinf<X>(d1) ? static_cast<X>(1) : static_cast<X>(0);
 		}
 
-        op_def static X startingValue(const X *input) {
-            return static_cast<X>(0);
+        op_def static Z startingValue(const X *input) {
+            return static_cast<Z>(0);
         }
 
-        op_def static X merge(X old, X opOutput, X *extraParams) {
+        op_def static Z merge(X old, X opOutput, X *extraParams) {
             return opOutput + old;
         }
 
 
-        op_def static X update(X old, X opOutput, X *extraParams) {
+        op_def static Z update(X old, X opOutput, X *extraParams) {
             return opOutput + old;
         }
 
 
-        op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
+        op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
             return reduction;
         }
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IsInfOrNan{
 	public:
 		no_op_exec_special
@@ -1307,7 +1307,7 @@ namespace simdOps {
 
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IsFinite {
 	public:
 		no_op_exec_special
@@ -1316,30 +1316,30 @@ namespace simdOps {
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_isfin<X>(d1) ? static_cast<X>(1) : static_cast<X>(0);
+		op_def static Z op(X d1, X *params) {
+			return nd4j::math::nd4j_isfin<X>(d1) ? static_cast<Z>(1) : static_cast<Z>(0);
 		}
 
-        op_def static X startingValue(const X *input) {
-            return static_cast<X>(0);
+        op_def static Z startingValue(const X *input) {
+            return static_cast<Z>(0);
         }
 
-        op_def static X merge(X old, X opOutput, X *extraParams) {
+        op_def static Z merge(X old, X opOutput, X *extraParams) {
             return opOutput + old;
         }
 
 
-        op_def static X update(X old, X opOutput, X *extraParams) {
+        op_def static Z update(X old, X opOutput, X *extraParams) {
             return opOutput + old;
         }
 
-        op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
+        op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
             return reduction;
         }
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ClipByValue {
 	public:
 		no_op_exec_special
@@ -1354,13 +1354,13 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Y>
+	template <typename X, typename Y, typename Z>
 	class LstmClip {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, X *params) {
 			X _v = (X) d2;
 			if (d1 > _v)
 				return _v;
@@ -1370,143 +1370,143 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Swish {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, X *params) {
 			return d1 * nd4j::math::nd4j_sigmoid<X>(d1);
 		}
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class SwishDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, X *params) {
 			X ex = nd4j::math::nd4j_pow<X, X, X>(static_cast<X>(M_E), d1);
-			return (ex * (d1 + ex + static_cast<X>(1))) / nd4j::math::nd4j_pow<X, X, X>((ex + static_cast<X>(1)) , static_cast<X>(2));
+			return (ex * (d1 + ex + static_cast<Z>(1))) / nd4j::math::nd4j_pow<X, X, Z>((ex + static_cast<X>(1)) , static_cast<X>(2));
 		}
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class LogSigmoid {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_log<X, X>(nd4j::math::nd4j_sigmoid<X>(d1));
+		op_def static Z op(X d1, X *params) {
+			return nd4j::math::nd4j_log<X, Z>(nd4j::math::nd4j_sigmoid<X, Z>(d1));
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class LogSigmoidDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			X ex = nd4j::math::nd4j_pow<X, X, X>(M_E, d1);
+		op_def static Z op(X d1, X *params) {
+			X ex = nd4j::math::nd4j_pow<X, X, Z>(M_E, d1);
 			return static_cast<X>(1) / (ex + static_cast<X>(1));
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Sigmoid {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_sigmoid<X>(d1);
+		op_def static Z op(X d1, X *params) {
+			return nd4j::math::nd4j_sigmoid<X, Z>(d1);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class SigmoidDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_sigmoidderivative<X>(d1);
+		op_def static Z op(X d1, X *params) {
+			return nd4j::math::nd4j_sigmoidderivative<X, Z>(d1);
 		}
 	};
 
-	template <typename X, typename Y>
+	template <typename X, typename Y, typename Z>
 	class SigmoidDerivativeE {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, Y d2, X *params) {
-            X s = nd4j::math::nd4j_sigmoid<X>(d1);
-            return (X) d2 * (s * ((X) 1.0f - s));
+		op_def static Z op(X d1, Y d2, X *params) {
+            Z s = nd4j::math::nd4j_sigmoid<X, Z>(d1);
+            return (Z) d2 * (s * ((Z) 1.0f - s));
 		}
 	};
 
-    template <typename X, typename Y>
+    template <typename X, typename Y, typename Z>
     class SoftplusDerivativeE {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static X op(X d1, Y d2, X *params) {
-            X p = nd4j::math::nd4j_pow<X, X, X>(static_cast<X>(M_E), d1);
-            return (X) d2 * (p / (p + 1.));
+        op_def static Z op(X d1, Y d2, X *params) {
+            Z p = nd4j::math::nd4j_pow<X, X, Z>(static_cast<X>(M_E), d1);
+            return (Z) d2 * (p / (p + 1.f));
         }
     };
 
-    template <typename X, typename Y>
+    template <typename X, typename Y, typename Z>
     class SoftsignDerivativeE {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static X op(X d1, Y d2, X *params) {
+        op_def static Z op(X d1, Y d2, X *params) {
             X f = (X) 1.0f + nd4j::math::nd4j_abs<X>(d1);
             return (X) d2 * ((X) 1.0f / (f * f));
         }
     };
 
-    template <typename X, typename Y>
+    template <typename X, typename Y, typename Z>
     class TanhDerivativeE {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static X op(X d1, Y d2, X *params) {
-            X t = nd4j::math::nd4j_tanh<X,X>(d1);
-            return (X) d2 * ((X) 1.0f - (t * t));
+        op_def static Z op(X d1, Y d2, X *params) {
+            Z t = nd4j::math::nd4j_tanh<X,Z>(d1);
+            return (Z) d2 * ((Z) 1.0f - (t * t));
         }
     };
 
-    template <typename X>
+    template <typename X, typename Z>
     class HardSigmoid {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static X op(X d1, X *params) {
+        op_def static Z op(X d1, X *params) {
             return nd4j::math::nd4j_min<X>(static_cast<X>(1), nd4j::math::nd4j_max<X>(static_cast<X>(0), (static_cast<X>(0.2f)) * d1 + static_cast<X>(0.5f)));
         }
     };
 
-    template <typename X>
+    template <typename X, typename Z>
     class HardSigmoidDerivative {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static X op(X d1, X *params) {
-            return d1 < static_cast<X>(-2.5f) || d1 > static_cast<X>(2.5f) ? static_cast<X>(0) : static_cast<X>(0.2f);
+        op_def static Z op(X d1, X *params) {
+            return d1 < static_cast<X>(-2.5f) || d1 > static_cast<X>(2.5f) ? static_cast<Z>(0) : static_cast<Z>(0.2f);
         }
     };
 
@@ -1514,13 +1514,13 @@ namespace simdOps {
 	/**
 	* Scale to be between a min and max
 	*/
-	template <typename X>
+	template <typename X, typename Z>
 	class SetRange {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, X *params) {
 			auto min = params[0];
 			auto max = params[1];
 			if (d1 >= min && d1 <= max)
@@ -1536,13 +1536,13 @@ namespace simdOps {
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Sin {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, X *params) {
 			return nd4j::math::nd4j_sin<X>(d1);
 		}
 	};
