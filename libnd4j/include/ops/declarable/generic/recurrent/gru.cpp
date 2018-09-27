@@ -59,8 +59,7 @@ CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
     REQUIRE_TRUE(whShape == whCorrectShape, 0, "GRU operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", whCorrectShape.c_str(), whShape.c_str());     
     REQUIRE_TRUE(bShape  == bCorrectShape,  0, "GRU operation: wrong shape of biases array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());     
 
-
-    helpers::gruTimeLoop({x, h0, Wx, Wh, b}, h);
+    helpers::gruTimeLoop(x, h0, Wx, Wh, b, h);
     
     return Status::OK();
 }
@@ -103,8 +102,9 @@ DECLARE_SHAPE_FN(gru) {
     hShapeInfo[1] = time;
     hShapeInfo[2] = bS;
     hShapeInfo[3] = numUnits;
+    ArrayOptions::copyDataType(hShapeInfo, xShapeInfo);
     
-    shape::updateStrides(hShapeInfo, shape::order(const_cast<Nd4jLong*>(h0ShapeInfo)));
+    shape::updateStrides(hShapeInfo, shape::order(h0ShapeInfo));
          
     return SHAPELIST(hShapeInfo);
 }   

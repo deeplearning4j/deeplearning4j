@@ -43,14 +43,13 @@ static FORCEINLINE NDArray activation(const NDArray& arr) {
 
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(const std::vector<NDArray*>& inArrs, NDArray* h) {
+void gruCell(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
 
-    auto x  = inArrs[0];                   // input [bS, iS], bS - batch size, iS - input size
-    auto h0 = inArrs[1];                   // previous cell output [bS, nU],  that is at previous time step t-1
-
-    auto Wx = inArrs[2];                   // input-to-hidden  weights, [iS, 3*nU]
-    auto Wh = inArrs[3];                   // hidden-to-hidden weights, [nU, 3*nU]
-    auto b  = inArrs[4];                   // biases, [3*nU]
+    // x    input [bS, iS], bS - batch size, iS - input size
+    // h0   previous cell output [bS, nU],  that is at previous time step t-1
+    // Wx   input-to-hidden  weights, [iS, 3*nU]
+    // Wh   hidden-to-hidden weights, [nU, 3*nU]
+    // b    biases, [3*nU]
     
     // h is current cell output [bS, nU], that is at current time step t    
 
@@ -74,14 +73,13 @@ void gruCell(const std::vector<NDArray*>& inArrs, NDArray* h) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoop(const std::vector<NDArray*>& inArrs, NDArray* h) {
+void gruTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
 
-    auto x  = inArrs[0];                   // input [time, bS, iS]
-    auto h0 = inArrs[1];                   // initial cell output (at time step = 0) [bS, nU]
-
-    auto Wx = inArrs[2];                   // input-to-hidden  weights, [iS, 3*nU]
-    auto Wh = inArrs[3];                   // hidden-to-hidden weights, [nU, 3*nU]
-    auto b  = inArrs[4];                   // biases, [3*nU]
+    // x   input [time, bS, iS]
+    // h0  initial cell output (at time step = 0) [bS, nU]
+    // Wx  input-to-hidden  weights, [iS, 3*nU]
+    // Wh  hidden-to-hidden weights, [nU, 3*nU]
+    // b   biases, [3*nU]
     
     // h is cell outputs at each time step [time, bS, nU]
 
@@ -95,29 +93,30 @@ void gruTimeLoop(const std::vector<NDArray*>& inArrs, NDArray* h) {
         auto xt = (*x)({t,t+1, 0,0, 0,0});
         auto ht = (*h)({t,t+1, 0,0, 0,0});
 
-        helpers::gruCell({&xt, &ht_1, Wx, Wh, b}, &ht);
+        helpers::gruCell(&xt, &ht_1, Wx, Wh, b, &ht);
         ht_1.assign(ht);    
     }
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBP(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs) {
+void gruCellBP(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* dLdWx0, 
+               const NDArray* dLdWh0, const NDArray* dLdb0, NDArray* dLdx, NDArray* dLdh0, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
 
-    auto x      = inArrs[0];                   // input [bS, iS]
-    auto h0     = inArrs[1];                   // previous cell output [bS, nU],  that is at previous time step t-1
-    auto Wx     = inArrs[2];                   // input-to-hidden  weights, [iS, 3*nU]
-    auto Wh     = inArrs[3];                   // hidden-to-hidden weights, [nU, 3*nU]
-    auto b      = inArrs[4];                   // biases, [3*nU]
-    auto dLdh   = inArrs[5];                   // gradient wrt output, [bS,nU], that is epsilon_next
-    auto dLdWx0 = inArrs[6];                   // gradient wrt Wx at previous time step, [iS, 3*nU]
-    auto dLdWh0 = inArrs[7];                   // gradient wrt Wh at previous time step, [nU, 3*nU]
-    auto dLdb0  = inArrs[8];                   // gradient wrt b at previous time step,  [3*nU]
+    // x        input [bS, iS]
+    // h0       previous cell output [bS, nU],  that is at previous time step t-1
+    // Wx       input-to-hidden  weights, [iS, 3*nU]
+    // Wh       hidden-to-hidden weights, [nU, 3*nU]
+    // b        biases, [3*nU]
+    // dLdh     gradient wrt output, [bS,nU], that is epsilon_next
+    // dLdWx0   gradient wrt Wx at previous time step, [iS, 3*nU]
+    // dLdWh0   gradient wrt Wh at previous time step, [nU, 3*nU]
+    // dLdb0    gradient wrt b at previous time step,  [3*nU]
 
-    auto dLdx   = outArrs[0];                  // gradient wrt x,  [bS, iS], that is epsilon
-    auto dLdh0  = outArrs[1];                  // gradient wrt h0, [bS, nU]
-    auto dLdWx  = outArrs[2];                  // gradient wrt Wx, [iS, 3*nU]
-    auto dLdWh  = outArrs[3];                  // gradient wrt Wh, [nU, 3*nU]
-    auto dLdb   = outArrs[4];                  // gradient wrt b at previous time step,  [3*nU]
+    //  dLdx    gradient wrt x,  [bS, iS], that is epsilon
+    //  dLdh0   gradient wrt h0, [bS, nU]
+    //  dLdWx   gradient wrt Wx, [iS, 3*nU]
+    //  dLdWh   gradient wrt Wh, [nU, 3*nU]
+    //  dLdb    gradient wrt b at previous time step,  [3*nU]
     
     // h is current cell output [bS, nU], that is at current time step t    
 

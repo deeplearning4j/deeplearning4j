@@ -65,20 +65,21 @@ static void clipping(NDArray* arr, T limit) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmCell(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const std::vector<double>& params) {
+void lstmCell(const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+              NDArray* ht, NDArray* ct, const std::vector<double>& params) {
 
-    auto xt   = inArrs[0];                   // input [bS x inSize]
-    auto ht_1 = inArrs[1];                   // previous cell output [bS x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!!
-    auto ct_1 = inArrs[2];                   // previous cell state  [bS x numUnits], that is at previous time step t-1
+    // xt   input [bS x inSize]
+    // ht_1 previous cell output [bS x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!!
+    // ct_1 previous cell state  [bS x numUnits], that is at previous time step t-1
 
-    auto Wx   = inArrs[3];                   // input-to-hidden  weights, [inSize  x 4*numUnits]
-    auto Wh   = inArrs[4];                   // hidden-to-hidden weights, [numProj x 4*numUnits]
-    auto Wc   = inArrs[5];                   // diagonal weights for peephole connections [3*numUnits]
-    auto Wp   = inArrs[6];                   // projection weights [numUnits x numProj]
-    auto b    = inArrs[7];                   // biases, [4*numUnits]
+    // Wx   input-to-hidden  weights, [inSize  x 4*numUnits]
+    // Wh   hidden-to-hidden weights, [numProj x 4*numUnits]
+    // Wc   diagonal weights for peephole connections [3*numUnits]
+    // Wp   projection weights [numUnits x numProj]
+    // b    biases, [4*numUnits]
     
-    auto ht   =  outArrs[0];                 // current cell output [bS x numProj], that is at current time step t
-    auto ct   =  outArrs[1];                 // current cell state  [bS x numUnits], that is at current time step t
+    // ht  current cell output [bS x numProj], that is at current time step t
+    // ct  current cell state  [bS x numUnits], that is at current time step t
     
     const bool peephole   = (bool)params[0];        // if true, provide peephole connections
     const bool projection = (bool)params[1];        // if true, then projection is performed, if false then numProj==numUnits is mandatory!!!!
@@ -129,20 +130,21 @@ void lstmCell(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& 
 
 
 //////////////////////////////////////////////////////////////////////////
-void lstmTimeLoop(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const std::vector<double>& params) {
+void lstmTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+                  NDArray* h, NDArray* c, const std::vector<double>& params) {
     
-    auto x  = inArrs[0];                    // input [time x bS x inSize]
-    auto h0 = inArrs[1];                    // initial cell output (at time step = 0) [bS x numProj], in case of projection=false -> numProj == numUnits !!!
-    auto c0 = inArrs[2];                    // initial cell state  (at time step = 0) [bS x numUnits],
+    // x  input [time x bS x inSize]
+    // h0 initial cell output (at time step = 0) [bS x numProj], in case of projection=false -> numProj == numUnits !!!
+    // c0 initial cell state  (at time step = 0) [bS x numUnits],
 
-    auto Wx  = inArrs[3];                   // input-to-hidden  weights, [inSize  x 4*numUnits]
-    auto Wh  = inArrs[4];                   // hidden-to-hidden weights, [numProj x 4*numUnits]
-    auto Wc  = inArrs[5];                   // diagonal weights for peephole connections [3*numUnits]
-    auto Wp  = inArrs[6];                   // projection weights [numUnits x numProj]
-    auto b   = inArrs[7];                   // biases, [4*numUnits]
+    // Wx input-to-hidden  weights, [inSize  x 4*numUnits]
+    // Wh hidden-to-hidden weights, [numProj x 4*numUnits]
+    // Wc diagonal weights for peephole connections [3*numUnits]
+    // Wp projection weights [numUnits x numProj]
+    // b  biases, [4*numUnits]
     
-    auto h   =  outArrs[0];                 // cell outputs [time x bS x numProj], that is per each time step
-    auto c   =  outArrs[1];                 // cell states  [time x bS x numUnits] that is per each time step
+    // h cell outputs [time x bS x numProj], that is per each time step
+    // c cell states  [time x bS x numUnits] that is per each time step
 
     const int time  = x->sizeAt(0);
 
@@ -155,7 +157,7 @@ void lstmTimeLoop(const std::vector<NDArray*>& inArrs, const std::vector<NDArray
         auto ht = (*h)({t,t+1, 0,0, 0,0});
         auto ct = (*c)({t,t+1, 0,0, 0,0});
 
-        helpers::lstmCell({&xt,&currentH,&currentC, Wx,Wh,Wc,Wp, b},   {&ht, &ct},   params);
+        helpers::lstmCell(&xt,&currentH,&currentC, Wx,Wh,Wc,Wp, b,   &ht, &ct,   params);
         currentH.assign(ht);
         currentC.assign(ct);
     }    
