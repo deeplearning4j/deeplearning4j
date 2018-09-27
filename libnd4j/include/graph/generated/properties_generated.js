@@ -143,11 +143,36 @@ nd4j.graph.FlatProperties.prototype.aLength = function() {
 
 /**
  * @param {number} index
+ * @returns {boolean}
+ */
+nd4j.graph.FlatProperties.prototype.b = function(index) {
+  var offset = this.bb.__offset(this.bb_pos, 14);
+  return offset ? !!this.bb.readInt8(this.bb.__vector(this.bb_pos + offset) + index) : false;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.FlatProperties.prototype.bLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 14);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @returns {Int8Array}
+ */
+nd4j.graph.FlatProperties.prototype.bArray = function() {
+  var offset = this.bb.__offset(this.bb_pos, 14);
+  return offset ? new Int8Array(this.bb.bytes().buffer, this.bb.bytes().byteOffset + this.bb.__vector(this.bb_pos + offset), this.bb.__vector_len(this.bb_pos + offset)) : null;
+};
+
+/**
+ * @param {number} index
  * @param {flatbuffers.Encoding=} optionalEncoding
  * @returns {string|Uint8Array}
  */
 nd4j.graph.FlatProperties.prototype.s = function(index, optionalEncoding) {
-  var offset = this.bb.__offset(this.bb_pos, 14);
+  var offset = this.bb.__offset(this.bb_pos, 16);
   return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
 };
 
@@ -155,7 +180,7 @@ nd4j.graph.FlatProperties.prototype.s = function(index, optionalEncoding) {
  * @returns {number}
  */
 nd4j.graph.FlatProperties.prototype.sLength = function() {
-  var offset = this.bb.__offset(this.bb_pos, 14);
+  var offset = this.bb.__offset(this.bb_pos, 16);
   return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -164,7 +189,7 @@ nd4j.graph.FlatProperties.prototype.sLength = function() {
  * @returns {number}
  */
 nd4j.graph.FlatProperties.prototype.shape = function(index) {
-  var offset = this.bb.__offset(this.bb_pos, 16);
+  var offset = this.bb.__offset(this.bb_pos, 18);
   return offset ? this.bb.readInt32(this.bb.__vector(this.bb_pos + offset) + index * 4) : 0;
 };
 
@@ -172,7 +197,7 @@ nd4j.graph.FlatProperties.prototype.shape = function(index) {
  * @returns {number}
  */
 nd4j.graph.FlatProperties.prototype.shapeLength = function() {
-  var offset = this.bb.__offset(this.bb_pos, 16);
+  var offset = this.bb.__offset(this.bb_pos, 18);
   return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -180,7 +205,7 @@ nd4j.graph.FlatProperties.prototype.shapeLength = function() {
  * @returns {Int32Array}
  */
 nd4j.graph.FlatProperties.prototype.shapeArray = function() {
-  var offset = this.bb.__offset(this.bb_pos, 16);
+  var offset = this.bb.__offset(this.bb_pos, 18);
   return offset ? new Int32Array(this.bb.bytes().buffer, this.bb.bytes().byteOffset + this.bb.__vector(this.bb_pos + offset), this.bb.__vector_len(this.bb_pos + offset)) : null;
 };
 
@@ -188,7 +213,7 @@ nd4j.graph.FlatProperties.prototype.shapeArray = function() {
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatProperties.startFlatProperties = function(builder) {
-  builder.startObject(7);
+  builder.startObject(8);
 };
 
 /**
@@ -317,10 +342,39 @@ nd4j.graph.FlatProperties.startAVector = function(builder, numElems) {
 
 /**
  * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} bOffset
+ */
+nd4j.graph.FlatProperties.addB = function(builder, bOffset) {
+  builder.addFieldOffset(5, bOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<boolean>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatProperties.createBVector = function(builder, data) {
+  builder.startVector(1, data.length, 1);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addInt8(+data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.FlatProperties.startBVector = function(builder, numElems) {
+  builder.startVector(1, numElems, 1);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
  * @param {flatbuffers.Offset} sOffset
  */
 nd4j.graph.FlatProperties.addS = function(builder, sOffset) {
-  builder.addFieldOffset(5, sOffset, 0);
+  builder.addFieldOffset(6, sOffset, 0);
 };
 
 /**
@@ -349,7 +403,7 @@ nd4j.graph.FlatProperties.startSVector = function(builder, numElems) {
  * @param {flatbuffers.Offset} shapeOffset
  */
 nd4j.graph.FlatProperties.addShape = function(builder, shapeOffset) {
-  builder.addFieldOffset(6, shapeOffset, 0);
+  builder.addFieldOffset(7, shapeOffset, 0);
 };
 
 /**

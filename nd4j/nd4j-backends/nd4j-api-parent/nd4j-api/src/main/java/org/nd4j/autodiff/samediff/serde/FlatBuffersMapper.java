@@ -304,6 +304,7 @@ public class FlatBuffersMapper {
             } catch (IllegalAccessException | InstantiationException e) {
                 throw new RuntimeException("Error creating differential function instance of type " + c);
             }
+            op.setOwnName(name);
 
             //Set input SDVariables:
 
@@ -331,7 +332,7 @@ public class FlatBuffersMapper {
             if(opType == Op.Type.SCALAR){
                 ScalarOp sOp = (ScalarOp)op;
                 sOp.setScalar(scalar);
-            } else if(opType == Op.Type.REDUCE || opType == Op.Type.REDUCE3){
+            } else if(opType == Op.Type.REDUCE || opType == Op.Type.REDUCE3 || opType == Op.Type.SUMMARYSTATS || opType == Op.Type.VARIANCE){
                 BaseAccumulation ba = (BaseAccumulation)op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
                 ba.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec

@@ -9,8 +9,9 @@ table FlatProperties {
     l:[long];       // long properties
     d:[double];     // double properties
     a:[FlatArray];  // array properties
+    b:[bool];       // boolean properties
     s:[string];     // string properties
-    shape:[int];    // multi-dimensional array shape (for i/l/d/a/s). Used when encoding multi-dimensional arrays as a 1d
+    shape:[int];    // array shape (for i/l/d/a/b/s). Used when encoding arrays as a 1d. Null when ildabs fields are used as length 1 for primitives/non-arrays
 }
 
 root_type FlatProperties;
