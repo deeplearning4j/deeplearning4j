@@ -78,15 +78,6 @@ public class BernoulliDistribution extends BaseRandomOp {
     }
 
     @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("prob",prob);
-        return ret;
-    }
-
-
-
-    @Override
     public int opNum() {
         return 7;
     }

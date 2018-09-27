@@ -101,16 +101,6 @@ public class LogNormalDistribution extends BaseRandomOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("mean",mean);
-        ret.put("stddev",stddev);
-        return ret;
-    }
-
-
     @Override
     public int opNum() {
         return 10;

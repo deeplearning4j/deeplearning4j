@@ -7010,7 +7010,7 @@ public class SameDiff {
     }
 
     /**
-     * @see #cumsum(String, SDVariable, SDVariable, boolean, boolean)
+     * @see #cumsum(String, SDVariable, boolean, boolean, int...)
      */
     public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
         return cumsum(null, in, exclusive, reverse, axis);
@@ -7037,7 +7037,7 @@ public class SameDiff {
     }
 
     /**
-     * @see #cumprod(String, SDVariable, SDVariable, boolean, boolean)
+     * @see #cumprod(String, SDVariable, boolean, boolean, int...)
      */
     public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
         return cumprod(null, in, exclusive, reverse, axis);
@@ -10960,7 +10960,7 @@ public class SameDiff {
     }
 
     protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables,
-                             Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter) {
+                             Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) {
         val opName = node.opName();
         val hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
@@ -11037,7 +11037,7 @@ public class SameDiff {
         }
 
         log.debug("Own Name: {}", node.getOwnName());
-        int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
+        int ownId = id != null ? id : idCounter.incrementAndGet();  //forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         String[] outNames = node.outputVariablesNames();
         for(String s : outNames){
             if(!reverseMap.containsKey(s)){
@@ -11137,6 +11137,7 @@ public class SameDiff {
         val framesMap = new LinkedHashMap<String, Integer>();
 
         int idx = 0;
+        Map<DifferentialFunction,Integer> idxForOps = new IdentityHashMap<>();
         for (val variable : variables()) {
             log.debug("Exporting variable: [{}]", variable.getVarName());
             if (variable.getArr() == null || variable.getShape() == null) {
@@ -11144,14 +11145,38 @@ public class SameDiff {
                 //addAsPlaceHolder(variable.getVarName());
                 continue;
             }
-            reverseMap.put(variable.getVarName(), idCounter.incrementAndGet());
-            log.debug("Adding [{}] as [{}]", variable.getVarName(), idCounter.get());
+
+            //If variable is the output of some op - let's use the ONE index for exporting, and properly track the output
+            // numbers. For example, unstack(x) -> y0, y1, y2 -> the y's should be say (3,0), (3,1), (3,2) NOT (4,0), (5,0), (6,0)
+            String varName = variable.getVarName();
+            int varIdx;
+            int outputNum;
+            if(functionOutputFor.containsKey(varName)){
+                //This variable is the output of a node
+                DifferentialFunction df = functionOutputFor.get(varName).get(0);
+                if(!idxForOps.containsKey(df)){
+                    varIdx = idCounter.incrementAndGet();
+                    idxForOps.put(df, varIdx);
+                } else {
+                    varIdx = idxForOps.get(df);
+                }
+                String[] outNames = df.outputVariablesNames();
+                outputNum = ArrayUtils.indexOf(outNames, varName);
+                Preconditions.checkState(outputNum >= 0, "Variable name \"%s\" not found in list of outputs: %s", varName, outNames);
+            } else {
+                varIdx = idCounter.incrementAndGet();
+                outputNum = 0;
+            }
+
+
+            reverseMap.put(variable.getVarName(), varIdx);
+            log.debug("Adding [{}] as [{}]", variable.getVarName(), varIdx);
 
             val arr = variable.getArr();
 
             int name = bufferBuilder.createString(variable.getVarName());
             int array = arr.toFlatArray(bufferBuilder);
-            int id = IntPair.createIntPair(bufferBuilder, idCounter.get(), 0);
+            int id = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
 
 
             int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, 0, array, -1);
@@ -11160,7 +11185,8 @@ public class SameDiff {
 
         //add functions
         for (val func : functionInstancesById.values()) {
-            flatNodes.add(asFlatNode(func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter));
+            Integer fnId = idxForOps.get(func);
+            flatNodes.add(asFlatNode(func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter, fnId));
         }
 
         // we're dumping scopes now
@@ -11194,9 +11220,8 @@ public class SameDiff {
 
             //add functions
             for (val func : scope.getValue().functionInstancesById.values()) {
-                flatNodes.add(asFlatNode(func, bufferBuilder, currVarList, reverseMap, forwardMap, framesMap, idCounter));
+                flatNodes.add(asFlatNode(func, bufferBuilder, currVarList, reverseMap, forwardMap, framesMap, idCounter, null));
             }
-
         }
 
         int outputsOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatOffsets));
@@ -11404,8 +11429,9 @@ public class SameDiff {
                 numOutputs = fn.outputLength();
             }
 
+            String[] varNames = null;
             if(varsForOp != null && varsForOp.size() == numOutputs){
-                String[] varNames = new String[varsForOp.size()];
+                varNames = new String[varsForOp.size()];
                 for( int i=0; i<varNames.length; i++ ){
                     varNames[i] = varsForOp.get(i).getVarName();
                 }
@@ -11413,7 +11439,7 @@ public class SameDiff {
             } else {
                 //We're missing some variables...
                 int outputNamesLength = fn.outputNamesLength();
-                String[] varNames = new String[outputNamesLength];
+                varNames = new String[outputNamesLength];
                 for( int i=0; i<outputNamesLength; i++ ){
                     String n = fn.outputNames(i);
                     varNames[i] = n;
@@ -11429,6 +11455,15 @@ public class SameDiff {
                     }
                 }
                 sd.outgoingArgsReverse.put(df.getOwnName(), varNames);
+            }
+
+            //Check the op mapping int he variablesByNodeAndOutputNum
+            //For multi-output ops, variables will have their own index, not related to the op index
+            for( int i=0; i<varNames.length; i++ ){
+                Pair<Integer,Integer> p = new Pair<>(opId, i);
+                if(!variablesByNodeAndOutNum.containsKey(p)){
+                    variablesByNodeAndOutNum.put(p, sd.getVariable(varNames[i]));
+                }
             }
         }
 

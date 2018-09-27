@@ -81,9 +81,14 @@ public class DifferentialFunctionClassHolder {
     //When determining fields/properties, where should we terminate the search?
     //We don't wan to include every single field from every single superclass
     private static final Set<Class> classesToIgnore = new HashSet<>(Arrays.<Class>asList(
-            Object.class,
-            BaseOp.class    //Exclude x/y/z, n, numProcessed, extraArgs, etc
+            Object.class
+//            BaseOp.class    //Exclude x/y/z, n, numProcessed, extraArgs, etc
     ));
+
+    private static final Map<Class<?>,Set<String>> classFieldsToIgnore = new HashMap<>();
+    static {
+        classFieldsToIgnore.put(BaseOp.class, new HashSet<>(Arrays.asList("x", "y", "z", "n", "numProcessed", "xVertexId", "yVertexId", "zVertexId", "extraArgz")));
+    }
 
     @Getter
     private int countTotalTfOps;
@@ -233,18 +238,28 @@ public class DifferentialFunctionClassHolder {
                             val configFieldClass = configField.getType();
 
                             for(val field : configFieldClass.getDeclaredFields()) {
-                                if(!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName())) {
+                                if(!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
+                                        (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
                                     fields.add(field);
                                     field.setAccessible(true);
+                                    if(fieldNames.containsKey(field.getName())){
+                                        throw new IllegalStateException("Field with name " + field.getName() + " exists for multiple classes: "
+                                                + fieldNames.get(field.getName()).getDeclaringClass().getName() + " and " + field.getDeclaringClass().getName());
+                                    }
                                     fieldNames.put(field.getName(),field);
                                 }
                             }
                         }
                         else {
                             for(Field field : current.getDeclaredFields()) {
-                                if(!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName())) {
+                                if(!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
+                                        (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
                                     fields.add(field);
                                     field.setAccessible(true);
+                                    if(fieldNames.containsKey(field.getName())){
+                                        throw new IllegalStateException("Field with name " + field.getName() + " exists for multiple classes: "
+                                                + fieldNames.get(field.getName()).getDeclaringClass().getName() + " and " + field.getDeclaringClass().getName());
+                                    }
                                     fieldNames.put(field.getName(),field);
                                 }
                             }

@@ -98,15 +98,6 @@ public class GaussianDistribution extends BaseRandomOp {
 
 
     @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("mean",mean);
-        ret.put("stddev",stddev);
-        return ret;
-    }
-
-
-    @Override
     public String opName() {
         return "distribution_gaussian";
     }

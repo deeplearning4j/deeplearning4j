@@ -266,12 +266,6 @@ public class StridedSlice extends DynamicCustomOp {
         return ret;
     }
 
-
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        return super.propertiesForFunction();
-    }
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         return Collections.singletonList(f().stridedSliceBp(arg(), i_v.get(0), begin, end, strides, beginMask, endMask,

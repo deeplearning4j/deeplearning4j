@@ -465,13 +465,13 @@ public class FlatBuffersMapper {
                         iArr[i] = p.i(i);
                     }
                     out.put(name, iArr);
-                } else if(p.lLength() > 0){
+                } else if(p.dLength() > 0){
                     double[] dArr = new double[p.dLength()];
                     for( int i=0; i<dArr.length; i++ ){
                         dArr[i] = p.d(i);
                     }
                     out.put(name, dArr);
-                } else if(p.dLength() > 0) {
+                } else if(p.lLength() > 0) {
                     long[] lArr = new long[p.lLength()];
                     for (int i = 0; i < lArr.length; i++) {
                         lArr[i] = p.l(i);

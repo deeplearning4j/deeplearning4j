@@ -230,7 +230,7 @@ public class OpValidation {
         INDArray[] outDe = deserialized.execAndEndResults();
         Preconditions.checkState(outOrig.length == outDe.length, "Different number of outputs: %s expected vs. %s actual", outOrig.length, outDe.length);
         for(int i=0; i<outOrig.length; i++ ){
-            Preconditions.checkState(outOrig[i].equals(outDe[i]), "Output array %s differs - \"%ndSInfo\" vs \"%ndSInfo\"", i, outOrig[i], outDe[i]);
+            Preconditions.checkState(outOrig[i].equals(outDe[i]), "Output array %s differs - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10", i, outOrig[i], outDe[i], outOrig[i], outDe[i]);
         }
     }
 

@@ -64,14 +64,6 @@ public class Linspace extends BaseRandomOp {
         this.extraArgs = new Object[] {from, to};
     }
 
-//    @Override
-//    public Map<String, Object> propertiesForFunction() {
-//        Map<String,Object> ret = new LinkedHashMap<>();
-//        ret.put("from",from);
-//        ret.put("to",to);
-//        return ret;
-//    }
-
 
     @Override
     public int opNum() {

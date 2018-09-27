@@ -75,13 +75,6 @@ public class Transpose extends DynamicCustomOp {
         return ret;
     }
 
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("permuteDims", permuteDims);
-        return ret;
-    }
-
 
     @Override
     public String opName() {

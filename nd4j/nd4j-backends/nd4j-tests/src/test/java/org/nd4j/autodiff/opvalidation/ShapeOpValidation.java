@@ -655,7 +655,8 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         for (long[] shape : unstackedShape) {
             for (int axis = 0; axis <= shape.length; axis++) {
-                for (int numInputs : new int[]{1, 3}) {
+//                for (int numInputs : new int[]{1, 3}) {
+                for (int numInputs : new int[]{3}) {
 
                     long[] stackedShape = new long[shape.length + 1];
                     int x = 0;
