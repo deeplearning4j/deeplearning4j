@@ -77,7 +77,7 @@ namespace ops {
                 newShape[i + 1] = shape::sizeAt(in, outRank + i - 1);
 
             shape::updateStrides(newShape, shape::order(in));
-
+            ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
             shapes->push_back(newShape);
         }
 

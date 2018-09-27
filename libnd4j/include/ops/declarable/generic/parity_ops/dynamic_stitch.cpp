@@ -48,7 +48,7 @@ namespace ops {
     }
 
     DECLARE_SHAPE_FN(dynamic_stitch) {
-        int maxValue = 0;
+        Nd4jLong maxValue = 0;
         auto numOfData = block.width();
         numOfData /= 2; // only index part it's needed to review
         auto restShape = inputShape->at(numOfData);
@@ -57,13 +57,8 @@ namespace ops {
             auto input = INPUT_VARIABLE(i);
 
             // FIXME: we have reduce::Max, cinsider using it instead
-            /*
-            for (int e = 0; e < input->lengthOf(); ++e) {
-                if (T(maxValue) < (*input)(e))
-                    maxValue = static_cast<int>((*input)(e));
-            }
-             */
-            throw std::runtime_error("Not implemented yet");
+            auto maxV = input->reduceNumber(reduce::Max);
+            if (maxV.e<Nd4jLong>(0) > maxValue) maxValue = maxV.e<Nd4jLong>(0);
         }
 
         Nd4jLong *outShapeInfo;
@@ -78,7 +73,7 @@ namespace ops {
         shape::updateStrides(outShapeInfo, shape::order(firstShape));
 
         //shape::shapeVector(maxValue + 1, newShape);
-
+        ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(restShape));
         return SHAPELIST(outShapeInfo);
     }
 }

@@ -73,7 +73,7 @@ DECLARE_SHAPE_FN(gather_nd) {
         outShapeInfo[rankInd + i] = inShapeInfoIn[lastIndDim + i + 1];
 
 	shape::updateStrides(outShapeInfo, 'c');
-
+    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfoIn));
     return SHAPELIST(outShapeInfo);    
 }
 

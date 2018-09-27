@@ -38,6 +38,10 @@ namespace ops {
     DECLARE_SHAPE_FN(eye) {
 
         std::vector<int> params;
+
+        // FIX ME: original has a dtype param - so should be used here instead. e.g. (DataType) INT_ARG(0);
+        nd4j::DataType dtype = nd4j::DataType::DOUBLE;
+
         if(block.width() == 0) {
             params = *block.getIArguments();
         }
@@ -93,7 +97,7 @@ namespace ops {
         }
         
         shape::updateStrides(outShapeInfo, static_cast<char>(-params[0]));
-        
+        ArrayOptions::setDataType(outShapeInfo, dtype);
         return SHAPELIST(outShapeInfo);
     }
 

@@ -54,7 +54,7 @@ DECLARE_SHAPE_FN(trace) {
         outShapeInfo[i] = inShapeInfo[i];
 
     shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
-
+    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfo));
     return SHAPELIST(outShapeInfo);
 }
 
