@@ -62,8 +62,8 @@ import static org.junit.Assume.assumeFalse;
         TransformOpValidation.class,
 
         //TF import tests
-//        TFGraphTestAllSameDiff.class,
-//        TFGraphTestAllLibnd4j.class
+        TFGraphTestAllSameDiff.class,
+        TFGraphTestAllLibnd4j.class
 })
 public class OpValidationSuite {
 

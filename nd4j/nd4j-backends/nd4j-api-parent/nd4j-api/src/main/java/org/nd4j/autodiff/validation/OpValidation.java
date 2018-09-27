@@ -176,7 +176,7 @@ public class OpValidation {
 
             //Now: deserialize, and check the results
             if(serializedBeforeExec != null){
-                checkDeserializedEquality(sd, serializedBeforeExec);
+                checkDeserializedEquality(sd, serializedBeforeExec, testCase);
             }
         }
 
@@ -197,7 +197,7 @@ public class OpValidation {
         return null;    //OK - passed
     }
 
-    public static void checkDeserializedEquality(SameDiff original, ByteBuffer bbSerialized) {
+    public static void checkDeserializedEquality(SameDiff original, ByteBuffer bbSerialized, TestCase tc) {
         SameDiff deserialized;
         try{
            deserialized = SameDiff.fromFlatBuffers(bbSerialized);
@@ -229,8 +229,19 @@ public class OpValidation {
         INDArray[] outOrig = original.execAndEndResults();
         INDArray[] outDe = deserialized.execAndEndResults();
         Preconditions.checkState(outOrig.length == outDe.length, "Different number of outputs: %s expected vs. %s actual", outOrig.length, outDe.length);
+        DifferentialFunction[] functions = original.functions();
+        String[] outNames = original.getOutputsForFunction(functions[functions.length-1]);
         for(int i=0; i<outOrig.length; i++ ){
-            Preconditions.checkState(outOrig[i].equals(outDe[i]), "Output array %s differs - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10", i, outOrig[i], outDe[i], outOrig[i], outDe[i]);
+            Function<INDArray,String> fn = tc.fwdTestFns().get(outNames[i]);
+            String err = null;
+            if(fn != null){
+                err = fn.apply(outDe[i]);
+            } else {
+                if(!outOrig[i].equals(outDe[i])) {
+                    err = "INDArray equality failed";
+                }
+            }
+            Preconditions.checkState(err == null, "Output array %s failed check - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10\nError:%s", i, outOrig[i], outDe[i], outOrig[i], outDe[i], err);
         }
     }
 

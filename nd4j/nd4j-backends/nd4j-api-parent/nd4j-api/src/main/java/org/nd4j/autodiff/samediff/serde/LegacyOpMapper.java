@@ -297,7 +297,7 @@ public class LegacyOpMapper {
             case 71:
                 return Pooling2D.class;
             case 72:
-                return MatchCondition.class;
+                return MatchConditionTransform.class;
             case 73:
                 return ClipByValue.class;
             case 74:
