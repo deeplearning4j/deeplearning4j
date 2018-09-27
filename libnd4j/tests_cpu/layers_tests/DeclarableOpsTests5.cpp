@@ -1342,11 +1342,12 @@ TEST_F(DeclarableOpsTests5, trace_test1) {
     auto input = NDArrayFactory::create<double>('c', {3, 4, 5});
     input.linspace(1);
     auto exp = NDArrayFactory::create<double>('c', {3}, {40, 120, 200});
-
+    NDArray matrix('c', {3, 3}, {1., 2., 3., 4., 5., 6., 7., 8., 9.});
     nd4j::ops::trace op;
     auto results = op.execute({&input}, {}, {});
     auto output = results->at(0);    
-    
+    double traceM = matrix.getTrace();
+    nd4j_printf("Trace for matrix is %f\n", traceM);
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(exp.isSameShape(output));
     exp.printIndexedBuffer("EXP TRACE");
