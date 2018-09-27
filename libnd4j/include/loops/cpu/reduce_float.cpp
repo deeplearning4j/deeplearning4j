@@ -35,11 +35,11 @@ namespace functions {
                                                 void *vz,
                                                 Nd4jLong *zShapeInfo) {
             auto x = reinterpret_cast<X *>(vx);
-            auto z = reinterpret_cast<X *>(vz);
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
+            auto z = reinterpret_cast<Z *>(vz);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
             const Nd4jLong length = shape::length(xShapeInfo);
-            int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+            auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
             if (xElementWiseStride >= 1) {
                 z[0] = execScalar<OpType>(x, xElementWiseStride, length, extraParams);
             }
@@ -91,7 +91,7 @@ namespace functions {
                     Nd4jLong *xShapeInfo,
                     void *vextraParams) {
                 auto x = reinterpret_cast<X *>(vx);
-                auto extraParams = reinterpret_cast<X *>(vextraParams);
+                auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
                 const Nd4jLong length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);

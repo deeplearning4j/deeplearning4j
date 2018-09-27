@@ -34,15 +34,15 @@ namespace simdOps {
         static const bool requiresSpecialAccumulation = true;
 
 
-        op_def static T startingValue(const T *input) {
+        op_def static T startingValue(T *input) {
             return (T) 0.0f;
         }
 
-        op_def static T merge(T old, T opOutput, T *extraParams) {
+        op_def static T merge(T old, T opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static T update(T old, T opOutput, T *extraParams) {
+        op_def static T update(T old, T opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
@@ -50,11 +50,11 @@ namespace simdOps {
             return nd4j::math::nd4j_exp<T, T>(d1 - d2);
         }
 
-        op_def static T op(T d1, T* extraParams) {
+        op_def static T op(T d1, Z* extraParams) {
             return nd4j::math::nd4j_exp<T, T>(d1 - extraParams[0]);
         }
 
-        op_def static T postProcess(T reduction, Nd4jLong n, T *extraParams) {
+        op_def static T postProcess(T reduction, Nd4jLong n, Z *extraParams) {
             return extraParams[0] + nd4j::math::nd4j_log<T, T>(reduction);
         }
 
@@ -187,7 +187,7 @@ namespace simdOps {
 
             if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(close) default(shared)
                 for (int i = 0; i < resultLength; i++) {
 
                     T *iter = x + tadOffsets[i];
