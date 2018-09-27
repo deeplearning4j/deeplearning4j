@@ -19,6 +19,7 @@
 #include <pointercast.h>
 #include "../NativeOpExcutioner.h"
 #include <types/types.h>
+#include <loops/transform_float.h>
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -228,8 +229,9 @@ void NativeOpExcutioner::execReduce3TAD(int opNum, void *x, Nd4jLong *xShapeInfo
 void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *scalar, Nd4jLong *scalarShapeInfo, void *extraParams) {
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(scalarShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, yType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), FLOAT_TYPES, FLOAT_TYPES);
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
 }
 
 
@@ -237,8 +239,9 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
 void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, Nd4jLong *scalarShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(scalarShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, yType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), FLOAT_TYPES, FLOAT_TYPES);
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -305,8 +308,9 @@ void NativeOpExcutioner::execSummaryStats(int opNum, void *x, Nd4jLong *xShapeIn
 */
 void NativeOpExcutioner::execTransform(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::transform::Transform, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

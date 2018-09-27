@@ -15,8 +15,8 @@
  ******************************************************************************/
 
 
-#ifndef REDUCE_H
-#define REDUCE_H
+#ifndef REDUCE_FLOAT_H
+#define REDUCE_FLOAT_H
 #include <dll.h>
 //#include <string>
 #include <helpers/sharedmem.h>

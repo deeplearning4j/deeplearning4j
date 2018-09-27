@@ -22,8 +22,8 @@
  *  @author: raver119@gmail.com
  */
 
-#ifndef TRANSFORM_H_
-#define TRANSFORM_H_
+#ifndef TRANSFORM_FLOAT_H_
+#define TRANSFORM_FLOAT_H_
 #include <vector>
 #include <templatemath.h>
 #include <ops/ops.h>
