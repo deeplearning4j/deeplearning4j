@@ -43,7 +43,7 @@ namespace functions {
 
 namespace simdOps {
 
-	template<typename T>
+	template<typename T, typename Z>
 	class Pooling2D {
 	public:
 		static const bool requiresSpecial = true;
@@ -713,7 +713,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 
 	};
 
-	template<typename T>
+	template<typename T, typename Z>
 	class Histogram {
 	public:
 		static const bool requiresSpecial = true;
@@ -815,7 +815,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		static void execSpecial(
 				T *dx,
 				Nd4jLong *xShapeBuffer,
-				T *result,
+				Z *result,
 				Nd4jLong *resultShapeBuffer,
 				T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
@@ -1383,7 +1383,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
         }
 	};
 
-	template<typename X>
+	template<typename X, typename Z>
 	class SoftMax {
 	public:
 		static const bool requiresSpecial = true;
@@ -1538,7 +1538,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 
 
 
-	template<typename X>
+	template<typename X, typename Z>
 	class LogSoftMax {
 	public:
 		static const bool requiresSpecial = true;
@@ -1695,7 +1695,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 	/**
 	* softmax(x)
 	*/
-	template<typename X>
+	template<typename X, typename Z>
 	class SoftMaxDerivative {
 	public:
 		static const bool requiresSpecial = true;
@@ -1771,9 +1771,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		static void execSpecial(
 			X *dx,
 			Nd4jLong *xShapeBuffer,
-			X *result,
+			Z *result,
 			Nd4jLong *resultShapeBuffer,
-			X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+			Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 			if (shape::isMatrix(xShapeBuffer, 2)) {
 				auto shape = shape::shapeOf(xShapeBuffer);
 
@@ -1963,7 +1963,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		static void doAll(
 			X *dx,
 			Nd4jLong *xShapeBuffer,
-			X *result,
+            bool *result,
 			Nd4jLong *resultShapeBuffer,
 			X *extraParams) {
 
@@ -1989,11 +1989,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 								maxIdx = i;
 							}
 
-							result[i] = 0.0;
+							result[i] = false;
 
 						}
 
-						result[maxIdx] = 1.0;
+						result[maxIdx] = true;
 
 					}
 					else {
@@ -2011,7 +2011,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 								currMaxLocal = dx[i];
 								maxIdxLocal = i;
 							}
-							result[i] = 0.0;
+							result[i] = false;
 						}
 #pragma omp critical
 {
@@ -2021,7 +2021,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 						}
 }
 }
-						result[maxIdx] = 1.0;
+						result[maxIdx] = true;
 					}
 
 				}
@@ -2031,14 +2031,14 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                         auto currMax = dx[0];
 //#pragma omp simd reduction(max:maxIdx,currMax)
 						for (int i = 0; i < length; i++) {
-							result[i * resultEleStride] = 0.0;
+							result[i * resultEleStride] = false;
 							if (currMax < dx[i * eleStride]) {
 								currMax = dx[i * eleStride];
 								maxIdx = i;
 							}
 						}
 
-						result[maxIdx * resultEleStride] = 1.0;
+						result[maxIdx * resultEleStride] = true;
 
 					}
 					else {
@@ -2051,7 +2051,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 						auto currMaxLocal = currMax;
 //#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
 						for (int i = 0; i < length; i++) {
-							result[i * resultEleStride] = 0.0;
+							result[i * resultEleStride] = false;
 							if (currMaxLocal < dx[i * eleStride]) {
 								currMaxLocal = dx[i * eleStride];
 								maxIdxLocal = i;
@@ -2066,7 +2066,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 						}
 }
 }
-						result[maxIdx * resultEleStride] = 1.0;
+						result[maxIdx * resultEleStride] = true;
 					}
 
 				}

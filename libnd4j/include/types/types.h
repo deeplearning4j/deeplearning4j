@@ -46,6 +46,9 @@
         //(nd4j::DataType::UINT64, Nd4jULong)
         //(nd4j::DataType::UINT32, uint32_t), \
 
+#define BOOL_TYPES \
+        (nd4j::DataType::BOOL, bool)
+
 #define FLOAT_TYPES \
         (nd4j::DataType::HALF, float16), \
         (nd4j::DataType::FLOAT32, float), \

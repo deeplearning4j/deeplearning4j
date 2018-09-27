@@ -667,14 +667,6 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y>
-	class SetValOrLess {
-	public:
-		op_def static Z op(X d1, Y d2, X *params) {
-			return nd4j::math::nd4j_max<X>(d1, d2);
-		}
-	};
-
 	template <typename X, typename Y, typename Z>
 	class Mod {
 	public:
@@ -1558,48 +1550,48 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Sqrt {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_sqrt<X, X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_sqrt<X, Z>(d1);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class RSqrt {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return static_cast<X>(1) / nd4j::math::nd4j_sqrt<X, X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return static_cast<Z>(1) / nd4j::math::nd4j_sqrt<X, Z>(d1);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Rint {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_rint<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_rint<X,Z>(d1);
 		}
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class SoftPlus {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::softplus<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::softplus<X, Z>(d1);
 		}
 	};
 
@@ -1628,90 +1620,90 @@ namespace simdOps {
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class RationalTanh {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, Z *params) {
 			// keep 2/3 as runtime variable, to match precision
-			auto dis = (static_cast<X>(2) / static_cast<X>(3)) * d1;
+			auto dis = (static_cast<Z>(2) / static_cast<Z>(3)) * d1;
 
-			auto tanh = nd4j::math::nd4j_sgn<X>(dis) * (static_cast<X>(1) - (static_cast<X>(1) / (static_cast<X>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(2)) + static_cast<X>(1.41645f) * nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(4)) )));
-			return static_cast<X>(1.7159f) * tanh;
+			auto tanh = nd4j::math::nd4j_sgn<X>(dis) * (static_cast<X>(1) - (static_cast<X>(1) / (static_cast<X>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(2)) + static_cast<Z>(1.41645f) * nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(4)) )));
+			return static_cast<Z>(1.7159f) * tanh;
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class RationalTanhDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			auto dis = (static_cast<X>(2) / static_cast<X>(3)) * d1;
+		op_def static Z op(X d1, Z *params) {
+			auto dis = (static_cast<Z>(2) / static_cast<Z>(3)) * d1;
 
-			auto a = static_cast<X>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(2)) + static_cast<X>(1.41645f) * nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(4));
+			auto a = static_cast<X>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(2)) + static_cast<Z>(1.41645f) * nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(4));
 
-			auto tDeriv = (static_cast<X>(1) + nd4j::math::nd4j_sign<X>(dis) * (static_cast<X>(2) * dis + static_cast<X>(4) * static_cast<X>(1.41645f) * nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(3)))) / (a * a);
+			auto tDeriv = (static_cast<X>(1) + nd4j::math::nd4j_sign<X>(dis) * (static_cast<X>(2) * dis + static_cast<Z>(4) * static_cast<Z>(1.41645f) * nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(3)))) / (a * a);
 
-			return static_cast<X>(1.7159f) * (static_cast<X>(2) / static_cast<X>(3)) * tDeriv;
+			return static_cast<Z>(1.7159f) * (static_cast<Z>(2) / static_cast<Z>(3)) * tDeriv;
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Tanh {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_tanh<X,X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_tanh<X, Z>(d1);
 		}
 	};
 
-    template <typename X>
+    template <typename X, typename Z>
     class RectifiedTanh {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static X op(X d1, X *params) {
-            return nd4j::math::nd4j_max<X>(static_cast<X>(0), nd4j::math::nd4j_tanh<X,X>(d1));
+        op_def static Z op(X d1, Z *params) {
+            return nd4j::math::nd4j_max<Z>(static_cast<Z>(0), nd4j::math::nd4j_tanh<X,Z>(d1));
         }
     };
 
-    template <typename X>
+    template <typename X, typename Z>
     class RectifiedTanhDerivative {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static X op(X d1, X *params) {
-            return d1 > static_cast<X>(0) ? nd4j::math::nd4j_tanhderivative<X>(d1) : static_cast<X>(0);
+        op_def static Z op(X d1, Z *params) {
+            return d1 > static_cast<X>(0) ? nd4j::math::nd4j_tanhderivative<X,Z>(d1) : static_cast<Z>(0);
         }
     };
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ATanh {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_atanh<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_atanh<X,Z>(d1);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class TanhDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_tanhderivative<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_tanhderivative<X,Z>(d1);
 		}
 	};
 
@@ -1738,59 +1730,59 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ACos {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_acos<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_acos<X, Z>(d1);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ASinh {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_asinh<X>(d1);
+		op_def static Z op(X d1, X *params) {
+			return nd4j::math::nd4j_asinh<X, Z>(d1);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ASinhDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return static_cast<X>(1) / (nd4j::math::nd4j_sqrt<X, X>(nd4j::math::nd4j_pow<X, X, X>(d1, static_cast<X>(2)) + static_cast<X>(1)));
+		op_def static Z op(X d1, X *params) {
+			return static_cast<Z>(1) / (nd4j::math::nd4j_sqrt<X, Z>(nd4j::math::nd4j_pow<X, X, Z>(d1, static_cast<X>(2)) + static_cast<Z>(1)));
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ACosh {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_acosh<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_acosh<X, Z>(d1);
 		}
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ACoshDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return static_cast<X>(1.f) / (nd4j::math::nd4j_sqrt<X, X>(d1 - static_cast<X>(1.f)) * nd4j::math::nd4j_sqrt<X, X>(d1 + static_cast<X>(1.f)));
+		op_def static Z op(X d1, Z *params) {
+			return static_cast<Z>(1.f) / (nd4j::math::nd4j_sqrt<X, Z>(d1 - static_cast<Z>(1.f)) * nd4j::math::nd4j_sqrt<X, Z>(d1 + static_cast<X>(1.f)));
 		}
 	};
 
@@ -1809,26 +1801,26 @@ namespace simdOps {
 
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class SoftSign {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_softsign<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_softsign<X,Z>(d1);
 		}
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class SoftSignDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_softsignderivative<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_softsignderivative<X,Z>(d1);
 		}
 	};
 
@@ -1902,26 +1894,26 @@ namespace simdOps {
         }
     };
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ELU {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_elu<X>(d1);
+		op_def static X op(X d1, Z *params) {
+			return nd4j::math::nd4j_elu<X,Z>(d1);
 		}
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ELUDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_eluderivative<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_eluderivative<X,Z>(d1);
 		}
 	};
 
@@ -2038,7 +2030,7 @@ namespace simdOps {
         no_op_exec_special_cuda
 
         op_def static X op(X d1, Y d2, X *params) {
-            return static_cast<X>(d2) * simdOps::HardSigmoidDerivative<X>::op(d1, nullptr);
+            return static_cast<X>(d2) * simdOps::HardSigmoidDerivative<X,Y>::op(d1, nullptr);
         }
     };
 
@@ -2049,7 +2041,7 @@ namespace simdOps {
         no_op_exec_special_cuda
 
         op_def static X op(X d1, Y d2, X *params) {
-            return static_cast<X>(d2) * simdOps::HardTanhDerivative<X>::op(d1, nullptr);
+            return static_cast<X>(d2) * simdOps::HardTanhDerivative<X,Y>::op(d1, nullptr);
         }
     };
 
@@ -2060,7 +2052,7 @@ namespace simdOps {
         no_op_exec_special_cuda
 
         op_def static X op(X d1, Y d2, X *params) {
-            return static_cast<X>(d2) * simdOps::RationalTanhDerivative<X>::op(d1, nullptr);
+            return static_cast<X>(d2) * simdOps::RationalTanhDerivative<X,Y>::op(d1, nullptr);
         }
     };
 
@@ -2083,40 +2075,40 @@ namespace simdOps {
 
 		op_def static X op(X d1, X *params) {
 			X relu = d1 < params[0] ? params[0] : d1;
-			return relu < static_cast<X>(6.f) ? relu : static_cast<X>(6.f);
+			return relu < static_cast<X>(6) ? relu : static_cast<X>(6);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class LeakyRELU {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_leakyrelu<X>(d1, params[0]);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_leakyrelu<X,Z>(d1, params[0]);
 		}
 	};
 
-    template <typename X>
+    template <typename X, typename Z>
     class SELU {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static X op(X d1, X *params) {
-            return d1 > static_cast<X>(0.0f) ? static_cast<X>(SELU_LAMBDA) * d1 : static_cast<X>(SELU_LAMBDA) * (static_cast<X>(SELU_ALPHA) * nd4j::math::nd4j_exp<X, X>(d1) - static_cast<X>(SELU_ALPHA));
+        op_def static Z op(X d1, Z *params) {
+            return d1 > static_cast<X>(0.0f) ? static_cast<Z>(SELU_LAMBDA) * d1 : static_cast<Z>(SELU_LAMBDA) * (static_cast<Z>(SELU_ALPHA) * nd4j::math::nd4j_exp<X, Z>(d1) - static_cast<Z>(SELU_ALPHA));
         }
     };
 
-    template <typename X>
+    template <typename X, typename Z>
     class SELUDerivative {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static X op(X d1, X *params) {
-            return d1 > static_cast<X>(0) ? static_cast<X>(SELU_LAMBDA) : static_cast<X>(SELU_ALPHA) * static_cast<X>(SELU_LAMBDA) * nd4j::math::nd4j_exp<X, X>(d1);
+        op_def static Z op(X d1, Z *params) {
+            return d1 > static_cast<X>(0) ? static_cast<Z>(SELU_LAMBDA) : static_cast<Z>(SELU_ALPHA) * static_cast<Z>(SELU_LAMBDA) * nd4j::math::nd4j_exp<X, Z>(d1);
         }
     };
 
@@ -2127,119 +2119,119 @@ namespace simdOps {
         no_op_exec_special_cuda
 
         op_def static X op(X d1, Y d2, X *params) {
-            return (X) d2 * simdOps::SELUDerivative<X>::op(d1, nullptr);
+            return (Y) d2 * simdOps::SELUDerivative<X, Y>::op(d1, nullptr);
         }
     };
 
-	template <typename X>
+	template <typename X, typename Z>
 	class LeakyRELUDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, Z *params) {
 			if (d1 >= static_cast<X>(0))
-				return static_cast<X>(1);
+				return static_cast<Z>(1);
 			else
 				return params[0];
 		}
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ASin {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_asin<X>(d1);
+		op_def static Z op(X d1, X *params) {
+			return nd4j::math::nd4j_asin<X,Z>(d1);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Sinh {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_sinh<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_sinh<X,Z>(d1);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class SinhDerivative {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_cosh<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_cosh<X, Z>(d1);
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Cosh {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_cosh<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_cosh<X,Z>(d1);
 		}
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class Tan {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_tan<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_tan<X,Z>(d1);
 		}
 	};
 
-    template <typename X>
+    template <typename X, typename Z>
     class TanDerivative {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-        op_def static X op(X d1, X *params) {
-            return  static_cast<X>(1) / nd4j::math::nd4j_pow<X, X, X>(nd4j::math::nd4j_cos<X>(d1), static_cast<X>(2.0f));
+        op_def static Z op(X d1, Z *params) {
+            return  static_cast<Z>(1) / nd4j::math::nd4j_pow<Z, Z, Z>(nd4j::math::nd4j_cos<X, Z>(d1), static_cast<Z>(2.0f));
         }
     };
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ATan {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_atan<X>(d1);
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_atan<X, Z>(d1);
 		}
 	};
 
-    template <typename X, typename Y>
+    template <typename X, typename Y, typename Z>
     class Atan2 {
     public:
         no_op_exec_special
         no_op_exec_special_cuda
 
-		op_def static X op(X d1, Y d2) {
+		op_def static Z op(X d1, Y d2) {
 			return nd4j::math::nd4j_atan2<X>(d2, d1);
 		}
 
-        op_def static X op(X d1, Y d2, X *params) {
+        op_def static Z op(X d1, Y d2, Z *params) {
             return op(d1, d2);
         }
 
 		// op for MetaOps
-		op_def static X op(X d1, Y *params) {
+		op_def static Z op(X d1, Y *params) {
 			return op(d1, params[0]);
 		}
     };
@@ -4033,7 +4025,7 @@ template <typename X>
 		}
 	};
 
-template <typename X>
+template <typename X, typename Z>
 	class DropOutInverted {
 	public:
 		no_op_exec_special
@@ -4042,7 +4034,7 @@ template <typename X>
 #ifdef __CUDACC__
     __device__
 #endif
-        inline static X op(X d1, X *params) {
+        inline static Z op(X d1, X *params) {
 			X prob = params[0];
 #ifdef __CUDACC__
 			X length = params[1];
@@ -4051,18 +4043,18 @@ template <typename X>
 #else
 			X rnd = static_cast<X>(rand() / RAND_MAX);
 #endif
-			return rnd >= prob ? static_cast<X>(0.0f) : d1 / prob;
+			return rnd >= prob ? static_cast<Z>(0.0f) : d1 / prob;
 		}
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class ReplaceNans {
 	public:
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
+		op_def static Z op(X d1, Z *params) {
 			X replacement = params[0];
 			return nd4j::math::nd4j_isnan(d1) ? replacement : d1 ;
 		}

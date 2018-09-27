@@ -112,7 +112,7 @@ namespace functions {
 #endif
 
 
-			static void exec(int opNum, void *dx, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *extraParams, const Nd4jLong n);
+			static void exec(int opNum, void *dx, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *extraParams, Nd4jLong n);
 
 			static void exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
@@ -120,7 +120,7 @@ namespace functions {
 			static ND4J_EXPORT void exec(void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 			template <typename OpType>
-			static ND4J_EXPORT void exec(void *dx, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *extraParams, const Nd4jLong n);
+			static ND4J_EXPORT void exec(void *dx, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *extraParams, Nd4jLong n);
         };
     }
 }

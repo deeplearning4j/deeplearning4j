@@ -28,19 +28,19 @@ using namespace simdOps;
 namespace functions {
     namespace transform {
 
-        template <typename X, typename Z>
-        void TransformFloat<X, Z>::exec(int opNum,
+        template <typename X, typename Y>
+        void TransformFloat<X, Y>::exec(int opNum,
                 void *dx,
                 Nd4jLong xStride,
                 void *result,
                 Nd4jLong resultStride,
                 void *extraParams,
                 const Nd4jLong n) {
-            DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_FLOAT_OPS);
+            DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_FLOAT_OPS);
 		}
 
-        template <typename X, typename Z>
-        void TransformFloat<X, Z>::exec(
+        template <typename X, typename Y>
+        void TransformFloat<X, Y>::exec(
 				int opNum,
 				void *dx,
 				Nd4jLong *xShapeInfo,
@@ -49,7 +49,7 @@ namespace functions {
 				void *extraParams,
 				Nd4jLong *tadShapeInfo,
 				Nd4jLong *tadOffsets) {
-                    DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
+                    DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
 		}
 
         template <typename X, typename Z>
@@ -131,7 +131,7 @@ namespace functions {
                              const Nd4jLong n) {
                 auto dx = reinterpret_cast<X *>(vx);
                 auto result = reinterpret_cast<X *>(vresult);
-                auto extraParams = reinterpret_cast<X *>(vextraParams);
+                auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
                 int elementsPerThread = n / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);

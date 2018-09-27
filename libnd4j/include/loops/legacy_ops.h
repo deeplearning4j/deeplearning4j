@@ -82,13 +82,14 @@
         (13,RELU), \
         (14,Identity), \
         (15,Step), \
-        (16, Ceiling), \
-        (17, Floor), \
+        (16,Ceiling), \
+        (17,Floor), \
         (18,ClipByValue) ,\
         (19,Stabilize), \
         (20,StabilizeFP16) ,\
         (21,DropOut), \
-        (22,Reverse)
+        (22,Reverse) ,\
+        (23,RELU6)
 
 // these ops return bool
 #define TRANSFORM_BOOL_OPS \
@@ -159,8 +160,7 @@
         (55,LogSigmoidDerivative) ,\
         (56,Erfc) ,\
         (57,Expm1), \
-        (58,ATanh), \
-        (59,RELU6)
+        (58,ATanh)
 
 
 
