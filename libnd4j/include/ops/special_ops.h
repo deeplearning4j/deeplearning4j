@@ -240,7 +240,7 @@ namespace simdOps {
 #endif
 
 
-static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outShapeBuffer, Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 	// input is  [bS, iC, iH, iW]
 	// output is [bS, iC, oH, oW]
 
@@ -424,7 +424,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 	}
 }
 
-		op_def static T op(T d1, T *params) {
+		op_def static T op(T d1, Z *params) {
 			return d1;
 		}
 
@@ -817,7 +817,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				Nd4jLong *xShapeBuffer,
 				Z *result,
 				Nd4jLong *resultShapeBuffer,
-				T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+				Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 			int length = shape::length(xShapeBuffer);
 			int _threads = 2;
@@ -886,7 +886,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		}
 
 
-        op_def static T op(T d1, T *params) {
+        op_def static T op(T d1, Z *params) {
             return d1;
         }
 	};
@@ -1447,14 +1447,14 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		static void execSpecial(
 			X *vx,
 			Nd4jLong *xShapeBuffer,
-			X *vresult,
+			Z *vresult,
 			Nd4jLong *resultShapeBuffer,
-			X *vextraParams,
+			Z *vextraParams,
 			Nd4jLong *tadShapeInfo,
 			Nd4jLong *tadOffsets) {
 		    auto dx = reinterpret_cast<X *>(vx);
 		    auto result = reinterpret_cast<X *>(vresult);
-		    auto extraParams = reinterpret_cast<X *>(vextraParams);
+		    auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
 			if (shape::isMatrix(xShapeBuffer)) {
 				auto shape = shape::shapeOf(xShapeBuffer);
@@ -1531,7 +1531,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 			}
 		}
 
-		op_def static X op(X d1, X *params) {
+		op_def static X op(X d1, Z *params) {
 			return nd4j::math::softplus<X>(d1);
 		}
 	};
@@ -1602,9 +1602,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		static void execSpecial(
 			X *dx,
 			Nd4jLong *xShapeBuffer,
-			X *result,
+			Z *result,
 			Nd4jLong *resultShapeBuffer,
-			X *extraParams,
+			Z *extraParams,
 			Nd4jLong *tadShapeInfo,
 			Nd4jLong *tadOffsets) {
 
@@ -1686,7 +1686,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 			}
 		}
 
-		op_def static X op(X d1, X *params) {
+		op_def static X op(X d1, Z *params) {
 			return nd4j::math::softplus<X>(d1);
 		}
 	};
@@ -1897,7 +1897,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 			}
 		}
 
-		op_def static X op(X d1, X *params) {
+		op_def static X op(X d1, Z *params) {
 			return nd4j::math::softplus<X>(d1);
 		}
 	};
@@ -2407,7 +2407,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
             }
 		}
 
-		op_def static X op(X d1, X *params) {
+		op_def static X op(X d1, Z *params) {
 			return nd4j::math::softplus<X>(d1);
 		}
 	};

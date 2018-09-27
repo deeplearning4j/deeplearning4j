@@ -66,7 +66,7 @@
 
 // these ops return same data type as input
 #define TRANSFORM_SAME_OPS \
-        (0, Abs), \
+        (0,Abs), \
         (1,Sign), \
         (2,Ones), \
         (3, Neg), \
@@ -102,10 +102,10 @@
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \
-        (0, Cosine), \
-        (1, Exp), \
-        (2, Log), \
-        (3, SetRange), \
+        (0,Cosine), \
+        (1,Exp), \
+        (2,Log), \
+        (3,SetRange), \
         (4,Sigmoid), \
         (5,Sin), \
         (6,SoftPlus), \

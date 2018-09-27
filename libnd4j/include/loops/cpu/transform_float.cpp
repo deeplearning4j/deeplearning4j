@@ -68,7 +68,7 @@ namespace functions {
 		        auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
                 if(OpType::requiresSpecial) {
-                    OpType::execSpecial(dx, xShapeInfo, result,resultShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+                    OpType::execSpecial(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets);
                     return;
                 }
 
@@ -173,15 +173,5 @@ namespace functions {
         }
 
         BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformFloat, , LIBND4J_TYPES, FLOAT_TYPES);
-
-        /*
-        BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<double>::exec, double, (double*, Nd4jLong*, double*, Nd4jLong*, double*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
-
-        BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong, float*, Nd4jLong, float*, const Nd4jLong), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, Nd4jLong, float16*, Nd4jLong, float16*, const Nd4jLong), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<double>::exec, double, (double*, Nd4jLong, double*, Nd4jLong, double*, const Nd4jLong), TRANSFORM_OPS)
-         */
     }
 }
