@@ -2399,7 +2399,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                                                           xStridesIter,
                                                           resultPointer,
                                                           resultStridesIter);
-                                   maxCursor = reinterpret_cast<X *>(maxCursorLong);
+                                   maxCursor = reinterpret_cast<Z *>(maxCursorLong);
                                    maxCursor[0] = 1.0;
                             }
                         }
@@ -2411,7 +2411,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		}
 
 		op_def static Z op(X d1, X *params) {
-			return nd4j::math::softplus<X>(d1);
+			return nd4j::math::softplus<X,Z>(d1);
 		}
 	};
 }

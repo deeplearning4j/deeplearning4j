@@ -4039,7 +4039,7 @@ namespace simdOps {
 #else
 			X rnd = static_cast<X>(rand() / RAND_MAX);
 #endif
-			return rnd >= prob ? static_cast<Z>(0.0f) : d1 / prob;
+			return rnd >= prob ? static_cast<Z>(0.0f) : reinterpret_cast<Z>(d1 / prob);
 		}
 	};
 
