@@ -83,9 +83,7 @@ CUSTOM_OP_IMPL(lstm, 8, 2, false, 3, 2) {
     REQUIRE_TRUE(correctBShape  == bShape,  0, "LSTM operation: wrong shape of biases, expected is %s, but got %s instead !", correctBShape.c_str(), bShape.c_str());
     REQUIRE_TRUE(!(!projection && numUnits != numProj), 0, "LSTM operation: projection option is switched of, and in this case output dimensionality for the projection matrices (numProj) must be equal to number of units in lstmCell !");
 
-
-    // fixme: shitty list below
-    //helpers::lstmTimeLoop({x,h0,c0, Wx,Wh,Wc,Wp, b},   {h,c},   {(T)peephole, (T)projection, clippingCellValue, clippingProjValue, forgetBias});
+    helpers::lstmTimeLoop(x,h0,c0, Wx,Wh,Wc,Wp,b,   h,c,   {(double)peephole, (double)projection, clippingCellValue, clippingProjValue, forgetBias});
 
     return Status::OK();
 }
@@ -103,8 +101,6 @@ DECLARE_SHAPE_FN(lstm) {
     auto WcShapeInfo = inputShape->at(5);                   // diagonal weights for peephole connections [3*numUnits]
     auto WpShapeInfo = inputShape->at(6);                   // projection weights [numUnits x numProj]
     auto bShapeInfo  = inputShape->at(7);                   // biases, [4*numUnits]
-
-
 
     const int rank     = xShapeInfo[0];
     const int time     = xShapeInfo[1];
@@ -148,6 +144,8 @@ DECLARE_SHAPE_FN(lstm) {
     hShapeInfo[2] = cShapeInfo[2] = bS;
     hShapeInfo[3] = numProj;
     cShapeInfo[3] = numUnits;
+    ArrayOptions::copyDataType(hShapeInfo, xShapeInfo);
+    ArrayOptions::copyDataType(cShapeInfo, xShapeInfo);
     
     shape::updateStrides(hShapeInfo, shape::order(h0ShapeInfo));
     shape::updateStrides(cShapeInfo, shape::order(c0ShapeInfo));

@@ -3511,7 +3511,7 @@ NDArray NDArray::transp() const {
         delete ptr;
         return result;
     }
-
+    
     ////////////////////////////////////////////////////////////////////////
     void NDArray::assign(const NDArray& other, const Intervals& idx) {
         auto subarr = this->subarray(idx);

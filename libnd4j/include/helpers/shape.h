@@ -484,7 +484,7 @@ namespace shape {
  * Returns the ordering
  * for this shape information buffer
  */
-    ND4J_EXPORT _CUDA_HD char order(Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD char order(const Nd4jLong *buffer);
 
 /**
  * Returns the element wise stride for this information
@@ -2703,7 +2703,7 @@ template <typename T>
  * Returns the ordering
  * for this shape information buffer
  */
-    INLINEDEF _CUDA_HD char order(Nd4jLong *buffer) {
+    INLINEDEF _CUDA_HD char order(const Nd4jLong *buffer) {
         //FIXME magic numbers
         return static_cast<char>(buffer[(buffer[0] * 2 + 4) - 1]);
     }

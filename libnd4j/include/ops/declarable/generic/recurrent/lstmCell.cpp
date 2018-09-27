@@ -82,9 +82,8 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
     REQUIRE_TRUE(correctBShape  == bShape,  0, "LSTMCELL operation: wrong shape of biases, expected is %s, but got %s instead !", correctBShape.c_str(), bShape.c_str());     
     REQUIRE_TRUE(!(!projection && numUnits != numProj), 0, "LSTMCELL operation: projection option is switched of, and in this case output dimensionality for the projection matrices (numProj) must be equal to number of units in lstmCell !");
     
-    // calculations
-    // FIXME: shitty initializer lists
-    //helpers::lstmCell({xt,ht_1,ct_1, Wx,Wh,Wc,Wp, b},   {ht,ct},   {(T)peephole, (T)projection, clippingCellValue, clippingProjValue, forgetBias});
+    // calculations    
+    helpers::lstmCell(xt,ht_1,ct_1, Wx,Wh,Wc,Wp, b,   ht,ct,   {(double)peephole, (double)projection, clippingCellValue, clippingProjValue, forgetBias});
     
     return Status::OK();
 }
@@ -141,7 +140,9 @@ DECLARE_SHAPE_FN(lstmCell) {
     hShapeInfo[0] = cShapeInfo[0] = rank;
     hShapeInfo[1] = cShapeInfo[1] = bS;
     hShapeInfo[2] = numProj;
-    cShapeInfo[2] = numUnits;    
+    cShapeInfo[2] = numUnits;
+    ArrayOptions::copyDataType(hShapeInfo, xtShapeInfo);
+    ArrayOptions::copyDataType(cShapeInfo, xtShapeInfo);
     
     shape::updateStrides(hShapeInfo, shape::order(ht_1ShapeInfo));
     shape::updateStrides(cShapeInfo, shape::order(ct_1ShapeInfo));
