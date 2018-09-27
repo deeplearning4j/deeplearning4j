@@ -100,7 +100,7 @@ namespace simdOps {
 			return d1 + d2;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return d1 + d2;
 		}
 
@@ -133,7 +133,7 @@ namespace simdOps {
 			return d1 - d2;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return d1 - d2;
 		}
 
@@ -155,7 +155,7 @@ namespace simdOps {
 			return nd4j::math::nd4j_pow<X, Y, Z>(d1 - d2, static_cast<Y>(2.f));
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return nd4j::math::nd4j_pow<X, Y, Z>(d1 - d2, static_cast<Y>(2.f));
 		}
 
@@ -176,7 +176,7 @@ namespace simdOps {
 			return d2 - d1;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return d2 - d1;
 		}
 
@@ -199,7 +199,7 @@ namespace simdOps {
 			return (nd4j::math::nd4j_exp<X, Z>(c) - z * c  + (z * nd4j::math::nd4j_log<X, Z>(z) - z + static_cast<X>(0.5f) * nd4j::math::nd4j_log<X, Z>(DOUBLE_PI_X * z)));
 		}
 
-		op_def static Z op(X z, Y c, X *params) {
+		op_def static Z op(X z, Y c, Z *params) {
 			return (nd4j::math::nd4j_exp<X, Z>(c) - z * c  + (z * nd4j::math::nd4j_log<X, Z>(z) - z + static_cast<X>(0.5f) * nd4j::math::nd4j_log<X, Z>(DOUBLE_PI_X * z)));
 		}
 
@@ -221,7 +221,7 @@ namespace simdOps {
 			return (nd4j::math::nd4j_exp<X, Z>(c) - z * c);
 		}
 
-		op_def static Z op(X z, Y c, X *params) {
+		op_def static Z op(X z, Y c, Z *params) {
 			return (nd4j::math::nd4j_exp<X, Z>(c) - z * c);
 		}
 
@@ -242,7 +242,7 @@ namespace simdOps {
 			return d1 * d2;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return d1 * d2;
 		}
 
@@ -267,7 +267,7 @@ namespace simdOps {
 			return d1 / d2;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return d1 / d2;
 		}
 
@@ -294,7 +294,7 @@ namespace simdOps {
 			return d1 / d2;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			if(d2 == static_cast<Y>(0))
 				return static_cast<X>(0);
 			return d1 / d2;
@@ -319,7 +319,7 @@ namespace simdOps {
             return nd4j::math::nd4j_floor<X>(d1 / d2);
         }
 
-        op_def static Z op(X d1, Y d2, X *params) {
+        op_def static Z op(X d1, Y d2, Z *params) {
             return nd4j::math::nd4j_floor<X>(d1 / d2);
         }
 
@@ -342,7 +342,7 @@ namespace simdOps {
             return static_cast<Z>(i1 / i2);
         }
 
-        op_def static Z op(X d1, Y d2, X *params) {
+        op_def static Z op(X d1, Y d2, Z *params) {
             auto i1 = static_cast<int>(d1);
             auto i2 = static_cast<int>(d2);
             return static_cast<Z>(i1 / i2);
@@ -367,7 +367,7 @@ namespace simdOps {
             return nd4j::math::nd4j_remainder<X, Y, Z>(d1, d2);
         }
 
-        op_def static Z op(X d1, Y d2, X *params) {
+        op_def static Z op(X d1, Y d2, Z *params) {
             return nd4j::math::nd4j_remainder<X, Y, Z>(d1, d2);
         }
 
@@ -388,7 +388,7 @@ namespace simdOps {
             return nd4j::math::nd4j_fmod<X, Y, Z>(d1, d2);
         }
 
-        op_def static Z op(X d1, Y d2, X *params) {
+        op_def static Z op(X d1, Y d2, Z *params) {
             return nd4j::math::nd4j_fmod<X, Y, Z>(d1, d2);
         }
 
@@ -410,7 +410,7 @@ namespace simdOps {
             return (d1 < static_cast<X>(0)) == (d2 < static_cast<Y>(0)) ? m : nd4j::math::nd4j_fmod<X, Y, X>(m + d2, d2);
         }
 
-        op_def static Z op(X d1, Y d2, X *params) {
+        op_def static Z op(X d1, Y d2, Z *params) {
             auto m = nd4j::math::nd4j_fmod<X, Y, Z>(d1, d2);
 			return (d1 < static_cast<X>(0.0f)) == (d2 < static_cast<Y>(0)) ? m : nd4j::math::nd4j_fmod<X, Y, X>(m + d2, d2);
         }
@@ -432,7 +432,7 @@ namespace simdOps {
 			return d2 / d1;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return d2 / d1;
 		}
 
@@ -453,7 +453,7 @@ namespace simdOps {
 			return d2;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return d2;
 		}
 
@@ -474,7 +474,7 @@ namespace simdOps {
 			return d2;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return d2;
 		}
 
@@ -495,7 +495,7 @@ namespace simdOps {
 			return d2 + d1;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			auto alpha = params[0];
 			return alpha * d1 + d2;
 		}
@@ -512,7 +512,7 @@ namespace simdOps {
 			return d2 + d1;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			auto comp = params[0];
 			return d1 != comp && static_cast<X>(d2) != comp ? static_cast<X>(1) : static_cast<X>(0);
 		}
@@ -534,7 +534,7 @@ namespace simdOps {
 			return d2 + d1;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			auto comp = params[0];
 
 			return d1 != comp || static_cast<X>(d2) != comp ? static_cast<Z>(1) : static_cast<Z>(0);
@@ -557,7 +557,7 @@ namespace simdOps {
 			return d2 + d1;
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			auto comp = params[0];
 
 			return ((d1 == comp && static_cast<X>(d2) != comp)||(d1 != comp && static_cast<X>(d2) == comp)) ? static_cast<X>(1) : static_cast<X>(0);
@@ -588,7 +588,7 @@ namespace simdOps {
 			return !((int) d1  && (int) d2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return static_cast<X>(!(static_cast<int>(d1)  && static_cast<int>(d2)));
 		}
 
@@ -612,7 +612,7 @@ namespace simdOps {
 			return  (i1 | i2) &~ (i1 & i2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return op(d1, d2);
 		}
 
@@ -633,7 +633,7 @@ namespace simdOps {
 			return static_cast<int>(d1)  & static_cast<int>(d2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return op(d1, d2);
 		}
 
@@ -654,7 +654,7 @@ namespace simdOps {
 			return static_cast<int>(d1) | static_cast<int>(d2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
             return op(d1, d2);
 		}
 
@@ -685,7 +685,7 @@ namespace simdOps {
             return static_cast<int>(d1) % static_cast<int>(d2);
         }
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return op(d1, d2);
 		}
 
@@ -702,7 +702,7 @@ namespace simdOps {
             return static_cast<int>(d2) % static_cast<int>(d1);
         }
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return op(d1, d2);
 		}
 
@@ -719,7 +719,7 @@ namespace simdOps {
 	template <typename X, typename Y, typename Z>
 	class Epsilon {
 	public:
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			X diff = d1 - d2;
 			X absDiff = nd4j::math::nd4j_abs<X>(diff);
 			if (absDiff <= static_cast<X>(MIN))
@@ -740,7 +740,7 @@ namespace simdOps {
 			return d1 == static_cast<X>(d2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return op(d1, d2);
 		}
 
@@ -758,7 +758,7 @@ namespace simdOps {
 			return d1 != static_cast<X>(d2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return op(d1, d2);
 		}
 
@@ -776,7 +776,7 @@ namespace simdOps {
 			return d1 >= static_cast<X>(d2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return op(d1, d2);
 		}
 
@@ -794,7 +794,7 @@ namespace simdOps {
 			return d1 > static_cast<X>(d2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return op(d1, d2);
 		}
 
@@ -813,7 +813,7 @@ namespace simdOps {
 			return d1 < static_cast<X>(d2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return op(d1, d2);
 		}
 
@@ -831,7 +831,7 @@ namespace simdOps {
 			return d1 <= static_cast<X>(d2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return op(d1, d2);
 		}
 
@@ -1075,7 +1075,7 @@ namespace simdOps {
 			return nd4j::math::nd4j_re<X>(d1, d2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return op(d1, d2);
 		}
 
@@ -1140,7 +1140,7 @@ namespace simdOps {
 			return nd4j::math::nd4j_pow<X, Y, Z>(d1, d2);
 		}
 
-		op_def static Z op(X d1, Y d2, X *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return nd4j::math::nd4j_pow<X, Y, Z>(d1, d2);
 		}
 
@@ -4056,11 +4056,11 @@ namespace simdOps {
 	};
 
     // this op is used for conditional pairwise transforms only
-    template <typename X, typename Y>
+    template <typename X, typename Y, typename Z>
     class CompareAndReplace{
     public:
         // op definition for PairWise Transform
-        op_def static X op(X d1, Y d2, X *params) {
+        op_def static Z op(X d1, Y d2, Z *params) {
 			auto compare = params[0];
             auto eps = params[2];
             int mode = (int) params[3];

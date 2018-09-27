@@ -36,7 +36,7 @@ namespace functions {
                 void *result,
                 Nd4jLong *resultShapeBuffer,
                 void *extraParams) {
-            DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx,
+            DISPATCH_BY_OPNUM_TTT(exec, PARAMS(dx,
                                               xShapeBuffer,
                                               y,
                                               yShapeBuffer,
@@ -236,7 +236,7 @@ namespace functions {
                 Nd4jLong xCoord[MAX_RANK];
                 Nd4jLong yCoord[MAX_RANK];
 
-                if(dx == result) {
+                if(vx == vresult) {
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared) private(xCoord, yCoord)
                     for (Nd4jLong i = 0; i < len; i++) {
                         shape::ind2subC(xRank,xShape, i, xCoord);

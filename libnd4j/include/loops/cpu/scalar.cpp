@@ -212,16 +212,26 @@ namespace functions {
                     auto resultStride = shape::stride(resultShapeInfo);
                     int xRank = shape::rank(xShapeInfo);
                     int resultRank = shape::rank(resultShapeInfo);
-
+                    if (vx == vz) {
 #pragma omp parallel for schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
-                    for (Nd4jLong i = 0; i < n; i++) {
-                        shape::ind2sub(xRank, xShape, i, n, xIdx);
-                        shape::ind2sub(resultRank, resultShape, i, n, resultIdx);
+                        for (Nd4jLong i = 0; i < n; i++) {
+                            shape::ind2sub(xRank, xShape, i, n, xIdx);
 
-                        auto xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-                        auto resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
+                            auto xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
 
-                        result[resultOffset2] = OpType::op(x[xOffset2], scalar, extraParams);
+                            result[xOffset2] = OpType::op(x[xOffset2], scalar, extraParams);
+                        }
+                    } else {
+#pragma omp parallel for schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
+                        for (Nd4jLong i = 0; i < n; i++) {
+                            shape::ind2sub(xRank, xShape, i, n, xIdx);
+                            shape::ind2sub(resultRank, resultShape, i, n, resultIdx);
+
+                            auto xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
+                            auto resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
+
+                            result[resultOffset2] = OpType::op(x[xOffset2], scalar, extraParams);
+                        }
                     }
                 }
 
@@ -298,8 +308,8 @@ namespace functions {
         //template class ND4J_EXPORT ScalarTransform<float16>;
         //template class ND4J_EXPORT ScalarTransform<double>;
         //BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , LIBND4J_TYPES, LIBND4J_TYPES);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_1);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_2);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_3);
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_1)
+        //BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_2)
+        //BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_3)
     }
 }
