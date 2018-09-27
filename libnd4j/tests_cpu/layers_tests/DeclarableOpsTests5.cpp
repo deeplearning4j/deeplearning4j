@@ -1694,10 +1694,10 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_2) {
     auto x = NDArrayFactory::create<double>('c', {2, 4}, {0.1f, -1.f, 5.2f, 4.3f, -1.f, 7.4f, 0.0f, -2.2f});
     auto y = NDArrayFactory::create<double>('c', {2, 4}, {1, 2, 1, 2, 1, 2, 3, 0});
 
-    std::vector<NDArray> exp( {NDArrayFactory::create<double>({-2.2}),
+    std::vector<NDArray> exp( {NDArrayFactory::create<double>('c', {1}, {-2.2}),
                                NDArrayFactory::create<double>('c', {3}, {0.1, 5.2, -1.}),
                                NDArrayFactory::create<double>('c', {3}, {-1., 4.3, 7.4}),
-                               NDArrayFactory::create<double>({0.0})});
+                               NDArrayFactory::create<double>('c', {1}, {0.0})});
 
     nd4j::ops::dynamic_partition op;
     int numPartition = 4;
@@ -1727,9 +1727,9 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_3) {
     auto y = NDArrayFactory::create<double>('c', {2, 4}, {0, 1, 0, 2, 0, 2, 3, 0});
 
     std::vector<NDArray> exp( {NDArrayFactory::create<double>({0.1f, 5.2f, -1.f, -2.2f}),
-                               NDArrayFactory::create<double>({-1.f}),
+                               NDArrayFactory::create<double>('c', {1}, {-1.f}),
                                NDArrayFactory::create<double>({4.3f, 7.4f}),
-                               NDArrayFactory::create<double>({0.0f})});
+                               NDArrayFactory::create<double>('c', {1}, {0.0f})});
 
     nd4j::ops::dynamic_partition op;
     int numPartition = 4;
@@ -1762,9 +1762,9 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_3) {
 
 TEST_F(DeclarableOpsTests5, DynamicStitch_1) {
     
-    auto x1 = NDArrayFactory::create<double>({1.f, 3.f, 5.f, 0.f});
-    auto x2 = NDArrayFactory::create<double>({2.f, 4.f});
-    auto y2 = NDArrayFactory::create<double>({-1.f, -1.f});
+    auto x1 = NDArrayFactory::create<double>({1., 3., 5., 0.});
+    auto x2 = NDArrayFactory::create<double>({2., 4.});
+    auto y2 = NDArrayFactory::create<double>({-1., -1.});
     auto y1 = NDArrayFactory::create<double>({0.1f, 5.2f, 4.3f, 7.4f});
 
     
