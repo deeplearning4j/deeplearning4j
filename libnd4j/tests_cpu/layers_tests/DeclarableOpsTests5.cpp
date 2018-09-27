@@ -204,7 +204,7 @@ TEST_F(DeclarableOpsTests5, Test_Rdiv_bp_1) {
     ASSERT_TRUE(x.isSameShape(z_bp));
 
     delete result_ff;
-//    delete result_bp;
+    delete result_bp;
 }
 
 
