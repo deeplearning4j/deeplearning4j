@@ -101,6 +101,14 @@ public class Cast extends BaseDynamicTransformOp {
     }
 
     @Override
+    public void setValueFor(Field target, Object value) {
+        //This is a hack around a property mapping issue - TF datatype DT_DOUBLE return attribute.getType() of DT_DOUBLE which doesn't make sense
+        if(value == null || value instanceof String || value instanceof DataBuffer.Type){
+            super.setValueFor(target, value);
+        }
+    }
+
+    @Override
     public String opName() {
         return "cast";
     }

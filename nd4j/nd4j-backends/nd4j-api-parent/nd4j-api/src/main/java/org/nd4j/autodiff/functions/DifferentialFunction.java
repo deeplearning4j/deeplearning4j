@@ -262,14 +262,16 @@ public abstract class DifferentialFunction {
 
         if(!firstClass.equals(valueType)) {
             if(firstClass.isEnum()){
-                Object[] enumConstants = firstClass.getEnumConstants();
-                for( int i=0; i<enumConstants.length; i++ ){
-                    if(enumConstants[i].toString().equalsIgnoreCase((String)value)){
-                        return enumConstants[i];
+                if(valueType.equals(String.class)) {
+                    Object[] enumConstants = firstClass.getEnumConstants();
+                    for (int i = 0; i < enumConstants.length; i++) {
+                        if (enumConstants[i].toString().equalsIgnoreCase((String) value)) {
+                            return enumConstants[i];
+                        }
                     }
+                    throw new IllegalStateException("Could not find enum constant value for value \"" + value
+                            + "\" for enum class " + firstClass.getName());
                 }
-                throw new IllegalStateException("Could not find enum constant value for value \"" + value
-                        + "\" for enum class " + firstClass.getName());
             } else if(firstClass.equals(int[].class)) {
                 if(value instanceof Number) {
                     Number number = (Number) value;

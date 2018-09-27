@@ -149,7 +149,6 @@ public class Conv3D extends DynamicCustomOp {
 
 
         tfAdapters.put("isValidMode", new StringEqualsAdapter("VALID"));
-        tfAdapters.put("isNCDHW", new StringEqualsAdapter("NCDHW"));
 
         ret.put(tensorflowName(), tfAdapters);
 
@@ -208,7 +207,7 @@ public class Conv3D extends DynamicCustomOp {
         val dataFormat = PropertyMapping.builder()
                 .onnxAttrName("data_format")
                 .tfAttrName("data_format")
-                .propertyNames(new String[]{"isNCDHW"})
+                .propertyNames(new String[]{"dataFormat"})
                 .build();
 
 
