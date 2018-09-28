@@ -612,6 +612,39 @@ namespace nd4j {
         }
 
         template <typename X, typename Z>
+        math_def inline Z nd4j_asin(X val) {
+            if (std::is_same<X, double>::value) {
+                return static_cast<Z>(asin(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(asinf(val));
+            } else {
+                return static_cast<Z>(asinf((float) val));
+            }
+        }
+
+        template <typename X, typename Z>
+        math_def inline Z nd4j_atan(X val) {
+            if (std::is_same<X, double>::value) {
+                return static_cast<Z>(atan(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(atanf(val));
+            } else {
+                return static_cast<Z>(atanf((float) val));
+            }
+        }
+
+        template <typename X, typename Z>
+        math_def inline Z nd4j_atanh(X val) {
+            if (std::is_same<X, double>::value) {
+                return static_cast<Z>(atanh(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(atanhf(val));
+            } else {
+                return static_cast<Z>(atanhf((float) val));
+            }
+        }
+
+        template <typename X, typename Z>
         math_def inline Z nd4j_cosh(X val) {
             if (std::is_same<X, double>::value) {
                 return static_cast<Z>(cosh(val));
@@ -773,35 +806,6 @@ namespace nd4j {
 			}
 		}
 
-		template<>
-        math_def inline float nd4j_erf<float>(float num) {
-            return erff(num);
-        }
-
-        template<>
-        math_def inline double nd4j_erf<double>(double num) {
-            return erf(num);
-        }
-
-        template<>
-        math_def inline float16 nd4j_erf<float16>(float16 num) {
-            return (float16) erff((float) num);
-        }
-
-		template<>
-        math_def inline float nd4j_erfc<float>(float num) {
-            return erfcf(num);
-        }
-
-        template<>
-        math_def inline double nd4j_erfc<double>(double num) {
-            return erfc(num);
-        }
-
-        template<>
-        math_def inline float16 nd4j_erfc<float16>(float16 num) {
-            return (float16) erfcf((float) num);
-        }
 
 		template <typename X, typename Z>
         math_def inline Z nd4j_sin(X val) {
@@ -852,98 +856,28 @@ namespace nd4j {
 			}
 		}
 
-
-
-		template<>
-        math_def inline float16 nd4j_tan<float16>(float16 val) {
-            return (float16) tanf((float) val);
+        template <typename X, typename Z>
+        math_def inline Z nd4j_erf(X val) {
+            if (std::is_same<X, double>::value) {
+                return static_cast<Z>(erf(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(erff(val));
+            } else {
+                return static_cast<Z>(erff((float) val));
+            }
         }
 
 
-        template<>
-        math_def inline float nd4j_tan<float>(float val) {
-            return tanf(val);
+        template <typename X, typename Z>
+        math_def inline Z nd4j_erfc(X val) {
+            if (std::is_same<X, double>::value) {
+                return static_cast<Z>(erfc(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(erfcf(val));
+            } else {
+                return static_cast<Z>(erfcf((float) val));
+            }
         }
-
-        template<>
-        math_def inline double nd4j_tan<double>(double val) {
-            return tan(val);
-        }
-        template<>
-        math_def inline int nd4j_tan<int>(int val) {
-            return tanf((float) val);
-        }
-
-		template<>
-        math_def inline float16 nd4j_asin<float16>(float16 val) {
-			return (float16) asinf((float) val);
-		}
-
-
-		template<>
-        math_def inline float nd4j_asin<float>(float val) {
-			return asinf(val);
-		}
-
-		template<>
-        math_def inline double nd4j_asin<double>(double val) {
-			return asin(val);
-		}
-
-		template<>
-        math_def inline int nd4j_asin<int>(int val) {
-			return asinf((float) val);
-		}
-
-
-		template<>
-        math_def inline float16 nd4j_atan<float16>(float16 val) {
-			return (float16) atanf((float)val);
-		}
-
-
-		template<>
-        math_def inline float nd4j_atan<float>(float val) {
-			return atanf(val);
-		}
-
-		template<>
-        math_def inline double nd4j_atan<double>(double val) {
-			return atan(val);
-		}
-
-		template<>
-        math_def inline int nd4j_atan<int>(int val) {
-			return atanf((float) val);
-		}
-
-
-
-
-
-        template<>
-        math_def inline float16 nd4j_atanh<float16>(float16 val) {
-            return (float16) atanhf((float)val);
-        }
-
-
-        template<>
-        math_def inline float nd4j_atanh<float>(float val) {
-            return atanhf(val);
-        }
-
-        template<>
-        math_def inline double nd4j_atanh<double>(double val) {
-            return atanh(val);
-        }
-
-        template<>
-        math_def inline int nd4j_atanh<int>(int val) {
-            return atanhf((float) val);
-        }
-
-
-
 
         template<typename T>
         math_def inline void nd4j_swap(T &val1, T &val2) {
