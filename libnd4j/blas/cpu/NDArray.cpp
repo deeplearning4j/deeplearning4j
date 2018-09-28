@@ -342,7 +342,7 @@ NDArray::NDArray(const Nd4jLong* shapeInfo, const bool copyStrides, nd4j::memory
 
 
 ////////////////////////////////////////////////////////////////////////
-    std::vector<Nd4jLong> NDArray::getShapeAsVector() {
+    std::vector<Nd4jLong> NDArray::getShapeAsVector() const {
         std::vector<Nd4jLong> vector(this->rankOf());
 
         for (int e = 0; e < this->rankOf(); e++)
@@ -1388,6 +1388,23 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 // perform array transformation
     void NDArray::applyTransform(nd4j::transform::FloatOps op, NDArray *target, void *extraParams) {
+        if (target->isR())
+            throw std::runtime_error("Target array must have one of FLOAT types");
+
+        NativeOpExcutioner::execTransform(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
+    }
+
+    void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, void *extraParams) {
+        if (target->dataType() != this->dataType())
+            throw std::runtime_error("Target array must the same data type as original array");
+
+        NativeOpExcutioner::execTransform(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
+    }
+
+    void NDArray::applyTransform(nd4j::transform::BoolOps op, NDArray *target, void *extraParams) {
+        if (target->isB())
+            throw std::runtime_error("Target array must have one of BOOL types");
+
         NativeOpExcutioner::execTransform(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
     }
 
@@ -1396,9 +1413,29 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         applyTransform(op, this, extraParams);
     }
 
+    void NDArray::applyTransform(nd4j::transform::SameOps op, void *extraParams) {
+        applyTransform(op, this, extraParams);
+    }
+
+    void NDArray::applyTransform(nd4j::transform::BoolOps op, void *extraParams) {
+        applyTransform(op, this, extraParams);
+    }
+
     // perform array transformation
     NDArray NDArray::transform(nd4j::transform::FloatOps op, void *extraParams) const {
+        auto result = this->isR() ? NDArrayFactory::create(this->ordering(), getShapeAsVector(), this->dataType(), this->_workspace) : NDArrayFactory::create(this->ordering(), getShapeAsVector(), Environment::getInstance()->defaultFloatDataType(), this->_workspace);
+        NativeOpExcutioner::execTransform(op, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, extraParams, nullptr, nullptr);
+        return result;
+    }
+
+    NDArray NDArray::transform(nd4j::transform::SameOps op, void *extraParams) const {
         NDArray result(this->_shapeInfo, true, this->_workspace);
+        NativeOpExcutioner::execTransform(op, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, extraParams, nullptr, nullptr);
+        return result;
+    }
+
+    NDArray NDArray::transform(nd4j::transform::BoolOps op, void *extraParams) const {
+        auto result = NDArrayFactory::create(this->ordering(), getShapeAsVector(), nd4j::DataType::BOOL, this->_workspace);
         NativeOpExcutioner::execTransform(op, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, extraParams, nullptr, nullptr);
         return result;
     }

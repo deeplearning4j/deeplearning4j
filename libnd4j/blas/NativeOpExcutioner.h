@@ -409,7 +409,7 @@ public:
  * @param extraParams
  * @param n
  */
-    static void execTransform(int opNum,
+    static void execTransformFloat(int opNum,
                               void *dx,
                               Nd4jLong *xShapeInfo,
                               void *result,
@@ -417,24 +417,22 @@ public:
                               void *extraParams,
                               Nd4jLong *tadShapeInfo,
                               Nd4jLong *tadOffsets);
-/**
-*
-* @param opNum
-* @param dx
-* @param xStride
-* @param result
-* @param resultStride
-* @param extraParams
-* @param n
-*/
-    static void execTransform(int opNum,
+
+    static void execTransformSame(int opNum,
                               void *dx,
                               Nd4jLong *xShapeInfo,
                               void *result,
                               Nd4jLong *resultShapeInfo,
                               void *extraParams,
-                              Nd4jLong *xIndexes,
-                              Nd4jLong *resultIndexes,
+                              Nd4jLong *tadShapeInfo,
+                              Nd4jLong *tadOffsets);
+
+    static void execTransformBool(int opNum,
+                              void *dx,
+                              Nd4jLong *xShapeInfo,
+                              void *result,
+                              Nd4jLong *resultShapeInfo,
+                              void *extraParams,
                               Nd4jLong *tadShapeInfo,
                               Nd4jLong *tadOffsets);
 

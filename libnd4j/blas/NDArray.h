@@ -516,8 +516,12 @@ namespace nd4j {
          */
         void applyTransform(nd4j::transform::FloatOps op, NDArray *target = nullptr, void *extraParams = nullptr);
         void applyTransform(nd4j::transform::FloatOps, void *extraParams = nullptr);
+
         void applyTransform(nd4j::transform::SameOps op, NDArray *target = nullptr, void *extraParams = nullptr);
         void applyTransform(nd4j::transform::SameOps, void *extraParams = nullptr);
+
+        void applyTransform(nd4j::transform::BoolOps op, NDArray *target = nullptr, void *extraParams = nullptr);
+        void applyTransform(nd4j::transform::BoolOps, void *extraParams = nullptr);
 
         /**
         *  apply OpName transformation to this array and store result in new array being returned
@@ -525,6 +529,7 @@ namespace nd4j {
         */
         NDArray transform(nd4j::transform::FloatOps op, void *extraParams = nullptr) const;
         NDArray transform(nd4j::transform::SameOps op, void *extraParams = nullptr) const;
+        NDArray transform(nd4j::transform::BoolOps op, void *extraParams = nullptr) const;
 
         /**
         *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in this array
@@ -775,7 +780,7 @@ namespace nd4j {
         template <typename T>
         std::vector<T> getBufferAsVector();
         void *getBufferAsPointer(nd4j::DataType dtype);
-        std::vector<Nd4jLong> getShapeAsVector();
+        std::vector<Nd4jLong> getShapeAsVector() const;
         std::vector<Nd4jLong> getShapeInfoAsVector();
         std::vector<int64_t> getShapeInfoAsFlatVector();
 				

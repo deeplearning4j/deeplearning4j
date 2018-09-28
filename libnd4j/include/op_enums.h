@@ -41,6 +41,10 @@ namespace nd4j {
         enum SameOps {
             BUILD_ENUMERATION(TRANSFORM_SAME_OPS)
         };
+
+        enum BoolOps {
+            BUILD_ENUMERATION(TRANSFORM_BOOL_OPS)
+        };
     }
 
     namespace pairwise {

@@ -22,8 +22,8 @@
  *  @author: raver119@gmail.com
  */
 
-#ifndef TRANSFORM_H_
-#define TRANSFORM_H_
+#ifndef TRANSFORM_SAME_H_
+#define TRANSFORM_SAME_H_
 #include <vector>
 #include <templatemath.h>
 #include <ops/ops.h>
