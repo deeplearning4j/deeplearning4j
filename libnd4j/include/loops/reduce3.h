@@ -865,14 +865,14 @@ template<typename OpType>
                 auto x = reinterpret_cast<X *>(vx);
                 auto y = reinterpret_cast<X *>(vy);
                 auto z = reinterpret_cast<Y *>(vz);
-                auto extraParams = reinterpret_cast<X *>(vextraParams);
+                auto extraParams = reinterpret_cast<Y *>(vextraParams);
 
                 auto startingVal = OpType::startingValue(x);
                 auto length = shape::length(xShapeInfo);
                 auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 auto yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
-                X extraParamsVals[3] = {(X) 0.0f, (X) 0.0f, (X) 0.0f};
+                Y extraParamsVals[3] = {(X) 0.0f, (X) 0.0f, (X) 0.0f};
                 // it's possible case for EqualsWithEps op
                 if (extraParams != nullptr) {
                     extraParamsVals[2] = extraParams[0];

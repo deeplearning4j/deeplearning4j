@@ -285,10 +285,13 @@ TEST_F(NDArrayTest2, Test_Streamline_1) {
 
 
 TEST_F(NDArrayTest2, Test_Streamline_2) {
-    auto x = NDArrayFactory::create<float>('c', {3, 4, 6});
-    auto y = NDArrayFactory::create<float>('f', {3, 4, 6});
+    auto x = NDArrayFactory::create<double>('c', {3, 4, 6});
+    auto y = NDArrayFactory::create<double>('f', {3, 4, 6});
     x.linspace(1);
     y.linspace(1);
+
+    x.printIndexedBuffer("x");
+    y.printIndexedBuffer("y");
 
     ASSERT_TRUE(x.isSameShape(&y));
     ASSERT_TRUE(x.equalsTo(&y));

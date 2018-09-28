@@ -1727,13 +1727,15 @@ NDArray NDArray::transp() const {
             return false;
 
         auto extras = NDArrayFactory::create(eps);
-        auto ptr = extras.getBufferAsPointer(this->dataType());
+        auto ptr = extras.getBufferAsPointer(nd4j::DataType::FLOAT32);
 
-        auto tmp = NDArrayFactory::create<float>(0.0f, this->_workspace);
+        auto tmp = NDArrayFactory::create<float >(0.0f, this->_workspace);
 
         // we don't need extraparams for this op
         NativeOpExcutioner::execReduce3Scalar(reduce3::EqualsWithEps, _buffer, _shapeInfo, ptr, other->_buffer, other->_shapeInfo, tmp.buffer(), tmp.shapeInfo());
 
+
+        tmp.printIndexedBuffer("t");
 
         RELEASE(reinterpret_cast<int8_t *>(ptr), _workspace);
 
