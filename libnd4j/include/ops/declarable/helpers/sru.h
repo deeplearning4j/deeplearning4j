@@ -28,15 +28,20 @@ namespace ops     {
 namespace helpers {
 
 
-	void sruCell(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs);
+	void sruCell(const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c);
 
-	void sruTimeLoop(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs);
-	
-    
+	void sruTimeLoop(const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c);
 
+	void sruBI(NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct);
+
+	void sruBIBP(NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradH, const NDArray* mask,    
+                 NDArray* gradI, NDArray* gradWeights, NDArray* gradB, NDArray* gradC0);
 }
 }
 }
 
 
 #endif //LIBND4J_SRU_H
+
+
+    

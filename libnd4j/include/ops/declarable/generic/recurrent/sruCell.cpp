@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
 
 
     // fixme: shitty initializer lists
-    helpers::sruCell({xt, ct_1, w, b}, {ht, ct});
+    helpers::sruCell(xt, ct_1, w, b, ht, ct);
     
     return Status::OK();
 }
