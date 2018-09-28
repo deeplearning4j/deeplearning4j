@@ -50,6 +50,9 @@
 #define BOOL_TYPES \
         (nd4j::DataType::BOOL, bool)
 
+#define LONG_TYPES \
+        (nd4j::DataType::INT64, Nd4jLong)
+
 #define FLOAT_TYPES \
         (nd4j::DataType::HALF, float16), \
         (nd4j::DataType::FLOAT32, float), \

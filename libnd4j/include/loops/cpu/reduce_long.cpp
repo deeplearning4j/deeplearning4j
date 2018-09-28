@@ -20,7 +20,7 @@
 
 #include <types/types.h>
 #include <op_boilerplate.h>
-#include <loops/reduce_float.h>
+#include <loops/reduce_long.h>
 #include <loops/legacy_ops.h>
 
 using namespace simdOps;
@@ -29,7 +29,7 @@ namespace functions {
     namespace reduce {
         template <typename X, typename Z>
         template <typename OpType>
-        void _CUDA_H ReduceFloatFunction<X,Z>::execScalar(void *vx,
+        void _CUDA_H ReduceLongFunction<X,Z>::execScalar(void *vx,
                                                 Nd4jLong *xShapeInfo,
                                                 void *vextraParams,
                                                 void *vz,
@@ -87,7 +87,7 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-            Z _CUDA_H ReduceFloatFunction<X, Z>::execScalar(void *vx,
+            Z _CUDA_H ReduceLongFunction<X, Z>::execScalar(void *vx,
                     Nd4jLong *xShapeInfo,
                     void *vextraParams) {
                 auto x = reinterpret_cast<X *>(vx);
@@ -140,7 +140,7 @@ namespace functions {
             }
 
         template <typename X, typename Y>
-        Y ReduceFloatFunction<X, Y>::execScalar(const int opNum,
+        Y ReduceLongFunction<X, Y>::execScalar(const int opNum,
                 void *x,
                 Nd4jLong *xShapeInfo,
                 void *extraParams) {
@@ -148,7 +148,7 @@ namespace functions {
         }
 
         template <typename X, typename Y>
-        void ReduceFloatFunction<X, Y>::execScalar(const int opNum,
+        void ReduceLongFunction<X, Y>::execScalar(const int opNum,
                                         void *x,
                                         Nd4jLong *xShapeInfo,
                                         void *extraParams,
@@ -158,7 +158,7 @@ namespace functions {
         }
 
         template <typename X, typename Y>
-        void ReduceFloatFunction<X, Y>::exec(const int opNum,
+        void ReduceLongFunction<X, Y>::exec(const int opNum,
                              void *x,
                              Nd4jLong *xShapeInfo,
                              void *extraParams,
@@ -182,7 +182,7 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-        void _CUDA_H ReduceFloatFunction<X,Z>::exec(void *vx,
+        void _CUDA_H ReduceLongFunction<X,Z>::exec(void *vx,
                              Nd4jLong *xShapeInfo,
                              void *vextraParams,
                              void *vresult,
@@ -293,7 +293,7 @@ namespace functions {
 
         template <typename X, typename Z>
         template<typename OpType>
-        void _CUDA_H ReduceFloatFunction<X,Z>::exec(void *x,
+        void _CUDA_H ReduceLongFunction<X,Z>::exec(void *x,
                              Nd4jLong *xShapeInfo,
                              void *extraParams,
                              void *vresult,
@@ -305,7 +305,7 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-        Z _CUDA_H ReduceFloatFunction<X, Z>::execScalar(void *vx,
+        Z _CUDA_H ReduceLongFunction<X, Z>::execScalar(void *vx,
                 Nd4jLong xElementWiseStride,
                 Nd4jLong length,
                 void *vextraParams) {
@@ -427,6 +427,6 @@ namespace functions {
             }
 
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceFloatFunction, , LIBND4J_TYPES, FLOAT_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceLongFunction, , LIBND4J_TYPES, LONG_TYPES);
     }
 }

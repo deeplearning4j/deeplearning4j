@@ -428,19 +428,5 @@ namespace functions {
 
 
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT ReduceSameFunction, , LIBND4J_TYPES);
-
-        //template void ReduceSameFunction<float16>::exec<simdOps::LogSumExp<float16>>(float16*, int*, float16*, float16*, int*, int*, int, int*, Nd4jLong*);
-        //template void ReduceSameFunction<float>::exec<simdOps::LogSumExp<float>>(float*, int*, float*, float*, int*, int*, int, int*, Nd4jLong*);
-        //template void ReduceSameFunction<double>::exec<simdOps::LogSumExp<double>>(double*, int*, double*, double*, int*, int*, int, int*, Nd4jLong*);
-
-        /*
-        BUILD_CALL_1(template void ReduceSameFunction<float>::exec, float, (float*, Nd4jLong*, float*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
-        BUILD_CALL_1(template void ReduceSameFunction<float16>::exec, float16, (float16*, Nd4jLong*, float16*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
-        BUILD_CALL_1(template void ReduceSameFunction<double>::exec, double, (double*, Nd4jLong*, double*, double*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*), REDUCE_OPS)
-
-        BUILD_CALL_1(template float ReduceSameFunction<float>::execScalar, float, (float *x, Nd4jLong *, float*), REDUCE_OPS)
-        BUILD_CALL_1(template float16 ReduceSameFunction<float16>::execScalar, float16, (float16 *x, Nd4jLong *, float16*), REDUCE_OPS)
-        BUILD_CALL_1(template double ReduceSameFunction<double>::execScalar, double, (double *x, Nd4jLong *, double*), REDUCE_OPS)
-         */
     }
 }
