@@ -480,7 +480,7 @@ TEST_F(DeclarableOpsTests6, BinCount_1) {
     );
 // ------------------------------------
 
-    auto exp = NDArrayFactory::create<double>({1., 3., 4.});
+    NDArray exp('c', {3}, {1, 3, 4}, nd4j::DataType::INT32);
 
     nd4j::ops::bincount op;
 

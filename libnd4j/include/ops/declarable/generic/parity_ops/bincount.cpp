@@ -57,6 +57,11 @@ namespace nd4j {
         DECLARE_SHAPE_FN(bincount) {
             auto shapeList = SHAPELIST(); 
             auto in = INPUT_VARIABLE(0);
+            nd4j::DataType dtype = DataType::INT32;
+            if (block.width() > 1)
+                dtype = in->dataType();
+            else if (block.numI() > 2)
+                dtype = (nd4j::DataType)INT_ARG(2);
 
             int maxIndex = in->argMax();
             int maxLength = in->e<int>(maxIndex)  + 1;
@@ -67,7 +72,7 @@ namespace nd4j {
             if (block.numI() > 1) 
                 maxLength = nd4j::math::nd4j_min(maxLength, INT_ARG(1));
 
-            auto newshape = ShapeBuilders::createVectorShapeInfo(block.dataType(), maxLength, block.workspace());
+            auto newshape = ShapeBuilders::createVectorShapeInfo(dtype, maxLength, block.workspace());
 
             shapeList->push_back(newshape); 
             return shapeList;
