@@ -22,6 +22,6 @@
 
 namespace functions {
     namespace pairwise_transforms {
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , PAIRWISE_TYPES_2);
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , PAIRWISE_TYPES_0);
     }
 }
