@@ -142,8 +142,8 @@ DECLARE_SHAPE_FN(lstmCell) {
     hShapeInfo[2] = numProj;
     cShapeInfo[2] = numUnits;
 
-    ShapeUtils::updateStirdesAndType(hShapeInfo, xtShapeInfo, shape::order(ht_1ShapeInfo));
-    ShapeUtils::updateStirdesAndType(cShapeInfo, xtShapeInfo, shape::order(ct_1ShapeInfo));
+    ShapeUtils::updateStridesAndType(hShapeInfo, xtShapeInfo, shape::order(ht_1ShapeInfo));
+    ShapeUtils::updateStridesAndType(cShapeInfo, xtShapeInfo, shape::order(ct_1ShapeInfo));
          
     return SHAPELIST(hShapeInfo, cShapeInfo);
 }   

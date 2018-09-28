@@ -103,7 +103,7 @@ DECLARE_SHAPE_FN(gru) {
     hShapeInfo[2] = bS;
     hShapeInfo[3] = numUnits;
 
-    ShapeUtils::updateStirdesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));    
+    ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));    
          
     return SHAPELIST(hShapeInfo);
 }   

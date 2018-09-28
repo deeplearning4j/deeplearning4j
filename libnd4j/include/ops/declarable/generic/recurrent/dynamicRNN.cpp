@@ -134,8 +134,8 @@ DECLARE_SHAPE_FN(dynamic_rnn) {
     hPrevShapeInfo[1] = bS;
     hShapeInfo[3]     = hPrevShapeInfo[2] = numUnits;
 
-    ShapeUtils::updateStirdesAndType(hShapeInfo, xShapeInfo, shape::order(xShapeInfo));
-    ShapeUtils::updateStirdesAndType(hPrevShapeInfo, xShapeInfo, shape::order(xShapeInfo));
+    ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(xShapeInfo));
+    ShapeUtils::updateStridesAndType(hPrevShapeInfo, xShapeInfo, shape::order(xShapeInfo));
          
     return SHAPELIST(hShapeInfo, hPrevShapeInfo);
 }   
