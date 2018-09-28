@@ -170,7 +170,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
     setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, workspace));
-    ALLOCATE(_buffer, workspace, _length * DataTypeUtils::sizeOf(dtype), int8_t);        
+    ALLOCATE(_buffer, workspace, _length * DataTypeUtils::sizeOf(dtype), int8_t);
+    memset(_buffer, 0, _length * DataTypeUtils::sizeOf(dtype));
     _workspace = workspace;    
     triggerAllocationFlag(true, true);
 }
@@ -975,6 +976,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     NDArray NDArray::sumNumber() const {
         NDArray res(_dataType, _workspace);
         NativeOpExcutioner::execReduceSameScalar(nd4j::reduce::SameOps::Sum, _buffer, _shapeInfo, nullptr, res.buffer(), res.shapeInfo());
+        return res;
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1410,6 +1412,9 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, void *extraParams) {
+        if (target == nullptr)
+            target = this;
+
         if (target->dataType() != this->dataType())
             throw std::runtime_error("Target array must the same data type as original array");
 
@@ -2053,6 +2058,7 @@ NDArray NDArray::transp() const {
         if (_isShapeAlloc)
             RELEASE(_shapeInfo, _workspace);
 
+        ArrayOptions::setDataType(shapeInfoNew, this->dataType());
         _shapeInfo = shapeInfoNew;
         _isShapeAlloc = true;
     } else {
@@ -2065,7 +2071,7 @@ NDArray NDArray::transp() const {
             shape::shapeBufferFortran(shape.size(), dataType(), shape.data(), shapeInfoNew);
 
         int8_t *newBuffer;
-        ALLOCATE(newBuffer, _workspace, this->lengthOf(), int8_t);
+        ALLOCATE(newBuffer, _workspace, this->lengthOf() * sizeOfT(), int8_t);
 
         NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Ops::Copy, newBuffer, shapeInfoNew, this->_buffer, this->_shapeInfo, newBuffer, shapeInfoNew, nullptr);
 

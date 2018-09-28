@@ -30,13 +30,13 @@ class NDArrayTest : public testing::Test {
 public:
     int alpha = 0;
 
-    Nd4jLong *cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 0, 1, 99};
-    Nd4jLong *fShape = new Nd4jLong[8]{2, 2, 2, 1, 2, 0, 1, 102};
+    Nd4jLong *cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 8192, 1, 99};
+    Nd4jLong *fShape = new Nd4jLong[8]{2, 2, 2, 1, 2, 8192, 1, 102};
 
 	float arr1[6] = {1,2,3,4,5,6};
-	Nd4jLong shape1[8] = {2,2,3,3,1,0,1,99};
+	Nd4jLong shape1[8] = {2,2,3,3,1,8192,1,99};
 	float arr2[48] = {1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6};
-	Nd4jLong shape2[10] = {3,2,4,6,24,6,1,0,1,99};
+	Nd4jLong shape2[10] = {3,2,4,6,24,6,1,8192,1,99};
 	const std::vector<Nd4jLong> tileShape1 = {2,2,2};
 
 
@@ -122,7 +122,7 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestGetScalar1) {
     float *c = new float[4] {1, 2, 3, 4};
-    auto cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 0, 1, 99};
+    auto cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 8192, 1, 99};
 
     auto arrayC = new NDArray(c, cShape);
 
@@ -203,11 +203,7 @@ TEST_F(NDArrayTest, TestTad1) {
 
     row2->assign(1.0);
 
-    //row2->printBuffer();
-
     ASSERT_NEAR(3.0f, array->sumNumber().e<float>(0), 1e-5);
-
-    //array->printBuffer();
 
     delete row2;
     delete array;
@@ -246,8 +242,8 @@ TEST_F(NDArrayTest, TestTad3) {
 
 TEST_F(NDArrayTest, TestPermuteReshape1) {
     auto array = NDArrayFactory::create<float>('c', {2, 2, 5, 5});
-    int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 0, -1, 99};
-    int rShape[] = {3, 2, 25, 2, 25, 1, 50, 0, -1, 99};
+    int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, -1, 99};
+    int rShape[] = {3, 2, 25, 2, 25, 1, 50, 8192, -1, 99};
 
     array.permutei({1, 2, 3, 0});
 
@@ -264,8 +260,8 @@ TEST_F(NDArrayTest, TestPermuteReshape1) {
 
 TEST_F(NDArrayTest, TestPermuteReshape2) {
     auto array = NDArrayFactory::create<float>('c', {2, 2, 5, 5, 6, 6});
-    int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 0, -1, 99};
-    int rShape[] = {3, 2, 72, 25, 1800, 25, 1, 0, 1, 99};
+    int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 8192, -1, 99};
+    int rShape[] = {3, 2, 72, 25, 1800, 25, 1, 8192, 1, 99};
 
 
     // array.printShapeInfo("before");
@@ -274,8 +270,10 @@ TEST_F(NDArrayTest, TestPermuteReshape2) {
 
     // array.printShapeInfo("after ");
 
+    auto aShape = array.getShapeInfo();
+
     for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
-        ASSERT_EQ(pShape[e], array.getShapeInfo()[e]);
+        ASSERT_EQ(pShape[e], aShape[e]);
 
     array.reshapei('c', {2, 72, 25});
 
@@ -286,7 +284,7 @@ TEST_F(NDArrayTest, TestPermuteReshape2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestRepeat1) {
     auto eBuffer = new float[8] {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
-    auto eShape = new Nd4jLong[8]{2, 4, 2, 2, 1, 0, 1, 99};
+    auto eShape = new Nd4jLong[8]{2, 4, 2, 2, 1, 8192, 1, 99};
     auto array = NDArrayFactory::create_<float>('c', {2, 2});
     auto exp = new NDArray(eBuffer, eShape);
     for (int e = 0; e < array->lengthOf(); e++)
@@ -361,8 +359,8 @@ TEST_F(NDArrayTest, TestAddiColumnVector) {
     float arr1[] = {1, 2, 3, 4};
     float arr2[] = {5, 6};
 	float arr3[] = {6, 7, 9, 10};
-	Nd4jLong shape1[] = {2,2,2,2,1,0,1,99};
-	Nd4jLong shape2[] = {2,2,1,1,1,0,1,99};
+	Nd4jLong shape1[] = {2,2,2,2,1,8192,1,99};
+	Nd4jLong shape2[] = {2,2,1,1,1,8192,1,99};
 	NDArray matrix(arr1, shape1);
 	NDArray column(arr2, shape2);
 	NDArray exp(arr3, shape1);
@@ -378,8 +376,8 @@ TEST_F(NDArrayTest, TestMuliColumnVector) {
     float arr1[] = {1, 2, 3, 4};
     float arr2[] = {5, 6};
 	float arr3[] = {5, 10, 18, 24};
-	Nd4jLong shape1[] = {2,2,2,2,1,0,1,99};
-	Nd4jLong shape2[] = {2,2,1,1,1,0,1,99};
+	Nd4jLong shape1[] = {2,2,2,2,1,8192,1,99};
+	Nd4jLong shape2[] = {2,2,1,1,1,8192,1,99};
 	NDArray matrix(arr1, shape1);
 	NDArray column(arr2, shape2);
 	NDArray exp(arr3, shape1);
@@ -409,8 +407,8 @@ TEST_F(NDArrayTest, Test3D_1) {
 TEST_F(NDArrayTest, TestTranspose1) {
     auto arrayC = NDArrayFactory::create_<double>('c', {2, 5, 10});
 
-    auto expC = new Nd4jLong[10] {3, 2, 5, 10, 50, 10, 1, 0, 1, 99};
-    auto expT = new Nd4jLong[10] {3, 10, 5, 2, 1, 10, 50, 0, 1, 102};
+    auto expC = new Nd4jLong[10] {3, 2, 5, 10, 50, 10, 1, 16384, 1, 99};
+    auto expT = new Nd4jLong[10] {3, 10, 5, 2, 1, 10, 50, 16384, 1, 102};
 
     auto arrayT = arrayC->transpose();
 
@@ -429,8 +427,8 @@ TEST_F(NDArrayTest, TestTranspose1) {
 TEST_F(NDArrayTest, TestTranspose2) {
     auto arrayC = NDArrayFactory::create_<double>('c', {2, 5, 10});
 
-    auto expC = new Nd4jLong[10] {3, 2, 5, 10, 50, 10, 1, 0, 1, 99};
-    auto expT = new Nd4jLong[10] {3, 10, 5, 2, 1, 10, 50, 0, 1, 102};
+    auto expC = new Nd4jLong[10] {3, 2, 5, 10, 50, 10, 1, 16384, 1, 99};
+    auto expT = new Nd4jLong[10] {3, 10, 5, 2, 1, 10, 50, 16384, 1, 102};
 
     arrayC->transposei();
 
@@ -449,7 +447,7 @@ TEST_F(NDArrayTest, TestSumAlongDimension1) {
     float *c = new float[4] {1, 2, 3, 4};
     auto array = new NDArray(c, cShape);
 
-    auto res = array->reduceNumber(reduce::Sum, {0});
+    auto res = array->reduceAlongDims(reduce::Sum, {0});
 
     ASSERT_EQ(2, res.lengthOf());
 
