@@ -666,7 +666,7 @@ Nd4jLong* ShapeUtils::evalDiagShapeInfo(const Nd4jLong* shapeInfoConst, nd4j::me
             outputShapeInfo[i] = outputShapeInfo[i + rank] = shapeInfo[i];
     }
         
-    shape::updateStridesAndType(outputShapeInfo, shapeInfoConst, shape::order(shapeInfo));
+    ShapeUtils::updateStridesAndType(outputShapeInfo, shapeInfo, shape::order(shapeInfo));
 
     return outputShapeInfo;
 }
