@@ -109,7 +109,7 @@ DECLARE_SHAPE_FN(gather) {
     	for(int i = axis+1; i < inputRank; ++i)
     		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
 	
-    	shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));    
+//    	shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
 	} else if (block.numI() > 1) {
 		int indicesRank = block.numI() == 2 ? 0 : 1;
 
@@ -127,12 +127,11 @@ DECLARE_SHAPE_FN(gather) {
 
 		for(int i = axis+1; i < inputRank; ++i)
     		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
-
-		shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));    
 	}
     else
         REQUIRE_TRUE(false, 0, "GATHER op: indices should be provided either as additional input array or as IntArguments !");
 
+	ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
     return SHAPELIST(outputShapeInfo);
 
@@ -143,3 +142,4 @@ DECLARE_SHAPE_FN(gather) {
 
 
 #endif
+ 

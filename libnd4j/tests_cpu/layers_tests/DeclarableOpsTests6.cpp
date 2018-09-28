@@ -806,7 +806,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_2) {
 TEST_F(DeclarableOpsTests6, MatrixDeterminant_3) {
 
     auto x = NDArrayFactory::create<double>('c', {1, 3, 3}, {3.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 3.0});
-    auto exp = NDArrayFactory::create<double>({-54.0});
+    NDArray exp('c', {1}, {-54.0});
 
     nd4j::ops::matrix_determinant op;
     auto result = op.execute({&x}, {}, {});
