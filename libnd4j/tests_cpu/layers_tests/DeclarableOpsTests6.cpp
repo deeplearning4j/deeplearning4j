@@ -827,7 +827,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_3) {
 TEST_F(DeclarableOpsTests6, MatrixDeterminant_4) {
 
     auto x = NDArrayFactory::create<double>('c', {1, 3, 3}, {12.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 13.0});
-    auto exp = NDArrayFactory::create<double>({189.0});
+    auto exp = NDArrayFactory::create<double>('c', {1}, {189.0});
 
     nd4j::ops::matrix_determinant op;
     auto result = op.execute({&x}, {}, {});
@@ -835,9 +835,9 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_4) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    //z->printIndexedBuffer("Output ");
-    //exp.printIndexedBuffer("Expected ");
-
+    z->printIndexedBuffer("Output ");
+    exp.printIndexedBuffer("Expected ");
+    z->printShapeInfo("Output shape");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -848,7 +848,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_4) {
 TEST_F(DeclarableOpsTests6, MatrixDeterminant_5) {
 
     auto x = NDArrayFactory::create<double>('c', {1, 4, 4});
-    auto exp = NDArrayFactory::create<double>({-16.0});
+    NDArray exp('c', {1}, {-16.0});
     x.linspace(1);
     x.p(5, 4.0);
     x.p(12, 12.0);
