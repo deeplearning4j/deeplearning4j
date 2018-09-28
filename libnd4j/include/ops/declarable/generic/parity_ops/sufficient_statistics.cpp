@@ -63,12 +63,14 @@ namespace nd4j {
                     axis[e] = ca;
             }
             //std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
-            auto scalarShape = ShapeBuilders::createScalarShapeInfo(block.workspace());
+            auto scalarShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace());
             auto sumShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
+            ArrayOptions::setDataType(sumShape, ArrayOptions::dataType(inputShape->at(0)));
             auto squareShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
-            auto shapeList = SHAPELIST(scalarShape, sumShape, squareShape); 
+            ArrayOptions::setDataType(squareShape, ArrayOptions::dataType(inputShape->at(0)));
+            auto shapeList = SHAPELIST(scalarShape, sumShape, squareShape);
             if (block.numT() > 0)
-                shapeList->push_back(ShapeBuilders::createScalarShapeInfo(block.workspace()));
+                shapeList->push_back(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace()));
             
             return shapeList;
         }

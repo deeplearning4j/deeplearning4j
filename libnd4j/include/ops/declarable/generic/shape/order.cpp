@@ -44,9 +44,9 @@ namespace nd4j {
             );
 
             if (isFOrder)
-                shape::shapeBufferFortran(shape::rank(input), block.dataType(),  shape::shapeOf(input), newShape);
+                shape::shapeBufferFortran(shape::rank(input), ArrayOptions::dataType(input),  shape::shapeOf(input), newShape);
             else
-                shape::shapeBuffer(shape::rank(input), block.dataType(), shape::shapeOf(input), newShape);
+                shape::shapeBuffer(shape::rank(input), ArrayOptions::dataType(input), shape::shapeOf(input), newShape);
 
             return SHAPELIST(newShape);
         }

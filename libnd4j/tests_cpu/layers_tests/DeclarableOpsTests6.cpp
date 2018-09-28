@@ -216,15 +216,17 @@ TEST_F(DeclarableOpsTests6, Test_BtS_1) {
 
 TEST_F(DeclarableOpsTests6, Test_Order_1) {
     auto x = NDArrayFactory::create<double>('f', {2, 3});
-    auto exp = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    auto exp = NDArrayFactory::create<double>('c', {2, 3}, {1, 3, 5, 2, 4, 6});
     x.linspace(1);
+    //exp.linspace(1);
 
     nd4j::ops::order op;
     auto result = op.execute({&x}, {}, {0});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-
+    z->printIndexedBuffer("O Output");
+    exp.printIndexedBuffer("O Expect");
     ASSERT_TRUE(exp.equalsTo(z));
     ASSERT_NE(x.ordering(), z->ordering());
 
@@ -234,7 +236,7 @@ TEST_F(DeclarableOpsTests6, Test_Order_1) {
 
 TEST_F(DeclarableOpsTests6, Test_CumSum_Inclusive_Reverse_1) {
     auto x = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
-    auto exp = NDArrayFactory::create<double>('c', {3, 3}, {12.f, 15.f, 18.f, 11.f, 13.f, 15.f, 7.f, 8.f, 9.f});
+    auto exp = NDArrayFactory::create<double>('c', {3, 3}, {12., 15., 18., 11., 13., 15., 7., 8., 9.});
 
     nd4j::ops::cumsum op;
     auto result = op.execute({&x}, {}, {0, 1, 0});
@@ -570,13 +572,13 @@ TEST_F(DeclarableOpsTests6, BinCount_4) {
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_1) {
 
-    auto x = NDArrayFactory::create<double>( {2., 2., 2.} );
+    auto x = NDArrayFactory::create<int>( {2, 2, 2} );
 
-    auto y = NDArrayFactory::create<double>({ 2., 1., 2.});
+    auto y = NDArrayFactory::create<int>({ 2, 1, 2});
 
 // ------------------------------------
 
-    auto exp = NDArrayFactory::create<double>({2., 2., 2.});
+    auto exp = NDArrayFactory::create<int>({2, 2, 2});
 
     nd4j::ops::broadcast_dynamic_shape op;
 
@@ -610,13 +612,13 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_2) {
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_3) {
 
-    auto x = NDArrayFactory::create<double>( {2., 2., 2.} );
+    auto x = NDArrayFactory::create<Nd4jLong>( {2, 2, 2} );
 
-    auto y = NDArrayFactory::create<double>({ 2.0, 1.0});
+    auto y = NDArrayFactory::create<Nd4jLong>({ 2, 1});
 
 // ------------------------------------
 
-    auto exp = NDArrayFactory::create<double>({2., 2., 2.});
+    auto exp = NDArrayFactory::create<Nd4jLong>({2, 2, 2});
 
     nd4j::ops::broadcast_dynamic_shape op;
 
