@@ -456,11 +456,11 @@ namespace nd4j {
         *  keepDims - if true then put unities in place of reduced dimensions
         */ 
 
-        NDArray* reduceAlongDimension(nd4j::reduce::Ops op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray* reduceAlongDimension(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
 
-        NDArray* reduceAlongDimension(nd4j::reduce::Ops op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray* reduceAlongDimension(nd4j::reduce::FloatOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
         
-        NDArray reduceAlongDims(nd4j::reduce::Ops op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
 
         /**
         *  method reduces array by excluding its shapes along dimensions present in given dimensions vector
@@ -469,7 +469,7 @@ namespace nd4j {
         *  keepDims - if true then put unities in place of reduced dimensions
         *  extras - extra parameters
         */ 
-        void reduceAlongDimension(nd4j::reduce::Ops op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, void *extras = nullptr) const;
+        void reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, void *extras = nullptr) const;
 
         /**
         *  return variance of array elements set
@@ -481,7 +481,9 @@ namespace nd4j {
         *  apply scalar operation to array 
         *  extraParams - extra parameters for operation
         */  
-        NDArray reduceNumber(nd4j::reduce::Ops ops, void *extraParams = nullptr) const;
+        NDArray reduceNumber(nd4j::reduce::FloatOps ops, void *extraParams = nullptr) const;
+        NDArray reduceNumber(nd4j::reduce::SameOps ops, void *extraParams = nullptr) const;
+        NDArray reduceNumber(nd4j::reduce::BoolOps ops, void *extraParams = nullptr) const;
 
         /**
         *  returns element index which corresponds to some condition imposed by operation
@@ -498,14 +500,14 @@ namespace nd4j {
         /**
          * 
          */
-        void applyTransform(nd4j::transform::Ops op, NDArray *target = nullptr, void *extraParams = nullptr);
-        void applyTransform(nd4j::transform::Ops, void *extraParams = nullptr);
+        void applyTransform(nd4j::transform::FloatOps op, NDArray *target = nullptr, void *extraParams = nullptr);
+        void applyTransform(nd4j::transform::FloatOps, void *extraParams = nullptr);
 
         /**
         *  apply OpName transformation to this array and store result in new array being returned
         *  extraParams - extra parameters for operation
         */
-        NDArray transform(nd4j::transform::Ops op, void *extraParams = nullptr) const;
+        NDArray transform(nd4j::transform::FloatOps op, void *extraParams = nullptr) const;
 
         /**
         *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in this array

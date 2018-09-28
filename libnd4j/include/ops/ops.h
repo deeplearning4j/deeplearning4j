@@ -2097,7 +2097,7 @@ namespace simdOps {
         no_op_exec_special_cuda
 
         op_def static Z op(X d1, Z *params) {
-            return d1 > static_cast<X>(0.0f) ? static_cast<Z>(SELU_LAMBDA) * d1 : static_cast<Z>(SELU_LAMBDA) * (static_cast<Z>(SELU_ALPHA) * nd4j::math::nd4j_exp<X, Z>(d1) - static_cast<Z>(SELU_ALPHA));
+            return d1 > static_cast<X>(0.0f) ? static_cast<Z>(SELU_LAMBDA) * static_cast<Z>(d1) : static_cast<Z>(SELU_LAMBDA) * (static_cast<Z>(SELU_ALPHA) * nd4j::math::nd4j_exp<X, Z>(d1) - static_cast<Z>(SELU_ALPHA));
         }
     };
 
@@ -4039,7 +4039,7 @@ namespace simdOps {
 #else
 			X rnd = static_cast<X>(rand() / RAND_MAX);
 #endif
-			return rnd >= prob ? static_cast<Z>(0.0f) : reinterpret_cast<Z>(d1 / prob);
+			return rnd >= static_cast<X>(prob) ? static_cast<Z>(0.0f) : reinterpret_cast<Z>(d1 / static_cast<X>(prob));
 		}
 	};
 

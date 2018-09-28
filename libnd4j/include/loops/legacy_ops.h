@@ -88,8 +88,7 @@
         (19,ClipByValue) ,\
         (20,Stabilize), \
         (21,StabilizeFP16) ,\
-        (22,DropOut), \
-        (23,Reverse)
+        (22,Reverse)
 
 // these ops return bool
 #define TRANSFORM_BOOL_OPS \
@@ -208,10 +207,9 @@
         (36, SXELogitsSmoother), \
         (37, LeakyRELU), \
         (38, LeakyRELUDerivative), \
-        (39, DropOutInverted), \
-        (40, ReplaceNans) ,\
-        (41, LogX) ,\
-        (42, LstmClip)
+        (39, ReplaceNans) ,\
+        (40, LogX) ,\
+        (41, LstmClip)
 
 
 

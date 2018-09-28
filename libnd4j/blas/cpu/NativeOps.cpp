@@ -221,7 +221,7 @@ void NativeOps::execReduce(
         void *extraParams,
         void *result,
         Nd4jLong *resultShapeInfo) {
-    NativeOpExcutioner::execReduceScalar(
+    NativeOpExcutioner::execReduceFloatScalar(
             opNum,
             x,
             xShapeInfo,
@@ -251,7 +251,7 @@ void NativeOps::execReduce(Nd4jPointer *extraPointers,
                                    int dimensionLength) {
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    NativeOpExcutioner::execReduce(opNum,
+    NativeOpExcutioner::execReduceFloat(opNum,
                                            x,
                                            xShapeInfo,
                                            extraParams,
