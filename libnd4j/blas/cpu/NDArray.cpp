@@ -3634,7 +3634,7 @@ NDArray NDArray::transp() const {
     // negative operator, it makes all array elements = -elements
     NDArray NDArray::operator-() const {
         NDArray result(this->_shapeInfo, this->_workspace);
-        NativeOpExcutioner::execTransform(nd4j::transform::Neg, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, nullptr, nullptr, nullptr);
+        NativeOpExcutioner::execTransformSame(nd4j::transform::Neg, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, nullptr, nullptr, nullptr);
 
         return result;
     }
