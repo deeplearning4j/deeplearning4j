@@ -15,13 +15,13 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 23/09/18.
+// Created by raver on 9/28/2018.
 //
 
-#include "../pairwise.hpp"
+#include "../scalar.hpp"
 
 namespace functions {
-    namespace pairwise_transforms {
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , PAIRWISE_TYPES_2);
+    namespace scalar {
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_2);
     }
 }
