@@ -2875,9 +2875,17 @@ NDArray NDArray::transp() const {
     template <typename T>
     void NDArray::p(const Nd4jLong i, const T value) {
         auto xType = this->dataType();
+        auto rp = i;
+
+        if (this->ordering() == 'f') {
+            Nd4jLong idx[MAX_RANK];
+            shape::ind2subC(rankOf(), shapeOf(), i, lengthOf(), idx);
+            rp = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+        }
+
 
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, i, p), LIBND4J_TYPES);
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, rp, p), LIBND4J_TYPES);
     }
     template void NDArray::p(const Nd4jLong i, const double value);
     template void NDArray::p(const Nd4jLong i, const float value);
