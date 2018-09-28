@@ -406,12 +406,17 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
         if (this->lengthOf() != second->lengthOf() || this->lengthOf() != third->lengthOf() || !this->isSameShape(second) || !this->isSameShape(third)) {
             nd4j_printf("applyPairwiseLambda requires both operands to have the same shape\n","");
             throw std::runtime_error("Shapes mismach");
-        }        
+        }
+
+        auto f = this->bufferAsT<T>();
+        auto s = second->bufferAsT<T>();
+        auto t = third->bufferAsT<T>();
+        auto z = target->bufferAsT<T>();
 
         if (this->ordering() == second->ordering() && this->ordering() == third->ordering()  && this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1) && this->ews() == second->ews() && this->ews() == third->ews()) {
 #pragma omp parallel for simd schedule(static)
             for (Nd4jLong e = 0; e < this->lengthOf(); e++)
-                target->_buffer[e] = func(this->_buffer[e], second->_buffer[e], third->_buffer[e]);
+                z[e] = func(f[e], s[e], t[e]);
         } else {
             Nd4jLong tCoord[MAX_RANK];
             Nd4jLong uCoord[MAX_RANK];
@@ -430,7 +435,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
                 auto vOffset = shape::getOffset(0, third->shapeOf(), third->stridesOf(), vCoord, third->rankOf());
                 auto zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord, target->rankOf());
 
-                target->_buffer[zOffset] = func(this->_buffer[tOffset], second->_buffer[uOffset], third->_buffer[vOffset]);
+                z[zOffset] = func(f[tOffset], s[uOffset], t[vOffset]);
             }
         }
     }
@@ -534,10 +539,13 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
         if (target == nullptr)
             target = this;
 
+        auto f = this->bufferAsT<T>();
+        auto z = target->bufferAsT<T>();
+
         if (this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1)) {
 #pragma omp parallel for simd schedule(guided)
             for (int e = 0; e < this->lengthOf(); e++)
-                target->_buffer[e] = func((Nd4jLong) e, this->_buffer[e]);
+                z[e] = func((Nd4jLong) e, f[e]);
         } else {
             Nd4jLong xCoord[MAX_RANK];
             Nd4jLong zCoord[MAX_RANK];
@@ -550,7 +558,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
                 auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
                 auto zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord, target->rankOf());
 
-                target->_buffer[zOffset] = func((Nd4jLong) e, this->_buffer[xOffset]);
+                z[zOffset] = func((Nd4jLong) e, f[xOffset]);
             }
         }
     }
@@ -641,7 +649,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
         Nd4jLong numElements = this->lengthOf();
 
         for (Nd4jLong e = 0; e < numElements; e++) {
-            this->p(e, step * (e + 1));
+            this->p(e, start + (step * e));
         }
     }
 
@@ -831,7 +839,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign, (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
             return;
         } else if (other.isScalar()) {
-            NativeOpExcutioner::execScalar(scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, _buffer, other._shapeInfo, nullptr);
+            NativeOpExcutioner::execScalar(scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, other._buffer, other._shapeInfo, nullptr);
             return;
         }
                 

@@ -660,11 +660,12 @@ TEST_F(NDArrayTest2, Test_toIndexedString_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, permute_test4) {
             
-    Nd4jLong arr1ShapeInfo[] = {6, 1, 1, 4, 3, 2, 2,    48, 48, 12, 4,  2,  1, 0, 1,  99};
-    Nd4jLong arr2ShapeInfo[] = {6, 1, 2, 2, 1, 4, 3,    48, 2,  1,  48, 12, 4, 0, -1, 99};
+    Nd4jLong arr1ShapeInfo[] = {6, 1, 1, 4, 3, 2, 2,    48, 48, 12, 4,  2,  1, 8192, 1,  99};
+    Nd4jLong arr2ShapeInfo[] = {6, 1, 2, 2, 1, 4, 3,    48, 2,  1,  48, 12, 4, 8192, -1, 99};
 
-    float* arr1Buffer = new float[786432];
-    float* arr2Buffer = new float[786432];
+
+    auto arr1Buffer = new float[786432];
+    auto arr2Buffer = new float[786432];
 
     NDArray arr1(arr1Buffer, arr1ShapeInfo, nullptr);
     NDArray arr2(arr2Buffer, arr2ShapeInfo, nullptr);
@@ -729,7 +730,7 @@ TEST_F(NDArrayTest2, Test_Linspace_2) {
     exp.setBuffer(_expB);
 
     auto x = NDArrayFactory::create<double>('c', {1, 5});
-    x.linspace(1,2);
+    x.linspace(1, 2);
 
     ASSERT_TRUE(x.equalsTo(&exp));
 }
