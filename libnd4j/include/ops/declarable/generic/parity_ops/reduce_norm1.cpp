@@ -73,20 +73,8 @@ namespace ops {
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            if (epsilon->isScalar()) {
-                // FIXME: lambda
-                /*
-                auto norm1Backprop = LAMBDA_T(_x, epsilon) {
-                    return (_x >= T(0.f) ? (*epsilon)(0.) : -(*epsilon)(0.));
-                };
-                input->applyLambda(norm1Backprop, output);
-                 */
-                throw std::runtime_error("Not implemented yet");
-            }
-            else {
-                std::vector<int> axes = *block.getIArguments();
-                helpers::reduceNorm1BP(input, epsilon, (NDArray*)nullptr, output, axes);
-            }
+            std::vector<int> axes = *block.getIArguments();
+            helpers::reduceNorm1BP(input, epsilon, (NDArray*)nullptr, output, axes);
 
             //delete tmpResult;
             return Status::OK();

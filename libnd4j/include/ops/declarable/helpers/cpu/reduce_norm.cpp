@@ -28,6 +28,16 @@ namespace helpers {
 
     void reduceNorm1BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes) {
 
+        if (epsilon->isScalar()) {
+#pragma omp parallel for
+            for (Nd4jLong e = 0; e < input->lengthOf(); ++e)
+                if (input->e<float>(e) > 0.f)
+                    output->p(e, epsilon->e<double>(0));
+                else
+                    output->p(e, -epsilon->e<double>(0));
+            return;
+        }
+
         std::vector<int> dimensions; //(input->rankOf() - axes.size());
         for (Nd4jLong e = 0; e < input->rankOf(); e++) {
             if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
