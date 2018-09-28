@@ -874,7 +874,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_cos<Z>(d1);
+			return nd4j::math::nd4j_cos<X,Z>(d1);
 		}
 	};
 
@@ -1182,7 +1182,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_round<X>(d1);
+			return nd4j::math::nd4j_round<X,X>(d1);
 		}
 	};
 
@@ -1366,7 +1366,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Z *params) {
-			return d1 * nd4j::math::nd4j_sigmoid<X>(d1);
+			return d1 * nd4j::math::nd4j_sigmoid<X,Z>(d1);
 		}
 	};
 
@@ -1612,9 +1612,9 @@ namespace simdOps {
 
 		op_def static Z op(X d1, Z *params) {
 			// keep 2/3 as runtime variable, to match precision
-			auto dis = (static_cast<Z>(2) / static_cast<Z>(3)) * d1;
+			auto dis = (static_cast<X>(2) / static_cast<X>(3)) * d1;
 
-			auto tanh = nd4j::math::nd4j_sgn<X>(dis) * (static_cast<X>(1) - (static_cast<X>(1) / (static_cast<X>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(2)) + static_cast<Z>(1.41645f) * nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(4)) )));
+			auto tanh = nd4j::math::nd4j_sgn<X,Z>(dis) * (static_cast<Z>(1) - (static_cast<Z>(1) / (static_cast<Z>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(2)) + static_cast<Z>(1.41645f) * nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(4)) )));
 			return static_cast<Z>(1.7159f) * tanh;
 		}
 	};
@@ -1626,11 +1626,11 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Z *params) {
-			auto dis = (static_cast<Z>(2) / static_cast<Z>(3)) * d1;
+			auto dis = (static_cast<X>(2) / static_cast<X>(3)) * d1;
 
 			auto a = static_cast<X>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(2)) + static_cast<Z>(1.41645f) * nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(4));
 
-			auto tDeriv = (static_cast<X>(1) + nd4j::math::nd4j_sign<X>(dis) * (static_cast<X>(2) * dis + static_cast<Z>(4) * static_cast<Z>(1.41645f) * nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(3)))) / (a * a);
+			auto tDeriv = (static_cast<X>(1) + nd4j::math::nd4j_sign<X,X>(dis) * (static_cast<X>(2) * dis + static_cast<Z>(4) * static_cast<Z>(1.41645f) * nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(3)))) / (a * a);
 
 			return static_cast<Z>(1.7159f) * (static_cast<Z>(2) / static_cast<Z>(3)) * tDeriv;
 		}

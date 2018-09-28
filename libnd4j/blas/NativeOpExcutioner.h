@@ -134,7 +134,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    static void execReduce(int opNum,
+    static void execReduceFloat(int opNum,
                            void *x,
                            Nd4jLong *xShapeInfo,
                            void *extraParams,
@@ -145,6 +145,28 @@ public:
                            Nd4jLong *tadShapeInfo,
                            Nd4jLong *tadOffsets);
 
+    static void execReduceSame(int opNum,
+                                void *x,
+                                Nd4jLong *xShapeInfo,
+                                void *extraParams,
+                                void *result,
+                                Nd4jLong *resultShapeInfo,
+                                int *dimension,
+                                int dimensionLength,
+                                Nd4jLong *tadShapeInfo,
+                                Nd4jLong *tadOffsets);
+
+    static void execReduceBool(int opNum,
+                                void *x,
+                                Nd4jLong *xShapeInfo,
+                                void *extraParams,
+                                void *result,
+                                Nd4jLong *resultShapeInfo,
+                                int *dimension,
+                                int dimensionLength,
+                                Nd4jLong *tadShapeInfo,
+                                Nd4jLong *tadOffsets);
+
     /**
      *
      * @param opNum
@@ -153,12 +175,26 @@ public:
      * @param extraParams
      * @return
      */
-    static void execReduceScalar(int opNum,
+    static void execReduceFloatScalar(int opNum,
                               void *x,
                               Nd4jLong *xShapeInfo,
                               void *extraParams,
                               void *z,
                               Nd4jLong *zShapeInfo);
+
+    static void execReduceBoolScalar(int opNum,
+                                      void *x,
+                                      Nd4jLong *xShapeInfo,
+                                      void *extraParams,
+                                      void *z,
+                                      Nd4jLong *zShapeInfo);
+
+    static void execReduceSameScalar(int opNum,
+                                      void *x,
+                                      Nd4jLong *xShapeInfo,
+                                      void *extraParams,
+                                      void *z,
+                                      Nd4jLong *zShapeInfo);
 
     /**
      *

@@ -74,7 +74,7 @@ namespace functions {
 
 #endif
 
-            static void exec(const int opNum,
+            static void exec(int opNum,
                              void *x,
                              Nd4jLong *xShapeInfo,
                              void *y,
