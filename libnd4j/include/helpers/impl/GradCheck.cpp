@@ -85,7 +85,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 			double scorePlus = 0.;
 			auto tmpScalar = NDArrayFactory::create(0.0);
 			for(int k = 0; k < numOutArrs; ++k) {                // loop through output array
-				NativeOpExcutioner::execReduceScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
+				NativeOpExcutioner::execReduceFloatScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
 				scorePlus += tmpScalar.e<double>(0);
 			}
 			delete outArrsFF;
@@ -96,7 +96,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 			double scoreMinus = 0.;
 
 			for(int k = 0; k < numOutArrs; ++k) {            // loop through output array
-				NativeOpExcutioner::execReduceScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
+				NativeOpExcutioner::execReduceFloatScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
 				scoreMinus += tmpScalar.e<double>(0);
 			}
 			delete outArrsFF;

@@ -66,7 +66,7 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
 */
 
     // FIXME: we should have proper extra set here
-    input->applyPairwiseTransform(pairwise::RELUDerivativeE, dLdO, dLdI, nullptr);
+//    input->applyPairwiseTransform(pairwise::RELUDerivativeE, dLdO, dLdI, nullptr);
 
     return Status::OK();
 }

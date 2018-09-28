@@ -93,7 +93,7 @@ TEST_F(StdTest,MultiDimTest) {
     int tadElementWiseStride = shape::elementWiseStride(tad->tadOnlyShapeInfo);
     ASSERT_EQ(-1,tadElementWiseStride);
     float *result = new float[shape::length(resultShapeInfo)];
-    functions::reduce::ReduceFloatFunction<float>::exec(
+    functions::reduce::ReduceFloatFunction<float,float>::exec(
             opNum,
             x,
             xShapeInfo,
@@ -131,7 +131,7 @@ TEST_F(ReduceTest,MatrixTest) {
     tad->createOffsets();
     auto tadElementWiseStride = shape::elementWiseStride(tad->tadOnlyShapeInfo);
     ASSERT_EQ(3,tadElementWiseStride);
-    functions::reduce::ReduceFloatFunction<float>::exec(
+    functions::reduce::ReduceFloatFunction<float,float>::exec(
             opNum,
             x,
             xShapeInfo,

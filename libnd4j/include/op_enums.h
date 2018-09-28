@@ -67,6 +67,10 @@ namespace nd4j {
         enum BoolOps {
             BUILD_ENUMERATION(REDUCE_BOOL_OPS)
         };
+
+        enum LongOps {
+            BUILD_ENUMERATION(REDUCE_LONG_OPS)
+        };
     }
 
     namespace reduce3 {

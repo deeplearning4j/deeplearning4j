@@ -54,7 +54,7 @@ namespace nd4j {
                 if ((block.getIArguments()->size() == 0) ||
                     (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                     // scalar
-                    NativeOpExcutioner::execReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
+                    NativeOpExcutioner::execReduceFloatScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
                     std::vector<int> dims(*block.getIArguments());
@@ -71,7 +71,7 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExcutioner::execReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
 
                 STORE_RESULT(*z);
@@ -99,7 +99,7 @@ namespace nd4j {
                     //x->printIndexedBuffer("x");
 
                     // scalar
-                    NativeOpExcutioner::execReduceScalar(opNum, b, s, e, z->buffer(), z->shapeInfo());
+                    NativeOpExcutioner::execReduceFloatScalar(opNum, b, s, e, z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
                     if (indices->lengthOf() > 1)
@@ -114,7 +114,7 @@ namespace nd4j {
                     auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
                     auto z = new NDArray(newShape, x->getWorkspace());
 
-                    NativeOpExcutioner::execReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
 
                     RELEASE(newShape, x->getWorkspace());
 

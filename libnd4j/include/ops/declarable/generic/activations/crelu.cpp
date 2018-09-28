@@ -82,7 +82,7 @@ namespace nd4j {
             auto actv = tmpResult->at(0);
 
             // now we do RELU backward pass
-            actv->applyPairwiseTransform(pairwise::RELUDerivativeE, epsilon, nullptr);
+//            actv->applyPairwiseTransform(pairwise::RELUDerivativeE, epsilon, nullptr);
 
             // now we split updated array into 2 chunks along last dimension
             nd4j::ops::concat_bp opc;

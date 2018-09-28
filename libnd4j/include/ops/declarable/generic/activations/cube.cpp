@@ -43,7 +43,7 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            input->applyPairwiseTransform(pairwise::CUBEDerivativeE, epsilon, z, nullptr);
+      //      input->applyPairwiseTransform(pairwise::CUBEDerivativeE, epsilon, z, nullptr);
 
             return Status::OK();
         }

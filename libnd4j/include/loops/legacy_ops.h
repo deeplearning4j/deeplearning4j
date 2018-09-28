@@ -229,7 +229,7 @@
 #define REDUCE_LONG_OPS \
         (0, CountNonZero), \
         (1, CountZero), \
-        (2, MatchCondition) ,\
+        (2, MatchCondition)
 
 #define REDUCE_BOOL_OPS \
         (0, Any) ,\

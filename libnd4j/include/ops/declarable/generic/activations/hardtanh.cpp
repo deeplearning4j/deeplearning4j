@@ -41,7 +41,7 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            input->applyPairwiseTransform(pairwise::HardTanhDerivativeE, epsilon, z, nullptr);
+//            input->applyPairwiseTransform(pairwise::HardTanhDerivativeE, epsilon, z, nullptr);
 
             return Status::OK();
         }
