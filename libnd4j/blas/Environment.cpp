@@ -32,6 +32,8 @@ namespace nd4j {
         _verbose.store(false);
         _debug.store(false);
         _profile.store(false);
+        _precBoost.store(false);
+        _dataType.store(nd4j::DataType::FLOAT32);
 
 #ifndef ANDROID
         const char* omp_threads = std::getenv("OMP_NUM_THREADS");
@@ -121,6 +123,14 @@ namespace nd4j {
 
     void Environment::setMaxThreads(int max) {
         _maxThreads.store(max);
+    }
+
+    bool Environment::precisionBoostAllowed() {
+        return _precBoost.load();
+    }
+
+    void Environment::allowPrecisionBoost(bool reallyAllow) {
+        _precBoost.store(reallyAllow);
     }
 
     nd4j::Environment *nd4j::Environment::_instance = 0;
