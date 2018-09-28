@@ -57,7 +57,7 @@ namespace nd4j {
             for(int i = 1; i < outRank; ++i)
                 outputShape[i + 1] = shape::sizeAt(in, i);
 
-            shape::updateStrides(outputShape, shape::order(in));
+            ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
             return SHAPELIST(outputShape);
         }

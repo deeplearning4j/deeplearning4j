@@ -45,6 +45,7 @@ namespace ops {
     
         std::vector<int> dimensions = *block.getIArguments();
         Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
+        ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
 
         return SHAPELIST(outShapeInfo);
     }

@@ -145,7 +145,7 @@ DECLARE_SHAPE_FN(conv2d) {
         outputShapeInfo[4] = oC;
     }
     
-    shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
+    ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
     
     return SHAPELIST(outputShapeInfo);
 }
@@ -376,7 +376,7 @@ DECLARE_SHAPE_FN(conv2d_input_bp) {
         gradIshapeInfo[4] = iC;
     }
     
-    shape::updateStrides(gradIshapeInfo, shape::order(gradOShapeInfo)); 
+    ShapeUtils::updateStridesAndType(gradIshapeInfo, gradOShapeInfo, shape::order(gradOShapeInfo));
 
     return SHAPELIST(gradIshapeInfo);        
 }

@@ -111,7 +111,7 @@ DECLARE_SHAPE_FN(matmul) {
 
    auto zShapeOnly = ShapeUtils::evalShapeForMatmul(xShapeInfo, yShapeInfo, transX, transY);
 
-    return SHAPELIST( ShapeBuilders::createShapeInfo('f', zShapeOnly, block.getWorkspace()) );
+    return SHAPELIST( ShapeBuilders::createShapeInfo(ArrayOptions::dataType(xShapeInfo), 'f', zShapeOnly, block.getWorkspace()) );
 }
 
 }

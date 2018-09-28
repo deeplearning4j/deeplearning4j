@@ -84,11 +84,12 @@ DECLARE_SHAPE_FN(mirror_pad) {
         outShapeInfo[3] = 0;
         outShapeInfo[4] = 1;
         outShapeInfo[5] = 99;
+        ArrayOptions::setDataType(outShapeInfo, input->dataType());
     }
     else {
         for(int i = 0; i < rank; ++i)
             outShapeInfo[i+1] = input->sizeAt(i) + paddings->e<Nd4jLong>(i,0) + paddings->e<Nd4jLong>(i,1);
-        shape::updateStrides(outShapeInfo, input->ordering());
+        ShapeUtils::updateStridesAndType(outShapeInfo, input->shapeInfo(), input->ordering());
     }
 
     return SHAPELIST(outShapeInfo);

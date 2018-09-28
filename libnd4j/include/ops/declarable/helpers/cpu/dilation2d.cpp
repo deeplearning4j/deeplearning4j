@@ -37,7 +37,7 @@ namespace helpers {
         const int output_rows = output->sizeAt(1);
         const int output_cols = output->sizeAt(2);
 
-//#pragma omp parallel for simd schedule(guided)
+#pragma omp parallel for simd schedule(guided)
         for (int b = 0; b < batch; ++b) {
             for (int h_out = 0; h_out < output_rows; ++h_out) {
                 int h_beg = h_out * stride_rows - pad_top;

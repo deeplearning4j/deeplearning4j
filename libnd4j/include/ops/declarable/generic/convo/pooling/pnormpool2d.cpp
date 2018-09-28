@@ -125,7 +125,7 @@ namespace nd4j {
                 newShapeInfo[3] = oW;
                 newShapeInfo[4] = iC;
             }
-            shape::updateStrides(newShapeInfo, order);
+            ShapeUtils::updateStridesAndType(newShapeInfo, inShape, order);
 
             return SHAPELIST(newShapeInfo);
         }
