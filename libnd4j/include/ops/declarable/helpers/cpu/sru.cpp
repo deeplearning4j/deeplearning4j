@@ -44,15 +44,15 @@ static FORCEINLINE NDArray sigmoid(const NDArray& arr) {
 
 
 //////////////////////////////////////////////////////////////////////////
-void sruCell(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs) {
+void sruCell(const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
 
-    auto x  = inArrs[0];               // input [bS x inSize], bS - batch size, inSize - number of features
-    auto c0 = inArrs[1];               // previous cell state c  [bS x inSize], that is at previous time step t-1
-    auto w  = inArrs[2];               // weights [inSize x 3*inSize]
-    auto b  = inArrs[3];               // biases [2*inSize]
+    // x   input [bS x inSize], bS - batch size, inSize - number of features
+    // c0  previous cell state c  [bS x inSize], that is at previous time step t-1
+    // w   weights [inSize x 3*inSize]
+    // b   biases [2*inSize]
 
-    auto h  = outArrs[0];              // current cell output [bS x inSize], that is at current time step t
-    auto c  = outArrs[1];              // current cell state  [bS x inSize], that is at current time step t
+    // h   current cell output [bS x inSize], that is at current time step t
+    // c   current cell state  [bS x inSize], that is at current time step t
 
     const int inSize = x->sizeAt(1);           // inSize - number of features
             
@@ -147,15 +147,15 @@ void sruCell(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& o
 // }
 
 //////////////////////////////////////////////////////////////////////////
-void sruTimeLoop(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs) {
+void sruTimeLoop(const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
     
-    auto x  = inArrs[0];                     // input [bS x inSize x time]
-    auto c0 = inArrs[1];                     // initial cell state  (at time step = 0) [bS x inSize],
-    auto w  = inArrs[2];                     // weights, [3*inSize x inSize]
-    auto b  = inArrs[3];                     // biases,  [2*inSize]
+    // x   input [bS x inSize x time]
+    // c0  initial cell state  (at time step = 0) [bS x inSize],
+    // w   weights, [3*inSize x inSize]
+    // b   biases,  [2*inSize]
     
-    auto h  = outArrs[0];                    // cell outputs [bS x inSize x time]
-    auto c  = outArrs[1];                    // cell states  [bS x inSize x time]
+    // h   cell outputs [bS x inSize x time]
+    // c   cell states  [bS x inSize x time]
 
     w = w->transpose();                             // [3*inSize x inSize] -> [inSize x 3*inSize] 
 
@@ -170,12 +170,226 @@ void sruTimeLoop(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*
         auto ht = (*h)({0,0, 0,0, t,t+1});
         auto ct = (*c)({0,0, 0,0, t,t+1});
 
-        helpers::sruCell({&xt, &ct_1, w, b},  {&ht, &ct});
+        helpers::sruCell(&xt, &ct_1, w, b,  &ht, &ct);
         ct_1.assign(ct);
     }    
 
     delete w;
 }
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct) {
+
+    // x     input 3d tensor [time x bS x 2*inSize], time - number of time steps, bS - batch size, inSize - number of features
+    // w     2d tensor of weights [2*inSize x 6*inSize]
+    // b     row of biases with twice length [1 × 4*inSize]
+    // c0    2d tensor of initial state [bS x 2*inSize] at time t=0
+    // mask  optional, 2d tensor of dropout mask [bS x 2*inSize]
+
+    // ht  [time x bS x 2K]
+    // ct  [time x bS x 2K]
+    
+    const Nd4jLong time   = x->sizeAt(0);                     // time - number of time steps
+    const Nd4jLong bS     = x->sizeAt(1);                     // bS - batch size
+    const Nd4jLong inSize = x->sizeAt(2) / 2;                 // inSize - number of features
+  
+    //  x = x * mask
+    if(mask)
+        x->applyBroadcast(broadcast::Multiply, {1, 2}, mask, x, nullptr);             // apply mask
+    
+    // U = x * w
+    NDArray wi = mmul(*x, *w);                    //  U [time x bS x 6K]
+
+    const Nd4jLong d2      = 2*inSize;
+    const Nd4jLong ncols   = bS*d2;     
+    const Nd4jLong ncolsWi = 3*ncols;    
+
+    T* pI    = x->bufferAsT<T>();
+    T* pWi   = wi.bufferAsT<T>();
+    T* pBias = const_cast<NDArray*>(b)->bufferAsT<T>();
+    T* pInit = const_cast<NDArray*>(c0)->bufferAsT<T>();
+    T* pMask = mask ? const_cast<NDArray*>(mask)->bufferAsT<T>() : nullptr;
+    T* pHt   = ht->bufferAsT<T>();
+    T* pCt   = ct->bufferAsT<T>();
+
+    Nd4jLong ncolsRev, ncolsWiRev;                   // for reverse direction
+    T maskVal, cur, bF, bR, ft, rt, val;
+    T *pIVal(nullptr), *pWiVal(nullptr), *pHtVal(nullptr), *pCtVal(nullptr);
+    bool flip = false;
+
+    for (Nd4jLong col = 0; col < ncols; ++col) {           
+        
+        flip       = (col % d2) >= inSize;
+        maskVal    = mask ? *(pMask + col) : T(1);
+        cur        = *(pInit + col);
+        bF         = *(pBias + col%d2);
+        bR         = *(pBias + col%d2 + d2);
+        pWiVal     = pWi     + 3*col;
+        pIVal      = pI      + col;
+        pHtVal     = pHt     + col;
+        pCtVal     = pCt     + col;
+
+        if (flip) {
+            pIVal  += (time-1)*ncols;
+            pWiVal += (time-1)*ncolsWi;
+            pHtVal += (time-1)*ncols;
+            pCtVal += (time-1)*ncols;
+        }
+
+        ncolsRev   = flip ? -ncols   : ncols;
+        ncolsWiRev = flip ? -ncolsWi : ncolsWi;
+
+        for (Nd4jLong t = 0; t < time; ++t) {
+            // evaluate sigmoids
+            ft = (1.)/(1. + nd4j::math::nd4j_exp<T, T>(-(*(pWiVal + 1) + bF)));
+            rt = (1.)/(1. + nd4j::math::nd4j_exp<T, T>(-(*(pWiVal + 2) + bR)));
+
+            cur = (cur - *pWiVal)*ft + *pWiVal;
+            *pCtVal = cur;
+            val = nd4j::math::nd4j_tanh<T, T>(cur);
+            *pHtVal = (val*maskVal - *pIVal)*rt + *pIVal;
+
+            pIVal  += ncolsRev;
+            pWiVal += ncolsWiRev;
+            pCtVal += ncolsRev;
+            pHtVal += ncolsRev;
+        }
+    }    
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradHt, const NDArray* mask,    
+                     NDArray* gradI, NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
+    
+    // x  input 3d tensor [time x bS x 2*inSize], time - number of time steps, bS - batch size, inSize - number of features
+    // w  2d tensor of weights [2*inSize x 6*inSize]
+    // b  row of biases with twice length [1 × 4*inSize]
+    // c0 2d tensor of initial state [bS x 2*inSize] at time t=0
+    // ct [time x bS x 2*inSize]
+    // inGradC0 [bS x 2*inSize]
+    // inGradHt  [time x bS x 2*inSize]
+    // mask optional,  2d tensor of dropout mask [bS x 2*inSize]
+
+    // gradI  [time x bS x 2*inSize]
+    // gradW  [time x 2*inSize x 6*inSize]
+    // gradB  [1 x 4*inSize]
+    // gradC0 [bS x 2*inSize]
+
+    const Nd4jLong time   = x->sizeAt(0);                     // time - number of time steps
+    const Nd4jLong bS     = x->sizeAt(1);
+    const Nd4jLong inSize = x->sizeAt(2) / 2;
+
+    //  x = x * mask
+    if(mask)
+        x->applyBroadcast(broadcast::Multiply, {1, 2}, mask, x, nullptr);             // apply mask        
+
+    // U = x * w
+    NDArray wi = mmul(*x, *w);                    //  [time x bS x 2*inSize] * [2*inSize x 6*inSize] = [time x bS x 6*inSize]
+    NDArray gradBias(x->ordering(), {bS, 4*inSize}, x->dataType(), x->getWorkspace());
+    NDArray gradWi  (x->ordering(), {time, bS, 6*inSize}, x->dataType(), x->getWorkspace());
+    
+    const Nd4jLong d2      = 2*inSize;
+    const Nd4jLong ncols   = bS*d2;     
+    const Nd4jLong ncolsWi = 3*ncols;    
+    T* pInput     = x->bufferAsT<T>();
+    T* pWi        = wi.bufferAsT<T>();
+    T* pBias      = const_cast<NDArray*>(b)->bufferAsT<T>();
+    T* pInit      = const_cast<NDArray*>(c0)->bufferAsT<T>();
+    T* pMask      = mask ? const_cast<NDArray*>(mask)->bufferAsT<T>() : nullptr;
+    T* pState     = const_cast<NDArray*>(ct)->bufferAsT<T>();
+    T* pInGradCt  = const_cast<NDArray*>(inGradC0)->bufferAsT<T>();
+    T* pInGradHt  = const_cast<NDArray*>(inGradHt)->bufferAsT<T>();
+    T* pGradWi    = gradWi.bufferAsT<T>();
+    T* pGradInput = gradI->bufferAsT<T>();
+    T* pGradBias  = gradBias.bufferAsT<T>();
+    T* pGradInit  = gradC0->bufferAsT<T>();
+    
+    Nd4jLong ncolsRev, ncolsWiRev;                   // for reverse direction
+    T gbF, gbR, cur, maskVal, bF, bR, ft, rt, val, prevVal, gft, grt, gradSateVal;
+    bool flip = false;
+    T *pInputVal(nullptr), *pWiVal(nullptr),  *pStateVal(nullptr), *pInGradHtVal(nullptr), *pGradWiVal(nullptr), *pGradInputVal(nullptr); 
+    
+    for (Nd4jLong col = 0; col < ncols; ++col) {           
+        gbF = gbR = (T)0.;
+        flip          = (col%d2) >= inSize;
+        maskVal       = mask ? *(pMask + col) : T(1.);
+        cur           = *(pInGradCt + col);
+        bF            = *(pBias     + col%d2);
+        bR            = *(pBias     + col%d2 + d2);
+        pWiVal        = pWi         + 3*col;
+        pInputVal     = pInput      + col;
+        pStateVal     = pState      + col;
+        pInGradHtVal  = pInGradHt    + col;
+        pGradWiVal    = pGradWi     + 3*col;
+        pGradInputVal = pGradInput  + col;                    
+        if (!flip) {
+            pInputVal     += (time-1)*ncols;
+            pWiVal        += (time-1)*ncolsWi;
+            pStateVal     += (time-1)*ncols;
+            pInGradHtVal  += (time-1)*ncols;
+            pGradWiVal    += (time-1)*ncolsWi;
+            pGradInputVal += (time-1)*ncols;
+        }
+        ncolsRev   = flip ? -ncols   : ncols;
+        ncolsWiRev = flip ? -ncolsWi : ncolsWi;
+        
+        for (Nd4jLong t = 0; t < time; ++t) {
+            // evaluate sigmoids 
+            ft = ((T)1.)/((T)1. + nd4j::math::nd4j_exp<T,T>(-(*(pWiVal + 1) + bF)));
+            rt = ((T)1.)/((T)1. + nd4j::math::nd4j_exp<T,T>(-(*(pWiVal + 2) + bR)));
+            
+            val     = nd4j::math::nd4j_tanh<T,T>(*pStateVal);            
+            prevVal = (t < time-1) ? (*(pStateVal - ncolsRev)) : (*(pInit + col));
+            // grad wrt input
+            *pGradInputVal = *pInGradHtVal - (*pInGradHtVal)*rt ;
+            // grad wrt rt, wiR and bR
+            grt = (*pInGradHtVal) * (val*maskVal - *pInputVal) * (rt - rt*rt);
+            *(pGradWiVal + 2) = grt;
+            gbR += grt;
+            // grad wrt state          
+            gradSateVal = (*pInGradHtVal) * maskVal * (rt - rt*val*val) + cur;
+            // grad wrt wi0
+            *pGradWiVal = gradSateVal - gradSateVal*ft;
+            // grad wrt ft, wi1, and bF
+            gft = gradSateVal * (prevVal - *pWiVal) * (ft - ft*ft);
+            *(pGradWiVal + 1) = gft;
+            gbF += gft;
+            // grad wrt c_previous
+            cur = gradSateVal * ft;
+            pInputVal     -= ncolsRev;
+            pWiVal        -= ncolsWiRev;
+            pStateVal     -= ncolsRev;
+            pGradWiVal    -= ncolsWiRev;
+            pGradInputVal -= ncolsRev;
+            pInGradHtVal  -= ncolsRev;            
+        } 
+        *(pGradBias + col) = gbF;
+        *(pGradBias + col + ncols) = gbR;
+        *(pGradInit + col) = cur;
+    }
+
+    // gradB    
+    gradBias.reduceAlongDimension(reduce::Sum, gradB, {0}, false, true);    // [1 x 4K]    
+    
+    // gradW     
+    x->permutei({0, 2, 1});                                             // [time x bS x 2*inSize] -> [time x 2*inSize x bS]
+    *gradW = mmul(*x, gradWi);                                    // [time x 2*inSize x bS ] * [time x bS x 6*inSize] = [time x 2*inSize x 6*inSize]
+}
+
+
+void sruBI(NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct) {
+    BUILD_SINGLE_SELECTOR(x->dataType(), sruBI_, (x, w, b, c0, mask, ht, ct), FLOAT_TYPES);
+}
+void sruBIBP(NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradH, const NDArray* mask, NDArray* gradI, NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
+    BUILD_SINGLE_SELECTOR(x->dataType(), sruBIBP_, (x, w, b, c0, ct, inGradC0, inGradH, mask, gradI, gradW, gradB, gradC0), FLOAT_TYPES);
+}
+
+
+BUILD_SINGLE_TEMPLATE(template void sruBI_,   (NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void sruBIBP_, (NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradH, const NDArray* mask, NDArray* gradI, NDArray* gradW, NDArray* gradB, NDArray* gradC0), FLOAT_TYPES);
+
 
 }
 }
