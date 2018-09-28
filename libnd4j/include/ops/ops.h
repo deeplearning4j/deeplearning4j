@@ -40,6 +40,7 @@
 #define no_op_exec_special_same 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, X *result, Nd4jLong *resultShapeBuffer, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_accumulation 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, Z *extraParams, Z *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
+#define no_op_exec_special_accumulation_long 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, X *extraParams, Z *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
 #define no_op_exec_special_accumulation_same 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
 #ifdef __CUDACC__
 #include <helpers/sharedmem.h>
@@ -1824,29 +1825,29 @@ namespace simdOps {
         }
     };
 
-    template <typename X>
+    template <typename X, typename Z>
     class MatchCondition {
     public:
-		no_op_exec_special_same
+		no_op_exec_special
 		no_op_exec_special_cuda
 
-		no_op_exec_special_accumulation_same
+		no_op_exec_special_accumulation_long
         no_op_exec_special_accumulation_cuda
 
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
         }
 
-        op_def static X merge(X old, X opOutput, X *extraParams) {
+        op_def static Z merge(Z old, Z opOutput, X *extraParams) {
             return old + opOutput;
         }
 
-        op_def static X update(X old, X opOutput, X *extraParams) {
+        op_def static Z update(Z old, Z opOutput, X *extraParams) {
             return old + opOutput;
         }
 
         // this op return 1.0 if condition met, 0.0 otherwise
-        op_def static X op(X d1, X *extraParams) {
+        op_def static Z op(X d1, X *extraParams) {
             X compare = extraParams[0];
             X eps = extraParams[1];
 
@@ -1855,33 +1856,33 @@ namespace simdOps {
 
 			switch (mode) {
 				case 0: // equals
-					return nd4j::math::nd4j_abs<X>(d1 - compare) <= eps ? 1.0f : 0.0f;
+					return nd4j::math::nd4j_abs<X>(d1 - compare) <= eps ? 1 : 0;
 				case 1: // not equals
-					return nd4j::math::nd4j_abs<X>(d1 - compare) > eps ? 1.0f : 0.0f;
+					return nd4j::math::nd4j_abs<X>(d1 - compare) > eps ? 1 : 0;
 				case 2: // less_than
-					return d1 < compare ? 1.0f : 0.0f;
+					return d1 < compare ? 1 : 0;
 				case 3: // greater_than
-					return d1 > compare ? 1.0f : 0.0f;
+					return d1 > compare ? 1 : 0;
 				case 4: // less_or_equals_than
-					return d1 <= compare ? 1.0f : 0.0f;
+					return d1 <= compare ? 1 : 0;
 				case 5: // greater_or_equals_than
-					return d1 >= compare ? 1.0f : 0.0f;
+					return d1 >= compare ? 1 : 0;
 				case 6: // abs_less_than
-					return nd4j::math::nd4j_abs<X>(d1) < compare ? 1.0f : 0.0f;
+					return nd4j::math::nd4j_abs<X>(d1) < compare ? 1 : 0;
 				case 7: // abs_greater_than
-					return nd4j::math::nd4j_abs<X>(d1) > compare ? 1.0f : 0.0f;
+					return nd4j::math::nd4j_abs<X>(d1) > compare ? 1 : 0;
 				case 8: // is inf
-					return nd4j::math::nd4j_isinf(d1) ? 1.0f : 0.0f;
+					return nd4j::math::nd4j_isinf(d1) ? 1 : 0;
 				case 9: // is nan
-					return nd4j::math::nd4j_isnan(d1) ? 1.0f : 0.0f;
+					return nd4j::math::nd4j_isnan(d1) ? 1 : 0;
 				case 10:
-					return (d1 == compare) ? 1.0f : 0.0f;
+					return (d1 == compare) ? 1 : 0;
 				case 11:
-					return (d1 != compare) ? 1.0f : 0.0f;
+					return (d1 != compare) ? 1 : 0;
 				case 12: // abs_greater_or_equals_than
-					return nd4j::math::nd4j_abs<X>(d1) >= compare ? 1.0f : 0.0f;
+					return nd4j::math::nd4j_abs<X>(d1) >= compare ? 1 : 0;
 				case 13: // abs_less_or_equals_than
-					return nd4j::math::nd4j_abs<X>(d1) <= compare ? 1.0f : 0.0f;
+					return nd4j::math::nd4j_abs<X>(d1) <= compare ? 1 : 0;
 				default:
 					printf("Undefined match condition: [%i]\n", mode);
 			}
@@ -1889,7 +1890,7 @@ namespace simdOps {
             return d1;
         }
 
-        op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
+        op_def static Z postProcess(Z reduction, Nd4jLong n, X *extraParams) {
             return reduction;
         }
     };
@@ -2295,26 +2296,26 @@ namespace simdOps {
     template <typename X, typename Z>
     class CountNonZero {
     public:
-        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_long
         no_op_exec_special_accumulation_cuda
 
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
         }
 
-        op_def static X merge(X old, X opOutput, X *extraParams) {
+        op_def static Z merge(Z old, Z opOutput, X *extraParams) {
             return opOutput + old;
         }
 
-        op_def static X update(X old, X opOutput, X *extraParams) {
+        op_def static Z update(Z old, Z opOutput, X *extraParams) {
             return opOutput + old;
         }
 
-        op_def static X op(X d1, X *extraParams) {
+        op_def static Z op(X d1, X *extraParams) {
             return d1 == static_cast<X>(0.0f) ? static_cast<X>(0.0f) : static_cast<X>(1.0f);
         }
 
-        op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
+        op_def static Z postProcess(Z reduction, Nd4jLong n, X *extraParams) {
             return reduction;
         }
     };
@@ -2323,26 +2324,26 @@ namespace simdOps {
     template <typename X, typename Z>
     class CountZero {
     public:
-        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_long
         no_op_exec_special_accumulation_cuda
 
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0.0f);
         }
 
-        op_def static X merge(X old, X opOutput, Z *extraParams) {
+        op_def static Z merge(Z old, Z opOutput, X *extraParams) {
             return opOutput + old;
         }
 
-        op_def static X update(X old, X opOutput, Z *extraParams) {
+        op_def static Z update(Z old, Z opOutput, X *extraParams) {
             return opOutput + old;
         }
 
-        op_def static X op(X d1, Z *extraParams) {
+        op_def static Z op(X d1, X *extraParams) {
             return d1 == static_cast<X>(0) ? static_cast<X>(1) : static_cast<X>(0);
         }
 
-        op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+        op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
             return static_cast<Z>(reduction);
         }
     };
@@ -3443,7 +3444,7 @@ namespace simdOps {
                 return old;
 #endif
 
-            auto res = simdOps::MatchCondition<X>::op(opOutput.value, extraParams);
+            auto res = simdOps::MatchCondition<X,X>::op(opOutput.value, extraParams);
 
 			//printf("res: %f; oldIdx: %i; newIdx: %i\n", res, old.index, opOutput.index);
 
@@ -3528,7 +3529,7 @@ namespace simdOps {
                 return old;
 #endif
 
-            auto res = simdOps::MatchCondition<X>::op(opOutput.value, extraParams);
+            auto res = simdOps::MatchCondition<X,X>::op(opOutput.value, extraParams);
 
             if (res == static_cast<X>(0))
                 return old;
