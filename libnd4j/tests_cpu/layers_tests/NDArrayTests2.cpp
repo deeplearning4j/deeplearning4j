@@ -290,9 +290,6 @@ TEST_F(NDArrayTest2, Test_Streamline_2) {
     x.linspace(1);
     y.linspace(1);
 
-    x.printIndexedBuffer("x");
-    y.printIndexedBuffer("y");
-
     ASSERT_TRUE(x.isSameShape(&y));
     ASSERT_TRUE(x.equalsTo(&y));
     

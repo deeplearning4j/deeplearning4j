@@ -1106,7 +1106,7 @@ namespace nd4j {
         /**
         *  return _isView
         */ 
-        FORCEINLINE bool isView();
+        FORCEINLINE bool isView() const;
 
         /**
         *  returns shape portion of shapeInfo
@@ -1404,7 +1404,7 @@ namespace nd4j {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    bool NDArray::isView() {
+    bool NDArray::isView() const {
         return _isView;
     }
 

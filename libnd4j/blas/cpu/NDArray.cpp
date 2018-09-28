@@ -1734,9 +1734,6 @@ NDArray NDArray::transp() const {
         // we don't need extraparams for this op
         NativeOpExcutioner::execReduce3Scalar(reduce3::EqualsWithEps, _buffer, _shapeInfo, ptr, other->_buffer, other->_shapeInfo, tmp.buffer(), tmp.shapeInfo());
 
-
-        tmp.printIndexedBuffer("t");
-
         RELEASE(reinterpret_cast<int8_t *>(ptr), _workspace);
 
         if (tmp.e<int>(0) > 0)
@@ -2820,9 +2817,16 @@ NDArray NDArray::transp() const {
 //////////////////////////////////////////////////////////////////////////
     template <typename T>
     T NDArray::e(const Nd4jLong i) const {
-        auto xType = this->dataType();
-        // return (*this)(i);
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, i), LIBND4J_TYPES);
+        auto rp = i;
+
+        if (this->ordering() == 'f' || isView()) {
+            Nd4jLong idx[MAX_RANK];
+            shape::ind2subC(rankOf(), shapeOf(), i, lengthOf(), idx);
+            rp = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+        }
+
+
+        BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
 
@@ -2877,7 +2881,7 @@ NDArray NDArray::transp() const {
         auto xType = this->dataType();
         auto rp = i;
 
-        if (this->ordering() == 'f') {
+        if (this->ordering() == 'f' || isView()) {
             Nd4jLong idx[MAX_RANK];
             shape::ind2subC(rankOf(), shapeOf(), i, lengthOf(), idx);
             rp = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
