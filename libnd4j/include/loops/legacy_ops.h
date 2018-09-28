@@ -88,7 +88,10 @@
         (19,ClipByValue) ,\
         (20,Stabilize), \
         (21,StabilizeFP16) ,\
-        (22,Reverse)
+        (22,Reverse) ,\
+        (23,SoftMax), \
+        (24,SoftMaxDerivative), \
+        (25,LogSoftMax)
 
 // these ops return bool
 #define TRANSFORM_BOOL_OPS \
@@ -122,40 +125,37 @@
         (17,HardTanhDerivative), \
         (18,SigmoidDerivative), \
         (19,SoftSignDerivative), \
-        (20,SoftMax), \
-        (21,SoftMaxDerivative), \
-        (22,LogSoftMax), \
-        (23,SpecialDerivative), \
-        (24,Histogram), \
-        (25,HardSigmoid), \
-        (26,HardSigmoidDerivative) ,\
-        (27,RationalTanh) ,\
-        (28,RationalTanhDerivative) ,\
-        (29,RectifiedTanh) ,\
-        (30,RectifiedTanhDerivative) ,\
-        (31,Sinh) ,\
-        (32,Cosh) ,\
-        (33,Tan) ,\
-        (34,TanDerivative) ,\
-        (35,SELU) ,\
-        (36,SELUDerivative) ,\
-        (37,Pooling2D) ,\
-        (38,Swish) ,\
-        (39,SwishDerivative) ,\
-        (40,RSqrt), \
-        (41,Log1p), \
-        (42,Erf), \
-        (43,ACosh), \
-        (44,ACoshDerivative) ,\
-        (45,ASinh), \
-        (46,ASinhDerivative) ,\
-        (47,SinhDerivative), \
-        (48,Rint), \
-        (49,LogSigmoid), \
-        (50,LogSigmoidDerivative) ,\
-        (51,Erfc) ,\
-        (52,Expm1), \
-        (53,ATanh)
+        (20,SpecialDerivative), \
+        (21,Histogram), \
+        (22,HardSigmoid), \
+        (23,HardSigmoidDerivative) ,\
+        (24,RationalTanh) ,\
+        (25,RationalTanhDerivative) ,\
+        (26,RectifiedTanh) ,\
+        (27,RectifiedTanhDerivative) ,\
+        (28,Sinh) ,\
+        (29,Cosh) ,\
+        (30,Tan) ,\
+        (31,TanDerivative) ,\
+        (32,SELU) ,\
+        (33,SELUDerivative) ,\
+        (34,Pooling2D) ,\
+        (35,Swish) ,\
+        (36,SwishDerivative) ,\
+        (37,RSqrt), \
+        (38,Log1p), \
+        (39,Erf), \
+        (40,ACosh), \
+        (41,ACoshDerivative) ,\
+        (42,ASinh), \
+        (43,ASinhDerivative) ,\
+        (44,SinhDerivative), \
+        (45,Rint), \
+        (46,LogSigmoid), \
+        (47,LogSigmoidDerivative) ,\
+        (48,Erfc) ,\
+        (49,Expm1), \
+        (50,ATanh)
 
 
 
