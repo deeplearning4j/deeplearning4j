@@ -36,7 +36,7 @@ namespace functions {
                                                 Nd4jLong *zShapeInfo) {
             auto x = reinterpret_cast<X *>(vx);
             auto z = reinterpret_cast<Z *>(vz);
-            auto extraParams = reinterpret_cast<Z *>(vextraParams);
+            auto extraParams = reinterpret_cast<X *>(vextraParams);
 
             const Nd4jLong length = shape::length(xShapeInfo);
             auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -91,7 +91,7 @@ namespace functions {
                     Nd4jLong *xShapeInfo,
                     void *vextraParams) {
                 auto x = reinterpret_cast<X *>(vx);
-                auto extraParams = reinterpret_cast<Z *>(vextraParams);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 const Nd4jLong length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
@@ -121,7 +121,8 @@ namespace functions {
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 auto xIter = x;
-                                start = OpType::update(start, OpType::op(xIter[0], extraParams), extraParams);
+                                auto f = OpType::op(xIter[0], extraParams);
+                                start = OpType::update(start, f, extraParams);
                             }
                         ND4J_RAW_ITER_ONE_NEXT(dim,
                                                rank,
@@ -144,7 +145,7 @@ namespace functions {
                 void *x,
                 Nd4jLong *xShapeInfo,
                 void *extraParams) {
-                RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_FLOAT_OPS);
+                RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_LONG_OPS);
         }
 
         template <typename X, typename Y>
@@ -154,7 +155,7 @@ namespace functions {
                                         void *extraParams,
                                         void *z,
                                         Nd4jLong *zShapeInfo) {
-            DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_FLOAT_OPS);
+            DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_LONG_OPS);
         }
 
         template <typename X, typename Y>
@@ -168,16 +169,7 @@ namespace functions {
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
                              Nd4jLong *tadOffset) {
-                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
-                                               xShapeInfo,
-                                               extraParams,
-                                               result,
-                                               resultShapeInfoBuffer,
-                                               dimension,
-                                               dimensionLength,
-                                               tadShapeInfo,
-                                               tadOffset),
-                                  REDUCE_FLOAT_OPS);
+                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset), REDUCE_LONG_OPS);
         }
 
         template <typename X, typename Z>
@@ -194,7 +186,7 @@ namespace functions {
 
                 auto x = reinterpret_cast<X *>(vx);
                 auto result = reinterpret_cast<Z *>(vresult);
-                auto extraParams = reinterpret_cast<Z *>(vextraParams);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 auto resultLength = shape::length(resultShapeInfoBuffer);
 
@@ -310,7 +302,7 @@ namespace functions {
                 Nd4jLong length,
                 void *vextraParams) {
                 auto x = reinterpret_cast<X *>(vx);
-                auto extraParams = reinterpret_cast<Z *>(vextraParams);
+                auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 auto startingVal = OpType::startingValue(x);
                 if (xElementWiseStride == 1) {
