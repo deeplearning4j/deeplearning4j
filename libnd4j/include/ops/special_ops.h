@@ -16,34 +16,39 @@
 
 #pragma once
 #include <ops/ops.h>
-#include <loops/reduce.h>
+#include <loops/reduce_float.h>
+#include <loops/reduce_same.h>
 #include <loops/scalar.h>
 #include <loops/indexreduce.h>
 #include <loops/broadcasting.h>
+#include <loops/transform_float.h>
 
 namespace functions {
 	namespace broadcast {
-		template <typename X, typename Y>
+		template <typename X, typename Y, typename Z>
 		class Broadcast;
 	}
 
 	namespace transform {
-		template <typename X>
-		class Transform;
+		template <typename X, typename Z>
+		class TransformFloat;
 	}
 
 	namespace scalar {
 	}
 
 	namespace reduce {
-		template <typename X>
-		class ReduceFunction;
+		template <typename X, typename Z>
+		class ReduceFloatFunction;
+
+        template <typename X>
+        class ReduceSameFunction;
 	}
 }
 
 namespace simdOps {
 
-	template<typename T>
+	template<typename T, typename Z>
 	class Pooling2D {
 	public:
 		static const bool requiresSpecial = true;
@@ -240,7 +245,7 @@ namespace simdOps {
 #endif
 
 
-static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outShapeBuffer, Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 	// input is  [bS, iC, iH, iW]
 	// output is [bS, iC, oH, oW]
 
@@ -302,20 +307,20 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                         wend = wstart + kWEff;
                         
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));                            
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(-wstart) / static_cast<T>(dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));                            
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                         hstart *= iStride2;
                         hend   *= iStride2;
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = -MAX_FLOAT;
+                        sum = -nd4j::DataTypeUtils::max<Z>();
                                                                     
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
@@ -345,27 +350,27 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                         wend = wstart + kWEff;
 
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(-wstart) / static_cast<T>(dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                         hstart *= iStride2;
                         hend   *= iStride2;
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = static_cast<T>(0.);
+                        sum = static_cast<Z>(0.);
                                             
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                 sum += pIn[kh + kw];
                                 
                         if ((int) extraParam0 == 0)         //Exclude padding
-                            sum /= static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(hend-hstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(wend-wstart) / static_cast<double>(iStep3)));   //Accounts for dilation
+                            sum /= static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(iStep3)));   //Accounts for dilation
                         else if ((int) extraParam0 == 1)    //Include padding
                             sum /= kProd;
                     
@@ -391,13 +396,13 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                         wend = wstart + kWEff;
 
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(-wstart) / static_cast<T>(dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                         hstart *= iStride2;
                         hend   *= iStride2;
@@ -424,7 +429,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 	}
 }
 
-		op_def static T op(T d1, T *params) {
+		op_def static T op(T d1, Z *params) {
 			return d1;
 		}
 
@@ -713,7 +718,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 
 	};
 
-	template<typename T>
+	template<typename T, typename Z>
 	class Histogram {
 	public:
 		static const bool requiresSpecial = true;
@@ -815,9 +820,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		static void execSpecial(
 				T *dx,
 				Nd4jLong *xShapeBuffer,
-				T *result,
+				Z *result,
 				Nd4jLong *resultShapeBuffer,
-				T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+				Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 			int length = shape::length(xShapeBuffer);
 			int _threads = 2;
@@ -886,7 +891,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		}
 
 
-        op_def static T op(T d1, T *params) {
+        op_def static T op(T d1, Z *params) {
             return d1;
         }
 	};
@@ -1423,7 +1428,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 			}
 			__syncthreads();
 
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
@@ -1435,7 +1440,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
@@ -1462,26 +1467,27 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				int dimension[1] = { 0 };
 				int maxDimension[1] = { 1 };
 				//compute the row wise maxes
-				std::vector<X> maxResult(shape[0]);
+				auto maxResult = new X[shape[0]];
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0;
 				Nd4jLong maxShape[2] = { shape[0], 1 };
 				auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::ArrayOptions::dataType(xShapeBuffer), maxShape);
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Max<X>>(reinterpret_cast<void *>(dx), xShapeBuffer, reinterpret_cast<void *>(extraParams), reinterpret_cast<void *>(maxResult.data()), maxResultShapeBuffer, maxDimension, 1,  nullptr, nullptr);
+				functions::reduce::ReduceSameFunction<X>::template exec<simdOps::Max<X>>(reinterpret_cast<void *>(dx), xShapeBuffer, reinterpret_cast<void *>(extraParams), reinterpret_cast<void *>(maxResult), maxResultShapeBuffer, maxDimension, 1,  nullptr, nullptr);
 
 				//subtract max of each row
-				functions::broadcast::Broadcast<X, X>::template exec<simdOps::Subtract<X,X>>(dx, xShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X, X, X>::template exec<simdOps::Subtract<X,X,X>>(dx, xShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
-				functions::transform::Transform<X>::template exec<simdOps::Exp<X>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
+				functions::transform::TransformFloat<X,X>::template exec<simdOps::Exp<X,X>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceSameFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//divide by the sum
-				functions::broadcast::Broadcast<X,X>::template exec<simdOps::Divide<X,X>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X,X,X>::template exec<simdOps::Divide<X,X,X>>(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				delete[] maxResultShapeBuffer;
+				delete[] maxResult;
 			}
 			else if (shape::isVector(xShapeBuffer)) {
 				auto max = -nd4j::DataTypeUtils::max<X>();
@@ -1492,12 +1498,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				if (elementWiseStride >= 1 && resultElementWiseStride >= 1) {
 					if (elementWiseStride == 1 && resultElementWiseStride == 1) {
 
-#pragma omp simd reduction(maxT:max)
+//#pragma omp simd reduction(maxT:max)
 						for (int i = 0; i < length; i++) {
 							max = nd4j::math::nd4j_max<X>(max, dx[i]);
 						}
 
-#pragma omp parallel for simd reduction(sumT:sum)
+//#pragma omp parallel for simd reduction(sumT:sum)
 						for (int i = 0; i < length; i++) {
                             result[i] = nd4j::math::nd4j_exp<X,X>(dx[i] - max);
 							sum += result[i];
@@ -1510,19 +1516,19 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					}
 					else {
 
-#pragma omp simd reduction(maxT:max)
+//#pragma omp simd reduction(maxT:max)
 						for (int i = 0; i < length; i++) {
 							max = nd4j::math::nd4j_max<X>(max, dx[i * elementWiseStride]);
 						}
 
-#pragma omp parallel for simd reduction(sumT:sum)
+//#pragma omp parallel for simd reduction(sumT:sum)
 						for (int i = 0; i < length; i++) {
                             auto r = nd4j::math::nd4j_exp<X, X>(dx[i * elementWiseStride] - max);
                             result[i * resultElementWiseStride] = r;
 							sum += r;
 						}
 
-#pragma omp simd
+//#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i * resultElementWiseStride] /= sum;
 						}
@@ -1532,7 +1538,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		}
 
 		op_def static X op(X d1, X *params) {
-			return nd4j::math::softplus<X>(d1);
+			return d1;
 		}
 	};
 
@@ -1574,7 +1580,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
 			__syncthreads();
 
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
@@ -1586,7 +1592,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
@@ -1614,7 +1620,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				int dimension[1] = { 0 };
 				int maxDimension[1] = { 1 };
 				//compute the row wise maxes
-				std::vector <X> maxResult(shape[0]);
+				auto maxResult = new X[shape[0]];
 
 #pragma omp simd
 				for (int i = 0; i < shape[0]; i++)
@@ -1622,21 +1628,21 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 
 				Nd4jLong maxShape[2] = { shape[0], 1 };
 				auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::ArrayOptions::dataType(xShapeBuffer), maxShape);
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Max<X>>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceSameFunction<X>::template exec<simdOps::Max<X>>(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//subtract max of each row
-				functions::broadcast::Broadcast<X,X>::template exec<simdOps::Subtract<X,X>>(dx, xShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X,X,X>::template exec<simdOps::Subtract<X,X,X>>(dx, xShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
-				functions::transform::Transform<X>::template exec<simdOps::Exp<X>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
+				functions::transform::TransformFloat<X,X>::template exec<simdOps::Exp<X,X>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceSameFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//divide by the sum
-				functions::broadcast::Broadcast<X,X>::template exec<simdOps::Divide<X,X>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X,X,X>::template exec<simdOps::Divide<X,X,X>>(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
-				functions::transform::Transform<X>::template exec<simdOps::Log<X>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
+				functions::transform::TransformFloat<X,X>::template exec<simdOps::Log<X,X>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 
 				delete[] maxResultShapeBuffer;
@@ -1648,12 +1654,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				auto elementWiseStride = shape::elementWiseStride(xShapeBuffer);
                 auto length = shape::length(xShapeBuffer);
 				if (elementWiseStride == 1) {
-#pragma omp simd reduction(maxT:max)
+//#pragma omp simd reduction(maxT:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<X>(max, result[i]);
 					}
 
-#pragma omp simd reduction(sumT:sum)
+//#pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
 						result[i] = nd4j::math::nd4j_exp<X, X>(dx[i] - max);
 						sum += result[i];
@@ -1666,18 +1672,18 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					}
 				}
 				else if (elementWiseStride > 1) {
-#pragma omp simd reduction(maxT:max)
+//#pragma omp simd reduction(maxT:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<X>(max, result[i * elementWiseStride]);
 					}
 
-#pragma omp simd reduction(sumT:sum)
+//#pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] = nd4j::math::nd4j_exp<X, X>(dx[i * elementWiseStride] - max);
 						sum += result[i * elementWiseStride];
 					}
 
-#pragma omp simd
+//#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] /= sum;
 						result[i * elementWiseStride] = nd4j::math::nd4j_log<X, X>(result[i * elementWiseStride]);
@@ -1687,7 +1693,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		}
 
 		op_def static X op(X d1, X *params) {
-			return nd4j::math::softplus<X>(d1);
+			return d1;
 		}
 	};
 
@@ -1736,7 +1742,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
 			__syncthreads();
 
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
@@ -1748,7 +1754,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceFloatFunction<T>::template execScalarCuda<simdOps::Sum<T>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
@@ -1784,26 +1790,26 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				int maxDimension[1] = { 1 };
 				auto len = shape::length(xShapeBuffer);
 				//compute the row wise maxes
-				std::vector <X> maxResult(shape[0]);
+				auto maxResult = new X[shape[0]];
 #pragma omp simd
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0;
 
 				Nd4jLong maxShape[2] = { shape[0], 1 };
 				auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::ArrayOptions::dataType(xShapeBuffer), maxShape);
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Max<X>>(dx, xShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceSameFunction<X>::template exec<simdOps::Max<X>>(dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//subtract max of each row
-				functions::broadcast::Broadcast<X,X>::template exec<simdOps::Subtract<X,X>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X,X,X>::template exec<simdOps::Subtract<X,X,X>>(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
-				functions::transform::Transform<X>::template exec<simdOps::Exp<X>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
+				functions::transform::TransformFloat<X,X>::template exec<simdOps::Exp<X,X>>(result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
-				functions::reduce::ReduceFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult.data(), maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceSameFunction<X>::template exec<simdOps::Sum<X>>(result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//divide by the sum
-				functions::broadcast::Broadcast<X,X>::template exec<simdOps::Divide<X,X>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X,X,X>::template exec<simdOps::Divide<X,X,X>>(result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				if (resultEleStide >= 1) {
 					if (resultEleStide == 1) {
@@ -1837,6 +1843,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 
 
 				delete[] maxResultShapeBuffer;
+				delete[] maxResult;
 			}
 			else if (shape::isVector(xShapeBuffer, 2)) {
 				auto max = -nd4j::DataTypeUtils::max<X>();
@@ -1846,36 +1853,36 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				auto length = shape::length(xShapeBuffer);
 				if (elementWiseStride == 1) {
 
-#pragma omp simd reduction(maxT:max)
+//#pragma omp simd reduction(maxT:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<X>(max, result[i]);
 					}
 
-#pragma omp simd reduction(sumT:sum)
+//#pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
 						result[i] -= max;
 						result[i] = nd4j::math::nd4j_exp<X, X>(result[i]);
 						sum += result[i];
 					}
 
-#pragma omp simd
+//#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i] /= sum;
 					}
 
-#pragma omp simd
+//#pragma omp simd
                     for (int i = 0; i < length; i++) {
                         result[i] = result[i] * ((X) 1.0f - result[i]);
                     }
                 } else if (elementWiseStride >= 1) {
 
-#pragma omp simd reduction(maxT:max)
+//#pragma omp simd reduction(maxT:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<X>(max, result[i * elementWiseStride]);
 					}
 
 
-#pragma omp simd reduction(sumT:sum)
+//#pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] -= max;
 						result[i * elementWiseStride] = nd4j::math::nd4j_exp<X, X>(result[i * elementWiseStride]);
@@ -1898,12 +1905,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		}
 
 		op_def static X op(X d1, X *params) {
-			return nd4j::math::softplus<X>(d1);
+			return d1;
 		}
 	};
 
 
-	template<typename X>
+	template<typename X, typename Z>
 	class IsMax {
 	public:
 		static const bool requiresSpecial = true;
@@ -1963,7 +1970,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		static void doAll(
 			X *dx,
 			Nd4jLong *xShapeBuffer,
-			X *result,
+            Z *result,
 			Nd4jLong *resultShapeBuffer,
 			X *extraParams) {
 
@@ -1989,11 +1996,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 								maxIdx = i;
 							}
 
-							result[i] = 0.0;
+							result[i] = false;
 
 						}
 
-						result[maxIdx] = 1.0;
+						result[maxIdx] = true;
 
 					}
 					else {
@@ -2011,7 +2018,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 								currMaxLocal = dx[i];
 								maxIdxLocal = i;
 							}
-							result[i] = 0.0;
+							result[i] = false;
 						}
 #pragma omp critical
 {
@@ -2021,7 +2028,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 						}
 }
 }
-						result[maxIdx] = 1.0;
+						result[maxIdx] = true;
 					}
 
 				}
@@ -2031,14 +2038,14 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                         auto currMax = dx[0];
 //#pragma omp simd reduction(max:maxIdx,currMax)
 						for (int i = 0; i < length; i++) {
-							result[i * resultEleStride] = 0.0;
+							result[i * resultEleStride] = false;
 							if (currMax < dx[i * eleStride]) {
 								currMax = dx[i * eleStride];
 								maxIdx = i;
 							}
 						}
 
-						result[maxIdx * resultEleStride] = 1.0;
+						result[maxIdx * resultEleStride] = true;
 
 					}
 					else {
@@ -2051,7 +2058,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 						auto currMaxLocal = currMax;
 //#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
 						for (int i = 0; i < length; i++) {
-							result[i * resultEleStride] = 0.0;
+							result[i * resultEleStride] = false;
 							if (currMaxLocal < dx[i * eleStride]) {
 								currMaxLocal = dx[i * eleStride];
 								maxIdxLocal = i;
@@ -2066,7 +2073,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 						}
 }
 }
-						result[maxIdx * resultEleStride] = 1.0;
+						result[maxIdx * resultEleStride] = true;
 					}
 
 				}
@@ -2106,7 +2113,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 						}
 
 						idx++;
-						result[0] = 0.0;
+						result[0] = (Z) 0;
 
 					}
 					ND4J_RAW_ITER_TWO_NEXT(
@@ -2123,9 +2130,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					if (shape::order(resultShapeBuffer) == 'c' || (shape::order(resultShapeBuffer) == 'f' &&
 						maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
 						shape::length(resultShapeBuffer)))
-						originalResult[maxIdx] = 1.0;
+						originalResult[maxIdx] = (Z)1;
 					else
-						originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = 1.0;
+						originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = (Z)1;
 				}
 			}
 
@@ -2155,7 +2162,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		static void execSpecial(
 			X *dx,
 			Nd4jLong *xShapeBuffer,
-			X *result,
+			Z *result,
 			Nd4jLong *resultShapeBuffer,
 			X *extraParams,
 			Nd4jLong *tadShapeInfo,
@@ -2396,7 +2403,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                                                           xStridesIter,
                                                           resultPointer,
                                                           resultStridesIter);
-                                   maxCursor = reinterpret_cast<X *>(maxCursorLong);
+                                   maxCursor = reinterpret_cast<Z *>(maxCursorLong);
                                    maxCursor[0] = 1.0;
                             }
                         }
@@ -2407,8 +2414,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
             }
 		}
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::softplus<X>(d1);
+		op_def static Z op(X d1, X *params) {
+			return nd4j::math::softplus<X,Z>(d1);
 		}
 	};
 }

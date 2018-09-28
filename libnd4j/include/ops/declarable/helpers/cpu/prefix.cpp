@@ -40,7 +40,7 @@ namespace nd4j {
                         shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
 
                         for (Nd4jLong e = length - 1; e >= 0; --e) {
-                            sum = op == scalar::Add ? simdOps::Add<T, T>::op(sum, x[e]) : simdOps::Multiply<T, T>::op(sum, x[e]);
+                            sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[e]) : simdOps::Multiply<T, T, T>::op(sum, x[e]);
                             if (!exclusive)
                                 prevSum = sum;
 
@@ -68,7 +68,7 @@ namespace nd4j {
                             auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                             auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
-                            sum = op == scalar::Add ? simdOps::Add<T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T>::op(sum, x[xOffset]);
+                            sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
                             if (!exclusive)
                                 prevSum = sum;
 
@@ -82,7 +82,7 @@ namespace nd4j {
                         shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {                        
 
                         for (int e = 0; e < length; e++) {
-                            sum = op == scalar::Add ? simdOps::Add<T, T>::op(sum, x[e]) : simdOps::Multiply<T, T>::op(sum, x[e]);
+                            sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[e]) : simdOps::Multiply<T, T, T>::op(sum, x[e]);
 
                             if (!exclusive)
                                 prevSum = sum;
@@ -111,7 +111,7 @@ namespace nd4j {
                             auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                             auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
-                            sum = op == scalar::Add ? simdOps::Add<T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T>::op(sum, x[xOffset]);
+                            sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
 
                             if (!exclusive)
                                 prevSum = sum;

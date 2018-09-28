@@ -26,8 +26,8 @@ using namespace simdOps;
 namespace functions {
     namespace pairwise_transforms {
 
-        template <typename X, typename Y>
-        void PairWiseTransform<X, Y>::exec(
+        template <typename X, typename Y, typename Z>
+        void PairWiseTransform<X, Y, Z>::exec(
                 const int opNum,
                 void *dx,
                 Nd4jLong *xShapeBuffer,
@@ -36,7 +36,7 @@ namespace functions {
                 void *result,
                 Nd4jLong *resultShapeBuffer,
                 void *extraParams) {
-            DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx,
+            DISPATCH_BY_OPNUM_TTT(exec, PARAMS(dx,
                                               xShapeBuffer,
                                               y,
                                               yShapeBuffer,
@@ -47,9 +47,9 @@ namespace functions {
         };
 
 
-        template <typename X, typename Y>
+        template <typename X, typename Y, typename Z>
         template <typename OpType>
-        void PairWiseTransform<X, Y>::exec(
+        void PairWiseTransform<X, Y, Z>::exec(
                 void *vx,
                 Nd4jLong* xShapeBuffer,
                 void *vy,
@@ -59,8 +59,8 @@ namespace functions {
                 void *vextraParams) {
             auto dx = reinterpret_cast<X *>(vx);
             auto y = reinterpret_cast<Y *>(vy);
-            auto result = reinterpret_cast<X *>(vresult);
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
+            auto result = reinterpret_cast<Z *>(vresult);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
             auto n = shape::length(xShapeBuffer);
             auto xElementWiseStride = shape::elementWiseStride(xShapeBuffer);
@@ -173,7 +173,7 @@ namespace functions {
                     auto resultStrideLocal = resultStride + 1;
 
                     int dim;
-                    if (PrepareThreeRawArrayIter<X, Y>(rankLocal,
+                    if (PrepareThreeRawArrayIter<X, Y, Z>(rankLocal,
                                                        xShapeLocal,
                                                        dxLocal,
                                                        xStrideLocal,
@@ -236,7 +236,7 @@ namespace functions {
                 Nd4jLong xCoord[MAX_RANK];
                 Nd4jLong yCoord[MAX_RANK];
 
-                if(dx == result) {
+                if(vx == vresult) {
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared) private(xCoord, yCoord)
                     for (Nd4jLong i = 0; i < len; i++) {
                         shape::ind2subC(xRank,xShape, i, xCoord);

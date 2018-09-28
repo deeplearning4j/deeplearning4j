@@ -15,8 +15,8 @@
  ******************************************************************************/
 
 
-#ifndef REDUCE_H
-#define REDUCE_H
+#ifndef REDUCE_LONG_H
+#define REDUCE_LONG_H
 #include <dll.h>
 //#include <string>
 #include <helpers/sharedmem.h>
@@ -57,8 +57,8 @@ namespace functions {
  * via aggregating member
  * elements.
  */
-        template<typename X>
-        class ReduceFunction {
+        template<typename X, typename Z>
+        class ReduceLongFunction {
         public:
 #ifdef __CUDACC__
             template<typename OpType>
@@ -130,7 +130,7 @@ namespace functions {
              * @return
              */
             template<typename OpType>
-            static _CUDA_H X execScalar(void *x,
+            static _CUDA_H Z execScalar(void *x,
                     Nd4jLong *xShapeInfo,
                     void *extraParams);
 
@@ -142,19 +142,19 @@ namespace functions {
                                         Nd4jLong *zShapeInfo);
 
 
-            static X execScalar(const int opNum,
+            static Z execScalar(int opNum,
                     void *x,
                     Nd4jLong *xShapeInfo,
                     void *extraParams);
 
-            static void execScalar(const int opNum,
+            static void execScalar(int opNum,
                                 void *x,
                                 Nd4jLong *xShapeInfo,
                                 void *extraParams,
                                 void *z,
                                 Nd4jLong *zShapeInfo);
 
-            static void exec(const int opNum,
+            static void exec(int opNum,
                              void *x,
                              Nd4jLong *xShapeInfo,
                              void *extraParams,
@@ -216,7 +216,7 @@ namespace functions {
             * @return
             */
             template<typename OpType>
-            static X _CUDA_H execScalar(void *x,
+            static Z _CUDA_H execScalar(void *x,
                     Nd4jLong xElementWiseStride,
                     Nd4jLong length,
                     void *extraParams);

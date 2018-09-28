@@ -26,10 +26,10 @@
 
 #include <ops/specials.h>
 #include <loops/reduce3.h>
-#include <loops/reduce.h>
+#include <loops/reduce_float.h>
 #include <loops/indexreduce.h>
 #include <loops/pairwise_transform.h>
-#include <loops/transform.h>
+#include <loops/transform_same.h>
 #include <loops/scalar.h>
 #include <loops/broadcasting.h>
 #include <loops/summarystatsreduce.h>

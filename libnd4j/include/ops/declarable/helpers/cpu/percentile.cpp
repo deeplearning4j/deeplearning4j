@@ -54,13 +54,13 @@ static void _percentile(const NDArray& input, NDArray& output, std::vector<int>&
     
     switch(interpolation) {
         case 0: // lower
-            position = static_cast<Nd4jLong>(math::nd4j_ceil<float>((len - 1) * fraction));
+            position = static_cast<Nd4jLong>(math::nd4j_ceil<float,Nd4jLong>((len - 1) * fraction));
             break;
         case 1: // higher
-            position = static_cast<Nd4jLong>(math::nd4j_floor<float>((len - 1) * fraction));
+            position = static_cast<Nd4jLong>(math::nd4j_floor<float,Nd4jLong>((len - 1) * fraction));
             break;
         case 2: // nearest
-            position = static_cast<Nd4jLong>(math::nd4j_round<float>((len - 1) * fraction));
+            position = static_cast<Nd4jLong>(math::nd4j_round<float,Nd4jLong>((len - 1) * fraction));
             break;
     }
     position = len - position - 1;

@@ -22,8 +22,8 @@
  *  @author: raver119@gmail.com
  */
 
-#ifndef TRANSFORM_H_
-#define TRANSFORM_H_
+#ifndef TRANSFORM_STRICT_H_
+#define TRANSFORM_STRICT_H_
 #include <vector>
 #include <templatemath.h>
 #include <ops/ops.h>
@@ -57,7 +57,7 @@ namespace functions {
     namespace transform {
 
         template<typename X>
-        class Transform {
+        class TransformStrict {
         public:
 
 #ifdef __CUDACC__
@@ -111,8 +111,7 @@ namespace functions {
 
 #endif
 
-
-			static void exec(int opNum, void *dx, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *extraParams, const Nd4jLong n);
+			static void exec(int opNum, void *dx, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *extraParams, Nd4jLong n);
 
 			static void exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
@@ -120,7 +119,7 @@ namespace functions {
 			static ND4J_EXPORT void exec(void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 			template <typename OpType>
-			static ND4J_EXPORT void exec(void *dx, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *extraParams, const Nd4jLong n);
+			static ND4J_EXPORT void exec(void *dx, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *extraParams, Nd4jLong n);
         };
     }
 }

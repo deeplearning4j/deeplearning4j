@@ -335,9 +335,9 @@ namespace randomOps {
                 __syncthreads();
 
                 if (e % 2 == 0)
-                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean;
+                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T,T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean;
                 else
-                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T>(two_pi * tZ[threadIdx.x])) * stddev + realMean;
+                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T,T>(two_pi * tZ[threadIdx.x])) * stddev + realMean;
 
                 __syncthreads();
             }
@@ -390,8 +390,8 @@ namespace randomOps {
                         u0 = buffer->relativeT<T>(e, static_cast<T>(1e-5f), static_cast<T>(1.0f));
                         u1 = buffer->relativeT<T>((e + 1), static_cast<T>(1e-5f), static_cast<T>(1.0f));
                         lnU0 = nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(u0));
-                        z0 = lnU0 * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = lnU0 * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                        z0 = lnU0 * nd4j::math::nd4j_cos<T,T>(two_pi * u1);
+                        z1 = lnU0 * nd4j::math::nd4j_sin<T,T>(two_pi * u1);
 
                         generated = true;
 
@@ -750,8 +750,8 @@ namespace randomOps {
                     uT = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0));
                     uP = two_pi * u1;
 
-                    z0 = uT * nd4j::math::nd4j_cos<T>(uP);
-                    z1 = uT * nd4j::math::nd4j_sin<T>(uP);
+                    z0 = uT * nd4j::math::nd4j_cos<T,T>(uP);
+                    z1 = uT * nd4j::math::nd4j_sin<T,T>(uP);
 
                     result0 = z0 * stddev + realMean0;
                     result1 = z1 * stddev + realMean1;
@@ -823,8 +823,8 @@ namespace randomOps {
                         u1 = buffer->relativeT<T>((epm + generation0), static_cast<T>(1e-6f), static_cast<T>(1.0f));
                         lnu0 = nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(u0));
                         lnu1 = two_pi * u1;
-                        z0 = lnu0 * nd4j::math::nd4j_cos<T>(lnu1);
-                        z1 = lnu0 * nd4j::math::nd4j_sin<T>(lnu1);
+                        z0 = lnu0 * nd4j::math::nd4j_cos<T,T>(lnu1);
+                        z1 = lnu0 * nd4j::math::nd4j_sin<T,T>(lnu1);
 
                         result0 = z0 * stddev + realMean0;
                         result1 = z1 * stddev + realMean1;
@@ -921,9 +921,9 @@ namespace randomOps {
                 __syncthreads();
 
                 if (e % 2 == 0)
-                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean);
+                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T,T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean);
                 else
-                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T>(two_pi * tZ[threadIdx.x])) * stddev + realMean);
+                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T,T>(two_pi * tZ[threadIdx.x])) * stddev + realMean);
                 __syncthreads();
             }
 
@@ -974,8 +974,8 @@ namespace randomOps {
                         u0 = buffer->relativeT<T>(e, static_cast<T>(1e-5f), static_cast<T>(1.0f));
                         u1 = buffer->relativeT<T>((e + 1), static_cast<T>(1e-5f), static_cast<T>(1.0f));
                         lnU0 = nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(u0));
-                        z0 = lnU0 * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = lnU0 * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                        z0 = lnU0 * nd4j::math::nd4j_cos<T,T>(two_pi * u1);
+                        z1 = lnU0 * nd4j::math::nd4j_sin<T,T>(two_pi * u1);
 
                         generated = true;
 

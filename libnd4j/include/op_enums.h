@@ -34,8 +34,20 @@ namespace nd4j {
     }
 
     namespace transform {
-        enum Ops {
-            BUILD_ENUMERATION(TRANSFORM_OPS)
+        enum FloatOps {
+            BUILD_ENUMERATION(TRANSFORM_FLOAT_OPS)
+        };
+
+        enum SameOps {
+            BUILD_ENUMERATION(TRANSFORM_SAME_OPS)
+        };
+
+        enum BoolOps {
+            BUILD_ENUMERATION(TRANSFORM_BOOL_OPS)
+        };
+
+        enum StrictOps {
+            BUILD_ENUMERATION(TRANSFORM_STRICT_OPS)
         };
     }
 
@@ -52,8 +64,20 @@ namespace nd4j {
     }
 
     namespace reduce {
-        enum Ops {
-            BUILD_ENUMERATION(REDUCE_OPS)
+        enum FloatOps {
+            BUILD_ENUMERATION(REDUCE_FLOAT_OPS)
+        };
+
+        enum SameOps {
+            BUILD_ENUMERATION(REDUCE_SAME_OPS)
+        };
+
+        enum BoolOps {
+            BUILD_ENUMERATION(REDUCE_BOOL_OPS)
+        };
+
+        enum LongOps {
+            BUILD_ENUMERATION(REDUCE_LONG_OPS)
         };
     }
 
