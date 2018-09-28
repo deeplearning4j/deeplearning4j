@@ -99,7 +99,7 @@ DECLARE_SHAPE_FN(gruCell) {
     hShapeInfo[1] = bS;
     hShapeInfo[2] = numUnits;
     
-    ShapeUtils::updateStirdesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));
+    ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));
 
     return SHAPELIST(hShapeInfo);
 
