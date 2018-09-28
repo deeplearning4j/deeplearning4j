@@ -1799,9 +1799,9 @@ NDArray NDArray::transp() const {
 	    int shapeInfoLength = shape::shapeInfoLength(rankOf());
 	    Nd4jLong* newShapeInfo = nullptr;
 
-	    ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, Nd4jLong);
-	    memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
-
+	    //ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, Nd4jLong);
+	    //memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
+        COPY_SHAPE_EX(_shapeInfo, newShapeInfo, _workspace);
 	    auto newArr = new NDArray(_buffer, newShapeInfo, _workspace);
 	    newArr->_isShapeAlloc = true;
 	    newArr->_isBuffAlloc  = false;

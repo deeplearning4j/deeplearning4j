@@ -2042,9 +2042,11 @@ TEST_F(DeclarableOpsTests6, deconv2d_test1) {
     
     nd4j::ops::deconv2d op;
     auto results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    auto output = results->at(0);            
-
     ASSERT_EQ(Status::OK(), results->status());
+
+    auto output = results->at(0);
+    output->printIndexedBuffer("DECONV output");
+    exp.printIndexedBuffer("DECONV expect");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
     

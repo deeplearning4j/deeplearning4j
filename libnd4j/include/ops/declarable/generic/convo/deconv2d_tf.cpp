@@ -141,8 +141,8 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
         gradIshapeInfo[4] = iC;
     }
     
-    shape::updateStrides(gradIshapeInfo, shape::order(gradOShapeInfo)); 
-
+    shape::updateStrides(gradIshapeInfo, shape::order(gradOShapeInfo));
+    ArrayOptions::setDataType(gradIshapeInfo, ArrayOptions::dataType(gradIShapeShapeInfo));
     return SHAPELIST(gradIshapeInfo);        
 
 }

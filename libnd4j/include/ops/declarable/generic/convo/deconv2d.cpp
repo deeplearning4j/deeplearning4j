@@ -149,7 +149,7 @@ DECLARE_SHAPE_FN(deconv2d) {
     }
     
     shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
-
+    ArrayOptions::setDataType(outputShapeInfo, ArrayOptions::dataType(inputShapeInfo));
     return SHAPELIST(outputShapeInfo);
 }
 
