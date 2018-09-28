@@ -82,7 +82,7 @@ namespace nd4j {
             outputShape[4] = outputDepthDim;
 
 
-            shape::updateStrides(outputShape, shape::order(in));
+            ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
             return SHAPELIST(outputShape);
         }
