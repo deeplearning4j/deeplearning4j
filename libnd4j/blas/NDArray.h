@@ -523,6 +523,9 @@ namespace nd4j {
         void applyTransform(nd4j::transform::BoolOps op, NDArray *target = nullptr, void *extraParams = nullptr);
         void applyTransform(nd4j::transform::BoolOps, void *extraParams = nullptr);
 
+        void applyTransform(nd4j::transform::StrictOps op, NDArray *target = nullptr, void *extraParams = nullptr);
+        void applyTransform(nd4j::transform::StrictOps, void *extraParams = nullptr);
+
         /**
         *  apply OpName transformation to this array and store result in new array being returned
         *  extraParams - extra parameters for operation
@@ -530,6 +533,7 @@ namespace nd4j {
         NDArray transform(nd4j::transform::FloatOps op, void *extraParams = nullptr) const;
         NDArray transform(nd4j::transform::SameOps op, void *extraParams = nullptr) const;
         NDArray transform(nd4j::transform::BoolOps op, void *extraParams = nullptr) const;
+        NDArray transform(nd4j::transform::StrictOps op, void *extraParams = nullptr) const;
 
         /**
         *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in this array

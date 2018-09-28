@@ -45,6 +45,10 @@ namespace nd4j {
         enum BoolOps {
             BUILD_ENUMERATION(TRANSFORM_BOOL_OPS)
         };
+
+        enum StrictOps {
+            BUILD_ENUMERATION(TRANSFORM_STRICT_OPS)
+        };
     }
 
     namespace pairwise {

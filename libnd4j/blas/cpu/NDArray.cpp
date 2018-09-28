@@ -1408,6 +1408,13 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         NativeOpExcutioner::execTransformBool(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
     }
 
+    void NDArray::applyTransform(nd4j::transform::StrictOps op, NDArray *target, void *extraParams) {
+        if (!this->isR() || target->isR() || (this->dataType() != target->dataType()))
+            throw std::runtime_error("Both Source and Target array must have one of FLOAT types");
+
+        NativeOpExcutioner::execTransformStrict(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
+    }
+
 // perform array transformation
     void NDArray::applyTransform(nd4j::transform::FloatOps op, void *extraParams) {
         applyTransform(op, this, extraParams);
@@ -1421,6 +1428,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         applyTransform(op, this, extraParams);
     }
 
+    void NDArray::applyTransform(nd4j::transform::StrictOps op, void *extraParams) {
+        applyTransform(op, this, extraParams);
+    }
+
     // perform array transformation
     NDArray NDArray::transform(nd4j::transform::FloatOps op, void *extraParams) const {
         auto result = this->isR() ? NDArrayFactory::create(this->ordering(), getShapeAsVector(), this->dataType(), this->_workspace) : NDArrayFactory::create(this->ordering(), getShapeAsVector(), Environment::getInstance()->defaultFloatDataType(), this->_workspace);
@@ -1431,6 +1442,15 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     NDArray NDArray::transform(nd4j::transform::SameOps op, void *extraParams) const {
         NDArray result(this->_shapeInfo, true, this->_workspace);
         NativeOpExcutioner::execTransformSame(op, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, extraParams, nullptr, nullptr);
+        return result;
+    }
+
+    NDArray NDArray::transform(nd4j::transform::StrictOps op, void *extraParams) const {
+        if (!this->isR())
+            throw std::runtime_error("Source array must have one of FLOAT types");
+
+        NDArray result(this->_shapeInfo, true, this->_workspace);
+        NativeOpExcutioner::execTransformStrict(op, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, extraParams, nullptr, nullptr);
         return result;
     }
 
