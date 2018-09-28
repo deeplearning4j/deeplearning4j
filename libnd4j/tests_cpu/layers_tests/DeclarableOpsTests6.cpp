@@ -84,7 +84,7 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_1) {
 
     auto z = result->at(0);    
 
-    ASSERT_EQ(exp, *z);
+    ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
 }
