@@ -85,7 +85,7 @@ namespace helpers {
     template <typename T>
     static void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
-            return y * nd4j::math::nd4j_eluderivative(x);
+            return y * nd4j::math::nd4j_eluderivative<T,T>(x);
         };
 
         input->applyPairwiseLambda<T>(epsilon, functor, output);
@@ -208,7 +208,7 @@ namespace helpers {
     template <typename T>
     static void rectifiedTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
-            return x > (T) 0.0f ? y * (nd4j::math::nd4j_tanhderivative<T>(x)) : (T) 0.0f;
+            return x > (T) 0.0f ? y * (nd4j::math::nd4j_tanhderivative<T,T>(x)) : (T) 0.0f;
         };
 
         input->applyPairwiseLambda<T>(epsilon, functor, output);
@@ -261,7 +261,7 @@ namespace helpers {
     template <typename T>
     static void sigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
-            T s = nd4j::math::nd4j_sigmoid<T>(x);
+            T s = nd4j::math::nd4j_sigmoid<T,T>(x);
             return y * (s * ((T) 1.0f - s));
         };
 
