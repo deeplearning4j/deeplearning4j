@@ -42,18 +42,18 @@ namespace nd4j {
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
-                determinantShape = shape::createScalarShapeInfo();
+                determinantShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.workspace());
             }
             else if (targetRank == 1) { // vector 
-                determinantShape = ShapeBuilders::createVectorShapeInfo(block.dataType(), shape::sizeAt(inShape, 0), block.workspace());
+                determinantShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.workspace());
             }
             else { // only two last dimensions are excluded
                 ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
 
                 if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(targetRank, block.dataType(), shape::shapeOf(inShape), determinantShape);
+                    shape::shapeBuffer(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), determinantShape);
                 else
-                    shape::shapeBufferFortran(targetRank, block.dataType(), shape::shapeOf(inShape), determinantShape);
+                    shape::shapeBufferFortran(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), determinantShape);
             }
             return SHAPELIST(determinantShape);
         }
