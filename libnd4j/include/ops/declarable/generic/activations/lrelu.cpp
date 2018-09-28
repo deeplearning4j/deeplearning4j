@@ -29,7 +29,9 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            input->applyTransform(nd4j::transform::LeakyRELU, output, block.getTArguments()->data());
+            float t = block.numT() > 0 ? T_ARG(0) : 0.0f;
+
+            input->applyScalar(nd4j::scalar::LeakyRELU, t, output);
             STORE_RESULT(output);
             
             return Status::OK();

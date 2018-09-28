@@ -178,13 +178,37 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void  execReduce(Nd4jPointer *extraPointers,
+    void  execReduceFloat(Nd4jPointer *extraPointers,
                             int opNum,
                             void *x,
                             Nd4jLong *xInfo,
                             void *extraParams,
                             void *result,
                             Nd4jLong *resultShapeInfo);
+
+    void  execReduceSame(Nd4jPointer *extraPointers,
+                          int opNum,
+                          void *x,
+                          Nd4jLong *xInfo,
+                          void *extraParams,
+                          void *result,
+                          Nd4jLong *resultShapeInfo);
+
+    void  execReduceBool(Nd4jPointer *extraPointers,
+                          int opNum,
+                          void *x,
+                          Nd4jLong *xInfo,
+                          void *extraParams,
+                          void *result,
+                          Nd4jLong *resultShapeInfo);
+
+    void  execReduceLong(Nd4jPointer *extraPointers,
+                          int opNum,
+                          void *x,
+                          Nd4jLong *xInfo,
+                          void *extraParams,
+                          void *result,
+                          Nd4jLong *resultShapeInfo);
 
     /**
      *
@@ -195,7 +219,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void   execReduce(Nd4jPointer *extraPointers,
+    void   execReduceFloat(Nd4jPointer *extraPointers,
                             int opNum,
                             void *x,
                             Nd4jLong *xInfo,
@@ -204,6 +228,36 @@ public:
                             Nd4jLong *resultShapeInfo,
                             int *dimension,
                             int dimensionLength);
+
+    void   execReduceSame(Nd4jPointer *extraPointers,
+                      int opNum,
+                      void *x,
+                      Nd4jLong *xInfo,
+                      void *extraParams,
+                      void *result,
+                      Nd4jLong *resultShapeInfo,
+                      int *dimension,
+                      int dimensionLength);
+
+    void   execReduceBool(Nd4jPointer *extraPointers,
+                      int opNum,
+                      void *x,
+                      Nd4jLong *xInfo,
+                      void *extraParams,
+                      void *result,
+                      Nd4jLong *resultShapeInfo,
+                      int *dimension,
+                      int dimensionLength);
+
+    void   execReduceLong(Nd4jPointer *extraPointers,
+                      int opNum,
+                      void *x,
+                      Nd4jLong *xInfo,
+                      void *extraParams,
+                      void *result,
+                      Nd4jLong *resultShapeInfo,
+                      int *dimension,
+                      int dimensionLength);
 
     /**
      *
@@ -368,13 +422,29 @@ public:
      * @param extraParams
      * @param n
      */
-    void execTransform(Nd4jPointer *extraPointers,
+    void execTransformFloat(Nd4jPointer *extraPointers,
                                int opNum,
                                void *dx,
                                Nd4jLong *xInfo,
                                void *result,
                                Nd4jLong *resultShapeInfo,
                                void *extraParams);
+
+    void execTransformSame(Nd4jPointer *extraPointers,
+                       int opNum,
+                       void *dx,
+                       Nd4jLong *xInfo,
+                       void *result,
+                       Nd4jLong *resultShapeInfo,
+                       void *extraParams);
+
+    void execTransformBool(Nd4jPointer *extraPointers,
+                       int opNum,
+                       void *dx,
+                       Nd4jLong *xInfo,
+                       void *result,
+                       Nd4jLong *resultShapeInfo,
+                       void *extraParams);
 
     /**
      *

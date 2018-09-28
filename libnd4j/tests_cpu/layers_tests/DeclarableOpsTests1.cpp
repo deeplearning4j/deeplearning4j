@@ -2163,8 +2163,8 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test3) {
     const int pW = 0;  
     const int dH = 1;  
     const int dW = 1;  
-    const int oH = (int) nd4j::math::nd4j_ceil(iH * 1.f / sH);
-    const int oW = (int) nd4j::math::nd4j_ceil(iW * 1.f / sW);
+    const int oH = (int) nd4j::math::nd4j_ceil<float, int>(iH * 1.f / sH);
+    const int oW = (int) nd4j::math::nd4j_ceil<float, int>(iW * 1.f / sW);
 
 
     auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
@@ -2251,8 +2251,8 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test5) {
     const int pW = 0;  
     const int dH = 1;  
     const int dW = 1;  
-    const int oH = (int) nd4j::math::nd4j_ceil(iH * 1.f / sH);
-    const int oW = (int) nd4j::math::nd4j_ceil(iW * 1.f / sW);
+    const int oH = (int) nd4j::math::nd4j_ceil<float, int>(iH * 1.f / sH);
+    const int oW = (int) nd4j::math::nd4j_ceil<float, int>(iW * 1.f / sW);
 
 
     auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
@@ -2365,8 +2365,8 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_test3) {
     const int pW = 0;  
     const int dH = 1;  
     const int dW = 1;  
-    const int oH = (int) nd4j::math::nd4j_ceil(iH * 1.f / sH);
-    const int oW = (int) nd4j::math::nd4j_ceil(iW * 1.f / sW);
+    const int oH = (int) nd4j::math::nd4j_ceil<float, int>(iH * 1.f / sH);
+    const int oW = (int) nd4j::math::nd4j_ceil<float, int>(iW * 1.f / sW);
 
 
     auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});

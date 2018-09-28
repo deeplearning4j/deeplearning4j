@@ -28,8 +28,8 @@ using namespace simdOps;
 namespace functions {
     namespace broadcast {
 
-        template <typename X, typename Y>
-        void Broadcast<X, Y>::exec(const int opNum,
+        template <typename X, typename Y, typename Z>
+        void Broadcast<X, Y, Z>::exec(const int opNum,
                              void *x,
                              Nd4jLong *xShapeInfo,
                              void *y,
@@ -42,7 +42,7 @@ namespace functions {
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
                              Nd4jLong *tadOffsetZ) {
-            DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
+            DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x,
                                                xShapeInfo,
                                                y,
                                                yShapeInfo,
@@ -56,9 +56,9 @@ namespace functions {
                                                tadOffsetZ), BROADCAST_OPS);
         }
 
-        template <typename X, typename  Y>
+        template <typename X, typename  Y, typename Z>
         template<typename OpType>
-        void Broadcast<X, Y>::exec(void *vx,
+        void Broadcast<X, Y, Z>::exec(void *vx,
                              Nd4jLong *xShapeInfo,
                              void *vy,
                              Nd4jLong *yShapeInfo,
@@ -72,8 +72,8 @@ namespace functions {
                              Nd4jLong *tadOffsetZ) {
 
                 auto x = reinterpret_cast<X *>(vx);
-                auto y = reinterpret_cast<X *>(vy);
-                auto result = reinterpret_cast<X *>(vz);
+                auto y = reinterpret_cast<Y *>(vy);
+                auto result = reinterpret_cast<Z *>(vz);
 
                 //decompose in to several sub tads after
                 //moving all dimensions (in sorted order)
@@ -177,10 +177,8 @@ namespace functions {
                     delete tad;
         }
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Broadcast, , FLOAT_TYPES, FLOAT_TYPES);
-
-        //BUILD_CALL_1(template void Broadcast<float, float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
-        //BUILD_CALL_1(template void Broadcast<float16, float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
-        //BUILD_CALL_1(template void Broadcast<double, double>::exec, double, (double*, Nd4jLong*, double*, Nd4jLong*, double*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT Broadcast, , PAIRWISE_TYPES_0);
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT Broadcast, , PAIRWISE_TYPES_1);
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT Broadcast, , PAIRWISE_TYPES_2);
     }
 }

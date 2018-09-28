@@ -64,99 +64,101 @@
        (29, LogicalNot) ,\
        (30, LogicalAnd)
 
+// these ops return same data type as input
+#define TRANSFORM_SAME_OPS \
+        (0,Abs), \
+        (1,Sign), \
+        (2,Ones), \
+        (3, Neg), \
+        (4, Round), \
+        (5,TimesOneMinus), \
+        (6,Cube), \
+        (7,OneMinus), \
+        (8,Col2Im), \
+        (9,Im2col),\
+        (10,CubeDerivative) , \
+        (11,Reciprocal), \
+        (12,Square), \
+        (13,RELU), \
+        (14,RELU6), \
+        (15,Identity), \
+        (16,Step), \
+        (17,Ceiling), \
+        (18,Floor), \
+        (19,ClipByValue) ,\
+        (20,Stabilize), \
+        (21,StabilizeFP16) ,\
+        (22,Reverse)
 
 
+// these ops return bool
+#define TRANSFORM_BOOL_OPS \
+        (0,IsMax), \
+        (1,Not), \
+        (2,IsInf), \
+        (3,IsNan), \
+        (4,IsFinite), \
+        (5,IsInfOrNan), \
+        (6,MatchConditionBool)
 
-#define TRANSFORM_OPS \
-	(0, Abs), \
-        (1, Ceiling), \
-        (2, Cosine), \
-        (3, Exp), \
-        (4, Floor), \
-        (5, Log), \
-        (6, Neg), \
-        (8, Round), \
-        (9, SetRange), \
-        (10,Sigmoid), \
-        (11,Sign), \
-        (12,Sin), \
-        (13,SoftPlus), \
-        (14,Sqrt), \
-        (15,Tanh), \
-        (16,ACos), \
-        (17,ASin), \
-        (18,ATan), \
-        (19,HardTanh), \
-        (20,SoftSign), \
-        (21,ELU), \
-        (22,ELUDerivative), \
-        (23,TanhDerivative), \
-        (24,TimesOneMinus), \
-        (25,HardTanhDerivative), \
-        (26,Ones), \
-        (27,Identity), \
-        (28,Stabilize), \
-        (29,SigmoidDerivative), \
-        (30,SoftSignDerivative), \
-        (31,LeakyRELU), \
-        (32,LeakyRELUDerivative), \
-        (33,RELU), \
-        (34,Step), \
-        (35,OneMinus), \
-        (36,Col2Im), \
-        (37,Im2col), \
-        (38,SoftMax), \
-        (39,SoftMaxDerivative), \
-        (40,LogSoftMax), \
-        (41,IsMax), \
-        (42,SpecialDerivative), \
-        (43,DropOut), \
-        (44,DropOutInverted), \
-        (46,ReplaceNans) ,\
-        (47,StabilizeFP16) ,\
-        (48,Histogram), \
-        (49,Cube), \
-        (50,CubeDerivative) , \
-        (51,HardSigmoid), \
-        (52,HardSigmoidDerivative) ,\
-        (53,RationalTanh) ,\
-        (54,RationalTanhDerivative) ,\
-        (55,LogX) ,\
-        (59,Not) ,\
-        (61,RectifiedTanh) ,\
-        (62,RectifiedTanhDerivative) ,\
-        (63,Sinh) ,\
-        (64,Cosh) ,\
-        (65,Tan) ,\
-        (66,TanDerivative) ,\
-        (67,SELU) ,\
-        (68,SELUDerivative) ,\
-        (70,Reverse) ,\
-        (71,Pooling2D) ,\
-        (72,MatchCondition) ,\
-        (73,ClipByValue) ,\
-        (74,Swish) ,\
-        (75,SwishDerivative) ,\
-        (76,RSqrt), \
-        (77,Log1p), \
-        (78,Erf), \
-        (79,IsInf), \
-        (80,IsNan), \
-        (81,IsFinite), \
-        (82,ACosh), \
-        (83,ACoshDerivative) ,\
-        (84,ASinh), \
-        (85,ASinhDerivative) ,\
-        (86,SinhDerivative), \
-        (87,Rint), \
-        (88,LogSigmoid), \
-        (89,LogSigmoidDerivative) ,\
-        (90,Erfc) ,\
-        (91,Expm1), \
-        (93,ATanh), \
-        (94,Reciprocal), \
-        (95,Square), \
-        (96,RELU6)
+#define TRANSFORM_STRICT_OPS \
+        (0,SoftMax), \
+        (1,SoftMaxDerivative), \
+        (2,LogSoftMax) ,\
+        (3,ELUDerivative), \
+        (4,TanhDerivative), \
+        (5,HardTanhDerivative), \
+        (6,SigmoidDerivative), \
+        (7,SoftSignDerivative), \
+        (8,TanDerivative) ,\
+        (9,SELUDerivative) ,\
+        (10,HardSigmoidDerivative) ,\
+        (11,RationalTanhDerivative) ,\
+        (12,RectifiedTanhDerivative) ,\
+        (13,SwishDerivative) ,\
+        (14,ACoshDerivative) ,\
+        (15,ASinhDerivative) ,\
+        (16,SinhDerivative), \
+        (17,LogSigmoidDerivative) ,\
+        (18,SpecialDerivative)
+
+// these ops return one of FLOAT data types
+#define TRANSFORM_FLOAT_OPS \
+        (0,Cosine), \
+        (1,Exp), \
+        (2,Log), \
+        (3,SetRange), \
+        (4,Sigmoid), \
+        (5,Sin), \
+        (6,SoftPlus), \
+        (7,Sqrt), \
+        (8,Tanh), \
+        (9,ACos), \
+        (10,ASin), \
+        (11,ATan), \
+        (12,HardTanh), \
+        (13,SoftSign), \
+        (14,ELU), \
+        (15,Histogram), \
+        (16,HardSigmoid), \
+        (17,RationalTanh) ,\
+        (18,RectifiedTanh) ,\
+        (19,Sinh) ,\
+        (20,Cosh) ,\
+        (21,Tan) ,\
+        (22,SELU) ,\
+        (23,Pooling2D) ,\
+        (24,Swish) ,\
+        (25,RSqrt), \
+        (26,Log1p), \
+        (27,Erf), \
+        (28,ACosh), \
+        (29,ASinh), \
+        (30,Rint), \
+        (31,LogSigmoid), \
+        (32,Erfc) ,\
+        (33,Expm1), \
+        (34,ATanh)
 
 
 
@@ -206,7 +208,12 @@
         (34, PowDerivative) ,\
         (35, CompareAndSet) ,\
         (36, SXELogitsSmoother), \
-        (37, LstmClip)
+        (37, LeakyRELU), \
+        (38, LeakyRELUDerivative), \
+        (39, ReplaceNans) ,\
+        (40, LogX) ,\
+        (41, LstmClip)
+
 
 
 
@@ -222,39 +229,46 @@
         (6, JaccardDistance) ,\
         (7, SimpleHammingDistance)
 
+#define REDUCE_LONG_OPS \
+        (0, CountNonZero), \
+        (1, CountZero), \
+        (2, MatchCondition)
+
+#define REDUCE_BOOL_OPS \
+        (0, Any) ,\
+        (1, All), \
+        (2, IsFinite), \
+        (3, IsInfOrNan), \
+        (4, IsNan), \
+        (5, IsInf)
+
+#define REDUCE_SAME_OPS \
+        (0, Sum), \
+        (1, Max), \
+        (2, Min), \
+        (3, Prod), \
+        (4, ASum), \
+        (5, AMax) ,\
+        (6, AMin)
 
 
-#define REDUCE_OPS \
+
+#define REDUCE_FLOAT_OPS \
         (0, Mean), \
-        (1, Sum), \
-        (3, Max), \
-        (4, Min), \
-        (5, Norm1), \
-        (6, Norm2), \
-        (7, NormMax), \
-        (8, Prod), \
-        (9, StandardDeviation), \
-        (10, Variance), \
-        (11, ASum), \
-        (12, MatchCondition) ,\
-        (13, AMax) ,\
-        (14, AMin) ,\
-        (15, AMean) ,\
-        (16, Entropy) ,\
-        (17, LogEntropy) ,\
-        (18, ShannonEntropy) ,\
-        (19, LogSumExp) ,\
-        (20, Any) ,\
-        (21, All), \
-        (22, CountNonZero), \
-        (23, NormFrobenius), \
-        (24, NormP), \
-        (25, SquaredNorm), \
-        (26, CountZero), \
-        (27, IsFinite), \
-        (28, IsInfOrNan), \
-        (29, IsNan), \
-        (30, IsInf)
+        (1, Norm1), \
+        (2, Norm2), \
+        (3, NormMax), \
+        (4, StandardDeviation), \
+        (5, Variance), \
+        (7, AMean) ,\
+        (8, Entropy) ,\
+        (9, LogEntropy) ,\
+        (10, ShannonEntropy) ,\
+        (11, LogSumExp) ,\
+        (13, NormFrobenius), \
+        (14, NormP), \
+        (15, SquaredNorm)
+
 
 
 
@@ -294,7 +308,7 @@
         (13,MaxPairwise),\
         (14,MinPairwise),\
         (15,NotEqualTo),\
-        (16,Copy2),\
+        (16,Copy2) ,\
         (17,Axpy),\
         (18,ReverseDivide),\
         (45,CompareAndSet),\
@@ -319,22 +333,6 @@
         (30, LogicalXor) ,\
         (31, LogicalNot) ,\
         (32, LogicalAnd) ,\
-        (33, RELUDerivativeE) ,\
-        (34, CUBEDerivativeE) ,\
-        (35, ELUDerivativeE) ,\
-        (36, HardSigmoidDerivativeE) ,\
-        (37, HardTanhDerivativeE) ,\
-        (38, LRELUDerivativeE) ,\
-        (39, RationalTanhDerivativeE) ,\
-        (40, RectifiedTanhDerivativeE) ,\
-        (41, RELU6DerivativeE) ,\
-        (42, SELUDerivativeE) ,\
-        (43, SigmoidDerivativeE) ,\
-        (44, SoftplusDerivativeE) ,\
-        (47, SoftsignDerivativeE) ,\
-        (48, TanhDerivativeE) ,\
-        (49, SXELossWithLogits) ,\
-        (50, ReduceNorm1E) ,\
         (92, PowDerivative), \
         (93, LogPoisonLoss), \
         (94, LogPoisonLossFull)

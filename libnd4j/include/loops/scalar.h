@@ -48,7 +48,7 @@ namespace functions {
  * Apply a scalar
  *  operation to an array
  */
-        template<typename X, typename Y>
+        template<typename X, typename Y, typename Z>
         class ScalarTransform {
 
         public:

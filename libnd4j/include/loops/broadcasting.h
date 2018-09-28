@@ -52,7 +52,7 @@ namespace functions {
  * for broadcasting a smaller tensor
  * along long a bigger one.
  */
-        template<typename X, typename Y>
+        template<typename X, typename Y, typename Z>
         class Broadcast {
         public:
 
@@ -74,7 +74,7 @@ namespace functions {
 
 #endif
 
-            static void exec(const int opNum,
+            static void exec(int opNum,
                              void *x,
                              Nd4jLong *xShapeInfo,
                              void *y,

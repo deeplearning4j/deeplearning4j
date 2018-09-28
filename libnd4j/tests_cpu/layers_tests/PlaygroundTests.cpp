@@ -251,7 +251,7 @@ TEST_F(PlaygroundTests, ScalarTest_2) {
 
 #pragma omp simd
         for (int i = 0; i < source.lengthOf(); i++) {
-            array[i] = simdOps::Add<float, float>::op(array[i], 2.0f);
+            array[i] = simdOps::Add<float, float, float>::op(array[i], 2.0f);
         }
 
         cnt++;

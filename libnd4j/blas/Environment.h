@@ -25,6 +25,7 @@
 #include <dll.h>
 #include <helpers/StringUtils.h>
 #include <stdexcept>
+#include <array/DataType.h>
 
 namespace nd4j{
     class ND4J_EXPORT Environment {
@@ -35,6 +36,7 @@ namespace nd4j{
         std::atomic<bool> _debug;
         std::atomic<bool> _profile;
         std::atomic<int> _maxThreads;
+        std::atomic<nd4j::DataType> _dataType;
 
         static Environment* _instance;
 
@@ -59,6 +61,9 @@ namespace nd4j{
 
         int maxThreads();
         void setMaxThreads(int max);
+
+        nd4j::DataType defaultFloatDataType();
+        void setDefaultFloatDataType(nd4j::DataType dtype);
     };
 }
 

@@ -20,7 +20,7 @@
 
 #include <op_boilerplate.h>
 #include <types/types.h>
-#include <loops/transform.h>
+#include <loops/transform_float.h>
 #include <loops/legacy_ops.h>
 
 using namespace simdOps;
@@ -28,19 +28,19 @@ using namespace simdOps;
 namespace functions {
     namespace transform {
 
-        template <typename X>
-        void Transform<X>::exec(int opNum,
+        template <typename X, typename Y>
+        void TransformFloat<X, Y>::exec(int opNum,
                 void *dx,
                 Nd4jLong xStride,
                 void *result,
                 Nd4jLong resultStride,
                 void *extraParams,
                 const Nd4jLong n) {
-            DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_OPS);
+            DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_FLOAT_OPS);
 		}
 
-        template <typename X>
-        void Transform<X>::exec(
+        template <typename X, typename Y>
+        void TransformFloat<X, Y>::exec(
 				int opNum,
 				void *dx,
 				Nd4jLong *xShapeInfo,
@@ -49,12 +49,12 @@ namespace functions {
 				void *extraParams,
 				Nd4jLong *tadShapeInfo,
 				Nd4jLong *tadOffsets) {
-                    DISPATCH_BY_OPNUM_T(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
+                    DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
 		}
 
-        template <typename X>
+        template <typename X, typename Z>
         template<typename OpType>
-		void _CUDA_H Transform<X>::exec(
+		void _CUDA_H TransformFloat<X, Z>::exec(
                     void *vx,
                     Nd4jLong *xShapeInfo,
                     void *vresult,
@@ -64,11 +64,11 @@ namespace functions {
                     Nd4jLong *tadOffsets) {
 
 		        auto dx = reinterpret_cast<X *>(vx);
-		        auto result = reinterpret_cast<X *>(vresult);
-		        auto extraParams = reinterpret_cast<X *>(vextraParams);
+		        auto result = reinterpret_cast<Z *>(vresult);
+		        auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
                 if(OpType::requiresSpecial) {
-                    OpType::execSpecial(dx, xShapeInfo, result,resultShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+                    OpType::execSpecial(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets);
                     return;
                 }
 
@@ -89,7 +89,7 @@ namespace functions {
                     auto xStride = shape::stride(xShapeInfo);
                     auto resultStride = shape::stride(resultShapeInfo);
                     int rank = shape::rank(xShapeInfo);
-                    if(PrepareTwoRawArrayIter<X>(rank,
+                    if(PrepareTwoRawArrayIter<X, Z>(rank,
                                                  xShape,
                                                  dx,
                                                  xStride,
@@ -121,17 +121,17 @@ namespace functions {
             }
         }
 
-        template <typename X>
+        template <typename X, typename Z>
         template <typename OpType>
-		void _CUDA_H Transform<X>::exec(void *vx,
+		void _CUDA_H TransformFloat<X, Z>::exec(void *vx,
                              Nd4jLong xStride,
                              void *vresult,
                              Nd4jLong resultStride,
                              void *vextraParams,
                              const Nd4jLong n) {
                 auto dx = reinterpret_cast<X *>(vx);
-                auto result = reinterpret_cast<X *>(vresult);
-                auto extraParams = reinterpret_cast<X *>(vextraParams);
+                auto result = reinterpret_cast<Z *>(vresult);
+                auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
                 int elementsPerThread = n / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
@@ -172,16 +172,6 @@ namespace functions {
             }
         }
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT Transform, , FLOAT_TYPES);
-
-        /*
-        BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<double>::exec, double, (double*, Nd4jLong*, double*, Nd4jLong*, double*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
-
-        BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong, float*, Nd4jLong, float*, const Nd4jLong), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, Nd4jLong, float16*, Nd4jLong, float16*, const Nd4jLong), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<double>::exec, double, (double*, Nd4jLong, double*, Nd4jLong, double*, const Nd4jLong), TRANSFORM_OPS)
-         */
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformFloat, , LIBND4J_TYPES, FLOAT_TYPES);
     }
 }

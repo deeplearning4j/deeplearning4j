@@ -19,7 +19,7 @@
 //
 
 #include <op_boilerplate.h>
-#include <loops/reduce.h>
+#include <loops/reduce_float.h>
 #include <loops/legacy_ops.h>
 #include <helpers/DebugHelper.h>
 
