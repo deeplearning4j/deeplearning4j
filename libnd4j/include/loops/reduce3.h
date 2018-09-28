@@ -35,6 +35,7 @@
 #include <pairwise_util.h>
 #include <dll.h>
 #include <helpers/shape.h>
+#include <helpers/TAD.h>
 #include <ops/ops.h>
 #include <op_boilerplate.h>
 
@@ -984,9 +985,9 @@ template<typename OpType>
 
                         auto ri = (r * yTads) + g;
 
-                        X *localExtraParams = nullptr;
+                        Y *localExtraParams = nullptr;
                         if (OpType::extraParamsLen > 0)
-                            localExtraParams = new X[OpType::extraParamsLen];
+                            localExtraParams = new Y[OpType::extraParamsLen];
                         for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) {
                             localExtraParams[extraParamsIdx] = startingVal;
                         }
@@ -1037,7 +1038,7 @@ template<typename OpType>
                 auto x = reinterpret_cast<X *>(vx);
                 auto y = reinterpret_cast<X *>(vy);
                 auto result = reinterpret_cast<Y *>(vresult);
-                auto extraParams = reinterpret_cast<X *>(vextraParams);
+                auto extraParams = reinterpret_cast<Y *>(vextraParams);
 
 /*
                 nd4j_printf("Xp: [%p]; Yp: [%p]; Zp: [%p];\n", (void *) x, (void *) y, (void *) result);
@@ -1084,9 +1085,9 @@ template<typename OpType>
                 for (Nd4jLong r = 0; r < tads; r++) {
                     Nd4jLong offset = tadOffsets[r];
 
-                    X *localExtraParams = nullptr;
+                    Y *localExtraParams = nullptr;
                     if (OpType::extraParamsLen > 0)
-                        localExtraParams = new X[OpType::extraParamsLen];
+                        localExtraParams = new Y[OpType::extraParamsLen];
                     for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) {
                         localExtraParams[extraParamsIdx] = startingVal;
                     }
@@ -1128,7 +1129,7 @@ template<typename OpType>
                 auto x = reinterpret_cast<X *>(vx);
                 auto y = reinterpret_cast<X *>(vy);
                 auto result = reinterpret_cast<Y *>(vresult);
-                auto extraParams = reinterpret_cast<X *>(vextraParams);
+                auto extraParams = reinterpret_cast<Y *>(vextraParams);
 
 /*
                 nd4j_printf("Xp: [%p]; Yp: [%p]; Zp: [%p];\n", (void *) x, (void *) y, (void *) result);
@@ -1148,7 +1149,7 @@ template<typename OpType>
                 nd4j_printf("dimLength: %i\n", dimensionLength);
 */
 
-                X extraParamsVals[3] = {(X) 0.0, (X) 0.0, (X) 0.0};
+                Y extraParamsVals[3] = {(X) 0.0, (X) 0.0, (X) 0.0};
 
 
                 if(shape::isScalar(resultShapeInfoBuffer)) {
@@ -1277,9 +1278,9 @@ template<typename OpType>
                         if(shape::length(xShapeInfo) == shape::length(yShapeInfo)) {
                             //#pragma omp parallel for proc_bind(AFFINITY) default(shared)
                             for (Nd4jLong i = 0; i < resultLength; i++) {
-                                X *localExtraParams = nullptr;
+                                Y *localExtraParams = nullptr;
                                 if (OpType::extraParamsLen > 0)
-                                    localExtraParams = new X[OpType::extraParamsLen];
+                                    localExtraParams = new Y[OpType::extraParamsLen];
                                 for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) {
                                     localExtraParams[extraParamsIdx] = startingVal;
                                 }
