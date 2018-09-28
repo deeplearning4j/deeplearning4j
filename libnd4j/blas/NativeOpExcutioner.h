@@ -167,6 +167,17 @@ public:
                                 Nd4jLong *tadShapeInfo,
                                 Nd4jLong *tadOffsets);
 
+    static void execReduceLong(int opNum,
+                               void *x,
+                               Nd4jLong *xShapeInfo,
+                               void *extraParams,
+                               void *result,
+                               Nd4jLong *resultShapeInfo,
+                               int *dimension,
+                               int dimensionLength,
+                               Nd4jLong *tadShapeInfo,
+                               Nd4jLong *tadOffsets);
+
     /**
      *
      * @param opNum
@@ -195,6 +206,13 @@ public:
                                       void *extraParams,
                                       void *z,
                                       Nd4jLong *zShapeInfo);
+
+    static void execReduceLongScalar(int opNum,
+                                     void *x,
+                                     Nd4jLong *xShapeInfo,
+                                     void *extraParams,
+                                     void *z,
+                                     Nd4jLong *zShapeInfo);
 
     /**
      *

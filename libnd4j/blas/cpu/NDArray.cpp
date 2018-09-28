@@ -1040,7 +1040,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
-        ArrayOptions::setDataType(newShape, this->dataType());
+        ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
         auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
@@ -1058,6 +1058,75 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         return result;
     }
 
+    NDArray* NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+
+        std::vector<int> copy(dimensions);
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        ArrayOptions::setDataType(newShape, this->dataType());
+        auto result = new NDArray(newShape, _workspace);
+        RELEASE(newShape, _workspace);
+
+        if(rankOf() == copy.size() || copy.empty())
+            //result->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
+            NativeOpExcutioner::execReduceSameScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, result->buffer(), result->shapeInfo());
+        else {
+            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+
+            NativeOpExcutioner::execReduceSame(op, this->getBuffer(), this->getShapeInfo(), nullptr, result->getBuffer(), result->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+        }
+
+        return result;
+    }
+
+    NDArray* NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+
+        std::vector<int> copy(dimensions);
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        ArrayOptions::setDataType(newShape, nd4j::DataType::BOOL);
+        auto result = new NDArray(newShape, _workspace);
+        RELEASE(newShape, _workspace);
+
+        if(rankOf() == copy.size() || copy.empty())
+            //result->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
+            NativeOpExcutioner::execReduceBoolScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, result->buffer(), result->shapeInfo());
+        else {
+            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+
+            NativeOpExcutioner::execReduceBool(op, this->getBuffer(), this->getShapeInfo(), nullptr, result->getBuffer(), result->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+        }
+
+        return result;
+    }
+
+    NDArray* NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+
+        std::vector<int> copy(dimensions);
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
+        auto result = new NDArray(newShape, _workspace);
+        RELEASE(newShape, _workspace);
+
+        if(rankOf() == copy.size() || copy.empty())
+            //result->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
+            NativeOpExcutioner::execReduceLongScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, result->buffer(), result->shapeInfo());
+        else {
+            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+
+            NativeOpExcutioner::execReduceLong(op, this->getBuffer(), this->getShapeInfo(), nullptr, result->getBuffer(), result->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+        }
+
+        return result;
+    }
+
 //////////////////////////////////////////////////////////////////////////
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector
     NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
@@ -1065,7 +1134,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
-        ArrayOptions::setDataType(newShape, this->dataType());
+        ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
         NDArray result(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
@@ -1078,11 +1147,75 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             tad.createOffsets();
 
             NativeOpExcutioner::execReduceFloat(op, this->getBuffer(), this->getShapeInfo(), nullptr, result.getBuffer(), result.getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
-            /*
-            functions::reduce::ReduceFloatFunction<T>::template exec<OpName>(_buffer, _shapeInfo, nullptr, result._buffer,
-                                                                        result._shapeInfo, copy.data(), copy.size(),
-                                                                        tad.tadOnlyShapeInfo, tad.tadOffsets);
-                                                                        */
+        }
+
+        return result;
+    }
+
+    NDArray NDArray::reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+
+        std::vector<int> copy(dimensions);
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        ArrayOptions::setDataType(newShape, this->dataType());
+        NDArray result(newShape, _workspace);
+        RELEASE(newShape, _workspace);
+
+        if(rankOf() == copy.size() || copy.empty())
+            //result._buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
+            NativeOpExcutioner::execReduceSameScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, result.buffer(), result.shapeInfo());
+        else {
+            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+
+            NativeOpExcutioner::execReduceSame(op, this->getBuffer(), this->getShapeInfo(), nullptr, result.getBuffer(), result.getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+        }
+
+        return result;
+    }
+
+    NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+
+        std::vector<int> copy(dimensions);
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        ArrayOptions::setDataType(newShape, nd4j::DataType::BOOL);
+        NDArray result(newShape, _workspace);
+        RELEASE(newShape, _workspace);
+
+        if(rankOf() == copy.size() || copy.empty())
+            //result._buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
+            NativeOpExcutioner::execReduceBoolScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, result.buffer(), result.shapeInfo());
+        else {
+            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+
+            NativeOpExcutioner::execReduceBool(op, this->getBuffer(), this->getShapeInfo(), nullptr, result.getBuffer(), result.getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+        }
+
+        return result;
+    }
+
+    NDArray NDArray::reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+
+        std::vector<int> copy(dimensions);
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
+        NDArray result(newShape, _workspace);
+        RELEASE(newShape, _workspace);
+
+        if(rankOf() == copy.size() || copy.empty())
+            //result._buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
+            NativeOpExcutioner::execReduceLongScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, result.buffer(), result.shapeInfo());
+        else {
+            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+
+            NativeOpExcutioner::execReduceLong(op, this->getBuffer(), this->getShapeInfo(), nullptr, result.getBuffer(), result.getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
         }
 
         return result;
@@ -1091,6 +1224,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
     void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, void *extras) const {
+
+        if (target == nullptr || !target->isR())
+            throw std::runtime_error("FloatReduce requires output array to be present and have dtype of real");
+
 
         std::vector<int> copy(dimensions);
 
@@ -1110,11 +1247,84 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             tad.createOffsets();
 
             NativeOpExcutioner::execReduceFloat(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
-            /*
-            functions::reduce::ReduceFloatFunction<T>::template exec<OpName>(_buffer, _shapeInfo, extras, target->_buffer,
-                                                                        target->_shapeInfo, copy.data(), copy.size(),
-                                                                        tad.tadOnlyShapeInfo, tad.tadOffsets);
-            */
+        }
+    }
+
+    void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, void *extras) const {
+
+        if (target == nullptr || !target->isB())
+            throw std::runtime_error("BoolReduce requires output array to be present and have dtype of bool");
+
+        std::vector<int> copy(dimensions);
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        if(!shape::shapeEquals(newShape, target->getShapeInfo())) {
+            nd4j_printf("NDArray::reduceAlongDimension method: wrong target shape!\n", "");
+            throw std::runtime_error("NDArray::reduceAlongDimension method: wrong target shape!");
+        }
+        RELEASE(newShape, _workspace);
+
+        if(rankOf() == copy.size() || copy.empty())
+            //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
+            NativeOpExcutioner::execReduceBoolScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->buffer(), target->shapeInfo());
+        else {
+            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+
+            NativeOpExcutioner::execReduceBool(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+        }
+    }
+
+    void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, void *extras) const {
+
+        if (target == nullptr || target->dataType() != this->dataType())
+            throw std::runtime_error("SameReduce requires output array to be present and have same dtype as input");
+
+        std::vector<int> copy(dimensions);
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        if(!shape::shapeEquals(newShape, target->getShapeInfo())) {
+            nd4j_printf("NDArray::reduceAlongDimension method: wrong target shape!\n", "");
+            throw std::runtime_error("NDArray::reduceAlongDimension method: wrong target shape!");
+        }
+        RELEASE(newShape, _workspace);
+
+        if(rankOf() == copy.size() || copy.empty())
+            //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
+            NativeOpExcutioner::execReduceSameScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->buffer(), target->shapeInfo());
+        else {
+            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+
+            NativeOpExcutioner::execReduceSame(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+        }
+    }
+
+    void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, void *extras) const {
+
+        if (target == nullptr || target->dataType() != nd4j::DataType::INT64)
+            throw std::runtime_error("SameReduce requires output array to be present and have dtype of INT64");
+
+        std::vector<int> copy(dimensions);
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        if(!shape::shapeEquals(newShape, target->getShapeInfo())) {
+            nd4j_printf("NDArray::reduceAlongDimension method: wrong target shape!\n", "");
+            throw std::runtime_error("NDArray::reduceAlongDimension method: wrong target shape!");
+        }
+        RELEASE(newShape, _workspace);
+
+        if(rankOf() == copy.size() || copy.empty())
+            //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
+            NativeOpExcutioner::execReduceLongScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->buffer(), target->shapeInfo());
+        else {
+            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+
+            NativeOpExcutioner::execReduceLong(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
         }
     }
 
@@ -1123,15 +1333,52 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
 	}
 
+    NDArray *NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+        return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
+    }
+
+    NDArray *NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+        return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
+    }
+
+    NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+        return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
+    }
+
 
 //
     NDArray NDArray::reduceNumber(nd4j::reduce::FloatOps op, void *extraParams) const {
-        auto shape = ShapeBuilders::createScalarShapeInfo(this->dataType(), this->_workspace);
+        auto shape = ShapeBuilders::createScalarShapeInfo(Environment::getInstance()->defaultFloatDataType(), this->_workspace);
         NDArray result(shape, this->_workspace);
 
         NativeOpExcutioner::execReduceFloatScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
         return result;
     }
+
+    NDArray NDArray::reduceNumber(nd4j::reduce::SameOps op, void *extraParams) const {
+        auto shape = ShapeBuilders::createScalarShapeInfo(this->dataType(), this->_workspace);
+        NDArray result(shape, this->_workspace);
+
+        NativeOpExcutioner::execReduceSameScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
+        return result;
+    }
+
+    NDArray NDArray::reduceNumber(nd4j::reduce::BoolOps op, void *extraParams) const {
+        auto shape = ShapeBuilders::createScalarShapeInfo(DataType::BOOL, this->_workspace);
+        NDArray result(shape, this->_workspace);
+
+        NativeOpExcutioner::execReduceBoolScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
+        return result;
+    }
+
+    NDArray NDArray::reduceNumber(nd4j::reduce::LongOps op, void *extraParams) const {
+        auto shape = ShapeBuilders::createScalarShapeInfo(DataType::INT64, this->_workspace);
+        NDArray result(shape, this->_workspace);
+
+        NativeOpExcutioner::execReduceLongScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
+        return result;
+    }
+
 
     NDArray NDArray::indexReduceNumber(nd4j::indexreduce::Ops op, void *extraParams) {
         auto res = NDArrayFactory::create<Nd4jLong>(0);
