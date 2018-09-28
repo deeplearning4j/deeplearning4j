@@ -23,6 +23,7 @@
 #include <loops/transform_float.h>
 #include <loops/transform_bool.h>
 #include <loops/transform_same.h>
+#include <loops/transform_strict.h>
 
 #include <loops/reduce_float.h>
 #include <loops/reduce_same.h>
@@ -368,6 +369,13 @@ void NativeOpExcutioner::execTransformSame(int opNum, void *dx, Nd4jLong *xShape
     auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+}
+
+void NativeOpExcutioner::execTransformStrict(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

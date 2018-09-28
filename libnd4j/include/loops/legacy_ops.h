@@ -88,10 +88,8 @@
         (19,ClipByValue) ,\
         (20,Stabilize), \
         (21,StabilizeFP16) ,\
-        (22,Reverse) ,\
-        (23,SoftMax), \
-        (24,SoftMaxDerivative), \
-        (25,LogSoftMax)
+        (22,Reverse)
+
 
 // these ops return bool
 #define TRANSFORM_BOOL_OPS \
@@ -102,6 +100,27 @@
         (4,IsFinite), \
         (5,IsInfOrNan), \
         (6,MatchConditionBool)
+
+#define TRANSFORM_STRICT_OPS \
+        (0,SoftMax), \
+        (1,SoftMaxDerivative), \
+        (2,LogSoftMax) ,\
+        (3,ELUDerivative), \
+        (4,TanhDerivative), \
+        (5,HardTanhDerivative), \
+        (6,SigmoidDerivative), \
+        (7,SoftSignDerivative), \
+        (8,TanDerivative) ,\
+        (9,SELUDerivative) ,\
+        (10,HardSigmoidDerivative) ,\
+        (11,RationalTanhDerivative) ,\
+        (12,RectifiedTanhDerivative) ,\
+        (13,SwishDerivative) ,\
+        (14,ACoshDerivative) ,\
+        (15,ASinhDerivative) ,\
+        (16,SinhDerivative), \
+        (17,LogSigmoidDerivative) ,\
+        (18,SpecialDerivative)
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \
@@ -120,42 +139,26 @@
         (12,HardTanh), \
         (13,SoftSign), \
         (14,ELU), \
-        (15,ELUDerivative), \
-        (16,TanhDerivative), \
-        (17,HardTanhDerivative), \
-        (18,SigmoidDerivative), \
-        (19,SoftSignDerivative), \
-        (20,SpecialDerivative), \
-        (21,Histogram), \
-        (22,HardSigmoid), \
-        (23,HardSigmoidDerivative) ,\
-        (24,RationalTanh) ,\
-        (25,RationalTanhDerivative) ,\
-        (26,RectifiedTanh) ,\
-        (27,RectifiedTanhDerivative) ,\
-        (28,Sinh) ,\
-        (29,Cosh) ,\
-        (30,Tan) ,\
-        (31,TanDerivative) ,\
-        (32,SELU) ,\
-        (33,SELUDerivative) ,\
-        (34,Pooling2D) ,\
-        (35,Swish) ,\
-        (36,SwishDerivative) ,\
-        (37,RSqrt), \
-        (38,Log1p), \
-        (39,Erf), \
-        (40,ACosh), \
-        (41,ACoshDerivative) ,\
-        (42,ASinh), \
-        (43,ASinhDerivative) ,\
-        (44,SinhDerivative), \
-        (45,Rint), \
-        (46,LogSigmoid), \
-        (47,LogSigmoidDerivative) ,\
-        (48,Erfc) ,\
-        (49,Expm1), \
-        (50,ATanh)
+        (15,Histogram), \
+        (16,HardSigmoid), \
+        (17,RationalTanh) ,\
+        (18,RectifiedTanh) ,\
+        (19,Sinh) ,\
+        (20,Cosh) ,\
+        (21,Tan) ,\
+        (22,SELU) ,\
+        (23,Pooling2D) ,\
+        (24,Swish) ,\
+        (25,RSqrt), \
+        (26,Log1p), \
+        (27,Erf), \
+        (28,ACosh), \
+        (29,ASinh), \
+        (30,Rint), \
+        (31,LogSigmoid), \
+        (32,Erfc) ,\
+        (33,Expm1), \
+        (34,ATanh)
 
 
 

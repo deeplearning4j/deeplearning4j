@@ -427,6 +427,15 @@ public:
                               Nd4jLong *tadShapeInfo,
                               Nd4jLong *tadOffsets);
 
+    static void execTransformStrict(int opNum,
+                                  void *dx,
+                                  Nd4jLong *xShapeInfo,
+                                  void *result,
+                                  Nd4jLong *resultShapeInfo,
+                                  void *extraParams,
+                                  Nd4jLong *tadShapeInfo,
+                                  Nd4jLong *tadOffsets);
+
     static void execTransformBool(int opNum,
                               void *dx,
                               Nd4jLong *xShapeInfo,
