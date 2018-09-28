@@ -1885,7 +1885,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 //#pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] -= max;
-						result[i * elementWiseStride] = nd4j::math::nd4j_exp<X, Z>(result[i * elementWiseStride]);
+						result[i * elementWiseStride] = nd4j::math::nd4j_exp<X, X>(result[i * elementWiseStride]);
 						sum += result[i * elementWiseStride];
 					}
 
