@@ -133,12 +133,9 @@ DECLARE_SHAPE_FN(dynamic_rnn) {
     hShapeInfo[2]     = timeMajor ? bS : time;
     hPrevShapeInfo[1] = bS;
     hShapeInfo[3]     = hPrevShapeInfo[2] = numUnits;
-    ArrayOptions::copyDataType(hShapeInfo, xShapeInfo);
-    ArrayOptions::copyDataType(hPrevShapeInfo, xShapeInfo);
 
-
-    shape::updateStrides(hShapeInfo,     shape::order(xShapeInfo));    
-    shape::updateStrides(hPrevShapeInfo, shape::order(xShapeInfo));
+    ShapeUtils::updateStirdesAndType(hShapeInfo, xShapeInfo, shape::order(xShapeInfo));
+    ShapeUtils::updateStirdesAndType(hPrevShapeInfo, xShapeInfo, shape::order(xShapeInfo));
          
     return SHAPELIST(hShapeInfo, hPrevShapeInfo);
 }   

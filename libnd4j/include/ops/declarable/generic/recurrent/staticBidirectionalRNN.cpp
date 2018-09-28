@@ -185,14 +185,11 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
     hShapeInfo[3]     		 = numUnitsFW + numUnitsBW;
     hFWFinalPrevShapeInfo[2] = numUnitsFW;
     hBWFinalPrevShapeInfo[2] = numUnitsBW;
-    ArrayOptions::copyDataType(hShapeInfo, xShapeInfo);
-    ArrayOptions::copyDataType(hFWFinalPrevShapeInfo, xShapeInfo);
-    ArrayOptions::copyDataType(hBWFinalPrevShapeInfo, xShapeInfo);
 
-    shape::updateStrides(hShapeInfo,            shape::order(xShapeInfo));
-    shape::updateStrides(hFWFinalPrevShapeInfo, shape::order(xShapeInfo));
-    shape::updateStrides(hBWFinalPrevShapeInfo, shape::order(xShapeInfo));
-         
+    ShapeUtils::updateStirdesAndType(hShapeInfo, xShapeInfo, shape::order(xShapeInfo));
+    ShapeUtils::updateStirdesAndType(hFWFinalPrevShapeInfo, xShapeInfo, shape::order(xShapeInfo));
+    ShapeUtils::updateStirdesAndType(hBWFinalPrevShapeInfo, xShapeInfo, shape::order(xShapeInfo));
+             
     return SHAPELIST(hShapeInfo, hFWFinalPrevShapeInfo, hBWFinalPrevShapeInfo);
 }   
 

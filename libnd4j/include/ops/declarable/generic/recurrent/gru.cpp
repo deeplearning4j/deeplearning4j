@@ -102,9 +102,8 @@ DECLARE_SHAPE_FN(gru) {
     hShapeInfo[1] = time;
     hShapeInfo[2] = bS;
     hShapeInfo[3] = numUnits;
-    ArrayOptions::copyDataType(hShapeInfo, xShapeInfo);
-    
-    shape::updateStrides(hShapeInfo, shape::order(h0ShapeInfo));
+
+    ShapeUtils::updateStirdesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));    
          
     return SHAPELIST(hShapeInfo);
 }   
