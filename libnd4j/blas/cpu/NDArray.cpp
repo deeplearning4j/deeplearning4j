@@ -2540,7 +2540,7 @@ NDArray NDArray::transp() const {
     template <typename T>
     T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
         //return (*this)(i, j, k);
-        if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2])
+        if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
             throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
         auto xType = this->dataType();
@@ -2647,7 +2647,7 @@ NDArray NDArray::transp() const {
         //(*this)(i,j,k) = value;
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         auto xType = this->dataType();
-        Nd4jLong coords[3] = {i, j, k};
+        Nd4jLong coords[4] = {i, j, k, l};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
     }

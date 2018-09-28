@@ -37,7 +37,7 @@ namespace helpers {
         const int output_rows = output->sizeAt(1);
         const int output_cols = output->sizeAt(2);
 
-#pragma omp parallel for simd schedule(guided)
+//#pragma omp parallel for simd schedule(guided)
         for (int b = 0; b < batch; ++b) {
             for (int h_out = 0; h_out < output_rows; ++h_out) {
                 int h_beg = h_out * stride_rows - pad_top;
@@ -51,7 +51,7 @@ namespace helpers {
                                 for (int w = 0; w < filter_cols; ++w) {
                                     const int w_in = w_beg + w * rate_cols;
                                     if (w_in >= 0 && w_in < input_cols) {
-                                        const Y val = (*input).e<Y>(b, h_in, w_in, d) + (*weights).e<Y>(h, w, d);
+                                        const Y val = input->e<Y>(b, h_in, w_in, d) + weights->e<Y>(h, w, d);
                                         if (val > cur_val) {
                                             cur_val = val;
                                         }
