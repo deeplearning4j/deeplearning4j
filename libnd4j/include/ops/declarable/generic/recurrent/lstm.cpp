@@ -144,11 +144,9 @@ DECLARE_SHAPE_FN(lstm) {
     hShapeInfo[2] = cShapeInfo[2] = bS;
     hShapeInfo[3] = numProj;
     cShapeInfo[3] = numUnits;
-    ArrayOptions::copyDataType(hShapeInfo, xShapeInfo);
-    ArrayOptions::copyDataType(cShapeInfo, xShapeInfo);
-    
-    shape::updateStrides(hShapeInfo, shape::order(h0ShapeInfo));
-    shape::updateStrides(cShapeInfo, shape::order(c0ShapeInfo));
+
+    ShapeUtils::updateStirdesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));
+    ShapeUtils::updateStirdesAndType(cShapeInfo, xShapeInfo, shape::order(c0ShapeInfo));
          
     return SHAPELIST(hShapeInfo, cShapeInfo);
 }   

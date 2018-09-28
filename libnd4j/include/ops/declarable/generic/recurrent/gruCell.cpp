@@ -98,9 +98,9 @@ DECLARE_SHAPE_FN(gruCell) {
     hShapeInfo[0] = rank;
     hShapeInfo[1] = bS;
     hShapeInfo[2] = numUnits;
-    ArrayOptions::copyDataType(hShapeInfo, xShapeInfo);
+    
+    ShapeUtils::updateStirdesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));
 
-    shape::updateStrides(hShapeInfo, shape::order(h0ShapeInfo));
     return SHAPELIST(hShapeInfo);
 
 

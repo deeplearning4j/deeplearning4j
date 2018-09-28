@@ -148,6 +148,16 @@ namespace nd4j {
         *  method returns false if permut == {0,1,2,...permut.size()-1} - in that case permutation is unnecessary
         */
         FORCEINLINE static bool isPermutNecessary(const std::vector<int>& permut);
+
+        /**
+        *  calculates strides using "dest" shape and "order", also copies data type from "source" to "dest"         
+        */
+        static void updateStirdesAndType(Nd4jLong* dest, const Nd4jLong* source, const char order);
+
+        /**
+        *  calculates strides using "dest" shape and "order", also set "dtype" into "dest"         
+        */
+        static void updateStirdesAndType(Nd4jLong* dest, const DataType dtype, const char order);
     };
 
 
