@@ -383,31 +383,6 @@ namespace nd4j {
 			return value < 0 ? -value : value;
 		}
 
-		template<>
-        math_def inline float16 nd4j_rint<float16>(float16 value) {
-			return (float16) rintf((float) value);
-		}
-
-
-		template<>
-        math_def inline float nd4j_rint<float>(float value) {
-			return rintf(value);
-		}
-
-		template<>
-        math_def inline double nd4j_rint<double>(double value) {
-			return rint(value);
-		}
-
-		template<>
-        math_def inline int nd4j_rint<int>(int value) {
-			return value;
-		}
-
-		template<>
-		math_def inline Nd4jLong nd4j_rint<Nd4jLong>(Nd4jLong value) {
-			return value;
-		}
 
 		template<>
         math_def inline bool nd4j_isnan<float16>(float16 value) {
@@ -652,6 +627,20 @@ namespace nd4j {
                 return static_cast<Z>(coshf(val));
             } else {
                 return static_cast<Z>(coshf((float) val));
+            }
+        }
+
+        template <typename X, typename Z>
+        math_def inline Z nd4j_rint(X val) {
+            if (std::is_same<X, double>::value) {
+                return static_cast<Z>(rint(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(rintf(val));
+            } else if (std::is_same<X, float16>::value) {
+                return static_cast<Z>(rintf((float) val));
+            } else {
+                // all non-float types are just returned as is
+                return static_cast<Z>(val);
             }
         }
 
