@@ -600,6 +600,61 @@ namespace nd4j {
             }
 		}
 
+        template <typename X, typename Z>
+        math_def inline Z nd4j_round(X val) {
+            if (std::is_same<X, double>::value) {
+                return static_cast<Z>(round(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(roundf(val));
+            } else {
+                return static_cast<Z>(roundf((float) val));
+            }
+        }
+
+        template <typename X, typename Z>
+        math_def inline Z nd4j_cosh(X val) {
+            if (std::is_same<X, double>::value) {
+                return static_cast<Z>(cosh(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(coshf(val));
+            } else {
+                return static_cast<Z>(coshf((float) val));
+            }
+        }
+
+        template <typename X, typename Z>
+        math_def inline Z nd4j_sinh(X val) {
+            if (std::is_same<X, double>::value) {
+                return static_cast<Z>(sinh(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(sinhf(val));
+            } else {
+                return static_cast<Z>(sinhf((float) val));
+            }
+        }
+
+        template <typename X, typename Z>
+        math_def inline Z nd4j_acos(X val) {
+            if (std::is_same<X, double>::value) {
+                return static_cast<Z>(acos(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(acosf(val));
+            } else {
+                return static_cast<Z>(acosf((float) val));
+            }
+        }
+
+        template <typename X, typename Z>
+        math_def inline Z nd4j_acosh(X val) {
+            if (std::is_same<X, double>::value) {
+                return static_cast<Z>(acosh(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(acoshf(val));
+            } else {
+                return static_cast<Z>(acoshf((float) val));
+            }
+        }
+
 		template <typename X, typename Z>
         math_def inline Z nd4j_cos(X val) {
             if (std::is_same<X, float16>::value) {
@@ -699,18 +754,8 @@ namespace nd4j {
 			return nd4j_abs<T>(val1 - val2) / (nd4j_abs<T>(val1) + nd4j_abs<T>(val2));
         }
 
-		template<>
-        math_def inline float16 nd4j_round<float16>(float16 val) {
-			return (float16) roundf((float) val);
-		}
 
-
-		template<>
-        math_def inline float nd4j_round<float>(float val) {
-			return roundf(val);
-		}
-
-		template <typename X, typename Y, typename Z>
+        template <typename X, typename Y, typename Z>
 		math_def inline Z nd4j_remainder(X val, Y val2) {
 			if (std::is_same<X, double>::value || std::is_same<Y, double>::value) {
 				return static_cast<Z>(remainder(static_cast<double>(val), static_cast<double>(val2)));
@@ -758,68 +803,21 @@ namespace nd4j {
             return (float16) erfcf((float) num);
         }
 
-
-
-		template<>
-        math_def inline double nd4j_round<double>(double val) {
-			return round(val);
-		}
-
-		template<>
-        math_def inline int nd4j_round<int>(int val) {
-			return round((float) val);
-		}
-
-		template<>
-        math_def inline float16 nd4j_sin<float16>(float16 val) {
+		template <typename X, typename Z>
+        math_def inline Z nd4j_sin(X val) {
+            if (std::is_same<X, float16>::value) {
 #ifdef NATIVE_HALFS
-            return hsin(val.data);
+                return (Z) hsin(val.data);
 #else
-			return (float16) sinf((float) val);
+			    return (Z) sinf((float) val);
 #endif
-		}
-
-
-		template<>
-        math_def inline float nd4j_sin<float>(float val) {
-			return sinf(val);
-		}
-
-		template<>
-        math_def inline double nd4j_sin<double>(double val) {
-			return sin(val);
-		}
-
-		template<>
-        math_def inline int nd4j_sin<int>(int val) {
-			return sin((float) val);
-		}
-
-
-
-		template<>
-		math_def inline float16 nd4j_sinh<float16>(float16 val) {
-#ifdef NATIVE_HALFS
-			return hsin(val.data);
-#else
-			return (float16) sinh((float) val);
-#endif
-		}
-
-
-		template<>
-		math_def inline float nd4j_sinh<float>(float val) {
-			return sinhf(val);
-		}
-
-		template<>
-		math_def inline double nd4j_sinh<double>(double val) {
-			return sinh(val);
-		}
-
-		template<>
-		math_def inline int nd4j_sinh<int>(int val) {
-			return sinhf((float) val);
+            } else if (std::is_same<X, double>::value) {
+                return static_cast<Z>(sin(val));
+            } else if (std::is_same<X, float>::value) {
+                return static_cast<Z>(sinf(val));
+            } else {
+                return static_cast<Z>(sinf((float) val));
+            }
 		}
 
 
@@ -836,7 +834,7 @@ namespace nd4j {
             } else if (std::is_same<X, float>::value) {
                 return static_cast<Z>(sqrtf(val));
             } else {
-                return static_cast<Z>(sqrt((float) val));
+                return static_cast<Z>(sqrtf((float) val));
             }
         }
 
@@ -875,51 +873,6 @@ namespace nd4j {
         math_def inline int nd4j_tan<int>(int val) {
             return tanf((float) val);
         }
-
-
-        template<>
-        math_def inline float16 nd4j_acos<float16>(float16 val) {
-			return (float16) acosf((float) val);
-		}
-
-
-		template<>
-        math_def inline float nd4j_acos<float>(float val) {
-			return acosf(val);
-		}
-
-		template<>
-        math_def inline double nd4j_acos<double>(double val) {
-			return acos(val);
-		}
-
-		template<>
-        math_def inline int nd4j_acos<int>(int val) {
-			return acosf((float) val);
-		}
-
-
-		template<>
-		math_def inline float16 nd4j_acosh<float16>(float16 val) {
-			return (float16) acoshf((float) val);
-		}
-
-
-		template<>
-		math_def inline float nd4j_acosh<float>(float val) {
-			return acoshf(val);
-		}
-
-		template<>
-		math_def inline double nd4j_acosh<double>(double val) {
-			return acosh(val);
-		}
-
-		template<>
-		math_def inline int nd4j_acosh<int>(int val) {
-			return acoshf((float) val);
-		}
-
 
 		template<>
         math_def inline float16 nd4j_asin<float16>(float16 val) {
