@@ -2934,6 +2934,7 @@ NDArray NDArray::transp() const {
 
 
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
+        return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
 
@@ -2949,6 +2950,7 @@ NDArray NDArray::transp() const {
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         //return (*this)(i, j);
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
+        return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
 
@@ -2964,6 +2966,7 @@ NDArray NDArray::transp() const {
         Nd4jLong coords[3] = {i, j, k};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
+        return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
 
@@ -2978,6 +2981,8 @@ NDArray NDArray::transp() const {
         Nd4jLong coords[4] = {i, j, k, l};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
+
+        return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
 
@@ -3221,6 +3226,7 @@ NDArray NDArray::transp() const {
 
     NDArray* NDArray::asT(DataType dtype) {
         BUILD_SINGLE_SELECTOR(dtype, return asT, (), LIBND4J_TYPES);
+        return nullptr;
     }
 
     template <typename T>

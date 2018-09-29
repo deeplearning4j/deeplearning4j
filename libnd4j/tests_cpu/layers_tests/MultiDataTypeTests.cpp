@@ -33,6 +33,7 @@ public:
 
 TEST_F(MultiDataTypeTests, DataTypeUtils_Test_1) {
     auto dtype = DataTypeUtils::pickPairwiseResultType(nd4j::INT32, nd4j::FLOAT32);
+
     ASSERT_EQ(nd4j::FLOAT32, dtype);
 }
 

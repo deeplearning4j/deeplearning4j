@@ -134,7 +134,7 @@ namespace nd4j {
             }
         }
 
-
+        return typeX;
     }
 
 

@@ -510,7 +510,7 @@ public:
     inline static Nd4jLong encodeBitmap(void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
         auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
 
-        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::encodeBitmapGeneric(dx, xShapeInfo, N, dz, threshold), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, return nd4j::SpecialMethods, ::encodeBitmapGeneric(dx, xShapeInfo, N, dz, threshold), FLOAT_TYPES);
     }
 
     inline static void decodeBitmap(void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo) {
