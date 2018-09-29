@@ -3825,41 +3825,41 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class SummaryStatsVariance {
 	public:
 
         static _CUDA_HD inline X getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
 			if (biasCorrected) {
-				X ret = val.varianceBiasCorrected();
+				Z ret = static_cast<Z>(val.varianceBiasCorrected());
 				if (ret < static_cast<X>(0.0f))
-					return val.variance();
+					return static_cast<Z>(val.variance());
 				return ret;
 			}
 			return val.variance();
 		}
 
-        static _CUDA_HD inline functions::summarystats::SummaryStatsData<X> op(functions::summarystats::SummaryStatsData<X> d1, X *extraParams) {
+        static _CUDA_HD inline functions::summarystats::SummaryStatsData<X> op(functions::summarystats::SummaryStatsData<X> d1, Z *extraParams) {
 			return d1;
 		}
 	};
 
-	template <typename X>
+	template <typename X, typename Z>
 	class SummaryStatsStandardDeviation {
 	public:
 
         static _CUDA_HD inline X getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
 			if (biasCorrected) {
-				X ret = val.varianceBiasCorrected();
+				auto ret = val.varianceBiasCorrected();
 				if (ret < static_cast<X>(0.0f))
-					return nd4j::math::nd4j_sqrt<double, X>(val.variance());
+					return nd4j::math::nd4j_sqrt<double, Z>(val.variance());
 				else
-					return nd4j::math::nd4j_sqrt<X, X>(ret);
+					return nd4j::math::nd4j_sqrt<double, Z>(ret);
 			}
 			return  nd4j::math::nd4j_sqrt<double, X>(val.variance());
 		}
 
-        static _CUDA_HD inline functions::summarystats::SummaryStatsData<X> op(functions::summarystats::SummaryStatsData<X> d1, X *extraParams) {
+        static _CUDA_HD inline functions::summarystats::SummaryStatsData<X> op(functions::summarystats::SummaryStatsData<X> d1, Z *extraParams) {
 			return d1;
 		}
 	};

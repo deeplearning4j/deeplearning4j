@@ -300,8 +300,9 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
 */
 void NativeOpExcutioner::execSummaryStats(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, bool biasCorrected) {
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::summarystats::SummaryStatsReduce, ::exec(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfo, nullptr, 1), FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::exec(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfo, nullptr, 1), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -314,10 +315,11 @@ void NativeOpExcutioner::execSummaryStats(int opNum, void *x, Nd4jLong *xShapeIn
 * @param result
 * @param resultShapeInfo
 */
-double NativeOpExcutioner::execSummaryStatsScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, bool biasCorrected) {
+void NativeOpExcutioner::execSummaryStatsScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, bool biasCorrected) {
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, return functions::summarystats::SummaryStatsReduce, ::execScalar(opNum, biasCorrected, x, xShapeInfo, extraParams), FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, return functions::summarystats::SummaryStatsReduce, ::execScalar(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfo), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -334,8 +336,9 @@ double NativeOpExcutioner::execSummaryStatsScalar(int opNum, void *x, Nd4jLong *
 */
 void NativeOpExcutioner::execSummaryStats(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, bool biasCorrected) {
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfoBuffer);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::summarystats::SummaryStatsReduce, ::exec(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::exec(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 

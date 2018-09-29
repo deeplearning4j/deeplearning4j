@@ -1568,7 +1568,8 @@ TEST_F(NDArrayTest, TestStdDev4) {
     M2 /= total;
     
     y = M2;
-    auto std = array.varianceNumber(variance::SummaryStatsStandardDeviation, false).e<float>(0);
+    auto a = array.varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    auto std = a.e<float>(0);
 //    float bY = array.varianceNumber();
     float bY = 0.3333333f;
     // nd4j_printf("Variance is %f, res is %f, internal is %f\n, deviance is %f(%f)\n", std, x, bY, y, nd4j::math::nd4j_sqrt<double>(M2));

@@ -230,12 +230,12 @@ namespace functions {
         /**
          * Standard deviation or variance 1 pass
          */
-        template<typename X>
+        template<typename X, typename Z>
         class SummaryStatsReduce {
         public:
             //calculate an update of the reduce operation
             _CUDA_HD static SummaryStatsData<X> update(SummaryStatsData<X> x, SummaryStatsData<X> y,
-                                                              X* extraParams) {
+                                                              void* extraParams) {
                 if ((long) x.n == 0 && (long) y.n > 0)
                     return y;
                 else if ((long) x.n > 0 && (long) y.n == 0)
@@ -298,14 +298,22 @@ namespace functions {
             static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, bool biasCorrected);
 #endif
 
-            static X execScalar(const int opNum,
-                    const bool biasCorrected,
+            static Z execScalar(int opNum,
+                    bool biasCorrected,
                     void *x,
                     Nd4jLong *xShapeInfo,
                     void *extraParams);
 
-            static void exec(const int opNum,
-                    const bool biasCorrected,
+            static void execScalar(int opNum,
+                                bool biasCorrected,
+                                void *x,
+                                Nd4jLong *xShapeInfo,
+                                void *extraParams,
+                                void *result,
+                                Nd4jLong *resultShapeInfoBuffer);
+
+            static void exec(int opNum,
+                    bool biasCorrected,
                     void *x,
                     Nd4jLong *xShapeInfo,
                     void *extraParams,
@@ -314,14 +322,22 @@ namespace functions {
                     int *dimension, int dimensionLength);
 
             template<typename OpType>
-            static X execScalar(const bool biasCorrected,
+            static Z execScalar(bool biasCorrected,
                     void *x,
                     Nd4jLong *xShapeInfo,
                     void *extraParams);
 
+            template<typename OpType>
+            static void execScalar(bool biasCorrected,
+                                void *x,
+                                Nd4jLong *xShapeInfo,
+                                void *extraParams,
+                                void *result,
+                                Nd4jLong *resultShapeInfoBuffer);
+
 
             template<typename OpType>
-            static void exec(const bool biasCorrected,
+            static void exec(bool biasCorrected,
                     void *x,
                     Nd4jLong *xShapeInfo,
                     void *extraParams,

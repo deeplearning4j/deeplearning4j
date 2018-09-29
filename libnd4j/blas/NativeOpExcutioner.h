@@ -372,10 +372,12 @@ public:
     * @param result
     * @param resultShapeInfo
     */
-    static double execSummaryStatsScalar(int opNum,
+    static void execSummaryStatsScalar(int opNum,
                                     void *x,
                                     Nd4jLong *xShapeInfo,
                                     void *extraParams,
+                                    void *result,
+                                    Nd4jLong *resultShapeInfo,
                                     bool biasCorrected);
 
     /**

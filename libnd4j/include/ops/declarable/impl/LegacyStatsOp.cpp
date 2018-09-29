@@ -38,8 +38,7 @@ namespace nd4j {
 
             if (block.getIArguments()->size() == 1 || (block.getIArguments()->size() == 2 && INT_ARG(1) == MAX_INT)) {
                 // scalar
-                double t = NativeOpExcutioner::execSummaryStatsScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),  biasCorrected);
-                z->p(Nd4jLong(0), t);
+                NativeOpExcutioner::execSummaryStatsScalar(opNum, x->getBuffer(), x->getShapeInfo(), nullptr, z->getBuffer(), z->getShapeInfo(),  biasCorrected);
             } else {
                 // dimensions for TAD
                 // we should skip first argument here, because it's addressing bias correction

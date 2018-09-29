@@ -966,8 +966,8 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 }
 
     NDArray NDArray::varianceNumber(nd4j::variance::Ops op, bool biasCorrected) {
-        NDArray res(_dataType, _workspace);
-        NativeOpExcutioner::execSummaryStats(op,this->getBuffer(), this->getShapeInfo(), nullptr, res.buffer(), res.shapeInfo(), biasCorrected);
+        NDArray res(Environment::getInstance()->defaultFloatDataType(), _workspace);
+        NativeOpExcutioner::execSummaryStatsScalar(op,this->getBuffer(), this->getShapeInfo(), nullptr, res.buffer(), res.shapeInfo(), biasCorrected);
         return res;
     }
 
@@ -3321,7 +3321,7 @@ NDArray NDArray::transp() const {
         RELEASE(newShape, _workspace);        
         
         if(rankOf() == copy.size() || copy.empty())
-            reinterpret_cast<double *>(result->_buffer)[0] = NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, biasCorrected);
+            NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, result->buffer(), result->shapeInfo(), biasCorrected);
         else
             NativeOpExcutioner::execSummaryStats(op, _buffer, _shapeInfo, nullptr, result->_buffer, result->_shapeInfo, copy.data(), copy.size(), biasCorrected);
 
@@ -3339,7 +3339,7 @@ NDArray NDArray::transp() const {
             std::sort(copy.begin(), copy.end());
 
         if(rankOf() == copy.size() || copy.empty())
-            reinterpret_cast<double *>(target->_buffer)[0] = NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, biasCorrected);
+            NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, target->getBuffer(), target->getShapeInfo(), biasCorrected);
         else
             NativeOpExcutioner::execSummaryStats(op, _buffer, _shapeInfo, nullptr, target->_buffer, target->_shapeInfo, copy.data(), copy.size(), biasCorrected);
     }
