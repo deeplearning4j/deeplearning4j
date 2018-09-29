@@ -3299,6 +3299,7 @@ NDArray NDArray::transp() const {
         newShape[1] = 1;    // set first dimension (scalar)
         newShape[2] = 1;    // set second dimension (scalar)
         shape::updateStrides(newShape, 'c');
+        ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
         // create output array (scalar)
         auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
@@ -3314,6 +3315,17 @@ NDArray NDArray::transp() const {
 
         delete []extraParamsVals;
      */
+
+        auto temp = NDArrayFactory::create<float>({0.0f, 0.0f, 0.0f}, this->_workspace);
+        void* extraParamsVals = nullptr;
+        if(extraParams == nullptr) {
+            extraParamsVals = temp.getBufferAsPointer(result->dataType());
+            extraParams = extraParamsVals;
+        }
+        // perform calculations
+        NativeOpExcutioner::execReduce3Scalar(op, _buffer, _shapeInfo, const_cast<void *>(extraParams), other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo);
+        delete[] reinterpret_cast<int8_t*>(extraParamsVals);
+
         return result;
     }
     
@@ -3412,6 +3424,7 @@ NDArray NDArray::transp() const {
             std::sort(copy.begin(), copy.end());
             
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
+        ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
         auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);        
         
