@@ -551,6 +551,7 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
             newShapeInfo[rankOld + 1 - i] *= reps[dim - i];     // set new shape by multiplying old dimensions by corresponding numbers from reps 
     }
     shape::updateStrides(newShapeInfo, arr.ordering());
+    ArrayOptions::setDataType(newShapeInfo, arr.dataType());
     
     return newShapeInfo;
 }
