@@ -1346,9 +1346,6 @@ TEST_F(NDArrayTest, TestIndexing2) {
     ASSERT_EQ(4, sub->sizeAt(2));
     ASSERT_EQ(4, sub->sizeAt(3));
 
-
-    sub->printIndexedBuffer("sub");
-    sub->printShapeInfo("sub shape");
     ASSERT_EQ(64, sub->lengthOf());
     ASSERT_NEAR(32, sub->e<float>(0), 1e-5);
     ASSERT_NEAR(112, sub->e<float>(32), 1e-5);

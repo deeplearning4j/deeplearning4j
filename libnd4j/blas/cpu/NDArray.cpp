@@ -2926,7 +2926,7 @@ NDArray NDArray::transp() const {
     T NDArray::e(const Nd4jLong i) const {
         auto rp = i;
 
-        if (this->ordering() == 'f' || isView()) {
+        if (this->ordering() == 'f' || isView() || ews() < 1) {
             Nd4jLong idx[MAX_RANK];
             shape::ind2subC(rankOf(), shapeOf(), i, lengthOf(), idx);
             rp = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
@@ -2993,7 +2993,7 @@ NDArray NDArray::transp() const {
         auto xType = this->dataType();
         auto rp = i;
 
-        if (this->ordering() == 'f' || isView()) {
+        if (this->ordering() == 'f' || isView() || ews() < 1) {
             Nd4jLong idx[MAX_RANK];
             shape::ind2subC(rankOf(), shapeOf(), i, lengthOf(), idx);
             rp = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
@@ -3141,11 +3141,11 @@ NDArray NDArray::transp() const {
                 offset += first * stridesOf[d];
 
                 shape::stride(newShape)[d] *= index->stride();
-                nd4j_printf("dimension_ [%i] stride [%i]\n", d, index->stride());
+                nd4j_debug("dimension_ [%i] stride [%i]\n", d, index->stride());
             }
         }
 
-        shape::printShapeInfoLinear(newShape);
+        //shape::printShapeInfoLinear(newShape);
 
         auto result = new NDArray(bufferWithOffset(offset), newShape, this->_workspace);
         result->_isShapeAlloc = true;
