@@ -160,9 +160,10 @@ TEST_F(VariableTests, Test_FlatVariableDataType_3) {
     ASSERT_EQ(12, rv->index());
 
     auto restoredArray = rv->getNDArray();
+    auto conv = restoredArray->asT<float>();
 
     ASSERT_TRUE(floating.isSameShape(restoredArray));
-    ASSERT_TRUE(floating.equalsTo(restoredArray));
+    ASSERT_TRUE(floating.equalsTo(conv));
 
     delete rv;
 }
