@@ -664,18 +664,16 @@ TEST_F(NDArrayTest, TestReductionAll1) {
     array.p(3, 0.0f);
 
     auto result0 = array.reduceAlongDimension(reduce::All, {0});
-
-    ASSERT_EQ(2, result0->lengthOf());
-
-    ASSERT_NEAR(0.0f, result0->e<float>(0), 1e-5f);
-    ASSERT_NEAR(0.0f, result0->e<float>(1), 1e-5f);
-
     auto result1 = array.reduceAlongDimension(reduce::All, {1});
 
+    ASSERT_EQ(2, result0->lengthOf());
     ASSERT_EQ(2, result1->lengthOf());
 
-    ASSERT_NEAR(1.0f, result1->e<float>(0), 1e-5f);
-    ASSERT_NEAR(0.0f, result1->e<float>(1), 1e-5f);
+    ASSERT_FALSE(result0->e<bool>(0));
+    ASSERT_FALSE(result0->e<bool>(1));
+
+    ASSERT_TRUE(result1->e<bool>(0));
+    ASSERT_FALSE(result1->e<bool>(1));
 
     delete result0;
     delete result1;
@@ -1336,7 +1334,7 @@ TEST_F(NDArrayTest, TestIndexing1) {
 
 TEST_F(NDArrayTest, TestIndexing2) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 5, 4, 4});
-    matrix.linspace(1);
+    matrix.linspace(0);
 
     IndicesList idx({ NDIndex::all(), NDIndex::interval(2,4), NDIndex::all(),  NDIndex::all()});
     auto sub = matrix.subarray(idx);
@@ -1358,8 +1356,7 @@ TEST_F(NDArrayTest, TestIndexing2) {
 
 TEST_F(NDArrayTest, TestIndexing3) {
     auto matrix = NDArrayFactory::create<float>('c', {5, 5});
-    for (int e = 0; e < matrix.lengthOf(); e++)
-        matrix.p(e, (float) e);
+    matrix.linspace(0);
 
     auto sub = matrix({2,4, 0,0});
 
@@ -1372,8 +1369,7 @@ TEST_F(NDArrayTest, TestIndexing3) {
 
 TEST_F(NDArrayTest, TestIndexing4) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 5, 4, 4});
-    for (int e = 0; e < matrix.lengthOf(); e++)
-        matrix.p(e, (float) e);
+    matrix.linspace(0);
 
     auto sub = matrix({0,0, 2,4, 0,0, 0,0});    
 
@@ -1667,7 +1663,7 @@ TEST_F(NDArrayTest, applyReduce3EuclideanDistance) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestVarianceAlongDimension1) {
     float xBuff[] =   {1, 2, 3, 4, 5, 6};        
-    float expBuff[] = {0.666667, 0.666667};
+    float expBuff[] = {0.816497, 0.816497};
     Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 8192, 1, 99};
     Nd4jLong expShapeInfo[] = {1, 2, 1, 8192, 1, 99};
     
