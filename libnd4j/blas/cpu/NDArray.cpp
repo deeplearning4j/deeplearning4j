@@ -3141,11 +3141,11 @@ NDArray NDArray::transp() const {
                 offset += first * stridesOf[d];
 
                 shape::stride(newShape)[d] *= index->stride();
-                nd4j_debug("dimension_ [%i] stride [%i]\n", d, index->stride());
+                nd4j_printf("dimension_ [%i] stride [%i]\n", d, index->stride());
             }
         }
 
-        //shape::printShapeInfoLinear(newShape);
+        shape::printShapeInfoLinear(newShape);
 
         auto result = new NDArray(bufferWithOffset(offset), newShape, this->_workspace);
         result->_isShapeAlloc = true;
