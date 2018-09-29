@@ -405,6 +405,10 @@ bool ShapeUtils::evalBroadcastShapeInfo(const NDArray &max, const NDArray &min, 
 
 bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
 
+    auto _min = ArrayOptions::dataType(min);
+    auto _max = ArrayOptions::dataType(max);
+    auto dtype = DataTypeUtils::pickPairwiseResultType(_max, _min);
+
     if (shape::isScalar(max) && shape::isScalar(min)) {
         resultShapeInfo = nullptr;
         if (shape::rank(max) >= shape::rank(min)) {
@@ -412,10 +416,11 @@ bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool
         } else {
             COPY_SHAPE_EX(min, resultShapeInfo, workspace);
         }
+        ArrayOptions::setDataType(resultShapeInfo, dtype);
         return true;
     } else if ((shape::rank(max) == 0 && shape::isScalar(min))) {
         // X is the driver here
-        resultShapeInfo = ShapeBuilders::createScalarShapeInfo(workspace);
+        resultShapeInfo = ShapeBuilders::createScalarShapeInfo(dtype, workspace);
         return true;
     }
 
@@ -446,6 +451,7 @@ bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool
         if(maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i])
             resultShapeInfo[maxRank - i] = minShapeInfo[minRank-i];
 
+    ArrayOptions::setDataType(resultShapeInfo, dtype);
     shape::updateStrides(resultShapeInfo, shape::order(max));
 
     return true;
