@@ -1058,7 +1058,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 }
 
     NDArray NDArray::varianceNumber(nd4j::variance::Ops op, bool biasCorrected) {
-        NDArray res(Environment::getInstance()->defaultFloatDataType(), _workspace);
+        NDArray res(DataTypeUtils::pickFloatingType(dataType()), _workspace);
         NativeOpExcutioner::execSummaryStatsScalar(op,this->getBuffer(), this->getShapeInfo(), nullptr, res.buffer(), res.shapeInfo(), biasCorrected);
         return res;
     }
@@ -1074,7 +1074,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 //////////////////////////////////////////////////////////////////////////
 // This method returns mean number of this NDArray
     NDArray NDArray::meanNumber() const {
-        NDArray res(_dataType, _workspace);
+        NDArray res(DataTypeUtils::pickFloatingType(dataType()), _workspace);
         NativeOpExcutioner::execReduceFloatScalar(nd4j::reduce::FloatOps::Mean, _buffer, _shapeInfo, nullptr, res.buffer(), res.shapeInfo());
         return res;
     }
@@ -1150,7 +1150,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
-        ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(dataType()));
         auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
@@ -1244,7 +1244,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
-        ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(dataType()));
         NDArray result(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
@@ -1342,6 +1342,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(dataType()));
         if(!shape::shapeEquals(newShape, target->getShapeInfo())) {
             nd4j_printf("NDArray::reduceAlongDimension method: wrong target shape!\n", "");
             throw std::runtime_error("NDArray::reduceAlongDimension method: wrong target shape!");
@@ -1458,7 +1459,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 //
     NDArray NDArray::reduceNumber(nd4j::reduce::FloatOps op, void *extraParams) const {
-        auto shape = ShapeBuilders::createScalarShapeInfo(Environment::getInstance()->defaultFloatDataType(), this->_workspace);
+        auto shape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(dataType()), this->_workspace);
         NDArray result(shape, this->_workspace);
 
         NativeOpExcutioner::execReduceFloatScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
@@ -1546,7 +1547,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
     // perform array transformation
     NDArray NDArray::transform(nd4j::transform::FloatOps op, void *extraParams) const {
-        auto result = this->isR() ? NDArrayFactory::create(this->ordering(), getShapeAsVector(), this->dataType(), this->_workspace) : NDArrayFactory::create(this->ordering(), getShapeAsVector(), Environment::getInstance()->defaultFloatDataType(), this->_workspace);
+        auto result = NDArrayFactory::create(this->ordering(), getShapeAsVector(), DataTypeUtils::pickFloatingType(dataType()), this->_workspace);
         NativeOpExcutioner::execTransformFloat(op, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, extraParams, nullptr, nullptr);
         return result;
     }
@@ -3299,7 +3300,7 @@ NDArray NDArray::transp() const {
         newShape[1] = 1;    // set first dimension (scalar)
         newShape[2] = 1;    // set second dimension (scalar)
         shape::updateStrides(newShape, 'c');
-        ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(this->dataType()));
         // create output array (scalar)
         auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
@@ -3360,7 +3361,7 @@ NDArray NDArray::transp() const {
         newShape[1] = numTadsX;
         newShape[2] = numTadsY;
         shape::updateStrides(newShape, 'c');
-        ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(this->dataType()));
         // create output array
         auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
@@ -3388,6 +3389,7 @@ NDArray NDArray::transp() const {
         shape::checkDimensions(other->rankOf(), copy);               
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(this->dataType()));
         auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);
         // create temporary array of extra parameters if array extraParams is empty (==nullptr)
@@ -3424,7 +3426,7 @@ NDArray NDArray::transp() const {
             std::sort(copy.begin(), copy.end());
             
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
-        ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(this->dataType()));
         auto result = new NDArray(newShape, _workspace);
         RELEASE(newShape, _workspace);        
         
@@ -3445,6 +3447,9 @@ NDArray NDArray::transp() const {
         std::vector<int> copy(dimensions);
         if (copy.size() > 1)
             std::sort(copy.begin(), copy.end());
+
+        if (!target->isR())
+            throw std::runtime_error("Target array must have FLOAT type");
 
         if(rankOf() == copy.size() || copy.empty())
             NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, target->getBuffer(), target->getShapeInfo(), biasCorrected);

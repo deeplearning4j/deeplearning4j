@@ -63,12 +63,22 @@ namespace nd4j {
         FORCEINLINE static bool isU(nd4j::DataType dataType);
 
         FORCEINLINE static nd4j::DataType pickPairwiseResultType(nd4j::DataType typeX, nd4j::DataType typeY);
+
+        FORCEINLINE static nd4j::DataType pickFloatingType(nd4j::DataType typeX);
     };
 
 
 //////////////////////////////////////////////////////////////////////////
 ///// IMLEMENTATION OF INLINE METHODS ///// 
 //////////////////////////////////////////////////////////////////////////
+
+    FORCEINLINE nd4j::DataType DataTypeUtils::pickFloatingType(nd4j::DataType typeX) {
+        // if proposed dataType is already floating point - return it
+        if (isR(typeX))
+            return typeX;
+        else // return default float type otherwise
+            return Environment::getInstance()->defaultFloatDataType();
+    }
 
     FORCEINLINE bool DataTypeUtils::isR(nd4j::DataType dataType) {
         return dataType == nd4j::DataType::FLOAT32 || dataType == nd4j::DataType::HALF || dataType == nd4j::DataType::DOUBLE;
