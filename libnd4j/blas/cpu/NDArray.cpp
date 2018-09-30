@@ -587,9 +587,9 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     template void NDArray::applyLambda(const std::function<float16(float16)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<Nd4jLong(Nd4jLong)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<int16_t(int16_t)>& func, NDArray* target);
-    template void NDArray::applyLambda(const std::function<int8_t(int8_t)>& func, NDArray* target);
-    template void NDArray::applyLambda(const std::function<int(int)>& func, NDArray* target);
+    template void NDArray::applyLambda(const std::function<int32_t(int32_t)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<uint8_t(uint8_t)>& func, NDArray* target);
+    template void NDArray::applyLambda(const std::function<int8_t(int8_t)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<bool(bool)>& func, NDArray* target);
 
     template<typename T>

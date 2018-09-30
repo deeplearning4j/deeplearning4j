@@ -15,32 +15,28 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 23.11.17.
+// @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_toggle_bits)
-
-#include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/helpers.h>
 #include <ops/declarable/helpers/toggle_bits.h>
+#include <helpers/BitwiseUtils.h>
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(toggle_bits, -1, -1, true) {
+        namespace helpers {
+            template<typename T>
+            void toggle_bits__(NDArray &in, NDArray &out) {
+                auto lambda = LAMBDA_T(_x) {
+                    return BitwiseUtils::flip_bits(_x);
+                };
 
-            for (int i = 0; i < block.width(); i++) {
-                auto x = INPUT_VARIABLE(i);
-                auto z = OUTPUT_VARIABLE(i);
-
-                REQUIRE_TRUE(x->dataType() == z->dataType(), 0, "Toggle bits requires input and output to have same type");
-                REQUIRE_TRUE(x->isR(),0, "Toggle bits requires input and output to be integer type (int8, int16, int32, int64)");
-
-                helpers::__toggle_bits(*x, *z);
+                in.applyLambda<T>(lambda, &out);
             }
-            return Status::OK();
+            BUILD_SINGLE_TEMPLATE(template void toggle_bits__, (NDArray &in, NDArray &out), INTEGER_TYPES);
+
+            void __toggle_bits(NDArray& in, NDArray& out) {
+                BUILD_SINGLE_SELECTOR(in.dataType(), toggle_bits__, (in, out), INTEGER_TYPES);
+            }
         }
     }
 }
-
-#endif

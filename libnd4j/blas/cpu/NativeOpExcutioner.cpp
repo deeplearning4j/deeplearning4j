@@ -43,11 +43,11 @@
 * @param result
 * @param resultShapeInfo
 */
-Nd4jLong NativeOpExcutioner::execIndexReduceScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo) {
+void NativeOpExcutioner::execIndexReduceScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo) {
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     auto z = reinterpret_cast<Nd4jLong*>(vz);
 
-    BUILD_SINGLE_SELECTOR(xType, z[0] = functions::indexreduce::IndexReduce, ::execScalar(opNum, x,xShapeInfo,extraParams), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, z[0] = functions::indexreduce::IndexReduce, ::execScalar(opNum, x,xShapeInfo,extraParams), LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -76,7 +76,7 @@ void NativeOpExcutioner::execIndexReduce(int opNum,
 
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffsets);, FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffsets);, LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

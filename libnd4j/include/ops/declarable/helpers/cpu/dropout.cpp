@@ -79,7 +79,7 @@ namespace helpers {
     int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
         auto xType = input->dataType();
 
-        BUILD_SINGLE_SELECTOR(xType, _dropOutFunctor, (rng, input, output, reduceShape, seed, probValue), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, return _dropOutFunctor, (rng, input, output, reduceShape, seed, probValue), FLOAT_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template int _dropOutFunctor, (nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue);, FLOAT_TYPES);

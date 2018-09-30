@@ -15,32 +15,23 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 23.11.17.
+// @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_toggle_bits)
-
-#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/helpers.h>
-#include <ops/declarable/helpers/toggle_bits.h>
+
+#ifndef DEV_TESTS_TOGGLE_BITS_H
+#define DEV_TESTS_TOGGLE_BITS_H
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(toggle_bits, -1, -1, true) {
+        namespace helpers {
+            template <typename T>
+            static void toggle_bits__(NDArray& in, NDArray& out);
 
-            for (int i = 0; i < block.width(); i++) {
-                auto x = INPUT_VARIABLE(i);
-                auto z = OUTPUT_VARIABLE(i);
-
-                REQUIRE_TRUE(x->dataType() == z->dataType(), 0, "Toggle bits requires input and output to have same type");
-                REQUIRE_TRUE(x->isR(),0, "Toggle bits requires input and output to be integer type (int8, int16, int32, int64)");
-
-                helpers::__toggle_bits(*x, *z);
-            }
-            return Status::OK();
+            void __toggle_bits(NDArray& in, NDArray& out);
         }
     }
 }
 
-#endif
+#endif //DEV_TESTS_TOGGLE_BITS_H

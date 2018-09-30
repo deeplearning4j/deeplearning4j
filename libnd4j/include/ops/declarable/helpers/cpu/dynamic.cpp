@@ -189,7 +189,7 @@ namespace nd4j {
             int dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output){
                 auto xType = inputs.at(0)->dataType();
 
-                BUILD_SINGLE_SELECTOR(xType, _dynamicStitchFunctor, (inputs, indices, output), LIBND4J_TYPES);
+                BUILD_SINGLE_SELECTOR(xType, return _dynamicStitchFunctor, (inputs, indices, output), LIBND4J_TYPES);
             }
 
             int dynamicStitchFunctorBP(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradInput, std::vector<NDArray*>& outputList) {
