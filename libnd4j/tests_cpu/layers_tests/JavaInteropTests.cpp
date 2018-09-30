@@ -254,9 +254,11 @@ TEST_F(JavaInteropTests, TestCol2Im_1) {
 
     Nd4jLong exp[] = {1, 1, 1, 1, 4, 5, 1, 1, 1};
 
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, false);
+    auto hash = op.getOpHash();
 
-    ASSERT_TRUE(output.meanNumber() > 0.0);
+    nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, false);
+
+    ASSERT_TRUE(output.meanNumber().e<float>(0) > 0.0f);
 }
 
 TEST_F(JavaInteropTests, TestPNorm_1) {

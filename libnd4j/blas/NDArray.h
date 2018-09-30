@@ -303,7 +303,7 @@ namespace nd4j {
         void* buffer();
 
         template <typename T>
-        T* bufferAsT();
+        T * bufferAsT() const;
 
         /**
         *   returns _shapeInfo

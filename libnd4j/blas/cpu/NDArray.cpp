@@ -3015,10 +3015,10 @@ NDArray NDArray::transp() const {
 
 
     template <typename T>
-    T* NDArray::bufferAsT() {
+    T * NDArray::bufferAsT() const {
         return reinterpret_cast<T*>(_buffer);
     }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template, * NDArray::bufferAsT(), LIBND4J_TYPES);
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template, * NDArray::bufferAsT() const, LIBND4J_TYPES);
 
 
     void NDArray::p(const Nd4jLong i, const NDArray& value) {
