@@ -49,7 +49,6 @@ namespace nd4j {
                 newShape[2] = 1;
                 newShape[3] = 1;
                 newShape[4] = 1;
-                newShape[5] = 0;
                 newShape[6] = 1;
                 newShape[7] = 99;
             } else {
@@ -61,6 +60,8 @@ namespace nd4j {
 
                 delete array;
             }
+
+            ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
 
             return SHAPELIST(newShape);
         }
