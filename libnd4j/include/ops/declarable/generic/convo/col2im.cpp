@@ -43,7 +43,7 @@ namespace nd4j {
             int dX = INT_ARG(7);			//Dilation in width/x dimension
 
             LaunchContext ctx;
-            helpers::col2im(ctx, *z, *x, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX);
+            helpers::col2im(ctx, *x, *z, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX);
 
             STORE_RESULT(*z);
 
@@ -74,11 +74,11 @@ namespace nd4j {
             zShape[3] = inY;
             zShape[4] = inX;
 
-            zShape[shape::shapeInfoLength(zShape) - 3] = 0;
             zShape[shape::shapeInfoLength(zShape) - 2] = 1;
             zShape[shape::shapeInfoLength(zShape) - 1] = 99;
 
             shape::updateStrides(zShape, 'c');
+            ArrayOptions::setDataType(zShape, ArrayOptions::dataType(inShape));
 
             return SHAPELIST(zShape);
         }

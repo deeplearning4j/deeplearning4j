@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
         axis += rank;
 
     // ******** input validation ******** //
-    REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);    
+    REQUIRE_TRUE(0 <= axis && (axis < rank || (axis == 0 && rank == 0)), 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
     for(int i = 1; i < numOfArrs; ++i)        
         REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0, "CONCAT op: all input arrays must have the same rank !");
@@ -143,6 +143,7 @@ DECLARE_SHAPE_FN(concat) {
     // case when we have only one input array
     if(numOfArrs == 1) {                
         shape::updateStrides(outShapeInfo, shape::order(nonEmptyArrShapes[0]));
+        ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(nonEmptyArrShapes[0]));
         return SHAPELIST(outShapeInfo);
     }
 
@@ -150,6 +151,7 @@ DECLARE_SHAPE_FN(concat) {
         outShapeInfo[axis + 1] += nonEmptyArrShapes[i][axis + 1];
 
     shape::updateStrides(outShapeInfo, shape::order(nonEmptyArrShapes[0]));
+    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(nonEmptyArrShapes[0]));
 
     // delete dynamically allocated vectors shapes with length=1
     for(int index : shapesToDelete)        
