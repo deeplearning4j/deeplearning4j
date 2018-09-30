@@ -418,7 +418,7 @@ TEST_F(DeclarableOpsTests10, range_test11) {
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, range_test12) {
     
-    auto exp = NDArrayFactory::create<double>('c', {9}, {0.5, 1. , 1.5, 2. , 2.5, 3. , 3.5, 4. , 4.5});
+    auto exp = NDArrayFactory::create<float>('c', {9}, {0.5, 1. , 1.5, 2. , 2.5, 3. , 3.5, 4. , 4.5});
 
     nd4j::ops::range op;
     auto result = op.execute({}, {0.5, 5, 0.5}, {});
