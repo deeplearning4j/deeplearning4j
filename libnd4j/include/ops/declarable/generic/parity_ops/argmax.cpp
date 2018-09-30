@@ -66,7 +66,7 @@ namespace nd4j {
 
             // special case - output is scalar
             if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
-                return SHAPELIST(ShapeBuilders::createScalarShapeInfo(block.workspace()));
+                return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.workspace()));
             }
 
             shape::TAD tad(inputShape->at(0), dims.data(), dims.size());
@@ -76,6 +76,7 @@ namespace nd4j {
             Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
 
             auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
+            ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
 
             return SHAPELIST(newShape);
         }
