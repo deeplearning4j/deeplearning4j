@@ -30,8 +30,8 @@
     <modules>
         <module>nd4j-native</module>
         <module>nd4j-native-platform</module>
-        <module>nd4j-cuda</module>
-        <module>nd4j-cuda-platform</module>
+        <!--<module>nd4j-cuda</module>
+        <module>nd4j-cuda-platform</module>-->
     </modules>
     <dependencies>
     </dependencies>
