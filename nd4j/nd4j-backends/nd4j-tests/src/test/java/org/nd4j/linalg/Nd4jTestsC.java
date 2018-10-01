@@ -37,7 +37,7 @@ import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.ReduceOp;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -480,7 +480,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray expected = Nd4j.repeat(Nd4j.scalar(2), 2).reshape(2, 1);
 
-        Accumulation accum = Nd4j.getOpFactory().createAccum("euclidean", values, values2);
+        val accum = Nd4j.getOpFactory().createAccum("euclidean", values, values2);
         INDArray results = Nd4j.getExecutioner().exec(accum, 1);
         assertEquals(expected, results);
 
@@ -4378,7 +4378,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testScalarReduction1() {
-        Accumulation op = new Norm2(Nd4j.create(1).assign(1.0));
+        val op = new Norm2(Nd4j.create(1).assign(1.0));
         double norm2 = Nd4j.getExecutioner().execAndReturn(op).getFinalResult().doubleValue();
         double norm1 = Nd4j.getExecutioner().execAndReturn(new Norm1(Nd4j.create(1).assign(1.0))).getFinalResult()
                 .doubleValue();

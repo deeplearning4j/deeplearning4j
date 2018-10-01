@@ -70,6 +70,16 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
+    public INDArray create(DataBuffer.Type dataType, long[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray createUninitialized(DataBuffer.Type dataType, long[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
     public INDArray createSparseCOO(double[] values, long[][] indices, long[] shape) {
         return new SparseNDArrayCOO(values, indices, shape);
     }

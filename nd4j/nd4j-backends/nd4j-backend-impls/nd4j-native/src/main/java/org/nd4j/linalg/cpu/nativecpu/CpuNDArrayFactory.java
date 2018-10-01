@@ -183,6 +183,16 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
+    public INDArray create(DataBuffer.Type dataType, long[] shape, char ordering) {
+        return new NDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering);
+    }
+
+    @Override
+    public INDArray createUninitialized(DataBuffer.Type dataType, long[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
     public INDArray createUninitializedDetached(int[] shape, char ordering) {
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(null);

@@ -309,7 +309,7 @@ TEST_F(DeclarableOpsTests2, Test_CRelu_BP_2) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests2, Test_Concat_BP_2) {
+TEST_F(DeclarableOpsTests2, Test_Concat_BP_1) {
     auto x = NDArrayFactory::create<float>('c', {2, 2});
     auto y = NDArrayFactory::create<float>('c', {2, 2});
     auto eps = NDArrayFactory::create<float>('c', {2, 4}, {1.0, 2.0, 0, 1, 3.0, 4.0, 0, 1});

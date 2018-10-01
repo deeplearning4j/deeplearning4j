@@ -262,6 +262,60 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer create(DataBuffer.Type dataType, long length, boolean initialize) {
+        switch (dataType) {
+            case DOUBLE:
+                return new DoubleBuffer(length, initialize);
+            case FLOAT:
+                return new FloatBuffer(length, initialize);
+            case HALF:
+                return new HalfBuffer(length, initialize);
+            case LONG:
+                return new LongBuffer(length, initialize);
+            case INT:
+                return new IntBuffer(length, initialize);
+            case SHORT:
+                return new Int16Buffer(length, initialize);
+            case UBYTE:
+                return new UInt8Buffer(length, initialize);
+            case BYTE:
+                return new Int8Buffer(length, initialize);
+            case BOOL:
+                return new BoolBuffer(length, initialize);
+            default:
+                throw new IllegalStateException("Unknown datatype used: [" + dataType + "]");
+
+        }
+
+    }
+
+    @Override
+    public DataBuffer create(DataBuffer.Type dataType, long length, boolean initialize, MemoryWorkspace workspace) {
+        switch (dataType) {
+            case DOUBLE:
+                return new DoubleBuffer(length, initialize, workspace);
+            case FLOAT:
+                return new FloatBuffer(length, initialize, workspace);
+            case HALF:
+                return new HalfBuffer(length, initialize, workspace);
+            case LONG:
+                return new LongBuffer(length, initialize, workspace);
+            case INT:
+                return new IntBuffer(length, initialize, workspace);
+            case SHORT:
+                return new Int16Buffer(length, initialize, workspace);
+            case UBYTE:
+                return new UInt8Buffer(length, initialize, workspace);
+            case BYTE:
+                return new Int8Buffer(length, initialize, workspace);
+            case BOOL:
+                return new BoolBuffer(length, initialize, workspace);
+            default:
+                throw new IllegalStateException("Unknown datatype used: [" + dataType + "]");
+        }
+    }
+
+    @Override
     public DataBuffer createInt(long length) {
         return new IntBuffer(length);
     }
