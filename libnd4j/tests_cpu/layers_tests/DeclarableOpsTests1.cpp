@@ -2447,8 +2447,8 @@ TEST_F(DeclarableOpsTests1, IsMax1) {
 
     float xBuff[]   = {1,2,3,4,5,6,7,8,9};
     Nd4jLong xShape[]    = {2,3,3,3,1,0,1,99};
-    float expBuff[] = {0,0,1,0,0,1,0,0,1};
-    ArrayOptions::setDataType(xShape, nd4j::DataType::FLOAT32);
+    bool expBuff[] = {0,0,1,0,0,1,0,0,1};
+    ArrayOptions::setDataType(xShape, nd4j::DataType::BOOL);
 
     auto x = new NDArray(xBuff, xShape);
     NDArray exp(expBuff, xShape);
@@ -2461,8 +2461,8 @@ TEST_F(DeclarableOpsTests1, IsMax1) {
     std::vector<int>* argI = block->getIArguments();
     *argI = {1};                                        // dimensions
 
-    nd4j::ops::ismax ismax;
-    Nd4jStatus status = ismax.execute(block);
+    nd4j::ops::ismax ismaxOp;
+    Nd4jStatus status = ismaxOp.execute(block);
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();  
@@ -3121,6 +3121,8 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_bp2) {
     auto output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
+    expected.printIndexedBuffer("Expected backprop");
+    output->printIndexedBuffer("Output backprop");
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3428,6 +3430,9 @@ TEST_F(DeclarableOpsTests1, Stack_1) {
     Nd4jLong shape1[]    = {2, 3, 4, 4, 1, 0, 1, 99};
     Nd4jLong shape2[]    = {2, 3, 4, 4, 1, 0, 1, 99};
     Nd4jLong expShape[]  = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, nd4j::DataType::FLOAT32);
 
     NDArray input1(buff1, shape1);
     NDArray input2(buff2, shape2);
@@ -3453,6 +3458,9 @@ TEST_F(DeclarableOpsTests1, Stack_2) {
     Nd4jLong shape1[]    = {2, 3, 4, 4, 1, 0, 1, 99};
     Nd4jLong shape2[]    = {2, 3, 4, 4, 1, 0, 1, 99};
     Nd4jLong expShape[]  = {3, 3, 2, 4, 8, 4, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, nd4j::DataType::FLOAT32);
 
     NDArray input1(buff1, shape1);
     NDArray input2(buff2, shape2);
@@ -3478,6 +3486,9 @@ TEST_F(DeclarableOpsTests1, Stack_3) {
     Nd4jLong shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
     Nd4jLong shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
     Nd4jLong expShape[]  = {3, 2, 1, 12, 12, 12, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, nd4j::DataType::FLOAT32);
 
     NDArray input1(buff1, shape1);
     NDArray input2(buff2, shape2);
@@ -3502,6 +3513,9 @@ TEST_F(DeclarableOpsTests1, Stack_4) {
     Nd4jLong shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
     Nd4jLong shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
     Nd4jLong expShape[]  = {3, 1, 2, 12, 24, 12, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, nd4j::DataType::FLOAT32);
 
     NDArray input1(buff1, shape1);
     NDArray input2(buff2, shape2);
@@ -3526,6 +3540,9 @@ TEST_F(DeclarableOpsTests1, Stack_5) {
     Nd4jLong shape1[]    = {2, 12, 1, 1,  1, 0, 1, 99};
     Nd4jLong shape2[]    = {2, 12, 1, 1,  1, 0, 1, 99};
     Nd4jLong expShape[]  = {3, 2, 12, 1, 12, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, nd4j::DataType::FLOAT32);
 
     NDArray input1(buff1, shape1);
     NDArray input2(buff2, shape2);
@@ -3550,6 +3567,9 @@ TEST_F(DeclarableOpsTests1, Stack_6) {
     Nd4jLong shape1[]    = {2, 12, 1, 1, 12, 0, 1, 99};
     Nd4jLong shape2[]    = {2, 12, 1, 1, 12, 0, 1, 99};
     Nd4jLong expShape[]  = {3, 12, 2, 1, 2, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, nd4j::DataType::FLOAT32);
 
     NDArray input1(buff1, shape1);
     NDArray input2(buff2, shape2);
@@ -3573,6 +3593,8 @@ TEST_F(DeclarableOpsTests1, Stack_7) {
     float expBuff[] = {1, 1, 1};
     Nd4jLong shape1[]    = {2, 1, 1, 1, 1, 0, 1, 99};    
     Nd4jLong expShape[]  = {3, 3, 1, 1, 1, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, nd4j::DataType::FLOAT32);
 
     NDArray input1(buff1, shape1);
     NDArray expected(expBuff, expShape);
@@ -3593,7 +3615,9 @@ TEST_F(DeclarableOpsTests1, Stack_8) {
     float buff1[]   = {1};    
     float expBuff[] = {1, 1, 1};
     Nd4jLong shape1[]    = {1, 1, 1, 0, 1, 99};    
-    Nd4jLong expShape[]  = {2, 3, 1, 1, 1, 0, 1, 99};    
+    Nd4jLong expShape[]  = {2, 3, 1, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, nd4j::DataType::FLOAT32);
 
     NDArray input1(buff1, shape1);
     NDArray expected(expBuff, expShape);
@@ -3615,6 +3639,8 @@ TEST_F(DeclarableOpsTests1, Stack_9) {
     float expBuff[] = {1, 1, 1};
     Nd4jLong shape1[]    = {2, 1, 1, 1, 1, 0, 1, 99};    
     Nd4jLong expShape[]  = {3, 1, 3, 1, 3, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, nd4j::DataType::FLOAT32);
 
     NDArray input1(buff1, shape1);
     NDArray expected(expBuff, expShape);
@@ -3636,6 +3662,8 @@ TEST_F(DeclarableOpsTests1, Stack_10) {
     float expBuff[] = {1, 1, 1};
     Nd4jLong shape1[]    = {1, 1, 1, 0, 1, 99};    
     Nd4jLong expShape[]  = {2, 1, 3, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, nd4j::DataType::FLOAT32);
 
     NDArray input1(buff1, shape1);
     NDArray expected(expBuff, expShape);
@@ -3659,6 +3687,8 @@ TEST_F(DeclarableOpsTests1, Stack_11) {
     float expBuff[] = {1, 1, 1};
     Nd4jLong shape1[]    = {1, 1, 1, 0, 1, 99};
     Nd4jLong expShape[]  = {2, 3, 1, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, nd4j::DataType::FLOAT32);
 
     NDArray input1(buff1, shape1);
     NDArray expected(expBuff, expShape);
