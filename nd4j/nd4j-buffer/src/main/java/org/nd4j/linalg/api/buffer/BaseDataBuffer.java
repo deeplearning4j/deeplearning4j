@@ -456,6 +456,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.LONG) {
             pointer = new LongPointer(length);
             setIndexer(LongIndexer.create((LongPointer) pointer));
+        } else if (dataType() == Type.SHORT) {
+            pointer = new ShortPointer(length);
+            setIndexer(ShortIndexer.create((ShortPointer) pointer));
+        } else if (dataType() == Type.BYTE) {
+            pointer = new BytePointer(length);
+            setIndexer(ByteIndexer.create((BytePointer) pointer));
+        } else if (dataType() == Type.UBYTE) {
+            pointer = new BytePointer(length);
+            setIndexer(UByteIndexer.create((BytePointer) pointer));
         }
 
         // log.info("Creating new buffer of size: {}; dtype: {}; C", length, dataType());
@@ -624,6 +633,30 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             if (initialize)
                 fillPointerWithZero();
+        } else if (dataType() == Type.BYTE) {
+            pointer = new BytePointer(length());
+            setIndexer(ByteIndexer.create((BytePointer) pointer));
+
+            if (initialize)
+                fillPointerWithZero();
+        } else if (dataType() == Type.SHORT) {
+            pointer = new ShortPointer(length());
+            setIndexer(ShortIndexer.create((ShortPointer) pointer));
+
+            if (initialize)
+                fillPointerWithZero();
+        } else if (dataType() == Type.UBYTE) {
+            pointer = new BytePointer(length());
+            setIndexer(UByteIndexer.create((BytePointer) pointer));
+
+            if (initialize)
+                fillPointerWithZero();
+        } else if (dataType() == Type.BOOL) {
+            pointer = new BoolPointer(length());
+            setIndexer(ByteIndexer.create((BytePointer) pointer));
+
+            if (initialize)
+                fillPointerWithZero();
         }
 
         //// log.info("Creating new buffer of size: {}; dtype: {}; A", length, dataType());
@@ -669,6 +702,24 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asLongPointer(); //new LongPointer(length());
             setIndexer(LongIndexer.create((LongPointer) pointer));
+        } else if (dataType() == Type.BYTE) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asBytePointer(); //new LongPointer(length());
+            setIndexer(ByteIndexer.create((BytePointer) pointer));
+        } else if (dataType() == Type.UBYTE) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asBytePointer(); //new LongPointer(length());
+            setIndexer(UByteIndexer.create((BytePointer) pointer));
+        } else if (dataType() == Type.SHORT) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer(); //new LongPointer(length());
+            setIndexer(ShortIndexer.create((ShortPointer) pointer));
         }
 
         workspaceGenerationId = workspace.getGenerationId();
@@ -1185,12 +1236,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
             ((IntIndexer) indexer).put(offset() + i, (int) element);
         } else if (dataType() == Type.LONG) {
             ((LongIndexer) indexer).put(offset() + i, (long) element);
-        } else {
+        } else if (dataType() == Type.FLOAT) {
             ((FloatIndexer) indexer).put(offset() + i, element);
+        } else if (dataType() == Type.SHORT) {
+            ((ShortIndexer) indexer).put(offset() + i,  (short) element);
+        } else if (dataType() == Type.BYTE) {
+            ((ShortIndexer) indexer).put(offset() + i, (byte) element);
         }
-        if (i >= length) {
-            length++;
-        }
+
         if (i == length) {
             length++;
         }
@@ -1206,8 +1259,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
             ((LongIndexer) indexer).put(offset() + i, (long) element);
         } else if (dataType() == Type.HALF) {
             ((HalfIndexer) indexer).put(offset() + i, (float) element);
-        } else {
+        } else if (dataType() == Type.FLOAT) {
             ((FloatIndexer) indexer).put(offset() + i, (float) element);
+        } else if (dataType() == Type.SHORT) {
+            ((ShortIndexer) indexer).put(offset() + i,  (short) element);
+        } else if (dataType() == Type.BYTE) {
+            ((ByteIndexer) indexer).put(offset() + i, (byte) element);
         }
         if (i == length) {
             length++;
@@ -1222,9 +1279,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
             ((IntIndexer) indexer).put(offset() + i, element);
         } else if (dataType() == Type.LONG) {
             ((LongIndexer) indexer).put(offset() + i, element);
-        } else {
+        } else if (dataType() == Type.FLOAT) {
             ((FloatIndexer) indexer).put(offset() + i, element);
+        } else if (dataType() == Type.SHORT) {
+            ((ShortIndexer) indexer).put(offset() + i,  (short) element);
+        } else if (dataType() == Type.BYTE) {
+            ((ByteIndexer) indexer).put(offset() + i,  (byte) element);
         }
+
         if (i == length) {
             length++;
         }
@@ -1240,6 +1302,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             ((LongIndexer) indexer).put(offset() + i, element ? 1 : 0);
         } else if (dataType() == Type.FLOAT) {
             ((FloatIndexer) indexer).put(offset() + i, element ? 1.0f : 0.0f);
+        } else if (dataType() == Type.SHORT) {
+            ((ShortIndexer) indexer).put(offset() + i, element ? (short) 1 : (short) 0);
+        } else if (dataType() == Type.BYTE) {
+            ((ByteIndexer) indexer).put(offset() + i, element ? (byte)1 : (byte) 0);
         }
         if (i == length) {
             length++;
