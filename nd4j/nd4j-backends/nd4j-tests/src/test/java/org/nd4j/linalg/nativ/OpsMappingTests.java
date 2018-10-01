@@ -165,7 +165,7 @@ public class OpsMappingTests {
             break;
             case REDUCE3:
             case REDUCE: {
-                Set<Class<? extends BaseAccumulation>> clazzes = f.getSubTypesOf(BaseAccumulation.class);
+                Set<Class<? extends BaseReduceOp>> clazzes = f.getSubTypesOf(BaseReduceOp.class);
 
                 for (Class<? extends DifferentialFunction> clazz : clazzes)
                     addOperation(clazz, list);

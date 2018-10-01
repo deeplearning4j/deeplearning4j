@@ -350,6 +350,10 @@ public interface DataBufferFactory {
 
     DataBuffer createFloat(long length, boolean initialize, MemoryWorkspace workspace);
 
+    DataBuffer create(DataBuffer.Type dataType, long length, boolean initialize);
+
+    DataBuffer create(DataBuffer.Type dataType, long length, boolean initialize, MemoryWorkspace workspace);
+
     /**
      * Create an int data buffer
      *

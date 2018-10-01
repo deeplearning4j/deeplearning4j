@@ -160,6 +160,10 @@ public class NDArray extends BaseNDArray {
         super(shape, stride, offset, ordering, initialize);
     }
 
+    public NDArray(DataBuffer.Type type, long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
+        super(shape, stride, offset, ordering, initialize);
+    }
+
     /**
      * Create the ndarray with
      * the specified shape and stride and an offset of 0

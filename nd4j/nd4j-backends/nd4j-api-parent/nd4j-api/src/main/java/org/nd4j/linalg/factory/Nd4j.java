@@ -1502,6 +1502,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static DataBuffer createBuffer(DataBuffer.Type dataType, long length, boolean initialize) {
+        return null;
+    }
+
     /**
      * Create a buffer based on the data opType
      *
@@ -3801,6 +3805,10 @@ public class Nd4j {
         return create(shape, order());
     }
 
+    public static INDArray create(DataBuffer.Type type, long... shape) {
+        return create(type, shape, order());
+    }
+
     /**
      *
      * @param data
@@ -4356,6 +4364,18 @@ public class Nd4j {
      * @return
      */
     public static INDArray create(@NonNull long[] shape, char ordering) {
+        if(shape.length == 0)
+            return Nd4j.trueScalar(0.0);
+        //ensure shapes that wind up being scalar end up with the write shape
+
+        checkShapeValues(shape);
+
+        INDArray ret = INSTANCE.create(shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(DataBuffer.Type dataType, @NonNull long[] shape, char ordering) {
         if(shape.length == 0)
             return Nd4j.trueScalar(0.0);
         //ensure shapes that wind up being scalar end up with the write shape

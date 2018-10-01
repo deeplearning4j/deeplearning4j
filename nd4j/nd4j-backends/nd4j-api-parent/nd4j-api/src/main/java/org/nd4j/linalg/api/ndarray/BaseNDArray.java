@@ -285,6 +285,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this(Nd4j.createBuffer(ArrayUtil.prodLong(shape), initialize), shape, stride, offset, ordering);
     }
 
+    public BaseNDArray(DataBuffer.Type type, long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
+        this(Nd4j.createBuffer(ArrayUtil.prodLong(shape), initialize), shape, stride, offset, ordering);
+    }
+
 
     /**
      * Create the ndarray with
