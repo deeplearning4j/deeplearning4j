@@ -403,7 +403,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         List<String> topologicalOrdering = topologicalOrdering();
 
         //Now, given the topological sort: do equivalent of forward pass
-        Map<String, InputType> vertexOutputs = new HashMap<>();
+        Map<String, InputType> vertexOutputs = new LinkedHashMap<>();
         int currLayerIdx = -1;
         for (String s : topologicalOrdering) {
             int inputIdx = networkInputs.indexOf(s);
