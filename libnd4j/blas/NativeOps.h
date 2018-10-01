@@ -448,6 +448,14 @@ public:
                        Nd4jLong *resultShapeInfo,
                        void *extraParams);
 
+    void execTransformStrict(Nd4jPointer *extraPointers,
+                           int opNum,
+                           void *dx,
+                           Nd4jLong *xInfo,
+                           void *result,
+                           Nd4jLong *resultShapeInfo,
+                           void *extraParams);
+
     /**
      *
      * @param extraPointers
