@@ -1503,7 +1503,7 @@ public class Nd4j {
     }
 
     public static DataBuffer createBuffer(DataBuffer.Type dataType, long length, boolean initialize) {
-        return null;
+        return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType,length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
@@ -4382,7 +4382,7 @@ public class Nd4j {
 
         checkShapeValues(shape);
 
-        INDArray ret = INSTANCE.create(shape, ordering);
+        INDArray ret = INSTANCE.create(dataType, shape, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
