@@ -80,6 +80,8 @@ namespace helpers {
         delete _b;
         delete _o;
     }
+
+    void weightedCrossEntropyWithLogitsFunctor(NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);
 }
 }
 }
