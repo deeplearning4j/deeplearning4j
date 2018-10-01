@@ -420,39 +420,25 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
                 z[e] = func(f[e], s[e], t[e]);
         } else {
             if (f == z) {
-                Nd4jLong tCoord[MAX_RANK];
-                Nd4jLong uCoord[MAX_RANK];
-                Nd4jLong vCoord[MAX_RANK];
 
-#pragma omp parallel for schedule(guided) private(tCoord, uCoord, vCoord)
+#pragma omp parallel for schedule(guided) 
                 for (int e = 0; e < this->lengthOf(); e++) {
-                    shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), tCoord);
-                    shape::ind2subC(second->rankOf(), second->shapeOf(), e, this->lengthOf(), uCoord);
-                    shape::ind2subC(third->rankOf(), third->shapeOf(), e, this->lengthOf(), vCoord);
 
-                    auto tOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), tCoord, this->rankOf());
-                    auto uOffset = shape::getOffset(0, second->shapeOf(), second->stridesOf(), uCoord, second->rankOf());
-                    auto vOffset = shape::getOffset(0, third->shapeOf(), third->stridesOf(), vCoord, third->rankOf());
+                    auto tOffset = this->getOffset(e);
+                    auto uOffset = second->getOffset(e);
+                    auto vOffset = third->getOffset(e);
 
                     f[tOffset] = func(f[tOffset], s[uOffset], t[vOffset]);
                 }
             } else {
-                Nd4jLong tCoord[MAX_RANK];
-                Nd4jLong uCoord[MAX_RANK];
-                Nd4jLong vCoord[MAX_RANK];
-                Nd4jLong zCoord[MAX_RANK];
 
-#pragma omp parallel for schedule(guided) private(tCoord, uCoord, vCoord, zCoord)
+#pragma omp parallel for schedule(guided)
                 for (int e = 0; e < this->lengthOf(); e++) {
-                    shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), tCoord);
-                    shape::ind2subC(second->rankOf(), second->shapeOf(), e, this->lengthOf(), uCoord);
-                    shape::ind2subC(third->rankOf(), third->shapeOf(), e, this->lengthOf(), vCoord);
-                    shape::ind2subC(target->rankOf(), target->shapeOf(), e, this->lengthOf(), zCoord);
-
-                    auto tOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), tCoord, this->rankOf());
-                    auto uOffset = shape::getOffset(0, second->shapeOf(), second->stridesOf(), uCoord, second->rankOf());
-                    auto vOffset = shape::getOffset(0, third->shapeOf(), third->stridesOf(), vCoord, third->rankOf());
-                    auto zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord, target->rankOf());
+                    
+                    auto tOffset = this->getOffset(e);
+                    auto uOffset = second->getOffset(e);
+                    auto vOffset = third->getOffset(e);
+                    auto zOffset = target->getOffset(e);
 
                     z[zOffset] = func(f[tOffset], s[uOffset], t[vOffset]);
                 }
@@ -495,33 +481,23 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
                 z[e] = func(f[e], s[e]);
         } else {
             if (f == z) {
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong yCoord[MAX_RANK];
 
-#pragma omp parallel for schedule(guided) private(xCoord, yCoord)
+#pragma omp parallel for schedule(guided) 
                 for (int e = 0; e < this->lengthOf(); e++) {
-                    shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
-                    shape::ind2subC(other->rankOf(), other->shapeOf(), e, this->lengthOf(), yCoord);
 
-                    auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
-                    auto yOffset = shape::getOffset(0, other->shapeOf(), other->stridesOf(), yCoord, other->rankOf());
+                    auto xOffset = this->getOffset(e);
+                    auto yOffset = other->getOffset(e);
 
                     f[xOffset] = func(f[xOffset], s[yOffset]);
                 }
             } else {
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong yCoord[MAX_RANK];
-                Nd4jLong zCoord[MAX_RANK];
 
-#pragma omp parallel for schedule(guided) private(xCoord, yCoord, zCoord)
+#pragma omp parallel for schedule(guided) 
                 for (int e = 0; e < this->lengthOf(); e++) {
-                    shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
-                    shape::ind2subC(other->rankOf(), other->shapeOf(), e, this->lengthOf(), yCoord);
-                    shape::ind2subC(target->rankOf(), target->shapeOf(), e, this->lengthOf(), zCoord);
 
-                    auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
-                    auto yOffset = shape::getOffset(0, other->shapeOf(), other->stridesOf(), yCoord, other->rankOf());
-                    auto zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord, target->rankOf());
+                    auto xOffset = this->getOffset(e);
+                    auto yOffset = other->getOffset(e);
+                    auto zOffset = target->getOffset(e);
 
                     z[zOffset] = func(f[xOffset], s[yOffset]);
                 }
@@ -553,30 +529,23 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
             for (int e = 0; e < this->lengthOf(); e++)
                 z[e] = func(f[e]);
         } else {
-            if (f == z) {
-                Nd4jLong xCoord[MAX_RANK];
+            if (f == z) {                
 
-#pragma omp parallel for schedule(guided) private(xCoord)
-                for (int e = 0; e < this->lengthOf(); e++) {
-                    shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
+#pragma omp parallel for schedule(guided)
+                for (int e = 0; e < this->lengthOf(); e++) {                    
 
-                    auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
+                    auto xOffset = this->getOffset(e);
 
                     f[xOffset] = func(f[xOffset]);
                 }
             } else {
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong zCoord[MAX_RANK];
 
-#pragma omp parallel for schedule(guided) private(xCoord, zCoord)
+#pragma omp parallel for schedule(guided)
                 for (int e = 0; e < this->lengthOf(); e++) {
-                    shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
-                    shape::ind2subC(target->rankOf(), target->shapeOf(), e, this->lengthOf(), zCoord);
-
-                    auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
-                    auto zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord,
-                                                    target->rankOf());
-
+                    
+                    auto xOffset = this->getOffset(e);
+                    auto zOffset = target->getOffset(e);
+                    
                     z[zOffset] = func(f[xOffset]);
                 }
             }
@@ -605,29 +574,22 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
             for (int e = 0; e < this->lengthOf(); e++)
                 z[e] = func((Nd4jLong) e, f[e]);
         } else {
-            if (f == z) {
-                Nd4jLong xCoord[MAX_RANK];
+            if (f == z) {                
 
-#pragma omp parallel for schedule(guided) private(xCoord)
+#pragma omp parallel for schedule(guided) 
                 for (int e = 0; e < this->lengthOf(); e++) {
-                    shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
-
-                    auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
+                    
+                    auto xOffset = this->getOffset(e);
 
                     f[xOffset] = func((Nd4jLong) e, f[xOffset]);
                 }
-            } else {
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong zCoord[MAX_RANK];
+            } else {                
 
-#pragma omp parallel for schedule(guided) private(xCoord, zCoord)
-                for (int e = 0; e < this->lengthOf(); e++) {
-                    shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
-                    shape::ind2subC(target->rankOf(), target->shapeOf(), e, this->lengthOf(), zCoord);
+#pragma omp parallel for schedule(guided)
+                for (int e = 0; e < this->lengthOf(); e++) {                    
 
-                    auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
-                    auto zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord,
-                                                    target->rankOf());
+                    auto xOffset = this->getOffset(e);
+                    auto zOffset = target->getOffset(e);
 
                     z[zOffset] = func((Nd4jLong) e, f[xOffset]);
                 }
@@ -670,34 +632,23 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
                 z[e] = func((Nd4jLong) e, f[e], s[e]);
         } else {
             if (f == z) {
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong yCoord[MAX_RANK];
 
-#pragma omp parallel for schedule(guided) private(xCoord, yCoord)
+#pragma omp parallel for schedule(guided)
                 for (int e = 0; e < this->lengthOf(); e++) {
-                    shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
-                    shape::ind2subC(other->rankOf(), other->shapeOf(), e, this->lengthOf(), yCoord);
 
-                    auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
-                    auto yOffset = shape::getOffset(0, other->shapeOf(), other->stridesOf(), yCoord, other->rankOf());
+                    auto xOffset = this->getOffset(e);
+                    auto yOffset = other->getOffset(e);
 
                     f[xOffset] = func((Nd4jLong) e, f[xOffset], s[yOffset]);
                 }
             } else {
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong yCoord[MAX_RANK];
-                Nd4jLong zCoord[MAX_RANK];
 
-#pragma omp parallel for schedule(guided) private(xCoord, yCoord, zCoord)
-                for (int e = 0; e < this->lengthOf(); e++) {
-                    shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
-                    shape::ind2subC(other->rankOf(), other->shapeOf(), e, this->lengthOf(), yCoord);
-                    shape::ind2subC(target->rankOf(), target->shapeOf(), e, this->lengthOf(), zCoord);
-
-                    auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
-                    auto yOffset = shape::getOffset(0, other->shapeOf(), other->stridesOf(), yCoord, other->rankOf());
-                    auto zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord,
-                                                    target->rankOf());
+#pragma omp parallel for schedule(guided) 
+                for (int e = 0; e < this->lengthOf(); e++) {                    
+                    
+                    auto xOffset = this->getOffset(e);
+                    auto yOffset = other->getOffset(e);
+                    auto zOffset = target->getOffset(e);
 
                     z[zOffset] = func((Nd4jLong) e, f[xOffset], s[yOffset]);
                 }
@@ -2273,14 +2224,11 @@ NDArray NDArray::transp() const {
             }
         }
         else {
-            Nd4jLong idx[MAX_RANK];
-            auto resultShape   = result.shapeOf();
-            auto resultStrides = result.stridesOf();
-            const auto resultRank = result.rankOf();
-#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
+            
+#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) 
             for(int i=0;  i<resultLen; ++i) {
-                shape::ind2subC(resultRank, resultShape, i, resultLen, idx);
-                auto xOffset = shape::getOffset(0, resultShape, resultStrides, idx, resultRank);
+                
+                auto xOffset = result.getOffset(i);
                 auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
                 BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
             }
@@ -2322,14 +2270,11 @@ NDArray NDArray::transp() const {
             }
         }
         else {
-            Nd4jLong idx[MAX_RANK];
-            auto targetShape     = target.shapeOf();
-            auto targetStrides   = target.stridesOf();
-            const auto targetRank = target.rankOf();
-#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
+            
+#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) 
             for(int i=0;  i<targetLen; ++i) {
-                shape::ind2subC(targetRank, targetShape, i, targetLen, idx);
-                auto xOffset = shape::getOffset(0, targetShape, targetStrides, idx, targetRank);
+                
+                auto xOffset = target.getOffset(i);
                 auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
                 BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
             }
@@ -2365,14 +2310,11 @@ NDArray NDArray::transp() const {
             }
         }
         else {
-            Nd4jLong idx[MAX_RANK];
-            auto targetShape     = target.shapeOf();
-            auto targetStrides   = target.stridesOf();
-            const auto targetRank = target.rankOf();
-#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
+            
+#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(int i=0;  i<targetLen; ++i) {
-                shape::ind2subC(targetRank, targetShape, i, targetLen, idx);
-                auto xOffset = shape::getOffset(0, targetShape, targetStrides, idx, targetRank);
+
+                auto xOffset = target.getOffset(i);
                 auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
                 BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
             }
