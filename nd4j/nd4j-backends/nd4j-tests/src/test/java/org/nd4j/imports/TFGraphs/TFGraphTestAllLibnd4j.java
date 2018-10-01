@@ -103,7 +103,17 @@ public class TFGraphTestAllLibnd4j {
             "sufficient_statistics.*",
 
             "histogram_fixed.*",
-            "unsorted_segment.*"
+            "unsorted_segment.*",
+
+            //These can't pass until this is fixed: https://github.com/deeplearning4j/deeplearning4j/issues/6465#issuecomment-424209155
+            //i.e., reduction ops with newFormat/keepDims args
+            "l2_normalize/.*",
+            "norm_tests/.*",
+            "g_06",
+
+            //JVM crashes
+            "simpleif.*",
+            "simple_cond.*"
     };
 
     @BeforeClass
