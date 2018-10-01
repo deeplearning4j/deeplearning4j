@@ -959,20 +959,22 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
     bool allScalar = true;
     bool allVectors = true;
     
-    Nd4jLong lenOfFirstArr = inArrs[0]->lengthOf();
+    const Nd4jLong lenOfFirstArr = inArrs[0]->lengthOf();
 
     //detect whether all arrays are c ordered or not
     //Also detect whether they are all scalars
     for(int i = 0; i < numOfArrs; i++) {
         allC &= (inArrs[i]->ordering() == 'c');
         allScalar &= (inArrs[i]->isScalar());
-        allVectors &= (inArrs[i]->isRowVector() && inArrs[0]->lengthOf() == lenOfFirstArr);
+        allVectors &= (inArrs[i]->isRowVector() && inArrs[i]->lengthOf() == lenOfFirstArr);
     }
+
+    T* outBuff = output.bufferAsT<T>();
 
     //we are merging all scalars
     if(allScalar) {
         for(int i = 0; i < numOfArrs; i++)
-            reinterpret_cast<T*>(output.getBuffer())[i] = reinterpret_cast<T*>(inArrs[i]->getBuffer())[0];
+            outBuff[i] = inArrs[i]->bufferAsT<T>()[0];
         return;
     }
 
@@ -983,8 +985,8 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
 #pragma omp parallel for schedule(guided)
             for (int r = 0; r < numOfArrs; r++) {
 
-                T *z = reinterpret_cast<T*>(output.getBuffer()) + (r * lenOfFirstArr);
-                T *x = reinterpret_cast<T*>(inArrs[r]->getBuffer());
+                T *z = outBuff + r * lenOfFirstArr;
+                T *x = inArrs[r]->bufferAsT<T>();
 
 #pragma omp simd
                 for (Nd4jLong e = 0; e < lenOfFirstArr; e++)
@@ -995,7 +997,7 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
             int currBuffer = 0;
             int currBufferOffset = 0;
             for (int i = 0; i < output.lengthOf(); i++) {
-                reinterpret_cast<T*>(output.getBuffer())[i] = reinterpret_cast<T*>(inArrs[currBuffer]->getBuffer())[currBufferOffset++];
+                outBuff[i] = inArrs[currBuffer]->bufferAsT<T>()[currBufferOffset++];
                 if (currBufferOffset >= inArrs[currBuffer]->lengthOf()) {
                     currBuffer++;
                     currBufferOffset = 0;

@@ -35,13 +35,17 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     std::vector<NDArray*> nonEmptyArrs;
     std::vector<int> arrsToDelete;
     int index = 0;
+    bool allOfSameType = true;
+
     for(int i = 0; i < block.width(); ++i) {
         
         if(!INPUT_VARIABLE(i)->isEmpty()) {
             
+            allOfSameType &= (INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType());
             if(INPUT_VARIABLE(i)->rankOf() == 0) {
+                // FIXME, use this instead:  block.dataType()
                 auto vec = new NDArray('c', {1}, INPUT_VARIABLE(0)->dataType(), block.getWorkspace());
-                (*vec) = *INPUT_VARIABLE(i);
+                vec->assign(INPUT_VARIABLE(i));
                 nonEmptyArrs.push_back(vec);
                 arrsToDelete.push_back(index);
             }
@@ -52,18 +56,13 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
         }
     }
     
-    const int numOfArrs = nonEmptyArrs.size();    
-    REQUIRE_TRUE(numOfArrs > 0, 0, "CONCAT op: at least one input array must be non-empty!");
-
-    auto output = OUTPUT_VARIABLE(0);
-    
-    const int rank = nonEmptyArrs[0]->rankOf();     //  look up to first non-empty array
-
-    int axis = INT_ARG(0);
-    if(axis < 0)
-        axis += rank;
+    const int numOfArrs = nonEmptyArrs.size();        
+    const int rank = nonEmptyArrs[0]->rankOf();                     //  look up to first non-empty array
+    int axis = INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank;
 
     // ******** input validation ******** //
+    REQUIRE_TRUE(numOfArrs > 0, 0, "CONCAT op: at least one input array must be non-empty!");
+    REQUIRE_TRUE(allOfSameType, 0, "CONCAT op: all of input arrays must have same type !");
     REQUIRE_TRUE(0 <= axis && (axis < rank || (axis == 0 && rank == 0)), 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
     for(int i = 1; i < numOfArrs; ++i)        
@@ -75,6 +74,8 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
                 REQUIRE_TRUE(nonEmptyArrs[i]->sizeAt(dim) == nonEmptyArrs[0]->sizeAt(dim), 0, "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
     }
     // ******** end of input validation ******** //
+
+    auto output = OUTPUT_VARIABLE(0);
 
     if(numOfArrs == 1) 
         output->assign(nonEmptyArrs[0]);
@@ -104,7 +105,8 @@ DECLARE_SHAPE_FN(concat) {
         if(!INPUT_VARIABLE(i)->isEmpty()) {
             
             if(inputShape->at(i)[0] == 0) {
-                nonEmptyArrShapes.push_back(ShapeBuilders::createVectorShapeInfo(block.dataType(), 1, block.workspace()));
+                // FIXME, use this instead: block.dataType()
+                nonEmptyArrShapes.push_back(ShapeBuilders::createVectorShapeInfo(INPUT_VARIABLE(0)->dataType(), 1, block.workspace()));
                 shapesToDelete.push_back(index);
             }
             else{
@@ -141,17 +143,15 @@ DECLARE_SHAPE_FN(concat) {
     COPY_SHAPE(nonEmptyArrShapes[0], outShapeInfo);
     
     // case when we have only one input array
-    if(numOfArrs == 1) {                
-        shape::updateStrides(outShapeInfo, shape::order(nonEmptyArrShapes[0]));
-        ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(nonEmptyArrShapes[0]));
+    if(numOfArrs == 1) {    
+        ShapeUtils::updateStridesAndType(outShapeInfo, nonEmptyArrShapes[0], shape::order(nonEmptyArrShapes[0]));        
         return SHAPELIST(outShapeInfo);
     }
 
     for(int i = 1; i < numOfArrs; ++i)
         outShapeInfo[axis + 1] += nonEmptyArrShapes[i][axis + 1];
 
-    shape::updateStrides(outShapeInfo, shape::order(nonEmptyArrShapes[0]));
-    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(nonEmptyArrShapes[0]));
+    ShapeUtils::updateStridesAndType(outShapeInfo, nonEmptyArrShapes[0], shape::order(nonEmptyArrShapes[0]));
 
     // delete dynamically allocated vectors shapes with length=1
     for(int index : shapesToDelete)        
