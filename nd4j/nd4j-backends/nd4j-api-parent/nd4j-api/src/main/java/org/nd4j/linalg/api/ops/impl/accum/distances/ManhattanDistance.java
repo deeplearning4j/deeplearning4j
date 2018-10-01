@@ -20,9 +20,8 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.indexing.SpecifiedIndex;
 
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +31,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class ManhattanDistance extends BaseAccumulation {
+public class ManhattanDistance extends BaseReduceOp {
     public static final String OP_NAME = "manhattan";
 
     public ManhattanDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {

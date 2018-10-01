@@ -118,8 +118,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op instanceof ScalarOp) {
             return execAndReturn((ScalarOp) op);
         }
-        if (op instanceof Accumulation) {
-            return Nd4j.scalar(execAndReturn((Accumulation) op).getFinalResult());
+        if (op instanceof ReduceOp) {
+            return Nd4j.scalar(execAndReturn((ReduceOp) op).getFinalResult());
         }
         if (op instanceof IndexAccumulation) {
             return Nd4j.scalar(execAndReturn((IndexAccumulation) op).getFinalResult());
@@ -200,12 +200,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     @Override
-    public Accumulation execAndReturn(Accumulation op) {
-        return (Accumulation) exec(op);
+    public ReduceOp execAndReturn(ReduceOp op) {
+        return (ReduceOp) exec(op);
     }
 
     @Override
-    public Accumulation execAndReturn(Variance op, boolean biasCorrected) {
+    public ReduceOp execAndReturn(Variance op, boolean biasCorrected) {
         return null;
     }
 
@@ -247,10 +247,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return op;
         }
 
-        if (op instanceof Accumulation || op instanceof IndexAccumulation) {
-            //Overloaded exec(Accumulation,int...) and exec(IndexAccumulation,int...) should always be called instead of this
+        if (op instanceof ReduceOp || op instanceof IndexAccumulation) {
+            //Overloaded exec(ReduceOp,int...) and exec(IndexAccumulation,int...) should always be called instead of this
             throw new IllegalStateException(
-                            "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
+                            "exec(Op,int...) should never be invoked for ReduceOp/IndexAccumulation");
         }
         if (op instanceof ScalarOp) {
             //Scalar op along dimension should be same as on the entire NDArray
@@ -264,7 +264,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray exec(Accumulation op, int... dimension) {
+    public INDArray exec(ReduceOp op, int... dimension) {
 
         throw new UnsupportedOperationException("Java computation no longer supported");
     }

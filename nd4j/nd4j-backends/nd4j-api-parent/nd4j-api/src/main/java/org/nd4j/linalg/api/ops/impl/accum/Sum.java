@@ -20,10 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
-import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.ops.BaseReduceOp;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,7 +31,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 @Slf4j
-public class Sum extends BaseAccumulation {
+public class Sum extends BaseReduceOp {
     public Sum(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }

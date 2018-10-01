@@ -20,7 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.BaseReduceOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,7 +30,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class EqualsWithEps extends BaseAccumulation {
+public class EqualsWithEps extends BaseReduceOp {
     private double eps;
 
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, int[] dimensions, double eps) {

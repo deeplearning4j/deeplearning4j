@@ -40,13 +40,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * and gives the implementer of a backend a way of hooking in to
  * passing parameters to different engines.<br>
  *
- * Note that Accumulation op implementations should be stateless
+ * Note that ReduceOp op implementations should be stateless
  * (other than the final result and x/y/z/n arguments) and hence threadsafe,
  * such that they may be parallelized using the update, combineSubResults and
  * set/getFinalResults methods.
  * @author Adam Gibson
  */
-public interface Accumulation extends Op {
+public interface ReduceOp extends Op {
 
     /**
      * Returns the no op version

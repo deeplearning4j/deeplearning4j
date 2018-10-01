@@ -176,7 +176,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD Nd4jLong* calcStrides(Nd4jLong *shape, int rank, Nd4jLong* ret);
 
-    ND4J_EXPORT _CUDA_HD void updateStrides(const Nd4jLong *shape, const char order);
+    ND4J_EXPORT _CUDA_HD void updateStrides(Nd4jLong *shape, const char order);
 
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1

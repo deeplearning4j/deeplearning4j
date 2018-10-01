@@ -190,7 +190,7 @@ public class OpProfiler {
             return "BroadcastOp";
         } else if (op instanceof RandomOp) {
             return "RandomOp";
-        } else if (op instanceof Accumulation) {
+        } else if (op instanceof ReduceOp) {
             return "AccumulationOp";
         } else if (op instanceof TransformOp) {
             if (op.y() == null) {

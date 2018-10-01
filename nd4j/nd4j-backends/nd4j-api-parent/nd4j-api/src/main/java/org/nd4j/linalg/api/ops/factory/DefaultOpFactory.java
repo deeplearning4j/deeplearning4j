@@ -85,24 +85,24 @@ public class DefaultOpFactory implements OpFactory {
     }
 
     @Override
-    public Accumulation createAccum(String name, INDArray x) {
+    public ReduceOp createAccum(String name, INDArray x) {
         return createAccum(name,x,null,x,null);
     }
 
     @Override
-    public Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z) {
+    public ReduceOp createAccum(String name, INDArray x, INDArray y, INDArray z) {
         return createAccum(name,x,y,z,null);
     }
 
 
     @Override
-    public Accumulation createAccum(String name,
-                                    INDArray x,
-                                    INDArray y,
-                                    INDArray z,
-                                    Object[] extraArgs) {
+    public ReduceOp createAccum(String name,
+                                INDArray x,
+                                INDArray y,
+                                INDArray z,
+                                Object[] extraArgs) {
 
-        Accumulation ret = null;
+        ReduceOp ret = null;
 
         switch (name) {
             case "mmul":
@@ -114,7 +114,7 @@ public class DefaultOpFactory implements OpFactory {
                 break;
             default:
                 try {
-                    ret = (Accumulation)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class, long.class).newInstance(x, y, z, x.length());
+                    ret = (ReduceOp)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class, long.class).newInstance(x, y, z, x.length());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -185,7 +185,7 @@ public class DefaultOpFactory implements OpFactory {
 
 
     @Override
-    public Accumulation createAccum(String name, INDArray x, INDArray y) {
+    public ReduceOp createAccum(String name, INDArray x, INDArray y) {
         return createAccum(name,x,y,x,null);
     }
 

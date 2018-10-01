@@ -20,7 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
@@ -31,7 +31,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class EuclideanDistance extends BaseAccumulation {
+public class EuclideanDistance extends BaseReduceOp {
     public static final String OP_NAME = "euclidean";
 
     public EuclideanDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {

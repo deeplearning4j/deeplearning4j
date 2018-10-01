@@ -20,7 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.BaseReduceOp;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,7 +31,7 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-public class Bias extends BaseAccumulation {
+public class Bias extends BaseReduceOp {
 
     private double mean;
 

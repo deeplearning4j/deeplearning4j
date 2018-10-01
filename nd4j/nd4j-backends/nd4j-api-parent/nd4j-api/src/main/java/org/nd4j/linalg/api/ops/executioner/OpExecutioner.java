@@ -121,7 +121,7 @@ public interface OpExecutioner {
      * @param op the operation to execute
      * @return the accumulated result
      */
-    Accumulation execAndReturn(Accumulation op);
+    ReduceOp execAndReturn(ReduceOp op);
 
     /**
      * Execute and return the result from an accumulation
@@ -129,7 +129,7 @@ public interface OpExecutioner {
      * @param op the operation to execute
      * @return the accumulated result
      */
-    Accumulation execAndReturn(Variance op, boolean biasCorrected);
+    ReduceOp execAndReturn(Variance op, boolean biasCorrected);
 
     /**Execute and return the result from an index accumulation
      * @param op the index accumulation operation to execute
@@ -161,12 +161,12 @@ public interface OpExecutioner {
 
 
     /**
-     * Execute an accumulation along one or more dimensions
-     * @param accumulation the accumulation
+     * Execute an reduceOp along one or more dimensions
+     * @param reduceOp the reduceOp
      * @param dimension the dimension
-     * @return the accumulation op
+     * @return the reduceOp op
      */
-    INDArray exec(Accumulation accumulation, int... dimension);
+    INDArray exec(ReduceOp reduceOp, int... dimension);
 
     /**
      * Execute an broadcast along one or more dimensions

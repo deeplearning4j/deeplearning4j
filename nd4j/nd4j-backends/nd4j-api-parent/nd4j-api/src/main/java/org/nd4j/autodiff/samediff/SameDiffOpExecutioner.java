@@ -141,8 +141,8 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @return the accumulated result
      */
     @Override
-    public Accumulation execAndReturn(Accumulation op) {
-        return (Accumulation) processOp(op).z();
+    public ReduceOp execAndReturn(ReduceOp op) {
+        return (ReduceOp) processOp(op).z();
     }
 
     /**
@@ -153,8 +153,8 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @return the accumulated result
      */
     @Override
-    public Accumulation execAndReturn(Variance op, boolean biasCorrected) {
-        return (Accumulation) processOp(op);
+    public ReduceOp execAndReturn(Variance op, boolean biasCorrected) {
+        return (ReduceOp) processOp(op);
     }
 
     /**
@@ -211,15 +211,15 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     }
 
     /**
-     * Execute an accumulation along one or more dimensions
+     * Execute an reduceOp along one or more dimensions
      *
-     * @param accumulation the accumulation
+     * @param reduceOp the reduceOp
      * @param dimension    the dimension
-     * @return the accumulation op
+     * @return the reduceOp op
      */
     @Override
-    public INDArray exec(Accumulation accumulation, int... dimension) {
-        return processOp(accumulation).z();
+    public INDArray exec(ReduceOp reduceOp, int... dimension) {
+        return processOp(reduceOp).z();
     }
 
     /**

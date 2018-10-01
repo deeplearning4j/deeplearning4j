@@ -148,8 +148,13 @@ public abstract class NativeOps extends Pointer {
      * @param result
      * @param resultShapeInfo
      */
-    public abstract void execReduce(PointerPointer extraPointers, int opNum, Pointer x,
-                                    @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo);
+    public abstract void execReduceFloat(PointerPointer extraPointers, int opNum, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo);
+
+    public abstract void execReduceSame(PointerPointer extraPointers, int opNum, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo);
+
+    public abstract void execReduceBool(PointerPointer extraPointers, int opNum, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo);
+
+    public abstract void execReduceLong(PointerPointer extraPointers, int opNum, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo);
 
     /**
      * @param opNum
@@ -159,9 +164,13 @@ public abstract class NativeOps extends Pointer {
      * @param result
      * @param resultShapeInfo
      */
-    public abstract void execReduce(PointerPointer extraPointers, int opNum, Pointer x,
-                                    @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo,
-                                    IntPointer dimension, int dimensionLength);
+    public abstract void execReduceFloat(PointerPointer extraPointers, int opNum, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, IntPointer dimension, int dimensionLength);
+
+    public abstract void execReduceSame(PointerPointer extraPointers, int opNum, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, IntPointer dimension, int dimensionLength);
+
+    public abstract void execReduceBool(PointerPointer extraPointers, int opNum, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, IntPointer dimension, int dimensionLength);
+
+    public abstract void execReduceLong(PointerPointer extraPointers, int opNum, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, IntPointer dimension, int dimensionLength);
 
     /**
      * @param opNum
@@ -230,8 +239,8 @@ public abstract class NativeOps extends Pointer {
      * @param extraParams
      * @param biasCorrected
      */
-    public abstract double execSummaryStatsScalar(PointerPointer extraPointers, int opNum, Pointer x,
-                                                  @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, boolean biasCorrected);
+    public abstract void execSummaryStatsScalar(PointerPointer extraPointers, int opNum, Pointer x,
+                                                  @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer extraParams, Pointer z, @Cast("Nd4jLong *") LongPointer zShapeInfo, boolean biasCorrected);
 
     /**
      * @param opNum
@@ -270,8 +279,13 @@ public abstract class NativeOps extends Pointer {
      * @param resultShapeInfo
      * @param extraParams
      */
-    public abstract void execTransform(PointerPointer extraPointers, int opNum, Pointer dx,
-                                       @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, Pointer extraParams);
+    public abstract void execTransformFloat(PointerPointer extraPointers, int opNum, Pointer dx, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, Pointer extraParams);
+
+    public abstract void execTransformSame(PointerPointer extraPointers, int opNum, Pointer dx, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, Pointer extraParams);
+
+    public abstract void execTransformStrict(PointerPointer extraPointers, int opNum, Pointer dx, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, Pointer extraParams);
+
+    public abstract void execTransformBool(PointerPointer extraPointers, int opNum, Pointer dx, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, Pointer extraParams);
 
 
     /**

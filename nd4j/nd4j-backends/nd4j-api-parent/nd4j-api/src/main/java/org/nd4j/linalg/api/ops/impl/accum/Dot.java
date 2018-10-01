@@ -19,7 +19,7 @@ package org.nd4j.linalg.api.ops.impl.accum;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.BaseReduceOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +28,7 @@ import java.util.List;
  * Dot product
  * @author Adam Gibson
  */
-public class Dot extends BaseAccumulation {
+public class Dot extends BaseReduceOp {
 
     public Dot(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);

@@ -18,14 +18,14 @@ package org.nd4j.linalg.api.ops.impl.meta;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.ReduceOp;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 
 import java.util.List;
 
 /**
- * This is special case PredicateOp, with opB being only either Accumulation, Variance or Reduce3 op
+ * This is special case PredicateOp, with opB being only either ReduceOp, Variance or Reduce3 op
  *
  * @author raver119@gmail.com
  */
@@ -35,7 +35,7 @@ public class ReduceMetaOp extends BaseMetaOp {
         super();
     }
 
-    public ReduceMetaOp(ScalarOp opA, Accumulation opB, int... dimensions) {
+    public ReduceMetaOp(ScalarOp opA, ReduceOp opB, int... dimensions) {
         this(new OpDescriptor(opA), new OpDescriptor(opB, dimensions));
     }
 
@@ -43,7 +43,7 @@ public class ReduceMetaOp extends BaseMetaOp {
         super(x, y);
     }
 
-    public ReduceMetaOp(ScalarOp opA, Accumulation opB) {
+    public ReduceMetaOp(ScalarOp opA, ReduceOp opB) {
         super(opA, opB);
     }
 

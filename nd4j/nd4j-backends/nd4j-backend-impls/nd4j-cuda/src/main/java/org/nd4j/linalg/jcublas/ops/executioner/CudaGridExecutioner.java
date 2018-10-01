@@ -123,8 +123,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         if (op instanceof GradientOp) {
             commit();
             op.exec();
-        } else if (op instanceof Accumulation) {
-            exec((Accumulation) op, new int[] {Integer.MAX_VALUE});
+        } else if (op instanceof ReduceOp) {
+            exec((ReduceOp) op, new int[] {Integer.MAX_VALUE});
         } else if (op instanceof IndexAccumulation) {
             exec((IndexAccumulation) op, new int[] {Integer.MAX_VALUE});
         } else if (op instanceof ScalarOp || op instanceof TransformOp) {
@@ -249,8 +249,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 flushQueue();
 
             super.naiveExec(acc, dimensions);
-        } else if (op instanceof Accumulation) {
-            Accumulation acc = (Accumulation) op;
+        } else if (op instanceof ReduceOp) {
+            ReduceOp acc = (ReduceOp) op;
             if (flush)
                 flushQueue();
 
@@ -426,7 +426,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     */
 
                     return isMatchingZX(last.getOp(), op) ? MetaType.PREDICATE : MetaType.NOT_APPLICABLE;
-                } else if (last.getOp() instanceof Accumulation) {
+                } else if (last.getOp() instanceof ReduceOp) {
                     /*
                     InvertedMetaOp, aka Postulate logic
                     
@@ -609,7 +609,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         }
     }
 
-    protected void buildZ(Accumulation op, int... dimension) {
+    protected void buildZ(ReduceOp op, int... dimension) {
         Arrays.sort(dimension);
 
         for (int i = 0; i < dimension.length; i++) {
@@ -682,7 +682,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     }
 
     @Override
-    public INDArray exec(Accumulation op, int... dimension) {
+    public INDArray exec(ReduceOp op, int... dimension) {
 
 
         // we should check, if this op returns scalar or not

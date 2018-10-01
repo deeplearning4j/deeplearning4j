@@ -16,25 +16,9 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
-
 /**
- * A loss function for computing
- * the delta between two arrays
- *
- * @author Adam Gibson
+ * Strict transforms take any type in, and return same type
+ * @author raver119@gmail.com
  */
-public interface LossFunction extends ReduceOp {
-    /**
-     * The true
-     * @return
-     */
-    INDArray input();
-
-    /**
-     * The guess
-     * @return
-     */
-    INDArray output();
-
+public interface SameTransformOp extends TransformOp  {
 }

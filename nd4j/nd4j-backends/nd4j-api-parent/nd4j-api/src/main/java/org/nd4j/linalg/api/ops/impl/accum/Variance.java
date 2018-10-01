@@ -16,17 +16,14 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -37,7 +34,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Variance extends BaseAccumulation {
+public class Variance extends BaseReduceOp {
     protected double mean, bias;
     protected boolean biasCorrected = true;
 

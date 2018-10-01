@@ -19,11 +19,9 @@ package org.nd4j.linalg.api.ops.impl.accum;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
-import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,7 +30,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class NormMax extends BaseAccumulation {
+public class NormMax extends BaseReduceOp {
     public NormMax(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }

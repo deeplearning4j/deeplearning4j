@@ -49,16 +49,16 @@ public interface OpFactory {
     LossFunction createLossFunction(String name, INDArray x, INDArray y);
 
     /**
-     * Accumulation operation
+     * ReduceOp operation
      *
      * @param name the opName of the function to create
      * @param x    the input to the function
      * @return the operation
      */
-    Accumulation createAccum(String name, INDArray x);
+    ReduceOp createAccum(String name, INDArray x);
 
     /**
-     * Accumulation operation
+     * ReduceOp operation
      *
      * @param name the opName of the function
      * @param x    the input
@@ -66,7 +66,7 @@ public interface OpFactory {
      * @param z    the output
      * @return the operation
      */
-    Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z);
+    ReduceOp createAccum(String name, INDArray x, INDArray y, INDArray z);
 
     /**
      *
@@ -77,7 +77,7 @@ public interface OpFactory {
      * @param extraArgs
      * @return
      */
-    Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
+    ReduceOp createAccum(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
 
     /**
      * @param name
@@ -85,7 +85,7 @@ public interface OpFactory {
      * @param y
      * @return
      */
-    Accumulation createAccum(String name, INDArray x, INDArray y);
+    ReduceOp createAccum(String name, INDArray x, INDArray y);
 
     /**
      *

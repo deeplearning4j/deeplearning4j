@@ -21,7 +21,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
-import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
@@ -46,7 +45,7 @@ import java.util.Map;
  * @author Adam Gibson
  */
 @Slf4j
-public abstract class BaseAccumulation extends BaseOp implements Accumulation {
+public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     protected Number finalResult;
     protected boolean keepDims = false;
 
@@ -56,9 +55,9 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected boolean isComplex = false;
 
 
-    public BaseAccumulation(SameDiff sameDiff,
-                            SDVariable i_v,
-                            int[] dimensions,boolean keepDims) {
+    public BaseReduceOp(SameDiff sameDiff,
+                        SDVariable i_v,
+                        int[] dimensions, boolean keepDims) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
             if(dimensions == null || dimensions.length < 1)
@@ -80,10 +79,10 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         this.newFormat = true;
     }
 
-    public BaseAccumulation(SameDiff sameDiff,
-                            SDVariable i_v,
-                            SDVariable i_v2,
-                            int[] dimensions,boolean keepDims) {
+    public BaseReduceOp(SameDiff sameDiff,
+                        SDVariable i_v,
+                        SDVariable i_v2,
+                        int[] dimensions, boolean keepDims) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
             if(dimensions == null || dimensions.length < 1)
@@ -106,29 +105,29 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
 
-    public BaseAccumulation(SameDiff sameDiff,
-                            SDVariable i_v) {
+    public BaseReduceOp(SameDiff sameDiff,
+                        SDVariable i_v) {
         this(sameDiff, i_v, null, false);
     }
 
 
-    public BaseAccumulation(SameDiff sameDiff,
-                            SDVariable i_v,
-                            int[] dimensions) {
+    public BaseReduceOp(SameDiff sameDiff,
+                        SDVariable i_v,
+                        int[] dimensions) {
         this(sameDiff,i_v,dimensions,false);
 
     }
 
-    public BaseAccumulation(SameDiff sameDiff,
-                            SDVariable i_v,
-                            SDVariable i_v2,
-                            int[] dimensions) {
+    public BaseReduceOp(SameDiff sameDiff,
+                        SDVariable i_v,
+                        SDVariable i_v2,
+                        int[] dimensions) {
         this(sameDiff,i_v,i_v2,dimensions,false);
     }
 
 
 
-    public BaseAccumulation() {}
+    public BaseReduceOp() {}
 
     /**
      * Initialize with the given
@@ -140,12 +139,12 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
      * @param z the result
      * @param n the number of elements
      */
-    public BaseAccumulation(INDArray x, INDArray y, INDArray z, long n) {
+    public BaseReduceOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init();
     }
 
-    public BaseAccumulation(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+    public BaseReduceOp(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
         super(x, y, z, x.lengthLong());
         this.newFormat = newFormat;
         this.keepDims = keepDims;
@@ -153,21 +152,21 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         init();
     }
 
-    public BaseAccumulation(INDArray x, INDArray y, long n) {
+    public BaseReduceOp(INDArray x, INDArray y, long n) {
         this(x, y, x, n);
     }
 
-    public BaseAccumulation(INDArray x) {
+    public BaseReduceOp(INDArray x) {
         this(x, null, x, x.lengthLong());
     }
 
-    public BaseAccumulation(INDArray x, INDArray y) {
+    public BaseReduceOp(INDArray x, INDArray y) {
         this(x, y, x, x.lengthLong());
         //if (y != null)
         //    LinAlgExceptions.assertSameLength(x, y);
     }
 
-    public BaseAccumulation(SameDiff sameDiff) {
+    public BaseReduceOp(SameDiff sameDiff) {
         this.sameDiff = sameDiff;
     }
 

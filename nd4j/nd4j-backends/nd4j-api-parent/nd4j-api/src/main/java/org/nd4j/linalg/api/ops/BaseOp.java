@@ -88,7 +88,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             } else {
                 type = Op.Type.PAIRWISE;
             }
-        } else if (op instanceof Accumulation) {
+        } else if (op instanceof ReduceOp) {
             if (op.y() == null)
                 type = Op.Type.REDUCE;
             else

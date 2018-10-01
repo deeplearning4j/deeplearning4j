@@ -507,27 +507,93 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param result
      * @param resultShapeInfo
      */
-    public native void execReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer x,
                                 @Cast("Nd4jLong*") LongPointer xInfo,
                                 Pointer extraParams,
                                 Pointer result,
                                 @Cast("Nd4jLong*") LongPointer resultShapeInfo);
-    public native void execReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer x,
                                 @Cast("Nd4jLong*") LongBuffer xInfo,
                                 Pointer extraParams,
                                 Pointer result,
                                 @Cast("Nd4jLong*") LongBuffer resultShapeInfo);
-    public native void execReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer x,
                                 @Cast("Nd4jLong*") long[] xInfo,
                                 Pointer extraParams,
                                 Pointer result,
                                 @Cast("Nd4jLong*") long[] resultShapeInfo);
+
+    public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                              int opNum,
+                              Pointer x,
+                              @Cast("Nd4jLong*") LongPointer xInfo,
+                              Pointer extraParams,
+                              Pointer result,
+                              @Cast("Nd4jLong*") LongPointer resultShapeInfo);
+    public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                              int opNum,
+                              Pointer x,
+                              @Cast("Nd4jLong*") LongBuffer xInfo,
+                              Pointer extraParams,
+                              Pointer result,
+                              @Cast("Nd4jLong*") LongBuffer resultShapeInfo);
+    public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                              int opNum,
+                              Pointer x,
+                              @Cast("Nd4jLong*") long[] xInfo,
+                              Pointer extraParams,
+                              Pointer result,
+                              @Cast("Nd4jLong*") long[] resultShapeInfo);
+
+    public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                              int opNum,
+                              Pointer x,
+                              @Cast("Nd4jLong*") LongPointer xInfo,
+                              Pointer extraParams,
+                              Pointer result,
+                              @Cast("Nd4jLong*") LongPointer resultShapeInfo);
+    public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                              int opNum,
+                              Pointer x,
+                              @Cast("Nd4jLong*") LongBuffer xInfo,
+                              Pointer extraParams,
+                              Pointer result,
+                              @Cast("Nd4jLong*") LongBuffer resultShapeInfo);
+    public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                              int opNum,
+                              Pointer x,
+                              @Cast("Nd4jLong*") long[] xInfo,
+                              Pointer extraParams,
+                              Pointer result,
+                              @Cast("Nd4jLong*") long[] resultShapeInfo);
+
+    public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                              int opNum,
+                              Pointer x,
+                              @Cast("Nd4jLong*") LongPointer xInfo,
+                              Pointer extraParams,
+                              Pointer result,
+                              @Cast("Nd4jLong*") LongPointer resultShapeInfo);
+    public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                              int opNum,
+                              Pointer x,
+                              @Cast("Nd4jLong*") LongBuffer xInfo,
+                              Pointer extraParams,
+                              Pointer result,
+                              @Cast("Nd4jLong*") LongBuffer resultShapeInfo);
+    public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                              int opNum,
+                              Pointer x,
+                              @Cast("Nd4jLong*") long[] xInfo,
+                              Pointer extraParams,
+                              Pointer result,
+                              @Cast("Nd4jLong*") long[] resultShapeInfo);
 
     /**
      *
@@ -538,7 +604,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param result
      * @param resultShapeInfo
      */
-    public native void execReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer x,
                                 @Cast("Nd4jLong*") LongPointer xInfo,
@@ -547,7 +613,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 @Cast("Nd4jLong*") LongPointer resultShapeInfo,
                                 IntPointer dimension,
                                 int dimensionLength);
-    public native void execReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer x,
                                 @Cast("Nd4jLong*") LongBuffer xInfo,
@@ -556,7 +622,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
                                 IntBuffer dimension,
                                 int dimensionLength);
-    public native void execReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer x,
                                 @Cast("Nd4jLong*") long[] xInfo,
@@ -565,6 +631,90 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 @Cast("Nd4jLong*") long[] resultShapeInfo,
                                 int[] dimension,
                                 int dimensionLength);
+
+    public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                          int opNum,
+                          Pointer x,
+                          @Cast("Nd4jLong*") LongPointer xInfo,
+                          Pointer extraParams,
+                          Pointer result,
+                          @Cast("Nd4jLong*") LongPointer resultShapeInfo,
+                          IntPointer dimension,
+                          int dimensionLength);
+    public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                          int opNum,
+                          Pointer x,
+                          @Cast("Nd4jLong*") LongBuffer xInfo,
+                          Pointer extraParams,
+                          Pointer result,
+                          @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
+                          IntBuffer dimension,
+                          int dimensionLength);
+    public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                          int opNum,
+                          Pointer x,
+                          @Cast("Nd4jLong*") long[] xInfo,
+                          Pointer extraParams,
+                          Pointer result,
+                          @Cast("Nd4jLong*") long[] resultShapeInfo,
+                          int[] dimension,
+                          int dimensionLength);
+
+    public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                          int opNum,
+                          Pointer x,
+                          @Cast("Nd4jLong*") LongPointer xInfo,
+                          Pointer extraParams,
+                          Pointer result,
+                          @Cast("Nd4jLong*") LongPointer resultShapeInfo,
+                          IntPointer dimension,
+                          int dimensionLength);
+    public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                          int opNum,
+                          Pointer x,
+                          @Cast("Nd4jLong*") LongBuffer xInfo,
+                          Pointer extraParams,
+                          Pointer result,
+                          @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
+                          IntBuffer dimension,
+                          int dimensionLength);
+    public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                          int opNum,
+                          Pointer x,
+                          @Cast("Nd4jLong*") long[] xInfo,
+                          Pointer extraParams,
+                          Pointer result,
+                          @Cast("Nd4jLong*") long[] resultShapeInfo,
+                          int[] dimension,
+                          int dimensionLength);
+
+    public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                          int opNum,
+                          Pointer x,
+                          @Cast("Nd4jLong*") LongPointer xInfo,
+                          Pointer extraParams,
+                          Pointer result,
+                          @Cast("Nd4jLong*") LongPointer resultShapeInfo,
+                          IntPointer dimension,
+                          int dimensionLength);
+    public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                          int opNum,
+                          Pointer x,
+                          @Cast("Nd4jLong*") LongBuffer xInfo,
+                          Pointer extraParams,
+                          Pointer result,
+                          @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
+                          IntBuffer dimension,
+                          int dimensionLength);
+    public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                          int opNum,
+                          Pointer x,
+                          @Cast("Nd4jLong*") long[] xInfo,
+                          Pointer extraParams,
+                          Pointer result,
+                          @Cast("Nd4jLong*") long[] resultShapeInfo,
+                          int[] dimension,
+                          int dimensionLength);
 
     /**
      *
@@ -780,23 +930,29 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param xShapeInfo
      * @param extraParams
      */
-    public native double execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                               int opNum,
                                               Pointer x,
                                               @Cast("Nd4jLong*") LongPointer xInfo,
                                               Pointer extraParams,
+                                              Pointer result,
+                                              @Cast("Nd4jLong*") LongPointer resultShapeInfo,
                                               @Cast("bool") boolean biasCorrected);
-    public native double execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                               int opNum,
                                               Pointer x,
                                               @Cast("Nd4jLong*") LongBuffer xInfo,
                                               Pointer extraParams,
+                                              Pointer result,
+                                              @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
                                               @Cast("bool") boolean biasCorrected);
-    public native double execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                               int opNum,
                                               Pointer x,
                                               @Cast("Nd4jLong*") long[] xInfo,
                                               Pointer extraParams,
+                                              Pointer result,
+                                              @Cast("Nd4jLong*") long[] resultShapeInfo,
                                               @Cast("bool") boolean biasCorrected);
     /**
      *
@@ -883,27 +1039,93 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param extraParams
      * @param n
      */
-    public native void execTransform(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execTransformFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                    int opNum,
                                    Pointer dx,
                                    @Cast("Nd4jLong*") LongPointer xInfo,
                                    Pointer result,
                                    @Cast("Nd4jLong*") LongPointer resultShapeInfo,
                                    Pointer extraParams);
-    public native void execTransform(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execTransformFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                    int opNum,
                                    Pointer dx,
                                    @Cast("Nd4jLong*") LongBuffer xInfo,
                                    Pointer result,
                                    @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
                                    Pointer extraParams);
-    public native void execTransform(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+    public native void execTransformFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                    int opNum,
                                    Pointer dx,
                                    @Cast("Nd4jLong*") long[] xInfo,
                                    Pointer result,
                                    @Cast("Nd4jLong*") long[] resultShapeInfo,
                                    Pointer extraParams);
+
+    public native void execTransformSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                           int opNum,
+                           Pointer dx,
+                           @Cast("Nd4jLong*") LongPointer xInfo,
+                           Pointer result,
+                           @Cast("Nd4jLong*") LongPointer resultShapeInfo,
+                           Pointer extraParams);
+    public native void execTransformSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                           int opNum,
+                           Pointer dx,
+                           @Cast("Nd4jLong*") LongBuffer xInfo,
+                           Pointer result,
+                           @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
+                           Pointer extraParams);
+    public native void execTransformSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                           int opNum,
+                           Pointer dx,
+                           @Cast("Nd4jLong*") long[] xInfo,
+                           Pointer result,
+                           @Cast("Nd4jLong*") long[] resultShapeInfo,
+                           Pointer extraParams);
+
+    public native void execTransformBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                           int opNum,
+                           Pointer dx,
+                           @Cast("Nd4jLong*") LongPointer xInfo,
+                           Pointer result,
+                           @Cast("Nd4jLong*") LongPointer resultShapeInfo,
+                           Pointer extraParams);
+    public native void execTransformBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                           int opNum,
+                           Pointer dx,
+                           @Cast("Nd4jLong*") LongBuffer xInfo,
+                           Pointer result,
+                           @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
+                           Pointer extraParams);
+    public native void execTransformBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                           int opNum,
+                           Pointer dx,
+                           @Cast("Nd4jLong*") long[] xInfo,
+                           Pointer result,
+                           @Cast("Nd4jLong*") long[] resultShapeInfo,
+                           Pointer extraParams);
+
+    public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                               int opNum,
+                               Pointer dx,
+                               @Cast("Nd4jLong*") LongPointer xInfo,
+                               Pointer result,
+                               @Cast("Nd4jLong*") LongPointer resultShapeInfo,
+                               Pointer extraParams);
+    public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                               int opNum,
+                               Pointer dx,
+                               @Cast("Nd4jLong*") LongBuffer xInfo,
+                               Pointer result,
+                               @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
+                               Pointer extraParams);
+    public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                               int opNum,
+                               Pointer dx,
+                               @Cast("Nd4jLong*") long[] xInfo,
+                               Pointer result,
+                               @Cast("Nd4jLong*") long[] resultShapeInfo,
+                               Pointer extraParams);
 
     /**
      *
@@ -2694,6 +2916,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
         public NDArray(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
         private native void allocate(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+
+        /**
+        *  this constructor creates scalar and set its value = 0
+        */
+        public NDArray(@Cast("nd4j::DataType") int dtype, Workspace workspace) { super((Pointer)null); allocate(dtype, workspace); }
+        private native void allocate(@Cast("nd4j::DataType") int dtype, Workspace workspace);
                 
 
         /**
@@ -2765,10 +2993,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  dimension - dimension along which to repeat elements        
         */
         public native void repeat(int dimension, @ByRef NDArray target);
-
-        /**
-        *  return _dataType;
-        */
 
         /**
         *  creates array which is view of this array
@@ -2947,12 +3171,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
         public native NDArray dup(char newOrder/*='a'*/);
         public native NDArray dup();
-
-        /**
-         * Returns data type of this array
-         * @return
-         */
-        public native @Cast("nd4j::DataType") int dataType();
 
         /** 
         *  returns sum of all elements of array
@@ -3535,6 +3753,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean isScalar();
 
         /**
+        * Returns data type of this array
+        * @return
+        */
+        public native @Cast("nd4j::DataType") int dataType();
+
+        /**
          * This method returns true if value is from Integer space
          * @return
          */
@@ -3902,24 +4126,30 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
     // still the definition of inline function must be in header file
     
 
-    //////////////////////////////////////////////////////////////////////////
-    
+//////////////////////////////////////////////////////////////////////////
 
-    //////////////////////////////////////////////////////////////////////////
-    
 
-    //////////////////////////////////////////////////////////////////////////
-    
+//////////////////////////////////////////////////////////////////////////
 
-    //////////////////////////////////////////////////////////////////////////
-    // returns true if these two NDArrays have same _shapeInfo
-    // still the definition of inline function must be in header file
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+// returns true if these two NDArrays have same _shapeInfo
+// still the definition of inline function must be in header file
+
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
 
     
+//////////////////////////////////////////////////////////////////////////
 
-    
 
-    
 
  
 // #endif
@@ -6052,9 +6282,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the ordering
  * for this shape information buffer
  */
-    @Namespace("shape") public static native char order(@Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native char order(@Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native char order(@Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") long[] buffer);
 
 /**
  * Returns the element wise stride for this information
@@ -7611,6 +7841,51 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define SEL_TT1_20(WHAT, YTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(YTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_TT1_19(WHAT, YTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
 
 
+// #define SEL_P1_1(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)
+// #define SEL_P1_2(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_1(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_3(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_2(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_4(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_3(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_5(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_4(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_6(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_5(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_7(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_6(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_8(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_7(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_9(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_8(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_10(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_9(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_11(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_10(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_12(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_11(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_13(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_12(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_14(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_13(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_15(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_14(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_16(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_15(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_17(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_16(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_18(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_17(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_19(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_18(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P1_20(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P1_19(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+
+// #define SEL_P2_1(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)
+// #define SEL_P2_2(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_1(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_3(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_2(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_4(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_3(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_5(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_4(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_6(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_5(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_7(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_6(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_8(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_7(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_9(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_8(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_10(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_9(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_11(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_10(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_12(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_11(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_13(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_12(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_14(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_13(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_15(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_14(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_16(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_15(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_17(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_16(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_18(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_17(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_19(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_18(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define SEL_P2_20(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_P2_19(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+
+
+
+
 // #define SEL_TT2_1(WHAT, NAME, SIGNATURE, TYPE_A, TYPE_B) WHAT(NAME, SIGNATURE, TYPE_A, TYPE_B)
 // #define SEL_TT2_2(WHAT, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_TT2_1(WHAT, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
 // #define SEL_TT2_3(WHAT, NAME, SIGNATURE, TYPE_A, TYPE_B, ...) WHAT(NAME, SIGNATURE, TYPE_A, TYPE_B)EVAL(SEL_TT2_2(WHAT, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
@@ -7653,6 +7928,208 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define DS_18(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DS_17(WHAT, NAME, SIGNATURE, __VA_ARGS__))
 // #define DS_19(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DS_18(WHAT, NAME, SIGNATURE, __VA_ARGS__))
 // #define DS_20(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DS_19(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+
+
+// #define DP_1(WHAT, NAME, SIGNATURE, TYPE_A) WHAT(NAME, SIGNATURE, TYPE_A)
+// #define DP_2(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_1(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_3(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_2(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_4(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_3(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_5(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_4(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_6(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_5(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_7(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_6(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_8(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_7(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_9(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_8(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_10(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_9(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_11(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_10(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_12(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_11(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_13(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_12(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_14(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_13(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_15(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_14(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_16(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_15(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_17(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_16(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_18(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_17(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_19(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_18(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_20(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_19(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_21(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_20(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_22(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_21(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_23(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_22(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_24(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_23(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_25(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_24(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_26(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_25(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_27(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_26(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_28(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_27(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_29(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_28(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_30(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_29(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_31(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_30(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_32(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_31(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_33(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_32(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_34(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_33(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_35(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_34(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_36(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_35(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_37(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_36(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_38(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_37(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_39(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_38(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_40(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_39(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_41(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_40(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_42(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_41(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_43(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_42(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_44(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_43(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_45(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_44(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_46(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_45(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_47(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_46(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_48(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_47(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_49(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_48(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_50(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_49(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_51(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_50(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_52(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_51(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_53(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_52(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_54(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_53(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_55(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_54(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_56(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_55(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_57(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_56(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_58(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_57(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_59(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_58(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_60(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_59(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_61(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_60(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_62(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_61(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_63(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_62(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_64(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_63(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_65(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_64(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_66(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_65(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_67(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_66(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_68(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_67(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_69(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_68(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_70(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_69(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_71(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_70(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_72(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_71(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_73(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_72(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_74(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_73(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_75(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_74(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_76(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_75(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_77(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_76(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_78(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_77(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_79(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_78(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_80(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_79(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_81(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_80(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_82(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_81(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_83(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_82(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_84(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_83(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_85(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_84(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_86(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_85(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_87(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_86(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_88(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_87(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_89(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_88(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_90(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_89(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_91(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_90(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_92(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_91(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_93(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_92(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_94(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_93(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_95(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_94(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_96(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_95(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_97(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_96(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_98(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_97(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_99(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_98(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_100(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_99(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_101(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_100(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_102(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_101(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_103(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_102(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_104(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_103(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_105(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_104(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_106(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_105(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_107(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_106(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_108(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_107(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_109(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_108(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_110(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_109(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_111(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_110(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_112(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_111(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_113(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_112(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_114(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_113(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_115(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_114(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_116(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_115(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_117(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_116(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_118(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_117(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_119(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_118(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_120(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_119(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_121(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_120(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_122(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_121(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_123(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_122(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_124(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_123(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_125(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_124(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_126(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_125(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_127(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_126(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_128(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_127(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_129(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_128(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_130(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_129(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_131(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_130(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_132(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_131(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_133(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_132(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_134(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_133(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_135(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_134(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_136(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_135(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_137(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_136(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_138(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_137(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_139(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_138(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_140(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_139(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_141(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_140(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_142(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_141(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_143(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_142(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_144(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_143(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_145(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_144(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_146(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_145(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_147(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_146(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_148(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_147(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_149(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_148(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_150(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_149(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_151(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_150(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_152(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_151(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_153(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_152(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_154(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_153(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_155(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_154(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_156(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_155(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_157(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_156(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_158(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_157(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_159(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_158(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_160(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_159(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_161(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_160(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_162(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_161(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_163(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_162(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_164(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_163(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_165(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_164(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_166(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_165(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_167(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_166(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_168(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_167(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_169(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_168(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_170(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_169(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_171(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_170(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_172(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_171(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_173(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_172(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_174(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_173(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_175(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_174(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_176(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_175(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_177(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_176(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_178(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_177(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_179(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_178(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_180(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_179(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_181(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_180(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_182(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_181(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_183(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_182(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_184(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_183(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_185(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_184(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_186(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_185(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_187(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_186(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_188(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_187(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_189(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_188(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_190(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_189(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_191(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_190(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_192(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_191(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_193(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_192(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_194(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_193(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_195(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_194(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_196(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_195(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_197(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_196(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_198(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_197(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_199(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_198(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define DP_200(WHAT, NAME, SIGNATURE, TYPE_A, ...) WHAT(NAME, SIGNATURE, TYPE_A)EVAL(DP_199(WHAT, NAME, SIGNATURE, __VA_ARGS__))
 
 
 // #define DT_1(WHAT, NAME, SIGNATURE, TYPE_A, TYPE_B) WHAT(NAME, SIGNATURE, TYPE_A, TYPE_B)
@@ -7828,11 +8305,15 @@ public static final int PREALLOC_SIZE = 33554432;
 
 
 // #define GET_MACRO_SEL_T(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
+// #define GET_MACRO_SEL_P1(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
+// #define GET_MACRO_SEL_P2(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
 // #define GET_MACRO_SEL_TT1(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
 // #define GET_MACRO_SEL_TT2(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
 // #define GET_MACRO_DS(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
 // #define GET_MACRO_DT(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
+// #define GET_MACRO_DP(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, _100, _101, _102, _103, _104, _105, _106, _107, _108, _109, _110, _111, _112, _113, _114, _115, _116, _117, _118, _119, _120, _121, _122, _123, _124, _125, _126, _127, _128, _129, _130, _131, _132, _133, _134, _135, _136, _137, _138, _139, _140, _141, _142, _143, _144, _145, _146, _147, _148, _149, _150, _151, _152, _153, _154, _155, _156, _157, _158, _159, _160, _161, _162, _163, _164, _165, _166, _167, _168, _169, _170, _171, _172, _173, _174, _175, _176, _177, _178, _179, _180, _181, _182, _183, _184, _185, _186, _187, _188, _189, _190, _191, _192, _193, _194, _195, _196, _197, _198, _199, _200, NAME,...) NAME
 // #define GET_MACRO_DT2(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
+
 
 // #define GET_MACRO_TT1(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
 // #define GET_MACRO_TT2(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
@@ -7844,10 +8325,14 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #define FOR_EACH_S1(WHAT, NAME, SIGNATURE, ...) EXPAND(GET_MACRO_SEL_T(__VA_ARGS__, SEL_T_20, SEL_T_19, SEL_T_18, SEL_T_17, SEL_T_16, SEL_T_15, SEL_T_14, SEL_T_13, SEL_T_12, SEL_T_11, SEL_T_10, SEL_T_9, SEL_T_8, SEL_T_7, SEL_T_6, SEL_T_5, SEL_T_4, SEL_T_3, SEL_T_2, SEL_T_1)(WHAT, NAME, SIGNATURE, __VA_ARGS__))
 // #define FOR_EACH_S2(WHAT, YTYPE, NAME, SIGNATURE, TYPES_A, ...) EXPAND(GET_MACRO_SEL_TT1(__VA_ARGS__, SEL_TT1_20, SEL_TT1_19, SEL_TT1_18, SEL_TT1_17, SEL_TT1_16, SEL_TT1_15, SEL_TT1_14, SEL_TT1_13, SEL_TT1_12, SEL_TT1_11, SEL_TT1_10, SEL_TT1_9, SEL_TT1_8, SEL_TT1_7, SEL_TT1_6, SEL_TT1_5, SEL_TT1_4, SEL_TT1_3, SEL_TT1_2, SEL_TT1_1)(WHAT, YTYPE, NAME, SIGNATURE, TYPES_A, __VA_ARGS__))
+// #define FOR_EACH_P1(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_A, ...) EXPAND(GET_MACRO_SEL_P1(__VA_ARGS__, SEL_P1_20, SEL_P1_19, SEL_P1_18, SEL_P1_17, SEL_P1_16, SEL_P1_15, SEL_P1_14, SEL_P1_13, SEL_P1_12, SEL_P1_11, SEL_P1_10, SEL_P1_9, SEL_P1_8, SEL_P1_7, SEL_P1_6, SEL_P1_5, SEL_P1_4, SEL_P1_3, SEL_P1_2, SEL_P1_1)(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_A, __VA_ARGS__))
+// #define FOR_EACH_P2(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_A, ...) EXPAND2(GET_MACRO_SEL_P2(__VA_ARGS__, SEL_P2_20, SEL_P2_19, SEL_P2_18, SEL_P2_17, SEL_P2_16, SEL_P2_15, SEL_P2_14, SEL_P2_13, SEL_P2_12, SEL_P2_11, SEL_P2_10, SEL_P2_9, SEL_P2_8, SEL_P2_7, SEL_P2_6, SEL_P2_5, SEL_P2_4, SEL_P2_3, SEL_P2_2, SEL_P2_1)(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_A, __VA_ARGS__))
 // #define FOR_EACH_S3(WHAT, NAME, SIGNATURE, TYPE_A, ...) EXPAND(GET_MACRO_SEL_TT2(__VA_ARGS__, SEL_TT2_20, SEL_TT2_19, SEL_TT2_18, SEL_TT2_17, SEL_TT2_16, SEL_TT2_15, SEL_TT2_14, SEL_TT2_13, SEL_TT2_12, SEL_TT2_11, SEL_TT2_10, SEL_TT2_9, SEL_TT2_8, SEL_TT2_7, SEL_TT2_6, SEL_TT2_5, SEL_TT2_4, SEL_TT2_3, SEL_TT2_2, SEL_TT2_1)(WHAT, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
 // #define FOR_EACH_DS(WHAT, NAME, SIGNATURE, ...) EXPAND(GET_MACRO_DS(__VA_ARGS__, DS_20, DS_19, DS_18, DS_17, DS_16, DS_15, DS_14, DS_13, DS_12, DS_11, DS_10, DS_9, DS_8, DS_7, DS_6, DS_5, DS_4, DS_3, DS_2, DS_1)(WHAT, NAME, SIGNATURE, __VA_ARGS__))
 // #define FOR_EACH_DT(WHAT, NAME, SIGNATURE, TYPES_A, ...) EXPAND(GET_MACRO_DT(__VA_ARGS__, DT_20, DT_19, DT_18, DT_17, DT_16, DT_15, DT_14, DT_13, DT_12, DT_11, DT_10, DT_9, DT_8, DT_7, DT_6, DT_5, DT_4, DT_3, DT_2, DT_1)(WHAT, NAME, SIGNATURE, TYPES_A, __VA_ARGS__))
 // #define FOR_EACH_DT2(WHAT, NAME, SIGNATURE, TYPE_A, ...) EXPAND(GET_MACRO_DT2(__VA_ARGS__, DT2_20, DT2_19, DT2_18, DT2_17, DT2_16, DT2_15, DT2_14, DT2_13, DT2_12, DT2_11, DT2_10, DT2_9, DT2_8, DT2_7, DT2_6, DT2_5, DT2_4, DT2_3, DT2_2, DT2_1)(WHAT, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define FOR_EACH_DP(WHAT, NAME, SIGNATURE, ...) EXPAND(GET_MACRO_DP(__VA_ARGS__, DP_200, DP_199, DP_198, DP_197, DP_196, DP_195, DP_194, DP_193, DP_192, DP_191, DP_190, DP_189, DP_188, DP_187, DP_186, DP_185, DP_184, DP_183, DP_182, DP_181, DP_180, DP_179, DP_178, DP_177, DP_176, DP_175, DP_174, DP_173, DP_172, DP_171, DP_170, DP_169, DP_168, DP_167, DP_166, DP_165, DP_164, DP_163, DP_162, DP_161, DP_160, DP_159, DP_158, DP_157, DP_156, DP_155, DP_154, DP_153, DP_152, DP_151, DP_150, DP_149, DP_148, DP_147, DP_146, DP_145, DP_144, DP_143, DP_142, DP_141, DP_140, DP_139, DP_138, DP_137, DP_136, DP_135, DP_134, DP_133, DP_132, DP_131, DP_130, DP_129, DP_128, DP_127, DP_126, DP_125, DP_124, DP_123, DP_122, DP_121, DP_120, DP_119, DP_118, DP_117, DP_116, DP_115, DP_114, DP_113, DP_112, DP_111, DP_110, DP_109, DP_108, DP_107, DP_106, DP_105, DP_104, DP_103, DP_102, DP_101, DP_100, DP_99, DP_98, DP_97, DP_96, DP_95, DP_94, DP_93, DP_92, DP_91, DP_90, DP_89, DP_88, DP_87, DP_86, DP_85, DP_84, DP_83, DP_82, DP_81, DP_80, DP_79, DP_78, DP_77, DP_76, DP_75, DP_74, DP_73, DP_72, DP_71, DP_70, DP_69, DP_68, DP_67, DP_66, DP_65, DP_64, DP_63, DP_62, DP_61, DP_60, DP_59, DP_58, DP_57, DP_56, DP_55, DP_54, DP_53, DP_52, DP_51, DP_50, DP_49, DP_48, DP_47, DP_46, DP_45, DP_44, DP_43, DP_42, DP_41, DP_40, DP_39, DP_38, DP_37, DP_36, DP_35, DP_34, DP_33, DP_32, DP_31, DP_30, DP_29, DP_28, DP_27, DP_26, DP_25, DP_24, DP_23, DP_22, DP_21, DP_20, DP_19, DP_18, DP_17, DP_16, DP_15, DP_14, DP_13, DP_12, DP_11, DP_10, DP_9, DP_8, DP_7, DP_6, DP_5, DP_4, DP_3, DP_2, DP_1)(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+
 
 // #define FOR_EACH_TT1(WHAT, NAME, SIGNATURE, TYPES_X, TYPES_Y, ...) EXPAND(GET_MACRO_TT1(__VA_ARGS__, TT1_20, TT1_19, TT1_18, TT1_17, TT1_16, TT1_15, TT1_14, TT1_13, TT1_12, TT1_11, TT1_10, TT1_9, TT1_8, TT1_7, TT1_6, TT1_5, TT1_4, TT1_3, TT1_2, TT1_1)(WHAT, NAME, SIGNATURE, TYPES_X, TYPES_Y, __VA_ARGS__))
 // #define FOR_EACH_TT2(WHAT, NAME, SIGNATURE, TYPE_Z, TYPES_X,  ...) EXPAND(GET_MACRO_TT2(__VA_ARGS__, TT2_20, TT2_19, TT2_18, TT2_17, TT2_16, TT2_15, TT2_14, TT2_13, TT2_12, TT2_11, TT2_10, TT2_9, TT2_8, TT2_7, TT2_6, TT2_5, TT2_4, TT2_3, TT2_2, TT2_1)(WHAT, NAME, SIGNATURE, TYPE_Z, TYPES_X, __VA_ARGS__))
@@ -7858,11 +8343,14 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define FOR_EACH_TTT3(WHAT, ZTYPE, NAME, SIGNATURE, TYPE_X, TYPE_Y, ...) EXPAND(GET_MACRO_TTT3(__VA_ARGS__, TTT3_20, TTT3_19, TTT3_18, TTT3_17, TTT3_16, TTT3_15, TTT3_14, TTT3_13, TTT3_12, TTT3_11, TTT3_10, TTT3_9, TTT3_8, TTT3_7, TTT3_6, TTT3_5, TTT3_4, TTT3_3, TTT3_2, TTT3_1)(WHAT, ZTYPE, NAME, SIGNATURE, TYPE_X, TYPE_Y, __VA_ARGS__))
 
 // #define _EXEC_SELECTOR_T(WHAT, NAME, SIGNATURE, ...) EVAL(FOR_EACH_S1(WHAT, NAME, SIGNATURE, __VA_ARGS__))
+// #define _EXEC_SELECTOR_P_1(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_A, ...) EVAL(FOR_EACH_P1(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_A, __VA_ARGS__))
+// #define _EXEC_SELECTOR_P_2(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, ...) EVAL(FOR_EACH_P2(WHAT, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
 // #define _EXEC_SELECTOR_TT_1(WHAT, YTYPE, NAME, SIGNATURE, TYPES_A, ...) EVAL(FOR_EACH_S2(WHAT, YTYPE, NAME, SIGNATURE, TYPES_A, __VA_ARGS__))
 // #define _EXEC_SELECTOR_TT_2(WHAT, NAME, SIGNATURE, TYPE_A, ...) EVAL(FOR_EACH_S3(WHAT, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
 // #define _EXEC_SINGLE_T(WHAT, NAME, SIGNATURE, ...) EVAL(FOR_EACH_DS(WHAT, NAME, SIGNATURE, __VA_ARGS__))
 // #define _EXEC_DOUBLE_T(WHAT, NAME, SIGNATURE, TYPES_A, ...) EVAL(FOR_EACH_DT(WHAT, NAME, SIGNATURE, LIST(TYPES_A), __VA_ARGS__))
 // #define _EXEC_DOUBLE_T2(WHAT, NAME, SIGNATURE, TYPE_A, ...) EVAL(FOR_EACH_DT2(WHAT, NAME, SIGNATURE, TYPE_A, __VA_ARGS__))
+// #define _EXEC_DOUBLE_P(WHAT, NAME, SIGNATURE, ...) EVAL(FOR_EACH_DP(WHAT, NAME, SIGNATURE, __VA_ARGS__))
 
 // #define _EXEC_SELECTOR_TTT_1(WHAT, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_Z, TYPES_Y, ...) EVAL(FOR_EACH_TTT1(WHAT, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_Z, TYPES_Y, __VA_ARGS__))
 // #define _EXEC_SELECTOR_TTT_2(WHAT, ZTYPE, NAME, SIGNATURE, TYPE_X, TYPES_Z, ...) EVAL(FOR_EACH_TTT2(WHAT, ZTYPE, NAME, SIGNATURE, TYPE_X, TYPES_Z, __VA_ARGS__))
@@ -7871,6 +8359,9 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define _EXEC_TRIPLE_T3(WHAT, NAME, SIGNATURE, TYPE_Z, TYPE_Y, ...) EVAL(FOR_EACH_TT3(WHAT, NAME, SIGNATURE, TYPE_Z, TYPE_Y, __VA_ARGS__))
 // #define _EXEC_TRIPLE_T2(WHAT, NAME, SIGNATURE, TYPE_Z, TYPES_X, ...) EVAL(FOR_EACH_TT2(WHAT, NAME, SIGNATURE, TYPE_Z, LIST(TYPES_X), __VA_ARGS__))
 // #define _EXEC_TRIPLE_T1(WHAT, NAME, SIGNATURE, TYPES_X, TYPES_Y, ...) EVAL(FOR_EACH_TT1(WHAT, NAME, SIGNATURE, LIST(TYPES_X), LIST(TYPES_Y), __VA_ARGS__))
+
+// #define DISPATCH_PAIRWISE(NAME, SIGNATURE, TYPE, TYPES_B) EVAL(_EXEC_DOUBLE_T2(RANDOMPAIRWISE2, NAME, SIGNATURE, TYPE, TYPES_B))
+// #define DISPATCH_PAIRWISE2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE, ...) EVAL(_EXEC_SELECTOR_P_2(SELECTOR_PAIRWISE_2, XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE, __VA_ARGS__))
 
 // #define DISPATCH_DTYPES(NAME, SIGNATURE, TYPE, TYPES_B) EVAL(_EXEC_DOUBLE_T2(RANDOMDOUBLE2, NAME, SIGNATURE, TYPE, TYPES_B))
 // #define DISPATCH_DTYPES2(NAME, SIGNATURE, TYPE, ...) EVAL(_EXEC_SELECTOR_TT_2(SELECTOR_DOUBLE_2, NAME, SIGNATURE, TYPE, __VA_ARGS__))
@@ -7883,11 +8374,14 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define BUILD_SINGLE_UNCHAINED_TEMPLATE(NAME, SIGNATURE, TYPES) EVAL(_EXEC_SINGLE_T(RANDOMSINGLEU, NAME, (SIGNATURE), TYPES))
 // #define BUILD_SINGLE_TEMPLATE(NAME, SIGNATURE, TYPES) EVAL(_EXEC_SINGLE_T(RANDOMSINGLE, NAME, (SIGNATURE), TYPES))
 // #define BUILD_DOUBLE_TEMPLATE(NAME, SIGNATURE, TYPES_A, TYPES_B) EVAL(_EXEC_DOUBLE_T(RANDOMDOUBLE, NAME, (SIGNATURE), (TYPES_A), TYPES_B))
-// #define BUILD_SINGLE_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES) switch(XTYPE) { EVAL(_EXEC_SELECTOR_T(SELECTOR_SINGLE, NAME, SIGNATURE, TYPES)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); }}
-// #define BUILD_SINGLE_PARTIAL_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES) switch(XTYPE) { EVAL(_EXEC_SELECTOR_T(SELECTOR_PARTIAL_SINGLE, NAME, SIGNATURE, TYPES)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); }}
-// #define BUILD_DOUBLE_SELECTOR(XTYPE, YTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B) switch(XTYPE) { EVAL(_EXEC_SELECTOR_TT_1(SELECTOR_DOUBLE, YTYPE, NAME, (SIGNATURE), (TYPES_B), TYPES_A)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); }}
-// #define BUILD_TRIPLE_SELECTOR(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPES_Z) switch(XTYPE) { EVAL(_EXEC_SELECTOR_TTT_1(SELECTOR_TRIPLE, YTYPE, ZTYPE, NAME, SIGNATURE, (TYPES_Z), (TYPES_Y), TYPES_X)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); } }
+// #define BUILD_SINGLE_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES) switch(XTYPE) { EVAL(_EXEC_SELECTOR_T(SELECTOR_SINGLE, NAME, SIGNATURE, TYPES)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type");}}
+
+// #define BUILD_SINGLE_PARTIAL_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES) switch(XTYPE) { EVAL(_EXEC_SELECTOR_T(SELECTOR_PARTIAL_SINGLE, NAME, SIGNATURE, TYPES)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type"); }}
+// #define BUILD_DOUBLE_SELECTOR(XTYPE, YTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B) switch(XTYPE) { EVAL(_EXEC_SELECTOR_TT_1(SELECTOR_DOUBLE, YTYPE, NAME, (SIGNATURE), (TYPES_B), TYPES_A)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); fflush(stdout); throw std::runtime_error("bad data type");}}
+// #define BUILD_TRIPLE_SELECTOR(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPES_Z) switch(XTYPE) { EVAL(_EXEC_SELECTOR_TTT_1(SELECTOR_TRIPLE, YTYPE, ZTYPE, NAME, SIGNATURE, (TYPES_Z), (TYPES_Y), TYPES_X)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type"); } }
 // #define BUILD_TRIPLE_TEMPLATE(NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPES_Z) EVAL(_EXEC_TRIPLE_T1(RANDOMTRIPLE, NAME, (SIGNATURE), (TYPES_X), (TYPES_Y), TYPES_Z))
+// #define BUILD_PAIRWISE_TEMPLATE(NAME, SIGNATURE, TYPES_A) EVAL(_EXEC_DOUBLE_P(RANDOMPAIRWISE, NAME, (SIGNATURE), TYPES_A))
+// #define BUILD_PAIRWISE_SELECTOR(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B) switch(XTYPE) { EVAL(_EXEC_SELECTOR_P_1(SELECTOR_PAIRWISE, XTYPE, YTYPE, ZTYPE, NAME, (SIGNATURE), (TYPES_B), TYPES_A)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type"); }}
 // #else
 // #define BUILD_SINGLE_UNCHAINED_TEMPLATE(NAME, SIGNATURE, TYPES) 
 // #define BUILD_SINGLE_TEMPLATE(NAME, SIGNATURE, TYPES)
@@ -7897,6 +8391,8 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define BUILD_DOUBLE_SELECTOR(XTYPE, YTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B)
 // #define BUILD_TRIPLE_SELECTOR(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPES_Z)
 // #define BUILD_TRIPLE_TEMPLATE(NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPES_Z)
+// #define BUILD_PAIRWISE_TEMPLATE(NAME, SIGNATURE, TYPES_A)
+// #define BUILD_PAIRWISE_SELECTOR(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B)
 // #endif
 
 // #define LIST(...) __VA_ARGS__
@@ -7907,6 +8403,10 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define _SELECTOR_DOUBLE(YTYPE, NAME, SIGNATURE, ENUM, TYPE_A, ...) case ENUM: { switch(YTYPE) { EXPAND(DISPATCH_DTYPES2(NAME, SIGNATURE, TYPE_A, __VA_ARGS__)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d\n", YTYPE, __FILE__, __LINE__); fflush(stdout);}}; break; };
 // #define SELECTOR_DOUBLE(YTYPE, NAME, SIGNATURE, TYPES_B, TYPE_A)  EVALUATING_PASTE(_SELECTOR, _DOUBLE(YTYPE, NAME, SIGNATURE, UNPAREN(TYPE_A), UNPAREN(TYPES_B)))
 
+// #define _SELECTOR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B) case ENUM: { if (ZTYPE == YTYPE) {NAME<TYPE_A, TYPE_B, TYPE_B> SIGNATURE;} else if (XTYPE == ZTYPE ){NAME<TYPE_A, TYPE_B, TYPE_A> SIGNATURE;} else {printf("[ERROR] Unknown dtypeX=%d on %s:%d\n", YTYPE, __FILE__, __LINE__); fflush(stdout); throw std::runtime_error("Unknown Z operand");}; break; };
+// #define SELECTOR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B) EVALUATING_PASTE2(_SELECT, OR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, UNPAREN3(SIGNATURE), TYPE_A, UNPAREN3(TYPE_B)))
+// #define _SELECTOR_PAIRWISE(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, ENUM, TYPE_A, ...) case ENUM: { switch(YTYPE) { EXPAND(DISPATCH_PAIRWISE2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d\n", YTYPE, __FILE__, __LINE__); fflush(stdout);}}; break; };
+// #define SELECTOR_PAIRWISE(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_B, TYPE_A)  EVALUATING_PASTE(_SELECTOR, _PAIRWISE(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, UNPAREN(TYPE_A), UNPAREN(TYPES_B)))
 
 // #define _SELECTOR_TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, ENUM_Z, TYPE_Z) case ENUM_Z: { NAME<TYPE_X, TYPE_Y, TYPE_Z>SIGNATURE;}; break;
 // #define SELECTOR_TRIPLE_3(ZTYPE, NAME, SIGNATURE, TYPE_X, TYPE_Y, TYPE_Z) EVALUATING_PASTE3(_SELECTOR, _TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, UNPAREN3(TYPE_Z)))
@@ -7926,8 +8426,12 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define RANDOMSINGLE(A, B, C) EVALUATING_PASTE(_RAND, OMSINGLE(A, UNPAREN(B), UNPAREN(C)))
 // #define RANDOMSINGLEU(A, B, C) EVALUATING_PASTE(_RAND, OMSINGLEU(A, UNPAREN(B), UNPAREN(C)))
 // #define RANDOMDOUBLE(A, B, C, D) EXPAND(DISPATCH_DTYPES(A, UNPAREN(B), D, UNPAREN(C)))
+
 // #define _RANDOMDOUBLE2(A, B, C, D, E, F) A<F,D>B;
 // #define RANDOMDOUBLE2(A, B, C, D) EVALUATING_PASTE(_RAND, OMDOUBLE2(A, B, UNPAREN(C), UNPAREN(D)))
+
+// #define _RANDOMPAIRWISE2(A, B, C, D, E) A<B,C,D>E;
+// #define RANDOMPAIRWISE(A, B, C) EVALUATING_PASTE(_RANDOM, PAIRWISE2(A, UNPAREN(C), UNPAREN(B)))
 
 // #define _RANDOMTRIPLE3(A, B, ZN, ZT, YN, YT, XN, XT) A<XT, YT, ZT>B;
 // #define RANDOMTRIPLE3(A, B, Z, Y, X) EVALUATING_PASTE(_RANDOM, TRIPLE3(A, UNPAREN(B), UNPAREN(Z), UNPAREN(Y), UNPAREN(X)))
@@ -8070,10 +8574,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #define _EXPAND_OP_CALL(FN, SIG, NUM, TYPE) case NUM: { FN<TYPE<X>>SIG; break; };
 // #define _EXPAND_OP_CALL_TT(FN, SIG, NUM, TYPE) case NUM: { FN<TYPE<X,Y>>SIG; break; };
+// #define _EXPAND_OP_CALL_TTT(FN, SIG, NUM, TYPE) case NUM: { FN<TYPE<X,Y,Z>>SIG; break; };
 // #define _EXPAND_RETURNING_OP_CALL(FN, SIG, NUM, TYPE) else if(opNum == NUM){ return FN<TYPE<X>>SIG; }
 // #define _EXPAND_RETURNING_OP_CALL_TT(FN, SIG, NUM, TYPE) else if(opNum == NUM){ return FN<TYPE<X, Y>>SIG; }
 // #define _EXPAND_PACKED_OP_CALL(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL (FN, SIG, UNPAREN(OPNUM_PAIR)))
 // #define _EXPAND_PACKED_OP_CALL_TT(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_TT (FN, SIG, UNPAREN(OPNUM_PAIR)))
+// #define _EXPAND_PACKED_OP_CALL_TTT(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_TTT (FN, SIG, UNPAREN(OPNUM_PAIR)))
 // #define _EXPAND_RETURNING_PACKED_OP_CALL(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _RETURNING_OP_CALL (FN, SIG, UNPAREN(OPNUM_PAIR)))
 // #define _EXPAND_RETURNING_PACKED_OP_CALL_TT(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _RETURNING_OP_CALL_TT (FN, SIG, UNPAREN(OPNUM_PAIR)))
 
@@ -9090,6 +9596,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //_EXPAND_PACKED_OP_CALL
 // #define DISPATCH_BY_OPNUM_T(NAME, SIGNATURE, ...) switch(opNum) { EVAL(_EXEC_OPS(_EXPAND_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) default: { printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }}
 // #define DISPATCH_BY_OPNUM_TT(NAME, SIGNATURE, ...) switch(opNum) { EVAL(_EXEC_OPS(_EXPAND_PACKED_OP_CALL_TT, NAME, (SIGNATURE), __VA_ARGS__)) default: { printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }}
+// #define DISPATCH_BY_OPNUM_TTT(NAME, SIGNATURE, ...) switch(opNum) { EVAL(_EXEC_OPS(_EXPAND_PACKED_OP_CALL_TTT, NAME, (SIGNATURE), __VA_ARGS__)) default: { printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }}
 
 // #ifdef __clang__
 // #define DISPATCH_METAOP(NAME, SIGNATURE, OPCLASS, LIST_A, LIST_B) EVAL(_EXEC_META_M(RANDOMWHAT, NAME, (SIGNATURE), OPCLASS, (LIST_A), LIST_B))
@@ -9502,9 +10009,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define LIBND4J_OPDESCRIPTOR_H
 
 // #include <string>
+// #include <vector>
+// #include <map>
+// #include <initializer_list>
 // #include <helpers/helper_hash.h>
 // #include <ops/InputType.h>
 // #include <graph/generated/node_generated.h>
+// #include <array/DataType.h>
 
         /**
         *   This class is very basic info holder for ops. bean/pojo pretty much.
@@ -9591,8 +10102,15 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
             public native void setHash(@Cast("Nd4jLong") long hash);
 
-            public native void setInputType(@Cast("nd4j::ops::InputType") int type);
             public native @Cast("nd4j::ops::InputType") int inputType();
+
+            public native OpDescriptor setInputType(@Cast("const nd4j::ops::InputType") int type);
+            public native OpDescriptor setAllowedInputTypes(@Cast("const nd4j::DataType") int dtype);
+            public native OpDescriptor setAllowedOutputTypes(@Cast("const nd4j::DataType") int dtype);
+            public native OpDescriptor setSameMode(@Cast("const bool") boolean reallySame);
+            public native OpDescriptor setInputType(int idx, @Cast("const nd4j::DataType") int dtype);
+            public native OpDescriptor setOutputType(int idx, @Cast("const nd4j::DataType") int dtype);
+
         }
     
 

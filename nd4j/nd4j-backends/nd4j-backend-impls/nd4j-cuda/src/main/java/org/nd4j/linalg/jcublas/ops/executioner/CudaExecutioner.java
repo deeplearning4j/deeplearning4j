@@ -204,7 +204,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
      * @param dimension
      * @return
      */
-    protected INDArray naiveExec(Accumulation op, int... dimension) {
+    protected INDArray naiveExec(ReduceOp op, int... dimension) {
         long st = profilingHookIn(op);
         INDArray ret = op.z();
 
@@ -545,7 +545,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public INDArray exec(Accumulation op, int... dimension) {
+    public INDArray exec(ReduceOp op, int... dimension) {
         long st = profilingHookIn(op);
         checkForCompression(op);
 
@@ -814,8 +814,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             invoke(t);
-        } else if (op instanceof Accumulation) {
-            Accumulation acc = (Accumulation) op;
+        } else if (op instanceof ReduceOp) {
+            ReduceOp acc = (ReduceOp) op;
             invoke(acc, null);
         } else if (op instanceof ScalarOp) {
             ScalarOp sc = (ScalarOp) op;
@@ -1030,7 +1030,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
 
-    protected CudaContext invoke(Accumulation op, int[] dimension) {
+    protected CudaContext invoke(ReduceOp op, int[] dimension) {
         long st = profilingHookIn(op);
 
         checkForCompression(op);

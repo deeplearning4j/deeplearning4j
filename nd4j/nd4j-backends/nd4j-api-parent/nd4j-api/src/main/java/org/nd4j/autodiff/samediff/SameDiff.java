@@ -10565,15 +10565,15 @@ public class SameDiff {
                     op.exec();
                 } else {
                     int[] axes = differentialFunction.getDimensions();
-                    if (differentialFunction instanceof Accumulation) {
-                        Accumulation accumulation = (Accumulation) differentialFunction;
+                    if (differentialFunction instanceof ReduceOp) {
+                        ReduceOp reduceOp = (ReduceOp) differentialFunction;
 
-                        Nd4j.getExecutioner().exec(accumulation, axes);
+                        Nd4j.getExecutioner().exec(reduceOp, axes);
 
                         if (differentialFunction.outputVariable().getArr() == null) {
                             val var = differentialFunction.outputVariables()[0];
-                            updateVariable(var.getVarName(), accumulation.z());
-                            updateShapeForVarName(var.getVarName(), accumulation.z().shape());
+                            updateVariable(var.getVarName(), reduceOp.z());
+                            updateShapeForVarName(var.getVarName(), reduceOp.z().shape());
                         }
                     } else if (differentialFunction instanceof BroadcastOp) {
                         BroadcastOp broadcastOp = (BroadcastOp) differentialFunction;

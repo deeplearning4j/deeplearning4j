@@ -67,7 +67,7 @@ namespace nd4j {
     }
 
     nd4j::DataType Environment::defaultFloatDataType() {
-        _dataType.load();
+        return _dataType.load();
     }
 
     void Environment::setDefaultFloatDataType(nd4j::DataType dtype) {

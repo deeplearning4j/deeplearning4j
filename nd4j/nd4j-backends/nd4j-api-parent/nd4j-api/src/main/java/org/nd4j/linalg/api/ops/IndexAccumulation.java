@@ -25,7 +25,7 @@ import org.nd4j.linalg.primitives.Pair;
  * element equal to value y, index of the maximum pair-wise difference
  * between two NDArrays X and Y etc.<br>
  *
- * Index accumulation is similar to {@link Accumulation} in that both are
+ * Index accumulation is similar to {@link ReduceOp} in that both are
  * accumulation/reduction operations, however index accumulation returns
  * an integer corresponding to an index, rather than a real (or complex)
  * value.<br>
