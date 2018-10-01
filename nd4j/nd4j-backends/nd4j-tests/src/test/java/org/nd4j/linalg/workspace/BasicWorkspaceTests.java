@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,7 +45,7 @@ import static org.junit.Assert.*;
 @Slf4j
 @RunWith(Parameterized.class)
 public class BasicWorkspaceTests extends BaseNd4jTest {
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     private static final WorkspaceConfiguration basicConfig = WorkspaceConfiguration.builder()
                     .initialSize(10 * 1024 * 1024).maxSize(10 * 1024 * 1024).overallocationLimit(0.1)
@@ -69,7 +70,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Before
     public void setUp() {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @After

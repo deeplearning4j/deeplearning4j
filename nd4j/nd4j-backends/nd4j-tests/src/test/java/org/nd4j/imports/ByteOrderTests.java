@@ -26,6 +26,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -52,7 +53,7 @@ public class ByteOrderTests  extends BaseNd4jTest {
     public void testByteArrayOrder1() {
         val ndarray = Nd4j.create(2).assign(1);
 
-        assertEquals(DataBuffer.Type.FLOAT, ndarray.data().dataType());
+        assertEquals(DataType.FLOAT, ndarray.data().dataType());
 
         val array = ndarray.data().asBytes();
 

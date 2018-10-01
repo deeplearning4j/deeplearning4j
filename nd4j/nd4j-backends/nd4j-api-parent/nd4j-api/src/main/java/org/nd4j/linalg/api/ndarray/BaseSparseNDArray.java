@@ -24,6 +24,7 @@ import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ops.impl.accum.Entropy;
 import org.nd4j.linalg.api.ops.impl.accum.LogEntropy;
@@ -2092,7 +2093,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public DataBuffer.Type dataType() {
+    public DataType dataType() {
         return data().dataType();
     }
 }

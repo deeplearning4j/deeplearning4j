@@ -20,6 +20,8 @@ package org.nd4j.linalg.factory;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 
@@ -103,7 +105,7 @@ public interface NDArrayFactory {
      *
      * @param dtype
      */
-    void setDType(DataBuffer.Type dtype);
+    void setDType(DataType dtype);
 
     /**
      * Create an ndarray with the given shape
@@ -126,7 +128,7 @@ public interface NDArrayFactory {
      *
      * @return the data opType for this ndarray
      */
-    DataBuffer.Type dtype();
+    DataType dtype();
 
     /**
      * Generate a linearly spaced vector
@@ -836,13 +838,13 @@ public interface NDArrayFactory {
 
     INDArray create(double[] data, long[] shape, long[] stride, long offset);
 
-    INDArray create(double[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
-    INDArray create(float[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
-    INDArray create(long[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
-    INDArray create(int[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
-    INDArray create(short[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
-    INDArray create(byte[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
-    INDArray create(boolean[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
+    INDArray create(double[] data, long[] shape, long[] stride, DataType dataType);
+    INDArray create(float[] data, long[] shape, long[] stride, DataType dataType);
+    INDArray create(long[] data, long[] shape, long[] stride, DataType dataType);
+    INDArray create(int[] data, long[] shape, long[] stride, DataType dataType);
+    INDArray create(short[] data, long[] shape, long[] stride, DataType dataType);
+    INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType);
+    INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType);
 
 
     /**
@@ -987,7 +989,7 @@ public interface NDArrayFactory {
      */
     INDArray scalar(Number value);
 
-    INDArray empty(DataBuffer.Type type);
+    INDArray empty(DataType type);
 
     INDArray trueScalar(Number value);
 
@@ -1068,13 +1070,13 @@ public interface NDArrayFactory {
 
     INDArray create(long[] shape, char ordering);
 
-    INDArray create(DataBuffer.Type dataType, long[] shape, char ordering);
+    INDArray create(DataType dataType, long[] shape, char ordering);
 
     INDArray createUninitialized(int[] shape, char ordering);
 
     INDArray createUninitialized(long[] shape, char ordering);
 
-    INDArray createUninitialized(DataBuffer.Type dataType, long[] shape, char ordering);
+    INDArray createUninitialized(DataType dataType, long[] shape, char ordering);
 
     /**
      * Cretes uninitialized INDArray detached from any (if any) workspace
@@ -1220,7 +1222,7 @@ public interface NDArrayFactory {
      * @param dataType
      * @return
      */
-    INDArray create(int[] shape, DataBuffer.Type dataType);
+    INDArray create(int[] shape, DataType dataType);
 
     /**
      *
@@ -1299,7 +1301,7 @@ public interface NDArrayFactory {
      * @return
      */
 
-    INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst);
+    INDArray convertDataEx(DataTypeEx typeSrc, INDArray source, DataTypeEx typeDst);
 
     /**
      *
@@ -1308,7 +1310,7 @@ public interface NDArrayFactory {
      * @param typeDst
      * @return
      */
-    DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst);
+    DataBuffer convertDataEx(DataTypeEx typeSrc, DataBuffer source, DataTypeEx typeDst);
 
     /**
      *
@@ -1317,7 +1319,7 @@ public interface NDArrayFactory {
      * @param typeDst
      * @param target
      */
-    void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target);
+    void convertDataEx(DataTypeEx typeSrc, DataBuffer source, DataTypeEx typeDst, DataBuffer target);
 
     /**
      *
@@ -1327,7 +1329,7 @@ public interface NDArrayFactory {
      * @param target
      * @param length
      */
-    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length);
+    void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, Pointer target, long length);
 
     /**
      *
@@ -1336,7 +1338,7 @@ public interface NDArrayFactory {
      * @param typeDst
      * @param buffer
      */
-    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer);
+    void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, DataBuffer buffer);
 
     /**
      * Create from an in memory numpy pointer

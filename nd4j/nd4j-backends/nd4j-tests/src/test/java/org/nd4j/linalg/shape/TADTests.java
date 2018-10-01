@@ -18,6 +18,7 @@ package org.nd4j.linalg.shape;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -143,7 +144,7 @@ public class TADTests extends BaseNd4jTest {
      * @return
      */
     protected boolean compareShapes(@NonNull DataBuffer shapeA, @NonNull DataBuffer shapeB) {
-        if (shapeA.dataType() != DataBuffer.Type.INT)
+        if (shapeA.dataType() != DataType.INT)
             throw new IllegalStateException("ShapeBuffer should have dataType of INT");
 
         if (shapeA.dataType() != shapeB.dataType())

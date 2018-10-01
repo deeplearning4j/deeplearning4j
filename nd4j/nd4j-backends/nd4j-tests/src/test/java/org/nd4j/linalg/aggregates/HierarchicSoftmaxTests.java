@@ -49,7 +49,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
     @Before
     public void setUp() {
-        // DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        // DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     @Test

@@ -21,6 +21,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -76,7 +77,7 @@ public class OpExecutionerUtil {
             MatchCondition condition = new MatchCondition(z, Conditions.isNan());
             match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
         } else {
-            if (z.data().dataType() == DataBuffer.Type.DOUBLE) {
+            if (z.data().dataType() == DataType.DOUBLE) {
                 if (Double.isNaN(z.getDouble(0)))
                     match = 1;
             } else {
@@ -104,7 +105,7 @@ public class OpExecutionerUtil {
             MatchCondition condition = new MatchCondition(z, Conditions.isInfinite());
             match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
         } else {
-            if (z.data().dataType() == DataBuffer.Type.DOUBLE) {
+            if (z.data().dataType() == DataType.DOUBLE) {
                 if (Double.isInfinite(z.getDouble(0)))
                     match = 1;
             } else {

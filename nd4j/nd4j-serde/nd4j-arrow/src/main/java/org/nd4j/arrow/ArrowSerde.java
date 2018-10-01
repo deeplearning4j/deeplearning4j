@@ -60,7 +60,7 @@ public class ArrowSerde {
             stride[i] /= elementSize;
         }
 
-        DataBuffer.Type  type = typeFromTensorType(b,elementSize);
+        DataType  type = typeFromTensorType(b,elementSize);
         DataBuffer dataBuffer = DataBufferStruct.createFromByteBuffer(tensor.getByteBuffer(),(int) tensor.data().offset(),type,length);
         INDArray arr = Nd4j.create(dataBuffer,shape);
         arr.setShapeAndStride(shape,stride);
@@ -169,23 +169,23 @@ public class ArrowSerde {
      * Create thee databuffer type frm the given type,
      * relative to the bytes in arrow in class:
      * {@link Type}
-     * @param type the type to create the nd4j {@link DataBuffer.Type} from
+     * @param type the type to create the nd4j {@link DataType} from
      * @param elementSize the element size
      * @return the data buffer type
      */
-    public static DataBuffer.Type typeFromTensorType(byte type,int elementSize) {
+    public static DataType typeFromTensorType(byte type,int elementSize) {
         if(type == Type.FloatingPoint) {
-            return DataBuffer.Type.FLOAT;
+            return DataType.FLOAT;
         }
         else if(type == Type.Decimal) {
-            return DataBuffer.Type.DOUBLE;
+            return DataType.DOUBLE;
         }
         else if(type == Type.Int) {
             if(elementSize == 4) {
-                return DataBuffer.Type.INT;
+                return DataType.INT;
             }
             else if(elementSize == 8) {
-                return DataBuffer.Type.LONG;
+                return DataType.LONG;
             }
         }
         else {

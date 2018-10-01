@@ -71,7 +71,7 @@ public class BoolBuffer extends BaseDataBuffer {
      */
     @Override
     protected void initTypeAndSize() {
-        type = Type.BOOL;
+        type = DataType.BOOL;
         elementSize = 1;
     }
 

@@ -32,6 +32,8 @@ import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -185,7 +187,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
     }
 
-    public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, char ordering, DataBuffer.Type type) {
+    public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, char ordering, DataType type) {
         this.data = buffer;
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, type));
@@ -193,7 +195,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
     }
 
-    public BaseNDArray(DataBuffer buffer,  DataBuffer.Type dataType, long[] shape, long[] stride, long offset, char ordering) {
+    public BaseNDArray(DataBuffer buffer,  DataType dataType, long[] shape, long[] stride, long offset, char ordering) {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, dataType));
@@ -300,7 +302,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this(Nd4j.createBuffer(ArrayUtil.prodLong(shape), initialize), shape, stride, offset, ordering);
     }
 
-    public BaseNDArray(DataBuffer.Type type, long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
+    public BaseNDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
         this(Nd4j.createBuffer(type, ArrayUtil.prodLong(shape), initialize), type, shape, stride, offset, ordering);
     }
 
@@ -400,7 +402,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param shape  the shape of the ndarray
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
-        DataBuffer ret = slices.get(0).data().dataType() == (DataBuffer.Type.FLOAT)
+        DataBuffer ret = slices.get(0).data().dataType() == (DataType.FLOAT)
                 ? Nd4j.createBuffer(new float[ArrayUtil.prod(shape)])
                 : Nd4j.createBuffer(new double[ArrayUtil.prod(shape)]);
         this.data = ret;
@@ -422,7 +424,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     public BaseNDArray(List<INDArray> slices, long[] shape, long[] stride, char ordering) {
-        DataBuffer ret = slices.get(0).data().dataType() == (DataBuffer.Type.FLOAT)
+        DataBuffer ret = slices.get(0).data().dataType() == (DataType.FLOAT)
                 ? Nd4j.createBuffer(new float[ArrayUtil.prod(shape)])
                 : Nd4j.createBuffer(new double[ArrayUtil.prod(shape)]);
         this.data = ret;
@@ -2531,7 +2533,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
          */
         // length/data.length can be different in case of Threshold conversion
         return Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
-                || (length() < data().length() && data.dataType() != DataBuffer.Type.INT)
+                || (length() < data().length() && data.dataType() != DataType.INT)
                 || data().originalDataBuffer() != null;
     }
 
@@ -5115,7 +5117,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {
-            if (data.dataType() == DataBuffer.Type.FLOAT) {
+            if (data.dataType() == DataType.FLOAT) {
                 double val = getDouble(0);
                 double val2 = n.getDouble(0);
 
@@ -5765,7 +5767,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (!isScalar())
             throw new IllegalStateException("Unable to retrieve element from non scalar matrix");
-        if (data.dataType() == DataBuffer.Type.FLOAT)
+        if (data.dataType() == DataType.FLOAT)
             return data.getFloat(0);
         return data.getDouble(0);
     }
@@ -6328,55 +6330,55 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray convertToHalfs() {
-        if (data.dataType() == DataBuffer.Type.HALF)
+        if (data.dataType() == DataType.HALF)
             return this;
 
         val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.HALF);
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.HALF);
 
-        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataBuffer.TypeEx.FLOAT16, buffer.addressPointer(), buffer.length());
+        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataTypeEx.FLOAT16, buffer.addressPointer(), buffer.length());
 
         return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
     }
 
     @Override
     public INDArray convertToFloats() {
-        if (data.dataType() == DataBuffer.Type.FLOAT)
+        if (data.dataType() == DataType.FLOAT)
             return this;
 
         val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.FLOAT);
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.FLOAT);
 
-        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataBuffer.TypeEx.FLOAT, buffer.addressPointer(), buffer.length());
+        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataTypeEx.FLOAT, buffer.addressPointer(), buffer.length());
 
         return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
     }
 
     @Override
     public INDArray convertToDoubles() {
-        if (data.dataType() == DataBuffer.Type.DOUBLE)
+        if (data.dataType() == DataType.DOUBLE)
             return this;
 
         val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.DOUBLE);
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.DOUBLE);
 
-        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataBuffer.TypeEx.DOUBLE, buffer.addressPointer(), buffer.length());
+        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataTypeEx.DOUBLE, buffer.addressPointer(), buffer.length());
 
         return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
     }
 
-    protected static DataBuffer.TypeEx convertType(DataBuffer.Type type) {
-        if (type == DataBuffer.Type.HALF) {
-            return DataBuffer.TypeEx.FLOAT16;
-        } else if (type == DataBuffer.Type.FLOAT) {
-            return DataBuffer.TypeEx.FLOAT;
-        } else if (type == DataBuffer.Type.DOUBLE) {
-            return DataBuffer.TypeEx.DOUBLE;
+    protected static DataTypeEx convertType(DataType type) {
+        if (type == DataType.HALF) {
+            return DataTypeEx.FLOAT16;
+        } else if (type == DataType.FLOAT) {
+            return DataTypeEx.FLOAT;
+        } else if (type == DataType.DOUBLE) {
+            return DataTypeEx.DOUBLE;
 
-        } else if(type == DataBuffer.Type.INT) {
-            return DataBuffer.TypeEx.INT8;
-        } else if(type == DataBuffer.Type.LONG) {
-            return DataBuffer.TypeEx.INT16;
+        } else if(type == DataType.INT) {
+            return DataTypeEx.INT8;
+        } else if(type == DataType.LONG) {
+            return DataTypeEx.INT16;
 
         } else
             throw new IllegalStateException("Unknown dataType: [" + type + "]");
@@ -6399,7 +6401,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public DataBuffer.Type dataType() {
+    public DataType dataType() {
         if (data != null)
             return data.dataType();
 
@@ -6407,10 +6409,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (e != 0) {
             val t = ArrayOptionsHelper.dataType(jvmShapeInfo.javaShapeInformation);
-            if (t != DataBuffer.Type.UNKNOWN)
+            if (t != DataType.UNKNOWN)
                 return t;
         }
 
-        return DataBuffer.Type.UNKNOWN;
+        return DataType.UNKNOWN;
     }
 }

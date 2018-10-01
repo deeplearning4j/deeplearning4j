@@ -17,6 +17,7 @@
 package org.nd4j.finitedifferences;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -100,7 +101,7 @@ public class TwoPointApproximation {
     }
 
     public static double getEpsRelativeTo(INDArray data) {
-        if(data.data().dataType() == DataBuffer.Type.FLOAT)
+        if(data.data().dataType() == DataType.FLOAT)
             return 1.1920929e-07;
             return 2.220446049250313e-16;
     }

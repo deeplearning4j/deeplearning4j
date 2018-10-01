@@ -28,6 +28,7 @@ import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
 import org.nd4j.imports.descriptors.properties.adapters.IntArrayIntIndexAdpater;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
@@ -43,13 +44,13 @@ import java.util.*;
  * @author raver119@gmail.com
  */
 public class Cast extends BaseDynamicTransformOp {
-    private DataBuffer.Type typeDst;
+    private DataType typeDst;
 
     public Cast() {
         //
     }
 
-    public Cast(SameDiff sameDiff, SDVariable arg, @NonNull DataBuffer.Type dst) {
+    public Cast(SameDiff sameDiff, SDVariable arg, @NonNull DataType dst) {
         super(sameDiff, new SDVariable[] {arg}, false);
 
         this.typeDst = dst;
@@ -64,11 +65,11 @@ public class Cast extends BaseDynamicTransformOp {
         }
 
         // FIXME!
-        if (!(value instanceof DataBuffer.Type))
+        if (!(value instanceof DataType))
             return;
 
         try {
-            target.set(this, (DataBuffer.Type) value);
+            target.set(this, (DataType) value);
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }

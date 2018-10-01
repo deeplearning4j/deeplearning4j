@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -40,7 +41,7 @@ public class ConversionTests extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     @After
     public void after() {
@@ -52,11 +53,11 @@ public class ConversionTests extends BaseNd4jTest {
     public void testDoubleToFloats1() {
         val dtype = Nd4j.dataType();
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         val arrayX = Nd4j.create(10).assign(1.0);
 
 
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
         val arrayY = Nd4j.create(10).assign(1.0);
 
 
@@ -76,11 +77,11 @@ public class ConversionTests extends BaseNd4jTest {
     public void testFloatsToDoubles1() {
         val dtype = Nd4j.dataType();
 
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
         val arrayX = Nd4j.create(10).assign(1.0);
 
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         val arrayY = Nd4j.create(10).assign(1.0);
 
 
@@ -102,11 +103,11 @@ public class ConversionTests extends BaseNd4jTest {
 
         val dtype = Nd4j.dataType();
 
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
         val arrayX = Nd4j.create(10).assign(1.0);
 
 
-        Nd4j.setDataType(DataBuffer.Type.HALF);
+        Nd4j.setDataType(DataType.HALF);
         val arrayY = Nd4j.create(10).assign(1.0);
 
 
@@ -123,14 +124,14 @@ public class ConversionTests extends BaseNd4jTest {
 
     @Test
     public void testConvDouble_1(){
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         val exp = Nd4j.linspace(-5, 5, 11);
 
-        DataBuffer.Type[] types = null;
+        DataType[] types = null;
         if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA) {
-            types = new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT, DataBuffer.Type.HALF};
+            types = new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF};
         } else {
-            types = new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT};
+            types = new DataType[]{DataType.DOUBLE, DataType.FLOAT};
         }
 
         for(val t : types) {
@@ -139,21 +140,21 @@ public class ConversionTests extends BaseNd4jTest {
             val arr = Nd4j.linspace(-5, 5, 11);
             val arr2 = arr.convertToDoubles();
 
-            Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+            Nd4j.setDataType(DataType.DOUBLE);
             assertEquals("Fail with dtype [" + t + "]", exp, arr2);
         }
     }
 
     @Test
     public void testConvFloat_1(){
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
         val exp = Nd4j.linspace(-5, 5, 11);
 
-        DataBuffer.Type[] types = null;
+        DataType[] types = null;
         if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA) {
-            types = new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT, DataBuffer.Type.HALF};
+            types = new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF};
         } else {
-            types = new DataBuffer.Type[]{DataBuffer.Type.DOUBLE, DataBuffer.Type.FLOAT};
+            types = new DataType[]{DataType.DOUBLE, DataType.FLOAT};
         }
 
         for(val t : types) {
@@ -162,7 +163,7 @@ public class ConversionTests extends BaseNd4jTest {
             val arr = Nd4j.linspace(-5, 5, 11);
             val arr2 = arr.convertToFloats();
 
-            Nd4j.setDataType(DataBuffer.Type.FLOAT);
+            Nd4j.setDataType(DataType.FLOAT);
             assertEquals("Fail with dtype [" + t + "]", exp, arr2);
         }
     }

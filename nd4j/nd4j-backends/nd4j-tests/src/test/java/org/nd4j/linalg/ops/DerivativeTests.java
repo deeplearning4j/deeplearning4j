@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
@@ -49,7 +50,7 @@ public class DerivativeTests extends BaseNd4jTest {
     public static final double REL_ERROR_TOLERANCE = 1e-3;
 
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public DerivativeTests(Nd4jBackend backend) {
         super(backend);
@@ -58,7 +59,7 @@ public class DerivativeTests extends BaseNd4jTest {
 
     @Before
     public void before() {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @After
@@ -96,7 +97,7 @@ public class DerivativeTests extends BaseNd4jTest {
 
     @Test
     public void testRectifiedLinearDerivative() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         //ReLU:
         //f(x) = max(0,x)
         //Piecewise differentiable; choose f'(0) = 0

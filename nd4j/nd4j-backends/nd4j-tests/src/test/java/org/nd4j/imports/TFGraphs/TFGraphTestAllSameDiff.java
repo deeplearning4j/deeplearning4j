@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -127,12 +128,12 @@ public class TFGraphTestAllSameDiff {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
     }
 
     @Before
     public void setup() {
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
     }
 
     @After

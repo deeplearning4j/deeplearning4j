@@ -30,7 +30,7 @@ public class AllocationShape {
     private long length = 0;
     private int stride = 1;
     private int elementSize = 0;
-    private DataBuffer.Type dataType = DataBuffer.Type.FLOAT;
+    private DataType dataType = DataType.FLOAT;
 
     /*
     public AllocationShape(long length, int elementSize) {
@@ -38,7 +38,7 @@ public class AllocationShape {
         this.elementSize = elementSize;
     }
     */
-    public AllocationShape(long length, int elementSize, DataBuffer.Type dataType) {
+    public AllocationShape(long length, int elementSize, DataType dataType) {
         this.length = length;
         this.elementSize = elementSize;
         this.dataType = dataType;

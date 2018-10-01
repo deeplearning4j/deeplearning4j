@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -311,7 +312,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
     }
 
-    public PagedPointer alloc(long requiredMemory, DataBuffer.Type type, boolean initialize) {
+    public PagedPointer alloc(long requiredMemory, DataType type, boolean initialize) {
         return alloc(requiredMemory, MemoryKind.HOST, type, initialize);
     }
 
@@ -325,7 +326,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         this.isDebug.set(reallyEnable);
     }
 
-    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type, boolean initialize) {
+    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType type, boolean initialize) {
         /*
             just two options here:
             1) reqMem + hostOffset < totalSize, we just return pointer + offset

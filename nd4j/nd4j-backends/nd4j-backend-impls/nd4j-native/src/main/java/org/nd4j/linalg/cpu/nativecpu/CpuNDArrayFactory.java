@@ -20,6 +20,8 @@ package org.nd4j.linalg.cpu.nativecpu;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.config.ND4JSystemProperties;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.buffer.LongBuffer;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -71,11 +73,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
 
-    public CpuNDArrayFactory(DataBuffer.Type dtype, Character order) {
+    public CpuNDArrayFactory(DataType dtype, Character order) {
         super(dtype, order);
     }
 
-    public CpuNDArrayFactory(DataBuffer.Type dtype, char order) {
+    public CpuNDArrayFactory(DataType dtype, char order) {
         super(dtype, order);
     }
 
@@ -183,12 +185,12 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray create(DataBuffer.Type dataType, long[] shape, char ordering) {
+    public INDArray create(DataType dataType, long[] shape, char ordering) {
         return new NDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering);
     }
 
     @Override
-    public INDArray createUninitialized(DataBuffer.Type dataType, long[] shape, char ordering) {
+    public INDArray createUninitialized(DataType dataType, long[] shape, char ordering) {
         return null;
     }
 
@@ -295,37 +297,37 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray create(double[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(double[] data, long[] shape, long[] stride, DataType dataType) {
         return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
-    public INDArray create(float[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(float[] data, long[] shape, long[] stride, DataType dataType) {
         return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
-    public INDArray create(long[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(long[] data, long[] shape, long[] stride, DataType dataType) {
         return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
-    public INDArray create(int[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(int[] data, long[] shape, long[] stride, DataType dataType) {
         return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
-    public INDArray create(short[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(short[] data, long[] shape, long[] stride, DataType dataType) {
         return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
-    public INDArray create(boolean[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType) {
         return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
-    public INDArray create(byte[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType) {
         return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
@@ -406,7 +408,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray empty(DataBuffer.Type type) {
+    public INDArray empty(DataType type) {
         long extras  = ArrayOptionsHelper.setOptionBit(0L, ArrayType.EMPTY);
         extras = ArrayOptionsHelper.setOptionBit(extras, type);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],1,'c', extras);
@@ -931,7 +933,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     /*
     @Override
     public DataBuffer restoreFromHalfs(DataBuffer buffer) {
-        if (buffer.dataType() != DataBuffer.Type.COMPRESSED)
+        if (buffer.dataType() != DataType.COMPRESSED)
             throw new IllegalStateException("DataBuffer contains wrong data: " + buffer.dataType());
     
         CompressedDataBuffer comp = (CompressedDataBuffer) buffer;
@@ -939,14 +941,14 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     
         DataBuffer targetBuffer = Nd4j.createBuffer(descriptor.getCompressedLength() / 2);
     
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        if (Nd4j.dataType() == DataType.DOUBLE) {
             nativeOps.convertHalfsToDoubles(
                     null,
                     comp.addressPointer(),
                     (int) descriptor.getCompressedLength() / 2,
                     targetBuffer.addressPointer()
             );
-        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+        } else if (Nd4j.dataType() == DataType.FLOAT) {
             nativeOps.convertHalfsToFloats(
                     null,
                     comp.addressPointer(),
@@ -972,14 +974,14 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         // we allocate pointer
         ShortPointer pointer = new ShortPointer(buffer.length());
     
-        if (buffer.dataType() == DataBuffer.Type.DOUBLE) {
+        if (buffer.dataType() == DataType.DOUBLE) {
             nativeOps.convertDoublesToHalfs(
                     null,
                     buffer.addressPointer(),
                     (int) buffer.length(),
                     pointer
             );
-        } else if (buffer.dataType() == DataBuffer.Type.FLOAT) {
+        } else if (buffer.dataType() == DataType.FLOAT) {
             nativeOps.convertFloatsToHalfs(
                     null,
                     buffer.addressPointer(),
@@ -1007,7 +1009,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      * @param typeDst @return
      */
     @Override
-    public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
+    public INDArray convertDataEx(DataTypeEx typeSrc, INDArray source, DataTypeEx typeDst) {
         if (source.isView())
             throw new UnsupportedOperationException("Impossible to compress View. Consider using dup() before. ");
 
@@ -1023,7 +1025,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst) {
+    public DataBuffer convertDataEx(DataTypeEx typeSrc, DataBuffer source, DataTypeEx typeDst) {
         int elementSize = 0;
         if (typeDst.ordinal() <= 2)
             elementSize = 1;
@@ -1060,18 +1062,18 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
+    public void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, Pointer target,
                               long length) {
         nativeOps.convertTypes(null, typeSrc.ordinal(), source, length, typeDst.ordinal(), target);
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer) {
+    public void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, DataBuffer buffer) {
         convertDataEx(typeSrc, source, typeDst, buffer.addressPointer(), buffer.length());
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst,
+    public void convertDataEx(DataTypeEx typeSrc, DataBuffer source, DataTypeEx typeDst,
                               DataBuffer target) {
         convertDataEx(typeSrc, source.addressPointer(), typeDst, target.addressPointer(), target.length());
     }

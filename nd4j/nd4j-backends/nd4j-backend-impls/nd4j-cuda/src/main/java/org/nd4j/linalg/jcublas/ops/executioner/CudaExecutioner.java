@@ -162,7 +162,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer dimensionPointer = AtomicAllocator.getInstance()
                 .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
 
-        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (op.x().data().dataType() == DataType.DOUBLE) {
             nativeOps.execBroadcastDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x, (LongPointer) xShapeInfo,
                     (DoublePointer) y,
                     (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),
@@ -170,7 +170,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     (DoublePointer) z, (LongPointer) AtomicAllocator.getInstance()
                             .getPointer(op.z().shapeInfoDataBuffer(), context),
                     (IntPointer) dimensionPointer, dimension.length);
-        } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+        } else if (op.x().data().dataType() == DataType.FLOAT) {
             nativeOps.execBroadcastFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                     (LongPointer) xShapeInfo,
                     (FloatPointer) y,
@@ -297,7 +297,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer dimensionPointer = AtomicAllocator.getInstance()
                 .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
 
-        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (op.x().data().dataType() == DataType.DOUBLE) {
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
                     double res = nativeOps.execSummaryStatsScalarDouble(xShapeInfoHostPointer, op.opNum(),
@@ -380,7 +380,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 }
             }
-        } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+        } else if (op.x().data().dataType() == DataType.FLOAT) {
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
                     float res = nativeOps.execSummaryStatsScalarFloat(xShapeInfoHostPointer, op.opNum(),
@@ -614,11 +614,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
                     ret = Nd4j.zeros(retShape);
                 } else {
-                    if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+                    if (op.x().data().dataType() == DataType.DOUBLE)
                         ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-                    else if (op.x().data().dataType() == DataBuffer.Type.FLOAT)
+                    else if (op.x().data().dataType() == DataType.FLOAT)
                         ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
-                    else if (op.x().data().dataType() == DataBuffer.Type.HALF)
+                    else if (op.x().data().dataType() == DataType.HALF)
                         ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
                 }
                 */
@@ -632,11 +632,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
 /*
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            if (op.x().data().dataType() == DataType.DOUBLE) {
                 op.z().assign(op.zeroDouble());
-            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+            } else if (op.x().data().dataType() == DataType.FLOAT) {
                 op.z().assign(op.zeroFloat());
-            } else if (op.x().data().dataType() == DataBuffer.Type.HALF) {
+            } else if (op.x().data().dataType() == DataType.HALF) {
                 op.z().assign(op.zeroHalf());
             }
 
@@ -702,11 +702,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
             ret = Nd4j.zeros(retShape);
         } else {
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+            if (op.x().data().dataType() == DataType.DOUBLE)
                 ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-            else if (op.x().data().dataType() == DataBuffer.Type.FLOAT)
+            else if (op.x().data().dataType() == DataType.FLOAT)
                 ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
-            else if (op.x().data().dataType() == DataBuffer.Type.HALF)
+            else if (op.x().data().dataType() == DataType.HALF)
                 ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
         }
         */
@@ -751,7 +751,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer dimensionPointer = AtomicAllocator.getInstance()
                 .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
 
-        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (op.x().data().dataType() == DataType.DOUBLE) {
             nativeOps.execIndexReduceDouble(xShapeInfoHostPointer,
                     op.opNum(), (DoublePointer) x,
                     (LongPointer) xShapeInfo,
@@ -761,7 +761,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     (IntPointer) dimensionPointer,
                     dimension.length);
 
-        } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+        } else if (op.x().data().dataType() == DataType.FLOAT) {
             nativeOps.execIndexReduceFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x, (LongPointer) xShapeInfo,
                     (FloatPointer) extraArgs, (FloatPointer) z, (LongPointer) zShapeInfo,
                     (IntPointer) dimensionPointer, dimension.length);
@@ -898,11 +898,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer dimensionPointer = AtomicAllocator.getInstance()
                 .getPointer(AtomicAllocator.getInstance().getConstantBuffer(op.getDimension()), context);
 
-        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (op.x().data().dataType() == DataType.DOUBLE) {
             nativeOps.execBroadcastDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x, (LongPointer) xShapeInfo,
                     (DoublePointer) y, (LongPointer) yShapeInfo, (DoublePointer) z, (LongPointer) zShapeInfo,
                     (IntPointer) dimensionPointer, op.getDimension().length);
-        } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+        } else if (op.x().data().dataType() == DataType.FLOAT) {
             nativeOps.execBroadcastFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x, (LongPointer) xShapeInfo,
                     (FloatPointer) y, (LongPointer) yShapeInfo, (FloatPointer) z, (LongPointer) zShapeInfo,
                     (IntPointer) dimensionPointer, op.getDimension().length);
@@ -977,13 +977,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
 
         if (op.z().isScalar() || dimension == null || dimension[0] == Integer.MAX_VALUE) {
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            if (op.x().data().dataType() == DataType.DOUBLE) {
                 double result = nativeOps.execIndexReduceScalarDouble(xShapeInfoHostPointer, op.opNum(),
                         (DoublePointer) x, (LongPointer) xShapeInfo, (DoublePointer) extraArgs);
                 op.setFinalResult((int) result);
                 op.z().assign(result);
 
-            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+            } else if (op.x().data().dataType() == DataType.FLOAT) {
                 float result = nativeOps.execIndexReduceScalarFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                         (LongPointer) xShapeInfo, (FloatPointer) extraArgs);
                 op.setFinalResult((int) result);
@@ -1004,11 +1004,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             Pointer dimensionPointer = AtomicAllocator.getInstance()
                     .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
 
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            if (op.x().data().dataType() == DataType.DOUBLE) {
                 nativeOps.execIndexReduceDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
                         (LongPointer) xShapeInfo, (DoublePointer) extraArgs, (DoublePointer) z,
                         (LongPointer) zShapeInfo, (IntPointer) dimensionPointer, dimension.length);
-            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+            } else if (op.x().data().dataType() == DataType.FLOAT) {
                 nativeOps.execIndexReduceFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                         (LongPointer) xShapeInfo, (FloatPointer) extraArgs, (FloatPointer) z,
                         (LongPointer) zShapeInfo, (IntPointer) dimensionPointer, dimension.length);
@@ -1113,18 +1113,18 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
             ret = Nd4j.zeros(retShape);
         } else {
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+            if (op.x().data().dataType() == DataType.DOUBLE)
                 ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-            else if (op.x().data().dataType() == DataBuffer.Type.FLOAT)
+            else if (op.x().data().dataType() == DataType.FLOAT)
                 ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
-            else if (op.x().data().dataType() == DataBuffer.Type.HALF)
+            else if (op.x().data().dataType() == DataType.HALF)
                 ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
         }
         */
         op.setZ(ret);
 
         if (op.z().isScalar()) {
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            if (op.x().data().dataType() == DataType.DOUBLE) {
                 if (op instanceof Variance) {
                     double result = nativeOps.execSummaryStatsScalarDouble(xShapeInfoHostPointer, op.opNum(),
                             (DoublePointer) x, (LongPointer) xShapeInfo, (DoublePointer) extraArgs,
@@ -1143,7 +1143,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             (DoublePointer) x, (LongPointer) xShapeInfo, (DoublePointer) extraArgs);
                     op.setFinalResult(result);
                 }
-            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+            } else if (op.x().data().dataType() == DataType.FLOAT) {
                 if (op instanceof Variance) {
                     float result = nativeOps.execSummaryStatsScalarFloat(xShapeInfoHostPointer, op.opNum(),
                             (FloatPointer) x, (LongPointer) xShapeInfo, (FloatPointer) extraArgs,
@@ -1191,7 +1191,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             Pointer dimensionPointer = AtomicAllocator.getInstance()
                     .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
 
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            if (op.x().data().dataType() == DataType.DOUBLE) {
                 if (op.y() != null) {
                     Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
                     Pointer yShapeInfo =
@@ -1215,7 +1215,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             }
             //float
-            else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+            else if (op.x().data().dataType() == DataType.FLOAT) {
                 if (op.y() != null) {
                     Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
                     Pointer yShapeInfo =
@@ -1326,15 +1326,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
 
 
-        if (op.x().data().dataType() == DataBuffer.Type.HALF) {
+        if (op.x().data().dataType() == DataType.HALF) {
             nativeOps.execScalarHalf(extraPointers, op.opNum(), (ShortPointer) x, (LongPointer) xShapeInfo,
                     (ShortPointer) z, (LongPointer) zShapeInfo, (ShortPointer) y, (ShortPointer) extraArgs,
                     (IntPointer) dimensionPointer, dimension.length);
-        } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+        } else if (op.x().data().dataType() == DataType.FLOAT) {
             nativeOps.execScalarFloat(extraPointers, op.opNum(), (FloatPointer) x, (LongPointer) xShapeInfo,
                     (FloatPointer) z, (LongPointer) zShapeInfo, (FloatPointer) y, (FloatPointer) extraArgs,
                     (IntPointer) dimensionPointer, dimension.length);
-        } else if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (op.x().data().dataType() == DataType.DOUBLE) {
             nativeOps.execScalarDouble(extraPointers, op.opNum(), (DoublePointer) x, (LongPointer) xShapeInfo,
                     (DoublePointer) z, (LongPointer) zShapeInfo, (DoublePointer) y, (DoublePointer) extraArgs,
                     (IntPointer) dimensionPointer, dimension.length);
@@ -1391,7 +1391,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
                 hostYShapeInfo, hostZShapeInfo, null, null);
 
-        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (op.x().data().dataType() == DataType.DOUBLE) {
             if (op.x().elementWiseStride() >= 1 && op.z().ordering() == op.x().ordering()) {
                 nativeOps.execScalarDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
                         op.x().elementWiseStride(), (DoublePointer) z, op.z().elementWiseStride(),
@@ -1401,7 +1401,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         (LongPointer) xShapeInfo, (DoublePointer) z, (LongPointer) zShapeInfo,
                         op.scalar().doubleValue(), (DoublePointer) extraArgs);
             }
-        } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+        } else if (op.x().data().dataType() == DataType.FLOAT) {
             if (op.x().elementWiseStride() >= 1 && op.z().ordering() == op.x().ordering()) {
                 nativeOps.execScalarFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                         op.x().elementWiseStride(), (FloatPointer) z, op.z().elementWiseStride(),
@@ -1622,7 +1622,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
 
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            if (op.x().data().dataType() == DataType.DOUBLE) {
                 if ((xEWS >= 1 && yEWS >= 1 && zEWS >= 1 && !op.isExecSpecial()
                         && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
 
@@ -1634,7 +1634,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             (LongPointer) xShapeInfo, (DoublePointer) y, (LongPointer) yShapeInfo,
                             (DoublePointer) z, (LongPointer) zShapeInfo, (DoublePointer) extraArgs);
                 }
-            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+            } else if (op.x().data().dataType() == DataType.FLOAT) {
                 if ((xEWS >= 1 && yEWS >= 1
                         && xEWS == yEWS && !op.isExecSpecial()
                         && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
@@ -1660,7 +1660,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
             }
         } else {
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            if (op.x().data().dataType() == DataType.DOUBLE) {
                 if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().ordering() == op.x().ordering()) {
                     nativeOps.execTransformDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
                             op.x().elementWiseStride(), (DoublePointer) z, op.z().elementWiseStride(),
@@ -1670,7 +1670,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             (LongPointer) xShapeInfo, (DoublePointer) z, (LongPointer) zShapeInfo,
                             (DoublePointer) extraArgs);
                 }
-            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+            } else if (op.x().data().dataType() == DataType.FLOAT) {
                 if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().ordering() == op.x().ordering()) {
                     nativeOps.execTransformFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                             op.x().elementWiseStride(), (FloatPointer) z, op.z().elementWiseStride(),
@@ -1734,15 +1734,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int indexPos = maxTypes * (Batch.getBatchLimit() * 16);
         int intArraysPos = indexPos + (batch.getSample().maxIndexArguments() * (Batch.getBatchLimit() * 16));
         int realPos = (intArraysPos + (maxIntArrays * maxArraySize * (Batch.getBatchLimit() * 16)))
-                / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 2 : 1);
+                / (Nd4j.dataType() == DataType.DOUBLE ? 2 : 1);
 
-        if (Nd4j.dataType() == DataBuffer.Type.HALF)
+        if (Nd4j.dataType() == DataType.HALF)
             realPos *= 2;
 
         int argsPos = (realPos + (batch.getSample().maxRealArguments() * (Batch.getBatchLimit() * 16)))
-                / (Nd4j.dataType() == DataBuffer.Type.FLOAT ? 2 : 1);
+                / (Nd4j.dataType() == DataType.FLOAT ? 2 : 1);
 
-        if (Nd4j.dataType() == DataBuffer.Type.HALF)
+        if (Nd4j.dataType() == DataType.HALF)
             argsPos /= 4;
 
         int shapesPos = argsPos + (batch.getSample().maxArguments() * (Batch.getBatchLimit() * 16));
@@ -1777,19 +1777,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             // TODO: variable datatype should be handled here
             // putting real arguments
-            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            if (Nd4j.dataType() == DataType.FLOAT) {
                 FloatPointer realPtr = new FloatPointer(pointer);
                 for (int e = 0; e < op.getRealArguments().size(); e++) {
                     idx = realPos + i * op.maxRealArguments();
                     realPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
                 }
-            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            } else if (Nd4j.dataType() == DataType.DOUBLE) {
                 DoublePointer dPtr = new DoublePointer(pointer);
                 for (int e = 0; e < op.getRealArguments().size(); e++) {
                     idx = realPos + (i * op.maxRealArguments());
                     dPtr.put(idx + e, op.getRealArguments().get(e).doubleValue());
                 }
-            } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            } else if (Nd4j.dataType() == DataType.HALF) {
                 ShortPointer sPtr = new ShortPointer(pointer);
                 for (int e = 0; e < op.getRealArguments().size(); e++) {
                     idx = realPos + (i * op.maxRealArguments());
@@ -1831,19 +1831,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         extraArgs.put(3, new CudaPointer(batch.getSample().getThreadsPerInstance()));
         extraArgs.put(4, new CudaPointer(batch.getSample().getSharedMemorySize()));
 
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+        if (Nd4j.dataType() == DataType.FLOAT) {
             nativeOps.execAggregateBatchFloat(extraArgs, batch.getNumAggregates(), batch.opNum(),
                     batch.getSample().maxArguments(), batch.getSample().maxShapes(),
                     batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
                     batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(),
                     AtomicAllocator.getInstance().getPointer(surfaceBuffer, context));
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (Nd4j.dataType() == DataType.DOUBLE) {
             nativeOps.execAggregateBatchDouble(extraArgs, batch.getNumAggregates(), batch.opNum(),
                     batch.getSample().maxArguments(), batch.getSample().maxShapes(),
                     batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
                     batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(),
                     AtomicAllocator.getInstance().getPointer(surfaceBuffer, context));
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+        } else if (Nd4j.dataType() == DataType.HALF) {
             nativeOps.execAggregateBatchHalf(extraArgs, batch.getNumAggregates(), batch.opNum(),
                     batch.getSample().maxArguments(), batch.getSample().maxShapes(),
                     batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
@@ -1939,19 +1939,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         INDArray realsBuffer = Nd4j.create(reals);
 
 
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+        if (Nd4j.dataType() == DataType.FLOAT) {
             nativeOps.execAggregateFloat(extraArgs, op.opNum(), xPtr, numArguments, sPtr, numShapeArguments,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
                     numIndexArguments, iPtr, numIntArrays,
                     (FloatPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
                     numRealArguments);
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (Nd4j.dataType() == DataType.DOUBLE) {
             nativeOps.execAggregateDouble(extraArgs, op.opNum(), xPtr, numArguments, sPtr, numShapeArguments,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
                     numIndexArguments, iPtr, numIntArrays,
                     (DoublePointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
                     numRealArguments);
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+        } else if (Nd4j.dataType() == DataType.HALF) {
             nativeOps.execAggregateHalf(extraArgs, op.opNum(), xPtr, numArguments, sPtr, numShapeArguments,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
                     numIndexArguments, iPtr, numIntArrays,
@@ -1996,7 +1996,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (op.x() != null && op.y() != null && op.z() != null) {
             // triple arg call
-            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            if (Nd4j.dataType() == DataType.FLOAT) {
                 nativeOps.execRandomFloat(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                         (FloatPointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
                         (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(),
@@ -2009,7 +2009,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                 context),
                         (FloatPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
                                 context));
-            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            } else if (Nd4j.dataType() == DataType.DOUBLE) {
                 nativeOps.execRandomDouble(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                         (DoublePointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
                         (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context),
@@ -2021,7 +2021,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                 context),
                         (DoublePointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
                                 context));
-            } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            } else if (Nd4j.dataType() == DataType.HALF) {
                 nativeOps.execRandomHalf(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                         (ShortPointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
                         (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(),
@@ -2037,7 +2037,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         } else if (op.x() != null && op.z() != null) {
             //double arg call
-            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            if (Nd4j.dataType() == DataType.FLOAT) {
                 nativeOps.execRandomFloat(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                         (FloatPointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
                         (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(),
@@ -2047,7 +2047,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                 context),
                         (FloatPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
                                 context));
-            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            } else if (Nd4j.dataType() == DataType.DOUBLE) {
                 nativeOps.execRandomDouble(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                         (DoublePointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
                         (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(),
@@ -2057,7 +2057,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                 context),
                         (DoublePointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
                                 context));
-            } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            } else if (Nd4j.dataType() == DataType.HALF) {
                 nativeOps.execRandomHalf(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                         (ShortPointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
                         (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(),
@@ -2072,21 +2072,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else {
             // single arg call
 
-            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            if (Nd4j.dataType() == DataType.FLOAT) {
                 nativeOps.execRandomFloat(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                         (FloatPointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
                         (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
                                 context),
                         (FloatPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
                                 context));
-            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            } else if (Nd4j.dataType() == DataType.DOUBLE) {
                 nativeOps.execRandomDouble(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                         (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
                         (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
                                 context),
                         (DoublePointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
                                 context));
-            } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            } else if (Nd4j.dataType() == DataType.HALF) {
                 nativeOps.execRandomHalf(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                         (ShortPointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
                         (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
@@ -2207,11 +2207,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         PointerPointer extras = extraz.get().put(1, context.getOldStream());
 
 
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+        if (Nd4j.dataType() == DataType.FLOAT) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Float(extras, (FloatPointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), (float) threshold);
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (Nd4j.dataType() == DataType.DOUBLE) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Double(extras, (DoublePointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), (float) threshold);
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+        } else if (Nd4j.dataType() == DataType.HALF) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Half(extras, (ShortPointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), (float) threshold);
         }
 
@@ -2293,11 +2293,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         //log.info("Offsets: {}", Arrays.toString(offsetsBuffer.asInt()));
 
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+        if (Nd4j.dataType() == DataType.FLOAT) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3Float(extras, (FloatPointer) AtomicAllocator.getInstance().getPointer(buffer), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (Nd4j.dataType() == DataType.DOUBLE) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3Double(extras, (DoublePointer) AtomicAllocator.getInstance().getPointer(buffer), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+        } else if (Nd4j.dataType() == DataType.HALF) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3Half(extras, (ShortPointer) AtomicAllocator.getInstance().getPointer(buffer), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
         }
 
@@ -2324,7 +2324,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public INDArray thresholdDecode(INDArray encoded, INDArray target) {
         DataBuffer buffer = encoded.data();
 
-        if (buffer.dataType() != DataBuffer.Type.INT)
+        if (buffer.dataType() != DataType.INT)
             throw new UnsupportedOperationException();
 
         long compressedLength = buffer.getInt(0);
@@ -2348,18 +2348,18 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         //log.info("DEC Source length: {}", buffer.length());
         //log.info("DEC Source: {}", Arrays.toString(buffer.asInt()));
 
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+        if (Nd4j.dataType() == DataType.FLOAT) {
             nativeOps.decodeThresholdFloat(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (FloatPointer) AtomicAllocator.getInstance().getPointer(result));
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (Nd4j.dataType() == DataType.DOUBLE) {
             nativeOps.decodeThresholdDouble(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (DoublePointer) AtomicAllocator.getInstance().getPointer(result));
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+        } else if (Nd4j.dataType() == DataType.HALF) {
             nativeOps.decodeThresholdHalf(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (ShortPointer) AtomicAllocator.getInstance().getPointer(result));
         }
 
         AtomicAllocator.getInstance().getAllocationPoint(result).tickDeviceWrite();
 
 
-        //DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.THRESHOLD, buffer, getGlobalTypeEx());
+        //DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataTypeEx.THRESHOLD, buffer, getGlobalTypeEx());
 
         return target;
     }
@@ -2373,7 +2373,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (tLen != (length / 16 + 5))
             throw new ND4JIllegalStateException("Length of target array should be " + (length / 16 + 5));
 
-        if (target.data().dataType() != DataBuffer.Type.INT)
+        if (target.data().dataType() != DataType.INT)
             throw new ND4JIllegalStateException("Target array should have INT dataType");
 
         DataBuffer buffer = target.data();
@@ -2398,21 +2398,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         );
 
         long val = 0;
-        if (indArray.data().dataType() == DataBuffer.Type.FLOAT) {
+        if (indArray.data().dataType() == DataType.FLOAT) {
             val = nativeOps.encodeBitmapFloat(extras,
                     (FloatPointer) AtomicAllocator.getInstance().getPointer(indArray, context),
                     length,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(buffer, context),
                     (float) threshold
             );
-        } else if (indArray.data().dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (indArray.data().dataType() == DataType.DOUBLE) {
             val = nativeOps.encodeBitmapDouble(extras,
                     (DoublePointer) AtomicAllocator.getInstance().getPointer(indArray, context),
                     length,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(buffer, context),
                     (float) threshold
             );
-        } else if (indArray.data().dataType() == DataBuffer.Type.HALF) {
+        } else if (indArray.data().dataType() == DataType.HALF) {
             val = nativeOps.encodeBitmapHalf(extras,
                     (ShortPointer) AtomicAllocator.getInstance().getPointer(indArray, context),
                     length,
@@ -2445,11 +2445,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferScalar(),
                 context.getBufferReduction());
 
-        if (target.data().dataType() == DataBuffer.Type.FLOAT) {
+        if (target.data().dataType() == DataType.FLOAT) {
             nativeOps.decodeBitmapFloat(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), (FloatPointer) AtomicAllocator.getInstance().getPointer(target, context));
-        } else if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (target.data().dataType() == DataType.DOUBLE) {
             nativeOps.decodeBitmapDouble(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), (DoublePointer) AtomicAllocator.getInstance().getPointer(target, context));
-        } else if (target.data().dataType() == DataBuffer.Type.HALF) {
+        } else if (target.data().dataType() == DataType.HALF) {
             nativeOps.decodeBitmapHalf(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), (ShortPointer) AtomicAllocator.getInstance().getPointer(target, context));
         } else
             throw new ND4JIllegalStateException("Unknown dataType " + target.data().dataType());
@@ -2543,7 +2543,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         for (val i: op.iArgs())
             iArgs.put(cnt++, i);
 
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+        if (Nd4j.dataType() == DataType.FLOAT) {
             val tArgs = op.tArgs().length > 0 ? new FloatPointer(op.tArgs().length) : null;
 
             cnt = 0;
@@ -2559,7 +2559,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asLongPointer()));
 
             nativeOps.deleteShapeList(ptrptr);
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (Nd4j.dataType() == DataType.DOUBLE) {
             val tArgs = op.tArgs().length > 0 ? new DoublePointer(op.tArgs().length) : null;
 
             cnt = 0;
@@ -2575,7 +2575,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asLongPointer()));
 
             nativeOps.deleteShapeList(ptrptr);
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+        } else if (Nd4j.dataType() == DataType.HALF) {
             val tArgs = op.tArgs().length > 0 ? new ShortPointer(op.tArgs().length) : null;
 
             cnt = 0;
@@ -2663,11 +2663,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val extraArgs = AtomicAllocator.getInstance().getPointer(extraArgsBuff, context);
 
 
-            if (dtype == DataBuffer.Type.DOUBLE) {
+            if (dtype == DataType.DOUBLE) {
                 nativeOps.execTransformDouble(xShapeHost, 37, (DoublePointer) x, (LongPointer) xShape, (DoublePointer) z, (LongPointer) zShape, (DoublePointer) extraArgs);
-            } else if (dtype == DataBuffer.Type.FLOAT) {
+            } else if (dtype == DataType.FLOAT) {
                 nativeOps.execTransformFloat(xShapeHost, 37, (FloatPointer) x, (LongPointer) xShape, (FloatPointer) z, (LongPointer) zShape, (FloatPointer) extraArgs);
-            } else if (dtype == DataBuffer.Type.HALF) {
+            } else if (dtype == DataType.HALF) {
                 nativeOps.execTransformHalf(xShapeHost, 37, (ShortPointer) x, (LongPointer) xShape, (ShortPointer) z, (LongPointer) zShape, (ShortPointer) extraArgs);
             }
 
@@ -2711,11 +2711,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val extraArgsBuff = Nd4j.getConstantHandler().getConstantBuffer(extrass);
             val extraArgs = AtomicAllocator.getInstance().getPointer(extraArgsBuff, context);
 
-            if (dtype == DataBuffer.Type.DOUBLE) {
+            if (dtype == DataType.DOUBLE) {
                 nativeOps.execTransformDouble(xShapeHost, 36, (DoublePointer) x, (LongPointer) xShape, (DoublePointer) z, (LongPointer) zShape, (DoublePointer) extraArgs);
-            } else if (dtype == DataBuffer.Type.FLOAT) {
+            } else if (dtype == DataType.FLOAT) {
                 nativeOps.execTransformFloat(xShapeHost, 36, (FloatPointer) x, (LongPointer) xShape, (FloatPointer) z, (LongPointer) zShape, (FloatPointer) extraArgs);
-            } else if (dtype == DataBuffer.Type.HALF) {
+            } else if (dtype == DataType.HALF) {
                 nativeOps.execTransformHalf(xShapeHost, 36, (ShortPointer) x, (LongPointer) xShape, (ShortPointer) z, (LongPointer) zShape, (ShortPointer) extraArgs);
             }
 
@@ -2759,11 +2759,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val extraArgsBuff = Nd4j.getConstantHandler().getConstantBuffer(extrass);
             val extraArgs = AtomicAllocator.getInstance().getPointer(extraArgsBuff, context);
 
-            if (dtype == DataBuffer.Type.DOUBLE) {
+            if (dtype == DataType.DOUBLE) {
                 nativeOps.execTransformDouble(xShapeHost, 71, (DoublePointer) x, (LongPointer) xShape, (DoublePointer) z, (LongPointer) zShape, (DoublePointer) extraArgs);
-            } else if (dtype == DataBuffer.Type.FLOAT) {
+            } else if (dtype == DataType.FLOAT) {
                 nativeOps.execTransformFloat(xShapeHost, 71, (FloatPointer) x, (LongPointer) xShape, (FloatPointer) z, (LongPointer) zShape, (FloatPointer) extraArgs);
-            } else if (dtype == DataBuffer.Type.HALF) {
+            } else if (dtype == DataType.HALF) {
                 nativeOps.execTransformHalf(xShapeHost, 71, (ShortPointer) x, (LongPointer) xShape, (ShortPointer) z, (LongPointer) zShape, (ShortPointer) extraArgs);
             }
 
@@ -2846,7 +2846,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         for (val i: op.iArgs())
             iArgs.put(cnt++, i);
 
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+        if (Nd4j.dataType() == DataType.FLOAT) {
             val tArgs = op.tArgs().length > 0 ? new FloatPointer(op.tArgs().length) : null;
 
             cnt = 0;
@@ -2856,7 +2856,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val status = OpStatus.byNumber(nativeOps.execCustomOpFloat(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (Nd4j.dataType() == DataType.DOUBLE) {
             val tArgs = op.tArgs().length > 0 ? new DoublePointer(op.tArgs().length) : null;
 
             cnt = 0;
@@ -2866,7 +2866,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val status = OpStatus.byNumber(nativeOps.execCustomOpDouble(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+        } else if (Nd4j.dataType() == DataType.HALF) {
             val tArgs = op.tArgs().length > 0 ? new ShortPointer(op.tArgs().length) : null;
 
             cnt = 0;
@@ -2897,11 +2897,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void registerGraph(long id, Pointer graph) {
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() == DataType.FLOAT)
             nativeOps.registerGraphFloat(null, id, graph);
-        else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
+        else if (Nd4j.dataType() == DataType.DOUBLE)
             nativeOps.registerGraphDouble(null, id, graph);
-        else if (Nd4j.dataType() == DataBuffer.Type.HALF)
+        else if (Nd4j.dataType() == DataType.HALF)
             nativeOps.registerGraphHalf(null, id, graph);
     }
 
@@ -2927,7 +2927,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         val newMap = new LinkedHashMap<String, INDArray>();
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+        if (Nd4j.dataType() == DataType.FLOAT) {
             val result = (Nd4jCuda.FloatVariablesSet) nativeOps.executeStoredGraphFloat(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
 
             val status = OpStatus.byNumber(result.status());
@@ -2961,7 +2961,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 newMap.put(nodeName, array);
             }
             nativeOps.deleteVariablesSetFloat(result);
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (Nd4j.dataType() == DataType.DOUBLE) {
             val result = (Nd4jCuda.DoubleVariablesSet) nativeOps.executeStoredGraphDouble(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
 
             val status = OpStatus.byNumber(result.status());
@@ -2996,7 +2996,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
 
             nativeOps.deleteVariablesSetDouble(result);
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+        } else if (Nd4j.dataType() == DataType.HALF) {
             val result = (Nd4jCuda.DoubleVariablesSet) nativeOps.executeStoredGraphHalf(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
 
             val status = OpStatus.byNumber(result.status());

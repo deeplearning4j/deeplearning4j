@@ -27,6 +27,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,7 +44,7 @@ import java.util.stream.LongStream;
 @RunWith(Parameterized.class)
 public class SortCooTests extends BaseNd4jTest {
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public SortCooTests(Nd4jBackend backend) {
         super(backend);
@@ -52,7 +53,7 @@ public class SortCooTests extends BaseNd4jTest {
 
     @Before
     public void setUp() {
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
     }
 
     @After

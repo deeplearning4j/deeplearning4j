@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ndarray;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
@@ -28,21 +29,21 @@ public interface ShapeInfoProvider {
      * @param shape
      * @return
      */
-    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, DataBuffer.Type dataType);
+    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, DataType dataType);
 
     /**
      * This method creates long shapeInformation buffer, based on shape & order being passed in
      * @param shape
      * @return
      */
-    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, char order, DataBuffer.Type dataType);
+    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, char order, DataType dataType);
 
     /**
      * This method creates long shapeInformation buffer, based on detailed shape info being passed in
      * @param shape
      * @return
      */
-    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataBuffer.Type dataType);
+    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType);
 
 
     Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras);

@@ -50,7 +50,7 @@ public class IntDataBufferTests extends BaseNd4jTest {
 
 
         DataBuffer dataBuffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4, 5});
-        DataBuffer shapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 5}, DataBuffer.Type.INT).getFirst();
+        DataBuffer shapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 5}, DataType.INT).getFirst();
         INDArray intArray = Nd4j.createArrayFromShapeBuffer(dataBuffer, shapeBuffer);
 
         File tempFile = File.createTempFile("test", "test");
@@ -64,8 +64,8 @@ public class IntDataBufferTests extends BaseNd4jTest {
 
         INDArray loaded = Nd4j.read(dis);
 
-        assertEquals(DataBuffer.Type.INT, loaded.data().dataType());
-        assertEquals(DataBuffer.Type.LONG, loaded.shapeInfoDataBuffer().dataType());
+        assertEquals(DataType.INT, loaded.data().dataType());
+        assertEquals(DataType.LONG, loaded.shapeInfoDataBuffer().dataType());
 
         assertEquals(intArray.data().length(), loaded.data().length());
 
@@ -76,7 +76,7 @@ public class IntDataBufferTests extends BaseNd4jTest {
     @Test(expected = ND4JIllegalStateException.class)
     public void testOpDiscarded() throws Exception {
         DataBuffer dataBuffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4, 5});
-        DataBuffer shapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 5}, DataBuffer.Type.INT).getFirst();
+        DataBuffer shapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 5}, DataType.INT).getFirst();
         INDArray intArray = Nd4j.createArrayFromShapeBuffer(dataBuffer, shapeBuffer);
 
         intArray.add(10f);

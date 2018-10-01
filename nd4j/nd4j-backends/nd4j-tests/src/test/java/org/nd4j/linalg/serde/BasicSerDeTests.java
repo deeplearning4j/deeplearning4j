@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -43,7 +44,7 @@ public class BasicSerDeTests extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     @After
     public void after() {
@@ -53,8 +54,8 @@ public class BasicSerDeTests extends BaseNd4jTest {
 
     @Test
     public void testBasicDataTypeSwitch1() throws Exception {
-        DataBuffer.Type initialType = Nd4j.dataType();
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        DataType initialType = Nd4j.dataType();
+        Nd4j.setDataType(DataType.FLOAT);
 
 
         INDArray array = Nd4j.create(new float[] {1, 2, 3, 4, 5, 6});
@@ -64,7 +65,7 @@ public class BasicSerDeTests extends BaseNd4jTest {
         Nd4j.write(bos, array);
 
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
 
 
         INDArray restored = Nd4j.read(new ByteArrayInputStream(bos.toByteArray()));

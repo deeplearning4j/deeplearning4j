@@ -157,11 +157,11 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         long bytes = requiredMemoryBytes;
         // hack for misalignment avoidance for 16bit data opType
-        if (dataBuffer.dataType() == DataBuffer.Type.HALF) {
+        if (dataBuffer.dataType() == DataType.HALF) {
             if (bytes % 4 != 0) {
                 bytes += 2;
             }
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE || dataBuffer.dataType() == DataBuffer.Type.LONG) {
+        } else if (Nd4j.dataType() == DataType.DOUBLE || dataBuffer.dataType() == DataType.LONG) {
             // for double data opType, we must be assured, that all DOUBLE pointers are starting from even addresses, to avoid banks spills
             long div = bytes / 4;
             if (div % 2 != 0)

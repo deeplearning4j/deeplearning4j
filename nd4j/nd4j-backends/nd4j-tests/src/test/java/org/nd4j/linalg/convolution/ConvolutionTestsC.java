@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -120,8 +121,8 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int[] padW = {0, 1, 2};
         boolean[] coverall = {false, true};
 
-        DataBuffer.Type[] types = new DataBuffer.Type[] {DataBuffer.Type.FLOAT, DataBuffer.Type.DOUBLE,
-                        DataBuffer.Type.FLOAT, DataBuffer.Type.DOUBLE};
+        DataType[] types = new DataType[] {DataType.FLOAT, DataType.DOUBLE,
+                        DataType.FLOAT, DataType.DOUBLE};
         DataBuffer.AllocationMode[] modes =
                         new DataBuffer.AllocationMode[] {DataBuffer.AllocationMode.HEAP, DataBuffer.AllocationMode.HEAP,
                                         DataBuffer.AllocationMode.DIRECT, DataBuffer.AllocationMode.DIRECT};
@@ -129,14 +130,14 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         String factoryClassName = Nd4j.factory().getClass().toString().toLowerCase();
         if (factoryClassName.contains("jcublas") || factoryClassName.contains("cuda")) {
             //Only test direct for CUDA; test all for CPU
-            types = new DataBuffer.Type[] {DataBuffer.Type.FLOAT, DataBuffer.Type.DOUBLE};
+            types = new DataType[] {DataType.FLOAT, DataType.DOUBLE};
             modes = new DataBuffer.AllocationMode[] {DataBuffer.AllocationMode.DIRECT,
                             DataBuffer.AllocationMode.DIRECT};
         }
 
-        DataBuffer.Type initialType = Nd4j.dataType();
+        DataType initialType = Nd4j.dataType();
         for (int i = 0; i < types.length; i++) {
-            DataBuffer.Type type = types[i];
+            DataType type = types[i];
             DataBuffer.AllocationMode mode = modes[i];
 
             DataTypeUtil.setDTypeForContext(type);

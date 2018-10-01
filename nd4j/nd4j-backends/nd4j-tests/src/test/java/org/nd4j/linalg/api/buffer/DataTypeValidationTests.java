@@ -33,7 +33,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
  */
 @RunWith(Parameterized.class)
 public class DataTypeValidationTests extends BaseNd4jTest {
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public DataTypeValidationTests(Nd4jBackend backend) {
         super(backend);
@@ -42,7 +42,7 @@ public class DataTypeValidationTests extends BaseNd4jTest {
     @Before
     public void setUp() {
         initialType = Nd4j.dataType();
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
     }
 
     @After
@@ -57,7 +57,7 @@ public class DataTypeValidationTests extends BaseNd4jTest {
     public void testOpValidation1() {
         INDArray x = Nd4j.create(10);
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
 
         INDArray y = Nd4j.create(10);
 
@@ -73,7 +73,7 @@ public class DataTypeValidationTests extends BaseNd4jTest {
     public void testBlasValidation1() {
         INDArray x = Nd4j.create(10);
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
 
         INDArray y = Nd4j.create(10);
 
@@ -88,7 +88,7 @@ public class DataTypeValidationTests extends BaseNd4jTest {
         INDArray a = Nd4j.create(100, 10);
         INDArray x = Nd4j.create(100);
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
 
         INDArray y = Nd4j.create(100);
 
@@ -102,7 +102,7 @@ public class DataTypeValidationTests extends BaseNd4jTest {
     public void testBlasValidation3() {
         INDArray x = Nd4j.create(100, 100);
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
 
         INDArray y = Nd4j.create(100, 100);
 

@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.shape.options;
 
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
@@ -50,31 +51,31 @@ public class ArrayOptionsHelper {
             return ArrayType.DENSE;
     }
 
-    public static DataBuffer.Type dataType(long[] shapeInfo) {
+    public static DataType dataType(long[] shapeInfo) {
         val opt = Shape.options(shapeInfo);
         if (hasBitSet(opt, 4))
-            return DataBuffer.Type.COMPRESSED;
+            return DataType.COMPRESSED;
         else if (hasBitSet(opt, 4096))
-            return DataBuffer.Type.HALF;
+            return DataType.HALF;
         else if (hasBitSet(opt, 8192))
-            return DataBuffer.Type.FLOAT;
+            return DataType.FLOAT;
         else if (hasBitSet(opt, 16384))
-            return DataBuffer.Type.DOUBLE;
+            return DataType.DOUBLE;
         else if (hasBitSet(opt, 131072))
-            return DataBuffer.Type.INT;
+            return DataType.INT;
         else if (hasBitSet(opt, 262144))
-            return DataBuffer.Type.LONG;
+            return DataType.LONG;
         else if (hasBitSet(opt, 524288))
-            return DataBuffer.Type.BOOL;
+            return DataType.BOOL;
         else if (hasBitSet(opt, 32768))
-            return DataBuffer.Type.BYTE;
+            return DataType.BYTE;
         else if (hasBitSet(opt, 65536))
-            return DataBuffer.Type.SHORT;
+            return DataType.SHORT;
         else
-            return DataBuffer.Type.UNKNOWN;
+            return DataType.UNKNOWN;
     }
 
-    public static long setOptionBit(long storage, DataBuffer.Type type) {
+    public static long setOptionBit(long storage, DataType type) {
         long bit = 0;
         switch (type) {
             case HALF:

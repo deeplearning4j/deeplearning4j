@@ -60,7 +60,7 @@ public class JcublasLapack extends BaseLapack {
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
         INDArray a = A;
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             log.warn("FLOAT getrf called in DOUBLE environment");
 
         if (A.ordering() == 'c')
@@ -128,7 +128,7 @@ public class JcublasLapack extends BaseLapack {
     public void dgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
         INDArray a = A;
 
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             log.warn("FLOAT getrf called in FLOAT environment");
 
         if (A.ordering() == 'c')
@@ -194,7 +194,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray a = A;
         INDArray r = R;
 
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             log.warn("FLOAT getrf called in DOUBLE environment");
 
         if (A.ordering() == 'c') 
@@ -309,7 +309,7 @@ public class JcublasLapack extends BaseLapack {
         INDArray a = A;
         INDArray r = R;
 
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             log.warn("DOUBLE getrf called in FLOAT environment");
 
         if (A.ordering() == 'c')
@@ -422,7 +422,7 @@ public class JcublasLapack extends BaseLapack {
     public void spotrf(byte uplo, int N, INDArray A, INDArray INFO) {
         INDArray a = A;
 
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             log.warn("DOUBLE potrf called in FLOAT environment");
 
         if (A.ordering() == 'c')
@@ -505,7 +505,7 @@ public class JcublasLapack extends BaseLapack {
     public void dpotrf(byte uplo, int N, INDArray A, INDArray INFO) {
         INDArray a = A;
 
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             log.warn("FLOAT potrf called in DOUBLE environment");
 
         if (A.ordering() == 'c')
@@ -605,7 +605,7 @@ public class JcublasLapack extends BaseLapack {
     public void sgesvd(byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT,
                     INDArray INFO) {
 
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             log.warn("FLOAT gesvd called in DOUBLE environment");
 
         INDArray a = A;
@@ -749,7 +749,7 @@ public class JcublasLapack extends BaseLapack {
 			vt = VT.dup('f');
 	}
 
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             log.warn("DOUBLE gesvd called in FLOAT environment");
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
@@ -830,7 +830,7 @@ public class JcublasLapack extends BaseLapack {
 	int jobz = _jobz == 'V' ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR ;
 	int uplo = _uplo == 'L' ? CUBLAS_FILL_MODE_LOWER : CUBLAS_FILL_MODE_UPPER ;
 
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             log.warn("FLOAT ssyev called in DOUBLE environment");
 
         INDArray a = A;
@@ -907,7 +907,7 @@ public class JcublasLapack extends BaseLapack {
 	int jobz = _jobz == 'V' ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR ;
 	int uplo = _uplo == 'L' ? CUBLAS_FILL_MODE_LOWER : CUBLAS_FILL_MODE_UPPER ;
 
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             log.warn("DOUBLE dsyev called in FLOAT environment");
 
         INDArray a = A;

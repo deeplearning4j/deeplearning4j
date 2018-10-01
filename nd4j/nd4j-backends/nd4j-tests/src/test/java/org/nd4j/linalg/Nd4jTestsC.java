@@ -33,6 +33,7 @@ import org.nd4j.imports.TFGraphs.NodeReader;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -90,7 +91,7 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public class Nd4jTestsC extends BaseNd4jTest {
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public Nd4jTestsC(Nd4jBackend backend) {
         super(backend);
@@ -101,7 +102,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Before
     public void before() throws Exception {
         super.before();
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
 
     }
@@ -1471,8 +1472,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNorm2Double() {
-        DataBuffer.Type initialType = Nd4j.dataType();
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        DataType initialType = Nd4j.dataType();
+        Nd4j.setDataType(DataType.DOUBLE);
 
         INDArray n = Nd4j.create(new double[] {1, 2, 3, 4});
         double assertion = 5.47722557505;
@@ -2051,13 +2052,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNullPointerDataBuffer() {
-        DataBuffer.Type initialType = Nd4j.dataType();
+        DataType initialType = Nd4j.dataType();
 
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
 
         ByteBuffer allocate = ByteBuffer.allocateDirect(10 * 4).order(ByteOrder.nativeOrder());
         allocate.asFloatBuffer().put(new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-        DataBuffer buff = Nd4j.createBuffer(allocate, DataBuffer.Type.FLOAT, 10);
+        DataBuffer buff = Nd4j.createBuffer(allocate, DataType.FLOAT, 10);
         float sum = Nd4j.create(buff).sumNumber().floatValue();
         System.out.println(sum);
         assertEquals(55f, sum, 0.001f);
@@ -6171,7 +6172,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             return;
 
         val dtype = Nd4j.dataType();
-        Nd4j.setDataType(DataBuffer.Type.HALF);
+        Nd4j.setDataType(DataType.HALF);
 
         val arr = Nd4j.ones(3, 3);
         arr.addi(2.0f);
@@ -6446,7 +6447,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testVariance_4D_1() {
         val dtype = Nd4j.dataType();
 
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
 
         val x = Nd4j.ones(10, 20, 30, 40);
         val result = x.var(false, 0, 2, 3);

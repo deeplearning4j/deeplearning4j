@@ -25,6 +25,7 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.imports.TFGraphs.TFGraphTestAllLibnd4j;
 import org.nd4j.imports.TFGraphs.TFGraphTestAllSameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
 
@@ -81,14 +82,14 @@ public class OpValidationSuite {
     }
 
 
-    private static DataBuffer.Type initialType;
+    private static DataType initialType;
 
     @BeforeClass
     public static void beforeClass() throws Exception {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
     }
 

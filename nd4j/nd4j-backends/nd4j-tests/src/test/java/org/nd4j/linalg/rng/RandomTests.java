@@ -28,6 +28,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -62,7 +63,7 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public class RandomTests extends BaseNd4jTest {
 
-    private DataBuffer.Type initialType;
+    private DataType initialType;
 
     public RandomTests(Nd4jBackend backend) {
         super(backend);
@@ -71,7 +72,7 @@ public class RandomTests extends BaseNd4jTest {
     @Before
     public void setUp() throws Exception {
         initialType = Nd4j.dataType();
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @After
@@ -947,7 +948,7 @@ public class RandomTests extends BaseNd4jTest {
 
     @Test
     public void someTest() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         INDArray x = Nd4j.create(new double[] {-0.5753774207320429, 1.0614372269091394, 0.4522970978070401,
                         -0.5752887679689271, 1.0636465735137173, 0.4544011796073467, -0.576361407698785,
                         1.0656790105069853, 0.4552935317796974, -0.5760602684016433, 1.0658617022858135,

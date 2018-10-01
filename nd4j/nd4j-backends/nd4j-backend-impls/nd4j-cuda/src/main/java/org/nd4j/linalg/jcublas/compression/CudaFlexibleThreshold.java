@@ -90,7 +90,7 @@ public class CudaFlexibleThreshold extends CudaThreshold {
 
         CompressedDataBuffer cbuff = new CompressedDataBuffer(pointer, descriptor);
 
-        Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer.addressPointer(), DataBuffer.TypeEx.FTHRESHOLD, pointer, buffer.length());
+        Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer.addressPointer(), DataTypeEx.FTHRESHOLD, pointer, buffer.length());
 
         Nd4j.getAffinityManager().tagLocation(buffer, AffinityManager.Location.HOST);
 

@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 @RunWith(Parameterized.class)
 public class DebugModeTests extends BaseNd4jTest {
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public DebugModeTests(Nd4jBackend backend) {
         super(backend);

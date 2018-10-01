@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -102,7 +103,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                                     .policyAllocation(AllocationPolicy.OVERALLOCATE)
                                     .policyReset(ResetPolicy.ENDOFBUFFER_REACHED).build();
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public WorkspaceProviderTests(Nd4jBackend backend) {
         super(backend);

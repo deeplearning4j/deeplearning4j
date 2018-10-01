@@ -71,7 +71,7 @@ public class UInt8Buffer extends BaseDataBuffer {
      */
     @Override
     protected void initTypeAndSize() {
-        type = Type.UBYTE;
+        type = DataType.UBYTE;
         elementSize = 1;
     }
 

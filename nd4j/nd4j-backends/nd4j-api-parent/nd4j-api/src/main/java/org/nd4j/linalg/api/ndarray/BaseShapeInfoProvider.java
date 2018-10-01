@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ndarray;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.shape.Shape;
@@ -40,7 +41,7 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
      * @return
      */
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, DataBuffer.Type dataType) {
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, DataType dataType) {
         char order = Nd4j.order();
 
         return createShapeInformation(shape, order, dataType);
@@ -54,7 +55,7 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
      * @return
      */
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, char order, DataBuffer.Type dataType) {
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, char order, DataType dataType) {
         long[] stride = Nd4j.getStrides(shape, order);
 
         // this won't be view, so ews is 1
@@ -64,7 +65,7 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     }
 
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataBuffer.Type dataType) {
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType) {
         DataBuffer buffer = Shape.createShapeInformation(shape, stride, elementWiseStride, order, dataType);
         buffer.setConstant(true);
         return Pair.create(buffer, buffer.asLong());

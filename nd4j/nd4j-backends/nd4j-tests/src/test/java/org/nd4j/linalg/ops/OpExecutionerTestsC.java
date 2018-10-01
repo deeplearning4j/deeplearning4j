@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -73,7 +74,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     @After
     public void after() {
@@ -823,8 +824,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testVarianceSingleVsMultipleDimensions() {
         // this test should always run in double
-        DataBuffer.Type type = Nd4j.dataType();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataType type = Nd4j.dataType();
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(12345);
 
         //Generate C order random numbers. Strides: [500,100,10,1]
@@ -912,8 +913,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testEuclideanManhattanDistanceAlongDimension_Rank4() {
-        DataBuffer.Type initialType = Nd4j.dataType();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataType initialType = Nd4j.dataType();
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(12345);
         INDArray firstOneExample = Nd4j.linspace(1, 8, 8).reshape('c', new int[] {1, 2, 2, 2});
         INDArray secondOneExample = firstOneExample.add(1);

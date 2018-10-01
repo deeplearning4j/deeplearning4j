@@ -213,7 +213,7 @@ public class NativeOpExecutionerTest {
     @Test
     public void testNd4jDup() {
     /* set the dType */
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
 
     /* create NDArray from a double[][] */
         int cnt = 0;
@@ -230,7 +230,7 @@ public class NativeOpExecutionerTest {
         System.out.println("A: " + testNDArray.getRow(0));
 
     /* set the dType again! */
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
 
     /* print the first row */
         System.out.println("B: " + testNDArray.getRow(0));
@@ -560,7 +560,7 @@ public class NativeOpExecutionerTest {
 
     @Test
     public void testDebugEdgeCase2(){
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         INDArray l1 = Nd4j.create(new double[]{-0.2585039112684677,-0.005179485353710878,0.4348343401770497,0.020356532375728764,-0.1970793298488186});
         INDArray l2 = Nd4j.create(2,l1.size(1));
 
@@ -593,7 +593,7 @@ public class NativeOpExecutionerTest {
 
     @Test
     public void testMul_Scalar1() throws Exception {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         INDArray x = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
         INDArray y = Nd4j.create(10).assign(0.000003);
 
@@ -759,7 +759,7 @@ public class NativeOpExecutionerTest {
 
     @Test
     public void testGet() throws Exception {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
 
         INDArray recurrentWeights = Nd4j.create(127, 511);
 
@@ -774,7 +774,7 @@ public class NativeOpExecutionerTest {
 
     @Test
     public void testInf() {
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
         INDArray x = Nd4j.create(10, 10);
         x.minNumber();
 

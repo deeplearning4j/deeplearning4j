@@ -31,23 +31,8 @@ import java.util.Collection;
  * @author Adam Gibson
  */
 public interface DataBuffer extends Serializable {
-
-    enum Type {
-        DOUBLE,
-        FLOAT,
-        HALF,
-        LONG,
-        INT,
-        SHORT,
-        UBYTE,
-        BYTE,
-        BOOL,
-        COMPRESSED,
-        UNKNOWN
-    }
-
     enum TypeEx {
-        FLOAT8, INT8, UINT8, FLOAT16, INT16, UINT16, FLOAT, DOUBLE, THRESHOLD, FTHRESHOLD
+
     }
 
     long getGenerationId();
@@ -412,7 +397,7 @@ public interface DataBuffer extends Serializable {
      *
      * @return the data opType of the buffer
      */
-    Type dataType();
+    DataType dataType();
 
     /**
      * Return the buffer as a float array

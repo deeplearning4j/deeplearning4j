@@ -17,6 +17,7 @@
 package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,7 +30,7 @@ public class NDArrayUtil {
     private NDArrayUtil() {}
 
     public static INDArray toNDArray(int[][] nums) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        if (Nd4j.dataType() == DataType.DOUBLE) {
             double[] doubles = ArrayUtil.toDoubles(nums);
             INDArray create = Nd4j.create(doubles, new int[] {nums[0].length, nums.length});
             return create;
@@ -42,7 +43,7 @@ public class NDArrayUtil {
     }
 
     public static INDArray toNDArray(int[] nums) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        if (Nd4j.dataType() == DataType.DOUBLE) {
             double[] doubles = ArrayUtil.toDoubles(nums);
             INDArray create = Nd4j.create(doubles, new int[] {1, nums.length});
             return create;
@@ -54,7 +55,7 @@ public class NDArrayUtil {
     }
 
     public static INDArray toNDArray(long[] nums) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        if (Nd4j.dataType() == DataType.DOUBLE) {
             double[] doubles = ArrayUtil.toDoubles(nums);
             INDArray create = Nd4j.create(doubles, new int[] {1, nums.length});
             return create;

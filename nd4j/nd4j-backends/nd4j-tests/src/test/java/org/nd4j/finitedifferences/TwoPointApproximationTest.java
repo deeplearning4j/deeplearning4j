@@ -20,6 +20,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,14 +30,14 @@ import org.nd4j.linalg.io.ClassPathResource;
 import static org.junit.Assert.assertEquals;
 
 public class TwoPointApproximationTest {
-    private DataBuffer.Type dtype;
+    private DataType dtype;
 
     @Before
     public void setUp() {
         Nd4j.create(1);
         dtype = Nd4j.dataType();
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
     }
 

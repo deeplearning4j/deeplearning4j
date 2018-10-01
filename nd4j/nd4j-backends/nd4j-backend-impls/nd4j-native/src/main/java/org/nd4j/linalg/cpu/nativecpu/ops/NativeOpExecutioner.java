@@ -25,6 +25,8 @@ import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -310,7 +312,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + (xT * yT) + "]");
             }
 
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            if (op.x().data().dataType() == DataType.DOUBLE) {
                 op.z().assign(op.zeroDouble());
             } else {
                 op.z().assign(op.zeroFloat());
@@ -830,9 +832,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int indexPos = maxTypes * Batch.getBatchLimit();
         int intArraysPos = indexPos + (batch.getSample().maxIndexArguments() * Batch.getBatchLimit());
         int realPos = (intArraysPos + (maxIntArrays * maxArraySize * Batch.getBatchLimit()))
-                / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 2 : 1);
+                / (Nd4j.dataType() == DataType.DOUBLE ? 2 : 1);
         int argsPos = (realPos + ((batch.getSample().maxRealArguments() * Batch.getBatchLimit())))
-                / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 1 : 2);
+                / (Nd4j.dataType() == DataType.DOUBLE ? 1 : 2);
         int shapesPos = argsPos + (batch.getSample().maxArguments() * Batch.getBatchLimit());
         for (int i = 0; i < batch.getNumAggregates(); i++) {
             T op = batch.getAggregates().get(i);
@@ -866,13 +868,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             // TODO: variable datatype should be handled here
             // putting real arguments
 
-            if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            if (Nd4j.dataType() == DataType.FLOAT) {
                 FloatPointer fPtr = new FloatPointer(pointer);
                 for (int e = 0; e < op.getRealArguments().size(); e++) {
                     idx = realPos + i * op.maxRealArguments();
                     fPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
                 }
-            } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            } else if (Nd4j.dataType() == DataType.DOUBLE) {
                 DoublePointer dPtr = new DoublePointer(pointer);
                 for (int e = 0; e < op.getRealArguments().size(); e++) {
                     idx = realPos + (i * op.maxRealArguments());
@@ -971,7 +973,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         PointerPointer shapes = block.getShapesPointer(); //new PointerPointer(numShapes);
 
         for (int x = 0; x < numShapes; x++) {
-            if (op.getShapes().get(x).dataType() != DataBuffer.Type.INT)
+            if (op.getShapes().get(x).dataType() != DataType.INT)
                 throw new RuntimeException("ShapeBuffers should have INT data opType");
 
             shapes.put(x, op.getShapes().get(x) == null ? null : op.getShapes().get(x).addressPointer());
@@ -988,7 +990,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         double[] reals = new double[numRealArguments];
         for (int x = 0; x < numRealArguments; x++) {
             //reals[x] = op.getRealArguments().get(x).doubleValue();
-            if (Nd4j.dataType() == DataBuffer.Type.FLOAT)
+            if (Nd4j.dataType() == DataType.FLOAT)
                 ((FloatPointer) block.getRealArgumentsPointer()).put(x, op.getRealArguments().get(x).floatValue());
             else
                 ((DoublePointer) block.getRealArgumentsPointer()).put(x, op.getRealArguments().get(x).doubleValue());
@@ -1132,7 +1134,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             indexingPointer = new IntPointer(op.maxIndexArguments());
 
             // allocating chunk for RealArguments
-            realArgumentsPointer = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(op.maxRealArguments())
+            realArgumentsPointer = Nd4j.dataType() == DataType.DOUBLE ? new DoublePointer(op.maxRealArguments())
                     : new FloatPointer(op.maxRealArguments());
 
             // allocating chunk for shapesPointer
@@ -1214,7 +1216,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         //CompressedDataBuffer cbuff = new CompressedDataBuffer(pointer, descriptor);
 
-        Nd4j.getNDArrayFactory().convertDataEx(AbstractCompressor.getBufferTypeEx(buffer), buffer.addressPointer(), DataBuffer.TypeEx.THRESHOLD, encodedBuffer.addressPointer(), buffer.length());
+        Nd4j.getNDArrayFactory().convertDataEx(AbstractCompressor.getBufferTypeEx(buffer), buffer.addressPointer(), DataTypeEx.THRESHOLD, encodedBuffer.addressPointer(), buffer.length());
 
         Nd4j.getAffinityManager().tagLocation(buffer, AffinityManager.Location.HOST);
 
@@ -1225,7 +1227,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray thresholdDecode(INDArray encoded, INDArray target) {
         DataBuffer buffer = encoded.data();
 
-        if (buffer.dataType() != DataBuffer.Type.INT)
+        if (buffer.dataType() != DataType.INT)
             throw new ND4JIllegalStateException("thresholdEncoded array should have dataType of INT");
 
         long compressedLength = buffer.getInt(0);
@@ -1235,9 +1237,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (target.lengthLong() != originalLength)
             throw new ND4JIllegalStateException("originalLength ["+ originalLength+"] stored in encoded array doesn't match target length ["+ target.lengthLong()+"]");
 
-        DataBuffer.TypeEx typeDst = AbstractCompressor.getBufferTypeEx(target.data());
+        DataTypeEx typeDst = AbstractCompressor.getBufferTypeEx(target.data());
 
-        loop.convertTypes(null, DataBuffer.TypeEx.THRESHOLD.ordinal(), buffer.addressPointer(), target.length(), typeDst.ordinal(), target.data().addressPointer());
+        loop.convertTypes(null, DataTypeEx.THRESHOLD.ordinal(), buffer.addressPointer(), target.length(), typeDst.ordinal(), target.data().addressPointer());
 
         return target;
     }
@@ -1251,7 +1253,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (tLen != (length / 16 + 5))
             throw new ND4JIllegalStateException("Length of target array should be " + (length / 16 + 5));
 
-        if (target.data().dataType() != DataBuffer.Type.INT)
+        if (target.data().dataType() != DataType.INT)
             throw new ND4JIllegalStateException("Target array should have INT dataType");
 
         DataBuffer buffer = target.data();

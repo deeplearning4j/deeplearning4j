@@ -42,7 +42,7 @@ public class CudaHalfsTest {
 
     @Before
     public void setUp() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
+        DataTypeUtil.setDTypeForContext(DataType.HALF);
     }
 
     @Test
@@ -83,14 +83,14 @@ public class CudaHalfsTest {
         // loading data back from file
         DataInputStream dis = new DataInputStream(new FileInputStream(tempFile.getAbsoluteFile()));
 
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        DataTypeUtil.setDTypeForContext(DataType.FLOAT);
 
         INDArray exp = Nd4j.linspace(1, 5, 10);
 
         INDArray restored = Nd4j.read(dis);
 
         assertArrayEquals(exp.data().asFloat(), restored.data().asFloat(), 0.1f);
-        assertEquals(DataBuffer.Type.FLOAT, exp.data().dataType());
+        assertEquals(DataType.FLOAT, exp.data().dataType());
     }
 
     @Test

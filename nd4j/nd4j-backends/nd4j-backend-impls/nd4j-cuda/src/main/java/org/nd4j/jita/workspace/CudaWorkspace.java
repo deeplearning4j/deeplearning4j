@@ -92,7 +92,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
     }
 
     @Override
-    public PagedPointer alloc(long requiredMemory, DataBuffer.Type type, boolean initialize) {
+    public PagedPointer alloc(long requiredMemory, DataType type, boolean initialize) {
         return this.alloc(requiredMemory, MemoryKind.DEVICE, type, initialize);
     }
 
@@ -120,7 +120,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
 
     @Override
-    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type, boolean initialize) {
+    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType type, boolean initialize) {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
         if (!isUsed.get()) {

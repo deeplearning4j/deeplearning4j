@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.Mean;
@@ -69,14 +70,14 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
  */
 @Slf4j
 public class SameDiffTests {
-    private DataBuffer.Type initialType;
+    private DataType initialType;
 
     @Before
     public void before() throws Exception {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
     }
 

@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -101,7 +102,7 @@ public class CompressionTests extends BaseNd4jTest {
 
         INDArray compr = BasicNDArrayCompressor.getInstance().compress(array);
 
-        assertEquals(DataBuffer.Type.COMPRESSED, compr.data().dataType());
+        assertEquals(DataType.COMPRESSED, compr.data().dataType());
 
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 
@@ -121,7 +122,7 @@ public class CompressionTests extends BaseNd4jTest {
 
         DataBuffer compr = BasicNDArrayCompressor.getInstance().compress(buffer);
 
-        assertEquals(DataBuffer.Type.COMPRESSED, compr.dataType());
+        assertEquals(DataType.COMPRESSED, compr.dataType());
 
         DataBuffer decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 
@@ -143,14 +144,14 @@ public class CompressionTests extends BaseNd4jTest {
 
         assertEquals(false, buffer.isCompressed());
         assertEquals(true, compr.isCompressed());
-        assertEquals(DataBuffer.Type.COMPRESSED, compr.data().dataType());
+        assertEquals(DataType.COMPRESSED, compr.data().dataType());
 
         //        assertNotEquals(exp, compr);
 
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 
         assertEquals(false, decomp.isCompressed());
-        assertEquals(DataBuffer.Type.FLOAT, decomp.data().dataType());
+        assertEquals(DataType.FLOAT, decomp.data().dataType());
 
         assertEquals(exp, decomp);
     }
@@ -164,7 +165,7 @@ public class CompressionTests extends BaseNd4jTest {
 
         DataBuffer compr = BasicNDArrayCompressor.getInstance().compress(buffer);
 
-        assertEquals(DataBuffer.Type.COMPRESSED, compr.dataType());
+        assertEquals(DataType.COMPRESSED, compr.dataType());
 
         DataBuffer decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 
@@ -184,7 +185,7 @@ public class CompressionTests extends BaseNd4jTest {
 
         DataBuffer compr = BasicNDArrayCompressor.getInstance().compress(buffer);
 
-        assertEquals(DataBuffer.Type.COMPRESSED, compr.dataType());
+        assertEquals(DataType.COMPRESSED, compr.dataType());
 
         DataBuffer decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 
@@ -203,7 +204,7 @@ public class CompressionTests extends BaseNd4jTest {
 
         DataBuffer compr = BasicNDArrayCompressor.getInstance().compress(buffer);
 
-        assertEquals(DataBuffer.Type.COMPRESSED, compr.dataType());
+        assertEquals(DataType.COMPRESSED, compr.dataType());
 
         DataBuffer decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 
@@ -225,7 +226,7 @@ public class CompressionTests extends BaseNd4jTest {
 
         INDArray compr = BasicNDArrayCompressor.getInstance().compress(array);
 
-        assertEquals(DataBuffer.Type.COMPRESSED, compr.data().dataType());
+        assertEquals(DataType.COMPRESSED, compr.data().dataType());
 
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 
@@ -243,12 +244,12 @@ public class CompressionTests extends BaseNd4jTest {
 
         INDArray compr = BasicNDArrayCompressor.getInstance().compress(array);
 
-        assertEquals(DataBuffer.Type.COMPRESSED, compr.data().dataType());
+        assertEquals(DataType.COMPRESSED, compr.data().dataType());
         assertTrue(compr.isCompressed());
 
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 
-        assertEquals(DataBuffer.Type.FLOAT, decomp.data().dataType());
+        assertEquals(DataType.FLOAT, decomp.data().dataType());
         assertFalse(decomp.isCompressed());
         assertFalse(decomp.data() instanceof CompressedDataBuffer);
         assertFalse(exp.data() instanceof CompressedDataBuffer);
@@ -269,7 +270,7 @@ public class CompressionTests extends BaseNd4jTest {
 
         INDArray compr = BasicNDArrayCompressor.getInstance().compress(array);
 
-        assertEquals(DataBuffer.Type.COMPRESSED, compr.data().dataType());
+        assertEquals(DataType.COMPRESSED, compr.data().dataType());
 
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compr);
 

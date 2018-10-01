@@ -155,7 +155,7 @@ public class LongBuffer extends BaseDataBuffer {
     @Override
     protected void initTypeAndSize() {
         elementSize = 8;
-        type = Type.LONG;
+        type = DataType.LONG;
     }
 
 

@@ -41,7 +41,7 @@ public class AllocationUtilsTest {
         shape.setOffset(0);
         shape.setLength(10);
         shape.setStride(1);
-        shape.setDataType(DataBuffer.Type.DOUBLE);
+        shape.setDataType(DataType.DOUBLE);
 
         assertEquals(80, AllocationUtils.getRequiredMemory(shape));
     }
@@ -52,7 +52,7 @@ public class AllocationUtilsTest {
         shape.setOffset(0);
         shape.setLength(10);
         shape.setStride(1);
-        shape.setDataType(DataBuffer.Type.FLOAT);
+        shape.setDataType(DataType.FLOAT);
 
         assertEquals(40, AllocationUtils.getRequiredMemory(shape));
     }
@@ -63,7 +63,7 @@ public class AllocationUtilsTest {
         shape.setOffset(0);
         shape.setLength(10);
         shape.setStride(2);
-        shape.setDataType(DataBuffer.Type.FLOAT);
+        shape.setDataType(DataType.FLOAT);
 
         assertEquals(80, AllocationUtils.getRequiredMemory(shape));
     }

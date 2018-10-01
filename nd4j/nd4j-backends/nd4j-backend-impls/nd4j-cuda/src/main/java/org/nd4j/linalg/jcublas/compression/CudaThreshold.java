@@ -109,7 +109,7 @@ public class CudaThreshold extends AbstractCompressor {
 
     @Override
     public DataBuffer decompress(DataBuffer buffer) {
-        if (buffer.dataType() != DataBuffer.Type.INT)
+        if (buffer.dataType() != DataType.INT)
             throw new UnsupportedOperationException();
 
         long compressedLength = buffer.getInt(0);
@@ -127,7 +127,7 @@ public class CudaThreshold extends AbstractCompressor {
         NativeOpsHolder.getInstance().getDeviceNativeOps().decodeThresholdFloat(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (FloatPointer) AtomicAllocator.getInstance().getPointer(result));
         AtomicAllocator.getInstance().getAllocationPoint(result).tickDeviceWrite();
 
-        //DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.THRESHOLD, buffer, getGlobalTypeEx());
+        //DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataTypeEx.THRESHOLD, buffer, getGlobalTypeEx());
 
         return result;
     }
@@ -264,7 +264,7 @@ public class CudaThreshold extends AbstractCompressor {
 
         CompressedDataBuffer cbuff = new CompressedDataBuffer(pointer, descriptor);
 
-        Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer.addressPointer(), DataBuffer.TypeEx.THRESHOLD, pointer, buffer.length());
+        Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer.addressPointer(), DataTypeEx.THRESHOLD, pointer, buffer.length());
 
         Nd4j.getAffinityManager().tagLocation(buffer, AffinityManager.Location.HOST);
 
@@ -273,7 +273,7 @@ public class CudaThreshold extends AbstractCompressor {
     }
 
     @Override
-    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize) {
+    protected CompressedDataBuffer compressPointer(DataTypeEx srcType, Pointer srcPointer, int length, int elementSize) {
         throw new UnsupportedOperationException();
     }
 }

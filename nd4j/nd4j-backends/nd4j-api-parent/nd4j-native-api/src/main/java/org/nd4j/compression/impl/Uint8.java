@@ -20,6 +20,7 @@ import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
@@ -54,7 +55,7 @@ public class Uint8 extends AbstractCompressor {
 
     @Override
     public DataBuffer decompress(DataBuffer buffer) {
-        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.UINT8, buffer, getGlobalTypeEx());
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataTypeEx.UINT8, buffer, getGlobalTypeEx());
 
         return result;
     }
@@ -62,12 +63,12 @@ public class Uint8 extends AbstractCompressor {
     @Override
     public DataBuffer compress(DataBuffer buffer) {
         val t = getBufferTypeEx(buffer);
-        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(t, buffer, DataBuffer.TypeEx.UINT8);
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(t, buffer, DataTypeEx.UINT8);
         return result;
     }
 
     @Override
-    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
+    protected CompressedDataBuffer compressPointer(DataTypeEx srcType, Pointer srcPointer, int length,
                     int elementSize) {
 
         val ptr = new BytePointer(length);
@@ -82,8 +83,8 @@ public class Uint8 extends AbstractCompressor {
 
         val buffer = new CompressedDataBuffer(ptr, descriptor);
 
-        //Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataBuffer.TypeEx.UINT8, ptr, length);
-        Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataBuffer.TypeEx.UINT8, buffer);
+        //Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataTypeEx.UINT8, ptr, length);
+        Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataTypeEx.UINT8, buffer);
 
         return buffer;
     }

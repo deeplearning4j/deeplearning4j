@@ -71,7 +71,7 @@ public class Int16Buffer extends BaseDataBuffer {
      */
     @Override
     protected void initTypeAndSize() {
-        type = Type.SHORT;
+        type = DataType.SHORT;
         elementSize = 2;
     }
 

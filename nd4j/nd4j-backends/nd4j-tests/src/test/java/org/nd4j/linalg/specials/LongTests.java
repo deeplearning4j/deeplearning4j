@@ -17,6 +17,7 @@
 package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.IntPointer;
 import org.junit.Ignore;
@@ -48,7 +49,7 @@ import static org.junit.Assert.assertNotEquals;
 @RunWith(Parameterized.class)
 public class LongTests extends BaseNd4jTest {
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public LongTests(Nd4jBackend backend) {
         super(backend);

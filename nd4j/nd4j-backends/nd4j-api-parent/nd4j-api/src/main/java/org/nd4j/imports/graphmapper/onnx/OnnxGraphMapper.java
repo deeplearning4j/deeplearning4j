@@ -33,6 +33,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -415,7 +416,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public DataBuffer.Type dataTypeForTensor( onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
+    public DataType dataTypeForTensor(onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
        return nd4jTypeFromOnnxType(tensorProto.getElemType());
     }
 
@@ -430,14 +431,14 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
      * @param dataType the data type to convert
      * @return the nd4j type for the onnx type
      */
-    public DataBuffer.Type nd4jTypeFromOnnxType(OnnxProto3.TensorProto.DataType dataType) {
+    public DataType nd4jTypeFromOnnxType(OnnxProto3.TensorProto.DataType dataType) {
         switch (dataType) {
-            case DOUBLE: return DataBuffer.Type.DOUBLE;
-            case FLOAT: return DataBuffer.Type.FLOAT;
-            case FLOAT16: return DataBuffer.Type.HALF;
+            case DOUBLE: return DataType.DOUBLE;
+            case FLOAT: return DataType.FLOAT;
+            case FLOAT16: return DataType.HALF;
             case INT32:
-            case INT64: return DataBuffer.Type.INT;
-            default: return DataBuffer.Type.UNKNOWN;
+            case INT64: return DataType.INT;
+            default: return DataType.UNKNOWN;
         }
     }
 
@@ -465,7 +466,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
     @Override
     public INDArray getNDArrayFromTensor(String tensorName, OnnxProto3.TypeProto.Tensor tensorProto, OnnxProto3.GraphProto graph) {
-        DataBuffer.Type type = dataTypeForTensor(tensorProto);
+        DataType type = dataTypeForTensor(tensorProto);
         if(!tensorProto.isInitialized()) {
             throw new ND4JIllegalStateException("Unable to retrieve ndarray. Tensor was not initialized");
         }
@@ -498,7 +499,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             return null;
 
 
-        DataBuffer.Type type = nd4jTypeFromOnnxType(tensor.getDataType());
+        DataType type = nd4jTypeFromOnnxType(tensor.getDataType());
 
         ByteString bytes = tensor.getRawData();
         ByteBuffer byteBuffer = bytes.asReadOnlyByteBuffer().order(ByteOrder.nativeOrder());

@@ -11175,13 +11175,13 @@ public class SameDiff {
      * @param val
      * @return
      */
-    public static DataBuffer.Type getDataTypeFromByte(byte val) {
+    public static org.nd4j.linalg.api.buffer.DataType getDataTypeFromByte(byte val) {
         if (val == DataType.FLOAT)
-            return DataBuffer.Type.FLOAT;
+            return org.nd4j.linalg.api.buffer.DataType.FLOAT;
         else if (val == DataType.DOUBLE)
-            return DataBuffer.Type.DOUBLE;
+            return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
         else if (val == DataType.HALF)
-            return DataBuffer.Type.HALF;
+            return  org.nd4j.linalg.api.buffer.DataType.HALF;
 
         throw new UnsupportedOperationException("Unsupported DataType: [" + val + "]");
     }
@@ -11192,7 +11192,7 @@ public class SameDiff {
      * @param type
      * @return
      */
-    public static byte getDataTypeAsByte(DataBuffer.Type type) {
+    public static byte getDataTypeAsByte(org.nd4j.linalg.api.buffer.DataType type) {
         switch (type) {
             case FLOAT:
                 return DataType.FLOAT;

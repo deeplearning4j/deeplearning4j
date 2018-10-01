@@ -25,6 +25,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
@@ -58,7 +59,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
      */
     @Override
     protected void initTypeAndSize() {
-        type = Type.COMPRESSED;
+        type = DataType.COMPRESSED;
         allocationMode = AllocationMode.JAVACPP;
     }
 
@@ -68,7 +69,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         // here we should mimic to usual DataBuffer array
         out.writeUTF(allocationMode.name());
         out.writeInt((int) compressionDescriptor.getCompressedLength());
-        out.writeUTF(Type.COMPRESSED.name());
+        out.writeUTF(DataType.COMPRESSED.name());
         // at this moment we don't care about mimics anymore
         //ByteIndexer indexer = ByteIndexer.create((BytePointer) pointer);
         out.writeUTF(compressionDescriptor.getCompressionAlgorithm());
@@ -96,7 +97,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         DataBuffer buffer = Nd4j.createBuffer(length);
         buffer.read(s);
         // if buffer is uncompressed, it'll be valid buffer, so we'll just return it
-        if (buffer.dataType() != Type.COMPRESSED)
+        if (buffer.dataType() != DataType.COMPRESSED)
             return buffer;
         else {
             try {

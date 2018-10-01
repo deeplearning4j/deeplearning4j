@@ -20,6 +20,7 @@ import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
@@ -54,7 +55,7 @@ public class Int16 extends AbstractCompressor {
 
     @Override
     public DataBuffer decompress(DataBuffer buffer) {
-        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.INT16, buffer, getGlobalTypeEx());
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataTypeEx.INT16, buffer, getGlobalTypeEx());
 
         return result;
     }
@@ -62,12 +63,12 @@ public class Int16 extends AbstractCompressor {
     @Override
     public DataBuffer compress(DataBuffer buffer) {
         DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer,
-                        DataBuffer.TypeEx.INT16);
+                        DataTypeEx.INT16);
         return result;
     }
 
     @Override
-    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
+    protected CompressedDataBuffer compressPointer(DataTypeEx srcType, Pointer srcPointer, int length,
                     int elementSize) {
 
         val ptr = new BytePointer(length * 2);
@@ -82,8 +83,8 @@ public class Int16 extends AbstractCompressor {
 
         val buffer = new CompressedDataBuffer(ptr, descriptor);
 
-        //Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataBuffer.TypeEx.INT16, ptr, length);
-        Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataBuffer.TypeEx.INT16, buffer);
+        //Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataTypeEx.INT16, ptr, length);
+        Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataTypeEx.INT16, buffer);
 
         return buffer;
     }

@@ -23,6 +23,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -3158,7 +3159,7 @@ public class Shape {
         return ret;
     }
 
-    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataBuffer.Type dataType) {
+    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType) {
         long offset = 0;
 
         ArrayOptionsHelper.setOptionBit(offset, dataType);

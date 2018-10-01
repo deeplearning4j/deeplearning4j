@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -87,15 +88,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
     protected void interceptIntDataType(Op op) {
         // FIXME: Remove this method, after we'll add support for <int> dtype operations
 /*
-        if (op.x() != null && op.x().data().dataType() == DataBuffer.Type.INT)
+        if (op.x() != null && op.x().data().dataType() == DataType.INT)
             throw new ND4JIllegalStateException(
                             "Op.X contains INT data. Operations on INT dataType are not supported yet");
 
-        if (op.z() != null && op.z().data().dataType() == DataBuffer.Type.INT)
+        if (op.z() != null && op.z().data().dataType() == DataType.INT)
             throw new ND4JIllegalStateException(
                             "Op.Z contains INT data. Operations on INT dataType are not supported yet");
 
-        if (op.y() != null && op.y().data().dataType() == DataBuffer.Type.INT)
+        if (op.y() != null && op.y().data().dataType() == DataType.INT)
             throw new ND4JIllegalStateException(
                             "Op.Y contains INT data. Operations on INT dataType are not supported yet.");
         */
@@ -560,28 +561,28 @@ public class DefaultOpExecutioner implements OpExecutioner {
      * @param expectedType
      * @param op
      */
-    public static void validateDataType(DataBuffer.Type expectedType, Op op) {
-        if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava()) && op.x().data().dataType() == DataBuffer.Type.COMPRESSED) {
+    public static void validateDataType(DataType expectedType, Op op) {
+        if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava()) && op.x().data().dataType() == DataType.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.x());
         }
 
-        if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava()) && op.y().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava()) && op.y().data().dataType() == DataType.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.y());
         }
 
-        if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava()) && op.z().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava()) && op.z().data().dataType() == DataType.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.z());
         }
 
         if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava())
                 && op.x().data().dataType() != expectedType
-                && op.x().data().dataType() != DataBuffer.Type.COMPRESSED)
+                && op.x().data().dataType() != DataType.COMPRESSED)
             throw new ND4JIllegalStateException("op.X dataType is [" + op.x().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
 
         if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava())
                         && op.z().data().dataType() != expectedType
-                        && op.z().data().dataType() != DataBuffer.Type.COMPRESSED)
+                        && op.z().data().dataType() != DataType.COMPRESSED)
             throw new ND4JIllegalStateException("op.Z dataType is [" + op.z().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
 
@@ -615,7 +616,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return builder.toString();
     }
 
-    public static void validateDataType(DataBuffer.Type expectedType, INDArray... operands) {
+    public static void validateDataType(DataType expectedType, INDArray... operands) {
         if (operands == null || operands.length == 0)
             return;
 

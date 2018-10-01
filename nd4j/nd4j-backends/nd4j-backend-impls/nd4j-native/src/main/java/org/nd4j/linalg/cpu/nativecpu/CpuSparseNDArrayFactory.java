@@ -19,6 +19,8 @@ package org.nd4j.linalg.cpu.nativecpu;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCOO;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SparseFormat;
@@ -70,12 +72,12 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public INDArray create(DataBuffer.Type dataType, long[] shape, char ordering) {
+    public INDArray create(DataType dataType, long[] shape, char ordering) {
         return null;
     }
 
     @Override
-    public INDArray createUninitialized(DataBuffer.Type dataType, long[] shape, char ordering) {
+    public INDArray createUninitialized(DataType dataType, long[] shape, char ordering) {
         return null;
     }
 
@@ -122,37 +124,37 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public INDArray create(double[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(double[] data, long[] shape, long[] stride, DataType dataType) {
         return null;
     }
 
     @Override
-    public INDArray create(float[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(float[] data, long[] shape, long[] stride, DataType dataType) {
         return null;
     }
 
     @Override
-    public INDArray create(long[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(long[] data, long[] shape, long[] stride, DataType dataType) {
         return null;
     }
 
     @Override
-    public INDArray create(int[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(int[] data, long[] shape, long[] stride, DataType dataType) {
         return null;
     }
 
     @Override
-    public INDArray create(short[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(short[] data, long[] shape, long[] stride, DataType dataType) {
         return null;
     }
 
     @Override
-    public INDArray create(byte[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType) {
         return null;
     }
 
     @Override
-    public INDArray create(boolean[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+    public INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType) {
         return null;
     }
 
@@ -413,27 +415,27 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
+    public INDArray convertDataEx(DataTypeEx typeSrc, INDArray source, DataTypeEx typeDst) {
         return null;
     }
 
     @Override
-    public DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst) {
+    public DataBuffer convertDataEx(DataTypeEx typeSrc, DataBuffer source, DataTypeEx typeDst) {
         return null;
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
+    public void convertDataEx(DataTypeEx typeSrc, DataBuffer source, DataTypeEx typeDst, DataBuffer target) {
 
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length) {
+    public void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, Pointer target, long length) {
 
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer) {
+    public void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, DataBuffer buffer) {
 
     }
 
@@ -544,7 +546,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
 
     @Override
-    public INDArray empty(DataBuffer.Type type) {
+    public INDArray empty(DataType type) {
         throw new UnsupportedOperationException();
     }
 }

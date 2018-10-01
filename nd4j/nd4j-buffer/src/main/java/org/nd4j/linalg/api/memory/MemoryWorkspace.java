@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.memory;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -94,7 +95,7 @@ public interface MemoryWorkspace extends AutoCloseable {
      * @param dataType dataType that is going to be used
      * @return
      */
-    PagedPointer alloc(long requiredMemory, DataBuffer.Type dataType, boolean initialize);
+    PagedPointer alloc(long requiredMemory, DataType dataType, boolean initialize);
 
     /**
      * This method does allocation from a given Workspace
@@ -104,7 +105,7 @@ public interface MemoryWorkspace extends AutoCloseable {
      * @param dataType dataType that is going to be used
      * @return
      */
-    PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type dataType, boolean initialize);
+    PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType dataType, boolean initialize);
 
     /**
      * This method notifies given Workspace that new use cycle is starting now

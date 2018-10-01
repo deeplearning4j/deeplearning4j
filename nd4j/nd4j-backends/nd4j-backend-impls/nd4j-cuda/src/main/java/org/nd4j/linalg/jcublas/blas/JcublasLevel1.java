@@ -103,7 +103,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             logger.warn("FLOAT dot called");
 
         DataTypeValidation.assertSameDataType(X, Y);
@@ -146,7 +146,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected double ddot(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             logger.warn("DOUBLE dot called");
 
         Nd4j.getExecutioner().push();
@@ -179,7 +179,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected float snrm2(long N, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             logger.warn("FLOAT nrm2 called");
 
         Nd4j.getExecutioner().push();
@@ -225,7 +225,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         return ret;
 /*
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             logger.warn("FLOAT asum called");
         
         
@@ -264,7 +264,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected double dnrm2(long N, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             logger.warn("DOUBLE nrm2 called");
 
         Nd4j.getExecutioner().push();
@@ -327,7 +327,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int isamax(long N, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             logger.warn("FLOAT iamax called");
 
         Nd4j.getExecutioner().push();
@@ -358,7 +358,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int idamax(long N, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             logger.warn("DOUBLE imax called");
 
         Nd4j.getExecutioner().push();
@@ -390,7 +390,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void sswap(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             logger.warn("FLOAT swap called");
 
         Nd4j.getExecutioner().push();
@@ -414,7 +414,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void scopy(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             logger.warn("FLOAT copy called");
 
         Nd4j.getExecutioner().push();
@@ -444,7 +444,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void saxpy(long N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             logger.warn("FLOAT axpy called");
 
         //        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
@@ -518,7 +518,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dswap(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             logger.warn("DOUBLE swap called");
 
         Nd4j.getExecutioner().push();
@@ -543,7 +543,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dcopy(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             logger.warn("DOUBLE copy called");
 
         Nd4j.getExecutioner().push();
@@ -573,7 +573,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void daxpy(long N, double alpha, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             logger.warn("DOUBLE axpy called");
 
         //CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
@@ -658,7 +658,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void sscal(long N, float alpha, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             logger.warn("FLOAT scal called");
 
         Nd4j.getExecutioner().push();
@@ -682,7 +682,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dscal(long N, double alpha, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             logger.warn("DOUBLE scal called");
 
         Nd4j.getExecutioner().push();

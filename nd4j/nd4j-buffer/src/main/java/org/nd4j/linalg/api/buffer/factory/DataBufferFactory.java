@@ -22,6 +22,7 @@ import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
@@ -350,9 +351,9 @@ public interface DataBufferFactory {
 
     DataBuffer createFloat(long length, boolean initialize, MemoryWorkspace workspace);
 
-    DataBuffer create(DataBuffer.Type dataType, long length, boolean initialize);
+    DataBuffer create(DataType dataType, long length, boolean initialize);
 
-    DataBuffer create(DataBuffer.Type dataType, long length, boolean initialize, MemoryWorkspace workspace);
+    DataBuffer create(DataType dataType, long length, boolean initialize, MemoryWorkspace workspace);
 
     /**
      * Create an int data buffer
@@ -627,7 +628,7 @@ public interface DataBufferFactory {
      * backed by this pointer with the given
      * opType and length.
      */
-    DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer);
+    DataBuffer create(Pointer pointer, DataType type, long length, Indexer indexer);
 
     /**
      *

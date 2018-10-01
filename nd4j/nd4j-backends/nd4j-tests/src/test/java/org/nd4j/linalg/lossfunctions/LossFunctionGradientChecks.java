@@ -25,6 +25,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,7 +43,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
 
     public static final double epsilon = 1e-6;
     private static final double maxRelError = 5.0; //5% relative error
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public LossFunctionGradientChecks(Nd4jBackend backend) {
         super(backend);
@@ -54,7 +55,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
         super.before();
 
         Nd4j.zeros(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
 
         Nd4j.getRandom().setSeed(123);
     }

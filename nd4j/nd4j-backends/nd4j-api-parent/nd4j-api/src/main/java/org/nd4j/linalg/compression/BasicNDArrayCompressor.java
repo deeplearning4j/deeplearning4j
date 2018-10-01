@@ -19,6 +19,7 @@ package org.nd4j.linalg.compression;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -201,7 +202,7 @@ public class BasicNDArrayCompressor {
      * @return the decompressed databuffer
      */
     public DataBuffer decompress(DataBuffer buffer) {
-        if (buffer.dataType() != DataBuffer.Type.COMPRESSED)
+        if (buffer.dataType() != DataType.COMPRESSED)
             throw new IllegalStateException("You can't decompress DataBuffer with dataType of: " + buffer.dataType());
 
         CompressedDataBuffer comp = (CompressedDataBuffer) buffer;
@@ -224,7 +225,7 @@ public class BasicNDArrayCompressor {
      * @return
      */
     public INDArray decompress(INDArray array) {
-        if (array.data().dataType() != DataBuffer.Type.COMPRESSED)
+        if (array.data().dataType() != DataType.COMPRESSED)
             return array;
 
         CompressedDataBuffer comp = (CompressedDataBuffer) array.data();
@@ -245,7 +246,7 @@ public class BasicNDArrayCompressor {
      *              if it is comprssed
      */
     public void decompressi(INDArray array) {
-        if (array.data().dataType() != DataBuffer.Type.COMPRESSED)
+        if (array.data().dataType() != DataType.COMPRESSED)
             return;
 
         CompressedDataBuffer comp = (CompressedDataBuffer) array.data();

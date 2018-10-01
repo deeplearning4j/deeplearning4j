@@ -77,7 +77,7 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
-    public INDArray empty(DataBuffer.Type type) {
+    public INDArray empty(DataType type) {
         throw new IllegalStateException();
     }
 
@@ -312,27 +312,27 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
-    public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
+    public INDArray convertDataEx(DataTypeEx typeSrc, INDArray source, DataTypeEx typeDst) {
         return null;
     }
 
     @Override
-    public DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst) {
+    public DataBuffer convertDataEx(DataTypeEx typeSrc, DataBuffer source, DataTypeEx typeDst) {
         return null;
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
+    public void convertDataEx(DataTypeEx typeSrc, DataBuffer source, DataTypeEx typeDst, DataBuffer target) {
 
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length) {
+    public void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, Pointer target, long length) {
 
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer) {
+    public void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, DataBuffer buffer) {
 
     }
 

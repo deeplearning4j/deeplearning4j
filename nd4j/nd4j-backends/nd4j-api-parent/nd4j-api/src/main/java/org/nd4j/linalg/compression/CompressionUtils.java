@@ -18,6 +18,7 @@ package org.nd4j.linalg.compression;
 
 import lombok.NonNull;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 
 /**
  * This class provides utility methods for Compression in ND4J
@@ -26,15 +27,15 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
  */
 public class CompressionUtils {
 
-    public static boolean goingToDecompress(@NonNull DataBuffer.TypeEx from, @NonNull DataBuffer.TypeEx to) {
+    public static boolean goingToDecompress(@NonNull DataTypeEx from, @NonNull DataTypeEx to) {
         // TODO: eventually we want FLOAT16 here
-        if (to.equals(DataBuffer.TypeEx.FLOAT) || to.equals(DataBuffer.TypeEx.DOUBLE) )
+        if (to.equals(DataTypeEx.FLOAT) || to.equals(DataTypeEx.DOUBLE) )
             return true;
 
         return false;
     }
 
-    public static boolean goingToCompress(@NonNull DataBuffer.TypeEx from, @NonNull DataBuffer.TypeEx to) {
+    public static boolean goingToCompress(@NonNull DataTypeEx from, @NonNull DataTypeEx to) {
         if (!goingToDecompress(from, to) && goingToDecompress(to, from))
             return true;
 

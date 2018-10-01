@@ -25,6 +25,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -125,8 +126,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             return extraArgz;
 
         if (extraArgs != null) {
-            DataBuffer.Type dtype = x != null ? x.data().dataType() : Nd4j.dataType();
-            if (dtype == DataBuffer.Type.FLOAT || dtype == DataBuffer.Type.HALF) {
+            DataType dtype = x != null ? x.data().dataType() : Nd4j.dataType();
+            if (dtype == DataType.FLOAT || dtype == DataType.HALF) {
                 float extraz[] = new float[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
                     Number arg = (Number) extraArgs[i];
@@ -135,7 +136,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 }
                 extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);
                 return extraArgz;
-            } else if (dtype == DataBuffer.Type.DOUBLE) {
+            } else if (dtype == DataType.DOUBLE) {
                 double extraz[] = new double[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
                     if (!(extraArgs[i] instanceof Number))
@@ -158,7 +159,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public Buffer extraArgsBuff() {
         if (extraArgs != null) {
             DataBuffer retBuff;
-            if (x.data().dataType() == DataBuffer.Type.FLOAT) {
+            if (x.data().dataType() == DataType.FLOAT) {
                 retBuff = Nd4j.createBuffer(new float[extraArgs.length]);
                 for (int i = 0; i < extraArgs.length; i++) {
                     Number val = (Number) extraArgs[i];

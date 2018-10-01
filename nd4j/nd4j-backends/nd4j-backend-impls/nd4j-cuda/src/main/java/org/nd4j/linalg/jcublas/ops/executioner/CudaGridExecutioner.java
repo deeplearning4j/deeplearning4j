@@ -359,7 +359,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
             }
         } else {
-            //&& Nd4j.dataType() != DataBuffer.Type.HALF
+            //&& Nd4j.dataType() != DataType.HALF
             if ((op instanceof TransformOp && op.y() != null && onCurrentDeviceXYZ(op))) {
                 enqueueOp(new OpDescriptor(op, dimension));
             } else {
@@ -660,11 +660,11 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
 
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+            if (op.x().data().dataType() == DataType.DOUBLE) {
                 op.z().assign(op.zeroDouble());
-            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+            } else if (op.x().data().dataType() == DataType.FLOAT) {
                 op.z().assign(op.zeroFloat());
-            } else if (op.x().data().dataType() == DataBuffer.Type.HALF) {
+            } else if (op.x().data().dataType() == DataType.HALF) {
                 op.z().assign(op.zeroHalf());
             }
 
@@ -816,7 +816,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
 
         if (op instanceof PredicateMetaOp || op instanceof InvertedPredicateMetaOp) {
-            if (first.getDtype() == DataBuffer.Type.FLOAT) {
+            if (first.getDtype() == DataType.FLOAT) {
                 if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
                     nativeOps.execMetaPredicateStridedFloat(extras, first.getType().ordinal(), first.getOpNum(),
                             second.getType().ordinal(), second.getOpNum(), first.getXLength(),
@@ -835,7 +835,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                             (FloatPointer) first.getExtraArgs(), (FloatPointer) second.getExtraArgs(),
                             (float) scalarA, (float) scalarB);
                 }
-            } else if (first.getDtype() == DataBuffer.Type.DOUBLE) {
+            } else if (first.getDtype() == DataType.DOUBLE) {
                 if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
                     nativeOps.execMetaPredicateStridedDouble(extras, first.getType().ordinal(), first.getOpNum(),
                             second.getType().ordinal(), second.getOpNum(), first.getXLength(),
@@ -875,7 +875,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 }
             }
         } else if (op instanceof ReduceMetaOp) {
-            if (first.getDtype() == DataBuffer.Type.FLOAT) {
+            if (first.getDtype() == DataType.FLOAT) {
 
                 nativeOps.execMetaPredicateReduceFloat(extras, first.getType().ordinal(), first.getOpNum(),
                         second.getType().ordinal(), second.getOpNum(), (FloatPointer) first.getX(),

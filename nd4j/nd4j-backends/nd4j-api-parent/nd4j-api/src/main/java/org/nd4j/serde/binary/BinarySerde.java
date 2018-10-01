@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -84,13 +85,13 @@ public class BinarySerde {
         DataBuffer shapeBuff = Nd4j.createBufferDetached(new int[shapeBufferLength]);
 
         //compute the databuffer opType from the index
-        DataBuffer.Type type = DataBuffer.Type.values()[byteBuffer.getInt()];
+        DataType type = DataType.values()[byteBuffer.getInt()];
         for (int i = 0; i < shapeBufferLength; i++) {
             shapeBuff.put(i, byteBuffer.getLong());
         }
 
         //after the rank,data opType, shape buffer (of length shape buffer length) * sizeof(int)
-        if (type != DataBuffer.Type.COMPRESSED) {
+        if (type != DataType.COMPRESSED) {
             ByteBuffer slice = byteBuffer.slice();
             //wrap the data buffer for the last bit
             // FIXME: int cast

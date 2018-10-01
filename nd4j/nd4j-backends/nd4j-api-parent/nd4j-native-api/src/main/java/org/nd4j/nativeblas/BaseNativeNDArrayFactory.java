@@ -22,6 +22,7 @@ import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.Shape;
@@ -43,11 +44,11 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-    public BaseNativeNDArrayFactory(DataBuffer.Type dtype, Character order) {
+    public BaseNativeNDArrayFactory(DataType dtype, Character order) {
         super(dtype, order);
     }
 
-    public BaseNativeNDArrayFactory(DataBuffer.Type dtype, char order) {
+    public BaseNativeNDArrayFactory(DataType dtype, char order) {
         super(dtype, order);
     }
 
@@ -118,7 +119,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
         DataBuffer shapeBuffer = Nd4j.createBuffer(
                 newPointer,
-                DataBuffer.Type.LONG,
+                DataType.LONG,
                 length,
                 LongIndexer.create(newPointer));
 
@@ -137,7 +138,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
 
             data = Nd4j.createBuffer(dPointer,
-                    DataBuffer.Type.FLOAT,
+                    DataType.FLOAT,
                     Shape.length(shapeBuffer),
                     FloatIndexer.create(dPointer));
         }
@@ -151,7 +152,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
 
             data = Nd4j.createBuffer(dPointer,
-                    DataBuffer.Type.DOUBLE,
+                    DataType.DOUBLE,
                     Shape.length(shapeBuffer),
                     DoubleIndexer.create(dPointer));
         }
@@ -188,7 +189,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
         DataBuffer shapeBuffer = Nd4j.createBuffer(
                 newPointer,
-                DataBuffer.Type.LONG,
+                DataType.LONG,
                 length,
                 LongIndexer.create(newPointer));
 
@@ -207,7 +208,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
 
             data = Nd4j.createBuffer(dPointer,
-                    DataBuffer.Type.FLOAT,
+                    DataType.FLOAT,
                     Shape.length(shapeBuffer),
                     FloatIndexer.create(dPointer));
         }
@@ -221,7 +222,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
 
             data = Nd4j.createBuffer(dPointer,
-                    DataBuffer.Type.DOUBLE,
+                    DataType.DOUBLE,
                     Shape.length(shapeBuffer),
                     DoubleIndexer.create(dPointer));
         }

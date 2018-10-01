@@ -17,6 +17,7 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.primitives.Pair;
@@ -40,7 +41,7 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
     private AtomicInteger counter = new AtomicInteger(0);
     private static final int MAX_ENTRIES = 1000;
 
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride,  long elementWiseStride, char order, DataBuffer.Type dataType) {
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride,  long elementWiseStride, char order, DataType dataType) {
         long extras = 0;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
         return createShapeInformation(shape, stride, elementWiseStride, order, extras);

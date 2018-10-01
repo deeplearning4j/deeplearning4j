@@ -18,6 +18,7 @@ package org.nd4j.linalg.ops.transforms;
 
 import lombok.NonNull;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
@@ -157,7 +158,7 @@ public class Transforms {
         double length = toScale.norm2Number().doubleValue();
 
         if (length > 0) {
-            if (toScale.data().dataType() == (DataBuffer.Type.FLOAT))
+            if (toScale.data().dataType() == (DataType.FLOAT))
                 return Nd4j.getBlasWrapper().scal(1.0f / (float) length, toScale);
             else
                 return Nd4j.getBlasWrapper().scal(1.0 / length, toScale);

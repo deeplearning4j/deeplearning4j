@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -49,7 +50,7 @@ import java.util.*;
 public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     // We don't really care about dtype field we'll use context instead
-    // protected DataBuffer.Type dtype;
+    // protected DataType dtype;
     protected char order;
     protected Blas blas;
     protected Level1 level1;
@@ -101,7 +102,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param dtype the data opType
      * @param order the ordering in mem
      */
-    protected BaseNDArrayFactory(DataBuffer.Type dtype, Character order) {
+    protected BaseNDArrayFactory(DataType dtype, Character order) {
         // this.dtype = dtype;
         if (Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
             throw new IllegalArgumentException("Order must either be c or f");
@@ -113,7 +114,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param dtype the data opType
      * @param order the ordering
      */
-    protected BaseNDArrayFactory(DataBuffer.Type dtype, char order) {
+    protected BaseNDArrayFactory(DataType dtype, char order) {
         // this.dtype = dtype;
         if (Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
             throw new IllegalArgumentException("Order must either be c or f");
@@ -175,14 +176,14 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param dtype
      */
     @Override
-    public void setDType(DataBuffer.Type dtype) {
-        assert dtype == DataBuffer.Type.DOUBLE || dtype == DataBuffer.Type.FLOAT
-                        || dtype == DataBuffer.Type.INT : "Invalid opType passed, must be float or double";
+    public void setDType(DataType dtype) {
+        assert dtype == DataType.DOUBLE || dtype == DataType.FLOAT
+                        || dtype == DataType.INT : "Invalid opType passed, must be float or double";
         // this.dtype = dtype;
     }
 
     @Override
-    public INDArray create(int[] shape, DataBuffer.Type dataType) {
+    public INDArray create(int[] shape, DataType dataType) {
         return create(shape, Nd4j.createBuffer(shape, dataType));
     }
 
@@ -202,7 +203,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return the data opType for this ndarray
      */
     @Override
-    public DataBuffer.Type dtype() {
+    public DataType dtype() {
         return Nd4j.dataType();
     }
 
@@ -1202,11 +1203,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(long rows, long columns, int[] stride, long offset) {
         /*
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() == DataType.DOUBLE)
             return create(new double[rows * columns], new int[] {rows, columns}, stride, offset);
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
+        if (Nd4j.dataType() == DataType.FLOAT || Nd4j.dataType() == DataType.HALF)
             return create(new float[rows * columns], new int[] {rows, columns}, stride, offset);
-        if (Nd4j.dataType() == DataBuffer.Type.INT)
+        if (Nd4j.dataType() == DataType.INT)
             return create(new int[rows * columns], new int[] {rows, columns}, stride, offset);
         throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
         */
@@ -1335,11 +1336,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(Number value, long offset) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() == DataType.DOUBLE)
             return scalar(value.doubleValue(), offset);
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
+        if (Nd4j.dataType() == DataType.FLOAT || Nd4j.dataType() == DataType.HALF)
             return scalar(value.floatValue(), offset);
-        if (Nd4j.dataType() == DataBuffer.Type.INT)
+        if (Nd4j.dataType() == DataType.INT)
             return scalar(value.intValue(), offset);
         throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
     }
@@ -1372,17 +1373,17 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray trueScalar(Number value) {
         if (value instanceof Double)
-                return create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, DataBuffer.Type.DOUBLE);
+                return create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, DataType.DOUBLE);
         else if (value instanceof Float)
-                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, DataBuffer.Type.FLOAT);
+                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, DataType.FLOAT);
         else if (value instanceof Long)
-                return create(new long[] {value.longValue()}, new long[] {}, new long[] {}, DataBuffer.Type.LONG);
+                return create(new long[] {value.longValue()}, new long[] {}, new long[] {}, DataType.LONG);
         else if (value instanceof Integer)
-                return create(new int[] {value.intValue()}, new long[] {}, new long[] {}, DataBuffer.Type.INT);
+                return create(new int[] {value.intValue()}, new long[] {}, new long[] {}, DataType.INT);
         else if (value instanceof Short)
-            return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, DataBuffer.Type.SHORT);
+            return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, DataType.SHORT);
         else if (value instanceof Byte)
-            return create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, DataBuffer.Type.BYTE);
+            return create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, DataType.BYTE);
         else
                 throw new UnsupportedOperationException("Unsupported data type: [" + value.getClass().getSimpleName() + "]");
     }
@@ -1418,11 +1419,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(Number value) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() == DataType.DOUBLE)
             return scalar(value.doubleValue(), 0);
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
+        if (Nd4j.dataType() == DataType.FLOAT || Nd4j.dataType() == DataType.HALF)
             return scalar(value.floatValue(), 0);
-        if (Nd4j.dataType() == DataBuffer.Type.INT)
+        if (Nd4j.dataType() == DataType.INT)
             return scalar(value.intValue(), 0);
         throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
     }
@@ -1435,9 +1436,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(float value) {
-        if (Nd4j.dataType() == DataBuffer.Type.FLOAT || Nd4j.dataType() == DataBuffer.Type.HALF)
+        if (Nd4j.dataType() == DataType.FLOAT || Nd4j.dataType() == DataType.HALF)
             return create(new float[] {value}, new int[] {1, 1}, new int[] {1, 1}, 0);
-        else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
+        else if (Nd4j.dataType() == DataType.DOUBLE)
             return scalar((double) value);
         else
             return scalar((int) value);
@@ -1451,7 +1452,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(double value) {
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() == DataType.DOUBLE)
             return create(new double[] {value}, new int[] {1, 1}, new int[] {1, 1}, 0);
         else
             return scalar((float) value);

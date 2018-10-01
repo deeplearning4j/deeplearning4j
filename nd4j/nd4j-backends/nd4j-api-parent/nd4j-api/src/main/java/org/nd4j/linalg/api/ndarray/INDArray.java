@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ndarray;
 import com.google.flatbuffers.FlatBufferBuilder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
@@ -2825,5 +2826,5 @@ public interface INDArray extends Serializable {
      * This method returns dtype for this INDArray
      * @return
      */
-    DataBuffer.Type dataType();
+    DataType dataType();
 }

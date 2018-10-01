@@ -50,7 +50,7 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX,
                     float beta, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+        if (Nd4j.dataType() != DataType.FLOAT)
             logger.warn("FLOAT gemv called");
 
         Nd4j.getExecutioner().push();
@@ -124,7 +124,7 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX,
                     double beta, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+        if (Nd4j.dataType() != DataType.DOUBLE)
             logger.warn("DOUBLE gemv called");
 
         Nd4j.getExecutioner().push();

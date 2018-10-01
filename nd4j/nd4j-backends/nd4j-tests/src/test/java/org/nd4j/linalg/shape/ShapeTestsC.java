@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,7 +44,7 @@ public class ShapeTestsC extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     @After
     public void after() {
@@ -293,8 +294,8 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     @Test
     public void testColumnSumDouble() {
-        DataBuffer.Type initialType = Nd4j.dataType();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataType initialType = Nd4j.dataType();
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
         INDArray columnVar = twoByThree.sum(0);
         INDArray assertion = Nd4j.create(new float[] {44850.0f, 45000.0f, 45150.0f, 45300.0f});

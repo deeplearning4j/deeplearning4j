@@ -24,6 +24,7 @@ import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,7 +40,7 @@ import static org.junit.Assert.fail;
 @Slf4j
 public class ReductionBpOpValidation extends BaseOpValidation {
 
-    private DataBuffer.Type initialType;
+    private DataType initialType;
 
     public ReductionBpOpValidation(Nd4jBackend backend) {
         super(backend);
@@ -50,7 +51,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
     }
 

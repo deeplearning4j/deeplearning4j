@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.blas.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -49,9 +50,9 @@ public abstract class BaseLapack implements Lapack {
         INDArray IPIV = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(mn),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, mn}, A.dataType()).getFirst());
 
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+        if (A.data().dataType() == DataType.DOUBLE)
             dgetrf(m, n, A, IPIV, INFO);
-        else if (A.data().dataType() == DataBuffer.Type.FLOAT)
+        else if (A.data().dataType() == DataType.FLOAT)
             sgetrf(m, n, A, IPIV, INFO);
         else
             throw new UnsupportedOperationException();
@@ -97,9 +98,9 @@ public abstract class BaseLapack implements Lapack {
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, A.dataType()).getFirst());
 
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+        if (A.data().dataType() == DataType.DOUBLE)
             dpotrf(uplo, n, A, INFO);
-        else if (A.data().dataType() == DataBuffer.Type.FLOAT)
+        else if (A.data().dataType() == DataType.FLOAT)
             spotrf(uplo, n, A, INFO);
         else
             throw new UnsupportedOperationException();
@@ -146,9 +147,9 @@ public abstract class BaseLapack implements Lapack {
         if (R.rows() != A.columns() || R.columns() != A.columns()) {
             throw new Error("geqrf: R must be N x N (n = columns in A)");
         }
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (A.data().dataType() == DataType.DOUBLE) {
             dgeqrf(m, n, A, R, INFO);
-        } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
+        } else if (A.data().dataType() == DataType.FLOAT) {
             sgeqrf(m, n, A, R, INFO);
         } else {
             throw new UnsupportedOperationException();
@@ -192,9 +193,9 @@ public abstract class BaseLapack implements Lapack {
             throw new ND4JArraySizeException();
 
         int status = -1;
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (A.data().dataType() == DataType.DOUBLE) {
             status = dsyev(jobz, uplo, (int) A.rows(), A, V);
-        } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
+        } else if (A.data().dataType() == DataType.FLOAT) {
             status = ssyev(jobz, uplo, (int) A.rows(), A, V);
         } else {
             throw new UnsupportedOperationException();
@@ -234,9 +235,9 @@ public abstract class BaseLapack implements Lapack {
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, A.dataType()).getFirst());
 
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE)
+        if (A.data().dataType() == DataType.DOUBLE)
             dgesvd(jobu, jobvt, m, n, A, S, U, VT, INFO);
-        else if (A.data().dataType() == DataBuffer.Type.FLOAT)
+        else if (A.data().dataType() == DataType.FLOAT)
             sgesvd(jobu, jobvt, m, n, A, S, U, VT, INFO);
         else
             throw new UnsupportedOperationException();

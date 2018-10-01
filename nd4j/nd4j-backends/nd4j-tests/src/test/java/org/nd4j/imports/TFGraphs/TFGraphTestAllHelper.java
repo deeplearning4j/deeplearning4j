@@ -33,6 +33,7 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -82,7 +83,7 @@ public class TFGraphTestAllHelper {
 
     @Before
     public void setup(){
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
     }
 
     @After

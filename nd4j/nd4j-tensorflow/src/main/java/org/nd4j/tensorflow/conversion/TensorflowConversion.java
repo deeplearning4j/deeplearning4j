@@ -95,7 +95,7 @@ public class TensorflowConversion {
 
         int type;
         DataBuffer data = ndArray.data();
-        DataBuffer.Type dataType = data.dataType();
+        DataType dataType = data.dataType();
         switch (dataType) {
             case DOUBLE: type = DT_DOUBLE; break;
             case FLOAT:  type = DT_FLOAT;  break;
@@ -173,7 +173,7 @@ public class TensorflowConversion {
         }
 
         int tfType = TF_TensorType(tensor);
-        DataBuffer.Type nd4jType = typeFor(tfType);
+        DataType nd4jType = typeFor(tfType);
 
         int length = ArrayUtil.prod(ndShape);
         Pointer pointer = TF_TensorData(tensor).capacity(length);
@@ -187,7 +187,7 @@ public class TensorflowConversion {
 
 
 
-    private Indexer indexerForType(DataBuffer.Type type,Pointer pointer) {
+    private Indexer indexerForType(DataType type,Pointer pointer) {
         switch(type) {
             case DOUBLE: return DoubleIndexer.create(new DoublePointer(pointer));
             case FLOAT: return FloatIndexer.create(new FloatPointer(pointer));
@@ -197,12 +197,12 @@ public class TensorflowConversion {
         }
     }
 
-    private DataBuffer.Type typeFor(int tensorflowType) {
+    private DataType typeFor(int tensorflowType) {
         switch(tensorflowType) {
-            case DT_DOUBLE: return DataBuffer.Type.DOUBLE;
-            case DT_FLOAT: return DataBuffer.Type.FLOAT;
-            case DT_INT32: return DataBuffer.Type.LONG;
-            case DT_INT64: return DataBuffer.Type.LONG;
+            case DT_DOUBLE: return DataType.DOUBLE;
+            case DT_FLOAT: return DataType.FLOAT;
+            case DT_INT32: return DataType.LONG;
+            case DT_INT64: return DataType.LONG;
             default: throw new IllegalArgumentException("Illegal type " + tensorflowType);
         }
     }

@@ -90,7 +90,7 @@ public class GridRunningTests {
 
     @Test
     public void testMul_Scalar1() throws Exception {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         INDArray x = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
         INDArray y = Nd4j.create(10).assign(0.000003);
 

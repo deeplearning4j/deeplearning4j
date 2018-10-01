@@ -19,6 +19,7 @@ package org.nd4j.linalg.checkutil;
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
@@ -333,7 +334,7 @@ public class CheckUtil {
     }
 
     public static void printMatrixFullPrecision(INDArray matrix) {
-        boolean floatType = (matrix.data().dataType() == DataBuffer.Type.FLOAT);
+        boolean floatType = (matrix.data().dataType() == DataType.FLOAT);
         printNDArrayHeader(matrix);
         long[] shape = matrix.shape();
         for (int i = 0; i < shape[0]; i++) {

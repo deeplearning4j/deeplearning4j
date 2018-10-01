@@ -71,7 +71,7 @@ public class HalfBuffer extends BaseDataBuffer {
      */
     @Override
     protected void initTypeAndSize() {
-        type = Type.HALF;
+        type = DataType.HALF;
         elementSize = 2;
     }
 

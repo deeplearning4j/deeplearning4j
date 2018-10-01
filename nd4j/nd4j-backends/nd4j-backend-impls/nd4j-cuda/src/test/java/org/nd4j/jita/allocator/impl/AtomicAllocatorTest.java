@@ -60,7 +60,7 @@ public class AtomicAllocatorTest {
 
     @Before
     public void setUp() throws Exception {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        DataTypeUtil.setDTypeForContext(DataType.FLOAT);
         if (allocator == null) {
 
 
@@ -128,7 +128,7 @@ public class AtomicAllocatorTest {
 
     @Test
     public void testSerialization1() throws Exception {
-      //  Nd4j.dtype = DataBuffer.Type.DOUBLE;
+      //  Nd4j.dtype = DataType.DOUBLE;
 
         INDArray test = Nd4j.ones(1,10);
 

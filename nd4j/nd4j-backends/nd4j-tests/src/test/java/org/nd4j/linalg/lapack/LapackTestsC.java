@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 @Slf4j
 @RunWith(Parameterized.class)
 public class LapackTestsC extends BaseNd4jTest {
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public LapackTestsC(Nd4jBackend backend) {
         super(backend);
@@ -47,7 +48,7 @@ public class LapackTestsC extends BaseNd4jTest {
 
     @Before
     public void setUp() {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @After

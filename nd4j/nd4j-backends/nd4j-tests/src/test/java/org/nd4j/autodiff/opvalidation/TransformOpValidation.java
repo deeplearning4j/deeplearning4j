@@ -31,6 +31,7 @@ import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -63,7 +64,7 @@ import static org.junit.Assert.*;
 @Slf4j
 public class TransformOpValidation extends BaseOpValidation {
 
-    private DataBuffer.Type initialType;
+    private DataType initialType;
 
     public TransformOpValidation(Nd4jBackend backend) {
         super(backend);
@@ -74,7 +75,7 @@ public class TransformOpValidation extends BaseOpValidation {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
     }
 
@@ -1424,7 +1425,7 @@ public class TransformOpValidation extends BaseOpValidation {
     @Test
     @Ignore
     public void testBooleanAnd(){
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
         INDArray arr1 = Nd4j.create(new long[]{3,4});
         INDArray arr2 = Nd4j.create(new long[]{3,4});
         INDArray out = Nd4j.create(new long[]{3,4});
@@ -1438,7 +1439,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testLogicalNot(){
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
         INDArray x = Nd4j.create(new long[]{3,4});
         INDArray z = Nd4j.create(new long[]{3,4});
 

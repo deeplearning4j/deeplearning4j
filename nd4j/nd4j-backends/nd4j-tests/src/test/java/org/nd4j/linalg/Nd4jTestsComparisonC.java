@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -47,7 +48,7 @@ public class Nd4jTestsComparisonC extends BaseNd4jTest {
 
     public static final int SEED = 123;
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public Nd4jTestsComparisonC(Nd4jBackend backend) {
         super(backend);
@@ -58,7 +59,7 @@ public class Nd4jTestsComparisonC extends BaseNd4jTest {
     @Before
     public void before() throws Exception {
         super.before();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     @After

@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -98,11 +99,11 @@ public class GradCheckUtil {
         if (maxRelError <= 0.0 || maxRelError > 0.25)
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
 
-        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
-        if (dataType != DataBuffer.Type.DOUBLE) {
+        DataType dataType = DataTypeUtil.getDtypeFromContext();
+        if (dataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
                     + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+                    + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
         /**
@@ -221,7 +222,7 @@ public class GradCheckUtil {
         }
 
         //Check data type:
-        if(Nd4j.dataType() != DataBuffer.Type.DOUBLE){
+        if(Nd4j.dataType() != DataType.DOUBLE){
             throw new IllegalStateException("Data type must be set to double");
         }
 

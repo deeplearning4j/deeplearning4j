@@ -39,8 +39,8 @@ public class AllocationUtils {
         if (shape.getElementSize() > 0)
             return shape.getElementSize();
         else
-            return (shape.getDataType() == DataBuffer.Type.FLOAT ? 4
-                            : shape.getDataType() == DataBuffer.Type.DOUBLE ? 8 : 2);
+            return (shape.getDataType() == DataType.FLOAT ? 4
+                            : shape.getDataType() == DataType.DOUBLE ? 8 : 2);
     }
 
     /**

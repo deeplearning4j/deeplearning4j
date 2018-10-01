@@ -64,16 +64,16 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer create(DataBuffer underlyingBuffer, long offset, long length) {
-        if (underlyingBuffer.dataType() == DataBuffer.Type.DOUBLE) {
+        if (underlyingBuffer.dataType() == DataType.DOUBLE) {
             return new CudaDoubleDataBuffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataBuffer.Type.FLOAT) {
+        } else if (underlyingBuffer.dataType() == DataType.FLOAT) {
             return new CudaFloatDataBuffer(underlyingBuffer, length, offset);
 
-        } else if (underlyingBuffer.dataType() == DataBuffer.Type.INT) {
+        } else if (underlyingBuffer.dataType() == DataType.INT) {
             return new CudaIntDataBuffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataBuffer.Type.HALF) {
+        } else if (underlyingBuffer.dataType() == DataType.HALF) {
             return new CudaHalfDataBuffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataBuffer.Type.LONG) {
+        } else if (underlyingBuffer.dataType() == DataType.LONG) {
             return new CudaLongDataBuffer(underlyingBuffer, length, offset);
         }
 
@@ -480,7 +480,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
      * opType and length.
      */
     @Override
-    public DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer) {
+    public DataBuffer create(Pointer pointer, DataType type, long length, Indexer indexer) {
         switch (type) {
             case LONG:
                 return new CudaLongDataBuffer(pointer, indexer, length);

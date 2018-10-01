@@ -17,6 +17,7 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -47,7 +48,7 @@ public class AveragingTests extends BaseNd4jTest {
     private final int THREADS = 16;
     private final int LENGTH = 51200 * 4;
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public AveragingTests(Nd4jBackend backend) {
         super(backend);
@@ -56,7 +57,7 @@ public class AveragingTests extends BaseNd4jTest {
 
     @Before
     public void setUp() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     @After

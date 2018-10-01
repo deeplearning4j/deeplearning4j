@@ -752,20 +752,20 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
 
     @Override
-    public DataBuffer.Type dataTypeForTensor(NodeDef tensorProto) {
+    public org.nd4j.linalg.api.buffer.DataType dataTypeForTensor(NodeDef tensorProto) {
         if(!tensorProto.containsAttr("dtype") && !tensorProto.containsAttr("Tidx") && !tensorProto.containsAttr("T"))
-            return DataBuffer.Type.UNKNOWN;
+            return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
 
         val type = tensorProto.containsAttr("dtype") ? tensorProto.getAttrOrThrow("dtype").getType()
                 : tensorProto.containsAttr("T") ? tensorProto.getAttrOrThrow("T").getType() : tensorProto
                 .getAttrOrThrow("Tidx").getType();
         switch(type) {
-            case DT_DOUBLE: return DataBuffer.Type.DOUBLE;
+            case DT_DOUBLE: return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
             case DT_INT32:
-            case DT_INT64: return DataBuffer.Type.INT;
-            case DT_FLOAT: return DataBuffer.Type.FLOAT;
-            case DT_BFLOAT16: return DataBuffer.Type.HALF;
-            default: return DataBuffer.Type.UNKNOWN;
+            case DT_INT64: return org.nd4j.linalg.api.buffer.DataType.INT;
+            case DT_FLOAT: return org.nd4j.linalg.api.buffer.DataType.FLOAT;
+            case DT_BFLOAT16: return org.nd4j.linalg.api.buffer.DataType.HALF;
+            default: return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
         }
     }
 
@@ -950,7 +950,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0) {
                 // binary representation
-                //DataBuffer buffer = Nd4j.createBuffer(tfTensor.getTensorContent().asReadOnlyByteBuffer(), DataBuffer.Type.FLOAT, (int) length);
+                //DataBuffer buffer = Nd4j.createBuffer(tfTensor.getTensorContent().asReadOnlyByteBuffer(), DataType.FLOAT, (int) length);
                 //INDArray array = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(arrayShape, 'c'));
 
                 // binary representation

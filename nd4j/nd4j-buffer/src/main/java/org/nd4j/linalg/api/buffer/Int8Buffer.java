@@ -71,7 +71,7 @@ public class Int8Buffer extends BaseDataBuffer {
      */
     @Override
     protected void initTypeAndSize() {
-        type = Type.BYTE;
+        type = DataType.BYTE;
         elementSize = 1;
     }
 

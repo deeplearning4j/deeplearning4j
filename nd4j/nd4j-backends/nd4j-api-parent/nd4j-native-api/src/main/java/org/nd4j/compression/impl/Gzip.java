@@ -20,6 +20,7 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
@@ -102,8 +103,8 @@ public class Gzip extends AbstractCompressor {
     }
 
     @Override
-    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
-                    int elementSize) {
+    protected CompressedDataBuffer compressPointer(DataTypeEx srcType, Pointer srcPointer, int length,
+                                                   int elementSize) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 }

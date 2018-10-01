@@ -768,14 +768,14 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray convertToHalfs() {
-        if (data.dataType() == DataBuffer.Type.HALF)
+        if (data.dataType() == DataType.HALF)
             return this;
 
         val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.HALF);
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.HALF);
 
         factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()),
-                DataBuffer.TypeEx.FLOAT16, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
+                DataTypeEx.FLOAT16, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
@@ -785,13 +785,13 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray convertToFloats() {
-        if (data.dataType() == DataBuffer.Type.FLOAT)
+        if (data.dataType() == DataType.FLOAT)
             return this;
 
         val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.FLOAT);
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.FLOAT);
 
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.FLOAT, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
+        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataTypeEx.FLOAT, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
@@ -800,13 +800,13 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray convertToDoubles() {
-        if (data.dataType() == DataBuffer.Type.DOUBLE)
+        if (data.dataType() == DataType.DOUBLE)
             return this;
 
         val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.DOUBLE);
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.DOUBLE);
 
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.DOUBLE, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
+        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataTypeEx.DOUBLE, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 

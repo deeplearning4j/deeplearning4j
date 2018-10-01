@@ -21,6 +21,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -35,7 +36,7 @@ import org.nd4j.linalg.api.ops.Op;
 public class GridPointers {
     private Op.Type type;
     private int opNum;
-    private DataBuffer.Type dtype;
+    private DataType dtype;
 
     // indarrays
     private INDArray opX;
