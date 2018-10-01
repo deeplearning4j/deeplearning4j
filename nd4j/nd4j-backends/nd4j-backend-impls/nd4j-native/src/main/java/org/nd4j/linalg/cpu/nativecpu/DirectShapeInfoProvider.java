@@ -42,7 +42,7 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
 
     public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride,  long elementWiseStride, char order, DataBuffer.Type dataType) {
         long extras = 0;
-        ArrayOptionsHelper.setOptionBit(extras, dataType);
+        extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
         return createShapeInformation(shape, stride, elementWiseStride, order, extras);
     }
 
