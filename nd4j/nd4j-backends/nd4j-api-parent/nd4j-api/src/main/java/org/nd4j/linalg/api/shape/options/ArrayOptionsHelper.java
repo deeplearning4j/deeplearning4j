@@ -56,13 +56,13 @@ public class ArrayOptionsHelper {
             return DataBuffer.Type.COMPRESSED;
         else if (hasBitSet(opt, 4096))
             return DataBuffer.Type.HALF;
-        else if (hasBitSet(opt, 16384))
+        else if (hasBitSet(opt, 8192))
             return DataBuffer.Type.FLOAT;
-        else if (hasBitSet(opt, 32768))
+        else if (hasBitSet(opt, 16384))
             return DataBuffer.Type.DOUBLE;
-        else if (hasBitSet(opt, 262144))
+        else if (hasBitSet(opt, 131072))
             return DataBuffer.Type.INT;
-        else if (hasBitSet(opt, 524288))
+        else if (hasBitSet(opt, 262144))
             return DataBuffer.Type.LONG;
         else
             return DataBuffer.Type.UNKNOWN;

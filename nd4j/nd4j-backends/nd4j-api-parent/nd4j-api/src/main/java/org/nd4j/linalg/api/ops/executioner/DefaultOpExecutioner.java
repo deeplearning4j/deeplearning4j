@@ -86,7 +86,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
      */
     protected void interceptIntDataType(Op op) {
         // FIXME: Remove this method, after we'll add support for <int> dtype operations
-
+/*
         if (op.x() != null && op.x().data().dataType() == DataBuffer.Type.INT)
             throw new ND4JIllegalStateException(
                             "Op.X contains INT data. Operations on INT dataType are not supported yet");
@@ -98,6 +98,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op.y() != null && op.y().data().dataType() == DataBuffer.Type.INT)
             throw new ND4JIllegalStateException(
                             "Op.Y contains INT data. Operations on INT dataType are not supported yet.");
+        */
     }
 
     @Override

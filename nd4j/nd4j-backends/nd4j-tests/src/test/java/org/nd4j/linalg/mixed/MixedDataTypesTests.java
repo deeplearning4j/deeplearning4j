@@ -20,8 +20,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -39,6 +41,7 @@ public class MixedDataTypesTests {
         assertNotNull(array);
         assertEquals(9, array.length());
         assertEquals(DataBuffer.Type.LONG, array.dataType());
+        assertEquals(DataBuffer.Type.LONG, ArrayOptionsHelper.dataType(array.shapeInfoJava()));
     }
 
     @Test
@@ -48,6 +51,7 @@ public class MixedDataTypesTests {
         assertNotNull(array);
         assertEquals(9, array.length());
         assertEquals(DataBuffer.Type.SHORT, array.dataType());
+        assertEquals(DataBuffer.Type.SHORT, ArrayOptionsHelper.dataType(array.shapeInfoJava()));
     }
 
     @Test
@@ -57,5 +61,16 @@ public class MixedDataTypesTests {
         assertNotNull(array);
         assertEquals(9, array.length());
         assertEquals(DataBuffer.Type.HALF, array.dataType());
+        assertEquals(DataBuffer.Type.HALF, ArrayOptionsHelper.dataType(array.shapeInfoJava()));
+    }
+
+    @Test
+    public void testBasicOps_1() throws Exception {
+        val exp = new long[]{1,1,1,1,1,1,1,1,1};
+        val array = Nd4j.create(DataBuffer.Type.INT, 3, 3);
+        array.assign(1);
+
+        val vector = array.toLongVector();
+        assertArrayEquals(exp, vector);
     }
 }

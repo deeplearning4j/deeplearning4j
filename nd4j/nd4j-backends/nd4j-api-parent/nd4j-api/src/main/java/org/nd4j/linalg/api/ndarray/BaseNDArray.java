@@ -154,9 +154,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = buffer;
         if (buffer.length() >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
-        int[] shape = {1, (int) buffer.length()};
-        int[] stride = Nd4j.getStrides(shape);
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, 1, Nd4j.order()));
+        long[] shape = {1, (int) buffer.length()};
+        long[] stride = Nd4j.getStrides(shape);
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,  1, Nd4j.order(), Nd4j.dataType()));
         init(shape, stride);
     }
 
@@ -170,8 +170,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, long offset, char ordering) {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, Nd4j.dataType()));
         init(shape, stride);
         // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
@@ -179,11 +179,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering) {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, Nd4j.dataType()));
         init(shape, stride);
         // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
+    }
 
+    public BaseNDArray(DataBuffer buffer,  DataBuffer.Type dataType, long[] shape, long[] stride, long offset, char ordering) {
+        this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, dataType));
+        init(shape, stride);
+        // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
     }
 
     /**
@@ -286,7 +293,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(DataBuffer.Type type, long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
-        this(Nd4j.createBuffer(type, ArrayUtil.prodLong(shape), initialize), shape, stride, offset, ordering);
+        this(Nd4j.createBuffer(type, ArrayUtil.prodLong(shape), initialize), type, shape, stride, offset, ordering);
     }
 
 
@@ -340,10 +347,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public BaseNDArray(int newRows, int newColumns, char ordering) {
         this.data = Nd4j.createBuffer((long) newRows * newColumns);
-        int[] shape = new int[] {newRows, newColumns};
-        int[] stride = Nd4j.getStrides(shape, ordering);
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
+        val shape = new long[] {newRows, newColumns};
+        val stride = Nd4j.getStrides(shape, ordering);
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, Nd4j.dataType()));
         init(shape, stride);
     }
 
@@ -351,8 +358,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = Nd4j.createBuffer((long) newRows * newColumns);
         long[] shape = new long[] {newRows, newColumns};
         long[] stride = Nd4j.getStrides(shape, ordering);
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, Nd4j.dataType()));
         init(shape, stride);
     }
 
@@ -389,8 +396,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 ? Nd4j.createBuffer(new float[ArrayUtil.prod(shape)])
                 : Nd4j.createBuffer(new double[ArrayUtil.prod(shape)]);
         this.data = ret;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, slices.get(0).dataType()));
         init(shape, stride);
         //    Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
@@ -411,8 +418,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 ? Nd4j.createBuffer(new float[ArrayUtil.prod(shape)])
                 : Nd4j.createBuffer(new double[ArrayUtil.prod(shape)]);
         this.data = ret;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, slices.get(0).dataType()));
         init(shape, stride);
         //    Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
@@ -447,8 +454,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(float[] data, int[] shape, int[] stride, long offset, char ordering) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, Nd4j.dataType()));
         if (data != null && data.length > 0) {
 
             val perfD = PerformanceTracker.getInstance().helperStartTransaction();
@@ -465,8 +472,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(float[] data, long[] shape, long[] stride, long offset, char ordering) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, Nd4j.dataType()));
         if (data != null && data.length > 0) {
             this.data = Nd4j.createBuffer(data, offset);
             if (offset >= data.length)
@@ -477,8 +484,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(double[] data, long[] shape, long[] stride, long offset, char ordering) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, Nd4j.dataType()));
         if (data != null && data.length > 0) {
             this.data = Nd4j.createBuffer(data, offset);
             if (offset >= data.length)
@@ -497,7 +504,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public BaseNDArray(DataBuffer data, int[] shape, int[] stride, long offset) {
         this.data = Nd4j.createBuffer(data, offset, ArrayUtil.prodLong(shape));
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset, Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'), Nd4j.order()));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'), Nd4j.order(), Nd4j.dataType()));
         init(shape, stride);
         //  Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'));
 
@@ -1041,7 +1048,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
          *
          */
         baseNDArray.setShapeInformation(
-                Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, ews, newOrder));
+                Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,  ews, newOrder, this.dataType()));
 
         return toTad;
     }
@@ -1216,23 +1223,22 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setOrder(char order) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride(), 0,
-                elementWiseStride(), order));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride(), elementWiseStride(), order, this.dataType()));
     }
 
     @Override
     public void setShape(long[] shape) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride(), 0, elementWiseStride(), ordering()));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride(), elementWiseStride(), ordering(), this.dataType()));
     }
 
     @Override
     public void setStride(long[] stride) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride, 0, elementWiseStride(), ordering()));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride, elementWiseStride(), ordering(), this.dataType()));
     }
 
     @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0, -1, ordering()));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),  -1, ordering(), this.dataType()));
     }
 
 
@@ -2648,7 +2654,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //null character
         if (ordering() == '\u0000') {
             //Shape.setOrder(shapeInfo(), Nd4j.order());
-            val si = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride, 0,1, Nd4j.order());
+            val si = Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), 1, Nd4j.order(), this.dataType());
             setShapeInformation(si);
         }
 
@@ -2663,7 +2669,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         //null character
         if (ordering() == '\u0000') {
-            val si = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride, 0,1, Nd4j.order());
+            val si = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride, 1, Nd4j.order(), this.dataType());
             setShapeInformation(si);
         }
 
@@ -2680,7 +2686,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         long idx = this.isScalar() ? 0 : Shape.getOffset(jvmShapeInfo.javaShapeInformation, Shape.ind2subC(this.shape(), i));
         val buffer = Nd4j.createBuffer( this.data(), this.data().originalOffset() + idx, 1);
-        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],0,1,'c');
+        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],1,'c', dataType());
         return Nd4j.createArrayFromShapeBuffer(buffer, shape);
     }
 
@@ -4221,7 +4227,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         long idx = Shape.getOffset(jvmShapeInfo.javaShapeInformation, indexes);
         val buffer = Nd4j.createBuffer(this.data(), idx, 1);
-        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],0,1,'c');
+        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],1, 'c', this.dataType());
         return Nd4j.createArrayFromShapeBuffer(buffer, shape);
     }
 
@@ -4237,7 +4243,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         long idx = Shape.getOffset(jvmShapeInfo.javaShapeInformation, indexes);
         val buffer = Nd4j.createBuffer(this.data(), idx, 1);
-        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],0,1,'c');
+        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],1,'c', this.dataType());
         return Nd4j.createArrayFromShapeBuffer(buffer, shape);
     }
 
@@ -5060,7 +5066,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         // FIXME: this is bad
         if (!this.isView() && this.ordering() == 'c' && result.elementWiseStride() == 1 && result.ordering() != 'c') {
-            ((BaseNDArray) result).setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(result.shape(), result.stride(), 0, 1, 'c'));
+            ((BaseNDArray) result).setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(result.shape(), result.stride(), 1, 'c', this.dataType()));
         }
 
         return result;
@@ -5601,15 +5607,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new RuntimeException("EWS is -1");
             */
 
-        val si = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, 0, ews, newOrder);
+        val si = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride,  ews, newOrder, dataType());
         setShapeInformation(si);
 
 
         if (shapeInfo.get(2 * rank + 2) > 0) {
             //for the backend to work - no ews for permutei
             //^^ not true anymore? Not sure here. Marking this for raver
-            setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride,
-                    this.offset(), -1, newOrder));
+            setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, -1, newOrder, dataType()));
         }
 
         //this.shape = null;
