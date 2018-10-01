@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_clipbyvalue)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace nd4j {
     namespace ops {
@@ -30,9 +31,13 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
 
             // FIXME: extra args!!!
-            input->applyTransform(transform::ClipByValue, output, block.getTArguments()->data());
+            auto left = T_ARG(0);
+            auto right = T_ARG(1);
 
-            STORE_RESULT(*output);
+            REQUIRE_TRUE(left < right, 0, "clip_by_value: left bound should be lesser than right. But %f >= %f given.", left, right);
+            //input->applyTransform(transform::ClipByValue, output, block.getTArguments()->data());
+            helpers::clipByValue(*input, left, right, *output);
+            //STORE_RESULT(*output);
 
             return Status::OK();
         }

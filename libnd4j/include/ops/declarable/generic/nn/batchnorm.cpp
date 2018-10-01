@@ -86,6 +86,7 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
 DECLARE_SHAPE_FN(batchnorm) {        
 
     std::vector<const NDArray*> inArrs(block.width());
+    auto in = inputShape->at(0);
     for(int i = 0; i < block.width(); ++i)
         inArrs[i] = INPUT_VARIABLE(i);
 
@@ -93,6 +94,8 @@ DECLARE_SHAPE_FN(batchnorm) {
     Nd4jLong* outShapeInfo = nullptr;
     const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
+
+    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(in));
 
     return SHAPELIST(outShapeInfo);
 }

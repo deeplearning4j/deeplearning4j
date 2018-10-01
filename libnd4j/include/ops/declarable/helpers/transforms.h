@@ -62,6 +62,7 @@ namespace helpers {
 	void clipByNormBP(const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm);
 
 	void clipByAveraged(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace);
+	void clipByValue(NDArray& input, double leftBound, double rightBound, NDArray& output);
 
 	void mirrorPad(const NDArray& input, const NDArray& paddings, NDArray& output, const int mode);
 

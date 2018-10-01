@@ -109,9 +109,10 @@ DECLARE_SHAPE_FN(matmul) {
         transY = !temp;
     }
 
-   auto zShapeOnly = ShapeUtils::evalShapeForMatmul(xShapeInfo, yShapeInfo, transX, transY);
+    auto zShapeOnly = ShapeUtils::evalShapeForMatmul(xShapeInfo, yShapeInfo, transX, transY);
+    auto newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(xShapeInfo), 'f', zShapeOnly, block.getWorkspace());
 
-    return SHAPELIST( ShapeBuilders::createShapeInfo(ArrayOptions::dataType(xShapeInfo), 'f', zShapeOnly, block.getWorkspace()) );
+    return SHAPELIST( newShape );
 }
 
 }

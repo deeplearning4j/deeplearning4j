@@ -2923,15 +2923,9 @@ NDArray NDArray::transp() const {
 
 //////////////////////////////////////////////////////////////////////////
     template <typename T>
-    T NDArray::e(const Nd4jLong i) const {
-        auto rp = i;
+    T NDArray::e(const Nd4jLong i) const {        
 
-        if (this->ordering() == 'f' || isView() || ews() < 1) {
-            Nd4jLong idx[MAX_RANK];
-            shape::ind2subC(rankOf(), shapeOf(), i, lengthOf(), idx);
-            rp = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
-        }
-
+        auto rp = getOffset(i);
 
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
         return static_cast<T>(119);
@@ -2987,21 +2981,20 @@ NDArray NDArray::transp() const {
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
+NDArray NDArray::e(const Nd4jLong i) const {
+    NDArray scalar(dataType(), _workspace);
+    BUILD_SINGLE_SELECTOR(dataType(), scalar.templatedSet, (scalar._buffer, 0, dataType(), bufferWithOffset(getOffset(i))), LIBND4J_TYPES);
+    return scalar;
+}
+
+//////////////////////////////////////////////////////////////////////////
 // This method sets value in linear buffer to position i
     template <typename T>
     void NDArray::p(const Nd4jLong i, const T value) {
-        auto xType = this->dataType();
-        auto rp = i;
 
-        if (this->ordering() == 'f' || isView() || ews() < 1) {
-            Nd4jLong idx[MAX_RANK];
-            shape::ind2subC(rankOf(), shapeOf(), i, lengthOf(), idx);
-            rp = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
-        }
-
-
-        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, rp, p), LIBND4J_TYPES);
+        auto rp = getOffset(i);
+        const void *pV = reinterpret_cast<const void*>(const_cast<T *>(&value));
+        BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), templatedSet<, T>(this->_buffer, rp, pV), LIBND4J_TYPES);
     }
     template void NDArray::p(const Nd4jLong i, const double value);
     template void NDArray::p(const Nd4jLong i, const float value);
@@ -3021,9 +3014,12 @@ NDArray NDArray::transp() const {
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template, * NDArray::bufferAsT() const, LIBND4J_TYPES);
 
 
-    void NDArray::p(const Nd4jLong i, const NDArray& value) {
-        // probqbly wrong args order
-        BUILD_SINGLE_SELECTOR(value.dataType(), templatedSet, (_buffer, i, value.dataType(), value.getBuffer()), LIBND4J_TYPES);
+    void NDArray::p(const Nd4jLong i, const NDArray& scalar) {
+        if(!scalar.isScalar())
+            throw std::invalid_argument("NDArray::p method: input array must be scalar!");
+        // probably wrong args order
+        auto rp = getOffset(i);
+        BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (_buffer, rp, scalar.dataType(), scalar.getBuffer()), LIBND4J_TYPES);
         // void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value)
     }
 
@@ -4378,6 +4374,26 @@ NDArray NDArray::transp() const {
 
         return allTensorsAlongDimension(dimensions);
     }
+
+////////////////////////////////////////////////////////////////////////
+Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
+
+    if (i >= _length)
+        throw std::invalid_argument("NDArray::getOffset: input index is out of array length !");
+
+    auto ews   = this->ews();
+    auto order = ordering();   
+
+    if(ews == 1 && order == 'c')
+        return i;
+    
+    if(ews > 1 && order == 'c')
+        return i * ews;
+
+    Nd4jLong idx[MAX_RANK];
+    shape::ind2subC(rankOf(), shapeOf(), i, idx);
+    return shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+}
 
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*

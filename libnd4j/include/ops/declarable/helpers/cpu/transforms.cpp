@@ -885,7 +885,30 @@ static void clipByAveraged_(NDArray& input, NDArray& output, const std::vector<i
 
     BUILD_SINGLE_TEMPLATE(template void clipByAveraged_, (NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
 
+/*
+    if (d1 > params[1])
+    return params[1];
+    else if (d1 < params[0])
+    return params[0];
+    else return d1;
+*/
 
+    template <typename T>
+    static void clipByValue_(NDArray& input, double leftBound, double rightBound, NDArray& output) {
+        auto routine = LAMBDA_T(_x, leftBound, rightBound) {
+            if (_x > rightBound) return rightBound;
+            if (_x < leftBound)  return leftBound;
+            return _x;
+        };
+
+        input.applyLambda<T>(routine, &output);
+    }
+
+    void clipByValue(NDArray& input, double leftBound, double rightBound, NDArray& output) {
+        BUILD_SINGLE_SELECTOR(input.dataType(), clipByValue_, (input, leftBound, rightBound, output), FLOAT_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void clipByValue_, (NDArray& input, double leftBound, double rightBound, NDArray& output);, FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
