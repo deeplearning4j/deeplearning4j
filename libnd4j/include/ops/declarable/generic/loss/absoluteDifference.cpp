@@ -132,13 +132,17 @@ DECLARE_SHAPE_FN(absolute_difference_loss) {
     	outShapeInfo[5] = 0;
     	outShapeInfo[6] = 1;
     	outShapeInfo[7] = 99;
+    	DataType dtype = ArrayOptions::dataType(labelsShapeInfo);
+    	ArrayOptions::setDataType(outShapeInfo, dtype);
     }
     else {							// in this case output has the same shape as labels
     	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(labelsShapeInfo[0]), Nd4jLong);
     	outShapeInfo[0] = labelsShapeInfo[0];
     	for(int i = 1; i <= outShapeInfo[0]; ++i)
     		outShapeInfo[i] = labelsShapeInfo[i];
-    	shape::updateStrides(outShapeInfo, shape::order(labelsShapeInfo));    
+
+    	ShapeUtils::updateStridesAndType(outShapeInfo, labelsShapeInfo, shape::order(labelsShapeInfo));
+
     }
  
     return SHAPELIST(outShapeInfo);    

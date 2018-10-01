@@ -216,9 +216,9 @@ TEST_F(DeclarableOpsTests6, Test_BtS_1) {
 
 TEST_F(DeclarableOpsTests6, Test_Order_1) {
     auto x = NDArrayFactory::create<double>('f', {2, 3});
-    auto exp = NDArrayFactory::create<double>('c', {2, 3}, {1, 3, 5, 2, 4, 6});
+    auto exp = NDArrayFactory::create<double>('c', {2, 3});
     x.linspace(1);
-    //exp.linspace(1);
+    exp.linspace(1);
 
     nd4j::ops::order op;
     auto result = op.execute({&x}, {}, {0});
