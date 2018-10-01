@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 		//auto smooth = LAMBDA_T(value, labelsSmoothing, numClasses) { return value * ((T)1. - labelsSmoothing) + labelsSmoothing/numClasses; };
     	newLabels = new NDArray(*labels);
     	//newLabels->applyLambda(smooth);
-    	*newLabels = newLabels * ts + (labelsSmoothing / numClasses);
+    	*newLabels = *newLabels * ts + (labelsSmoothing / numClasses);
 	}	
 		
 	std::vector<int> dimensions = {-1};
@@ -128,7 +128,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 	}
 
 
-    STORE_RESULT(*output);
+    //STORE_RESULT(*output);
 
     if(weightsBroad != weights)
     	delete weightsBroad;
@@ -161,7 +161,7 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
     	reducedShapeInfo[6] = 1;
     	reducedShapeInfo[7] = 99;    	
     }    
-
+	ArrayOptions::setDataType(reducedShapeInfo, ArrayOptions::dataType(logitsShapeInfo)); // As TF doc says
     return SHAPELIST(reducedShapeInfo);    
 
 }
