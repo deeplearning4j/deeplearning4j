@@ -3705,7 +3705,7 @@ TEST_F(DeclarableOpsTests1, Stack_11) {
 
 
 TEST_F(DeclarableOpsTests1, Test_Range_Integer_1) {
-    auto exp = NDArrayFactory::create<float>('c', {4});
+    auto exp = NDArrayFactory::create<int>('c', {4});
     exp.linspace(1);
 
     nd4j::ops::range op;
@@ -3716,7 +3716,7 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_1) {
     ASSERT_EQ(1, result->size());
 
     auto array = result->at(0);    
-
+    array->printIndexedBuffer("Range integer 1");
     ASSERT_TRUE(exp.isSameShape(array));
     ASSERT_TRUE(exp.equalsTo(array));
 
@@ -3972,7 +3972,7 @@ TEST_F(DeclarableOpsTests1, Reverse_1 ) {
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1.};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
-    // int shapeInfo[] = {2, 2, 12, 12, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray input(inBuff, shapeInfo);
     NDArray expected(expBuff, shapeInfo);
@@ -3997,7 +3997,7 @@ TEST_F(DeclarableOpsTests1, Reverse_2 ) {
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1.};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
-    // int shapeInfo[] = {2, 2, 12, 12, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray input(inBuff, shapeInfo);
     NDArray expected(expBuff, shapeInfo);
@@ -4022,6 +4022,7 @@ TEST_F(DeclarableOpsTests1, Reverse_3 ) {
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1., 24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13.};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray input(inBuff, shapeInfo);
     NDArray expected(expBuff, shapeInfo);
@@ -4047,6 +4048,7 @@ TEST_F(DeclarableOpsTests1, Reverse_4 ) {
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {16,15,14,13,    20,19,18,17,       24,23,22,21,    4,3,2,1,    8,7,6,5,      12,11,10,9,};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray input(inBuff, shapeInfo);
     NDArray expected(expBuff, shapeInfo);
@@ -4072,6 +4074,7 @@ TEST_F(DeclarableOpsTests1, Reverse_5 ) {
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16., 9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4.};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray input(inBuff, shapeInfo);
     NDArray expected(expBuff, shapeInfo);
@@ -4096,6 +4099,7 @@ TEST_F(DeclarableOpsTests1, Reverse_6 ) {
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {4., 3., 2., 1., 8., 7., 6., 5., 12., 11., 10., 9., 16., 15., 14., 13., 20., 19., 18., 17., 24., 23., 22., 21.};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray input(inBuff, shapeInfo);
     NDArray expected(expBuff, shapeInfo);
@@ -4122,6 +4126,7 @@ TEST_F(DeclarableOpsTests1, Reverse_7 ) {
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4., 21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16.};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray input(inBuff, shapeInfo);
     NDArray expected(expBuff, shapeInfo);
@@ -4148,6 +4153,7 @@ TEST_F(DeclarableOpsTests1, Reverse_8 ) {
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4., 21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16.};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray input(inBuff, shapeInfo);
     NDArray expected(expBuff, shapeInfo);
@@ -4174,6 +4180,7 @@ TEST_F(DeclarableOpsTests1, Reverse_9 ) {
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray input(inBuff, shapeInfo);
     NDArray expected(expBuff, shapeInfo);
