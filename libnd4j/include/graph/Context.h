@@ -75,7 +75,7 @@ namespace nd4j {
             Nd4jLong getOuterTime();
             Nd4jLong getInnerTime();
 
-            nd4j::DataType dataType();
+            nd4j::DataType dataType() override;
 
             // these methods are related to Workspace abstraction
             bool hasWorkspaceProvided();

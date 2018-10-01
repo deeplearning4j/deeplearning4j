@@ -1998,6 +1998,9 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test1) {
     auto result = op.execute({&x, &gradO1}, {0}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
     auto output = result->at(0);
+
+    output->printShapeInfo("o");
+
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
     delete result;
