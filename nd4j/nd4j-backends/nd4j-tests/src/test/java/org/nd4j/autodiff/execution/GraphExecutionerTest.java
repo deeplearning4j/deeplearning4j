@@ -101,18 +101,20 @@ public class GraphExecutionerTest {
         SameDiff sameDiff = SameDiff.create();
         INDArray ones = Nd4j.ones(4);
         SDVariable sdVariable = sameDiff.var("ones",ones);
-        SDVariable scalarOne = sameDiff.var("add1",Nd4j.scalar(1.0));
-        SDVariable result = sdVariable.addi(scalarOne);
+        SDVariable scalarOne = sameDiff.var("scalar",Nd4j.scalar(1.0));
+        SDVariable result = sdVariable.add(scalarOne);
         SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
 
         log.info("TOTAL: {}; Id: {}", total.getVarName(), total);
 
         INDArray[] resB = executionerB.executeGraph(sameDiff, configVarSpace);
 
-        assertEquals(6, resB.length);
-        assertEquals(Nd4j.create(new float[]{2f, 2f, 2f, 2f}), resB[4]);
+        //Variables: ones, scalar, result, total
+        assertEquals(sameDiff.variables().size(), resB.length);
+        assertEquals(Nd4j.ones(4), resB[0]);
         assertEquals(Nd4j.scalar(1), resB[1]);
-        assertEquals(Nd4j.scalar(8.0), resB[5]);
+        assertEquals(Nd4j.create(new float[]{2f, 2f, 2f, 2f}), resB[2]);
+        assertEquals(Nd4j.scalar(8.0), resB[3]);
     }
 
 
@@ -129,7 +131,7 @@ public class GraphExecutionerTest {
         INDArray ones = Nd4j.ones(4);
         SDVariable sdVariable = sameDiff.var("ones",ones);
         SDVariable scalarOne = sameDiff.var("add1",Nd4j.scalar(1.0));
-        SDVariable result = sdVariable.addi(scalarOne);
+        SDVariable result = sdVariable.add(scalarOne);
         SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
 
 //        log.info("ID: {}",sameDiff.getGraph().getVertex(1).getValue().getId());
