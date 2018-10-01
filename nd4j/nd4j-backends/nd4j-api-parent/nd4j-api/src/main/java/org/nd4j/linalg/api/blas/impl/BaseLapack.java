@@ -43,11 +43,11 @@ public abstract class BaseLapack implements Lapack {
         int n = (int) A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, A.dataType()).getFirst());
 
         int mn = Math.min(m, n);
         INDArray IPIV = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(mn),
-                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, mn}).getFirst());
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, mn}, A.dataType()).getFirst());
 
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgetrf(m, n, A, IPIV, INFO);
@@ -95,7 +95,7 @@ public abstract class BaseLapack implements Lapack {
         int n = (int) A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, A.dataType()).getFirst());
 
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
             dpotrf(uplo, n, A, INFO);
@@ -141,7 +141,7 @@ public abstract class BaseLapack implements Lapack {
         int n = (int) A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, A.dataType()).getFirst());
 
         if (R.rows() != A.columns() || R.columns() != A.columns()) {
             throw new Error("geqrf: R must be N x N (n = columns in A)");
@@ -232,7 +232,7 @@ public abstract class BaseLapack implements Lapack {
         byte jobvt = (byte) (VT == null ? 'N' : 'A');
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, A.dataType()).getFirst());
 
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgesvd(jobu, jobvt, m, n, A, S, U, VT, INFO);

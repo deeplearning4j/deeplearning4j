@@ -374,7 +374,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     public INDArray empty(DataBuffer.Type type) {
         long extras  = ArrayOptionsHelper.setOptionBit(0L, ArrayType.EMPTY);
         extras = ArrayOptionsHelper.setOptionBit(extras, type);
-        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new int[0], new int[0],0,1,'c', extras);
+        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],1,'c', extras);
         return new NDArray(null, (LongBuffer) shape.getFirst(), shape.getSecond());
     }
 

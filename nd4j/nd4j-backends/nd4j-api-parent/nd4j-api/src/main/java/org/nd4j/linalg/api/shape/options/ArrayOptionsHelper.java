@@ -56,14 +56,20 @@ public class ArrayOptionsHelper {
             return DataBuffer.Type.COMPRESSED;
         else if (hasBitSet(opt, 4096))
             return DataBuffer.Type.HALF;
-        else if (hasBitSet(opt, 16384))
+        else if (hasBitSet(opt, 8192))
             return DataBuffer.Type.FLOAT;
-        else if (hasBitSet(opt, 32768))
+        else if (hasBitSet(opt, 16384))
             return DataBuffer.Type.DOUBLE;
-        else if (hasBitSet(opt, 262144))
+        else if (hasBitSet(opt, 131072))
             return DataBuffer.Type.INT;
-        else if (hasBitSet(opt, 524288))
+        else if (hasBitSet(opt, 262144))
             return DataBuffer.Type.LONG;
+        else if (hasBitSet(opt, 524288))
+            return DataBuffer.Type.BOOL;
+        else if (hasBitSet(opt, 32768))
+            return DataBuffer.Type.BYTE;
+        else if (hasBitSet(opt, 65536))
+            return DataBuffer.Type.SHORT;
         else
             return DataBuffer.Type.UNKNOWN;
     }
@@ -75,16 +81,25 @@ public class ArrayOptionsHelper {
                 bit = 4096;
                 break;
             case FLOAT:
-                bit = 16384;
+                bit = 8192;
                 break;
             case DOUBLE:
-                bit = 32768;
+                bit = 16384;
                 break;
             case INT:
-                bit = 262144;
+                bit = 131072;
                 break;
             case LONG:
+                bit = 262144;
+                break;
+            case BOOL:
                 bit = 524288;
+                break;
+            case BYTE:
+                bit = 32768;
+                break;
+            case SHORT:
+                bit = 65536;
                 break;
             case COMPRESSED:
                 bit = 4;
