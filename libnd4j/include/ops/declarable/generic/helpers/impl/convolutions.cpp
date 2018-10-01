@@ -309,14 +309,25 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, cons
     T* colBuff = const_cast<NDArray&>(columns).bufferAsT<T>();
 
     // initial zeroing of volume content
-    const Nd4jLong volEWS = nd4j::math::nd4j_abs<Nd4jLong>(volume.ews());
+    const Nd4jLong volEWS = volume.ews();
+    const auto volLen = volume.lengthOf();
     if(volEWS == 1)
-        memset(volBuff, 0, volume.lengthOf() * sizeof(T));
-    else
+        memset(volBuff, 0, volLen * sizeof(T));
+    else if(volEWS > 1) {
 #pragma omp parallel for schedule(static) proc_bind(close)
-        for (int i = 0; i < volume.lengthOf() * volEWS; i += volEWS) 
+        for (Nd4jLong i = 0; i < volLen * volEWS; i += volEWS)
             volBuff[i] = static_cast<T>(0.f);
+    }
+    else {
+        Nd4jLong idx[MAX_RANK];
+        for (Nd4jLong i = 0; i < volLen; i++) {
+            shape::ind2subC(volume.rankOf(), volume.shapeOf(), i, volLen, idx);
+            auto volOffset = shape::getOffset(0, volume.shapeOf(), volume.stridesOf(), idx, volume.rankOf());
 
+            volBuff[volOffset] = static_cast<T>(0.f);
+        }
+    }
+    
     T* col, *vol;
     int volDep, volRow, volCol;
 
@@ -1230,14 +1241,25 @@ static void pooling2dBP_(const NDArray& input, const NDArray& gradO, NDArray& gr
     T* gI = gradI.bufferAsT<T>();
 
     // initial zeroing of gradI
-    const Nd4jLong gradIEWS = nd4j::math::nd4j_abs<Nd4jLong>(gradI.ews());
+    const Nd4jLong gradIEWS = gradI.ews();
+    const Nd4jLong gradILen = gradI.lengthOf();
     if(gradIEWS == 1)
-        memset(gI, 0, gradI.lengthOf() * sizeof(T));
-    else
-#pragma omp parallel for schedule(static) proc_bind(close)
-        for (int i = 0; i < gradI.lengthOf() * gradIEWS; i += gradIEWS) 
+        memset(gI, 0, gradILen * sizeof(T));
+    else if (gradIEWS > 1) {
+        for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gI[i] = static_cast<T>(0.f);
+    }
+    else {
+        Nd4jLong idx[MAX_RANK];        
+#pragma omp parallel for schedule(static) proc_bind(close) private(idx)
+        for (Nd4jLong i = 0; i < gradILen; i++) {
+            shape::ind2subC(gradI.rankOf(), gradI.shapeOf(), i, gradILen, idx);
+            auto offset = shape::getOffset(0, gradI.shapeOf(), gradI.stridesOf(), idx, gradI.rankOf());
 
+            gI[offset] = static_cast<T>(0.f);
+        }
+    }
+ 
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
@@ -1419,14 +1441,26 @@ static void pooling3dBP_(const NDArray& input, const NDArray& gradO, NDArray& gr
     T* gI = gradI.bufferAsT<T>();
 
     // initial zeroing of gradI
-    const Nd4jLong gradIEWS = nd4j::math::nd4j_abs<Nd4jLong>(gradI.ews());
-    if(gradIEWS == 1)
-        memset(gI, 0, gradI.lengthOf() * sizeof(T));
-    else
+    const Nd4jLong gradIEWS = gradI.ews();
+    const Nd4jLong gradILen = gradI.lengthOf();
+    if(gradIEWS == 1) {
+        memset(gI, 0, gradILen * sizeof(T));
+    }
+    else if (gradIEWS > 1) {
 #pragma omp parallel for schedule(static) proc_bind(close)
-        for (int i = 0; i < gradI.lengthOf() * gradIEWS; i += gradIEWS) 
+        for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gI[i] = static_cast<T>(0.f);
+    }
+    else {
+        Nd4jLong idx[MAX_RANK];        
+#pragma omp parallel for schedule(static) proc_bind(close) private(idx)
+        for (Nd4jLong i = 0; i < gradILen; i++) {
+            shape::ind2subC(gradI.rankOf(), gradI.shapeOf(), i, gradILen, idx);
+            auto offset = shape::getOffset(0, gradI.shapeOf(), gradI.stridesOf(), idx, gradI.rankOf());
 
+            gI[offset] = static_cast<T>(0.f);
+        }
+    }
     const int kDEff = kD + (kD-1)*(dD-1);
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
