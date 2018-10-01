@@ -33,7 +33,17 @@ import java.util.Collection;
 public interface DataBuffer extends Serializable {
 
     enum Type {
-        DOUBLE, FLOAT, INT, HALF, COMPRESSED, LONG,UNKNOWN
+        DOUBLE,
+        FLOAT,
+        HALF,
+        LONG,
+        INT,
+        SHORT,
+        UBYTE,
+        BYTE,
+        BOOL,
+        COMPRESSED,
+        UNKNOWN
     }
 
     enum TypeEx {
