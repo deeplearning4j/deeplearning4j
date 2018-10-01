@@ -4150,7 +4150,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @see #memoryInfo(int, InputType...)
      */
     public String summary() {
-        return summary(null);
+        return summary((InputType[])null);
     }
 
     /**
@@ -4165,26 +4165,26 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @see #memoryInfo(int, InputType...)
      */
     public String summary(InputType... inputTypes) {
-
-        String ret = "\n";
-        ret += StringUtils.repeat("=", 250);
-        ret += "\n";
-        if (inputTypes != null) {
-            //inputTypes length has to match
-            if (inputTypes.length != configuration.getNetworkInputs().size())
-                throw new IllegalArgumentException("The number of inputTypes should match the size of the inputs in the computation graph");
-            ret += String.format("%-40s%-10s%-12s%-40s%-30s%-75s%-75s\n", "VertexName (VertexType)", "nIn,nOut", "TotalParams",
-                    "ParamsShape", "Vertex Inputs", "InputShape", "OutputShape");
-        } else {
-            ret += String.format("%-40s%-10s%-12s%-40s%-30s\n", "VertexName (VertexType)", "nIn,nOut", "TotalParams",
-                    "ParamsShape", "Vertex Inputs");
-        }
-        ret += StringUtils.repeat("=", 250);
-        ret += "\n";
+        StringBuilder ret = new StringBuilder();
+        ret.append("\n")
+                .append(StringUtils.repeat("=", 250))
+                .append("\n");
 
         int frozenParams = 0;
         Map<String, InputType> vertexOutputs = new HashMap<>(); //vertex name and output types
         int currLayerIdx = -1;
+
+        List<String[]> lines = new ArrayList<>();
+        if(inputTypes == null){
+            lines.add(new String[]{"VertexName (VertexType)", "nIn,nOut", "TotalParams", "ParamsShape", "Vertex Inputs"});
+        } else {
+            lines.add(new String[]{"VertexName (VertexType)", "nIn,nOut", "TotalParams", "ParamsShape", "Vertex Inputs", "InputShape", "OutputShape"});
+        }
+        int[] maxLength = new int[inputTypes == null || inputTypes.length == 0 ? 5 : 7];
+        String[] header = lines.get(0);
+        for( int i=0; i<header.length; i++ ){
+            maxLength[i] = header[i].length();
+        }
 
         for (int currVertexIdx : topologicalOrder) {
 
@@ -4273,25 +4273,43 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
 
             //Add on to summary string
-            if (inputTypes != null) {
-                ret += String.format("%-40s%-10s%-12s%-40s%-30s%-75s%-75s", currentVertexName + " (" + className + ")", in + "," + out, paramCount,
-                        paramShape, connections, inShape, outShape);
+            String[] line;
+            if (inputTypes == null) {
+                line = new String[]{currentVertexName + " (" + className + ")", in + "," + out, paramCount, paramShape, connections};
             } else {
-                ret += String.format("%-40s%-10s%-12s%-40s%-30s", currentVertexName + " (" + className + ")", in + "," + out, paramCount,
-                        paramShape, connections);
+                line = new String[]{currentVertexName + " (" + className + ")", in + "," + out, paramCount, paramShape, connections, inShape, outShape};
             }
-            ret += "\n";
-
+            for( int i=0; i<line.length; i++ ){
+                maxLength[i] = Math.max(maxLength[i], line[i] == null ? 0 : line[i].length());
+            }
+            lines.add(line);
         }
-        ret += StringUtils.repeat("-", 250);
-        ret += String.format("\n%30s %d", "Total Parameters: ", params().length());
-        ret += String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams);
-        ret += String.format("\n%30s %d", "Frozen Parameters: ", frozenParams);
-        ret += "\n";
-        ret += StringUtils.repeat("=", 250);
-        ret += "\n";
 
-        return ret;
+        StringBuilder sbFormat = new StringBuilder();
+        for(int length : maxLength){
+            sbFormat.append("%-").append(length+3).append("s");
+        }
+        sbFormat.append("\n");
+        String format = sbFormat.toString();
+        boolean first = true;
+        for(String[] line : lines){
+            String formatted = String.format(format, (Object[])line);
+            ret.append(formatted);
+            if(first){
+                ret.append(StringUtils.repeat("=", 250)).append("\n");
+                first = false;
+            }
+        }
+
+        ret.append(StringUtils.repeat("-", 250))
+                .append(String.format("\n%30s %d", "Total Parameters: ", params().length()))
+                .append(String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams))
+                .append(String.format("\n%30s %d", "Frozen Parameters: ", frozenParams))
+                .append("\n")
+                .append(StringUtils.repeat("=", 250))
+                .append("\n");
+
+        return ret.toString();
     }
 
     /**
