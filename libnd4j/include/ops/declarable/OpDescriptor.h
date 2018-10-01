@@ -22,9 +22,13 @@
 #define LIBND4J_OPDESCRIPTOR_H
 
 #include <string>
+#include <vector>
+#include <map>
+#include <initializer_list>
 #include <helpers/helper_hash.h>
 #include <ops/InputType.h>
 #include <graph/generated/node_generated.h>
+#include <array/DataType.h>
 
 namespace nd4j {
     namespace ops {
@@ -73,6 +77,15 @@ namespace nd4j {
 
             // default InputType is numeric
             InputType _inputType = InputType_NUMERIC;
+
+
+            bool _sameMode = false;
+            std::vector<nd4j::DataType> _allowedIns;
+            std::vector<nd4j::DataType> _allowedOuts;
+
+            // optional per-input configuration
+            std::map<int, nd4j::DataType> _outputTypes;
+            std::map<int, nd4j::DataType> _inputTypes;
 
         public:
             // default constructor
@@ -137,8 +150,17 @@ namespace nd4j {
 
             void setHash(Nd4jLong hash);
 
-            void setInputType(InputType type);
             InputType inputType();
+
+            OpDescriptor* setInputType(const InputType type);
+            OpDescriptor* setAllowedInputTypes(const std::initializer_list<nd4j::DataType> &dtype);
+            OpDescriptor* setAllowedOutputTypes(const std::initializer_list<nd4j::DataType> &dtype);
+            OpDescriptor* setAllowedInputTypes(const nd4j::DataType dtype);
+            OpDescriptor* setAllowedOutputTypes(const nd4j::DataType dtype);
+            OpDescriptor* setSameMode(const bool reallySame);
+            OpDescriptor* setInputType(const int idx, const nd4j::DataType dtype);
+            OpDescriptor* setOutputType(const int idx, const nd4j::DataType dtype);
+
         };
     }
 }

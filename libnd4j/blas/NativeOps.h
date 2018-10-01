@@ -367,11 +367,13 @@ public:
      * @param xShapeInfo
      * @param extraParams
      */
-    double execSummaryStatsScalar(Nd4jPointer *extraPointers,
+    void execSummaryStatsScalar(Nd4jPointer *extraPointers,
                                           int opNum,
                                           void *x,
                                           Nd4jLong *xInfo,
                                           void *extraParams,
+                                          void *result,
+                                          Nd4jLong *resultShapeInfo,
                                           bool biasCorrected);
     /**
      *

@@ -34,7 +34,7 @@ namespace functions {
         template<typename OpType>
         void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, void *vscalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
             auto x = reinterpret_cast<X *>(vx);
-            auto z = reinterpret_cast<X *>(vz);
+            auto z = reinterpret_cast<Z *>(vz);
             auto scalars = reinterpret_cast<Y *>(vscalars);
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
@@ -138,7 +138,7 @@ namespace functions {
                                void *vscalar,
                                void *vextraParams) {
             auto x = reinterpret_cast<X *>(vx);
-            auto result = reinterpret_cast<X *>(vz);
+            auto result = reinterpret_cast<Z *>(vz);
             auto scalar = reinterpret_cast<Y *>(vscalar)[0];
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
@@ -164,7 +164,7 @@ namespace functions {
                 auto xStride = shape::stride(xShapeInfo);
                 auto resultStride = shape::stride(resultShapeInfo);
                 int rank = shape::rank(xShapeInfo);
-                if(PrepareTwoRawArrayIter<X, X>(rank,
+                if(PrepareTwoRawArrayIter<X, Z>(rank,
                                              xShape,
                                              x,
                                              xStride,
@@ -249,7 +249,7 @@ namespace functions {
                     void *vextraParams,
                     const Nd4jLong n) {
                 auto x = reinterpret_cast<X *>(vx);
-                auto result = reinterpret_cast<X *>(vz);
+                auto result = reinterpret_cast<Z *>(vz);
                 auto scalar = reinterpret_cast<Y *>(vscalar)[0];
                 auto extraParams = reinterpret_cast<Z *>(vextraParams);
 /*
@@ -274,9 +274,11 @@ namespace functions {
                             }
                         }
                     } else {
-#pragma omp simd
+//#pragma omp simd
                         for (Nd4jLong i = 0; i < n; i++) {
-                            result[i] = OpType::op(x[i], scalar, extraParams);
+                            auto x_ = x[i];
+                            auto r_ = OpType::op(x_, scalar, extraParams);;
+                            result[i] = r_;
                         }
                     }
                 }
@@ -302,10 +304,5 @@ namespace functions {
                     }
                 }
             }
-
-
-        //BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_0)
-        //BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_1)
-        //BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_2)
     }
 }

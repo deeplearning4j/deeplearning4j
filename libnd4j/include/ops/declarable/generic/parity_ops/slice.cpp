@@ -110,7 +110,7 @@ namespace nd4j {
             }
 
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank), Nd4jLong);
-            shape::shapeBuffer(x_rank, block.dataType(), shape.data(), newShape);
+            shape::shapeBuffer(x_rank, ArrayOptions::dataType(inShape), shape.data(), newShape);
 
             return SHAPELIST(newShape);
         }

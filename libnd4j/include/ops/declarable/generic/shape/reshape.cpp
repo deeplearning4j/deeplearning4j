@@ -185,6 +185,7 @@ namespace nd4j {
                     newShape[cnt++] = v;
 
                 shape::updateStrides(newShape, order);
+                ArrayOptions::setDataType(newShape, ArrayOptions::dataType(inp));
 
                 return SHAPELIST(newShape);
             } else {
@@ -197,7 +198,7 @@ namespace nd4j {
                     REQUIRE_TRUE(x->lengthOf() == 1, 0, "Reshape: new length doesn't match existing array");
 
 
-                    return SHAPELIST(ShapeBuilders::createScalarShapeInfo(block.getWorkspace()));
+                    return SHAPELIST(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inp),block.getWorkspace()));
                 }
 
                 std::vector<Nd4jLong> shapeNew(y->lengthOf());

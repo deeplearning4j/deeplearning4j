@@ -505,17 +505,21 @@ void NativeOps::execScalar(
  * @param xShapeInfo
  * @param extraParams
  */
-double NativeOps::execSummaryStatsScalar(Nd4jPointer *extraPointers,
+void NativeOps::execSummaryStatsScalar(Nd4jPointer *extraPointers,
         int opNum,
         void *x,
         Nd4jLong *xShapeInfo,
         void *extraParams,
+        void *result,
+        Nd4jLong *resultShapeInfo,
         bool biasCorrected) {
-    return NativeOpExcutioner::execSummaryStatsScalar(
+    NativeOpExcutioner::execSummaryStatsScalar(
             opNum,
             x,
             xShapeInfo,
             extraParams,
+            result,
+            resultShapeInfo,
             biasCorrected);
 }
 /**

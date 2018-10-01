@@ -140,8 +140,7 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
 
 TEST_F(ListOperationsTests, BasicTest_Size_1) {
     NDArrayList list(10);
-    auto exp = NDArrayFactory::create<double>('c', {1, 1});
-    exp.p(0, 10);
+    auto exp = NDArrayFactory::create<int>(10);
     for (int e = 0; e < 10; e++) {
         auto row = NDArrayFactory::create_<double>('c', {1, 100});
         row->assign((double) e);
@@ -394,9 +393,9 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
     nodeD2->setCustomOp(&opD);
 
     // using OneMinus on each chunk separately
-    auto nodeE0 = new Node(OpType_TRANSFORM, 35, 10, {5});
-    auto nodeE1 = new Node(OpType_TRANSFORM, 35, 11, {6});
-    auto nodeE2 = new Node(OpType_TRANSFORM, 35, 12, {7});
+    auto nodeE0 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 10, {5});
+    auto nodeE1 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 11, {6});
+    auto nodeE2 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 12, {7});
 
     // writing chunks back to the List
     auto nodeF0 = new Node(OpType_CUSTOM, 0, 15, {2, 10}, {},{}, 0.0f, {}, {0});
@@ -530,9 +529,9 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
 
 
     // using OneMinus on each chunk separately
-    auto nodeE0 = new Node(OpType_TRANSFORM, 35, 10, {5});
-    auto nodeE1 = new Node(OpType_TRANSFORM, 35, 11, {6});
-    auto nodeE2 = new Node(OpType_TRANSFORM, 35, 12, {7});
+    auto nodeE0 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 10, {5});
+    auto nodeE1 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 11, {6});
+    auto nodeE2 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 12, {7});
 
     // writing chunks back to the List
     auto nodeF0 = new Node(OpType_CUSTOM, 0, 15, {2, 10}, {},{}, 0.0f, {}, {0});

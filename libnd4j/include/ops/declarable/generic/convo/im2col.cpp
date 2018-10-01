@@ -95,11 +95,11 @@ namespace nd4j {
             zShape[5] = oY;
             zShape[6] = oX;
 
-            zShape[shape::shapeInfoLength(zShape) - 3] = 0;
             zShape[shape::shapeInfoLength(zShape) - 2] = 1;
             zShape[shape::shapeInfoLength(zShape) - 1] = 99;
 
             shape::updateStrides(zShape, 'c');
+            ArrayOptions::setDataType(zShape, ArrayOptions::dataType(inShape));
 
             return SHAPELIST(zShape);
         }

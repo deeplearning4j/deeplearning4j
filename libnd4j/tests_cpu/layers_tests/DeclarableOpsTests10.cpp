@@ -40,7 +40,7 @@ public:
 
 TEST_F(DeclarableOpsTests10, Test_ArgMax_1) {
     auto x = NDArrayFactory::create<double>('c', {3, 3});
-    auto e = NDArrayFactory::create<double>(8);
+    auto e = NDArrayFactory::create<Nd4jLong>(8);
 
     x.linspace(1.0);
 
@@ -60,7 +60,7 @@ TEST_F(DeclarableOpsTests10, Test_ArgMax_1) {
 TEST_F(DeclarableOpsTests10, Test_ArgMax_2) {
     auto x = NDArrayFactory::create<double>('c', {3, 3});
     auto y = NDArrayFactory::create<double>('c', {1}, {1.0});
-    auto e = NDArrayFactory::create<double>('c', {3}, {2.0, 2.0, 2.0});
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {3}, {2, 2, 2});
 
     x.linspace(1.0);
 
@@ -122,7 +122,7 @@ TEST_F(DeclarableOpsTests10, Test_Not_1) {
 
 TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
     auto x = NDArrayFactory::create<double>('c', {10, 20, 30});
-    auto e = NDArrayFactory::create<double>(20.0);
+    auto e = NDArrayFactory::create<Nd4jLong>(20);
 
     nd4j::ops::size_at op;
     auto result = op.execute({&x}, {}, {1});
@@ -418,7 +418,7 @@ TEST_F(DeclarableOpsTests10, range_test11) {
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, range_test12) {
     
-    auto exp = NDArrayFactory::create<double>('c', {9}, {0.5, 1. , 1.5, 2. , 2.5, 3. , 3.5, 4. , 4.5});
+    auto exp = NDArrayFactory::create<float>('c', {9}, {0.5, 1. , 1.5, 2. , 2.5, 3. , 3.5, 4. , 4.5});
 
     nd4j::ops::range op;
     auto result = op.execute({}, {0.5, 5, 0.5}, {});

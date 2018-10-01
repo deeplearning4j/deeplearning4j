@@ -37,6 +37,7 @@ namespace nd4j{
         std::atomic<bool> _profile;
         std::atomic<int> _maxThreads;
         std::atomic<nd4j::DataType> _dataType;
+        std::atomic<bool> _precBoost;
 
         static Environment* _instance;
 
@@ -64,6 +65,9 @@ namespace nd4j{
 
         nd4j::DataType defaultFloatDataType();
         void setDefaultFloatDataType(nd4j::DataType dtype);
+
+        bool precisionBoostAllowed();
+        void allowPrecisionBoost(bool reallyAllow);
     };
 }
 

@@ -208,6 +208,7 @@ NDArray betaIncT(const NDArray& a, const NDArray& b, const NDArray& x) {
 NDArray betaInc(const NDArray& a, const NDArray& b, const NDArray& x) {
 	auto xType = a.dataType();
 	BUILD_SINGLE_SELECTOR(xType, return betaIncT, (a, b, x), FLOAT_TYPES);
+	return a;
 }
 
 

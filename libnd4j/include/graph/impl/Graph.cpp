@@ -310,7 +310,7 @@ namespace nd4j {
                 nodeState->setName(node->getName());
 
 
-            if (node->isInplace());
+            if (node->isInplace())
                     nodeState->markRemovable(false);
 
             _handles.push_back(node);

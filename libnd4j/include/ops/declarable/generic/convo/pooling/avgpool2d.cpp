@@ -133,6 +133,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
         newShapeInfo[4] = iD;
     }
     shape::updateStrides(newShapeInfo, order);
+    ArrayOptions::setDataType(newShapeInfo, block.dataType());
 
     return SHAPELIST(newShapeInfo);
 }
@@ -211,6 +212,7 @@ DECLARE_SHAPE_FN(avgpool2d_bp) {
     
     Nd4jLong* gradIShapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIShapeInfo);
+    ArrayOptions::setDataType(gradIShapeInfo, ArrayOptions::dataType(inputShape->at(1)));
     
     return SHAPELIST(gradIShapeInfo);
 }

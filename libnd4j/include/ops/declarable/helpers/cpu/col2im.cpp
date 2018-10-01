@@ -28,8 +28,8 @@ namespace helpers {
 template <typename T>
 void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
 
-    auto imBuff         = static_cast<T*>(output.getBuffer());
-	auto colBuff        = static_cast<T*>(input.getBuffer());
+    auto imBuff         = output.bufferAsT<T>();
+	auto colBuff        = input.bufferAsT<T>();
 	auto imShapeBuffer  = output.getShapeInfo();
 	auto colShapeBuffer = input.getShapeInfo();
     auto colShape  		= shape::shapeOf(colShapeBuffer);
@@ -55,13 +55,24 @@ void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& outp
     const Nd4jLong imStride3  = imStride[3];
 
     // initial zeroing of image content
-    const Nd4jLong imEWS = nd4j::math::nd4j_abs<Nd4jLong>(shape::elementWiseStride(imShapeBuffer));
-    if(imEWS == 1)
-    	memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
-    else 
+    const auto imEWS = shape::elementWiseStride(imShapeBuffer);
+    if(imEWS == 1) {
+        memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
+    } else if (imEWS > 1) {
 #pragma omp parallel for schedule(static) proc_bind(close)
-    	for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS) 
-        	imBuff[i] = static_cast<T>(0.f);
+        for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS)
+            imBuff[i] = static_cast<T>(0.f);
+    } else {
+        Nd4jLong idx[MAX_RANK];
+        const auto len = shape::length(imShapeBuffer);
+#pragma omp parallel for schedule(static) proc_bind(close) private(idx)
+        for (int i = 0; i < len; i++) {
+            shape::ind2subC(shape::rank(imShapeBuffer), imShape, i, len, idx);
+            auto imOffset = shape::getOffset(0, imShape, imStride, idx, shape::rank(imShapeBuffer));
+
+            imBuff[imOffset] = 0;
+        }
+    }
             
 	T *col, *im;
     int imRow, imCol;

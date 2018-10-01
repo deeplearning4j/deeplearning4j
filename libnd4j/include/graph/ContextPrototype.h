@@ -51,7 +51,7 @@ namespace nd4j {
             // this method returns true, if inputs are defined
             bool hasVariablesFilled();
 
-            nd4j::DataType dataType();
+            virtual nd4j::DataType dataType();
 
             bool isInplace();
             void markInplace(bool reallyInplace);

@@ -26,6 +26,8 @@
 #include <graph/generated/array_generated.h>
 #include <op_boilerplate.h>
 #include <dll.h>
+#include <Environment.h>
+#include <templatemath.h>
 
 namespace nd4j {
     class ND4J_EXPORT DataTypeUtils {
@@ -51,12 +53,90 @@ namespace nd4j {
         FORCEINLINE static T eps();
 
         FORCEINLINE static size_t sizeOf(DataType type);
+
+        FORCEINLINE static bool isR(nd4j::DataType dataType);
+
+        FORCEINLINE static bool isZ(nd4j::DataType dataType);
+
+        FORCEINLINE static bool isB(nd4j::DataType dataType);
+
+        FORCEINLINE static bool isU(nd4j::DataType dataType);
+
+        FORCEINLINE static nd4j::DataType pickPairwiseResultType(nd4j::DataType typeX, nd4j::DataType typeY);
+
+        FORCEINLINE static nd4j::DataType pickFloatingType(nd4j::DataType typeX);
     };
 
 
 //////////////////////////////////////////////////////////////////////////
 ///// IMLEMENTATION OF INLINE METHODS ///// 
 //////////////////////////////////////////////////////////////////////////
+
+    FORCEINLINE nd4j::DataType DataTypeUtils::pickFloatingType(nd4j::DataType typeX) {
+        // if proposed dataType is already floating point - return it
+        if (isR(typeX))
+            return typeX;
+        else // return default float type otherwise
+            return Environment::getInstance()->defaultFloatDataType();
+    }
+
+    FORCEINLINE bool DataTypeUtils::isR(nd4j::DataType dataType) {
+        return dataType == nd4j::DataType::FLOAT32 || dataType == nd4j::DataType::HALF || dataType == nd4j::DataType::DOUBLE;
+    }
+
+    FORCEINLINE bool DataTypeUtils::isB(nd4j::DataType dataType) {
+        return dataType == nd4j::DataType::BOOL;
+    }
+
+    FORCEINLINE bool DataTypeUtils::isZ(nd4j::DataType dataType) {
+        return !isR(dataType) && !isB(dataType);
+    }
+
+    FORCEINLINE bool DataTypeUtils::isU(nd4j::DataType dataType) {
+        return dataType == nd4j::DataType::UINT8 || dataType == nd4j::DataType::UINT16 || dataType == nd4j::DataType::UINT32 || dataType == nd4j::DataType::UINT64;
+    }
+
+    FORCEINLINE nd4j::DataType DataTypeUtils::pickPairwiseResultType(nd4j::DataType typeX, nd4j::DataType typeY) {
+        // if both dtypes are the same - just return it
+        if (typeX == typeY)
+            return typeX;
+
+        auto rX = isR(typeX);
+        auto rY = isR(typeY);
+
+        // if X is float - use it
+        if (rX && !rY)
+            return typeX;
+
+        // if Y is float - use it
+        if (!rX && rY)
+            return typeY;
+
+        // if both data types are float - return biggest one
+        if (rX && rY) {
+            // if we allow precision boost, then we pick bigger data type
+            if (nd4j::Environment::getInstance()->precisionBoostAllowed()) {
+                return nd4j::math::nd4j_max<nd4j::DataType>(typeX, typeY);
+            } else {
+                // and we return first operand otherwise
+                return typeX;
+            }
+
+        }
+
+        // if that's not real type, we apply same rules
+        if (!rX && !rY) {
+            if (nd4j::Environment::getInstance()->precisionBoostAllowed()) {
+                return nd4j::math::nd4j_max<nd4j::DataType>(typeX, typeY);
+            } else {
+                // and we return first operand otherwise
+                return typeX;
+            }
+        }
+
+        return typeX;
+    }
+
 
 ///////////////////////////////////////////////////////////////////
 FORCEINLINE size_t DataTypeUtils::sizeOf(DataType type) {

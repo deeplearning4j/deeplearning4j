@@ -140,8 +140,14 @@ namespace nd4j {
                 if (varSpace.hasVariable(pair)) {
                     auto var = varSpace.getVariable(pair);
                     if (var->getNDArray() != nullptr) {
-                        var->markRemovable(false);
-                        res->push_back(var->getNDArray());
+                        auto arr = var->getNDArray();
+                        if (arr->isAttached()) {
+                            auto d = arr->detach();
+                            res->push_back(d);
+                        } else {
+                            var->markRemovable(false);
+                            res->push_back(arr);
+                        }
                     }
                 } else
                     break;

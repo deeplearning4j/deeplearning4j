@@ -95,3 +95,17 @@ TEST_F(ArrayOptionsTests, TestShape_Basic_7) {
 
     ASSERT_EQ(nd4j::DataType::FLOAT32, ArrayOptions::dataType(shape));
 }
+
+TEST_F(ArrayOptionsTests, TestShape_Basic_8) {
+    ArrayOptions::setDataType(shape, nd4j::DataType::DOUBLE);
+    ArrayOptions::setDataType(shape, nd4j::DataType::FLOAT32);
+
+    ASSERT_EQ(nd4j::DataType::FLOAT32, ArrayOptions::dataType(shape));
+}
+
+TEST_F(ArrayOptionsTests, TestShape_Basic_9) {
+    ArrayOptions::setDataType(shape, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape, nd4j::DataType::DOUBLE);
+
+    ASSERT_EQ(nd4j::DataType::DOUBLE, ArrayOptions::dataType(shape));
+}

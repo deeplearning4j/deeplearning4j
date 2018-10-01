@@ -30,17 +30,28 @@ namespace functions {
     namespace summarystats {
 
 
-        template <typename X>
-        X SummaryStatsReduce<X>::execScalar(const int opNum,
+        template <typename X, typename Y>
+        Y SummaryStatsReduce<X,Y>::execScalar(const int opNum,
                 const bool biasCorrected,
                 void *x,
                 Nd4jLong *xShapeInfo,
                 void *extraParams) {
-            RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
+            RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
         }
 
-        template <typename X>
-        void SummaryStatsReduce<X>::exec(const int opNum,
+        template <typename X, typename Y>
+        void SummaryStatsReduce<X,Y>::execScalar(const int opNum,
+                                              const bool biasCorrected,
+                                              void *x,
+                                              Nd4jLong *xShapeInfo,
+                                              void *extraParams,
+                                              void *result,
+                                              Nd4jLong *resultShapeInfoBuffer) {
+            DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer), SUMMARY_STATS_OPS);
+        }
+
+        template <typename X, typename Y>
+        void SummaryStatsReduce<X,Y>::exec(const int opNum,
                 const bool biasCorrected,
                 void *x,
                 Nd4jLong *xShapeInfo,
@@ -49,23 +60,35 @@ namespace functions {
                 Nd4jLong *resultShapeInfoBuffer,
                 int *dimension,
                 int dimensionLength) {
-            DISPATCH_BY_OPNUM_T(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
+            DISPATCH_BY_OPNUM_TT(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
         }
 
-        template <typename X>
+        template <typename X, typename Z>
         template <typename OpType >
-        X SummaryStatsReduce<X>::execScalar(const bool biasCorrected,
+        void SummaryStatsReduce<X,Z>::execScalar(const bool biasCorrected,
+                                              void *vx,
+                                              Nd4jLong *xShapeInfo,
+                                              void *vextraParams,
+                                              void *result,
+                                              Nd4jLong *resultShapeInfoBuffer) {
+            auto z = reinterpret_cast<Z*>(result);
+            z[0] = execScalar<OpType>(biasCorrected, vx, xShapeInfo, vextraParams);
+        }
+
+        template <typename X, typename Z>
+        template <typename OpType >
+        Z SummaryStatsReduce<X,Z>::execScalar(const bool biasCorrected,
                 void *vx,
                 Nd4jLong *xShapeInfo,
                 void *vextraParams) {
 
             auto x = reinterpret_cast<X *>(vx);
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
             SummaryStatsData<X> startingIndex;
             startingIndex.initialize();
-            Nd4jLong length = shape::length(xShapeInfo);
-            int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+            auto length = shape::length(xShapeInfo);
+            auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
             if (xElementWiseStride == 1) {
                 for (Nd4jLong i = 0; i < length; i++) {
                     SummaryStatsData<X> curr;
@@ -74,7 +97,7 @@ namespace functions {
                                            extraParams);
                 }
 
-                return (X) OpType::getValue(biasCorrected, startingIndex);
+                return (Z) OpType::getValue(biasCorrected, startingIndex);
             }
             else {
                 Nd4jLong xCoords[MAX_RANK];
@@ -93,13 +116,13 @@ namespace functions {
                     startingIndex = update(startingIndex, curr, extraParams);
                 }
 
-                return (X)OpType::getValue(biasCorrected, startingIndex);
+                return (Z)OpType::getValue(biasCorrected, startingIndex);
             }
         }
 
-        template <typename X>
+        template <typename X, typename Z>
         template <typename OpType >
-        void SummaryStatsReduce<X>::exec(const bool biasCorrected,
+        void SummaryStatsReduce<X,Z>::exec(const bool biasCorrected,
                 void *vx,
                 Nd4jLong *xShapeInfo,
                 void *vextraParams,
@@ -108,8 +131,8 @@ namespace functions {
                 int *dimension,
                 int dimensionLength) {
             auto x = reinterpret_cast<X *>(vx);
-            auto result = reinterpret_cast<X *>(vresult);
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
+            auto result = reinterpret_cast<Z *>(vresult);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
             if (shape::isScalar(resultShapeInfoBuffer)) {
                 result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
@@ -243,6 +266,6 @@ namespace functions {
         }
 
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , FLOAT_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , LIBND4J_TYPES, FLOAT_TYPES);
     }
 }

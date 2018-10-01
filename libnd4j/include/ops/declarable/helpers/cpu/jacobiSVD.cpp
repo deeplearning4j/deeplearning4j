@@ -395,7 +395,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
 
     for(int i = 0; i < _diagSize; i++) {
                 
-        int pos = (_s({i,-1, 0,0}).indexReduceNumber(indexreduce::IndexMax, nullptr)).e<int>(0);
+        int pos = (_s({i,-1, 0,0}).indexReduceNumber(indexreduce::IndexMax, nullptr)).template e<int>(0);
         T maxSingVal =  _s({i,-1, 0,0}).reduceNumber(reduce::Max).template e<T>(0);
 
         if(maxSingVal == (T)0.)   

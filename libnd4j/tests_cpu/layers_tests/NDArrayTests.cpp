@@ -30,13 +30,13 @@ class NDArrayTest : public testing::Test {
 public:
     int alpha = 0;
 
-    Nd4jLong *cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 0, 1, 99};
-    Nd4jLong *fShape = new Nd4jLong[8]{2, 2, 2, 1, 2, 0, 1, 102};
+    Nd4jLong *cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 8192, 1, 99};
+    Nd4jLong *fShape = new Nd4jLong[8]{2, 2, 2, 1, 2, 8192, 1, 102};
 
 	float arr1[6] = {1,2,3,4,5,6};
-	Nd4jLong shape1[8] = {2,2,3,3,1,0,1,99};
+	Nd4jLong shape1[8] = {2,2,3,3,1,8192,1,99};
 	float arr2[48] = {1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6};
-	Nd4jLong shape2[10] = {3,2,4,6,24,6,1,0,1,99};
+	Nd4jLong shape2[10] = {3,2,4,6,24,6,1,8192,1,99};
 	const std::vector<Nd4jLong> tileShape1 = {2,2,2};
 
 
@@ -122,7 +122,7 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestGetScalar1) {
     float *c = new float[4] {1, 2, 3, 4};
-    auto cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 0, 1, 99};
+    auto cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 8192, 1, 99};
 
     auto arrayC = new NDArray(c, cShape);
 
@@ -203,11 +203,7 @@ TEST_F(NDArrayTest, TestTad1) {
 
     row2->assign(1.0);
 
-    //row2->printBuffer();
-
     ASSERT_NEAR(3.0f, array->sumNumber().e<float>(0), 1e-5);
-
-    //array->printBuffer();
 
     delete row2;
     delete array;
@@ -246,8 +242,8 @@ TEST_F(NDArrayTest, TestTad3) {
 
 TEST_F(NDArrayTest, TestPermuteReshape1) {
     auto array = NDArrayFactory::create<float>('c', {2, 2, 5, 5});
-    int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 0, -1, 99};
-    int rShape[] = {3, 2, 25, 2, 25, 1, 50, 0, -1, 99};
+    int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, -1, 99};
+    int rShape[] = {3, 2, 25, 2, 25, 1, 50, 8192, -1, 99};
 
     array.permutei({1, 2, 3, 0});
 
@@ -264,8 +260,8 @@ TEST_F(NDArrayTest, TestPermuteReshape1) {
 
 TEST_F(NDArrayTest, TestPermuteReshape2) {
     auto array = NDArrayFactory::create<float>('c', {2, 2, 5, 5, 6, 6});
-    int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 0, -1, 99};
-    int rShape[] = {3, 2, 72, 25, 1800, 25, 1, 0, 1, 99};
+    int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 8192, -1, 99};
+    int rShape[] = {3, 2, 72, 25, 1800, 25, 1, 8192, 1, 99};
 
 
     // array.printShapeInfo("before");
@@ -274,8 +270,10 @@ TEST_F(NDArrayTest, TestPermuteReshape2) {
 
     // array.printShapeInfo("after ");
 
+    auto aShape = array.getShapeInfo();
+
     for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
-        ASSERT_EQ(pShape[e], array.getShapeInfo()[e]);
+        ASSERT_EQ(pShape[e], aShape[e]);
 
     array.reshapei('c', {2, 72, 25});
 
@@ -286,7 +284,7 @@ TEST_F(NDArrayTest, TestPermuteReshape2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestRepeat1) {
     auto eBuffer = new float[8] {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
-    auto eShape = new Nd4jLong[8]{2, 4, 2, 2, 1, 0, 1, 99};
+    auto eShape = new Nd4jLong[8]{2, 4, 2, 2, 1, 8192, 1, 99};
     auto array = NDArrayFactory::create_<float>('c', {2, 2});
     auto exp = new NDArray(eBuffer, eShape);
     for (int e = 0; e < array->lengthOf(); e++)
@@ -361,8 +359,8 @@ TEST_F(NDArrayTest, TestAddiColumnVector) {
     float arr1[] = {1, 2, 3, 4};
     float arr2[] = {5, 6};
 	float arr3[] = {6, 7, 9, 10};
-	Nd4jLong shape1[] = {2,2,2,2,1,0,1,99};
-	Nd4jLong shape2[] = {2,2,1,1,1,0,1,99};
+	Nd4jLong shape1[] = {2,2,2,2,1,8192,1,99};
+	Nd4jLong shape2[] = {2,2,1,1,1,8192,1,99};
 	NDArray matrix(arr1, shape1);
 	NDArray column(arr2, shape2);
 	NDArray exp(arr3, shape1);
@@ -378,8 +376,8 @@ TEST_F(NDArrayTest, TestMuliColumnVector) {
     float arr1[] = {1, 2, 3, 4};
     float arr2[] = {5, 6};
 	float arr3[] = {5, 10, 18, 24};
-	Nd4jLong shape1[] = {2,2,2,2,1,0,1,99};
-	Nd4jLong shape2[] = {2,2,1,1,1,0,1,99};
+	Nd4jLong shape1[] = {2,2,2,2,1,8192,1,99};
+	Nd4jLong shape2[] = {2,2,1,1,1,8192,1,99};
 	NDArray matrix(arr1, shape1);
 	NDArray column(arr2, shape2);
 	NDArray exp(arr3, shape1);
@@ -409,8 +407,8 @@ TEST_F(NDArrayTest, Test3D_1) {
 TEST_F(NDArrayTest, TestTranspose1) {
     auto arrayC = NDArrayFactory::create_<double>('c', {2, 5, 10});
 
-    auto expC = new Nd4jLong[10] {3, 2, 5, 10, 50, 10, 1, 0, 1, 99};
-    auto expT = new Nd4jLong[10] {3, 10, 5, 2, 1, 10, 50, 0, 1, 102};
+    auto expC = new Nd4jLong[10] {3, 2, 5, 10, 50, 10, 1, 16384, 1, 99};
+    auto expT = new Nd4jLong[10] {3, 10, 5, 2, 1, 10, 50, 16384, 1, 102};
 
     auto arrayT = arrayC->transpose();
 
@@ -429,8 +427,8 @@ TEST_F(NDArrayTest, TestTranspose1) {
 TEST_F(NDArrayTest, TestTranspose2) {
     auto arrayC = NDArrayFactory::create_<double>('c', {2, 5, 10});
 
-    auto expC = new Nd4jLong[10] {3, 2, 5, 10, 50, 10, 1, 0, 1, 99};
-    auto expT = new Nd4jLong[10] {3, 10, 5, 2, 1, 10, 50, 0, 1, 102};
+    auto expC = new Nd4jLong[10] {3, 2, 5, 10, 50, 10, 1, 16384, 1, 99};
+    auto expT = new Nd4jLong[10] {3, 10, 5, 2, 1, 10, 50, 16384, 1, 102};
 
     arrayC->transposei();
 
@@ -449,7 +447,7 @@ TEST_F(NDArrayTest, TestSumAlongDimension1) {
     float *c = new float[4] {1, 2, 3, 4};
     auto array = new NDArray(c, cShape);
 
-    auto res = array->reduceNumber(reduce::Sum, {0});
+    auto res = array->reduceAlongDims(reduce::Sum, {0});
 
     ASSERT_EQ(2, res.lengthOf());
 
@@ -666,18 +664,16 @@ TEST_F(NDArrayTest, TestReductionAll1) {
     array.p(3, 0.0f);
 
     auto result0 = array.reduceAlongDimension(reduce::All, {0});
-
-    ASSERT_EQ(2, result0->lengthOf());
-
-    ASSERT_NEAR(0.0f, result0->e<float>(0), 1e-5f);
-    ASSERT_NEAR(0.0f, result0->e<float>(1), 1e-5f);
-
     auto result1 = array.reduceAlongDimension(reduce::All, {1});
 
+    ASSERT_EQ(2, result0->lengthOf());
     ASSERT_EQ(2, result1->lengthOf());
 
-    ASSERT_NEAR(1.0f, result1->e<float>(0), 1e-5f);
-    ASSERT_NEAR(0.0f, result1->e<float>(1), 1e-5f);
+    ASSERT_FALSE(result0->e<bool>(0));
+    ASSERT_FALSE(result0->e<bool>(1));
+
+    ASSERT_TRUE(result1->e<bool>(0));
+    ASSERT_FALSE(result1->e<bool>(1));
 
     delete result0;
     delete result1;
@@ -792,11 +788,11 @@ TEST_F(NDArrayTest, TestTile6)
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper1) {
     auto xBuffer = new float[3]{1.f, 2.f, 3.f};
-    auto xShape = new Nd4jLong[8] {2, 1, 3, 1, 1, 0, 1, 99};
+    auto xShape = new Nd4jLong[8] {2, 1, 3, 1, 1, 8192, 1, 99};
     auto x = new NDArray(xBuffer, xShape);
 
     auto yBuffer = new float[3]{2.f, 4.f, 6.f};
-    auto yShape = new Nd4jLong[8] {2, 1, 3, 1, 1, 0, 1, 99};
+    auto yShape = new Nd4jLong[8] {2, 1, 3, 1, 1, 8192, 1, 99};
     auto y = new NDArray(yBuffer, yShape);
 
     auto z = MmulHelper::mmul(x, y);
@@ -818,7 +814,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul1) {
     auto x = NDArrayFactory::create<float>('c', {6, 3});
     auto y = NDArrayFactory::create<float>('c', {3, 6});
 
-    Nd4jLong _expS[] = {2, 3, 3, 1, 3, 0, 1, 102};
+    Nd4jLong _expS[] = {2, 3, 3, 1, 3, 8192, 1, 102};
     float _expB[] = {231.0, 252.0, 273.0, 537.0, 594.0, 651.0, 843.0, 936.0, 1029.0};
     NDArray exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
@@ -844,7 +840,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul2) {
     auto x = NDArrayFactory::create<float>('c', {6, 3});
     auto y = NDArrayFactory::create<float>('c', {3, 6});
 
-    Nd4jLong _expS[] = {2, 3, 3, 1, 3, 0, 1, 102};
+    Nd4jLong _expS[] = {2, 3, 3, 1, 3, 8192, 1, 102};
     float _expB[] = {231.0, 252.0, 273.0, 537.0, 594.0, 651.0, 843.0, 936.0, 1029.0};
     NDArray exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
@@ -876,7 +872,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul3) {
     auto x = NDArrayFactory::create<float>('c', {2, 2, 2, 3, 2, 2});
     auto y = NDArrayFactory::create<float>('c', {2, 3, 2 ,2});
 
-    Nd4jLong _expS[] = {2, 8, 2, 1, 8, 0, 1, 102};
+    Nd4jLong _expS[] = {2, 8, 2, 1, 8, 8192, 1, 102};
     float _expB[] = {1624.0, 1858.0, 2092.0, 2326.0, 5368.0, 5602.0, 5836.0, 6070.0, 4504.0, 5170.0, 5836.0, 6502.0, 15160.0, 15826.0, 16492.0, 17158.0};
     NDArray exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
@@ -905,7 +901,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul4) {
     auto x = NDArrayFactory::create<float>('c', {2, 2, 2, 3, 2, 2});
     auto y = NDArrayFactory::create<float>('c', {2, 3, 2 ,2});
 
-    Nd4jLong _expS[] = {2, 8, 2, 1, 8, 0, 1, 102};
+    Nd4jLong _expS[] = {2, 8, 2, 1, 8, 8192, 1, 102};
     float _expB[] = {1624.0, 1858.0, 2092.0, 2326.0, 5368.0, 5602.0, 5836.0, 6070.0, 4504.0, 5170.0, 5836.0, 6502.0, 15160.0, 15826.0, 16492.0, 17158.0};
     NDArray exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
@@ -937,12 +933,12 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul4) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper2) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
-    auto xShape = new Nd4jLong[8] {2, 5, 3, 3, 1, 0, 1, 99};
+    auto xShape = new Nd4jLong[8] {2, 5, 3, 3, 1, 8192, 1, 99};
     auto x = new NDArray(xBuffer, xShape);
     x->triggerAllocationFlag(true, true);
 
     auto yBuffer = new float[3]{2.f, 4.f, 6.f};
-    auto yShape = new Nd4jLong[8] {2, 3, 1, 1, 1, 0, 1, 99};
+    auto yShape = new Nd4jLong[8] {2, 3, 1, 1, 1, 8192, 1, 99};
     auto y = new NDArray(yBuffer, yShape);
     y->triggerAllocationFlag(true, true);
 
@@ -969,11 +965,11 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper3) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
-    auto xShape = new Nd4jLong[8] {2, 5, 3, 1, 5, 0, 1, 102};
+    auto xShape = new Nd4jLong[8] {2, 5, 3, 1, 5, 8192, 1, 102};
     auto x = new NDArray(xBuffer, xShape);
 
     auto yBuffer = new float[3]{2.f, 4.f, 6.f};
-    auto yShape = new Nd4jLong[8] {2, 3, 1, 1, 1, 0, 1, 99};
+    auto yShape = new Nd4jLong[8] {2, 3, 1, 1, 1, 8192, 1, 99};
     auto y = new NDArray(yBuffer, yShape);
 
     auto z = NDArrayFactory::create_<float>('f', {5, 1});
@@ -1004,11 +1000,11 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper4) {
     auto xBuffer = new float[6]{1, 2, 3, 4, 5, 6};
-    auto xShape = new Nd4jLong[8] {2, 3, 2, 2, 1, 0, 1, 99};
+    auto xShape = new Nd4jLong[8] {2, 3, 2, 2, 1, 8192, 1, 99};
     auto x = new NDArray(xBuffer, xShape);
 
     auto yBuffer = new float[6]{7, 8, 9, 0, 1, 2};
-    auto yShape = new Nd4jLong[8] {2, 2, 3, 3, 1, 0, 1, 99};
+    auto yShape = new Nd4jLong[8] {2, 2, 3, 3, 1, 8192, 1, 99};
     auto y = new NDArray(yBuffer, yShape);
 
     auto z = NDArrayFactory::create_<float>('f', {3, 3});
@@ -1034,11 +1030,11 @@ TEST_F(NDArrayTest, TestMmulHelper4) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper5) {
     auto xBuffer = new float[6]{1, 2, 3, 4, 5, 6};
-    auto xShape = new Nd4jLong[8] {2, 3, 2, 1, 3, 0, 1, 102};
+    auto xShape = new Nd4jLong[8] {2, 3, 2, 1, 3, 8192, 1, 102};
     auto x = new NDArray(xBuffer, xShape);
 
     auto yBuffer = new float[6]{7, 8, 9, 0, 1, 2};
-    auto yShape = new Nd4jLong[8] {2, 2, 3, 3, 1, 0, 1, 99};
+    auto yShape = new Nd4jLong[8] {2, 2, 3, 3, 1, 8192, 1, 99};
     auto y = new NDArray(yBuffer, yShape);
 
     auto z = NDArrayFactory::create_<float>('f', {3, 3});
@@ -1064,11 +1060,11 @@ TEST_F(NDArrayTest, TestMmulHelper5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper6) {
     auto xBuffer = new float[6]{1, 2, 3, 4, 5, 6};
-    auto xShape = new Nd4jLong[8] {2, 3, 2, 1, 3, 0, 1, 102};
+    auto xShape = new Nd4jLong[8] {2, 3, 2, 1, 3, 8192, 1, 102};
     auto x = new NDArray(xBuffer, xShape);
 
     auto yBuffer = new float[6]{7, 8, 9, 0, 1, 2};
-    auto yShape = new Nd4jLong[8] {2, 2, 3, 1, 2, 0, 1, 102};
+    auto yShape = new Nd4jLong[8] {2, 2, 3, 1, 2, 8192, 1, 102};
     auto y = new NDArray(yBuffer, yShape);
 
     auto z = NDArrayFactory::create_<float>('f', {3, 3});
@@ -1095,11 +1091,11 @@ TEST_F(NDArrayTest, TestMmulHelper6) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper7) {
     auto xBuffer = new float[15]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-    auto xShape = new Nd4jLong[8] {2, 5, 3, 1, 5, 0, 1, 102};
+    auto xShape = new Nd4jLong[8] {2, 5, 3, 1, 5, 8192, 1, 102};
     auto x = new NDArray(xBuffer, xShape);
 
     auto yBuffer = new float[5]{2, 4, 6, 8, 10};
-    auto yShape = new Nd4jLong[8] {2, 1, 5, 1, 1, 0, 1, 99};
+    auto yShape = new Nd4jLong[8] {2, 1, 5, 1, 1, 8192, 1, 99};
     auto y = new NDArray(yBuffer, yShape);
 
     auto z = NDArrayFactory::create_<float>('f', {1, 3});
@@ -1126,7 +1122,7 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
 
 
 TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
-    Nd4jLong _expS[] = {3, 2, 3, 3, 9, 3, 1, 0, 1, 99};
+    Nd4jLong _expS[] = {3, 2, 3, 3, 9, 3, 1, 8192, 1, 99};
     float _expB[] = {70.f, 80.f, 90.f, 158.f, 184.f, 210.f, 246.f, 288.f, 330.f, 1030.f, 1088.f, 1146.f, 1310.f, 1384.f, 1458.f, 1590.f, 1680.f, 1770.f};
 
     auto a = NDArrayFactory::create<float>('c', {2, 3, 4});
@@ -1153,7 +1149,7 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
 
 
 TEST_F(NDArrayTest, TestMmulHelper_ND_2) {
-    Nd4jLong _expS[] = {3, 2, 72, 2, 144, 2, 1, 0, 1, 99};
+    Nd4jLong _expS[] = {3, 2, 72, 2, 144, 2, 1, 8192, 1, 99};
     float _expB[] = {1.07250000e+04,   1.10500000e+04,   2.63500000e+04,   2.73000000e+04,  4.19750000e+04,   4.35500000e+04,   5.76000000e+04,   5.98000000e+04,    7.32250000e+04,   7.60500000e+04,   8.88500000e+04,   9.23000000e+04,    1.04475000e+05,   1.08550000e+05,   1.20100000e+05,   1.24800000e+05,    1.35725000e+05,   1.41050000e+05,   1.51350000e+05,   1.57300000e+05,    1.66975000e+05,   1.73550000e+05,   1.82600000e+05,   1.89800000e+05,    1.98225000e+05,   2.06050000e+05,   2.13850000e+05,   2.22300000e+05,    2.29475000e+05,   2.38550000e+05,   2.45100000e+05,   2.54800000e+05,    2.60725000e+05,   2.71050000e+05,   2.76350000e+05,   2.87300000e+05,    2.91975000e+05,   3.03550000e+05,   3.07600000e+05,   3.19800000e+05,    3.23225000e+05,   3.36050000e+05,   3.38850000e+05,   3.52300000e+05,    3.54475000e+05,   3.68550000e+05,   3.70100000e+05,   3.84800000e+05,    3.85725000e+05,   4.01050000e+05,   4.01350000e+05,   4.17300000e+05,    4.16975000e+05,   4.33550000e+05,   4.32600000e+05,   4.49800000e+05,    4.48225000e+05,   4.66050000e+05,   4.63850000e+05,   4.82300000e+05,    4.79475000e+05,   4.98550000e+05,   4.95100000e+05,   5.14800000e+05,    5.10725000e+05,   5.31050000e+05,   5.26350000e+05,   5.47300000e+05,    5.41975000e+05,   5.63550000e+05,   5.57600000e+05,   5.79800000e+05,    5.73225000e+05,   5.96050000e+05,   5.88850000e+05,   6.12300000e+05,    6.04475000e+05,   6.28550000e+05,   6.20100000e+05,   6.44800000e+05,    6.35725000e+05,   6.61050000e+05,   6.51350000e+05,   6.77300000e+05,    6.66975000e+05,   6.93550000e+05,   6.82600000e+05,   7.09800000e+05,    6.98225000e+05,   7.26050000e+05,   7.13850000e+05,   7.42300000e+05,    7.29475000e+05,   7.58550000e+05,   7.45100000e+05,   7.74800000e+05,    7.60725000e+05,   7.91050000e+05,   7.76350000e+05,   8.07300000e+05,    7.91975000e+05,   8.23550000e+05,   8.07600000e+05,   8.39800000e+05,    8.23225000e+05,   8.56050000e+05,   8.38850000e+05,   8.72300000e+05,    8.54475000e+05,   8.88550000e+05,   8.70100000e+05,   9.04800000e+05,   8.85725000e+05,   9.21050000e+05,   9.01350000e+05,   9.37300000e+05, 9.16975000e+05,   9.53550000e+05,   9.32600000e+05,   9.69800000e+05, 9.48225000e+05,   9.86050000e+05,   9.63850000e+05,   1.00230000e+06, 9.79475000e+05,   1.01855000e+06,   9.95100000e+05,   1.03480000e+06, 1.01072500e+06,   1.05105000e+06,   1.02635000e+06,   1.06730000e+06, 1.04197500e+06,   1.08355000e+06,   1.05760000e+06,   1.09980000e+06, 1.07322500e+06,   1.11605000e+06,   1.08885000e+06,   1.13230000e+06, 1.10447500e+06,   1.14855000e+06,   1.12010000e+06,   1.16480000e+06, 1.13572500e+06,   1.18105000e+06,   1.15135000e+06,   1.19730000e+06, 1.16697500e+06,   1.21355000e+06,   3.54260000e+06,   3.58980000e+06, 3.58947500e+06,   3.63730000e+06,   3.63635000e+06,   3.68480000e+06, 3.68322500e+06,   3.73230000e+06,   3.73010000e+06,   3.77980000e+06,   3.77697500e+06,   3.82730000e+06,   3.82385000e+06,   3.87480000e+06, 3.87072500e+06,   3.92230000e+06,   3.91760000e+06,   3.96980000e+06,  3.96447500e+06,   4.01730000e+06,   4.01135000e+06,   4.06480000e+06, 4.05822500e+06,   4.11230000e+06,   4.10510000e+06,   4.15980000e+06,  4.15197500e+06,   4.20730000e+06,   4.19885000e+06,   4.25480000e+06, 4.24572500e+06,   4.30230000e+06,   4.29260000e+06,   4.34980000e+06,  4.33947500e+06,   4.39730000e+06,   4.38635000e+06,   4.44480000e+06, 4.43322500e+06,   4.49230000e+06,   4.48010000e+06,   4.53980000e+06, 4.52697500e+06,   4.58730000e+06,   4.57385000e+06,   4.63480000e+06,  4.62072500e+06,   4.68230000e+06,   4.66760000e+06,   4.72980000e+06,  4.71447500e+06,   4.77730000e+06,   4.76135000e+06,   4.82480000e+06,  4.80822500e+06,   4.87230000e+06,   4.85510000e+06,   4.91980000e+06,  4.90197500e+06,   4.96730000e+06,   4.94885000e+06,   5.01480000e+06,   4.99572500e+06,   5.06230000e+06,   5.04260000e+06,   5.10980000e+06,   5.08947500e+06,   5.15730000e+06,   5.13635000e+06,   5.20480000e+06,   5.18322500e+06,   5.25230000e+06,   5.23010000e+06,   5.29980000e+06,  5.27697500e+06,   5.34730000e+06,   5.32385000e+06,   5.39480000e+06,       5.37072500e+06,   5.44230000e+06,   5.41760000e+06,   5.48980000e+06,       5.46447500e+06,   5.53730000e+06,   5.51135000e+06,   5.58480000e+06,       5.55822500e+06,   5.63230000e+06,   5.60510000e+06,   5.67980000e+06,       5.65197500e+06,   5.72730000e+06,   5.69885000e+06,   5.77480000e+06,       5.74572500e+06,   5.82230000e+06,   5.79260000e+06,   5.86980000e+06,       5.83947500e+06,   5.91730000e+06,   5.88635000e+06,   5.96480000e+06,       5.93322500e+06,   6.01230000e+06,   5.98010000e+06,   6.05980000e+06,       6.02697500e+06,   6.10730000e+06,   6.07385000e+06,   6.15480000e+06,       6.12072500e+06,   6.20230000e+06,   6.16760000e+06,   6.24980000e+06,       6.21447500e+06,   6.29730000e+06,   6.26135000e+06,   6.34480000e+06,       6.30822500e+06,   6.39230000e+06,   6.35510000e+06,   6.43980000e+06,       6.40197500e+06,   6.48730000e+06,   6.44885000e+06,   6.53480000e+06,       6.49572500e+06,   6.58230000e+06,   6.54260000e+06,   6.62980000e+06,       6.58947500e+06,   6.67730000e+06,   6.63635000e+06,   6.72480000e+06,       6.68322500e+06,   6.77230000e+06,   6.73010000e+06,   6.81980000e+06,       6.77697500e+06,   6.86730000e+06,   6.82385000e+06,   6.91480000e+06,       6.87072500e+06,   6.96230000e+06,   6.91760000e+06,   7.00980000e+06,       6.96447500e+06,   7.05730000e+06,   7.01135000e+06,   7.10480000e+06,       1.17619750e+07,   1.18560500e+07,   1.18401000e+07,   1.19348000e+07,       1.19182250e+07,   1.20135500e+07,   1.19963500e+07,   1.20923000e+07,       1.20744750e+07,   1.21710500e+07,   1.21526000e+07,   1.22498000e+07,       1.22307250e+07,   1.23285500e+07,   1.23088500e+07,   1.24073000e+07,       1.23869750e+07,   1.24860500e+07,   1.24651000e+07,   1.25648000e+07,       1.25432250e+07,   1.26435500e+07,   1.26213500e+07,   1.27223000e+07,       1.26994750e+07,   1.28010500e+07,   1.27776000e+07,   1.28798000e+07,       1.28557250e+07,   1.29585500e+07,   1.29338500e+07,   1.30373000e+07,       1.30119750e+07,   1.31160500e+07,   1.30901000e+07,   1.31948000e+07,       1.31682250e+07,   1.32735500e+07,   1.32463500e+07,   1.33523000e+07,       1.33244750e+07,   1.34310500e+07,   1.34026000e+07,   1.35098000e+07,       1.34807250e+07,   1.35885500e+07,   1.35588500e+07,   1.36673000e+07,       1.36369750e+07,   1.37460500e+07,   1.37151000e+07,   1.38248000e+07,       1.37932250e+07,   1.39035500e+07,   1.38713500e+07,   1.39823000e+07,       1.39494750e+07,   1.40610500e+07,   1.40276000e+07,   1.41398000e+07,       1.41057250e+07,   1.42185500e+07,   1.41838500e+07,   1.42973000e+07,       1.42619750e+07,   1.43760500e+07,   1.43401000e+07,   1.44548000e+07,       1.44182250e+07,   1.45335500e+07,   1.44963500e+07,   1.46123000e+07,       1.45744750e+07,   1.46910500e+07,   1.46526000e+07,   1.47698000e+07,       1.47307250e+07,   1.48485500e+07,   1.48088500e+07,   1.49273000e+07,       1.48869750e+07,   1.50060500e+07,   1.49651000e+07,   1.50848000e+07,       1.50432250e+07,   1.51635500e+07,   1.51213500e+07,   1.52423000e+07,       1.51994750e+07,   1.53210500e+07,   1.52776000e+07,   1.53998000e+07,       1.53557250e+07,   1.54785500e+07,   1.54338500e+07,   1.55573000e+07,       1.55119750e+07,   1.56360500e+07,   1.55901000e+07,   1.57148000e+07,       1.56682250e+07,   1.57935500e+07,   1.57463500e+07,   1.58723000e+07,       1.58244750e+07,   1.59510500e+07,   1.59026000e+07,   1.60298000e+07,       1.59807250e+07,   1.61085500e+07,   1.60588500e+07,   1.61873000e+07,       1.61369750e+07,   1.62660500e+07,   1.62151000e+07,   1.63448000e+07,       1.62932250e+07,   1.64235500e+07,   1.63713500e+07,   1.65023000e+07,       1.64494750e+07,   1.65810500e+07,   1.65276000e+07,   1.66598000e+07,       1.66057250e+07,   1.67385500e+07,   1.66838500e+07,   1.68173000e+07,       1.67619750e+07,   1.68960500e+07,   1.68401000e+07,   1.69748000e+07,       1.69182250e+07,   1.70535500e+07,   1.69963500e+07,   1.71323000e+07,       1.70744750e+07,   1.72110500e+07,   1.71526000e+07,   1.72898000e+07,       1.72307250e+07,   1.73685500e+07,   1.73088500e+07,   1.74473000e+07,       1.73869750e+07,   1.75260500e+07,   1.74651000e+07,   1.76048000e+07,       1.75432250e+07,   1.76835500e+07,   2.46688500e+07,   2.48098000e+07,       2.47782250e+07,   2.49198000e+07,   2.48876000e+07,   2.50298000e+07,       2.49969750e+07,   2.51398000e+07,   2.51063500e+07,   2.52498000e+07,       2.52157250e+07,   2.53598000e+07,   2.53251000e+07,   2.54698000e+07,       2.54344750e+07,   2.55798000e+07,   2.55438500e+07,   2.56898000e+07,       2.56532250e+07,   2.57998000e+07,   2.57626000e+07,   2.59098000e+07,       2.58719750e+07,   2.60198000e+07,   2.59813500e+07,   2.61298000e+07,       2.60907250e+07,   2.62398000e+07,   2.62001000e+07,   2.63498000e+07,       2.63094750e+07,   2.64598000e+07,   2.64188500e+07,   2.65698000e+07,       2.65282250e+07,   2.66798000e+07,   2.66376000e+07,   2.67898000e+07,       2.67469750e+07,   2.68998000e+07,   2.68563500e+07,   2.70098000e+07,       2.69657250e+07,   2.71198000e+07,   2.70751000e+07,   2.72298000e+07,       2.71844750e+07,   2.73398000e+07,   2.72938500e+07,   2.74498000e+07,       2.74032250e+07,   2.75598000e+07,   2.75126000e+07,   2.76698000e+07,       2.76219750e+07,   2.77798000e+07,   2.77313500e+07,   2.78898000e+07,       2.78407250e+07,   2.79998000e+07,   2.79501000e+07,   2.81098000e+07,       2.80594750e+07,   2.82198000e+07,   2.81688500e+07,   2.83298000e+07,       2.82782250e+07,   2.84398000e+07,   2.83876000e+07,   2.85498000e+07,       2.84969750e+07,   2.86598000e+07,   2.86063500e+07,   2.87698000e+07,       2.87157250e+07,   2.88798000e+07,   2.88251000e+07,   2.89898000e+07,       2.89344750e+07,   2.90998000e+07,   2.90438500e+07,   2.92098000e+07,       2.91532250e+07,   2.93198000e+07,   2.92626000e+07,   2.94298000e+07,       2.93719750e+07,   2.95398000e+07,   2.94813500e+07,   2.96498000e+07,       2.95907250e+07,   2.97598000e+07,   2.97001000e+07,   2.98698000e+07,       2.98094750e+07,   2.99798000e+07,   2.99188500e+07,   3.00898000e+07,    3.00282250e+07,   3.01998000e+07,   3.01376000e+07,   3.03098000e+07,    3.02469750e+07,   3.04198000e+07,   3.03563500e+07,   3.05298000e+07,  3.04657250e+07,   3.06398000e+07,   3.05751000e+07,   3.07498000e+07, 3.06844750e+07,   3.08598000e+07,   3.07938500e+07,   3.09698000e+07,    3.09032250e+07,   3.10798000e+07,   3.10126000e+07,   3.11898000e+07,    3.11219750e+07,   3.12998000e+07,   3.12313500e+07,   3.14098000e+07,    3.13407250e+07,   3.15198000e+07,   3.14501000e+07,   3.16298000e+07,    3.15594750e+07,   3.17398000e+07,   3.16688500e+07,   3.18498000e+07,    3.17782250e+07,   3.19598000e+07,   3.18876000e+07,   3.20698000e+07,    3.19969750e+07,   3.21798000e+07,   3.21063500e+07,   3.22898000e+07,    3.22157250e+07,   3.23998000e+07,   3.23251000e+07,   3.25098000e+07,    3.24344750e+07,   3.26198000e+07,   3.25438500e+07,   3.27298000e+07, 3.26532250e+07,   3.28398000e+07,   3.27626000e+07,   3.29498000e+07};
 
     auto a = NDArrayFactory::create<float>('c', {2, 72, 25});
@@ -1191,8 +1187,8 @@ TEST_F(NDArrayTest, TestNegSize1) {
 // not-in-place
 TEST_F(NDArrayTest, Permute1) {  
     
-    const Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-	const Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
+    const Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
+	const Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
     NDArray arr1(shape1,true);
@@ -1208,8 +1204,8 @@ TEST_F(NDArrayTest, Permute1) {
 // in-place
 TEST_F(NDArrayTest, Permute2) {
     
-    const Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-	const Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
+    const Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
+	const Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
     NDArray arr1(shape1,true);
@@ -1222,9 +1218,9 @@ TEST_F(NDArrayTest, Permute2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Broadcast1) {
     
-    const Nd4jLong shape1[10] = {3, 5, 1, 10, 10, 10, 1, 0, 1, 99};
-	const Nd4jLong shape2[8]  = {2,    7, 10, 10, 1, 0, 1, 99};
-	const Nd4jLong shape3[10] = {3, 5, 7, 10, 70, 10, 1, 0, 1, 99};    
+    const Nd4jLong shape1[10] = {3, 5, 1, 10, 10, 10, 1, 8192, 1, 99};
+	const Nd4jLong shape2[8]  = {2,    7, 10, 10, 1, 8192, 1, 99};
+	const Nd4jLong shape3[10] = {3, 5, 7, 10, 70, 10, 1, 8192, 1, 99};
     
 	NDArray arr1(shape1);
     NDArray arr2(shape2);
@@ -1252,9 +1248,9 @@ TEST_F(NDArrayTest, BroadcastOpsTest1) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);
     float *brow = new float[5]{1,2,3,4,5};
-    auto bshape = new Nd4jLong[8]{2, 1, 5, 1, 1, 0, 1, 99};
+    auto bshape = new Nd4jLong[8]{2, 1, 5, 1, 1, 8192, 1, 99};
     float *ebuf = new float[25] {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
-    auto eshape = new Nd4jLong[8] {2, 5, 5, 5, 1, 0, 1, 99};
+    auto eshape = new Nd4jLong[8] {2, 5, 5, 5, 1, 8192, 1, 99};
     NDArray expRow(brow, bshape);
     NDArray exp(ebuf, eshape);
 
@@ -1338,8 +1334,7 @@ TEST_F(NDArrayTest, TestIndexing1) {
 
 TEST_F(NDArrayTest, TestIndexing2) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 5, 4, 4});
-    for (int e = 0; e < matrix.lengthOf(); e++)
-        matrix.p(e, (float) e);
+    matrix.linspace(0);
 
     IndicesList idx({ NDIndex::all(), NDIndex::interval(2,4), NDIndex::all(),  NDIndex::all()});
     auto sub = matrix.subarray(idx);
@@ -1351,7 +1346,6 @@ TEST_F(NDArrayTest, TestIndexing2) {
     ASSERT_EQ(4, sub->sizeAt(2));
     ASSERT_EQ(4, sub->sizeAt(3));
 
-
     ASSERT_EQ(64, sub->lengthOf());
     ASSERT_NEAR(32, sub->e<float>(0), 1e-5);
     ASSERT_NEAR(112, sub->e<float>(32), 1e-5);
@@ -1361,8 +1355,7 @@ TEST_F(NDArrayTest, TestIndexing2) {
 
 TEST_F(NDArrayTest, TestIndexing3) {
     auto matrix = NDArrayFactory::create<float>('c', {5, 5});
-    for (int e = 0; e < matrix.lengthOf(); e++)
-        matrix.p(e, (float) e);
+    matrix.linspace(0);
 
     auto sub = matrix({2,4, 0,0});
 
@@ -1375,8 +1368,7 @@ TEST_F(NDArrayTest, TestIndexing3) {
 
 TEST_F(NDArrayTest, TestIndexing4) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 5, 4, 4});
-    for (int e = 0; e < matrix.lengthOf(); e++)
-        matrix.p(e, (float) e);
+    matrix.linspace(0);
 
     auto sub = matrix({0,0, 2,4, 0,0, 0,0});    
 
@@ -1538,7 +1530,7 @@ TEST_F(NDArrayTest, TestStdDev2) {
 }
 
 TEST_F(NDArrayTest, TestStdDev3) {
-    auto array = NDArrayFactory::create<float>('c', {1, 5000000});
+    auto array = NDArrayFactory::create<float>('c', {1, 50000});
     for (int e = 0; e < array.lengthOf(); e++)
         array.p(e, 1.f + (e%2?0.5f:-0.5f));
 
@@ -1548,7 +1540,7 @@ TEST_F(NDArrayTest, TestStdDev3) {
 }
 
 TEST_F(NDArrayTest, TestStdDev4) {
-    auto array = NDArrayFactory::create<float>('c', {1, 2000000});
+    auto array = NDArrayFactory::create<float>('c', {1, 20000});
     float const ethalon = 1 / 3.f;
     float x = ethalon;
     int total = array.lengthOf();
@@ -1569,9 +1561,10 @@ TEST_F(NDArrayTest, TestStdDev4) {
     }
     //y /= total;
     M2 /= total;
-    
+
     y = M2;
-    auto std = array.varianceNumber(variance::SummaryStatsStandardDeviation, false).e<float>(0);
+    auto a = array.varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    auto std = a.e<float>(0);
 //    float bY = array.varianceNumber();
     float bY = 0.3333333f;
     // nd4j_printf("Variance is %f, res is %f, internal is %f\n, deviance is %f(%f)\n", std, x, bY, y, nd4j::math::nd4j_sqrt<double>(M2));
@@ -1579,8 +1572,8 @@ TEST_F(NDArrayTest, TestStdDev4) {
 }
 
 TEST_F(NDArrayTest, TestStdDev5) {
-    auto array = NDArrayFactory::create<float>('c', {1, 1000000}); //00000});
-    auto arrayD = NDArrayFactory::create<double>('c', {1, 1000000}); //00000});
+    auto array = NDArrayFactory::create<float>('c', {1, 10000}); //00000});
+    auto arrayD = NDArrayFactory::create<double>('c', {1, 10000}); //00000});
     for (int e = 0; e < array.lengthOf(); e++) {
         array.p(e, 1.f + (e%2?1/5.f:-1/5.f));
         arrayD.p(e, 1.0 + (e%2?1/5.:-1/5.));
@@ -1595,13 +1588,11 @@ TEST_F(NDArrayTest, TestStdDev5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestApplyIndexReduce1) {
     float xBuff[] = {1, 5, 2, 12, 9, 3, 10, 7, 4, 11, 6, 8};    
-    Nd4jLong xShapeInfo[] = {3, 2, 3, 2, 6, 2, 1, 0, 1, 99};        
-    float expBuff[] = {3,1}; 
-    Nd4jLong expShapeInfo[] = {1, 2, 1, 0, 1, 99};
+    Nd4jLong xShapeInfo[] = {3, 2, 3, 2, 6, 2, 1, 8192, 1, 99};
     std::vector<int> dim = {0,1};
     
     NDArray x(xBuff, xShapeInfo);
-    NDArray exp(expBuff, expShapeInfo);
+    auto exp = NDArrayFactory::create<Nd4jLong>({3, 1});
     
     auto result = x.applyIndexReduce(indexreduce::IndexMax, dim);
     ASSERT_TRUE(exp.isSameShapeStrict(result));
@@ -1614,7 +1605,7 @@ TEST_F(NDArrayTest, TestApplyIndexReduce1) {
 TEST_F(NDArrayTest, applyReduce3Dot) {
     float xBuff[] = {1, 2, 3, 4, 5, 6};    
     float yBuff[] = {2, 2, 2, 2, 2, 2};    
-    Nd4jLong xShapeInfo[] = {2, 2, 3, 3, 1, 0, 1, 99};        
+    Nd4jLong xShapeInfo[] = {2, 2, 3, 3, 1, 8192, 1, 99};
         
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, xShapeInfo);
@@ -1631,8 +1622,8 @@ TEST_F(NDArrayTest, applyAllReduce3EuclideanDistance) {
     float xBuff[] =   {1, 2, 3, 4, 5, 6};    
     float yBuff[] =   {2, 2, 2, 2, 2, 2};
     float expBuff[] = {1.414214, 1.414214, 5.385165, 5.385165};
-    Nd4jLong expShapeInfo[] = {2, 2, 2, 2, 1, 0, 1, 99};        
-    Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 0, 1, 99};        
+    Nd4jLong expShapeInfo[] = {2, 2, 2, 2, 1, 8192, 1, 99};
+    Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 8192, 1, 99};
         
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, xShapeInfo);
@@ -1651,8 +1642,8 @@ TEST_F(NDArrayTest, applyReduce3EuclideanDistance) {
     float xBuff[] =   {1, 2, 3, 4, 5, 6};    
     float yBuff[] =   {2, 2, 2, 2, 2, 2};
     float expBuff[] = {1.414214, 1.414214, 5.385165, 5.385165};
-    Nd4jLong expShapeInfo[] = {2, 2, 2, 2, 1, 0, 1, 99};        
-    Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 0, 1, 99};        
+    Nd4jLong expShapeInfo[] = {2, 2, 2, 2, 1, 8192, 1, 99};
+    Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 8192, 1, 99};
         
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, xShapeInfo);
@@ -1671,9 +1662,9 @@ TEST_F(NDArrayTest, applyReduce3EuclideanDistance) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestVarianceAlongDimension1) {
     float xBuff[] =   {1, 2, 3, 4, 5, 6};        
-    float expBuff[] = {0.666667, 0.666667};
-    Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 0, 1, 99};        
-    Nd4jLong expShapeInfo[] = {1, 2, 1, 0, 1, 99};        
+    float expBuff[] = {0.816497, 0.816497};
+    Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 8192, 1, 99};
+    Nd4jLong expShapeInfo[] = {1, 2, 1, 8192, 1, 99};
     
         
     NDArray x(xBuff, xShapeInfo);
@@ -1692,8 +1683,8 @@ TEST_F(NDArrayTest, TestSubRowVector1) {
     float xBuff[] = {6, 7, 8, 9};
     float yBuff[] = {1, 2};
     float expBuff[] =  {5, 5, 7, 7};
-    Nd4jLong xShapeInfo[] = {2, 2, 2, 2, 1, 0, 1, 99};        
-    Nd4jLong yShapeInfo[] = {2, 1, 2, 2, 1, 0, 1, 99};        
+    Nd4jLong xShapeInfo[] = {2, 2, 2, 2, 1, 8192, 1, 99};
+    Nd4jLong yShapeInfo[] = {2, 1, 2, 2, 1, 8192, 1, 99};
     
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, yShapeInfo);
@@ -1711,8 +1702,8 @@ TEST_F(NDArrayTest, TestDivRowVector1) {
     float xBuff[] = {6, 8, 10, 12};
     float yBuff[] = {2, 4};
     float expBuff[] =  {3, 2, 5, 3};
-    Nd4jLong xShapeInfo[] = {2, 2, 2, 2, 1, 0, 1, 99};        
-    Nd4jLong yShapeInfo[] = {2, 1, 2, 2, 1, 0, 1, 99};        
+    Nd4jLong xShapeInfo[] = {2, 2, 2, 2, 1, 8192, 1, 99};
+    Nd4jLong yShapeInfo[] = {2, 1, 2, 2, 1, 8192, 1, 99};
     
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, yShapeInfo);
@@ -1730,8 +1721,8 @@ TEST_F(NDArrayTest, TestMulRowVector1) {
     float xBuff[] = {6, 8, 10, 12};
     float yBuff[] = {2, 4};
     float expBuff[] =  {12, 32, 20, 48};
-    Nd4jLong xShapeInfo[] = {2, 2, 2, 2, 1, 0, 1, 99};        
-    Nd4jLong yShapeInfo[] = {2, 1, 2, 2, 1, 0, 1, 99};        
+    Nd4jLong xShapeInfo[] = {2, 2, 2, 2, 1, 8192, 1, 99};
+    Nd4jLong yShapeInfo[] = {2, 1, 2, 2, 1, 8192, 1, 99};
     
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, yShapeInfo);
@@ -1767,7 +1758,7 @@ TEST_F(NDArrayTest, TestTensorDotAgain_1) {
      */
     double _expB[] = {96.0,  116.0,  136.0,  156.0,  256.0,  276.0,  296.0,  316.0,  102.0,  124.0,  146.0,  168.0,    278.0,  300.0,  322.0,  344.0,  108.0,  132.0,  156.0,  180.0,  300.0,  324.0,  348.0,  372.0,    114.0,  140.0,  166.0,  192.0,  322.0,  348.0,  374.0,  400.0,  120.0,  148.0,  176.0,  204.0,    344.0,  372.0,  400.0,  428.0,  126.0,  156.0,  186.0,  216.0,  366.0,  396.0,  426.0,  456.0,    132.0,  164.0,  196.0,  228.0,  388.0,  420.0,  452.0,  484.0,  138.0,  172.0,  206.0,  240.0,    410.0,  444.0,  478.0,  512.0,  144.0,  180.0,  216.0,  252.0,  432.0,  468.0,  504.0,  540.0,    150.0,  188.0,  226.0,  264.0,  454.0,  492.0,  530.0,  568.0,  156.0,  196.0,  236.0,  276.0,    476.0,  516.0,  556.0,  596.0,  162.0,  204.0,  246.0,  288.0,  498.0,  540.0,  582.0,  624.0,    168.0,  212.0,  256.0,  300.0,  520.0,  564.0,  608.0,  652.0,  174.0,  220.0,  266.0,  312.0,    542.0,  588.0,  634.0,  680.0,  180.0,  228.0,  276.0,  324.0,  564.0,  612.0,  660.0,  708.0,    186.0,  236.0,  286.0,  336.0,  586.0,  636.0,  686.0,  736.0,  192.0,  244.0,  296.0,  348.0,    608.0,  660.0,  712.0,  764.0,  198.0,  252.0,  306.0,  360.0,  630.0,  684.0,  738.0,  792.0};
 
-    Nd4jLong _expS[] = {6, 2, 3, 3, 2, 2, 2, 72, 24, 8, 4, 2, 1, 0, 1, 99};
+    Nd4jLong _expS[] = {6, 2, 3, 3, 2, 2, 2, 72, 24, 8, 4, 2, 1, 16384, 1, 99};
     NDArray exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
 
@@ -1792,7 +1783,7 @@ TEST_F(NDArrayTest, TestTensorDotAgain_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestBroadcast_1) {
     double _expB[] = {1.000000, 1.000000, 1.000000, 1.000000, 2.000000, 2.000000, 2.000000, 2.000000, 3.000000, 3.000000, 3.000000, 3.000000, 1.000000, 1.000000, 1.000000, 1.000000, 2.000000, 2.000000, 2.000000, 2.000000, 3.000000, 3.000000, 3.000000, 3.000000};
-    Nd4jLong _expS[] = {4, 2, 3, 2, 2, 12, 4, 2, 1, 0, 1, 99};
+    Nd4jLong _expS[] = {4, 2, 3, 2, 2, 12, 4, 2, 1, 16384, 1, 99};
     NDArray exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
 
@@ -1837,7 +1828,7 @@ TEST_F(NDArrayTest, TestMMulMultiDim) {
     const int bS=2;
     const int K=3;
     const int N=4;
-    Nd4jLong expShape[] = {3, 2, 9, 4, 36, 4, 1, 0, 1, 99};
+    Nd4jLong expShape[] = {3, 2, 9, 4, 36, 4, 1, 16384, 1, 99};
     double expBuff[] = { 38,   44,   50,   56, 83,   98,  113,  128, 128,  152,  176,  200, 173,  206,  239,  272, 218,  260,  302,  344, 263,  314,  365,  416, 308,  368,  428,  488, 353,  422,  491,  560, 398,  476,  554,  632, 110,  116,  122,  128, 263,  278,  293,  308, 416,  440,  464,  488, 569,  602,  635,  668, 722,  764,  806,  848, 875,  926,  977, 1028, 1028, 1088, 1148, 1208, 1181, 1250, 1319, 1388, 1334, 1412, 1490, 1568};
 
     auto input   = NDArrayFactory::create<double>('c', {bS,  K, N});
@@ -1886,8 +1877,8 @@ TEST_F(NDArrayTest, TestMatmMul_Again_1) {
     a.linspace(1);
     b.linspace(1);
 
-    double _expB[] = {1.f,    2.f,    3.f,    4.f,    5.f,    2.f,    4.f,    6.f,    8.f,   10.f,    3.f,    6.f,    9.f,   12.f,   15.f,    4.f,    8.f,   12.f,   16.f,   20.f,   30.f,   35.f,   40.f,   45.f,    50.f,   36.f,   42.f,   48.f,   54.f,   60.f,   42.f,   49.f,   56.f,   63.f,   70.f,   48.f,    56.f,   64.f,   72.f,   80.f,   99.f,  108.f,  117.f,  126.f,  135.f,  110.f,  120.f,  130.f,    140.f,  150.f,  121.f,  132.f,  143.f,  154.f,  165.f,  132.f,  144.f,  156.f,  168.f,  180.f};
-    Nd4jLong _expS[] = {3, 3, 4, 5, 20, 5, 1, 0, 1, 99};
+    float _expB[] = {1.f,    2.f,    3.f,    4.f,    5.f,    2.f,    4.f,    6.f,    8.f,   10.f,    3.f,    6.f,    9.f,   12.f,   15.f,    4.f,    8.f,   12.f,   16.f,   20.f,   30.f,   35.f,   40.f,   45.f,    50.f,   36.f,   42.f,   48.f,   54.f,   60.f,   42.f,   49.f,   56.f,   63.f,   70.f,   48.f,    56.f,   64.f,   72.f,   80.f,   99.f,  108.f,  117.f,  126.f,  135.f,  110.f,  120.f,  130.f,    140.f,  150.f,  121.f,  132.f,  143.f,  154.f,  165.f,  132.f,  144.f,  156.f,  168.f,  180.f};
+    Nd4jLong _expS[] = {3, 3, 4, 5, 20, 5, 1, 8192, 1, 99};
     NDArray c(_expB, _expS);
     c.triggerAllocationFlag(false, false);
 
@@ -1908,7 +1899,7 @@ TEST_F(NDArrayTest, TestMatmMul_Again_2) {
     b.linspace(1);
 
     double _expB[] = {30.f,    70.f,   110.f,   150.f,   190.f,   590.f,   694.f,   798.f,   902.f,  1006.f};
-    Nd4jLong _expS[] = {3, 2, 5, 1, 5, 1, 1, 0, 1, 99};
+    Nd4jLong _expS[] = {3, 2, 5, 1, 5, 1, 1, 16384, 1, 99};
     NDArray c(_expB, _expS);
     c.triggerAllocationFlag(false, false);
 
