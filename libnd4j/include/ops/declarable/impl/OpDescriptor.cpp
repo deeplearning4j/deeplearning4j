@@ -50,6 +50,43 @@ namespace nd4j {
             _scalar = isScalar;
         }
 
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
+            _allowedIns = dtypes;
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
+            _allowedOuts = dtypes;
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(const nd4j::DataType dtype) {
+            _allowedIns.clear();
+            _allowedIns.emplace_back(dtype);
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const nd4j::DataType dtype) {
+            _allowedOuts.clear();
+            _allowedOuts.emplace_back(dtype);
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setInputType(const int idx, const nd4j::DataType dtype) {
+            _inputTypes[idx] = dtype;
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setOutputType(const int idx, const nd4j::DataType dtype) {
+            _outputTypes[idx] = dtype;
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setSameMode(const bool reallySame) {
+            _sameMode = reallySame;
+            return this;
+        }
+
         bool OpDescriptor::operator==(const OpDescriptor& other) const {
             if (_hash == -1 && other._hash == -1)
                 return this->_opNum == other._opNum;
@@ -146,8 +183,9 @@ namespace nd4j {
             return _opNum;
         }
 
-        void OpDescriptor::setInputType(InputType type) {
+        OpDescriptor* OpDescriptor::setInputType(const InputType type) {
             _inputType = type;
+            return this;
         }
 
         InputType OpDescriptor::inputType() {
