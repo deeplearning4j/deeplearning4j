@@ -4166,9 +4166,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public String summary(InputType... inputTypes) {
         StringBuilder ret = new StringBuilder();
-        ret.append("\n")
-                .append(StringUtils.repeat("=", 250))
-                .append("\n");
+        ret.append("\n");
 
         int frozenParams = 0;
         Map<String, InputType> vertexOutputs = new HashMap<>(); //vertex name and output types
@@ -4286,27 +4284,42 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         StringBuilder sbFormat = new StringBuilder();
+        int totalLength = 0;
+        int pos = 0;
         for(int length : maxLength){
-            sbFormat.append("%-").append(length+3).append("s");
+            int currLength;
+            if(pos++ == maxLength.length-1){
+                currLength = length;
+            } else {
+                currLength = length+3;
+            }
+            sbFormat.append("%-").append(currLength).append("s");
+            totalLength += currLength;
         }
         sbFormat.append("\n");
         String format = sbFormat.toString();
+
+
+
+        ret.append(StringUtils.repeat("=", totalLength))
+                .append("\n");
+
         boolean first = true;
         for(String[] line : lines){
             String formatted = String.format(format, (Object[])line);
             ret.append(formatted);
             if(first){
-                ret.append(StringUtils.repeat("=", 250)).append("\n");
+                ret.append(StringUtils.repeat("=", totalLength)).append("\n");
                 first = false;
             }
         }
 
-        ret.append(StringUtils.repeat("-", 250))
+        ret.append(StringUtils.repeat("-", totalLength))
                 .append(String.format("\n%30s %d", "Total Parameters: ", params().length()))
                 .append(String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams))
                 .append(String.format("\n%30s %d", "Frozen Parameters: ", frozenParams))
                 .append("\n")
-                .append(StringUtils.repeat("=", 250))
+                .append(StringUtils.repeat("=", totalLength))
                 .append("\n");
 
         return ret.toString();
