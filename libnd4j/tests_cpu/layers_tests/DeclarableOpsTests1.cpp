@@ -613,7 +613,8 @@ TEST_F(DeclarableOpsTests1, ClipByValue1) {
 
     clip.execute(block);
 
-    //x.printBuffer("Result");
+    x->printIndexedBuffer("Result");
+    exp.printIndexedBuffer("Expect");
     ASSERT_TRUE(x->equalsTo(&exp));
 
 
@@ -1080,16 +1081,14 @@ TEST_F(DeclarableOpsTests1, MultiplyScalarScalar1) {
 
 TEST_F(DeclarableOpsTests1, TestMatMul1) {
     auto x = NDArrayFactory::create_<float>('c', {3, 5});
-    for (int e = 0; e < x->lengthOf(); e++)
-        x->p(e, e+1);
+    x->linspace(1);
 
     auto y = NDArrayFactory::create_<float>('c', {5, 3});
-    for (int e = 0; e < y->lengthOf(); e++)
-        y->p(e, e+1);
+    y->linspace(1);
 
-    float _expB[]{135.0, 310.0, 485.0, 150.0, 350.0, 550.0, 165.0, 390.0, 615.0};
-    Nd4jLong _expS[] {2, 3, 3, 1, 3, 0, 1, 102};
-
+    float _expB[]{135.0f, 310.0f, 485.0f, 150.0f, 350.0f, 550.0f, 165.0f, 390.0f, 615.0f};
+    Nd4jLong _expS[] {2, 3, 3, 1, 3, 0, 1, 102}; // expected shape
+    ArrayOptions::setDataType(_expS, nd4j::DataType::FLOAT32);
     NDArray exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
 
@@ -1574,10 +1573,13 @@ TEST_F(DeclarableOpsTests1, TestLegacyExecution2) {
 TEST_F(DeclarableOpsTests1, TestGemv1) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
     auto xShape = new Nd4jLong[8] {2, 5, 3, 3, 1, 0, 1, 99};
+    ArrayOptions::setDataType(xShape, nd4j::DataType::FLOAT32);
     auto x = new NDArray(xBuffer, xShape);
 
     auto yBuffer = new float[3]{2.f, 4.f, 6.f};
     auto yShape = new Nd4jLong[8] {2, 3, 1, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(yShape, nd4j::DataType::FLOAT32);
+
     auto y = new NDArray(yBuffer, yShape);
 
     auto z = NDArrayFactory::create_<float>('f', {5, 1});
