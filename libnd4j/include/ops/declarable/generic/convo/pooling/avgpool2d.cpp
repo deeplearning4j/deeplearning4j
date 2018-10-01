@@ -132,8 +132,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
         newShapeInfo[3] = oW;
         newShapeInfo[4] = iD;
     }
-    shape::updateStrides(newShapeInfo, order);
-    ArrayOptions::setDataType(newShapeInfo, block.dataType());
+    ShapeUtils::updateStridesAndType(newShapeInfo, inShape, order); // Accordingly with TF doc
 
     return SHAPELIST(newShapeInfo);
 }

@@ -129,7 +129,7 @@ DECLARE_SHAPE_FN(maxpool2d) {
         newShapeInfo[3] = oW;
         newShapeInfo[4] = iC;
     }
-    shape::updateStrides(newShapeInfo, order);
+    ShapeUtils::updateStridesAndType(newShapeInfo, inShape, order); // Accordingly with TF doc
 
     return SHAPELIST(newShapeInfo);
 }

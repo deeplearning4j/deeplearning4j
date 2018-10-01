@@ -4310,10 +4310,10 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_2) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f,1.f, 2.f, 3.f, 4.f,1.f, 2.f, 3.f, 4.f});
     nd4j::ops::reduce_norm1_bp op;
     auto result = op.execute({&x, &eps}, {}, {0,1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
-//    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
-
+    output->printIndexedBuffer("Result is");
+    exp.printIndexedBuffer("Expect is");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 

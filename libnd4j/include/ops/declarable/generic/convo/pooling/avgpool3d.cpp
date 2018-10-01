@@ -130,8 +130,8 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
         outputShapeInfo[4] = oW;
         outputShapeInfo[5] = iC;
     }
-    
-    shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
+    // TF DOC: A Tensor. Has the same type as input.
+    ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
     return SHAPELIST(outputShapeInfo);
 }

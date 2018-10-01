@@ -72,6 +72,8 @@ namespace ops {
         else 
             shape = {{bS, oD, oH, oW }};
         shape::shapeBuffer(4, block.dataType(), shape.data(), newShape);
+        // TF DOC: A Tensor. Has the same type as input.
+        ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
 
         return SHAPELIST(newShape);
     }

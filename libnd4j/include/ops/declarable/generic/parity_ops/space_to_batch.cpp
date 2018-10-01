@@ -285,6 +285,7 @@ namespace ops {
 
         // we always give out C order here
         shape::shapeBuffer((int) external_output_shape.size(), ArrayOptions::dataType(in), external_output_shape.data(), newShape);
+        ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in)); // as in TF
 
         return SHAPELIST(newShape);
     }

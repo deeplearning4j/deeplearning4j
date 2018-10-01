@@ -34,8 +34,10 @@ namespace nd4j {
 //            for (int e = 0; e < input->lengthOf(); e++)
 //                if ((*input)(e) == T(0))
 //                    numZeros++;
-            (*output) = input->reduceNumber(reduce::CountZero);
-            (*output) /= double(input->lengthOf());
+            auto countZero = input->reduceNumber(reduce::CountZero);
+            //nd4j_printf("Zero count is %f for %i elements.", countZero.e<double>(0), input->lengthOf());
+            //countZero /= double(input->lengthOf());
+            output->p<double>(0, countZero.e<Nd4jLong>(0) / double(input->lengthOf())); //printIndexedBuffer("Zero count");
 
             return Status::OK();
         }
