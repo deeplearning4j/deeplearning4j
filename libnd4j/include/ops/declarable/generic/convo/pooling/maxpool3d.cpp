@@ -133,8 +133,8 @@ DECLARE_SHAPE_FN(maxpool3dnew) {
         outputShapeInfo[4] = oW;
         outputShapeInfo[5] = iC;
     }
-    
-    shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
+
+    ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo)); // as TF doc says
 
     return SHAPELIST(outputShapeInfo);
 }
