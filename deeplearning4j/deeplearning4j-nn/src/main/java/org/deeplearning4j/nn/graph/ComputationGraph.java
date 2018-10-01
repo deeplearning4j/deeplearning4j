@@ -4052,13 +4052,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 //Assuming single output here
                 INDArray[] features = next.getFeatures();
                 INDArray[] featuresMasks = next.getFeaturesMaskArrays();
-                INDArray labels = next.getLabels(0);
+                INDArray[] labels = next.getLabels();
                 INDArray[] labelMasks = next.getLabelsMaskArrays();
 
                 try (MemoryWorkspace ws = outputWs.notifyScopeEntered()) {
                     INDArray[] out = outputOfLayersDetached(false, FwdPassType.STANDARD, getOutputLayerIndices(), features, featuresMasks, labelMasks, true, false, ws);
 
                     for (Integer i : evaluations.keySet()) {
+                        Preconditions.checkState(i >= 0 && i <labels.length, "Invalid output index: evaluation/output indices must be between 0" +
+                                " and numOutputs-1 (%s), got index %s", numOutputArrays, (int)i);
                         IEvaluation[] evalsThisOutput = evaluations.get(i);
                         if (evalsThisOutput == null)
                             continue;
@@ -4066,10 +4068,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         Preconditions.checkState(i >= 0 && i < getNumOutputArrays(), "Invalid output index: indices for outputs " +
                                 "must be between 0 and %s inclusive - found index %s", numOutputArrays, (int) i);
                         INDArray currOut = out[i];
+                        INDArray currLabel = labels[i];
 
                         try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                             for (IEvaluation evaluation : evalsThisOutput)
-                                evaluation.eval(labels, currOut, next.getLabelsMaskArray(i));
+                                evaluation.eval(currLabel, currOut, next.getLabelsMaskArray(i));
                         }
                     }
                 }
