@@ -3388,6 +3388,43 @@ public class Nd4j {
         return Nd4j.create(columns, order);
     }
 
+
+    public static INDArray create(int[] data, long[] shape, DataBuffer.Type type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(long[] data, long[] shape, DataBuffer.Type type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(double[] data, long[] shape, DataBuffer.Type type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(float[] data, long[] shape, DataBuffer.Type type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(short[] data, long[] shape, DataBuffer.Type type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(byte[] data, long[] shape, DataBuffer.Type type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
     /**
      * This method creates new 0D INDArray, aka scalar.
      *

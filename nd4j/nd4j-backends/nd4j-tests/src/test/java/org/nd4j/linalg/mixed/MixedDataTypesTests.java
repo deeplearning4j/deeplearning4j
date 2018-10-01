@@ -113,4 +113,28 @@ public class MixedDataTypesTests {
         val vector = array.toLongVector();
         assertArrayEquals(exp, vector);
     }
+
+    @Test
+    public void testBasicOps_2() throws Exception {
+        val exp = new int[]{1,1,1,1,1,1,1,1,1};
+        val arrayX = Nd4j.create(DataBuffer.Type.INT, 3, 3);
+        val arrayY = Nd4j.create(new int[]{1,1,1,1,1,1,1,1,1}, new long[]{3, 3}, DataBuffer.Type.INT);
+
+        arrayX.addi(arrayY);
+
+        val vector = arrayX.data().asInt();
+        assertArrayEquals(exp, vector);
+    }
+
+    @Test
+    public void testBasicOps_3() throws Exception {
+        val exp = new int[]{1,1,1,1,1,1,1,1,1};
+        val arrayX = Nd4j.create(DataBuffer.Type.INT, 3, 3);
+        val arrayY = Nd4j.create(new int[]{1,1,1,1,1,1,1,1,1}, new long[]{3, 3}, DataBuffer.Type.LONG);
+
+        arrayX.addi(arrayY);
+
+        val vector = arrayX.data().asInt();
+        assertArrayEquals(exp, vector);
+    }
 }
