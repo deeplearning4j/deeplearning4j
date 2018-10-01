@@ -70,7 +70,7 @@ void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& outp
             shape::ind2subC(shape::rank(imShapeBuffer), imShape, i, len, idx);
             auto imOffset = shape::getOffset(0, imShape, imStride, idx, shape::rank(imShapeBuffer));
 
-            imBuff[imOffset] = 0;
+            imBuff[imOffset] = static_cast<T>(0.f);
         }
     }
             

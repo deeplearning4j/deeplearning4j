@@ -792,7 +792,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
     NDArray& NDArray::operator=(const NDArray& other) {
-        nd4j_printf("Move operator...\n","")
+        nd4j_printf("Assignment operator...\n","")
 
 	if (this == &other) return *this;
 
