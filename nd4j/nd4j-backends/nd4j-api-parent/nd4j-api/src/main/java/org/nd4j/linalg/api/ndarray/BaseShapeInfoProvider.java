@@ -70,6 +70,13 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
         return Pair.create(buffer, buffer.asLong());
     }
 
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
+        DataBuffer buffer = Shape.createShapeInformation(shape, stride, elementWiseStride, order, extras);
+        buffer.setConstant(true);
+        return Pair.create(buffer, buffer.asLong());
+    }
+
 
     @Override
     public long getCachedBytes() {

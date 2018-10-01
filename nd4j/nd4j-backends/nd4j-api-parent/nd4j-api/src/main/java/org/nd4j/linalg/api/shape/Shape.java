@@ -3186,6 +3186,31 @@ public class Shape {
         return ret;
     }
 
+    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
+
+        if (shape.length != stride.length)
+            throw new IllegalStateException("Shape and stride must be the same length");
+
+        int rank = shape.length;
+        long shapeBuffer[] = new long[Shape.shapeInfoLength(rank)];
+        shapeBuffer[0] = rank;
+        int count = 1;
+        for (int e = 0; e < shape.length; e++)
+            shapeBuffer[count++] = shape[e];
+
+        for (int e = 0; e < stride.length; e++)
+            shapeBuffer[count++] = stride[e];
+
+        shapeBuffer[count++] = extras;
+        shapeBuffer[count++] = elementWiseStride;
+        shapeBuffer[count] = (int) order;
+
+        DataBuffer ret = Nd4j.createBufferDetached(shapeBuffer);
+        ret.setConstant(true);
+
+        return ret;
+    }
+
     public static DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions,
                                                      int underlyingRank) {
         int flagLength = flags.length;

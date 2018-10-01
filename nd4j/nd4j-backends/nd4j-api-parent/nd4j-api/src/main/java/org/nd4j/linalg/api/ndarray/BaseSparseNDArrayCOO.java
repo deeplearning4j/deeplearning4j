@@ -62,7 +62,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
         this.values = values;
         this.indices = indices;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, Nd4j.dataType()));
         init(shape);
         this.length = values.length();
         int[] flags = new int[rank()];
@@ -78,7 +78,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         this.values = createValueBuffer(values);
         length = values.length;
 
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, Nd4j.dataType()));
         init(shape);
         this.sparseInformation = createSparseInformationBuffer(rank());
         checkBufferCoherence();
@@ -89,7 +89,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         this.values = createValueBuffer(values);
         length = values.length;
 
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, Nd4j.dataType()));
         init(shape);
         this.sparseInformation = createSparseInformationBuffer(rank());
         checkBufferCoherence();
@@ -100,7 +100,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         this.values = createValueBuffer(values);
         length = values.length;
 
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, Nd4j.dataType()));
         init(shape);
         this.sparseInformation = createSparseInformationBuffer(rank());
         checkBufferCoherence();
@@ -111,7 +111,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         this.values = createValueBuffer(values);
         length = values.length;
 
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, Nd4j.dataType()));
         init(shape);
         this.sparseInformation = createSparseInformationBuffer(rank());
         checkBufferCoherence();
@@ -121,7 +121,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, long[] shape) {
         this.values = Nd4j.createBuffer(values, 0, values.length());
         this.indices = indices;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, Nd4j.dataType()));
         init(shape);
         this.sparseInformation = sparseInformation;
         this.length = countNNZ();

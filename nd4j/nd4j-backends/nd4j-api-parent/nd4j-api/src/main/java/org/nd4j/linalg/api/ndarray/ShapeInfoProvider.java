@@ -45,6 +45,7 @@ public interface ShapeInfoProvider {
     Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataBuffer.Type dataType);
 
 
+    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras);
 
     /**
      * This method forces cache purge, if cache is available for specific implementation

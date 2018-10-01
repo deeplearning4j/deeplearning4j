@@ -99,7 +99,7 @@ public class LegacyPooling2D extends BaseTransformOp {
         //number of channels (depth)
         long c = img.size(1);
 
-        return Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {n, c,  kernelHeight, kernelWidth, outHeight, outWidth}, 'c').getFirst();
+        return Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {n, c,  kernelHeight, kernelWidth, outHeight, outWidth}, 'c', img.dataType()).getFirst();
     }
 
     @Override
