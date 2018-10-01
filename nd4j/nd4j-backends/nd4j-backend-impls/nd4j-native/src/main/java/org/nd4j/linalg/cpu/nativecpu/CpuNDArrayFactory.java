@@ -295,6 +295,41 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
+    public INDArray create(double[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+    }
+
+    @Override
+    public INDArray create(float[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+    }
+
+    @Override
+    public INDArray create(long[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+    }
+
+    @Override
+    public INDArray create(int[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+    }
+
+    @Override
+    public INDArray create(short[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+    }
+
+    @Override
+    public INDArray create(boolean[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+    }
+
+    @Override
+    public INDArray create(byte[] data, long[] shape, long[] stride, DataBuffer.Type dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+    }
+
+    @Override
     public INDArray create(DataBuffer data, long[] shape) {
         return new NDArray(data, shape);
     }

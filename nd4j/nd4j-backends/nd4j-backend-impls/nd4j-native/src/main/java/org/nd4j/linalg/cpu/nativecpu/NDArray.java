@@ -122,6 +122,10 @@ public class NDArray extends BaseNDArray {
         super(data, shape, stride, offset, ordering);
     }
 
+    public NDArray(DataBuffer data, long[] shape, long[] stride, char ordering, DataBuffer.Type type) {
+        super(data, shape, stride, ordering, type);
+    }
+
     public NDArray(double[] data, long[] shape, long offset, char ordering) {
         super(data, shape, offset, ordering);
     }

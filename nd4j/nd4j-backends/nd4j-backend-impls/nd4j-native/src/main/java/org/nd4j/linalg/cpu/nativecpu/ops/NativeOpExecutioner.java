@@ -509,7 +509,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } else {
             long st = profilingHookIn(op);
 
-            validateDataType(Nd4j.dataType(), op);
+            //validateDataType(Nd4j.dataType(), op);
 
             if (op.x().lengthLong() != op.z().lengthLong())
                 throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: " +

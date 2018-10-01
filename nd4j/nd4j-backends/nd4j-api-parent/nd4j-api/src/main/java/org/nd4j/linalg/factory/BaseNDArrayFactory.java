@@ -1371,18 +1371,20 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray trueScalar(Number value) {
-        val dtype = Nd4j.dataType();
-        switch (dtype) {
-            case DOUBLE:
-                return create(new double[] {value.doubleValue()}, new int[] {}, new int[] {}, 0);
-            case FLOAT:
-                return create(new float[] {value.floatValue()}, new int[] {}, new int[] {}, 0);
-            case HALF:
-                return create(new float[] {value.floatValue()}, new int[] {}, new int[] {}, 0);
-            default:
-                throw new UnsupportedOperationException("Unsupported data type: [" + dtype + "]");
-
-        }
+        if (value instanceof Double)
+                return create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, DataBuffer.Type.DOUBLE);
+        else if (value instanceof Float)
+                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, DataBuffer.Type.FLOAT);
+        else if (value instanceof Long)
+                return create(new long[] {value.longValue()}, new long[] {}, new long[] {}, DataBuffer.Type.LONG);
+        else if (value instanceof Integer)
+                return create(new int[] {value.intValue()}, new long[] {}, new long[] {}, DataBuffer.Type.INT);
+        else if (value instanceof Short)
+            return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, DataBuffer.Type.SHORT);
+        else if (value instanceof Byte)
+            return create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, DataBuffer.Type.BYTE);
+        else
+                throw new UnsupportedOperationException("Unsupported data type: [" + value.getClass().getSimpleName() + "]");
     }
 
     public INDArray trueVector(float[] data) {

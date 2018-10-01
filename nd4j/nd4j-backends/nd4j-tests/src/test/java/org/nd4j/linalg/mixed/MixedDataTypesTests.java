@@ -65,6 +65,16 @@ public class MixedDataTypesTests {
     }
 
     @Test
+    public void testBasicCreation_4() throws Exception {
+        val scalar = Nd4j.trueScalar(1.0);
+        assertNotNull(scalar);
+        assertEquals(0, scalar.rank());
+        assertEquals(1, scalar.length());
+        assertEquals(DataBuffer.Type.DOUBLE, scalar.dataType());
+        assertEquals(1.0, scalar.getDouble(0), 1e-5);
+    }
+
+    @Test
     public void testBasicOps_1() throws Exception {
         val exp = new long[]{1,1,1,1,1,1,1,1,1};
         val array = Nd4j.create(DataBuffer.Type.INT, 3, 3);

@@ -836,6 +836,14 @@ public interface NDArrayFactory {
 
     INDArray create(double[] data, long[] shape, long[] stride, long offset);
 
+    INDArray create(double[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
+    INDArray create(float[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
+    INDArray create(long[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
+    INDArray create(int[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
+    INDArray create(short[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
+    INDArray create(byte[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
+    INDArray create(boolean[] data, long[] shape, long[] stride, DataBuffer.Type dataType);
+
 
     /**
      * Create an ndrray with the specified shape
