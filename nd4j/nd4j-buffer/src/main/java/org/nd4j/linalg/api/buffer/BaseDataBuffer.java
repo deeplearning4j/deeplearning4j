@@ -801,6 +801,27 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
+    public void setData(byte[] data) {
+        for (int i = 0; i < data.length; i++) {
+            put(i, data[i]);
+        }
+    }
+
+    @Override
+    public void setData(short[] data) {
+        for (int i = 0; i < data.length; i++) {
+            put(i, data[i]);
+        }
+    }
+
+    @Override
+    public void setData(boolean[] data) {
+        for (int i = 0; i < data.length; i++) {
+            put(i, data[i]);
+        }
+    }
+
+    @Override
     public void assign(long[] indices, double[] data, boolean contiguous, long inc) {
         if (indices.length != data.length)
             throw new IllegalArgumentException("Indices and data length must be the same");
@@ -1203,6 +1224,22 @@ public abstract class BaseDataBuffer implements DataBuffer {
             ((LongIndexer) indexer).put(offset() + i, element);
         } else {
             ((FloatIndexer) indexer).put(offset() + i, element);
+        }
+        if (i == length) {
+            length++;
+        }
+    }
+
+    @Override
+    public void put(long i, boolean element) {
+        if (dataType() == Type.DOUBLE) {
+            ((DoubleIndexer) indexer).put(offset() + i,  element ? 1.0 : 0.0);
+        } else if (dataType() == Type.INT) {
+            ((IntIndexer) indexer).put(offset() + i, element ? 1 : 0);
+        } else if (dataType() == Type.LONG) {
+            ((LongIndexer) indexer).put(offset() + i, element ? 1 : 0);
+        } else if (dataType() == Type.FLOAT) {
+            ((FloatIndexer) indexer).put(offset() + i, element ? 1.0f : 0.0f);
         }
         if (i == length) {
             length++;

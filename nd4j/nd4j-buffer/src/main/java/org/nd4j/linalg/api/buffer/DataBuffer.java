@@ -396,6 +396,9 @@ public interface DataBuffer extends Serializable {
      * @param data the data for this buffer
      */
     void setData(double[] data);
+    void setData(short[] data);
+    void setData(byte[] data);
+    void setData(boolean[] data);
 
     /**
      * Raw byte array storage
@@ -509,6 +512,8 @@ public interface DataBuffer extends Serializable {
     void put(long i, int element);
 
     void put(long i, long element);
+
+    void put(long i, boolean element);
 
 
     /**
