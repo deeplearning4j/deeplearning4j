@@ -788,3 +788,59 @@ TEST_F(NDArrayTest2, allTensorsAlongDimension_test1) {
 
     delete set;
 }
+
+////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, scalar_get_test1) {
+    
+    NDArray scalar1('c', {0}, {20.}, nd4j::DataType::FLOAT32);
+
+    NDArray arr('c', {2,2}, {0., 10., 20., 30.}, nd4j::DataType::FLOAT32);
+
+    NDArray scalar2 = arr.e(2); 
+
+    ASSERT_TRUE(scalar1.isSameShape(scalar2));
+    ASSERT_TRUE(scalar1.equalsTo(scalar2));
+    ASSERT_TRUE(scalar1.dataType() == scalar2.dataType());
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, scalar_get_test2) {
+    
+    NDArray scalar1('c', {0}, {20.}, nd4j::DataType::FLOAT32);
+
+    NDArray arr('f', {2,2}, {0., 10., 20., 30.}, nd4j::DataType::FLOAT32);
+
+    NDArray scalar2 = arr.e(1); 
+
+    ASSERT_TRUE(scalar1.isSameShape(scalar2));
+    ASSERT_TRUE(scalar1.equalsTo(scalar2));
+    ASSERT_TRUE(scalar1.dataType() == scalar2.dataType());
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, scalar_set_test1) {
+    
+    NDArray scalar1('c', {0}, {20.}, nd4j::DataType::FLOAT32);
+
+    NDArray arr('c', {2,2}, {0., 10., -20., 30.}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {2,2}, {0., 10.,  20., 30.}, nd4j::DataType::FLOAT32);
+
+    arr.p(2, scalar1); 
+
+    ASSERT_TRUE(exp.equalsTo(arr));
+}
+
+
+////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, scalar_set_test2) {
+    
+    NDArray scalar1('c', {0}, {20.}, nd4j::DataType::FLOAT32);
+
+    NDArray arr('f', {2,2}, {0., 10., -20., 30.}, nd4j::DataType::FLOAT32);
+    NDArray exp('f', {2,2}, {0., 10.,  20., 30.}, nd4j::DataType::FLOAT32);
+
+    arr.p(1, scalar1); 
+
+    ASSERT_TRUE(exp.equalsTo(arr));
+}
+

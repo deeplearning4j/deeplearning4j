@@ -198,7 +198,7 @@ namespace nd4j {
         /**
         *  this constructor creates scalar and set its value = 0
         */
-        NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace);
+        NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
                 
 
         /**
@@ -1074,6 +1074,11 @@ namespace nd4j {
         ResultSet* allExamples()const ;        
 
         /**
+        *  returns absolute offset which corresponds to given sequential index
+        */
+        Nd4jLong getOffset(const Nd4jLong i) const;
+
+        /**
         *  default destructor
         */
         ~NDArray() noexcept; 
@@ -1162,7 +1167,7 @@ namespace nd4j {
         /**
         *  returns true if buffer && shapeInfo were defined (non nullptr)
         */
-        FORCEINLINE bool nonNull() const;
+        FORCEINLINE bool nonNull() const;        
 
         /** 
         *  returns array element with given index from linear buffer
@@ -1193,6 +1198,12 @@ namespace nd4j {
         */
         template <typename T>
         T e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
+
+        /** 
+        *  returns array-scalar containing element of this array with given index
+        *  i - element index in array
+        */        
+        NDArray e(const Nd4jLong i) const; 
         
         /** 
         *  assigns given scalar to array element by given index, regards array buffer as linear
