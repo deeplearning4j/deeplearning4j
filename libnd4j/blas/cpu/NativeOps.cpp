@@ -658,6 +658,28 @@ void NativeOps::execTransformBool(
             tadOffsets);
 }
 
+void NativeOps::execTransformStrict(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        void *dx,
+        Nd4jLong *xShapeInfo,
+        void *result,
+        Nd4jLong *resultShapeInfo,
+        void *extraParams) {
+    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+
+    NativeOpExcutioner::execTransformStrict(
+            opNum,
+            dx,
+            xShapeInfo,
+            result,
+            resultShapeInfo,
+            extraParams,
+            tadShapeInfo,
+            tadOffsets);
+}
+
 void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
                                      int opNum,
                                      void *x,
