@@ -56,6 +56,18 @@ void sparseSoftmaxCrossEntropyLossWithLogits(const NDArray& labels, const NDArra
                 if(weightsBroad->e<float>(i*sizeAtRestDims + j) != 0.f)
                     numOfNonZeroWeights.p<Nd4jLong>(i, 1 + numOfNonZeroWeights.e<Nd4jLong>(i));
     }
+
+    template <typename T>
+    static void weightedAbsoluteSubtract_(NDArray* predictions, NDArray* labels, NDArray& weightedLosses) {
+        // perform subtraction (predictions - labels) and apply abs
+        auto absDiffr = LAMBDA_TT(p, l) { return nd4j::math::nd4j_abs(p - l); };
+        predictions->applyPairwiseLambda<T>(labels, absDiffr, &weightedLosses);
+    }
+
+    void weightedAbsoluteSubtract(NDArray* predictions, NDArray* labels, NDArray& weightedLosses) {
+        BUILD_SINGLE_SELECTOR(predictions->dataType(), weightedAbsoluteSubtract_, (predictions, labels, weightedLosses), FLOAT_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template void weightedAbsoluteSubtract_, (NDArray* predictions, NDArray* labels, NDArray& weightedLosses); , FLOAT_TYPES);
 }
 }
 }
