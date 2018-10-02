@@ -47,6 +47,17 @@ static void _diagFunctor(const NDArray* input, NDArray* output) {
 
 BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (const NDArray* input, NDArray* output);, LIBND4J_TYPES);
 
+void diagPartFunctor(NDArray* input, NDArray* output) {
+    const int outLen = output->lengthOf();
+    const int inLen = input->lengthOf();
+    int i(0), j(0);
+    while (j < outLen) {
+        output->p(j, input->e(i));
+        i += outLen + 1;
+        ++j;
+    }
+}
+
 
 }
 }

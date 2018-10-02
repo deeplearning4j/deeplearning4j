@@ -27,6 +27,7 @@ namespace ops {
 namespace helpers {
 
     void diagFunctor(NDArray const* input, NDArray* output);
+    void diagPartFunctor(NDArray* input, NDArray* output);
 
 }
 }

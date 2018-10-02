@@ -2442,7 +2442,7 @@ TEST_F(DeclarableOpsTests1, Pnormpool2d1) {
     delete block;
 }
 
-//////////////////////////////////////////////////////////////////////
+/*/////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, IsMax1) {
 
     float xBuff[]   = {1,2,3,4,5,6,7,8,9};
@@ -2459,17 +2459,42 @@ TEST_F(DeclarableOpsTests1, IsMax1) {
     auto block = new Context(1, variableSpace, false);
     block->fillInputs({-1});
     std::vector<int>* argI = block->getIArguments();
-    *argI = {1};                                        // dimensions
+//    *argI = {1};                                        // dimensions
+    argI->push_back(1); // = {1};                                        // dimensions
 
     nd4j::ops::ismax ismaxOp;
     Nd4jStatus status = ismaxOp.execute(block);
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();  
+    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
+    result->printIndexedBuffer("IS_MAX");
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete variableSpace;
     delete block;
+}
+*/
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, IsMax1) {
+    NDArray x('c', {3, 3}, nd4j::DataType::FLOAT32);
+//    NDArray exp('c', {3, 3}, nd4j::DataType::BOOL);
+    NDArray exp('c', {3, 3}, nd4j::DataType::FLOAT32);
+    x.linspace(1);
+    exp.p<bool>(0, 2, true);
+    exp.p<bool>(1, 2, true);
+    exp.p<bool>(2, 2, true);
+
+    nd4j::ops::ismax ismaxOp;
+    auto result = ismaxOp.execute({&x}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto res = result->at(0);
+    res->printIndexedBuffer("IS_MAX");
+    ASSERT_TRUE(exp.equalsTo(res));
+
+    delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
