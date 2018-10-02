@@ -141,7 +141,7 @@ DECLARE_SHAPE_FN(hinge_loss) {
     		outShapeInfo[i] = labelsShapeInfo[i];
     	shape::updateStrides(outShapeInfo, shape::order(labelsShapeInfo));    
     }
- 
+	ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(labelsShapeInfo));
     return SHAPELIST(outShapeInfo);    
 
 }

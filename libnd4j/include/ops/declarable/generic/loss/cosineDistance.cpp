@@ -147,7 +147,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
     	std::vector<int> dimensions = {dim};
     	outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(labelsShapeInfo), dimensions, labelsShapeInfo, true, false, block.getWorkspace());
     }
-    
+    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(predictionsShapeInfo));
     return SHAPELIST(outShapeInfo);    
 
 }
