@@ -82,7 +82,7 @@ public class ScalarReverseDivision extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable g = f().rdiv(f().pow(arg(), 2), -scalarValue.doubleValue()).mul(i_v1.get(0));
+        SDVariable g = f().rdiv(f().pow(arg(), 2), -scalarValue.getDouble(0)).mul(i_v1.get(0));
         return Arrays.asList(g);
     }
 

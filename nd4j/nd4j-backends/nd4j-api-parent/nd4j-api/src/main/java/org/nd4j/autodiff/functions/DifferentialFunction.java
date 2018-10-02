@@ -60,7 +60,7 @@ public abstract class DifferentialFunction {
     @Getter
     @Setter
     @JsonIgnore
-    protected Number scalarValue;
+    protected INDArray scalarValue;
 
 
     @Getter

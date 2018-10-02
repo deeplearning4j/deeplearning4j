@@ -531,8 +531,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                              op.z().data().addressPointer(),
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            null,
-                            null,
+                            op.scalar().data().addressPointer(),
+                            (LongPointer) op.scalar().shapeInfoDataBuffer().addressPointer(),
                             getPointerForExtraArgs(op));
 
             profilingHookOut(op, st);
@@ -540,7 +540,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private Pointer getPointerForExtraArgs(Op op) {
-        if (op.extraArgs() != null)
+        if (op.extraArgs() != null && op.extraArgsDataBuff() != null)
             return op.extraArgsDataBuff().addressPointer();
         return null;
     }

@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,14 +39,14 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     public BaseScalarOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n);
-        this.scalarValue = num;
+        this.scalarValue = Nd4j.scalar(num);
 
         init(x, y, z, n);
     }
 
     public BaseScalarOp(INDArray x, Number num) {
         super(x);
-        this.scalarValue = num;
+        this.scalarValue = Nd4j.scalar(num);
         init(x, y, z, n);
 
     }
@@ -68,7 +69,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                         boolean inPlace,
                         Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
-        this.scalarValue = scalar;
+        this.scalarValue = Nd4j.scalar(scalar);
         if (i_v != null) {
             this.xVertexId = i_v.getVarName();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
@@ -130,13 +131,13 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     @Override
     public void setScalar(Number scalar) {
-        this.scalarValue = scalar;
+        this.scalarValue = Nd4j.scalar(scalar);
     }
 
     @Override
-    public Number scalar() {
+    public INDArray scalar() {
         if(scalarValue == null && y() != null && y().isScalar())
-            return y().getDouble(0);
+            return y();
         return scalarValue;
     }
 

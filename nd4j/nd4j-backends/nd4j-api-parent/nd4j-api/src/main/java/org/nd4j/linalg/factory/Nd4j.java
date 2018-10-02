@@ -5393,49 +5393,11 @@ public class Nd4j {
     /**
      * Create a scalar ndarray with the specified offset
      *
-     * @param value  the value to initialize the scalar with
-     * @param offset the offset of the ndarray
-     * @return the created ndarray
-     */
-    public static INDArray scalar(Number value, long offset) {
-        return INSTANCE.scalar(value, offset);
-    }
-
-    /**
-     * Create a scalar nd array with the specified value and offset
-     *
-     * @param value  the value of the scalar
-     * @param offset the offset of the ndarray
-     * @return the scalar nd array
-     */
-    public static INDArray scalar(double value, long offset) {
-        INDArray ret = INSTANCE.scalar(value, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create a scalar nd array with the specified value and offset
-     *
-     * @param value  the value of the scalar
-     * @param offset the offset of the ndarray
-     * @return the scalar nd array
-     */
-    public static INDArray scalar(float value, long offset) {
-        INDArray ret = INSTANCE.scalar(value, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-
-    }
-
-    /**
-     * Create a scalar ndarray with the specified offset
-     *
      * @param value the value to initialize the scalar with
      * @return the created ndarray
      */
     public static INDArray scalar(Number value) {
-        INDArray ret = INSTANCE.scalar(value);
+        INDArray ret = INSTANCE.trueScalar(value);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5447,7 +5409,7 @@ public class Nd4j {
      *              =     * @return the scalar nd array
      */
     public static INDArray scalar(double value) {
-        INDArray ret = INSTANCE.scalar(value);
+        INDArray ret = INSTANCE.trueScalar(value);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5459,7 +5421,7 @@ public class Nd4j {
      *              =     * @return the scalar nd array
      */
     public static INDArray scalar(float value) {
-        INDArray ret = INSTANCE.scalar(value);
+        INDArray ret = INSTANCE.trueScalar(value);
         logCreationIfNecessary(ret);
         return ret;
     }

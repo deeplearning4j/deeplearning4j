@@ -1826,7 +1826,7 @@ public class SameDiff {
 
         associateArrayWithVariable(arr, ret);
         if (ArrayUtil.prod(arr.shape()) == 1)
-            ret.setScalarValue(arr.getDouble(0));
+            ret.setScalarValue(Nd4j.scalar(arr.getDouble(0)));
 
         addVariable(ret);
         if (getShapeForVarName(name) == null)
@@ -10892,7 +10892,7 @@ public class SameDiff {
                 integerArgs,
                 dimensions,
                 -1,
-                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().floatValue() : 0.0f, 0, scopeName);
+                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().getFloat(0) : 0.0f, 0, scopeName);
 
         return flatNode;
     }
