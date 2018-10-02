@@ -24,6 +24,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <numeric>
 #include <iostream>
+#include <ops/declarable/helpers/losses.h>
 
 namespace nd4j {
 namespace ops  {
@@ -66,14 +67,15 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 			numOfNonZeroWeights.assign((labels->lengthOf()/labels->sizeAt(0)));
 	}
 	else {
-		int sizeAtRestDims =  weightsBroad->lengthOf()/weightsBroad->sizeAt(0);
+		Nd4jLong sizeAtRestDims =  weightsBroad->lengthOf()/weightsBroad->sizeAt(0);
+		helpers::reduceZeroCountWeights(weightsBroad, sizeAtRestDims, numOfNonZeroWeights);
 		/*
 		for(int i = 0; i < numOfNonZeroWeights.lengthOf(); ++i)
 			for(int j = 0; j < sizeAtRestDims; ++j)
 				if((*weightsBroad)(i*sizeAtRestDims + j) != (T)0.)
 					++numOfNonZeroWeights(i);
 					*/
-		throw std::runtime_error("Not implemented yet");
+		//throw std::runtime_error("Not implemented yet");
 	}
 	
 	sumSqrsDiffPerBatch.applyPairwiseTransform(pairwise::SafeDivide, &numOfNonZeroWeights, nullptr);
