@@ -2553,7 +2553,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         //No existing free workspace managers for forward pass - create a new one...
                         String wsName = "WS_LAYER_ACT_" + allWorkspaceManagers.size();
                         workspaceMgr = LayerWorkspaceMgr.builder()
-                                .with(ArrayType.INPUT, wsName, WS_LAYER_ACT_X_CONFIG)
+                                .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                                 .with(ArrayType.ACTIVATION_GRAD, wsName, WS_LAYER_ACT_X_CONFIG)
                                 .with(ArrayType.ACTIVATIONS, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG) //For forward pass in the context of BP
                                 .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
