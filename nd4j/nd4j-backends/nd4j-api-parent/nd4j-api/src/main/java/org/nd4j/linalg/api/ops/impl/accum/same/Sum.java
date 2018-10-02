@@ -63,7 +63,7 @@ public class Sum extends BaseReduceSameOp {
 
     @Override
     public int opNum() {
-        return 1;
+        return 0;
     }
 
     @Override

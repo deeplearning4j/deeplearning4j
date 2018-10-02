@@ -58,7 +58,7 @@ public class AMax extends BaseReduceSameOp {
 
     @Override
     public int opNum() {
-        return 13;
+        return 5;
     }
 
     @Override

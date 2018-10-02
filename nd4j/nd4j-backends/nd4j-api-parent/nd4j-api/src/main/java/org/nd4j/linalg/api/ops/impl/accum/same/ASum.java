@@ -56,7 +56,7 @@ public class ASum extends BaseReduceSameOp {
 
     @Override
     public int opNum() {
-        return 11;
+        return 4;
     }
 
     @Override

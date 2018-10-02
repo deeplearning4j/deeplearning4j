@@ -14,12 +14,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.accum;
+package org.nd4j.linalg.api.ops.impl.accum.same;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
+import org.nd4j.linalg.api.ops.BaseReduceSameOp;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Prod extends BaseReduceOp {
+public class Prod extends BaseReduceSameOp {
     public Prod(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
@@ -41,30 +42,26 @@ public class Prod extends BaseReduceOp {
     public Prod() {
     }
 
-    public Prod(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Prod(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public Prod(INDArray x, INDArray z, long n) {
+        super(x, null, z, n);
     }
 
     public Prod(INDArray x) {
         super(x);
     }
 
-    public Prod(INDArray x, INDArray y) {
-        super(x, y);
+    public Prod(INDArray x, INDArray z) {
+        super(x, null, z);
     }
 
-    public Prod(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public Prod(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, z, newFormat, keepDims, dimensions);
     }
 
 
     @Override
     public int opNum() {
-        return 8;
+        return 3;
     }
 
     @Override

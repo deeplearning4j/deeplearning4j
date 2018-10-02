@@ -57,7 +57,7 @@ public class AMin extends BaseReduceSameOp {
 
     @Override
     public int opNum() {
-        return 14;
+        return 6;
     }
 
     @Override

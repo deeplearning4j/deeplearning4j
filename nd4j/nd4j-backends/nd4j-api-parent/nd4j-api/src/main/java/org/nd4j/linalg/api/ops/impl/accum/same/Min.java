@@ -57,7 +57,7 @@ public class Min extends BaseReduceSameOp {
 
     @Override
     public int opNum() {
-        return 4;
+        return 2;
     }
 
     @Override
