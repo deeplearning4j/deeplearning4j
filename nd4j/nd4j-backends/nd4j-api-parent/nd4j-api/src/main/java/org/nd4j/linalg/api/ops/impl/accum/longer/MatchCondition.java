@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceLongOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -34,7 +35,7 @@ import java.util.Map;
  *
  * @author raver119@gmail.com
  */
-public class MatchCondition extends BaseReduceOp {
+public class MatchCondition extends BaseReduceLongOp {
 
     private double compare;
     private double eps;
@@ -76,7 +77,7 @@ public class MatchCondition extends BaseReduceOp {
 
     @Override
     public int opNum() {
-        return 12;
+        return 2;
     }
 
     @Override

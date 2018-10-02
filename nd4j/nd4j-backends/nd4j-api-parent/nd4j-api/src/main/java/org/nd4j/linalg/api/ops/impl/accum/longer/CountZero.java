@@ -46,7 +46,7 @@ public class CountZero extends BaseReduceOp {
 
     @Override
     public int opNum() {
-        return 26;
+        return 1;
     }
 
     @Override
