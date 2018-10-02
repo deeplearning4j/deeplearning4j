@@ -134,7 +134,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
             newShapeInfo[0] = rank;
             for(int i = 0; i < rank; ++i)
                 newShapeInfo[i+1] = 1;
-            shape::updateStrides(newShapeInfo, order);
+            ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
             return newShapeInfo;
         }
         else if(supportOldShapes) {
@@ -161,7 +161,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
             else
                 newShapeInfo[i+1] = shapeInfo[i+1];
 
-        shape::updateStrides(newShapeInfo, order);
+        ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
 
         return newShapeInfo;
     }
@@ -202,7 +202,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
         }
     } 
     
-	shape::updateStrides(newShapeInfo, order);
+	ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
        
     return newShapeInfo;
 }
