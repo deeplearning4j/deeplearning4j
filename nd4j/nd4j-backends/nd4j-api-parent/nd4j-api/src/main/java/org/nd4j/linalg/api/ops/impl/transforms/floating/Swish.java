@@ -14,10 +14,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.floating;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
@@ -25,69 +26,72 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * SELU activation function
- * <p>
- * https://arxiv.org/pdf/1706.02515.pdf
+ * Swish function
  *
  * @author raver119@gmail.com
  */
-public class SELU extends BaseTransformOp {
-
-    private static final double SELU_ALPHA = 1.6732632423543772848170429916717;
-    private static final double SELU_LAMBDA = 1.0507009873554804934193349852946;
-
-    public SELU(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class Swish extends BaseTransformOp {
+    public Swish(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SELU(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public Swish(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public SELU(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public Swish(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public SELU() {
+    public Swish() {
     }
 
-    public SELU(INDArray x, INDArray z) {
+    public Swish(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public SELU(INDArray x, INDArray z, long n) {
+    public Swish(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public SELU(INDArray x) {
-        super(x);
+    public Swish(INDArray x, INDArray y, INDArray z, long n) {
+        super(x, y, z, n);
+    }
+
+    public Swish(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.lengthLong());
+    }
+
+    public Swish(INDArray ndArray) {
+        super(ndArray);
     }
 
     @Override
     public int opNum() {
-        return 67;
+        return 24;
     }
 
     @Override
     public String opName() {
-        return "selu";
+        return "swish";
     }
 
     @Override
     public String onnxName() {
-        return "Selu";
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "Selu";
+        return "Swish";
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().seluDerivative(arg()).mul(i_v.get(0));
+        SDVariable ret = f().swishDerivative(arg()).mul(i_v.get(0));
         return Arrays.asList(ret);
     }
+
 
 }

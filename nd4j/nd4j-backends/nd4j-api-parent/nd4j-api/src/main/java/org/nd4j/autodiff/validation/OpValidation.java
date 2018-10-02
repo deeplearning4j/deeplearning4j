@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.grid.FreeGridOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
+import org.nd4j.linalg.api.ops.impl.scalar.PowDerivative;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarRemainder;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;

@@ -66,6 +66,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.same.*;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SwishDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;

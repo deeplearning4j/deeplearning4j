@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.same;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -110,7 +110,7 @@ public class Relu6 extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 96;
+        return 14;
     }
 
     @Override

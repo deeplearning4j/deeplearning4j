@@ -14,83 +14,77 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.same;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * LogSigmoid function
- *
- * @author raver119@gmail.com
+ * Created by susaneraly on 3/28/18.
  */
-public class LogSigmoid extends BaseTransformOp {
-    public LogSigmoid(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
+public class Reciprocal extends BaseTransformOp {
+
+    public Reciprocal(SameDiff sameDiff, SDVariable in, boolean inPlace) {
+        super(sameDiff, in, inPlace);
     }
 
-    public LogSigmoid(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    public Reciprocal() {
     }
 
-    public LogSigmoid(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
-    public LogSigmoid() {
-    }
-
-    public LogSigmoid(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public LogSigmoid(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public LogSigmoid(INDArray x, INDArray y, INDArray z, long n) {
+    public Reciprocal(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public LogSigmoid(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+    public Reciprocal(INDArray x, INDArray y) {
+        super(x, y, x, x.lengthLong());
     }
 
-    public LogSigmoid(INDArray ndArray) {
-        super(ndArray);
+    public Reciprocal(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.lengthLong());
     }
 
     @Override
     public int opNum() {
-        return 88;
+        return 11;
     }
 
     @Override
     public String opName() {
-        return "logsigmoid";
+        return "Reciprocal";
     }
 
     @Override
     public String onnxName() {
-        return "LogSigmoid";
+        throw new NoOpNameFoundException("No  onnx opName found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "LogSigmoid";
+        return "Reciprocal";
+    }
+
+    @Override
+    public String[] tensorflowNames(){
+        return new String[]{"Reciprocal", "Inv"};
+    }
+
+    @Override
+    public void init(INDArray x, INDArray y, INDArray z, long n) {
+        super.init(x, y, z, n);
     }
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().logSigmoidDerivative(arg(), i_v.get(0));
-        return Arrays.asList(ret);
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+        // -1/(x^2)
+        SDVariable g = f().pow(arg(), 2).rdiv(-1).mul(i_v1.get(0));
+        return Collections.singletonList(g);
     }
-
-
 }

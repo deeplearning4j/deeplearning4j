@@ -14,66 +14,72 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.same;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Soft max function
- * row_maxes is a row vector (max for each row)
- * row_maxes = rowmaxes(input)
- * diff = exp(input - max) / diff.rowSums()
- * Outputs a probability distribution.
- * Note that this is a parameterized model and requires
- * the sum and max for the vector being calculated
+ * Square function (x ^ 2)
  *
  * @author Adam Gibson
  */
-
-public class SoftMax extends BaseDynamicTransformOp {
-    public SoftMax() {
-        super();
+public class Square extends BaseTransformOp {
+    public Square(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
-    public SoftMax(SameDiff sameDiff, SDVariable[] args) {
-        super(sameDiff, args, false);
+    public Square(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-
-    public SoftMax(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
-        super(sameDiff, args, inPlace);
+    public Square(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
     }
 
-    public SoftMax(INDArray input, INDArray result){
-        super(new INDArray[]{input}, new INDArray[]{result});
+    public Square() {
+    }
+
+    public Square(INDArray x, INDArray z) {
+        super(x, z);
+    }
+
+    public Square(INDArray x, INDArray z, long n) {
+        super(x, z, n);
+    }
+
+    public Square(INDArray x) {
+        super(x);
+    }
+
+    @Override
+    public int opNum() {
+        return 12;
     }
 
     @Override
     public String opName() {
-        return "softmax";
+        return "square";
     }
-
 
     @Override
     public String onnxName() {
-        return "Softmax";
+        return "Square";
     }
 
     @Override
     public String tensorflowName() {
-        return "Softmax";
+        return "Square";
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().softmaxDerivative(arg(), i_v.get(0), 1);
-        return Collections.singletonList(ret);
+        SDVariable g = f().powDerivative(arg(), 2).mul(i_v.get(0));
+        return Arrays.asList(g);
     }
 }

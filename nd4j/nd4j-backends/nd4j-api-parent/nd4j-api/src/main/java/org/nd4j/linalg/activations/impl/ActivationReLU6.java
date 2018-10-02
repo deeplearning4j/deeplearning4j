@@ -20,9 +20,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
-import org.nd4j.linalg.api.ops.impl.transforms.Relu6;
-import org.nd4j.linalg.api.ops.impl.transforms.Step;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Relu6;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Step;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 

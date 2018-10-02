@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.ops.impl.accum.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.scalar.Pow;
 import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
-import org.nd4j.linalg.api.ops.impl.transforms.Step;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Step;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 
 import java.lang.reflect.Constructor;

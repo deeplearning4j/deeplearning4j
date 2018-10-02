@@ -14,77 +14,80 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.floating;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Created by susaneraly on 3/28/18.
+ * SELU activation function
+ * <p>
+ * https://arxiv.org/pdf/1706.02515.pdf
+ *
+ * @author raver119@gmail.com
  */
-public class Reciprocal extends BaseTransformOp {
+public class SELU extends BaseTransformOp {
 
-    public Reciprocal(SameDiff sameDiff, SDVariable in, boolean inPlace) {
-        super(sameDiff, in, inPlace);
+    private static final double SELU_ALPHA = 1.6732632423543772848170429916717;
+    private static final double SELU_LAMBDA = 1.0507009873554804934193349852946;
+
+    public SELU(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
-    public Reciprocal() {
+    public SELU(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public Reciprocal(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public SELU(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
     }
 
-    public Reciprocal(INDArray x, INDArray y) {
-        super(x, y, x, x.lengthLong());
+    public SELU() {
     }
 
-    public Reciprocal(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+    public SELU(INDArray x, INDArray z) {
+        super(x, z);
+    }
+
+    public SELU(INDArray x, INDArray z, long n) {
+        super(x, z, n);
+    }
+
+    public SELU(INDArray x) {
+        super(x);
     }
 
     @Override
     public int opNum() {
-        return 94;
+        return 22;
     }
 
     @Override
     public String opName() {
-        return "Reciprocal";
+        return "selu";
     }
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No  onnx opName found for " + opName());
+        return "Selu";
     }
 
     @Override
     public String tensorflowName() {
-        return "Reciprocal";
-    }
-
-    @Override
-    public String[] tensorflowNames(){
-        return new String[]{"Reciprocal", "Inv"};
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
+        return "Selu";
     }
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        // -1/(x^2)
-        SDVariable g = f().pow(arg(), 2).rdiv(-1).mul(i_v1.get(0));
-        return Collections.singletonList(g);
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = f().seluDerivative(arg()).mul(i_v.get(0));
+        return Arrays.asList(ret);
     }
+
 }
