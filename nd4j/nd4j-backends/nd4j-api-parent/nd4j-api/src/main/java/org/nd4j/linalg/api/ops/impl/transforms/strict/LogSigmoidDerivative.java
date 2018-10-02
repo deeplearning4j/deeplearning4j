@@ -19,8 +19,11 @@ package org.nd4j.linalg.api.ops.impl.transforms.strict;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseGradientOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
+import org.nd4j.linalg.api.ops.TransformStrictOp;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.Sigmoid;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -32,7 +35,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class LogSigmoidDerivative extends BaseGradientOp {
+public class LogSigmoidDerivative extends BaseGradientOp implements TransformStrictOp  {
     public LogSigmoidDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -61,7 +64,7 @@ public class LogSigmoidDerivative extends BaseGradientOp {
 
     @Override
     public int opNum() {
-        return 89;
+        return 17;
     }
 
     @Override
@@ -88,5 +91,10 @@ public class LogSigmoidDerivative extends BaseGradientOp {
        @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataType resultType() {
+        return x().dataType();
     }
 }

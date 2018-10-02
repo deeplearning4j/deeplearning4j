@@ -87,7 +87,7 @@ public class Histogram extends BaseTransformFloatOp {
 
     @Override
     public int opNum() {
-        return 48;
+        return 15;
     }
 
     @Override

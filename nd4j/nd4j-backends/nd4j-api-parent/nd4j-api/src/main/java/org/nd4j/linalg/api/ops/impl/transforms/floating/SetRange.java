@@ -89,7 +89,7 @@ public class SetRange extends BaseTransformFloatOp {
 
     @Override
     public int opNum() {
-        return 9;
+        return 3;
     }
 
     @Override

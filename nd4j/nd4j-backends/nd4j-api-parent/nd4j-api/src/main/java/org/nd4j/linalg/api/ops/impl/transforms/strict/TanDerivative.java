@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
@@ -28,7 +29,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class TanDerivative extends BaseTransformOp {
+public class TanDerivative extends BaseTransformStrictOp {
 
     public TanDerivative() {}
 
@@ -40,21 +41,13 @@ public class TanDerivative extends BaseTransformOp {
         super(x, z, n);
     }
 
-    public TanDerivative(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public TanDerivative(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
-    }
-
     public TanDerivative(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 66;
+        return 8;
     }
 
     @Override

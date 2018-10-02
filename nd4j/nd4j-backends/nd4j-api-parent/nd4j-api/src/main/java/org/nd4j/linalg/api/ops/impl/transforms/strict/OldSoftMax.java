@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.Exp;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -38,7 +39,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 
-public class OldSoftMax extends BaseTransformOp {
+public class OldSoftMax extends BaseTransformStrictOp {
     public OldSoftMax(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -63,20 +64,12 @@ public class OldSoftMax extends BaseTransformOp {
     }
 
     public OldSoftMax(INDArray x, INDArray z) {
-        this(x, null, z);
+        this(x, z, x.length());
 
     }
 
     public OldSoftMax(INDArray x, INDArray z, long n) {
-        this(x, null, z, n);
-    }
-
-    public OldSoftMax(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public OldSoftMax(INDArray x, INDArray y, INDArray z) {
-        this(x, y, z, x.lengthLong());
+        super(x, z, n);
     }
 
     public OldSoftMax(INDArray x) {
@@ -86,7 +79,7 @@ public class OldSoftMax extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 38;
+        return 0;
     }
 
     @Override

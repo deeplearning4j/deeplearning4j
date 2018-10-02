@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
@@ -31,7 +32,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Stabilize extends BaseTransformOp {
+public class Stabilize extends BaseTransformStrictOp {
     double realMin = 1.1755e-38f;
     double cutOff = FastMath.log(realMin);
     double k;
@@ -69,11 +70,6 @@ public class Stabilize extends BaseTransformOp {
         this.k = k;
     }
 
-    public Stabilize(INDArray x, INDArray y, INDArray z, long n, double k) {
-        super(x, y, z, n);
-        this.k = k;
-    }
-
     public Stabilize(INDArray x, double k) {
         super(x);
         this.k = k;
@@ -81,7 +77,7 @@ public class Stabilize extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 28;
+        return 19;
     }
 
     @Override

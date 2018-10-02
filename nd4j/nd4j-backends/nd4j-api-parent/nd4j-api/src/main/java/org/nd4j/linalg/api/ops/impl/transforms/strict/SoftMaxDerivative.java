@@ -43,10 +43,6 @@ public class SoftMaxDerivative extends OldSoftMax {
         super(x, z, n);
     }
 
-    public SoftMaxDerivative(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public SoftMaxDerivative(INDArray x) {
         super(x);
     }
@@ -60,7 +56,7 @@ public class SoftMaxDerivative extends OldSoftMax {
 
     @Override
     public int opNum() {
-        return 39;
+        return 1;
     }
 
     @Override
@@ -72,7 +68,6 @@ public class SoftMaxDerivative extends OldSoftMax {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
 
     @Override
     public String opName() {

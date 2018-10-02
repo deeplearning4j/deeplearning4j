@@ -23,6 +23,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 public abstract class BaseTransformStrictOp extends BaseTransformOp implements TransformStrictOp {
 
+    public BaseTransformStrictOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
+        super(sameDiff, i_v1, i_v2);
+    }
+
+    public BaseTransformStrictOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+    }
+
     public BaseTransformStrictOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
