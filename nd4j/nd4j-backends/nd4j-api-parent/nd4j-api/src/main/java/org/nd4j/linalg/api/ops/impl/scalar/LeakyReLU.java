@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.scalar;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
@@ -37,26 +38,19 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public class LeakyReLU extends BaseTransformOp {
+public class LeakyReLU extends BaseScalarOp {
     public static final double DEFAULT_ALPHA = 0.01;
     private double alpha = DEFAULT_ALPHA;
 
     public LeakyReLU(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double alpha) {
-        super(sameDiff, i_v, inPlace);
-        this.alpha = alpha;
-        this.extraArgs = new Object[]{alpha};
-
-    }
-
-    public LeakyReLU(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double alpha) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        super(sameDiff, i_v, alpha, inPlace);
         this.alpha = alpha;
         this.extraArgs = new Object[]{alpha};
 
     }
 
     public LeakyReLU(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double alpha) {
-        super(sameDiff, i_v, extraArgs);
+        super(sameDiff, i_v, alpha, extraArgs);
         this.alpha = alpha;
         this.extraArgs = new Object[]{alpha};
     }
@@ -66,44 +60,34 @@ public class LeakyReLU extends BaseTransformOp {
     }
 
     public LeakyReLU(INDArray x, double alpha) {
-        super(x);
+        super(x, alpha);
         this.alpha = alpha;
         init(x, y, z, n); //Need to re-init to properly set alpha in extra args array
     }
 
     public LeakyReLU(INDArray x, INDArray z, double alpha) {
-        super(x, z);
+        super(x, null, z, x.length(), alpha);
         this.alpha = alpha;
         init(x, y, z, n);
     }
 
     public LeakyReLU(INDArray x, INDArray z, long n, double alpha) {
-        super(x, z, n);
+        super(x, null, z, n, alpha);
         this.alpha = alpha;
         init(x, y, z, n);
     }
 
-    public LeakyReLU(INDArray x, INDArray y, INDArray z, long n, double alpha) {
-        super(x, y, z, n);
-        this.alpha = alpha;
-        init(x, y, z, n);
-    }
 
     public LeakyReLU(INDArray x, INDArray z) {
-        super(x, z);
+        this(x, z, 0.0);
     }
 
     public LeakyReLU(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public LeakyReLU(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+        this(x, z, n, 0.0);
     }
 
     public LeakyReLU(INDArray x) {
-        super(x);
-        this.extraArgs = new Object[]{alpha};
+        super(x, 0.0);
     }
 
     @Override

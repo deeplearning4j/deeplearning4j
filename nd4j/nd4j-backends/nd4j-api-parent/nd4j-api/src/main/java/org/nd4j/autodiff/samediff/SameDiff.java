@@ -37,7 +37,6 @@ import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -47,9 +46,9 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
-import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
@@ -11263,13 +11262,25 @@ public class SameDiff {
                 return Op.Type.SCALAR;
             case OpType.BROADCAST:
                 return Op.Type.BROADCAST;
-            case OpType.TRANSFORM:
-                return Op.Type.TRANSFORM;
-            case OpType.ACCUMULATION:
-                return Op.Type.REDUCE;
-            case OpType.ACCUMULATION3:
+            case OpType.TRANSFORM_BOOL:
+                return Op.Type.TRANSFORM_BOOL;
+            case OpType.TRANSFORM_FLOAT:
+                return Op.Type.TRANSFORM_FLOAT;
+            case OpType.TRANSFORM_SAME:
+                return Op.Type.TRANSFORM_SAME;
+            case OpType.TRANSFORM_STRICT:
+                return Op.Type.TRANSFORM_STRICT;
+            case OpType.REDUCE_BOOL:
+                return Op.Type.REDUCE_BOOL;
+            case OpType.REDUCE_LONG:
+                return Op.Type.REDUCE_LONG;
+            case OpType.REDUCE_FLOAT:
+                return Op.Type.REDUCE_FLOAT;
+            case OpType.REDUCE_SAME:
+                return Op.Type.REDUCE_SAME;
+            case OpType.REDUCE_3:
                 return Op.Type.REDUCE3;
-            case OpType.INDEX_ACCUMULATION:
+            case OpType.INDEX_REDUCE:
                 return Op.Type.INDEXREDUCE;
             case OpType.RANDOM:
                 return Op.Type.RANDOM;
@@ -11300,15 +11311,28 @@ public class SameDiff {
                 return OpType.SCALAR;
             case BROADCAST:
                 return OpType.BROADCAST;
-            case TRANSFORM:
+            case TRANSFORM_BOOL:
+                return OpType.TRANSFORM_BOOL;
+            case TRANSFORM_FLOAT:
+                return OpType.TRANSFORM_FLOAT;
+            case TRANSFORM_SAME:
+                return OpType.TRANSFORM_SAME;
+            case TRANSFORM_STRICT:
+                return OpType.TRANSFORM_STRICT;
             case SPECIAL:
-                return OpType.TRANSFORM;
-            case REDUCE:
-                return OpType.ACCUMULATION;
+                return OpType.TRANSFORM_STRICT;
+            case REDUCE_FLOAT:
+                return OpType.REDUCE_FLOAT;
+            case REDUCE_BOOL:
+                return OpType.REDUCE_BOOL;
+            case REDUCE_SAME:
+                return OpType.REDUCE_SAME;
+            case REDUCE_LONG:
+                return OpType.REDUCE_LONG;
             case REDUCE3:
-                return OpType.ACCUMULATION3;
+                return OpType.REDUCE_3;
             case INDEXREDUCE:
-                return OpType.INDEX_ACCUMULATION;
+                return OpType.INDEX_REDUCE;
             case RANDOM:
                 return OpType.RANDOM;
             case MERGE:

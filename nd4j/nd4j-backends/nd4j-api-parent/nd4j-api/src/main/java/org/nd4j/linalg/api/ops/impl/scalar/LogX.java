@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Collections;
@@ -31,11 +32,11 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class LogX extends BaseTransformOp {
+public class LogX extends BaseScalarOp {
     private double base;
 
     public LogX(SameDiff sameDiff, SDVariable i_v, double base) {
-        super(sameDiff, i_v, new Object[] {base});
+        super(sameDiff, i_v, base);
         this.base = base;
         this.extraArgs = new Object[] {base};
     }
@@ -43,25 +44,25 @@ public class LogX extends BaseTransformOp {
     public LogX() {}
 
     public LogX(INDArray x, INDArray z, double base) {
-        super(x, z);
+        super(x, null, z, x.length(), base);
         this.base = base;
         this.extraArgs = new Object[] {base};
     }
 
     public LogX(INDArray x, INDArray z, double base, long n) {
-        super(x, z, n);
+        super(x, null, z, n, base);
         this.base = base;
         this.extraArgs = new Object[] {base};
     }
 
     public LogX(INDArray x, INDArray y, INDArray z, double base, long n) {
-        super(x, y, z, n);
+        super(x, null, z, x.length(), n);
         this.base = base;
         this.extraArgs = new Object[] {base};
     }
 
     public LogX(INDArray x, double base) {
-        super(x);
+        super(x, base);
         this.base = base;
         this.extraArgs = new Object[] {base};
     }

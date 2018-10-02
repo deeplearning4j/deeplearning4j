@@ -42,7 +42,10 @@ import java.nio.Buffer;
 public interface Op {
     enum Type {
         SCALAR,
-        TRANSFORM,
+        TRANSFORM_SAME,
+        TRANSFORM_FLOAT,
+        TRANSFORM_BOOL,
+        TRANSFORM_STRICT,
         PAIRWISE,
         SPECIAL,
         BROADCAST,

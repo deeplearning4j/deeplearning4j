@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseModule;
 import org.nd4j.linalg.api.ops.Module;
-import org.nd4j.linalg.api.ops.impl.accum.Mmul;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
