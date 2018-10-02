@@ -1049,9 +1049,9 @@ TEST_F(DeclarableOpsTests5, Test_TopK_4) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Test_TopK_5) {
-    auto x = NDArrayFactory::create<double>('f', {2, 3}, {1.1, 11.1, 3.1, 14.2, 5.2, 6.2});
-    auto expV = NDArrayFactory::create<double>('f', {2, 2}, {11.1, 3.1, 14.2, 6.2});
-    auto expI = NDArrayFactory::create<Nd4jLong>('f', {2, 2}, {1, 2, 2, 0});
+    auto x = NDArrayFactory::create<double>('f', {2, 3}, {1.1, 5.2, 3.1, 14.2, 11.1, 6.2});
+    auto expV = NDArrayFactory::create<double>('f', {2, 2}, {11.1, 14.2, 3.1, 6.2});
+    auto expI = NDArrayFactory::create<Nd4jLong>('f', {2, 2}, {2, 1, 1, 2});
 
     nd4j::ops::top_k op;
     auto result = op.execute({&x}, {}, {2, 1});
