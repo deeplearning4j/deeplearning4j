@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Abs extends BaseTransformOp {
+public class Abs extends BaseTransformSameOp {
     public Abs(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -51,10 +52,6 @@ public class Abs extends BaseTransformOp {
 
     public Abs(INDArray x, INDArray z, long n) {
         super(x, z, n);
-    }
-
-    public Abs(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
     }
 
     public Abs(INDArray x) {

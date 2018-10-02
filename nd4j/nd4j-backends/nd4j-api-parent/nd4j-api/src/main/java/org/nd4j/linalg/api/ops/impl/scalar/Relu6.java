@@ -14,12 +14,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.same;
+package org.nd4j.linalg.api.ops.impl.scalar;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative;
 
@@ -31,86 +32,61 @@ import java.util.List;
  *
  * @author Max Pumperla
  */
-public class Relu6 extends BaseTransformOp {
-
-    private double cutoff = 0.0;
-
+public class Relu6 extends BaseScalarOp {
     public Relu6(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double cutoff) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-        this.cutoff = cutoff;
-        this.extraArgs = new Object[]{cutoff};
+        super(sameDiff, i_v1, cutoff, inPlace);
     }
 
     public Relu6(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double cutoff) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-        this.cutoff = cutoff;
-        this.extraArgs = new Object[]{cutoff};
+        super(sameDiff, i_v1, cutoff, extraArgs);
     }
 
     public Relu6(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
-        super(sameDiff, i_v, inPlace);
-        this.cutoff = cutoff;
-        this.extraArgs = new Object[]{cutoff};
-
+        super(sameDiff, i_v, cutoff, inPlace);
     }
 
     public Relu6() {
-        this.extraArgs = new Object[]{cutoff};
+        //
     }
 
     public Relu6(INDArray x, INDArray z, double cutoff) {
-        super(x, z);
-        this.cutoff = cutoff;
-        init(x, y, z, n); //Need to re-init to properly set cutoff in extra args array
+        super(x,null, z, x.length(), cutoff);
+
+        init(x, null, z, x.length()); //Need to re-init to properly set cutoff in extra args array
     }
 
     public Relu6(INDArray x, INDArray z, long n, double cutoff) {
-        super(x, z, n);
-        this.cutoff = cutoff;
-        init(x, y, z, n);
-    }
+        super(x, null, z, n, cutoff);
 
-    public Relu6(INDArray x, INDArray y, INDArray z, long n, double cutoff) {
-        super(x, y, z, n);
-        this.cutoff = cutoff;
-        init(x, y, z, n);
+        init(x, null, z, n);
     }
 
     public Relu6(INDArray x, double cutoff) {
-        super(x);
-        this.cutoff = cutoff;
-        init(x, y, z, n);
+        super(x, cutoff);
+        init(x, null, x, x.length());
     }
 
     public Relu6(INDArray x, INDArray z) {
-        super(x, z);
+        super(x, null, z, x.length(), 0.0f);
     }
 
     public Relu6(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+        super(x, null, z, n, 0.0f);
     }
 
-    public Relu6(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Relu6(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
-    }
 
     public Relu6(INDArray x) {
-        super(x);
+        this(x, 0.0f);
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[]{cutoff};
     }
 
     @Override
     public int opNum() {
-        return 14;
+        return 42;
     }
 
     @Override
@@ -131,6 +107,6 @@ public class Relu6 extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable dLdOut = i_v.get(0);
-        return Collections.singletonList(f().relu6Derivative(arg(), dLdOut, cutoff));
+        return Collections.singletonList(f().relu6Derivative(arg(), dLdOut, scalarValue.getDouble(0)));
     }
 }

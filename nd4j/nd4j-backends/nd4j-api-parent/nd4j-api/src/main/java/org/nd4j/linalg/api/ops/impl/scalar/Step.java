@@ -14,13 +14,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.same;
+package org.nd4j.linalg.api.ops.impl.scalar;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +31,7 @@ import java.util.List;
  * f(x) = 1 if x > cutoff; 0 otherwise
  * cutoff = 0.0 usually.
  */
-public class Step extends BaseTransformOp {
+public class Step extends BaseTransformSameOp {
     private final double cutoff;
 
     public Step(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {

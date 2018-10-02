@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,7 +30,7 @@ import java.util.List;
 /**
  * Created by susaneraly on 3/28/18.
  */
-public class Reciprocal extends BaseTransformOp {
+public class Reciprocal extends BaseTransformSameOp {
 
     public Reciprocal(SameDiff sameDiff, SDVariable in, boolean inPlace) {
         super(sameDiff, in, inPlace);
@@ -38,16 +39,16 @@ public class Reciprocal extends BaseTransformOp {
     public Reciprocal() {
     }
 
-    public Reciprocal(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public Reciprocal(INDArray x, INDArray z, long n) {
+        super(x, z, n);
     }
 
-    public Reciprocal(INDArray x, INDArray y) {
-        super(x, y, x, x.lengthLong());
+    public Reciprocal(INDArray x, INDArray z) {
+        super(x, z, x.lengthLong());
     }
 
-    public Reciprocal(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+    public Reciprocal(INDArray x) {
+        super(x);
     }
 
     @Override

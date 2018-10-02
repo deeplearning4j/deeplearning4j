@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.UUID;
  *
  * @author Adam Gibson
  */
-public class OldIdentity extends BaseTransformOp {
+public class OldIdentity extends BaseTransformSameOp {
     public OldIdentity(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -55,17 +56,13 @@ public class OldIdentity extends BaseTransformOp {
         super(x, z, n);
     }
 
-    public OldIdentity(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public OldIdentity(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 27;
+        return 15;
     }
 
     @Override

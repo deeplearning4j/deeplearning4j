@@ -14,13 +14,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.same;
+package org.nd4j.linalg.api.ops.impl.scalar;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.impl.transforms.same.Step;
+import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,79 +29,55 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class RectifedLinear extends BaseTransformOp {
-    private double cutoff = 0.0;
-
+public class RectifedLinear extends BaseScalarOp {
     public RectifedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double cutoff) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-        this.cutoff = cutoff;
-        this.extraArgs = new Object[]{cutoff};
+        super(sameDiff, i_v1, cutoff, inPlace);
     }
 
     public RectifedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double cutoff) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-        this.cutoff = cutoff;
-        this.extraArgs = new Object[]{cutoff};
+        super(sameDiff, i_v1, cutoff, extraArgs);
     }
 
     public RectifedLinear(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
-        super(sameDiff, i_v, inPlace);
-        this.cutoff = cutoff;
-        this.extraArgs = new Object[]{cutoff};
-
+        super(sameDiff, i_v, cutoff, inPlace);
     }
 
     public RectifedLinear() {
-        this.extraArgs = new Object[]{cutoff};
+
     }
 
     public RectifedLinear(INDArray x, INDArray z, double cutoff) {
-        super(x, z);
-        this.cutoff = cutoff;
-        init(x, y, z, n); //Need to re-init to properly set cutoff in extra args array
+        super(x, null, z, x.length(), cutoff);
+
+        init(x, null, z, n); //Need to re-init to properly set cutoff in extra args array
     }
 
     public RectifedLinear(INDArray x, INDArray z, long n, double cutoff) {
-        super(x, z, n);
-        this.cutoff = cutoff;
-        init(x, y, z, n);
-    }
-
-    public RectifedLinear(INDArray x, INDArray y, INDArray z, long n, double cutoff) {
-        super(x, y, z, n);
-        this.cutoff = cutoff;
-        init(x, y, z, n);
+        super(x, null, z, n, cutoff);
+        init(x, null, z, n);
     }
 
     public RectifedLinear(INDArray x, double cutoff) {
-        super(x);
-        this.cutoff = cutoff;
-        init(x, y, z, n);
+        super(x, cutoff);
+
+        init(x, null, x, x.length());
     }
 
     public RectifedLinear(INDArray x, INDArray z) {
-        super(x, z);
+        this(x, z, 0.0f);
     }
 
     public RectifedLinear(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public RectifedLinear(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public RectifedLinear(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+        this(x, z, n, 0.0f);
     }
 
     public RectifedLinear(INDArray x) {
-        super(x);
+        this(x, 0.0f);
     }
 
     @Override
     public int opNum() {
-        return 33;
+        return 41;
     }
 
     @Override
@@ -123,13 +98,12 @@ public class RectifedLinear extends BaseTransformOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[]{cutoff};
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable step = new Step(sameDiff, arg(), false, cutoff).outputVariables()[0];
+        SDVariable step = new Step(sameDiff, arg(), false, scalarValue.getDouble(0)).outputVariables()[0];
         SDVariable ret = step.mul(i_v.get(0));
         return Arrays.asList(ret);
     }
