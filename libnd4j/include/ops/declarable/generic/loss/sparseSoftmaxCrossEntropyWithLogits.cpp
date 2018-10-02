@@ -44,7 +44,7 @@ OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false) {
     std::vector<Nd4jLong> labelsShape = labels->getShapeAsVector();
     std::vector<Nd4jLong> logitsShape = logits->getShapeAsVector();
     bool equalSoft = true;
-    for (size_t i = 1; i < labelsShape; ++i)
+    for (size_t i = 1; i < labelsShape.size(); ++i)
         if (labelsShape[i] != logitsShape[i]) {
             equalSoft = false;
             break;
