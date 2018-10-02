@@ -27,6 +27,7 @@
 #include <op_boilerplate.h>
 #include <dll.h>
 #include <Environment.h>
+#include <ArrayOptions.h> 
 #include <templatemath.h>
 
 namespace nd4j {
@@ -63,6 +64,8 @@ namespace nd4j {
         FORCEINLINE static bool isU(nd4j::DataType dataType);
 
         FORCEINLINE static nd4j::DataType pickPairwiseResultType(nd4j::DataType typeX, nd4j::DataType typeY);
+
+        FORCEINLINE static nd4j::DataType pickPairwiseResultType(const Nd4jLong* shapeInfo1, const Nd4jLong* shapeInfo2);
 
         FORCEINLINE static nd4j::DataType pickFloatingType(nd4j::DataType typeX);
     };
@@ -137,6 +140,11 @@ namespace nd4j {
         return typeX;
     }
 
+///////////////////////////////////////////////////////////////////
+FORCEINLINE nd4j::DataType DataTypeUtils::pickPairwiseResultType(const Nd4jLong* shapeInfo1, const Nd4jLong* shapeInfo2) {
+
+    return pickPairwiseResultType(ArrayOptions::dataType(shapeInfo1), ArrayOptions::dataType(shapeInfo2));
+}
 
 ///////////////////////////////////////////////////////////////////
 FORCEINLINE size_t DataTypeUtils::sizeOf(DataType type) {
