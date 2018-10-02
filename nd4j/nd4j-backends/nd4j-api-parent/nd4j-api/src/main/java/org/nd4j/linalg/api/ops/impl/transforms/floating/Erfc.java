@@ -68,7 +68,7 @@ public class Erfc extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 90;
+        return 32;
     }
 
     @Override

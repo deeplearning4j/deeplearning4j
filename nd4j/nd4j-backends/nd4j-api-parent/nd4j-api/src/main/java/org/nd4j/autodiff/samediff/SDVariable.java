@@ -16,22 +16,17 @@
 
 package org.nd4j.autodiff.samediff;
 
-import com.google.common.annotations.VisibleForTesting;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
@@ -43,7 +38,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 /**
  *

@@ -63,7 +63,7 @@ public class Sqrt extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 14;
+        return 7;
     }
 
     @Override

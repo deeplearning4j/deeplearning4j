@@ -65,7 +65,7 @@ public class Cos extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 2;
+        return 0;
     }
 
     @Override

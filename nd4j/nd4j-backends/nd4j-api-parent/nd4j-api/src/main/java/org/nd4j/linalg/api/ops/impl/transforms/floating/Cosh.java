@@ -65,7 +65,7 @@ public class Cosh extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 64;
+        return 20;
     }
 
     @Override

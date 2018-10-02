@@ -63,7 +63,7 @@ public class HardTanh extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 19;
+        return 12;
     }
 
     @Override

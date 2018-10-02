@@ -67,7 +67,7 @@ public class Sigmoid extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 10;
+        return 4;
     }
 
     @Override

@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarSet;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.same.OldIdentity;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SwishDerivative;

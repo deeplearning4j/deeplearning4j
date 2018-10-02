@@ -64,7 +64,7 @@ public class ASinh extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 84;
+        return 29;
     }
 
     @Override

@@ -60,7 +60,7 @@ public class Tan extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 65;
+        return 21;
     }
 
     @Override

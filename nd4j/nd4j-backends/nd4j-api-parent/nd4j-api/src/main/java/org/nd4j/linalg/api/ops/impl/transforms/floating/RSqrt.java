@@ -63,7 +63,7 @@ public class RSqrt extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 76;
+        return 25;
     }
 
     @Override

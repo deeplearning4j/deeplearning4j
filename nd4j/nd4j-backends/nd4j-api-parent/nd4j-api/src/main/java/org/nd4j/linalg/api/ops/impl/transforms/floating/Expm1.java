@@ -65,7 +65,7 @@ public class Expm1 extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 91;
+        return 33;
     }
 
     @Override

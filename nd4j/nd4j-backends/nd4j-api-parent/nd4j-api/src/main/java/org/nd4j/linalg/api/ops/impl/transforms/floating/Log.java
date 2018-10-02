@@ -63,7 +63,7 @@ public class Log extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 5;
+        return 2;
     }
 
     @Override

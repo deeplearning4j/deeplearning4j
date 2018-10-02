@@ -64,7 +64,7 @@ public class ASin extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 17;
+        return 10;
     }
 
     @Override

@@ -59,7 +59,7 @@ public class HardSigmoid extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 51;
+        return 16;
     }
 
     @Override

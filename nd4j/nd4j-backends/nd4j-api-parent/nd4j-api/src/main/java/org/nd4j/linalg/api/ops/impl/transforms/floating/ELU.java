@@ -72,7 +72,7 @@ public class ELU extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 21;
+        return 14;
     }
 
     @Override

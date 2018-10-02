@@ -66,7 +66,7 @@ public class ACosh extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 82;
+        return 28;
     }
 
     @Override

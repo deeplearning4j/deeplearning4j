@@ -66,7 +66,7 @@ public class Erf extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 78;
+        return 27;
     }
 
     @Override
