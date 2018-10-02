@@ -2920,8 +2920,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  this constructor creates scalar and set its value = 0
         */
-        public NDArray(@Cast("nd4j::DataType") int dtype, Workspace workspace) { super((Pointer)null); allocate(dtype, workspace); }
-        private native void allocate(@Cast("nd4j::DataType") int dtype, Workspace workspace);
+        public NDArray(@Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(dtype, workspace); }
+        private native void allocate(@Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
+        public NDArray(@Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(dtype); }
+        private native void allocate(@Cast("nd4j::DataType") int dtype);
                 
 
         /**
@@ -3587,6 +3589,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native ResultSet allExamples();        
 
         /**
+        *  returns absolute offset which corresponds to given sequential index
+        */
+        public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong") long i);
+
+        /**
         *  default destructor
         */ 
 
@@ -3676,7 +3683,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  returns true if buffer && shapeInfo were defined (non nullptr)
         */
-        public native @Cast("bool") boolean nonNull();
+        public native @Cast("bool") boolean nonNull();        
 
         /** 
         *  returns array element with given index from linear buffer
@@ -3699,6 +3706,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  returns element with given indexes from DD array
         */
+
+        /** 
+        *  returns array-scalar containing element of this array with given index
+        *  i - element index in array
+        */        
+        public native @ByVal NDArray e(@Cast("const Nd4jLong") long i); 
         
         /** 
         *  assigns given scalar to array element by given index, regards array buffer as linear

@@ -85,7 +85,7 @@ namespace helpers {
     }
 
     Nd4jLong uniqueFunctor(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), uniqueFunctor_,(input, values, indices, counts), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return uniqueFunctor_,(input, values, indices, counts), LIBND4J_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template Nd4jLong uniqueFunctor_, (NDArray* input, NDArray* values, NDArray* indices, NDArray* counts), LIBND4J_TYPES);

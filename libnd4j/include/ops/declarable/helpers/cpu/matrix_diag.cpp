@@ -55,7 +55,7 @@ static int _matrixDiag(const NDArray* input, NDArray* output) {
 }
 
     int matrixDiag(const NDArray* input, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), _matrixDiag, (input, output), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiag, (input, output), LIBND4J_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template int _matrixDiag, (const NDArray* input, NDArray* output), LIBND4J_TYPES);

@@ -55,7 +55,7 @@ int _matrixDiagPart(const NDArray* input, NDArray* output) {
 }
 
     int matrixDiagPart(const NDArray* input, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), _matrixDiagPart, (input, output), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (input, output), LIBND4J_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template int _matrixDiagPart, (const NDArray* input, NDArray* output), LIBND4J_TYPES);
