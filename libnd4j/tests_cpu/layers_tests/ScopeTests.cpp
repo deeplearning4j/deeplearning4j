@@ -79,7 +79,7 @@ TEST_F(ScopeTests, RealTests_1) {
     variableSpace->putVariable(-3, scalar);
 
     // just few ops coming before while
-    auto nodeA = new Node(OpType_TRANSFORM, 35, 1, {-1});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 35, 1, {-1});
     auto nodeB = new Node(OpType_SCALAR, 0, 2, {1}, {}, {}, 1.0);
 
     //
@@ -97,7 +97,7 @@ TEST_F(ScopeTests, RealTests_1) {
 //// filling out condition scope
 ////////////////////////////////////////////////////////////////////////////////////////////////////
     // this is Sum accumulation, which feed
-    auto scopedA0 = new Node(OpType_ACCUMULATION, 0, 4, {12});
+    auto scopedA0 = new Node(OpType_REDUCE_SAME, 0, 4, {12});
     scopedA0->setScopeInfo(3, "scopeCondition");
 
     // this op compares LT A0 result with variable `scalar` which is 10;

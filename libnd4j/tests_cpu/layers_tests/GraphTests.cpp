@@ -48,9 +48,9 @@ TEST_F(GraphTests, SingleInput1) {
 
     graph->getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 2, 2, {1}, {3});
-    auto nodeC = new Node(OpType_TRANSFORM, 0, 3, {2}, {});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 2, 2, {1}, {3});
+    auto nodeC = new Node(OpType_TRANSFORM_SAME, 0, 3, {2}, {});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -85,8 +85,8 @@ TEST_F(GraphTests, DoubleInput1) {
     graph->getVariableSpace()->putVariable(-2, y);
     graph->getVariableSpace()->putVariable(-3, z);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {3});
-    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {-2}, {3});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {3});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 0, 2, {-2}, {3});
     auto nodeC = new Node(OpType_PAIRWISE, 0, 3, {1, 2}, {-3});
 
     graph->addNode(nodeA);
@@ -116,9 +116,9 @@ TEST_F(GraphTests, SingleInput3) {
     graph->getVariableSpace()->putVariable(-2, v0);
     graph->getVariableSpace()->putVariable(-3, v1);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2, 3});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {-2});
-    auto nodeC = new Node(OpType_TRANSFORM, 26, 3, {1}, {-3});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2, 3});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
+    auto nodeC = new Node(OpType_TRANSFORM_SAME, 26, 3, {1}, {-3});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -148,12 +148,12 @@ TEST_F(GraphTests, SingleInput4) {
     graph->getVariableSpace()->putVariable(-2, v0);
     graph->getVariableSpace()->putVariable(-3, v1);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {3});
-    auto nodeC = new Node(OpType_TRANSFORM, 6, 3, {2}, {4, 5});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {3});
+    auto nodeC = new Node(OpType_TRANSFORM_SAME, 6, 3, {2}, {4, 5});
 
-    auto nodeS = new Node(OpType_TRANSFORM, 26, 4, {3}, {-2});
-    auto nodeE = new Node(OpType_TRANSFORM, 27, 5, {3}, {-3});
+    auto nodeS = new Node(OpType_TRANSFORM_SAME, 26, 4, {3}, {-2});
+    auto nodeE = new Node(OpType_TRANSFORM_SAME, 27, 5, {3}, {-3});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -191,13 +191,13 @@ TEST_F(GraphTests, DoubleInput2) {
     graph->getVariableSpace()->putVariable(-4, z1);
 
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {3});
-    auto nodeC = new Node(OpType_TRANSFORM, 6, 3, {2}, {-3});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {3});
+    auto nodeC = new Node(OpType_TRANSFORM_SAME, 6, 3, {2}, {-3});
 
-    auto nodeT = new Node(OpType_TRANSFORM, 0, 11, {-2}, {12});
-    auto nodeU = new Node(OpType_TRANSFORM, 14, 12, {11}, {13});
-    auto nodeV = new Node(OpType_TRANSFORM, 6, 13, {12}, {-4});
+    auto nodeT = new Node(OpType_TRANSFORM_SAME, 0, 11, {-2}, {12});
+    auto nodeU = new Node(OpType_TRANSFORM_SAME, 14, 12, {11}, {13});
+    auto nodeV = new Node(OpType_TRANSFORM_SAME, 6, 13, {12}, {-4});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -240,16 +240,16 @@ TEST_F(GraphTests, DoubleInput3) {
     graph->getVariableSpace()->putVariable(-5, w);
 
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {3});
-    auto nodeC = new Node(OpType_TRANSFORM, 6, 3, {2}, {-3, 21});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {3});
+    auto nodeC = new Node(OpType_TRANSFORM_SAME, 6, 3, {2}, {-3, 21});
 
-    auto nodeT = new Node(OpType_TRANSFORM, 0, 11, {-2}, {12});
-    auto nodeU = new Node(OpType_TRANSFORM, 14, 12, {11}, {13});
-    auto nodeV = new Node(OpType_TRANSFORM, 6, 13, {12}, {-4, 21});
+    auto nodeT = new Node(OpType_TRANSFORM_SAME, 0, 11, {-2}, {12});
+    auto nodeU = new Node(OpType_TRANSFORM_SAME, 14, 12, {11}, {13});
+    auto nodeV = new Node(OpType_TRANSFORM_SAME, 6, 13, {12}, {-4, 21});
 
     auto nodeW = new Node(OpType_PAIRWISE, 0, 21, {3, 13}, {22});
-    auto nodeZ = new Node(OpType_TRANSFORM, 0, 22, {21}, {-5});
+    auto nodeZ = new Node(OpType_TRANSFORM_SAME, 0, 22, {21}, {-5});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -298,10 +298,10 @@ TEST_F(GraphTests, QuadInput1) {
     graph->getVariableSpace()->putVariable(-4, x3);
     graph->getVariableSpace()->putVariable(-5, z);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {11});
-    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {-2}, {11});
-    auto nodeC = new Node(OpType_TRANSFORM, 0, 3, {-3}, {21});
-    auto nodeD = new Node(OpType_TRANSFORM, 0, 4, {-4}, {21});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {11});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 0, 2, {-2}, {11});
+    auto nodeC = new Node(OpType_TRANSFORM_SAME, 0, 3, {-3}, {21});
+    auto nodeD = new Node(OpType_TRANSFORM_SAME, 0, 4, {-4}, {21});
 
     auto nodeP1 = new Node(OpType_PAIRWISE, 0, 11, {1, 2}, {31});
     auto nodeP2 = new Node(OpType_PAIRWISE, 0, 21, {3, 4}, {31});
@@ -338,19 +338,19 @@ TEST_F(GraphTests, InternalBranching1) {
     graph->getVariableSpace()->putVariable(-2, z);
 
     // 1.0
-    auto nodeA = new Node(OpType_TRANSFORM, 26, 1, {-1}, {11, 21});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 26, 1, {-1}, {11, 21});
 
     // -1
-    auto nodeK = new Node(OpType_TRANSFORM, 6, 11, {1}, {12});
+    auto nodeK = new Node(OpType_TRANSFORM_SAME, 6, 11, {1}, {12});
 
     // 2.0
-    auto nodeL = new Node(OpType_TRANSFORM, 35, 12, {11}, {31});
+    auto nodeL = new Node(OpType_TRANSFORM_SAME, 35, 12, {11}, {31});
 
     // -1
-    auto nodeR = new Node(OpType_TRANSFORM, 6, 21, {1}, {22});
+    auto nodeR = new Node(OpType_TRANSFORM_SAME, 6, 21, {1}, {22});
 
     // 1
-    auto nodeS = new Node(OpType_TRANSFORM, 6, 22, {21}, {31});
+    auto nodeS = new Node(OpType_TRANSFORM_SAME, 6, 22, {21}, {31});
 
     // 1.0
     auto nodeZ = new Node(OpType_PAIRWISE, 0, 31, {12, 22}, {-2});
@@ -391,8 +391,8 @@ TEST_F(GraphTests, ReductionsTest1) {
     graph->getVariableSpace()->putVariable(-2, z);
 
 
-    auto nodeA = new Node(OpType_ACCUMULATION, 0, 1, {-1}, {2}, {1});
-    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_REDUCE_SAME, 0, 1, {-1}, {2}, {1});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -424,8 +424,8 @@ TEST_F(GraphTests, IndexReductionsTest1) {
     graph->getVariableSpace()->putVariable(-2, z);
 
 
-    auto nodeA = new Node(OpType_INDEX_ACCUMULATION, 1, 1, {-1}, {2}, {1});
-    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_INDEX_REDUCE, 1, 1, {-1}, {2}, {1});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -448,8 +448,8 @@ TEST_F(GraphTests, AutoOutput1) {
 
     graph->getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 35, 2, {1}, {});
+    auto nodeA = new Node(OpType_TRANSFORM_FLOAT, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, 35, 2, {1}, {});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -483,9 +483,9 @@ TEST_F(GraphTests, AutoOutput2) {
 
     graph->getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2, 3, -1});
-    auto nodeB = new Node(OpType_TRANSFORM, 35, 2, {1}, {});
-    auto nodeC = new Node(OpType_TRANSFORM, 6, 3, {1}, {});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2, 3, -1});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 35, 2, {1}, {});
+    auto nodeC = new Node(OpType_TRANSFORM_SAME, 6, 3, {1}, {});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -533,7 +533,7 @@ TEST_F(GraphTests, BroadcastTest1) {
     graph->getVariableSpace()->putVariable(-3, z);
 
     auto nodeA = new Node(OpType_BROADCAST, 0, 1, {-1, -2}, {2}, {1});
-    auto nodeB = new Node(OpType_TRANSFORM, 6, 2, {1}, {-3});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 6, 2, {1}, {-3});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -557,8 +557,8 @@ TEST_F(GraphTests, ScalarTest1) {
     graph->getVariableSpace()->putVariable(-1, x);
     graph->getVariableSpace()->putVariable(-2, z);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {3});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {3});
     auto nodeE = new Node(OpType_SCALAR, 0, 3, {2}, {-2}, {}, 1.3f);
 
     graph->addNode(nodeA);
@@ -595,8 +595,8 @@ TEST_F(GraphTests, SymbolicLookupTest1) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
 
     std::string p("phi");
     std::string t("theta");
@@ -653,8 +653,8 @@ TEST_F(GraphTests, OutputValidation1) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -690,8 +690,8 @@ TEST_F(GraphTests, OutputValidation2) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -732,8 +732,8 @@ TEST_F(GraphTests, OutputValidation3) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -772,8 +772,8 @@ TEST_F(GraphTests, OutputValidation4) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
 
     graph->addOutput(-1);
 
@@ -818,8 +818,8 @@ TEST_F(GraphTests, OutputValidation5) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
 
     graph->addOutput(-1);
 
@@ -858,8 +858,8 @@ TEST_F(GraphTests, OutputValidation6) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {});
 
     //graph->addOutput(-1);
 
@@ -898,9 +898,9 @@ TEST_F(GraphTests, TestMultiOutput1) {
 
 
     // Abs
-    auto nodeA0 = new Node(OpType_TRANSFORM, 0, 1, {-1}, {11});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {11});
     nodeA0->markInplace(false);
-    auto nodeB0 = new Node(OpType_TRANSFORM, 0, 2, {-2}, {11});
+    auto nodeB0 = new Node(OpType_TRANSFORM_SAME, 0, 2, {-2}, {11});
     nodeB0->markInplace(false);
 
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation("testop2i2o");
@@ -913,12 +913,12 @@ TEST_F(GraphTests, TestMultiOutput1) {
 
 
     // this op will subtract this value from 1.0
-    auto nodeX = new Node(OpType_TRANSFORM, 35, 21);
+    auto nodeX = new Node(OpType_TRANSFORM_SAME, 35, 21);
     nodeX->markInplace(false);
     nodeX->pickInput(11, 0);
 
     // this op will subtract this value from 1.0
-    auto nodeY = new Node(OpType_TRANSFORM, 35, 31);
+    auto nodeY = new Node(OpType_TRANSFORM_SAME, 35, 31);
     nodeY->markInplace(false);
     nodeY->pickInput(11, 1);
 
@@ -964,8 +964,8 @@ TEST_F(GraphTests, MemoryEstimationTest1) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA0 = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeA1 = new Node(OpType_TRANSFORM, 0, 2, {1}, {});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {});
     nodeA1->markInplace(false);
 
     graph.addNode(nodeA0);
@@ -987,8 +987,8 @@ TEST_F(GraphTests, MemoryEstimationTest2) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA0 = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeA1 = new Node(OpType_TRANSFORM, 0, 2, {1}, {});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {});
     //nodeA1->markInplace(false);
 
     graph.addNode(nodeA0);
@@ -1010,9 +1010,9 @@ TEST_F(GraphTests, MemoryEstimationTest3) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA0 = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeA1 = new Node(OpType_TRANSFORM, 0, 2, {1}, {3});
-    auto nodeA2 = new Node(OpType_ACCUMULATION, 0, 3, {2}, {}, {});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {3});
+    auto nodeA2 = new Node(OpType_REDUCE_SAME, 0, 3, {2}, {}, {});
     nodeA1->markInplace(false);
 
     graph.addNode(nodeA0);
@@ -1035,9 +1035,9 @@ TEST_F(GraphTests, MemoryEstimationTest4) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA0 = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeA1 = new Node(OpType_TRANSFORM, 0, 2, {1}, {3});
-    auto nodeA2 = new Node(OpType_ACCUMULATION, 0, 3, {2}, {}, {1});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {3});
+    auto nodeA2 = new Node(OpType_REDUCE_SAME, 0, 3, {2}, {}, {1});
     nodeA1->markInplace(false);
 
     graph.addNode(nodeA0);
@@ -1060,8 +1060,8 @@ TEST_F(GraphTests, MemoryEstimationTest5) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA0 = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeA1 = new Node(OpType_TRANSFORM, 0, 2, {1}, {3});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {3});
     auto nodeA2 = new Node(OpType_CUSTOM, 0, 3, {2}, {}, {});
     nodeA1->markInplace(false);
 
@@ -1102,15 +1102,15 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
     graphB.getVariableSpace()->putVariable(-1, new Variable(true));
 
     // abs, result is 5
-    auto nodeA0 = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
     // 1-, result -4
-    auto nodeA1 = new Node(OpType_TRANSFORM, 35, 2, {1}, {3});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 35, 2, {1}, {3});
 
     // graph should return 12: abs(3.0 x -4)
     auto nodeA2 = new Node(OpType_GRAPH, -1, 3, {2}, {4});
 
     // 1 - 12 = -11
-    auto nodeA3 = new Node(OpType_TRANSFORM, 35, 4, {3}, {});
+    auto nodeA3 = new Node(OpType_TRANSFORM_SAME, 35, 4, {3}, {});
 
     nodeA2->setGraph(&graphB);
 
@@ -1121,7 +1121,7 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
 
     // this is going to be PWT
     auto nodeB0 = new Node(OpType_PAIRWISE, 6, 1, {-1, -2}, {2});
-    auto nodeB1 = new Node(OpType_TRANSFORM, 0, 2, {1}, {});
+    auto nodeB1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {});
 
     graphB.addNode(nodeB0);
     graphB.addNode(nodeB1);
@@ -1172,16 +1172,16 @@ TEST_F(GraphTests, TestGraphInGraph_2) {
     graphB.getVariableSpace()->putVariable(-1, placeHolder);
 
     // abs, result is 5
-    auto nodeA0 = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
     // 1-, result -4
-    auto nodeA1 = new Node(OpType_TRANSFORM, 35, 2, {1}, {3});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 35, 2, {1}, {3});
     nodeA1->setName(nameA1);
 
     // graph should return 12: abs(3.0 x -4)
     auto nodeA2 = new Node(OpType_GRAPH, -1, 3, {2}, {4});
 
     // 1 - 12 = -11
-    auto nodeA3 = new Node(OpType_TRANSFORM, 35, 4, {3}, {});
+    auto nodeA3 = new Node(OpType_TRANSFORM_SAME, 35, 4, {3}, {});
 
     nodeA2->setGraph(&graphB);
 
@@ -1192,7 +1192,7 @@ TEST_F(GraphTests, TestGraphInGraph_2) {
 
     // this is going to be PWT
     auto nodeB0 = new Node(OpType_PAIRWISE, 6, 1, {-1, -2}, {2});
-    auto nodeB1 = new Node(OpType_TRANSFORM, 0, 2, {1}, {});
+    auto nodeB1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {});
 
     graphB.addNode(nodeB0);
     graphB.addNode(nodeB1);
@@ -1520,21 +1520,21 @@ TEST_F(GraphTests, Test_Inplace_Execution_2) {
     graphA.getVariableSpace()->putVariable(-1, x);
 
     // abs, result is 5
-    auto nodeA0 = new Node(OpType_TRANSFORM, 0, 1, {-1}, {});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {});
     // 1-, result -4
-    auto nodeA1 = new Node(OpType_TRANSFORM, 35, 2, {1}, {});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 35, 2, {1}, {});
 
     // graph should return 4: abs(-4)
-    auto nodeA2 = new Node(OpType_TRANSFORM, 0, 3, {2}, {});
+    auto nodeA2 = new Node(OpType_TRANSFORM_SAME, 0, 3, {2}, {});
 
     // graph should return 1 - 4 = -3
-    auto nodeA21 = new Node(OpType_TRANSFORM, 35, 5, {3}, {});
+    auto nodeA21 = new Node(OpType_TRANSFORM_SAME, 35, 5, {3}, {});
 
     // 1 - -4 = 3
-    auto nodeA3 = new Node(OpType_TRANSFORM, 35, 4, {2}, {});
+    auto nodeA3 = new Node(OpType_TRANSFORM_SAME, 35, 4, {2}, {});
 
     // same abs = 3
-    auto nodeA31 = new Node(OpType_TRANSFORM, 35, 6, {4}, {});
+    auto nodeA31 = new Node(OpType_TRANSFORM_SAME, 35, 6, {4}, {});
 
     graphA.addNode(nodeA0);
     graphA.addNode(nodeA1);

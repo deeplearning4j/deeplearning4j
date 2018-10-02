@@ -31,7 +31,7 @@ namespace ops  {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
 
-        const auto clipNorm = NDArrayFactory::create(T_ARG(0));
+        const auto clipNorm = NDArrayFactory::create(T_ARG(0), block.getWorkspace());
         const bool isInplace = block.isInplace();
         
         helpers::clipByNorm(*input, *output, *block.getIArguments(), clipNorm, isInplace);

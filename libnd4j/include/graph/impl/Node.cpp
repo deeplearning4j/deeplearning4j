@@ -332,22 +332,22 @@ namespace nd4j {
             }
 
             // these ops allow in-place execution by design
-            if (opType == OpType_TRANSFORM || opType == OpType_SCALAR || opType == OpType_BROADCAST) {
+            if (opType == OpType_TRANSFORM_SAME || opType == OpType_SCALAR || opType == OpType_BROADCAST) {
                 if (_output.size() <= 1) {
                     _isInplace = true;
                 }
                 _opClass = OpClass_TRANSFORM;
-            } else if (opType == OpType_ACCUMULATION || opType == OpType_SUMMARYSTATS) {
+            } else if (opType == OpType_REDUCE_SAME || opType == OpType_SUMMARYSTATS) {
                 _opClass = OpClass_REDUCTION;
             }
 
 
             if (opType == OpType_BROADCAST ||
-                    opType == OpType_INDEX_ACCUMULATION ||
+                    opType == OpType_INDEX_REDUCE ||
                     opType == OpType_SUMMARYSTATS ||
-                    opType == OpType_ACCUMULATION ||
-                    opType == OpType_ACCUMULATION3 ||
-                    opType == OpType_TRANSFORM ||
+                    opType == OpType_REDUCE_SAME ||
+                    opType == OpType_REDUCE_3 ||
+                    opType == OpType_TRANSFORM_SAME ||
                     opType == OpType_RANDOM ||
                     opType == OpType_PAIRWISE ||
                     opType == OpType_SCALAR) {
@@ -464,7 +464,7 @@ namespace nd4j {
 
 
                 // these ops allow in-place execution by design
-                if (this->_opType == OpType_TRANSFORM || this->_opType == OpType_SCALAR || this->_opType == OpType_BROADCAST || this->_opType == OpType_RANDOM || this->_opType == OpType_ACCUMULATION || this->_opType == OpType_ACCUMULATION3 || this->_opType == OpType_PAIRWISE || this->_opType == OpType_SUMMARYSTATS || this->_opType == OpType_INDEX_ACCUMULATION) {
+                if (this->_opType == OpType_TRANSFORM_SAME || this->_opType == OpType_SCALAR || this->_opType == OpType_BROADCAST || this->_opType == OpType_RANDOM || this->_opType == OpType_REDUCE_SAME || this->_opType == OpType_REDUCE_3 || this->_opType == OpType_PAIRWISE || this->_opType == OpType_SUMMARYSTATS || this->_opType == OpType_INDEX_REDUCE) {
                     if (_output.size() <= 1) {
                         _isInplace = true;
                     }
@@ -590,15 +590,15 @@ namespace nd4j {
             switch (opType) {
                 case OpType_PAIRWISE:
                     return new nd4j::ops::LegacyPairwiseTransformOp(opNum);
-                case OpType_TRANSFORM:
+                case OpType_TRANSFORM_SAME:
                     return new nd4j::ops::LegacyTransformOp(opNum);
                 case OpType_SCALAR:
                     return new nd4j::ops::LegacyScalarOp(opNum, scalar);
-                case OpType_ACCUMULATION3:
+                case OpType_REDUCE_3:
                     return new nd4j::ops::LegacyReduce3Op(opNum);
-                case OpType_ACCUMULATION:
+                case OpType_REDUCE_SAME:
                     return new nd4j::ops::LegacyReduceOp(opNum);
-                case OpType_INDEX_ACCUMULATION:
+                case OpType_INDEX_REDUCE:
                     return new nd4j::ops::LegacyIndexReduceOp(opNum);
                 case OpType_SUMMARYSTATS:
                     return new nd4j::ops::LegacyStatsOp(opNum);

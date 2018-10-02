@@ -62,7 +62,7 @@ TEST_F(FlatBuffersTest, BasicTest1) {
 
     auto name = builder.CreateString("wow");
 
-    auto node = CreateFlatNode(builder, -1, name, OpType_TRANSFORM, 26, {0});
+    auto node = CreateFlatNode(builder, -1, name, OpType_TRANSFORM_SAME, 26, {0});
 
     builder.Finish(node);
 
@@ -116,8 +116,8 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto name1 = builder.CreateString("wow1");
     auto name2 = builder.CreateString("wow2");
 
-    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, 0, in1, 0, nd4j::graph::DataType::DataType_FLOAT, vec1);
-    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM, 2, 0, in2, 0, nd4j::graph::DataType::DataType_FLOAT, vec2);
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM_SAME, 0, 0, in1, 0, nd4j::graph::DataType::DataType_FLOAT, vec1);
+    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM_SAME, 2, 0, in2, 0, nd4j::graph::DataType::DataType_FLOAT, vec2);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fVar);
@@ -207,7 +207,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 }
 
 TEST_F(FlatBuffersTest, ExecutionTest1) {
-    auto gA = new Node(OpType_TRANSFORM);
+    auto gA = new Node(OpType_TRANSFORM_SAME);
 
     float *c = new float[4] {-1, -2, -3, -4};
     auto array = new NDArray(c, cShape);

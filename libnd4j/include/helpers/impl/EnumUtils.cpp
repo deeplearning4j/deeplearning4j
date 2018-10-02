@@ -35,13 +35,13 @@ namespace nd4j {
 
     const char * EnumUtils::_OpTypeToString(nd4j::graph::OpType opType) {
         switch(opType) {
-            case OpType_ACCUMULATION: return "ACCUMULATION";
+            case OpType_REDUCE_SAME: return "ACCUMULATION";
             case OpType_BOOLEAN: return "BOOLEAN";
             case OpType_BROADCAST: return "BROADCAST";
             case OpType_CUSTOM: return "CUSTOM";
             case OpType_LOGIC: return "LOGIC";
-            case OpType_TRANSFORM: return "TRANSFORM";
-            case OpType_INDEX_ACCUMULATION: return "INDEX_ACCUMULATION";
+            case OpType_TRANSFORM_SAME: return "TRANSFORM";
+            case OpType_INDEX_REDUCE: return "INDEX_ACCUMULATION";
             case OpType_SCALAR: return "SCALAR";
             case OpType_SHAPE: return "SHAPE";
             default: return "UNKNOWN OpType";

@@ -369,7 +369,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
     variableSpace->putVariable(-2, indices);
 
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1});
 
     // creating list
     auto nodeB = new Node(OpType_CUSTOM, 0, 2, {1},{},{}, 0.0f, {}, {0, 1});
@@ -393,9 +393,9 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
     nodeD2->setCustomOp(&opD);
 
     // using OneMinus on each chunk separately
-    auto nodeE0 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 10, {5});
-    auto nodeE1 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 11, {6});
-    auto nodeE2 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 12, {7});
+    auto nodeE0 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 10, {5});
+    auto nodeE1 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 11, {6});
+    auto nodeE2 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 12, {7});
 
     // writing chunks back to the List
     auto nodeF0 = new Node(OpType_CUSTOM, 0, 15, {2, 10}, {},{}, 0.0f, {}, {0});
@@ -505,7 +505,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
     variableSpace->putVariable(-3, scalar);
 
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1});
 
     // creating list
     auto nodeB = new Node(OpType_CUSTOM, 0, 2, {1},{},{}, 0.0f, {}, {0, 1});
@@ -529,9 +529,9 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
 
 
     // using OneMinus on each chunk separately
-    auto nodeE0 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 10, {5});
-    auto nodeE1 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 11, {6});
-    auto nodeE2 = new Node(OpType_TRANSFORM, nd4j::transform::OneMinus, 12, {7});
+    auto nodeE0 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 10, {5});
+    auto nodeE1 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 11, {6});
+    auto nodeE2 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 12, {7});
 
     // writing chunks back to the List
     auto nodeF0 = new Node(OpType_CUSTOM, 0, 15, {2, 10}, {},{}, 0.0f, {}, {0});
