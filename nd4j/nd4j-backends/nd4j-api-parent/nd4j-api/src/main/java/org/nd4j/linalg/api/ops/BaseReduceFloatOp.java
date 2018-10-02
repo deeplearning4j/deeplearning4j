@@ -17,17 +17,15 @@
 package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Transform operation:
- * stores the result in an ndarray
- *
- * @author Adam Gibson
- */
-public interface TransformOp extends Op {
-    /**
-     * This method returns datatype for result array wrt given inputs
-     * @return
-     */
-    DataType resultType();
+public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFloatOp {
+
+    @Override
+    public DataType resultType() {
+        if (this.x() != null && this.x().isR())
+            return this.x().dataType();
+
+        return Nd4j.defaultFloatintPointType();
+    }
 }

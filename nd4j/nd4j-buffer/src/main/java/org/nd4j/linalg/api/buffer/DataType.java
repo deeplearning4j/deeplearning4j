@@ -26,6 +26,7 @@ public enum DataType {
     UBYTE,
     BYTE,
     BOOL,
+    STRING,
     COMPRESSED,
     UNKNOWN
 }

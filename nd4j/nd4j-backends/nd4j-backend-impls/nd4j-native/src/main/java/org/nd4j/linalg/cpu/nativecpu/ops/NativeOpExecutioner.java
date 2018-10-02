@@ -625,28 +625,28 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             getPointerForExtraArgs(op));
             } else {
-                if (op instanceof FloatTransformOp) {
+                if (op instanceof TransformFloatOp) {
                     loop.execTransformFloat(dummy, op.opNum(),
                             op.x().data().addressPointer(),
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             op.z().data().addressPointer(),
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             getPointerForExtraArgs(op));
-                } else if (op instanceof StrictTransformOp) {
+                } else if (op instanceof TransformStrictOp) {
                     loop.execTransformStrict(dummy, op.opNum(),
                             op.x().data().addressPointer(),
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             op.z().data().addressPointer(),
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             getPointerForExtraArgs(op));
-                } else if (op instanceof SameTransformOp) {
+                } else if (op instanceof TransformSameOp) {
                     loop.execTransformSame(dummy, op.opNum(),
                             op.x().data().addressPointer(),
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             op.z().data().addressPointer(),
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             getPointerForExtraArgs(op));
-                } else if (op instanceof BoolTransformOp) {
+                } else if (op instanceof TransformBoolOp) {
                     loop.execTransformBool(dummy, op.opNum(),
                             op.x().data().addressPointer(),
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),

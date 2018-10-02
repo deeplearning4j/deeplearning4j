@@ -100,6 +100,7 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 /**
@@ -166,6 +167,7 @@ public class Nd4j {
     private static MemoryWorkspaceManager workspaceManager;
     private static final AtomicInteger numThreads = new AtomicInteger(-1);
     private static final AtomicBoolean skipTheadSafetyChecks = new AtomicBoolean(false);
+    private static AtomicReference<DataType> defaultFloatingPointDataType;
 
     protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
@@ -6310,5 +6312,13 @@ public class Nd4j {
 
     public static boolean areThreadSafetyChecksSkipped() {
         return skipTheadSafetyChecks.get();
+    }
+
+    public static DataType defaultFloatintPointType() {
+        return defaultFloatingPointDataType.get();
+    }
+
+    public static void setDefaultFloatingPointDataType(@NonNull DataType dtype) {
+        defaultFloatingPointDataType.set(dtype);
     }
 }
