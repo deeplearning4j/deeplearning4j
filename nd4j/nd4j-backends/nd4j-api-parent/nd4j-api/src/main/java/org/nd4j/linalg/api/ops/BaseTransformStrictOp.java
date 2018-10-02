@@ -16,9 +16,46 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 public abstract class BaseTransformStrictOp extends BaseTransformOp implements TransformStrictOp {
+
+    public BaseTransformStrictOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public BaseTransformStrictOp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public BaseTransformStrictOp(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public BaseTransformStrictOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
+    public BaseTransformStrictOp(INDArray x, INDArray z) {
+        super(x, z);
+    }
+
+    public BaseTransformStrictOp() {
+        super();
+    }
+
+    public BaseTransformStrictOp(INDArray x, INDArray z, long n) {
+        super(x, z, n);
+    }
+
+
+    public BaseTransformStrictOp(INDArray x) {
+        super(x);
+    }
+
 
     @Override
     public DataType resultType() {

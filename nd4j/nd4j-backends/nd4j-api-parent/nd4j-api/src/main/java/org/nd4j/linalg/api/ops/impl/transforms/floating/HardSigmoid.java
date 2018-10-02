@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.floating;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidDerivative;
 
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class HardSigmoid extends BaseTransformOp {
+public class HardSigmoid extends BaseTransformFloatOp {
     public HardSigmoid() {}
 
     public HardSigmoid(INDArray x, INDArray z) {
@@ -39,14 +40,6 @@ public class HardSigmoid extends BaseTransformOp {
 
     public HardSigmoid(INDArray x, INDArray z, long n) {
         super(x, z, n);
-    }
-
-    public HardSigmoid(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public HardSigmoid(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
     }
 
     public HardSigmoid(INDArray ndArray) {

@@ -24,6 +24,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
@@ -38,7 +39,7 @@ import java.util.Map;
 /**
  * @author raver119@gmail.com
  */
-public class Histogram extends BaseTransformOp {
+public class Histogram extends BaseTransformFloatOp {
     public Histogram(SameDiff sameDiff, SDVariable i_v, boolean inPlace, int numBins) {
         super(sameDiff, i_v, inPlace);
         this.numBins = numBins;
@@ -82,10 +83,6 @@ public class Histogram extends BaseTransformOp {
         Map<String,Object> ret = new LinkedHashMap<>();
         ret.put("numBins",numBins);
         return ret;
-    }
-
-    public Histogram(SameDiff sameDiff) {
-        super(sameDiff);
     }
 
     @Override

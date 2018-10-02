@@ -16,10 +16,46 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseTransformFloatOp extends BaseTransformOp implements TransformFloatOp {
+
+    public BaseTransformFloatOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public BaseTransformFloatOp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public BaseTransformFloatOp(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public BaseTransformFloatOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
+    public BaseTransformFloatOp(INDArray x, INDArray z) {
+        super(x, z);
+    }
+
+    public BaseTransformFloatOp() {
+        super();
+    }
+
+    public BaseTransformFloatOp(INDArray x, INDArray z, long n) {
+        super(x, z, n);
+    }
+
+
+    public BaseTransformFloatOp(INDArray x) {
+        super(x);
+    }
 
     @Override
     public DataType resultType() {

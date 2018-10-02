@@ -20,6 +20,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
   */
-public class Rint extends BaseTransformOp {
+public class Rint extends BaseTransformFloatOp {
     public Rint(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -50,10 +51,6 @@ public class Rint extends BaseTransformOp {
 
     public Rint(INDArray x, INDArray z, long n) {
         super(x, z, n);
-    }
-
-    public Rint(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
     }
 
     public Rint(INDArray x) {

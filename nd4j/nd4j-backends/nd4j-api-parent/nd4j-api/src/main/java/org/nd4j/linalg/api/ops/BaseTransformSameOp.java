@@ -16,9 +16,46 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 public abstract class BaseTransformSameOp extends BaseTransformOp implements TransformSameOp {
+
+    public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
+    public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
+    public BaseTransformSameOp(INDArray x, INDArray z) {
+        super(x, z);
+    }
+
+    public BaseTransformSameOp() {
+        super();
+    }
+
+    public BaseTransformSameOp(INDArray x, INDArray z, long n) {
+        super(x, z, n);
+    }
+
+
+    public BaseTransformSameOp(INDArray x) {
+        super(x);
+    }
+
 
     @Override
     public DataType resultType() {
