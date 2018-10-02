@@ -143,7 +143,7 @@ DECLARE_SHAPE_FN(huber_loss) {
     		outShapeInfo[i] = labelsShapeInfo[i];
     	shape::updateStrides(outShapeInfo, shape::order(labelsShapeInfo));
     }
- 
+	ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(labelsShapeInfo));
     return SHAPELIST(outShapeInfo);    
 
 }
