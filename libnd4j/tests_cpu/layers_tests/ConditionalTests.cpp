@@ -72,7 +72,7 @@ TEST_F(ConditionalTests, BasicTests_1) {
     auto nodeT = new Node(OpType_PAIRWISE, 1, 6, {-1, -2});
     nodeT->setScopeInfo(3, "scopeTrue");
 
-    auto nodeC0 = new Node(OpType_ACCUMULATION, 1, 7, {-1});
+    auto nodeC0 = new Node(OpType_REDUCE_SAME, 1, 7, {-1});
     nodeC0->setScopeInfo(1, "scopeCondition");
 
     auto nodeC1 = new Node(OpType_BOOLEAN, 0, 8, {7, -4});

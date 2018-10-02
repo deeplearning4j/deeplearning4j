@@ -51,8 +51,8 @@ TEST_F(SwitchTests, SwitchTest1) {
     variableSpace->putVariable(-3, condtionY);
 
     // this is just 2 ops, that are executed sequentially. We don't really care bout them
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {1}, {3});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {3});
 
     // this is our condition op, we'll be using Equals condition, on variables conditionX and conditionY (ids -2 and -3 respectively)
     auto nodeCondition = new Node(OpType_BOOLEAN, 0, 119, {-2, -3});
@@ -71,9 +71,9 @@ TEST_F(SwitchTests, SwitchTest1) {
 
 
     // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
-    auto nodeZ0 = new Node(OpType_TRANSFORM, 0, 4, {}, {});
+    auto nodeZ0 = new Node(OpType_TRANSFORM_SAME, 0, 4, {}, {});
     nodeZ0->pickInput(3, 0);
-    auto nodeZ1 = new Node(OpType_TRANSFORM, 35, 5, {}, {});
+    auto nodeZ1 = new Node(OpType_TRANSFORM_SAME, 35, 5, {}, {});
     nodeZ1->pickInput(3, 1);
 
 
@@ -143,8 +143,8 @@ TEST_F(SwitchTests, SwitchTest2) {
     variableSpace->putVariable(-3, condtionY);
 
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {1}, {3});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {3});
 
     auto scopeCondition = new Node(OpType_LOGIC, 10, 3);
     scopeCondition->setName("scopeCondition");
@@ -162,9 +162,9 @@ TEST_F(SwitchTests, SwitchTest2) {
 
 
     // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
-    auto nodeZ0 = new Node(OpType_TRANSFORM, 0, 6, {}, {});
+    auto nodeZ0 = new Node(OpType_TRANSFORM_SAME, 0, 6, {}, {});
     nodeZ0->pickInput(5, 0);
-    auto nodeZ1 = new Node(OpType_TRANSFORM, 35, 7, {}, {});
+    auto nodeZ1 = new Node(OpType_TRANSFORM_SAME, 35, 7, {}, {});
     nodeZ1->pickInput(5, 1);
 
     graph.addNode(nodeA);
@@ -209,8 +209,8 @@ TEST_F(SwitchTests, SwitchTest3) {
     variableSpace->putVariable(-3, condtionY);
 
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {1}, {3});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {3});
 
     auto scopeCondition = new Node(OpType_LOGIC, 10, 3);
     scopeCondition->setName("scopeCondition");
@@ -228,9 +228,9 @@ TEST_F(SwitchTests, SwitchTest3) {
 
 
     // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
-    auto nodeZ0 = new Node(OpType_TRANSFORM, 6, 6, {}, {});
+    auto nodeZ0 = new Node(OpType_TRANSFORM_SAME, 6, 6, {}, {});
     nodeZ0->pickInput(5, 0);
-    auto nodeZ1 = new Node(OpType_TRANSFORM, 35, 7, {}, {});
+    auto nodeZ1 = new Node(OpType_TRANSFORM_SAME, 35, 7, {}, {});
     nodeZ1->pickInput(5, 1);
 
     graph.addNode(nodeA);

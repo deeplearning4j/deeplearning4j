@@ -33,7 +33,7 @@ public:
 };
 
 TEST_F(NodeTests, Test_Dtype_Conversion_1) {
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
 
     auto nd = nodeA->asT<double>();
     auto nf = nd->asT<float>();
