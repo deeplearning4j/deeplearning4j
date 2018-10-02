@@ -19,7 +19,7 @@ package org.nd4j.linalg.indexing;
 import com.google.common.base.Function;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.accum.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
 import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Choose;

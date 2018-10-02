@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ops.impl.accum.Entropy;
 import org.nd4j.linalg.api.ops.impl.accum.LogEntropy;
-import org.nd4j.linalg.api.ops.impl.accum.ShannonEntropy;
+import org.nd4j.linalg.api.ops.impl.accum.floating.ShannonEntropy;
 import org.nd4j.linalg.api.ops.impl.transforms.Assign;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;

@@ -24,10 +24,13 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarSet;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SwishDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Cube;
 
 /**
  * This enum is the factory for the activation function.

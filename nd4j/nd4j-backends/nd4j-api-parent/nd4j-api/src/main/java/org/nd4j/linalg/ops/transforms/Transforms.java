@@ -17,21 +17,26 @@
 package org.nd4j.linalg.ops.transforms;
 
 import lombok.NonNull;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
+import org.nd4j.linalg.api.ops.impl.scalar.Pow;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.OldAtan2Op;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Abs;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Ceil;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Floor;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Negative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.inverse.InvertMatrix;
 

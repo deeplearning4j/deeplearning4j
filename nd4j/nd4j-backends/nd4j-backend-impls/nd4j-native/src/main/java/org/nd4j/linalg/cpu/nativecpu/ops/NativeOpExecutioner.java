@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.IsMax;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
@@ -563,13 +564,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         /**
-         * This is the {@link org.nd4j.linalg.api.ops.impl.transforms.IsMax}
+         * This is the {@link IsMax}
          * operation.
          *
          * @see {@link Op#extraArgs()}
          * for what an extra argument is in an op.
          *
-         * The extra argument in the op here is the {@link org.nd4j.linalg.api.ops.impl.transforms.IsMax#IsMax(INDArray, int...)}
+         * The extra argument in the op here is the {@link IsMax#IsMax(INDArray, int...)}
          * dimension to do the ismax along
          */
         if (op.opNum() == 41 && op.extraArgs() != null) {

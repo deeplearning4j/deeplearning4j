@@ -27,7 +27,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.transforms.Abs;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Abs;
 import org.nd4j.linalg.api.ops.impl.transforms.Sign;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;

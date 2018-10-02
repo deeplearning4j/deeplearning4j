@@ -138,4 +138,13 @@ public class MixedDataTypesTests {
         val vector = arrayX.data().asInt();
         assertArrayEquals(exp, vector);
     }
+
+    @Test
+    public void testBasicOps_4() throws Exception {
+        val arrayX = Nd4j.create(new int[]{7,8,7,9,1,1,1,1,1}, new long[]{3, 3}, DataType.LONG);
+
+        val result = arrayX.maxNumber().longValue();
+
+        assertEquals(9L, result);
+    }
 }

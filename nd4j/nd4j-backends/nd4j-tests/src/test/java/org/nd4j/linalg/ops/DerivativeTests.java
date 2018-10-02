@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.ops;
 
-import lombok.val;
 import org.apache.commons.math3.util.FastMath;
 import org.junit.After;
 import org.junit.Before;
@@ -24,14 +23,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.Sigmoid;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;

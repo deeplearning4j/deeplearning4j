@@ -23,7 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
-import org.nd4j.linalg.api.ops.impl.transforms.Pow;
+import org.nd4j.linalg.api.ops.impl.scalar.Pow;
 import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.Step;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
@@ -275,7 +275,7 @@ public class DefaultOpFactory implements OpFactory {
 
         switch (name) {
             case "_softmaxderivative":
-                op = new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x, z);
+                op = new org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative(x, z);
                 break;
             case "set":
                 op = new org.nd4j.linalg.api.ops.impl.transforms.Set(x,y,z,z.length());
@@ -397,7 +397,7 @@ public class DefaultOpFactory implements OpFactory {
                 op = new TimesOneMinus(x, z);
                 break;
             case "softmaxderivative":
-                op = new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x, z);
+                op = new org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative(x, z);
                 break;
             case "softmax":
                 op = new SoftMax(x, z);

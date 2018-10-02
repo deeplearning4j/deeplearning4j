@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
@@ -29,8 +28,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DefaultOpConverter;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.accum.All;
-import org.nd4j.linalg.api.ops.impl.accum.Any;
+import org.nd4j.linalg.api.ops.impl.accum.bool.All;
+import org.nd4j.linalg.api.ops.impl.accum.bool.Any;
 import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
 import org.nd4j.linalg.api.ops.impl.accum.NormalizeMoments;
 import org.nd4j.linalg.api.ops.impl.accum.bp.*;
@@ -54,6 +53,9 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SwishDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.TanDerivative;
 import org.nd4j.linalg.api.ops.persistence.RestoreV2;
 import org.nd4j.linalg.api.ops.persistence.SaveV2;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
@@ -655,16 +657,16 @@ public class OpValidation {
                 Relu6Derivative.class,
                 SELUDerivative.class,
                 SigmoidDerivative.class,
-                org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative.class,
+                org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative.class,
                 SoftMaxDerivative.class,
-                org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative.class,
+                org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative.class,
                 SoftSignDerivative.class,
                 TanhDerivative.class,
                 LogSigmoidDerivative.class,
                 SwishDerivative.class,
                 TanDerivative.class,
                 TanhDerivative.class,
-                org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative.class,
+                org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative.class,
                 PowDerivative.class,
 
                 BiasAddGrad.class,

@@ -91,7 +91,7 @@ public class TanhDerivative extends BaseGradientOp {
 
     @Override
     public void exec() {
-        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative(x, z));
+        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative(x, z));
         z.muli(wrt());
     }
 
