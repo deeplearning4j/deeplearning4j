@@ -104,14 +104,4 @@ public class AMin extends BaseReduceSameOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-    @Override
-    public Type opType() {
-        return Type.REDUCE;
-    }
-
-    @Override
-    public Type getOpType() {
-        return opType();
-    }
 }

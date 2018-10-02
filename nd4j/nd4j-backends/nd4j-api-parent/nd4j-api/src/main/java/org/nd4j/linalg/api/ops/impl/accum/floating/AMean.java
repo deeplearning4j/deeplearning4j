@@ -20,6 +20,8 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
+import org.nd4j.linalg.api.ops.BaseReduceLongOp;
 import org.nd4j.linalg.api.ops.impl.accum.same.ASum;
 
 import java.util.Collections;
@@ -30,7 +32,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class  AMean extends ASum {
+public class  AMean extends BaseReduceFloatOp {
     public AMean(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
@@ -41,29 +43,21 @@ public class  AMean extends ASum {
 
     public AMean() {}
 
-    public AMean(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public AMean(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public AMean(INDArray x, INDArray z, long n) {
+        super(x, null, z, n);
     }
 
     public AMean(INDArray x) {
         super(x);
     }
 
-    public AMean(INDArray x, INDArray y) {
-        super(x, y);
-    }
-
-    public AMean(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+    public AMean(INDArray x, INDArray z) {
+        super(x, null, z, x.lengthLong());
     }
 
     @Override
     public int opNum() {
-        return 15;
+        return 1;
     }
 
     @Override
@@ -80,11 +74,6 @@ public class  AMean extends ASum {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public Type opType() {
-        return Type.REDUCE;
     }
 
     @Override

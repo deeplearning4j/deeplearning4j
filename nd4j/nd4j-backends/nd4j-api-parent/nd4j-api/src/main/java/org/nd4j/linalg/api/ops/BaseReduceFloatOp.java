@@ -24,7 +24,11 @@ import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFloatOp {
 
-    public BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, dimensions, keepDims);
+    }
+
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -40,6 +44,13 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
         super(x, null, z, newFormat, keepDims, dimensions);
     }
 
+    public BaseReduceFloatOp(INDArray input, INDArray output, boolean keepDims, int... dimensions){
+        super(input, null, output, input.length());
+        this.keepDims = keepDims;
+        this.dimensions = dimensions;
+    }
+
+
     public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
@@ -54,6 +65,16 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
 
     protected BaseReduceFloatOp() {
         super();
+    }
+
+    @Override
+    public Type opType() {
+        return Type.REDUCE_FLOAT;
+    }
+
+    @Override
+    public Type getOpType() {
+        return opType();
     }
 
     @Override

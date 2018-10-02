@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.accum.floating;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Norm1 extends BaseReduceOp {
+public class Norm1 extends BaseReduceFloatOp {
     public Norm1(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
@@ -38,20 +39,16 @@ public class Norm1 extends BaseReduceOp {
     public Norm1() {
     }
 
-    public Norm1(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Norm1(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public Norm1(INDArray x, INDArray z, long n) {
+        super(x, null, z, n);
     }
 
     public Norm1(INDArray x) {
         super(x);
     }
 
-    public Norm1(INDArray x, INDArray y) {
-        super(x, y);
+    public Norm1(INDArray x, INDArray z) {
+        super(x, null, z);
     }
 
     @Override
@@ -62,7 +59,7 @@ public class Norm1 extends BaseReduceOp {
 
     @Override
     public int opNum() {
-        return 5;
+        return 2;
     }
 
     @Override
@@ -84,10 +81,5 @@ public class Norm1 extends BaseReduceOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         return Collections.singletonList(f().norm1Bp(arg(), grad.get(0), keepDims, dimensions));
-    }
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE;
     }
 }

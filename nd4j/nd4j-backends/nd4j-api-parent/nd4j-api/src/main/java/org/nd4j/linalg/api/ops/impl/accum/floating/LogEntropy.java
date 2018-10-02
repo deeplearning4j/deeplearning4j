@@ -14,59 +14,53 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.accum;
+package org.nd4j.linalg.api.ops.impl.accum.floating;
 
-import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Entropy Op - returns the entropy (information gain, or uncertainty of a random variable).
- * -sum(x * log(x))
+ * Log Entropy Op - returns the log entropy (information gain, or uncertainty of a random variable).
+ * log(-sum( x * log(x)))
  *
  * @author raver119@gmail.com
  */
-public class Entropy extends BaseReduceOp {
-    public Entropy(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+public class  LogEntropy extends BaseReduceFloatOp {
+
+    public LogEntropy(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public Entropy() {}
+    public LogEntropy() {}
 
-    public Entropy(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public LogEntropy(INDArray x, INDArray z, long n) {
+        super(x, null, z, n);
     }
 
-    public Entropy(INDArray x, INDArray y, long n) {
-        super(x, y, n);
-    }
-
-    public Entropy(INDArray x) {
+    public LogEntropy(INDArray x) {
         super(x);
     }
 
-    public Entropy(INDArray x, INDArray y) {
-        super(x, y);
+    public LogEntropy(INDArray x, INDArray z) {
+        super(x, null, z, x.lengthLong());
     }
 
-    public Entropy(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
-    }
 
     @Override
     public int opNum() {
-        return 16;
+        return 9;
     }
 
     @Override
     public String opName() {
-        return "entropy";
+        return "logentropy";
     }
 
     @Override
@@ -76,29 +70,13 @@ public class Entropy extends BaseReduceOp {
 
     @Override
     public String tensorflowName() {
-        return "entropy_shannon";
-    }
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE;
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        //dL/dx = dL/dOut * dOut/dIn
-        //out = -sum(x*log(x))
-        // let z = x * log(x)
-        //Then we can do sumBp(z, -dL/dOut)
-        //Note d/dx(x*log(x)) = log(x)+1
-
-        return grad(f(), arg(), f1.get(0), dimensions);
-    }
-
-    public static List<SDVariable> grad(DifferentialFunctionFactory f, SDVariable arg, SDVariable grad, int[] dimensions){
-        SDVariable logx = f.log(arg);
-        SDVariable xLogX = arg.mul(logx);
-        SDVariable sumBp = f.sumBp(xLogX, grad.neg(), false, dimensions);
-        return Collections.singletonList(sumBp.mul(logx.add(1.0)));
+        //If y=log(x), and x=entropy(in) then dL/dx = dL/dy * dy/dx; d(log(x))/dx = 1/x
+        List<SDVariable> entropyGrad = Entropy.grad(f(), arg(), f1.get(0), dimensions);
+        return Collections.singletonList(entropyGrad.get(0).div(f().exp(outputVariable())));
     }
 }

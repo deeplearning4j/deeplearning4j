@@ -299,11 +299,6 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     }
 
     @Override
-    public Type opType() {
-        return Type.REDUCE;
-    }
-
-    @Override
     public boolean isComplexAccumulation() {
         return isComplex;
     }

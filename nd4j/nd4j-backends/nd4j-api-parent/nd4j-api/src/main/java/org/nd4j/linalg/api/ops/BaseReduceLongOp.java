@@ -56,6 +56,16 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
     }
 
     @Override
+    public Type opType() {
+        return Type.REDUCE_LONG;
+    }
+
+    @Override
+    public Type getOpType() {
+        return opType();
+    }
+
+    @Override
     public DataType resultType() {
         return DataType.LONG;
     }

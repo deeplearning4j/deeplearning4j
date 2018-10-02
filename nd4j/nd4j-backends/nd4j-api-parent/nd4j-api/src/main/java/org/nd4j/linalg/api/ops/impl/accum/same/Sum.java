@@ -91,8 +91,4 @@ public class Sum extends BaseReduceSameOp {
         return "Sum";
     }
 
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE;
-    }
 }

@@ -57,6 +57,16 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
     }
 
     @Override
+    public Type opType() {
+        return Type.REDUCE_SAME;
+    }
+
+    @Override
+    public Type getOpType() {
+        return opType();
+    }
+
+    @Override
     public DataType resultType() {
         return this.x().dataType();
     }

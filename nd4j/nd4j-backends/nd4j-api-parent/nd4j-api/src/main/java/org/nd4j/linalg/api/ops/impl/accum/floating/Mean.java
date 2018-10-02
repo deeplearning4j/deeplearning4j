@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.accum.floating;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.impl.accum.same.Sum;
 
 import java.util.Collections;
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Mean extends Sum {
+public class Mean extends BaseReduceFloatOp {
     public Mean(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, keepDims, dimensions);
     }
@@ -37,28 +38,20 @@ public class Mean extends Sum {
     public Mean() {
     }
 
-    public Mean(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Mean(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public Mean(INDArray x, INDArray z, long n) {
+        super(x, null, z, n);
     }
 
     public Mean(INDArray x) {
         super(x);
     }
 
-    public Mean(INDArray x, INDArray y) {
-        super(x, y);
+    public Mean(INDArray x, INDArray z) {
+        super(x, null, z, x.lengthLong());
     }
 
-    public Mean(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
-    }
-
-    public Mean(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public Mean(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, z, newFormat, keepDims, dimensions);
     }
 
     @Override

@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.accum.floating;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class NormMax extends BaseReduceOp {
+public class NormMax extends BaseReduceFloatOp {
     public NormMax(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
@@ -42,20 +43,17 @@ public class NormMax extends BaseReduceOp {
     public NormMax() {
     }
 
-    public NormMax(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public NormMax(INDArray x, INDArray z, long n) {
+        super(x, null, z, n);
     }
 
-    public NormMax(INDArray x, INDArray y, long n) {
-        super(x, y, n);
-    }
 
     public NormMax(INDArray x) {
         super(x);
     }
 
-    public NormMax(INDArray x, INDArray y) {
-        super(x, y);
+    public NormMax(INDArray x, INDArray z) {
+        super(x, null, z);
     }
 
     @Override
@@ -66,7 +64,7 @@ public class NormMax extends BaseReduceOp {
 
     @Override
     public int opNum() {
-        return 7;
+        return 4;
     }
 
     @Override
@@ -91,10 +89,4 @@ public class NormMax extends BaseReduceOp {
     public String tensorflowName() {
         return "norm";
     }
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE;
-    }
-
 }

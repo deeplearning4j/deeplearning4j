@@ -55,6 +55,16 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
     }
 
     @Override
+    public Type opType() {
+        return Type.REDUCE_BOOL;
+    }
+
+    @Override
+    public Type getOpType() {
+        return opType();
+    }
+
+    @Override
     public DataType resultType() {
         return DataType.BOOL;
     }

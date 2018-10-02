@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 
 import java.util.Collections;
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class ShannonEntropy extends BaseReduceOp {
+public class ShannonEntropy extends BaseReduceFloatOp {
     public ShannonEntropy(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
@@ -41,28 +42,20 @@ public class ShannonEntropy extends BaseReduceOp {
 
     public ShannonEntropy() {}
 
-    public ShannonEntropy(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public ShannonEntropy(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public ShannonEntropy(INDArray x, INDArray z, long n) {
+        super(x, null, z, n);
     }
 
     public ShannonEntropy(INDArray x) {
         super(x);
     }
 
-    public ShannonEntropy(INDArray x, INDArray y) {
-        super(x, y);
-    }
-
-    public ShannonEntropy(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+    public ShannonEntropy(INDArray x, INDArray z) {
+        super(x, null, z, x.lengthLong());
     }
     @Override
     public int opNum() {
-        return 18;
+        return 10;
     }
 
     @Override
@@ -94,11 +87,5 @@ public class ShannonEntropy extends BaseReduceOp {
     @Override
     public String tensorflowName() {
         return "entropy_shannon";
-    }
-
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE;
     }
 }

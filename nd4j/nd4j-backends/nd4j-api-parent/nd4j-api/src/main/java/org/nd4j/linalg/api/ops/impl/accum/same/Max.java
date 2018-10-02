@@ -109,9 +109,4 @@ public class Max extends BaseReduceSameOp {
     public String tensorflowName() {
         return "Max";
     }
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE;
-    }
 }

@@ -95,9 +95,4 @@ public class Min extends BaseReduceSameOp {
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         return Collections.singletonList(f().minBp(arg(), grad.get(0), keepDims, dimensions));
     }
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE;
-    }
 }

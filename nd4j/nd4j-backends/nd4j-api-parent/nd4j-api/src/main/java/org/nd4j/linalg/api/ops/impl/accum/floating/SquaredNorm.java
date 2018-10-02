@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.accum.floating;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.impl.accum.BaseReduction;
 
 import java.util.Collections;
@@ -31,7 +32,7 @@ import java.util.List;
  * @author Alex Black
  */
 
-public class SquaredNorm extends BaseReduction {
+public class SquaredNorm extends BaseReduceFloatOp {
     public SquaredNorm(SameDiff sameDiff, SDVariable input, boolean keepDims, int... dimensions) {
         super(sameDiff, input, keepDims, dimensions);
     }
@@ -42,10 +43,24 @@ public class SquaredNorm extends BaseReduction {
 
     public SquaredNorm(){}
 
+    @Override
+    public int opNum() {
+        return 7;
+    }
 
     @Override
     public String opName() {
         return "reduce_sqnorm";
+    }
+
+    @Override
+    public String onnxName() {
+        return null;
+    }
+
+    @Override
+    public String tensorflowName() {
+        return null;
     }
 
     @Override
