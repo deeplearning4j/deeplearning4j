@@ -24,12 +24,28 @@ import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSameOp {
 
+    public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
     protected BaseReduceSameOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
     protected BaseReduceSameOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
         super(sameDiff, input, dimensions);
+    }
+
+    public BaseReduceSameOp(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, null, z, newFormat, keepDims, dimensions);
+    }
+
+    public BaseReduceSameOp(INDArray x, INDArray y, INDArray z, long n) {
+        super(x, y, z, n);
+    }
+
+    public BaseReduceSameOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
     }
 
     public BaseReduceSameOp(INDArray x) {

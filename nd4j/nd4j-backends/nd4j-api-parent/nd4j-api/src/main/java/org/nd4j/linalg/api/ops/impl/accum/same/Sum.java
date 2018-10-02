@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
+import org.nd4j.linalg.api.ops.BaseReduceSameOp;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 @Slf4j
-public class Sum extends BaseReduceOp {
+public class Sum extends BaseReduceSameOp {
     public Sum(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
@@ -44,28 +45,20 @@ public class Sum extends BaseReduceOp {
     public Sum() {
     }
 
-    public Sum(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Sum(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public Sum(INDArray x, INDArray z, long n) {
+        super(x, null, z, n);
     }
 
     public Sum(INDArray x) {
         super(x);
     }
 
-    public Sum(INDArray x, INDArray y) {
-        super(x, y);
+    public Sum(INDArray x, INDArray z) {
+        super(x, null, z);
     }
 
-    public Sum(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
-    }
-
-    public Sum(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public Sum(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, z, newFormat, keepDims, dimensions);
     }
 
     @Override

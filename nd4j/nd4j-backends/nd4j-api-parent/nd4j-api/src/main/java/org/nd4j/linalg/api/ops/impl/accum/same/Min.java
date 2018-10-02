@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
+import org.nd4j.linalg.api.ops.BaseReduceSameOp;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Min extends BaseReduceOp {
+public class Min extends BaseReduceSameOp {
     public Min(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
@@ -37,24 +38,20 @@ public class Min extends BaseReduceOp {
     public Min() {
     }
 
-    public Min(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Min(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public Min(INDArray x, INDArray z, long n) {
+        super(x, null, z, n);
     }
 
     public Min(INDArray x) {
         super(x);
     }
 
-    public Min(INDArray x, INDArray y) {
-        super(x, y);
+    public Min(INDArray x, INDArray z) {
+        super(x, null, z);
     }
 
-    public Min(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public Min(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, z, newFormat, keepDims, dimensions);
     }
 
 

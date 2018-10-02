@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
+import org.nd4j.linalg.api.ops.BaseReduceSameOp;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class AMin extends BaseReduceOp {
+public class AMin extends BaseReduceSameOp {
     public AMin(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
@@ -41,20 +42,16 @@ public class AMin extends BaseReduceOp {
 
     public AMin() {}
 
-    public AMin(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public AMin(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public AMin(INDArray x, INDArray z, long n) {
+        super(x, null, z, n);
     }
 
     public AMin(INDArray x) {
         super(x);
     }
 
-    public AMin(INDArray x, INDArray y) {
-        super(x, y);
+    public AMin(INDArray x, INDArray z) {
+        super(x, null, z);
     }
 
 
