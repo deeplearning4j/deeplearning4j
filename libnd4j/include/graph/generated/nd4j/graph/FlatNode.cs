@@ -20,7 +20,7 @@ public struct FlatNode : IFlatbufferObject
   public int Id { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public string Name { get { int o = __p.__offset(6); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
   public ArraySegment<byte>? GetNameBytes() { return __p.__vector_as_arraysegment(6); }
-  public OpType OpType { get { int o = __p.__offset(8); return o != 0 ? (OpType)__p.bb.GetSbyte(o + __p.bb_pos) : OpType.TRANSFORM; } }
+  public OpType OpType { get { int o = __p.__offset(8); return o != 0 ? (OpType)__p.bb.GetSbyte(o + __p.bb_pos) : OpType.TRANSFORM_FLOAT; } }
   public long OpNum { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
   public FlatProperties? Properties(int j) { int o = __p.__offset(12); return o != 0 ? (FlatProperties?)(new FlatProperties()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int PropertiesLength { get { int o = __p.__offset(12); return o != 0 ? __p.__vector_len(o) : 0; } }
@@ -51,7 +51,7 @@ public struct FlatNode : IFlatbufferObject
   public static Offset<FlatNode> CreateFlatNode(FlatBufferBuilder builder,
       int id = 0,
       StringOffset nameOffset = default(StringOffset),
-      OpType opType = OpType.TRANSFORM,
+      OpType opType = OpType.TRANSFORM_FLOAT,
       long opNum = 0,
       VectorOffset propertiesOffset = default(VectorOffset),
       VectorOffset inputOffset = default(VectorOffset),

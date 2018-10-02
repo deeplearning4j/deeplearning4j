@@ -4,19 +4,25 @@ package nd4j.graph;
 
 public final class OpType {
   private OpType() { }
-  public static final byte TRANSFORM = 0;
-  public static final byte ACCUMULATION = 1;
-  public static final byte INDEX_ACCUMULATION = 2;
-  public static final byte SCALAR = 3;
-  public static final byte BROADCAST = 4;
-  public static final byte PAIRWISE = 5;
-  public static final byte ACCUMULATION3 = 6;
-  public static final byte SUMMARYSTATS = 7;
-  public static final byte SHAPE = 8;
-  public static final byte AGGREGATION = 9;
-  public static final byte RANDOM = 10;
-  public static final byte CUSTOM = 11;
-  public static final byte GRAPH = 12;
+  public static final byte TRANSFORM_FLOAT = 0;
+  public static final byte TRANSFORM_SAME = 1;
+  public static final byte TRANSFORM_BOOL = 2;
+  public static final byte TRANSFORM_STRICT = 3;
+  public static final byte REDUCE_FLOAT = 4;
+  public static final byte REDUCE_SAME = 5;
+  public static final byte REDUCE_LONG = 6;
+  public static final byte REDUCE_BOOL = 7;
+  public static final byte INDEX_REDUCE = 8;
+  public static final byte SCALAR = 9;
+  public static final byte BROADCAST = 10;
+  public static final byte PAIRWISE = 11;
+  public static final byte REDUCE_3 = 12;
+  public static final byte SUMMARYSTATS = 13;
+  public static final byte SHAPE = 14;
+  public static final byte AGGREGATION = 15;
+  public static final byte RANDOM = 16;
+  public static final byte CUSTOM = 17;
+  public static final byte GRAPH = 18;
   public static final byte VARIABLE = 30;
   public static final byte BOOLEAN = 40;
   public static final byte LOGIC = 119;
