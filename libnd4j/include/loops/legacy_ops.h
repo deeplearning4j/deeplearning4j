@@ -79,8 +79,6 @@
         (10,CubeDerivative) , \
         (11,Reciprocal), \
         (12,Square), \
-        (13,RELU), \
-        (14,RELU6), \
         (15,Identity), \
         (16,Step), \
         (17,Ceiling), \
@@ -212,7 +210,9 @@
         (38, LeakyRELUDerivative), \
         (39, ReplaceNans) ,\
         (40, LogX) ,\
-        (41, LstmClip)
+        (41, RELU), \
+        (42, RELU6), \
+        (43, LstmClip)
 
 
 
