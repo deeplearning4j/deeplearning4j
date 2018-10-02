@@ -360,6 +360,7 @@ public class FrozenLayerWithBackpropTest extends BaseDL4JTest {
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                 .updater(new Sgd(0.0))
                                 .biasUpdater(new Sgd(0.0))
+                                .activation(Activation.TANH)
                                 .nIn(2)
                                 .nOut(1)
                                 .build()
@@ -395,6 +396,7 @@ public class FrozenLayerWithBackpropTest extends BaseDL4JTest {
                 ).layer(3,
                         new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
                                 new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                                        .activation(Activation.TANH)
                                         .nIn(2)
                                         .nOut(1)
                                         .build()
@@ -511,6 +513,7 @@ public class FrozenLayerWithBackpropTest extends BaseDL4JTest {
                 .addLayer(frozenBranchOutput,
                         new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
                                 new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                                        .activation(Activation.TANH)
                                         .nIn(3)
                                         .nOut(1)
                                         .build()
@@ -585,6 +588,7 @@ public class FrozenLayerWithBackpropTest extends BaseDL4JTest {
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                 .updater(new Sgd(0.0))
                                 .biasUpdater(new Sgd(0.0))
+                                .activation(Activation.TANH)
                                 .nIn(3)
                                 .nOut(1)
                                 .build()

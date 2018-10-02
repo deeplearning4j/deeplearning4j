@@ -850,7 +850,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
         @Override
         public List<Writable> next() {
-            INDArray nd = Nd4j.create(new float[nZ*nY*nX], new int[] {1, 1, nZ, nY, nX }, 'C').assign(n);
+            INDArray nd = Nd4j.create(new float[nZ*nY*nX], new int[] {1, 1, nZ, nY, nX }, 'c').assign(n);
             final List<Writable>res = RecordConverter.toRecord(nd);
             res.add(new IntWritable(0));
             n++;
