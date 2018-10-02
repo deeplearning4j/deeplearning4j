@@ -118,6 +118,7 @@ DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
     outShapeInfo[5] = 0;
     outShapeInfo[6] = 1;
     outShapeInfo[7] = 99;
+	ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(predictionsShapeInfo));
 
     return SHAPELIST(outShapeInfo);    
 
