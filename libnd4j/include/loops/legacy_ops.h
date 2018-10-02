@@ -261,7 +261,7 @@
         (4, NormMax), \
         (5, NormFrobenius), \
         (6, NormP), \
-        (7, SquaredNorm)
+        (7, SquaredNorm) ,\
         (8, Entropy) ,\
         (9, LogEntropy) ,\
         (10, ShannonEntropy) ,\
