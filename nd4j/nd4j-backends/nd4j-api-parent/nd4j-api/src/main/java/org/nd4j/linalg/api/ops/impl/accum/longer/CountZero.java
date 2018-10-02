@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceLongOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 
 import java.util.Collections;
@@ -32,7 +33,7 @@ import java.util.List;
  * @author Max Pumperla
  */
 @NoArgsConstructor
-public class CountZero extends BaseReduceOp {
+public class CountZero extends BaseReduceLongOp {
 
     public CountZero(SameDiff sameDiff, SDVariable input, int... dimensions) {
         super(sameDiff, input, dimensions);

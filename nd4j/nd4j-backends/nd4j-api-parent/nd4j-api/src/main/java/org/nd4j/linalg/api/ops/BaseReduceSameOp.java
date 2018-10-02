@@ -16,10 +16,29 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSameOp {
+
+    protected BaseReduceSameOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    protected BaseReduceSameOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public BaseReduceSameOp(INDArray x) {
+        super(x);
+    }
+
+    protected BaseReduceSameOp() {
+        super();
+    }
 
     @Override
     public DataType resultType() {

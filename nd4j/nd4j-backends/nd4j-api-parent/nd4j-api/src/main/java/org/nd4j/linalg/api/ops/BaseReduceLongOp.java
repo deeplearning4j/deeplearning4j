@@ -16,9 +16,28 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLongOp {
+
+    protected BaseReduceLongOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    protected BaseReduceLongOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public BaseReduceLongOp(INDArray x) {
+        super(x);
+    }
+
+    protected BaseReduceLongOp() {
+        super();
+    }
 
     @Override
     public DataType resultType() {
