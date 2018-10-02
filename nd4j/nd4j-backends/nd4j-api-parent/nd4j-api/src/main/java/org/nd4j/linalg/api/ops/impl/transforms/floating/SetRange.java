@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.List;
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class SetRange extends BaseTransformOp {
+public class SetRange extends BaseTransformFloatOp {
 
     private double min, max;
 
@@ -71,14 +72,14 @@ public class SetRange extends BaseTransformOp {
         this.max = max;
         init(x, y, z, n);
     }
-
+/*
     public SetRange(INDArray x, INDArray y, INDArray z, long n, double min, double max) {
         super(x, y, z, n);
         this.min = min;
         this.max = max;
         init(x, y, z, n);
     }
-
+*/
     public SetRange(INDArray x, double min, double max) {
         super(x);
         this.min = min;

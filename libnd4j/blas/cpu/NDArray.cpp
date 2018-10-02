@@ -1783,7 +1783,7 @@ NDArray NDArray::transp() const {
         } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
             return false;
 
-        auto extras = NDArrayFactory::create(eps);
+        auto extras = NDArrayFactory::create(eps, _workspace);
         auto ptr = extras.getBufferAsPointer(nd4j::DataType::FLOAT32);
 
         auto tmp = NDArrayFactory::create<float >(0.0f, this->_workspace);
@@ -2159,9 +2159,7 @@ NDArray NDArray::transp() const {
     NDArray* NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const {
 
         int shapeInfoLength = shape::shapeInfoLength(rankOf());
-        Nd4jLong* newShapeInfo = nullptr;
-        ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, Nd4jLong);
-        memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
+        Nd4jLong* newShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _workspace);        
         auto newArr = new NDArray(_buffer, newShapeInfo, _workspace, false, true);
 
         newArr->reshapei(order, shape);
@@ -4202,6 +4200,10 @@ NDArray NDArray::e(const Nd4jLong i) const {
     }
 
     NDArray* NDArray::quantize(NDArray *array) {
+        
+        if(array->isR())
+            throw std::invalid_argument("NDArray::quantize: type of array should be from real space!");
+
         auto ws = array->getWorkspace();
         char *buffer = nullptr;
         Nd4jLong *shapeInfo;

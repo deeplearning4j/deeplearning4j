@@ -69,7 +69,7 @@ nd4j.graph.FlatNode.prototype.name = function(optionalEncoding) {
  */
 nd4j.graph.FlatNode.prototype.opType = function() {
   var offset = this.bb.__offset(this.bb_pos, 8);
-  return offset ? /** @type {nd4j.graph.OpType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.OpType.TRANSFORM;
+  return offset ? /** @type {nd4j.graph.OpType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.OpType.TRANSFORM_FLOAT;
 };
 
 /**
@@ -302,7 +302,7 @@ nd4j.graph.FlatNode.addName = function(builder, nameOffset) {
  * @param {nd4j.graph.OpType} opType
  */
 nd4j.graph.FlatNode.addOpType = function(builder, opType) {
-  builder.addFieldInt8(2, opType, nd4j.graph.OpType.TRANSFORM);
+  builder.addFieldInt8(2, opType, nd4j.graph.OpType.TRANSFORM_FLOAT);
 };
 
 /**

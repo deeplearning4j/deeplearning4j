@@ -150,9 +150,9 @@ namespace nd4j {
         FORCEINLINE static bool isPermutNecessary(const std::vector<int>& permut);
 
         /**
-        *  calculates strides using "dest" shape and "order", also copies data type from "source" to "dest"         
+        *  calculates strides using "dest" shape and given "order", also copies data type from "source" to "dest"         
         */
-        static void updateStridesAndType(Nd4jLong* dest, const Nd4jLong* source, const char order);
+        static void updateStridesAndType(Nd4jLong* dest, const Nd4jLong* source, const char order);        
 
         /**
         *  calculates strides using "dest" shape and "order", also set "dtype" into "dest"         

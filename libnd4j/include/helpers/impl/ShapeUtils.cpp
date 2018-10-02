@@ -405,25 +405,6 @@ bool ShapeUtils::evalBroadcastShapeInfo(const NDArray &max, const NDArray &min, 
 
 bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
 
-    auto _min = ArrayOptions::dataType(min);
-    auto _max = ArrayOptions::dataType(max);
-    auto dtype = DataTypeUtils::pickPairwiseResultType(_max, _min);
-
-    if (shape::isScalar(max) && shape::isScalar(min)) {
-        resultShapeInfo = nullptr;
-        if (shape::rank(max) >= shape::rank(min)) {
-            COPY_SHAPE_EX(max, resultShapeInfo, workspace);
-        } else {
-            COPY_SHAPE_EX(min, resultShapeInfo, workspace);
-        }
-        ArrayOptions::setDataType(resultShapeInfo, dtype);
-        return true;
-    } else if ((shape::rank(max) == 0 && shape::isScalar(min))) {
-        // X is the driver here
-        resultShapeInfo = ShapeBuilders::createScalarShapeInfo(dtype, workspace);
-        return true;
-    }
-
     // check whether broadcast operation is possible for input arrays
     if(!areShapesBroadcastable(max, min))
         return false;
@@ -436,8 +417,8 @@ bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool
         minShapeInfo = max;
     }
        
-    const auto maxRank      = shape::rank(maxShapeInfo);
-    const auto minRank      = shape::rank(minShapeInfo);
+    const auto maxRank = shape::rank(maxShapeInfo);
+    const auto minRank = shape::rank(minShapeInfo);
     
     // evaluate shapeInfo for resulting array
     if(resultShapeInfo != nullptr)
@@ -450,9 +431,8 @@ bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool
     for (int i = 0; i < minRank; ++i)
         if(maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i])
             resultShapeInfo[maxRank - i] = minShapeInfo[minRank-i];
-
-    ArrayOptions::setDataType(resultShapeInfo, dtype);
-    shape::updateStrides(resultShapeInfo, shape::order(max));
+        
+    ShapeUtils::updateStridesAndType(resultShapeInfo, DataTypeUtils::pickPairwiseResultType(maxShapeInfo, minShapeInfo), shape::order(maxShapeInfo));
 
     return true;
 }
@@ -693,19 +673,15 @@ std::vector<int> ShapeUtils::evalBroadcastBackwardAxis(const Nd4jLong *operandSh
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-Nd4jLong* ShapeUtils::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, nd4j::DataType  dtype,
-    nd4j::memory::Workspace* workspace) {
+Nd4jLong* ShapeUtils::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, nd4j::DataType  dtype, nd4j::memory::Workspace* workspace) {
 
     auto inA = theFirstShape;
     auto inB = theSecondShape;
     Nd4jLong *shape;
     ALLOCATE(shape, workspace, shape::shapeInfoLength(2), Nd4jLong);
 
-    Nd4jLong *tmpA, *tmpB;
-    COPY_SHAPE_EX(inA, tmpA, workspace);
-    COPY_SHAPE_EX(inB, tmpB, workspace);
-
-
+    Nd4jLong* tmpA = ShapeBuilders::copyShapeInfo(inA, true, workspace);
+    Nd4jLong* tmpB = ShapeBuilders::copyShapeInfo(inB, true, workspace);
 
     if (shouldTranspondFirst)
         shape::transposeInplace(tmpA);

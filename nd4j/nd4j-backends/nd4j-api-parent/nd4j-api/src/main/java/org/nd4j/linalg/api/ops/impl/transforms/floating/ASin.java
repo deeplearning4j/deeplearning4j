@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class ASin extends BaseTransformOp {
+public class ASin extends BaseTransformFloatOp {
     public ASin(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -52,10 +53,6 @@ public class ASin extends BaseTransformOp {
 
     public ASin(INDArray x, INDArray z, long n) {
         super(x, z, n);
-    }
-
-    public ASin(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
     }
 
     public ASin(INDArray x) {

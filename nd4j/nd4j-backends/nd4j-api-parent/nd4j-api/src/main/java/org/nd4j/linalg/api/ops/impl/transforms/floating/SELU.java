@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.floating;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
@@ -31,7 +32,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class SELU extends BaseTransformOp {
+public class SELU extends BaseTransformFloatOp {
 
     private static final double SELU_ALPHA = 1.6732632423543772848170429916717;
     private static final double SELU_LAMBDA = 1.0507009873554804934193349852946;

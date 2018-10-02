@@ -52,6 +52,7 @@ TEST_F(ConvolutionTests, TestConv2D_1) {
 
     for (int e = 0; e < weights->lengthOf(); e++)
         weights->p(e, e + 1);
+    weights->permutei({2,3,1,0});
 
     auto exp = new NDArray(_expB, _expS);
     exp->triggerAllocationFlag(false, false);

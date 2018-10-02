@@ -30,7 +30,7 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.reduce.Variance;
 import org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;

@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.floating;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class LogSigmoid extends BaseTransformOp {
+public class LogSigmoid extends BaseTransformFloatOp {
     public LogSigmoid(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -51,14 +52,6 @@ public class LogSigmoid extends BaseTransformOp {
 
     public LogSigmoid(INDArray x, INDArray z, long n) {
         super(x, z, n);
-    }
-
-    public LogSigmoid(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public LogSigmoid(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
     }
 
     public LogSigmoid(INDArray ndArray) {

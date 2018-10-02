@@ -186,18 +186,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     }
 
     @Override
-    public Type opType() {
-        if(args() == null || args().length == 1)
-            return Type.TRANSFORM;
-        else if(args().length == 2)
-            return Type.PAIRWISE;
-
-        else throw new ND4JIllegalStateException("Illegal number of args (can only be 1 or 2)");
-    }
-
-
-
-    @Override
     public List<long[]> calculateOutputShape() {
         List<long[]> ret = new ArrayList<>(1);
         if(arg() == null)
