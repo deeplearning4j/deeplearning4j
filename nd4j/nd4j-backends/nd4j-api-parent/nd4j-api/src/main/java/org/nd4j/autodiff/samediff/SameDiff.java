@@ -10856,7 +10856,7 @@ public class SameDiff {
         int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         reverseMap.put(node.getOwnName(), ownId);
 
-        val dims = node.opType() == Op.Type.REDUCE && node.getDimensions() != null ? node.getDimensions() : new int[]{};
+        val dims = (node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_FLOAT  || node.opType() == Op.Type.REDUCE_LONG  || node.opType() == Op.Type.REDUCE_BOOL) && node.getDimensions() != null ? node.getDimensions() : new int[]{};
         // TODO: Adam, just put your props here, instead of empty list, and they will be saved
         List<FunctionProperties> props = new ArrayList<>();
         int properties = FunctionProperties.asFlatProperties(bufferBuilder, props);
