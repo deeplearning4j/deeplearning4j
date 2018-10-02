@@ -736,8 +736,6 @@ public class OpValidation {
                 IMin.class,
                 LastIndex.class,
                 //Exclude Random ops
-                LegacyDropOut.class,
-                LegacyDropOutInverted.class,
                 RandomStandardNormal.class,
                 DistributionUniform.class,
                 AlphaDropOut.class,

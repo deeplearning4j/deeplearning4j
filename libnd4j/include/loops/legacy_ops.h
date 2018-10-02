@@ -86,9 +86,7 @@
         (17,Ceiling), \
         (18,Floor), \
         (19,ClipByValue) ,\
-        (20,Stabilize), \
-        (21,StabilizeFP16) ,\
-        (22,Reverse)
+        (20,Reverse)
 
 
 // these ops return bool
@@ -120,7 +118,9 @@
         (15,ASinhDerivative) ,\
         (16,SinhDerivative), \
         (17,LogSigmoidDerivative) ,\
-        (18,SpecialDerivative)
+        (18,SpecialDerivative), \
+        (19,Stabilize), \
+        (20,StabilizeFP16)
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \

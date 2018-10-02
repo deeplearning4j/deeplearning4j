@@ -37,7 +37,7 @@ public class RandomPerformanceTests extends BaseNd4jTest {
         super(backend);
     }
 
-
+/*
     @Test
     public void testDropoutPerformance() throws Exception {
 
@@ -79,7 +79,7 @@ public class RandomPerformanceTests extends BaseNd4jTest {
                             timeLegacy / 1000, timeRecent / 1000, timeLegacy / x1.length(), timeRecent / x1.length());
         }
     }
-
+*/
 
     @Override
     public char ordering() {
