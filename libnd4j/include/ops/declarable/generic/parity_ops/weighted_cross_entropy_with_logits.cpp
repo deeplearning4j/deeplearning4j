@@ -36,7 +36,7 @@ namespace ops {
         REQUIRE_TRUE(targets->isSameShape(input), 0, "WEIGHTED_CROSS_ENTROPY_WITH_LOGITS op: The shape of both input params should be equal, but got input_shape=%s and targets_shape=%s !", ShapeUtils::shapeAsString(input).c_str(), ShapeUtils::shapeAsString(targets).c_str());
         REQUIRE_TRUE(weights->isScalar() || targets->sizeAt(-1) == weights->lengthOf(), 0, "WEIGHTED_CROSS_ENTROPY_WITH_LOGITS op: The weights should be scalar or vector with length equal to size of last targets dimension, but got weights_shape=%s instead!", ShapeUtils::shapeAsString(weights).c_str());
 
-        // helpers::weightedCrossEntropyWithLogitsFunctor(targets, input, weights, output);
+        helpers::weightedCrossEntropyWithLogitsFunctor(targets, input, weights, output);
 
         return Status::OK();
     }

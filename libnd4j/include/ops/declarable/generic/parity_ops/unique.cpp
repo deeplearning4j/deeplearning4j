@@ -72,13 +72,13 @@ namespace nd4j {
             int uniqueCount = helpers::uniqueCount(source);
             // all output shapes are 1D arrays (vectors)
             // all output shapes are 1D arrays (vectors)
-            auto valuesShape = ShapeBuilders::createVectorShapeInfo(block.dataType(), uniqueCount, block.workspace());
+            auto valuesShape = ShapeBuilders::createVectorShapeInfo(source->dataType(), uniqueCount, block.workspace());
 
             // second output is always LONG
             auto indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, source->lengthOf(), block.workspace());
 
             // third one as well
-            auto countsShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, source->lengthOf(), block.workspace());
+            auto countsShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, uniqueCount, block.workspace());
 
             return SHAPELIST(valuesShape, indicesShape, countsShape);
         }
