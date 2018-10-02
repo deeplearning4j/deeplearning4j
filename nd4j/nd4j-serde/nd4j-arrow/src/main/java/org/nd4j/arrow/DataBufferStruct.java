@@ -20,6 +20,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.flatbuffers.Struct;
 import lombok.Getter;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -52,7 +53,7 @@ public class DataBufferStruct extends Struct {
      * @param length the length of the buffer to create
      * @return the created databuffer
      */
-    public static DataBuffer createFromByteBuffer(ByteBuffer bb,int bb_pos,DataType type,int length) {
+    public static DataBuffer createFromByteBuffer(ByteBuffer bb, int bb_pos, DataType type, int length) {
         bb.order(ByteOrder.LITTLE_ENDIAN);
         int elementSize = DataTypeUtil.lengthForDtype(type);
         DataBuffer ret = Nd4j.createBuffer(ByteBuffer.allocateDirect(length *   elementSize),type,length,0);
