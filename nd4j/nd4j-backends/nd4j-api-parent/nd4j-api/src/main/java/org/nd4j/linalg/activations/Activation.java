@@ -22,17 +22,18 @@ import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarSet;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.same.OldIdentity;
+import org.nd4j.linalg.api.ops.impl.transforms.same.RectifedLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Step;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SwishDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Cube;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
 
 /**
  * This enum is the factory for the activation function.

@@ -22,7 +22,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.floating.Sigmoid;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftPlus;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.SoftPlus;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
