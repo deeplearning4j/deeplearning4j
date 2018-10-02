@@ -1449,7 +1449,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 // perform array transformation
     void NDArray::applyTransform(nd4j::transform::FloatOps op, NDArray *target, void *extraParams) {
-        if (target->isR())
+        if (!target->isR())
             throw std::runtime_error("Target array must have one of FLOAT types");
 
         NativeOpExcutioner::execTransformFloat(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
