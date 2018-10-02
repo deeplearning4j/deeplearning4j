@@ -105,7 +105,7 @@ TEST_F(DeclarableOpsTests3, Test_Permute_2) {
 TEST_F(DeclarableOpsTests3, Test_Unique_1) {
     auto x= NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 1, 2, 3});
     auto expV= NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
-    auto expI= NDArrayFactory::create<float>('c', {5}, {0, 1, 0, 1, 2});
+    auto expI= NDArrayFactory::create<Nd4jLong>('c', {5}, {0, 1, 0, 1, 2});
 //    auto expI= NDArrayFactory::create<float>('c', {3}, {0, 1, 4});
 
     nd4j::ops::unique op;
@@ -116,7 +116,9 @@ TEST_F(DeclarableOpsTests3, Test_Unique_1) {
 
     auto v = result->at(0);
     auto i = result->at(1);
-
+    v->printIndexedBuffer("Values");
+    i->printIndexedBuffer("Indices");
+    i->printShapeInfo("Indices shape");
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
 
@@ -129,8 +131,8 @@ TEST_F(DeclarableOpsTests3, Test_Unique_1) {
 TEST_F(DeclarableOpsTests3, Test_Unique_2) {
     auto x= NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 1, 2, 3});
     auto expV= NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
-    auto expI= NDArrayFactory::create<float>('c', {5}, {0, 1, 0, 1, 2});
-    auto expC= NDArrayFactory::create<float>('c', {3}, {2, 2, 1});
+    auto expI= NDArrayFactory::create<Nd4jLong>('c', {5}, {0, 1, 0, 1, 2});
+    auto expC= NDArrayFactory::create<Nd4jLong>('c', {3}, {2, 2, 1});
 
     nd4j::ops::unique_with_counts op;
     auto result = op.execute({&x}, {}, {});
@@ -142,12 +144,12 @@ TEST_F(DeclarableOpsTests3, Test_Unique_2) {
     auto i = result->at(1);
     auto c = result->at(2);
 
-    // v->printShapeInfo();
-    // v->printIndexedBuffer("Values");
-    // i->printShapeInfo();
-    // i->printIndexedBuffer("Indices");
-    // c->printShapeInfo();
-    // c->printIndexedBuffer("Counts");
+     v->printShapeInfo();
+     v->printIndexedBuffer("Values");
+     i->printShapeInfo();
+     i->printIndexedBuffer("Indices");
+     c->printShapeInfo();
+     c->printIndexedBuffer("Counts");
 
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
