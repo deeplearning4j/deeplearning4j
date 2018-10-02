@@ -43,7 +43,14 @@ OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false) {
 
     std::vector<Nd4jLong> labelsShape = labels->getShapeAsVector();
     std::vector<Nd4jLong> logitsShape = logits->getShapeAsVector();
-    REQUIRE_TRUE(shape::equalsSoft(labels->shapeInfo(), logits->shapeInfo()), 0, "SPARSE_SOFTMAX_CROSS_ENTROPY_LOSS_WITH_LOGITS OP: wrong shape of labels array, its shape should be the same as logits shape with last dimension excluded, however got labels_shape = %s and logits_shape = %s instead !", ShapeUtils::shapeAsString(labelsShape).c_str(), ShapeUtils::shapeAsString(logitsShape).c_str());
+    bool equalSoft = true;
+    for (size_t i = 1; i < labelsShape; ++i)
+        if (labelsShape[i] != logitsShape[i]) {
+            equalSoft = false;
+            break;
+        }
+
+    REQUIRE_TRUE(equalSoft, 0, "SPARSE_SOFTMAX_CROSS_ENTROPY_LOSS_WITH_LOGITS OP: wrong shape of labels array, its shape should be the same as logits shape with last dimension excluded, however got labels_shape = %s and logits_shape = %s instead !", ShapeUtils::shapeAsString(labelsShape).c_str(), ShapeUtils::shapeAsString(logitsShape).c_str());
 
     helpers::sparseSoftmaxCrossEntropyLossWithLogits(*labels, *logits, *output);
 
