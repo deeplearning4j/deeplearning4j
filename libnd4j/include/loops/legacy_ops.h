@@ -255,19 +255,17 @@
 
 #define REDUCE_FLOAT_OPS \
         (0, Mean), \
-        (1, Norm1), \
-        (2, Norm2), \
-        (3, NormMax), \
-        (4, StandardDeviation), \
-        (5, Variance), \
-        (7, AMean) ,\
+        (1, AMean) ,\
+        (2, Norm1), \
+        (3, Norm2), \
+        (4, NormMax), \
+        (5, NormFrobenius), \
+        (6, NormP), \
+        (7, SquaredNorm)
         (8, Entropy) ,\
         (9, LogEntropy) ,\
         (10, ShannonEntropy) ,\
-        (11, LogSumExp) ,\
-        (13, NormFrobenius), \
-        (14, NormP), \
-        (15, SquaredNorm)
+        (11, LogSumExp)
 
 
 
