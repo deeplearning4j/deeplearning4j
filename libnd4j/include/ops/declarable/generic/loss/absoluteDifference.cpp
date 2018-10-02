@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_absolute_difference_loss)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/losses.h>
 
 namespace nd4j {
     namespace ops {
@@ -55,11 +56,8 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
 		weightsBroad = new NDArray(weights->tile(reps));
 	}
 
-	// perform subtraction (predictions - labels) and apply abs
-	// FIXME: lambda should be replaced
-	//auto absDiffr = LAMBDA_TT(p, l) { return nd4j::math::nd4j_abs(p - l); };
-    NDArray weightedLosses(labels->getShapeInfo(), block.getWorkspace());
- 	//predictions->applyPairwiseLambda(labels, absDiffr, &weightedLosses);
+	NDArray weightedLosses(labels->getShapeInfo(), block.getWorkspace());
+	helpers::weightedAbsoluteSubtract(predictions, labels, weightedLosses);
  	// multiply weightedLosses on weights
 
  	weightedLosses *= (*weights);

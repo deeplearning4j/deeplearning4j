@@ -30,6 +30,7 @@ namespace helpers {
 
 	void sparseSoftmaxCrossEntropyLossWithLogits(const NDArray& labels, const NDArray& logits, NDArray& output);
 	void reduceZeroCountWeights(NDArray* weightsBroad, Nd4jLong sizeAtRestDims, NDArray& numOfNonZeroWeights);
+	void weightedAbsoluteSubtract(NDArray* predictions, NDArray* labels, NDArray& weightedLosses);
 
 }
 }
