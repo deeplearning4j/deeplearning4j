@@ -578,8 +578,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_1) {
                                         
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.5);
-    expected.assign(0.5);
+    weights.assign(0.5f);
+    expected.assign(0.5f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
@@ -606,8 +606,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_2) {
                                         
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.5);
-    expected.assign(0.5);
+    weights.assign(0.5f);
+    expected.assign(0.5f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
@@ -615,7 +615,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *result = results->at(0);    
-
+    result->printIndexedBuffer("ADL test2");
+    expected.printIndexedBuffer("ADL expec");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -633,8 +634,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_3) {
                                         
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.5);
-    expected.assign(0.5);
+    weights.assign(0.5f);
+    expected.assign(0.5f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
@@ -660,8 +661,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_4) {
                                         
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.5);
-    expected.assign(0.5);
+    weights.assign(0.5f);
+    expected.assign(0.5f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
@@ -687,8 +688,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_5) {
                                         
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.5);
-    expected.assign(0.5);
+    weights.assign(0.5f);
+    expected.assign(0.5f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
@@ -714,8 +715,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_6) {
                                         
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.);
-    expected.assign(0.);
+    weights.assign(0.f);
+    expected.assign(0.f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
@@ -740,7 +741,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_7) {
                                             
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.5);
+    weights.assign(0.5f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
@@ -750,7 +751,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_7) {
     auto *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE(result->e<float>(0) == 60.);
+    ASSERT_TRUE(result->e<float>(0) == 60.f);
 
     delete results;
 
@@ -765,7 +766,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_8) {
                                             
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.);
+    weights.assign(0.f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
@@ -790,7 +791,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_9) {
                                             
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.5);
+    weights.assign(0.5f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
@@ -815,7 +816,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_10) {
                                             
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.5);
+    weights.assign(0.5f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
@@ -825,7 +826,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_10) {
     auto *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE(result->e<float>(0) == 60.);
+    ASSERT_TRUE(result->e<float>(0) == 60.f);
 
     delete results;
 
@@ -840,7 +841,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_11) {
                                             
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.5);
+    weights.assign(0.5f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -865,7 +866,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_12) {
                                             
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.);
+    weights.assign(0.f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -890,7 +891,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_13) {
                                             
     labels.linspace(1);
     predictions.linspace(2);
-    weights.assign(0.5);
+    weights.assign(0.5f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -942,7 +943,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_15) {
                                             
     labels.linspace(1);
     predictions.linspace(3);
-    weights.assign(0.5);
+    weights.assign(0.5f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -967,11 +968,11 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_16) {
                                             
     labels.linspace(1);
     predictions.linspace(3);
-    weights.assign(0.5);
-    predictions.p(0, 0.);
-    predictions.p(1, 0.);
-    predictions.p(2, 0.);
-    predictions.p(3, 0.);
+    weights.assign(0.5f);
+    predictions.p(0, 0.f);
+    predictions.p(1, 0.f);
+    predictions.p(2, 0.f);
+    predictions.p(3, 0.f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -996,15 +997,15 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_17) {
                                             
     labels.linspace(1);
     predictions.linspace(3);
-    weights.assign(0.5);
-    predictions.p(0, 0.);
-    predictions.p(1, 0.);
-    predictions.p(2, 0.);
-    predictions.p(3, 0.);
-    labels.p(0, 0.);
-    labels.p(1, 0.);
-    labels.p(2, 0.);
-    labels.p(3, 0.);
+    weights.assign(0.5f);
+    predictions.p(0, 0.f);
+    predictions.p(1, 0.f);
+    predictions.p(2, 0.f);
+    predictions.p(3, 0.f);
+    labels.p(0, 0.f);
+    labels.p(1, 0.f);
+    labels.p(2, 0.f);
+    labels.p(3, 0.f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -1029,15 +1030,15 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_18) {
                                             
     labels.linspace(1);
     predictions.linspace(3);
-    weights.assign(0.5);
-    predictions.p(0, 0.);
-    predictions.p(1, 0.);
-    predictions.p(2, 0.);
+    weights.assign(0.5f);
+    predictions.p(0, 0.f);
+    predictions.p(1, 0.f);
+    predictions.p(2, 0.f);
     predictions.p(3, 0.);
-    labels.p(0, 0.);
-    labels.p(1, 0.);
-    labels.p(2, 0.);
-    labels.p(3, 0.);
+    labels.p(0, 0.f);
+    labels.p(1, 0.f);
+    labels.p(2, 0.f);
+    labels.p(3, 0.f);
 
     nd4j::ops::absolute_difference_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -1047,7 +1048,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_18) {
     auto *result = results->at(0);    
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 1.93333, 1e-5);
+    ASSERT_NEAR(result->e<float>(0), 1.93333f, 1e-5);
 
     delete results;
 
