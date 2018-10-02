@@ -187,7 +187,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
     std::vector<int> dims({1});
     nd4j::ops::norm op;
 
-    auto result0 = op.execute({&x}, {0}, {});
+    auto result0 = op.execute({&x}, {0.}, {});
 
     auto z0 = result0->at(0);
     auto exp0 = x.reduceAlongDims(reduce::NormFrobenius, empty, false, true);
@@ -196,7 +196,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
 
     delete result0;
 
-    auto result1 = op.execute({&x}, {1}, {1});
+    auto result1 = op.execute({&x}, {1.}, {1});
 
     auto z1 = result1->at(0);
     auto exp1 = x.reduceAlongDims(reduce::Norm2, dims, false, true);
@@ -205,7 +205,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
 
     delete result1;
 
-    auto result4 = op.execute({&x}, {4}, {1});
+    auto result4 = op.execute({&x}, {4.}, {1});
 
     auto z4 = result4->at(0);
     auto exp4= x.reduceAlongDims(reduce::NormMax, dims, false, true);
@@ -325,6 +325,9 @@ TEST_F(DeclarableOpsTests3, Test_CumSum_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
+    z->printIndexedBuffer("CumSum1");
+    z->printShapeInfo("CumSum1 shape");
+    exp.printShapeInfo("expected CumSum1");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -341,7 +344,9 @@ TEST_F(DeclarableOpsTests3, Test_CumSum_2) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-
+    z->printIndexedBuffer("CumSum2");
+    z->printShapeInfo("CumSum2 shape");
+    exp.printShapeInfo("expected CumSum2");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -515,7 +520,7 @@ TEST_F(DeclarableOpsTests3, Test_Range_7) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Range_8) {
-    auto exp= NDArrayFactory::create<float>('c', {2}, {2, 1});
+    auto exp= NDArrayFactory::create<int>('c', {2}, {2, 1});
 
     nd4j::ops::range op;
     auto result = op.execute({}, {}, {2, 0, -1});
@@ -531,7 +536,7 @@ TEST_F(DeclarableOpsTests3, Test_Range_8) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_Range_9) {
-    auto exp= NDArrayFactory::create<float>('c', {2}, {0, 1});
+    auto exp= NDArrayFactory::create<int>('c', {2}, {0, 1});
 
     nd4j::ops::range op;
     auto result = op.execute({}, {}, {0, 2, 1});
@@ -1202,7 +1207,7 @@ TEST_F(DeclarableOpsTests3, diag_test2) {
 TEST_F(DeclarableOpsTests3, diag_test_vector) {
 
 
-    auto input = NDArrayFactory::linspace(1,4,4);
+    auto input = NDArrayFactory::linspace<float>(1,4,4);
     auto expected= NDArrayFactory::create<float>('c', {4,4}, {1,0,0,0, 0,2,0,0, 0,0,3,0,0,0,0,4});
 
     nd4j::ops::diag op;
@@ -1225,7 +1230,7 @@ TEST_F(DeclarableOpsTests3, diag_test_vector) {
 TEST_F(DeclarableOpsTests3, diag_test_col_vector) {
 
 
-    auto *input = NDArrayFactory::linspace(1,4,4);
+    auto input = NDArrayFactory::linspace<float>(1,4,4);
     input->reshapei({4,1});
     auto expected= NDArrayFactory::create<float>('c', {4,4}, {1,0,0,0, 0,2,0,0, 0,0,3,0,0,0,0,4});
 
@@ -1927,7 +1932,7 @@ TEST_F(DeclarableOpsTests3, polygamma_test1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *output = results->at(0);
+    auto output = results->at(0);
     // output->printBuffer();
 
     ASSERT_TRUE(expected.isSameShape(output));

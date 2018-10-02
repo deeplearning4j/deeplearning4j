@@ -42,6 +42,7 @@ namespace nd4j {
                 helpers::adjustAxis(input, axisVector, dims);
 
                 auto shape = ShapeUtils::evalReduceShapeInfo(input->ordering(), dims, *input, false, true);
+                ArrayOptions::setDataType(shape, input->dataType());
                 output = new NDArray(shape, false, block.getWorkspace());
 
                 overwrite = true;
