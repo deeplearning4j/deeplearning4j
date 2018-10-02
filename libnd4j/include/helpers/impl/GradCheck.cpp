@@ -83,7 +83,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 			ResultSet* outArrsFF = opFF.execute(argsHolderFF);
 			int numOutArrs = outArrsFF->size();
 			double scorePlus = 0.;
-			auto tmpScalar = NDArrayFactory::create(0.0);
+			NDArray tmpScalar(nd4j::DataType::DOUBLE, inArrsFF[0]->getWorkspace()); // scalar = 0
 			for(int k = 0; k < numOutArrs; ++k) {                // loop through output array
 				NativeOpExcutioner::execReduceFloatScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
 				scorePlus += tmpScalar.e<double>(0);

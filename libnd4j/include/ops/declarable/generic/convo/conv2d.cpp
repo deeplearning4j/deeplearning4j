@@ -291,7 +291,7 @@ CUSTOM_OP_IMPL(conv2d_input_bp, 3, 1, false, 0, 9) {
     std::vector<Nd4jLong> gradIShapeAsVector(rank);
     for(int i = 0; i < rank; ++i)        
         gradIShapeAsVector[i] = gradIShape->e<Nd4jLong>(i);
-    auto input = NDArrayFactory::create(gradO->ordering(), gradIShapeAsVector, gradO->dataType(), block.getWorkspace());
+    NDArray input(gradO->ordering(), gradIShapeAsVector, gradO->dataType(), block.getWorkspace());
 
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
