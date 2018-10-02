@@ -49,6 +49,13 @@ void sparseSoftmaxCrossEntropyLossWithLogits(const NDArray& labels, const NDArra
     }
 }
 
+    void reduceZeroCountWeights(NDArray* weightsBroad, Nd4jLong sizeAtRestDims, 
+        NDArray& numOfNonZeroWeights) {
+        for(int i = 0; i < numOfNonZeroWeights.lengthOf(); ++i)
+            for(int j = 0; j < sizeAtRestDims; ++j)
+                if(weightsBroad->e<float>(i*sizeAtRestDims + j) != 0.f)
+                    numOfNonZeroWeights.p<Nd4jLong>(i, 1 + numOfNonZeroWeights.e<Nd4jLong>(i));
+    }
 }
 }
 }
