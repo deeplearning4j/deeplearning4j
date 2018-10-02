@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ops.impl.accum.floating.Norm2;
 import org.nd4j.linalg.api.ops.impl.accum.floating.NormMax;
 import org.nd4j.linalg.api.ops.impl.accum.same.Max;
 import org.nd4j.linalg.api.ops.impl.accum.same.Min;
+import org.nd4j.linalg.api.ops.impl.accum.same.Prod;
 import org.nd4j.linalg.api.ops.impl.accum.same.Sum;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;

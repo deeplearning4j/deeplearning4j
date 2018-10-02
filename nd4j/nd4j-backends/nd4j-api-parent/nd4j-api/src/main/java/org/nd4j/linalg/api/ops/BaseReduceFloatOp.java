@@ -16,10 +16,45 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFloatOp {
+
+    public BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+        super(sameDiff, i_v, i_v2, dimensions);
+    }
+
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+        super(sameDiff, input, dimensions, keepDims);
+    }
+
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
+        super(sameDiff, input, dimensions);
+    }
+
+    public BaseReduceFloatOp(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, null, z, newFormat, keepDims, dimensions);
+    }
+
+    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, long n) {
+        super(x, y, z, n);
+    }
+
+    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
+    }
+
+    public BaseReduceFloatOp(INDArray x) {
+        super(x);
+    }
+
+    protected BaseReduceFloatOp() {
+        super();
+    }
 
     @Override
     public DataType resultType() {

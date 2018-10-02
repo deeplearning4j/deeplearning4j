@@ -2157,18 +2157,16 @@ NDArray NDArray::transp() const {
     //////////////////////////////////////////////////////////////////////////
     // create new array with corresponding order and shape, new array will point to the same _buffer as this array
     NDArray* NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const {
-	    int shapeInfoLength = shape::shapeInfoLength(rankOf());
-	    Nd4jLong* newShapeInfo = nullptr;
 
-	    //ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, Nd4jLong);
-	    //memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
-        COPY_SHAPE_EX(_shapeInfo, newShapeInfo, _workspace);
-	    auto newArr = new NDArray(_buffer, newShapeInfo, _workspace);
-	    newArr->_isShapeAlloc = true;
-	    newArr->_isBuffAlloc  = false;
-	    newArr->reshapei(order, shape);
+        int shapeInfoLength = shape::shapeInfoLength(rankOf());
+        Nd4jLong* newShapeInfo = nullptr;
+        ALLOCATE(newShapeInfo , _workspace, shapeInfoLength, Nd4jLong);
+        memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
+        auto newArr = new NDArray(_buffer, newShapeInfo, _workspace, false, true);
 
-	    return newArr;
+        newArr->reshapei(order, shape);
+
+        return newArr;
     }
 
     //////////////////////////////////////////////////////////////////////////
