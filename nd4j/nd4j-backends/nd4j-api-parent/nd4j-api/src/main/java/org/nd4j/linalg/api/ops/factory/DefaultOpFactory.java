@@ -24,7 +24,8 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.scalar.Pow;
-import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
+import org.nd4j.linalg.api.ops.impl.transforms.same.RectifedLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Step;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 
@@ -278,7 +279,7 @@ public class DefaultOpFactory implements OpFactory {
                 op = new org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative(x, z);
                 break;
             case "set":
-                op = new org.nd4j.linalg.api.ops.impl.transforms.Set(x,y,z,z.length());
+                op = new Set(x,y,z,z.length());
                 break;
             case "relu":
                 op = new RectifedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
@@ -304,7 +305,7 @@ public class DefaultOpFactory implements OpFactory {
 
         switch (opName) {
             case "set":
-                op = new org.nd4j.linalg.api.ops.impl.transforms.Set(x,y,z,z.length());
+                op = new org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set(x,y,z,z.length());
                 break;
             case "relu":
                 op = new RectifedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);

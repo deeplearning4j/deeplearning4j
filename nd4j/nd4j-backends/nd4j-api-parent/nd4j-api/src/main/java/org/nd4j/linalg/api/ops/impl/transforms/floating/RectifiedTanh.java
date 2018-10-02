@@ -14,72 +14,65 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.floating;
 
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Inverted DropOut implementation as Op
+ * RectifiedTanh
  *
- * PLEASE NOTE: This is legacy DropOutInverted implementation, please consider using op with the same opName from randomOps
+ * Essentially max(0, tanh(x))
+ *
  * @author raver119@gmail.com
  */
-public class LegacyDropOutInverted extends BaseTransformOp {
-
-    private double p;
-
-    public LegacyDropOutInverted(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double p) {
+public class RectifiedTanh extends BaseTransformOp {
+    public RectifiedTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
-        this.p = p;
     }
 
-    public LegacyDropOutInverted(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double p) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.p = p;
-    }
+    public RectifiedTanh() {}
 
-    public LegacyDropOutInverted(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double p) {
-        super(sameDiff, i_v, extraArgs);
-        this.p = p;
-    }
-
-    public LegacyDropOutInverted() {
-
-    }
-
-    public LegacyDropOutInverted(INDArray x, double p) {
-        super(x);
-        this.p = p;
-        init(x, null, x, x.length());
-    }
-
-    public LegacyDropOutInverted(INDArray x, INDArray z, double p) {
+    public RectifiedTanh(INDArray x, INDArray z) {
         super(x, z);
-        this.p = p;
-        init(x, null, z, x.length());
     }
 
-    public LegacyDropOutInverted(INDArray x, INDArray z, double p, long n) {
+    public RectifiedTanh(INDArray x, INDArray z, long n) {
         super(x, z, n);
-        this.p = p;
-        init(x, null, z, n);
+    }
+
+    public RectifiedTanh(INDArray x, INDArray y, INDArray z, long n) {
+        super(x, y, z, n);
+    }
+
+    public RectifiedTanh(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.lengthLong());
+    }
+
+    public RectifiedTanh(INDArray x) {
+        super(x);
     }
 
     @Override
     public int opNum() {
-        return 44;
+        return 18;
     }
 
     @Override
     public String opName() {
-        return "legacy_dropout_inverted";
+        return "rectified_tanh";
     }
 
     @Override
@@ -93,14 +86,18 @@ public class LegacyDropOutInverted extends BaseTransformOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {p, (double) n};
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        super.initFromOnnx(node, initWith, attributesForNode, graph);
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.singletonList(f().tanhRectifiedDerivative(arg()).mul(f1.get(0)));
     }
 }

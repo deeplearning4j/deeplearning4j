@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.floating;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -66,7 +66,7 @@ public class SoftSign extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 20;
+        return 13;
     }
 
     @Override

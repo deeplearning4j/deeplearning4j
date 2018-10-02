@@ -14,9 +14,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.scalar;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -26,75 +25,61 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import java.util.List;
 
 /**
- * Set range to a particular set of values
+ * Element-wise "Replace NaN" implementation as Op
  *
- * @author Adam Gibson
+ * @author raver119@gmail.com
  */
-public class SetRange extends BaseTransformOp {
+public class ReplaceNans extends BaseTransformOp {
 
-    private double min, max;
+    private double set;
 
-    public SetRange(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double min, double max) {
+    public ReplaceNans(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double set) {
         super(sameDiff, i_v, inPlace);
-        this.min = min;
-        this.max = max;
+        this.set = set;
     }
 
-    public SetRange(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double min, double max) {
+    public ReplaceNans(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double set) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.min = min;
-        this.max = max;
+        this.set = set;
     }
 
-    public SetRange(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double min, double max) {
+    public ReplaceNans(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double set) {
         super(sameDiff, i_v, extraArgs);
-        this.min = min;
-        this.max = max;
+        this.set = set;
     }
 
-    public SetRange() {}
+    public ReplaceNans() {
 
-    public SetRange(INDArray x) {
-        this(x, 0, 1);
     }
 
-    public SetRange(INDArray x, INDArray z, double min, double max) {
-        super(x, z);
-        this.min = min;
-        this.max = max;
-        init(x, y, z, n);
-    }
-
-    public SetRange(INDArray x, INDArray z, long n, double min, double max) {
-        super(x, z, n);
-        this.min = min;
-        this.max = max;
-        init(x, y, z, n);
-    }
-
-    public SetRange(INDArray x, INDArray y, INDArray z, long n, double min, double max) {
-        super(x, y, z, n);
-        this.min = min;
-        this.max = max;
-        init(x, y, z, n);
-    }
-
-    public SetRange(INDArray x, double min, double max) {
+    public ReplaceNans(INDArray x, double set) {
         super(x);
-        this.min = min;
-        this.max = max;
-        init(x, y, z, n);
+        this.set = set;
+        init(x, null, x, x.length());
+    }
+
+    public ReplaceNans(INDArray x, INDArray z, double set) {
+        super(x, z);
+        this.set = set;
+        init(x, null, z, x.length());
+    }
+
+    public ReplaceNans(INDArray x, INDArray z, double set, long n) {
+        super(x, z, n);
+        this.set = set;
+        init(x, null, x, n);
     }
 
     @Override
     public int opNum() {
-        return 9;
+        return 46;
     }
 
     @Override
     public String opName() {
-        return "setrange";
+        return "replace_nans";
     }
+
     @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
@@ -105,12 +90,12 @@ public class SetRange extends BaseTransformOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
+
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[] {min, max};
+        this.extraArgs = new Object[] {set, (double) n};
     }
-
 
 
     @Override
@@ -118,3 +103,4 @@ public class SetRange extends BaseTransformOp {
         return null;
     }
 }
+

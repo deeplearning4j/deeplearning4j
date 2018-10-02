@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.pairwise;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -27,63 +27,67 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
-public class BinaryRelativeError extends BaseTransformOp {
-    private double threshold = 0.0;
+public class BinaryMinimalRelativeError extends BaseTransformOp {
+    private double thresholdRelative = 0.0;
+    private double thresholdAbsolute = 0.0;
 
-    public BinaryRelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
+    public BinaryMinimalRelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
 
-    public BinaryRelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
+    public BinaryMinimalRelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
         super(sameDiff, i_v1, i_v2, inPlace);
     }
 
-    public BinaryRelativeError(SameDiff sameDiff) {
+    public BinaryMinimalRelativeError(SameDiff sameDiff) {
         super(sameDiff);
     }
 
-    public BinaryRelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
+    public BinaryMinimalRelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
         super(sameDiff, i_v1, i_v2, extraArgs);
     }
 
-    public BinaryRelativeError(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+    public BinaryMinimalRelativeError(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public BinaryRelativeError(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public BinaryMinimalRelativeError(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public BinaryRelativeError(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public BinaryMinimalRelativeError(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public BinaryRelativeError() {
+    public BinaryMinimalRelativeError() {
     }
 
-    public BinaryRelativeError(INDArray x, INDArray y, INDArray z, double threshold, long n) {
+    public BinaryMinimalRelativeError(INDArray x, INDArray y, INDArray z, double thresholdRelative, double thresholdAbsolute, long n) {
         super(x, y, z, n);
-        this.threshold = threshold;
+        this.thresholdRelative = thresholdRelative;
+        this.thresholdAbsolute = thresholdAbsolute;
     }
 
-    public BinaryRelativeError(INDArray x, INDArray y, double threshold) {
+    public BinaryMinimalRelativeError(INDArray x, INDArray y, double thresholdRelative, double thresholdAbsolute) {
         super(x, y, x, x.lengthLong());
-        this.threshold = threshold;
+        this.thresholdRelative = thresholdRelative;
+        this.thresholdAbsolute = thresholdAbsolute;
     }
 
-    public BinaryRelativeError(INDArray x, INDArray y, INDArray z, double threshold) {
+    public BinaryMinimalRelativeError(INDArray x, INDArray y, INDArray z, double thresholdRelative, double thresholdAbsolute) {
         super(x, y, z, x.lengthLong());
-        this.threshold = threshold;
+        this.thresholdRelative = thresholdRelative;
+        this.thresholdAbsolute = thresholdAbsolute;
     }
 
     @Override
     public int opNum() {
-        return 27;
+        return 28;
     }
 
     @Override
     public String opName() {
-        return "BinaryRelativeError";
+        return "BinaryMinimalRelativeError";
     }
 
     @Override
@@ -99,7 +103,7 @@ public class BinaryRelativeError extends BaseTransformOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[] {threshold};
+        this.extraArgs = new Object[] {thresholdRelative, thresholdAbsolute};
     }
 
 

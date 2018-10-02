@@ -14,8 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.pairwise;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -26,60 +27,72 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Rational Tanh Approximation elementwise function, as described at https://github.com/deeplearning4j/libnd4j/issues/351
+ * Boolean AND pairwise transform
  *
  * @author raver119@gmail.com
  */
-public class RationalTanh extends BaseTransformOp {
-    public RationalTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
+public class Not extends BaseTransformOp {
+
+    protected double comparable = 0.0;
+
+    public Not(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v, false);
+        this.extraArgs = new Object[] {this.comparable};
     }
 
-    public RationalTanh() {}
-
-    public RationalTanh(INDArray x, INDArray z) {
-        super(x, z);
+    public Not() {
+        this.extraArgs = new Object[] {this.comparable};
     }
 
-    public RationalTanh(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    public Not(@NonNull INDArray x) {
+        this(x, 0.0);
     }
 
-    public RationalTanh(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public Not(@NonNull INDArray x, Number comparable) {
+        this(x, x, comparable, x.lengthLong());
     }
 
-    public RationalTanh(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+    public Not(@NonNull INDArray x, INDArray z, Number comparable) {
+        this(x, z, comparable, x.lengthLong());
     }
 
-    public RationalTanh(INDArray x) {
-        super(x);
+    public Not(@NonNull INDArray x, INDArray z) {
+        this(x, z, z.lengthLong());
     }
+
+    public Not(@NonNull INDArray x, INDArray z, long n) {
+        this(x, z, 0.0, n);
+    }
+
+    public Not(@NonNull INDArray x, INDArray z, Number comparable, long n) {
+        super(x, null, z, n);
+        this.comparable = comparable.doubleValue();
+        this.extraArgs = new Object[] {this.comparable};
+    }
+
 
     @Override
     public int opNum() {
-        return 53;
+        return 59;
     }
 
     @Override
     public String opName() {
-        return "rational_tanh";
+        return "boolean_not";
     }
 
     @Override
     public String onnxName() {
-        return "Tanh";
+        return "Not";
     }
 
     @Override
     public String tensorflowName() {
-        return "RationalTanh";
+        return "LogicalNot";
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().tanhRationalDerivative(arg()).mul(f1.get(0)));
+        return Collections.singletonList(f().zerosLike(arg()));
     }
 }

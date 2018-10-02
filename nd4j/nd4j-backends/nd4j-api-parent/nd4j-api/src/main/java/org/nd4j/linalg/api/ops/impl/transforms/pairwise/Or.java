@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.pairwise;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -27,64 +27,69 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Boolean XOR pairwise transform
+ * Boolean OR pairwise transform
  *
  * @author raver119@gmail.com
  */
-public class Xor extends BaseTransformOp {
+public class Or extends BaseTransformOp {
 
     protected double comparable = 0.0;
 
-    public Xor(SameDiff sameDiff, SDVariable ix, SDVariable iy){
-        super(sameDiff, ix, iy);
+    public Or(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
+        super(sameDiff, i_v1, i_v2);
         this.extraArgs = new Object[] {this.comparable};
     }
 
-    public Xor(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double comparable) {
+    public Or(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+        this.extraArgs = new Object[] {this.comparable};
+    }
+
+    public Or(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double comparable) {
         super(sameDiff, i_v, inPlace);
         this.comparable = comparable;
         this.extraArgs = new Object[] {this.comparable};
     }
 
-    public Xor(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
+    public Or(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.comparable = comparable;
         this.extraArgs = new Object[] {this.comparable};
     }
 
-    public Xor(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double comparable) {
+    public Or(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double comparable) {
         super(sameDiff, i_v, extraArgs);
         this.comparable = comparable;
         this.extraArgs = new Object[] {this.comparable};
     }
 
-    public Xor() {}
+    public Or() {}
 
-    public Xor(@NonNull INDArray x, @NonNull INDArray y) {
+    public Or(@NonNull INDArray x, @NonNull INDArray y) {
         this(x, y, 0.0);
     }
 
-    public Xor(@NonNull INDArray x, @NonNull INDArray y, Number comparable) {
+    public Or(@NonNull INDArray x, @NonNull INDArray y, Number comparable) {
         this(x, y, x, comparable, x.lengthLong());
     }
 
-    public Xor(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable) {
+    public Or(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable) {
         this(x, y, z, comparable, x.lengthLong());
     }
 
-    public Xor(@NonNull INDArray x, @NonNull INDArray y, long n) {
+    public Or(@NonNull INDArray x, @NonNull INDArray y, long n) {
         this(x, y, x, n);
     }
 
-    public Xor(@NonNull INDArray x, @NonNull INDArray y, INDArray z) {
+    public Or(@NonNull INDArray x, @NonNull INDArray y, INDArray z) {
         this(x, y, z, z.lengthLong());
     }
 
-    public Xor(@NonNull INDArray x, @NonNull INDArray y, INDArray z, long n) {
+    public Or(@NonNull INDArray x, @NonNull INDArray y, INDArray z, long n) {
         this(x, y, z, 0.0, n);
     }
 
-    public Xor(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable, long n) {
+    public Or(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable, long n) {
         super(x, y, z, n);
         this.comparable = comparable.doubleValue();
         this.extraArgs = new Object[] {this.comparable};
@@ -93,27 +98,27 @@ public class Xor extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 58;
+        return 57;
     }
 
     @Override
     public String opName() {
-        return "xor";
+        return "or";
     }
 
     @Override
     public String onnxName() {
-        return "Xor";
+        return "Or";
     }
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No Tensorflow op opName found for " +  opName());
+        throw new NoOpNameFoundException("No tensorflow op name found for " + opName());
     }
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
         return Arrays.asList( sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
     }
 }

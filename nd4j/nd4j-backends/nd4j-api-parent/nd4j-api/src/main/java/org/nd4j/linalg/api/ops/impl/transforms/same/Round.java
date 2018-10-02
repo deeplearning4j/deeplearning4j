@@ -14,72 +14,61 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.transforms.same;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * DropOut implementation as Op
+ * Rounding function
  *
- * PLEASE NOTE: This is legacy DropOut implementation, please consider using op with the same opName from randomOps
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
-public class LegacyDropOut extends BaseTransformOp {
-
-    private double p;
-
-    public LegacyDropOut(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double p) {
+public class Round extends BaseTransformOp {
+    public Round(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
-        this.p = p;
     }
 
-    public LegacyDropOut(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double p) {
+    public Round(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.p = p;
     }
 
-    public LegacyDropOut(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double p) {
+    public Round(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
-        this.p = p;
     }
 
-    public LegacyDropOut() {
+    public Round() {}
 
-    }
-
-    public LegacyDropOut(INDArray x, double p) {
-        super(x);
-        this.p = p;
-        init(x, null, x, x.length());
-    }
-
-    public LegacyDropOut(INDArray x, INDArray z, double p) {
+    public Round(INDArray x, INDArray z) {
         super(x, z);
-        this.p = p;
-        init(x, null, z, x.length());
     }
 
-    public LegacyDropOut(INDArray x, INDArray z, double p, long n) {
+    public Round(INDArray x, INDArray z, long n) {
         super(x, z, n);
-        this.p = p;
-        init(x, null, z, n);
+    }
+
+    public Round(INDArray x, INDArray y, INDArray z, long n) {
+        super(x, y, z, n);
+    }
+
+    public Round(INDArray x) {
+        super(x);
     }
 
     @Override
     public int opNum() {
-        return 43;
+        return 8;
     }
 
     @Override
     public String opName() {
-        return "legacy_dropout";
+        return "round";
     }
 
     @Override
@@ -89,18 +78,13 @@ public class LegacyDropOut extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+        return "Round";
     }
 
 
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {p, (double) n};
-    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Arrays.asList(f().zerosLike(arg()));
     }
 }

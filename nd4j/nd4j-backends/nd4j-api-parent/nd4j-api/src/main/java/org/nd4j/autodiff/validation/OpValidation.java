@@ -48,8 +48,9 @@ import org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.InvertPermutation;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.Histogram;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryMinimalRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
@@ -735,8 +736,6 @@ public class OpValidation {
                 IMin.class,
                 LastIndex.class,
                 //Exclude Random ops
-                LegacyDropOut.class,
-                LegacyDropOutInverted.class,
                 RandomStandardNormal.class,
                 DistributionUniform.class,
                 AlphaDropOut.class,
