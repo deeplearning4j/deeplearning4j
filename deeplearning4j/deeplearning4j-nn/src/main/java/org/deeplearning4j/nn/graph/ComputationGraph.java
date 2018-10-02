@@ -1381,7 +1381,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if(gv instanceof LayerVertex) {
                     //At this point: the input to the output layer might not be set on the layer itself - just the vertex
                     LayerVertex lv = (LayerVertex) gv;
-                    lv.applyPreprocessorAndSetInput(workspaceMgr);
+                    if(!lv.isSetLayerInput()) {
+                        lv.applyPreprocessorAndSetInput(workspaceMgr);
+                    }
                 }
                 Layer vertexLayer = gv.getLayer();
                 if (vertexLayer instanceof FrozenLayerWithBackprop) {
