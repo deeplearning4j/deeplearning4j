@@ -17,8 +17,8 @@
 package org.nd4j.linalg.api.ops;
 
 /**
- * Strict transforms take floating-point type in, and return same type
+ * Strict transforms take any type in, and return BOOL type
  * @author raver119@gmail.com
  */
-public interface StrictTransformOp extends TransformOp  {
+public interface TransformBoolOp extends TransformOp {
 }

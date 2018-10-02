@@ -16,9 +16,12 @@
 
 package org.nd4j.linalg.api.ops;
 
-/**
- * Strict transforms take any type in, and return BOOL type
- * @author raver119@gmail.com
- */
-public interface BoolTransformOp extends TransformOp {
+import org.nd4j.linalg.api.buffer.DataType;
+
+public abstract class BaseTransformBoolOp extends BaseTransformOp implements TransformSameOp {
+
+    @Override
+    public DataType resultType() {
+        return DataType.BOOL;
+    }
 }

@@ -2827,4 +2827,22 @@ public interface INDArray extends Serializable {
      * @return
      */
     DataType dataType();
+
+    /**
+     * This method checks if this INDArray instance is one of Real types
+     * @return true if data type is floating point, false otherwise
+     */
+    boolean isR();
+
+    /**
+     * This method checks if this INDArray instance is one of integer types
+     * @return
+     */
+    boolean isZ();
+
+    /**
+     * This method checks if this INDArray instance has boolean type
+     * @return
+     */
+    boolean isB();
 }

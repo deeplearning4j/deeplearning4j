@@ -16,9 +16,12 @@
 
 package org.nd4j.linalg.api.ops;
 
-/**
- * Strict transforms take any type in, and return FLOATING-POINT type
- * @author raver119@gmail.com
- */
-public interface FloatTransformOp extends TransformOp  {
+import org.nd4j.linalg.api.buffer.DataType;
+
+public abstract class BaseTransformSameOp extends BaseTransformOp implements TransformSameOp {
+
+    @Override
+    public DataType resultType() {
+        return this.x().dataType();
+    }
 }

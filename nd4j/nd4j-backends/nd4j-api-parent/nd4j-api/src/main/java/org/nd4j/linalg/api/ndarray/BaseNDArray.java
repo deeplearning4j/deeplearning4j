@@ -6418,4 +6418,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         return DataType.UNKNOWN;
     }
+
+    @Override
+    public boolean isR() {
+        val dtype = dataType();
+        return dtype == DataType.FLOAT || dtype == DataType.DOUBLE || dtype == DataType.HALF;
+    }
+
+    @Override
+    public boolean isZ() {
+        return !isR() && !isB();
+    }
+
+    @Override
+    public boolean isB() {
+        return dataType() == DataType.BOOL;
+    }
 }

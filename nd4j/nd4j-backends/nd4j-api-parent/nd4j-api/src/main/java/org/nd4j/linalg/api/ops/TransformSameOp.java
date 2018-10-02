@@ -16,18 +16,9 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.buffer.DataType;
-
 /**
- * Transform operation:
- * stores the result in an ndarray
- *
- * @author Adam Gibson
+ * Strict transforms take any type in, and return same type
+ * @author raver119@gmail.com
  */
-public interface TransformOp extends Op {
-    /**
-     * This method returns datatype for result array wrt given inputs
-     * @return
-     */
-    DataType resultType();
+public interface TransformSameOp extends TransformOp  {
 }

@@ -16,9 +16,13 @@
 
 package org.nd4j.linalg.api.ops;
 
-/**
- * Strict transforms take any type in, and return same type
- * @author raver119@gmail.com
- */
-public interface SameTransformOp extends TransformOp  {
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.factory.Nd4j;
+
+public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSameOp {
+
+    @Override
+    public DataType resultType() {
+        return this.x().dataType();
+    }
 }
