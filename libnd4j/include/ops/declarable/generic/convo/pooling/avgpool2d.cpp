@@ -187,10 +187,9 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
     // columns->template applyTransform<simdOps::Col2Im<T>>(gradI, std::vector<T>({(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW}).data());
 
     // *gradI /= kH*kW; 
-        
-    NDArray temp;    // does not mean anything, just to fit pooling2dBP signature
+            
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;    
-    ConvolutionUtils::pooling2dBP(temp, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 1, extraParam0);
+    ConvolutionUtils::pooling2dBP(*input, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 1, extraParam0);
 
     if(!isNCHW) {
         delete gradI;

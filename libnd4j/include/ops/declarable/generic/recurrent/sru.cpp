@@ -349,7 +349,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     auto c        = INPUT_VARIABLE(4);                // C, [bS x K x N]
     auto inGradCt = INPUT_VARIABLE(5);                // [bS x K]
     auto inGradH  = INPUT_VARIABLE(6);                // [bS x K x N]
-    NDArray* mask     = nullptr;                          // optional,  2d tensor of dropout mask [bS x K]
+    NDArray* mask     = nullptr;                      // optional,  2d tensor of dropout mask [bS x K]
 
     bool applyMask = false;        
     if (block.width() > 7) {
@@ -422,8 +422,8 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
         ft->addRowVector(bF, ft);
         rt->addRowVector(bR, rt);
-        ft->applyTransform(transform::Sigmoid, ft, nullptr);
-        rt->applyTransform(transform::Sigmoid, rt, nullptr);
+        ft->applyTransform(transform::Sigmoid, nullptr, nullptr);
+        rt->applyTransform(transform::Sigmoid, nullptr, nullptr);
         
         // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
         ct->applyTransform(transform::Tanh, gct);
@@ -476,7 +476,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
     // gradX 
     auto weightsT = w->transpose();                                            // [K x 3K]
-    MmulHelper::mmul(weightsT, gradU, gradX, 1., 0.);                    // [bS x K x N]
+    MmulHelper::mmul(weightsT, gradU, gradX, 1., 0.);                    // [bS x K x N]    
     gradX->applyPairwiseTransform(pairwise::Add, gradHX, gradX, nullptr);        // + grad_highway_x
     if(applyMask)
         gradX->applyBroadcast(broadcast::Multiply, {0,1}, mask, gradX, nullptr);  // apply mask

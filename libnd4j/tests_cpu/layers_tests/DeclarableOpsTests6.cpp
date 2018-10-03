@@ -334,26 +334,10 @@ TEST_F(DeclarableOpsTests6, TestDropout_3) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, MaxPoolWithArgmax_1) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
-             5.5, 0.,   0.3,  5.5,
-             1.5, 0.,   1.3,  6.5,
-             8.6, 0.,    0.,  0.4,
-             2.5, 1.,   0.3,  4.5,
-             1.5, 1.,   1.3,  1.5,
-             3.5, 0.,   1.3,  2.5,
-             2.6, 2.,    3.,  1.4,
-             4.5, 1.,   0.3,  0.5}
-    );       
-    auto expI = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
-             0,  1,  2,  3,
-             4,  5,  6,  7,
-             8,  9, 10, 11,
-            12, 13, 14, 15,
-             0,  1,  2,  3,
-             4,  5,  6,  7,
-             8,  9, 10, 11,
-            12, 13, 14, 15}
-    );
+    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {5.5, 0.,   0.3,  5.5,1.5, 0.,   1.3,  6.5,8.6, 0.,    0.,  0.4,2.5, 1.,   0.3,  4.5,
+                                                                1.5, 1.,   1.3,  1.5, 3.5, 0.,   1.3,  2.5, 2.6, 2.,    3.,  1.4, 4.5, 1.,   0.3,  0.5});       
+    auto expI = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {0,  1,  2,  3,4,  5,  6,  7,8,  9, 10, 11,12, 13, 14, 15,
+                                                                0,  1,  2,  3,4,  5,  6,  7,8,  9, 10, 11,12, 13, 14, 15});
 
     nd4j::ops::max_pool_with_argmax op;
 
@@ -376,16 +360,8 @@ TEST_F(DeclarableOpsTests6, MaxPoolWithArgmax_1) {
 TEST_F(DeclarableOpsTests6, SufficientStatistics_1) {
 //    auto x0 = NDArrayFactory::create<double>('c', {10, 10});
 //    auto x1 = NDArrayFactory::create<double>('c', {10, 10});
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
-        5.5, 0.,  0.3, 5.5,
-        1.5, 0.,  1.3, 6.5,
-        8.6, 0.,   0., 0.4,
-        2.5, 1.,  0.3, 4.5,
-        1.5, 1.,  1.3, 1.5,
-        3.5, 0.,  1.3, 2.5,
-        2.6, 2.,   3., 1.4,
-        4.5, 1.,  0.3, 0.5}
-    );
+    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {5.5, 0.,  0.3, 5.5,1.5, 0.,  1.3, 6.5,8.6, 0.,   0., 0.4,2.5, 1.,  0.3, 4.5,1.5, 1.,  
+                                                                1.3, 1.5,3.5, 0.,  1.3, 2.5,2.6, 2.,   3., 1.4,4.5, 1.,  0.3, 0.5});
 // ------------------------------------
     double count = 8.0;
     auto sumExp = NDArrayFactory::create<double>({30.2, 5., 7.8, 22.8});
@@ -409,16 +385,8 @@ TEST_F(DeclarableOpsTests6, SufficientStatistics_1) {
 TEST_F(DeclarableOpsTests6, SufficientStatistics_2) {
 //    auto x0 = NDArrayFactory::create<double>('c', {10, 10});
 //    auto x1 = NDArrayFactory::create<double>('c', {10, 10});
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
-        5.5, 0.,  0.3, 5.5,
-        1.5, 0.,  1.3, 6.5,
-        8.6, 0.,   0., 0.4,
-        2.5, 1.,  0.3, 4.5,
-        1.5, 1.,  1.3, 1.5,
-        3.5, 0.,  1.3, 2.5,
-        2.6, 2.,   3., 1.4,
-        4.5, 1.,  0.3, 0.5}
-    );
+    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {5.5, 0.,  0.3, 5.5,1.5, 0.,  1.3, 6.5,8.6, 0.,   0., 0.4,2.5, 1.,  0.3, 4.5,
+                                                                1.5, 1.,  1.3, 1.5,3.5, 0.,  1.3, 2.5,2.6, 2.,   3., 1.4,4.5, 1.,  0.3, 0.5});
 // ------------------------------------
     double count = 4.0;
     auto sumExp = NDArrayFactory::create<double>('c', {2, 4}, {

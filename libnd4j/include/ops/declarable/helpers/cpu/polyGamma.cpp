@@ -70,22 +70,22 @@ static FORCEINLINE T polyGamma(const int n, const T x) {
 //////////////////////////////////////////////////////////////////////////
 // calculate polygamma function for arrays
 template <typename T>
-static NDArray _polyGamma(const NDArray& n, const NDArray& x) {
+static void _polyGamma(const NDArray& n, const NDArray& x, NDArray& output) {
 
-	NDArray result = NDArray(&x, false, x.getWorkspace());
+	NDArray& result = output; //NDArray(&x, false, x.getWorkspace());
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
 	for(int i = 0; i < x.lengthOf(); ++i)
 		result.p(i, polyGamma<T>(n.e<int>(i), x.e<T>(i)));
 
-	return result;
+//	return result;
 }
 
-	NDArray polyGamma(const NDArray& n, const NDArray& x) {
-		BUILD_SINGLE_SELECTOR(x.dataType(), _polyGamma, (n, x), FLOAT_TYPES);
+	void polyGamma(const NDArray& n, const NDArray& x, NDArray& output) {
+		BUILD_SINGLE_SELECTOR(x.dataType(), _polyGamma, (n, x, output), FLOAT_TYPES);
 	}
 
-BUILD_SINGLE_TEMPLATE(template NDArray _polyGamma, (const NDArray&   n, const NDArray& x), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void _polyGamma, (const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
 
 
 

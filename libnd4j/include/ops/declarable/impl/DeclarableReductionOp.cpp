@@ -64,7 +64,7 @@ namespace nd4j {
             Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
             Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
 
-            auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), false, true, block.getWorkspace());
+            auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
             ArrayOptions::setDataType(newShape, block.dataType());
             return SHAPELIST(newShape);
         }

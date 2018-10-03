@@ -1240,6 +1240,38 @@ namespace simdOps {
 	};
 
 	template <typename X, typename Z>
+	class IsPositive {
+	public:
+		no_op_exec_special_bool
+		no_op_exec_special_cuda
+
+		no_op_exec_special_accumulation
+		no_op_exec_special_accumulation_cuda
+
+		op_def static Z op(X d1, X *params) {
+			return d1 > (X)0.f;
+		}
+
+        op_def static Z startingValue(const X *input) {
+            return static_cast<Z>(0);
+        }
+
+        op_def static Z merge(X old, X opOutput, X *extraParams) {
+            return opOutput + old;
+        }
+
+
+        op_def static Z update(X old, X opOutput, X *extraParams) {
+            return opOutput + old;
+        }
+
+
+        op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
+            return reduction;
+        }
+	};
+
+	template <typename X, typename Z>
 	class IsInf {
 	public:
 		no_op_exec_special_bool

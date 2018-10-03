@@ -97,7 +97,8 @@
         (2,IsNan), \
         (3,IsFinite), \
         (4,IsInfOrNan), \
-        (5,MatchConditionBool)
+        (5,MatchConditionBool), \
+        (7,IsPositive)
 
 #define TRANSFORM_STRICT_OPS \
         (0,SoftMax), \
@@ -246,7 +247,8 @@
         (2, IsFinite), \
         (3, IsInfOrNan), \
         (4, IsNan), \
-        (5, IsInf)
+        (5, IsInf), \
+        (6, IsPositive)
 
 #define REDUCE_SAME_OPS \
         (0, Sum), \

@@ -144,7 +144,7 @@ namespace nd4j {
 
             template <typename T>
             static void __prefix(scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse) {
-                    __prefix<T>(op, x->buffer(), x->shapeInfo(), x->buffer(), x->shapeInfo(), exclusive, reverse);
+                    __prefix<T>(op, x->buffer(), x->shapeInfo(), z->buffer(), z->shapeInfo(), exclusive, reverse);
             };
 
             void _prefix(scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse) {

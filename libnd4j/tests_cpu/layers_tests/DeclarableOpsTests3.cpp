@@ -180,7 +180,7 @@ TEST_F(DeclarableOpsTests3, Test_Rint_1) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Norm_1) {
-    auto x = NDArrayFactory::create<double>('c', {100, 100});
+    auto x = NDArrayFactory::create<float>('c', {100, 100});
     x.linspace(1);
 
     std::vector<int> empty;
@@ -190,16 +190,20 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
     auto result0 = op.execute({&x}, {0.}, {});
 
     auto z0 = result0->at(0);
-    auto exp0 = x.reduceAlongDims(reduce::NormFrobenius, empty, false, true);
+    auto exp0 = x.reduceAlongDims(reduce::NormFrobenius, empty, false, false);
     ASSERT_TRUE(exp0.isSameShape(z0));
     ASSERT_TRUE(exp0.equalsTo(z0));
 
     delete result0;
 
     auto result1 = op.execute({&x}, {1.}, {1});
-
+    ASSERT_EQ(result1->status(), ND4J_STATUS_OK);
     auto z1 = result1->at(0);
-    auto exp1 = x.reduceAlongDims(reduce::Norm2, dims, false, true);
+    z1->printIndexedBuffer("Z1");
+    auto exp1 = x.reduceAlongDims(reduce::Norm2, dims, false, false);
+    exp1.printIndexedBuffer("EXP1");
+    z1->printShapeInfo("Z1 shape");
+    exp1.printShapeInfo("EXP1 shape");
     ASSERT_TRUE(exp1.isSameShape(z1));
     ASSERT_TRUE(exp1.equalsTo(z1));
 
@@ -208,7 +212,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
     auto result4 = op.execute({&x}, {4.}, {1});
 
     auto z4 = result4->at(0);
-    auto exp4= x.reduceAlongDims(reduce::NormMax, dims, false, true);
+    auto exp4= x.reduceAlongDims(reduce::NormMax, dims, false, false);
     ASSERT_TRUE(exp4.isSameShape(z4));
     ASSERT_TRUE(exp4.equalsTo(z4));
 
@@ -217,9 +221,9 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
 
 
 TEST_F(DeclarableOpsTests3, Test_Norm_2) {
-    auto x = NDArrayFactory::create<double>('c', {100, 100});
+    auto x = NDArrayFactory::create<float>('c', {100, 100});
     x.linspace(1);
-    auto axis= NDArrayFactory::create<double>('c', {1, 1}, {1});
+    auto axis= NDArrayFactory::create<Nd4jLong>('c', {1, 1}, {1});
 
     std::vector<int> empty;
     std::vector<int> dims({1});
@@ -228,7 +232,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_2) {
     auto result0 = op.execute({&x}, {0}, {});
 
     auto z0 = result0->at(0);
-    auto exp0 = x.reduceAlongDims(reduce::NormFrobenius, empty, false, true);
+    auto exp0 = x.reduceAlongDims(reduce::NormFrobenius, empty, false, false);
     ASSERT_TRUE(exp0.isSameShape(z0));
     ASSERT_TRUE(exp0.equalsTo(z0));
 
@@ -237,7 +241,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_2) {
     auto result1 = op.execute({&x, &axis}, {1}, {});
 
     auto z1 = result1->at(0);
-    auto exp1 = x.reduceAlongDims(reduce::Norm2, dims, false, true);
+    auto exp1 = x.reduceAlongDims(reduce::Norm2, dims, false, false);
     ASSERT_TRUE(exp1.isSameShape(z1));
     ASSERT_TRUE(exp1.equalsTo(z1));
 
@@ -246,7 +250,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_2) {
     auto result4 = op.execute({&x, &axis}, {4}, {});
 
     auto z4 = result4->at(0);
-    auto exp4= x.reduceAlongDims(reduce::NormMax, dims, false, true);
+    auto exp4= x.reduceAlongDims(reduce::NormMax, dims, false, false);
     ASSERT_TRUE(exp4.isSameShape(z4));
     ASSERT_TRUE(exp4.equalsTo(z4));
 
@@ -1921,7 +1925,7 @@ TEST_F(DeclarableOpsTests3, polygamma_test1) {
 
     auto n= NDArrayFactory::create<float>('c', {3,3});
     auto x= NDArrayFactory::create<float>('c', {3,3});
-
+//    ASSERT_FALSE(true);
     n.linspace(1.);
     x.assign(0.5);
 
@@ -1952,6 +1956,8 @@ TEST_F(DeclarableOpsTests3, polygamma_test2) {
 
     auto expected= NDArrayFactory::create<float>('c', {3,3}, {-7.43182451e+09, 3.08334759e+05,-3.25669798e+03, 1.55186197e+02,-1.46220433e+01, 2.00905201e+00,-3.48791235e-01, 7.08016273e-02,-1.60476052e-02});
 
+    //ASSERT_FALSE(true);
+
     nd4j::ops::polygamma op;
     auto results = op.execute({&n, &x}, {}, {});
 
@@ -1975,6 +1981,8 @@ TEST_F(DeclarableOpsTests3, polygamma_test3) {
     x.linspace(10.);
 
     auto expected= NDArrayFactory::create<float>('c', {3,3}, {1.05166336e-01,-9.04983497e-03, 1.31009323e-03,-2.44459433e-04, 5.31593880e-05,-1.28049888e-05, 3.31755364e-06,-9.07408791e-07, 2.58758130e-07});
+
+    //ASSERT_FALSE(true);
 
     nd4j::ops::polygamma op;
     auto results = op.execute({&n, &x}, {}, {});
