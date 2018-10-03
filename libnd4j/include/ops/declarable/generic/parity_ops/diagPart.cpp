@@ -39,17 +39,7 @@ namespace ops  {
     			REQUIRE_TRUE(input->sizeAt(i) == input->sizeAt(i+1), 0, "DIAG_PART op: wrong shape of input array %s ! All dimensions must be equal !", ShapeUtils::shapeAsString(input).c_str());
 
 	 	 	helpers::diagPartFunctor(input, output);
-		const int outLen = output->lengthOf();
-		const int inLen  = input->lengthOf();
-    		int i(0), j(0);
-    		// FIXME: must be moved to helper
-    		while(j < outLen) {
-    			//(*output)(j) = (*input)(i);
-    			//i += outLen+1;
-    			//++j;
-    			throw std::runtime_error("Not implemented yet");
-    		}
-    
+
 		    return Status::OK();
 		}
 		DECLARE_SYN(DiagPart, diag_part);

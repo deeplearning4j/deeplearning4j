@@ -317,8 +317,8 @@ TEST_F(DeclarableOpsTests3, Test_ClipByNorm_2) {
 }
 
 TEST_F(DeclarableOpsTests3, Test_CumSum_1) {
-    auto x= NDArrayFactory::create<float>('c', {1, 4}, {1, 2, 3, 4});
-    auto exp= NDArrayFactory::create<float>('c', {1, 4}, {1, 3, 6, 10});
+    auto x = NDArrayFactory::create<float>('c', {1, 4}, {1.f, 2.f, 3.f, 4.f});
+    auto exp = NDArrayFactory::create<float>('c', {1, 4}, {1.f, 3.f, 6.f, 10.f});
 
     nd4j::ops::cumsum op;
     auto result = op.execute({&x}, {}, {0, 0});
@@ -374,7 +374,7 @@ TEST_F(DeclarableOpsTests3, Test_ListDiff_1) {
     auto y= NDArrayFactory::create<float>('c', {3}, {1, 3, 5});
 
     auto exp0= NDArrayFactory::create<float>('c', {3}, {2, 4, 6});
-    auto exp1= NDArrayFactory::create<float>('c', {3}, {1, 3, 5});
+    auto exp1= NDArrayFactory::create<Nd4jLong>('c', {3}, {1, 3, 5});
 
     nd4j::ops::listdiff op;
     auto result = op.execute({&x, &y}, {}, {});
@@ -1933,10 +1933,10 @@ TEST_F(DeclarableOpsTests3, polygamma_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto output = results->at(0);
-    // output->printBuffer();
+    output->printBuffer();
 
-    //ASSERT_TRUE(expected.isSameShape(output));
-    //ASSERT_TRUE(expected.equalsTo(output));
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
 }
@@ -1959,8 +1959,8 @@ TEST_F(DeclarableOpsTests3, polygamma_test2) {
 
     auto output = results->at(0);
 
-    //ASSERT_TRUE(expected.isSameShape(output));
-    //ASSERT_TRUE(expected.equalsTo(output));
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
 }
@@ -1981,10 +1981,10 @@ TEST_F(DeclarableOpsTests3, polygamma_test3) {
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *output = results->at(0);
+    auto output = results->at(0);
 
-    //ASSERT_TRUE(expected.isSameShape(output));
-    //ASSERT_TRUE(expected.equalsTo(output));
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
 }

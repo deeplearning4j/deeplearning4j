@@ -146,10 +146,10 @@ DECLARE_SHAPE_FN(deconv2d) {
         outputShapeInfo[2] = oH;
         outputShapeInfo[3] = oW;
         outputShapeInfo[4] = oC;
-    }
+    }    
     
-    shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
-    ArrayOptions::setDataType(outputShapeInfo, ArrayOptions::dataType(inputShapeInfo));
+    ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
+
     return SHAPELIST(outputShapeInfo);
 }
 
