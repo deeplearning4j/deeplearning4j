@@ -78,7 +78,7 @@ public class TestSameDiffConv extends BaseDL4JTest {
         assertNotNull(pt1.get(ConvolutionParamInitializer.WEIGHT_KEY));
         assertNotNull(pt1.get(ConvolutionParamInitializer.BIAS_KEY));
 
-        assertArrayEquals(new long[]{nOut, nIn, kH, kW}, pt1.get(ConvolutionParamInitializer.WEIGHT_KEY).shape());
+        assertArrayEquals(new long[]{kH, kW, nIn, nOut}, pt1.get(ConvolutionParamInitializer.WEIGHT_KEY).shape());
         assertArrayEquals(new long[]{1, nOut}, pt1.get(ConvolutionParamInitializer.BIAS_KEY).shape());
 
         TestUtils.testModelSerialization(net);

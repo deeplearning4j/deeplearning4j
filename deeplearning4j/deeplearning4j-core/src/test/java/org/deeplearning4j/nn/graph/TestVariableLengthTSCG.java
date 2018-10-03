@@ -68,7 +68,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                             .addLayer("0", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
                                             "in")
                             .addLayer("1", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                                            .nIn(2).nOut(1).build(), "0")
+                                            .nIn(2).nOut(1).activation(Activation.TANH).build(), "0")
                             .setOutputs("1").build();
 
             ComputationGraph net = new ComputationGraph(conf);
@@ -161,7 +161,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                             .addLayer("2", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
                                             "1")
                             .addLayer("3", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                                            .nIn(2).nOut(1).build(), "2")
+                                            .nIn(2).nOut(1).activation(Activation.TANH).build(), "2")
                             .setOutputs("3").inputPreProcessor("0", new RnnToFeedForwardPreProcessor())
                             .inputPreProcessor("2", new FeedForwardToRnnPreProcessor()).build();
 

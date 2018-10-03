@@ -100,7 +100,7 @@ public class OutputLayerUtil {
         //nOut = 1 + softmax
         if(!isLossLayer && nOut == 1 && activation instanceof ActivationSoftmax){   //May not have valid nOut for LossLayer
             throw new DL4JInvalidConfigException("Invalid output layer configuration for layer \"" + layerName + "\": Softmax + nOut=1 networks " +
-                    "are not supported. Softmax cannot be used with nOut=1 as the output will always be exactly 1" +
+                    "are not supported. Softmax cannot be used with nOut=1 as the output will always be exactly 1.0 " +
                     "regardless of the input. " + COMMON_MSG);
         }
 

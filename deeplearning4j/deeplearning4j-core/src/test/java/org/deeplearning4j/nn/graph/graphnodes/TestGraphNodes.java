@@ -187,7 +187,7 @@ public class TestGraphNodes {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                         .addVertex("lastTS", new LastTimeStepVertex("in"), "in")
-                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).lossFunction(LossFunctions.LossFunction.MSE).build(), "lastTS").setOutputs("out")
+                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "lastTS").setOutputs("out")
                         .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
@@ -239,8 +239,8 @@ public class TestGraphNodes {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder()
                         .addInputs("in2d", "in3d")
                         .addVertex("duplicateTS", new DuplicateToTimeSeriesVertex("in3d"), "in2d")
-                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).lossFunction(LossFunctions.LossFunction.MSE).build(), "duplicateTS")
-                        .addLayer("out3d", new RnnOutputLayer.Builder().nIn(1).nOut(1).lossFunction(LossFunctions.LossFunction.MSE).build(), "in3d")
+                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "duplicateTS")
+                        .addLayer("out3d", new RnnOutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "in3d")
                         .setOutputs("out", "out3d").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
@@ -547,7 +547,7 @@ public class TestGraphNodes {
                                         .addVertex("v6", new LastTimeStepVertex("in"), "in")
                                         .addVertex("v7", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in")
                                         .addVertex("v8", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 1), "in")
-                                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).lossFunction(LossFunctions.LossFunction.MSE).build(), "in")
+                                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "in")
                                         .setOutputs("out", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8").build();
 
         String json = conf.toJson();

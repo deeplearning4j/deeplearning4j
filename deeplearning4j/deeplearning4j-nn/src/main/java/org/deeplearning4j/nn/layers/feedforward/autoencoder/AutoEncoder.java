@@ -69,7 +69,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     public INDArray decode(INDArray y, LayerWorkspaceMgr workspaceMgr) {
         INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true, workspaceMgr);
         INDArray vBias = getParamWithNoise(PretrainParamInitializer.VISIBLE_BIAS_KEY, true, workspaceMgr);
-        INDArray preAct = y.mmul(W.transposei()).addiRowVector(vBias);
+        INDArray preAct = y.mmul(W.transpose()).addiRowVector(vBias);
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, layerConf().getActivationFn().getActivation(preAct, true));
 
     }
@@ -106,7 +106,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         INDArray hiddenLoss = layerConf().getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1))
                         : visibleLoss.mmul(W).muli(y).muli(y.add(-layerConf().getSparsity()));
 
-        INDArray wGradient = corruptedX.transposei().mmul(hiddenLoss).addi(visibleLoss.transposei().mmul(y));
+        INDArray wGradient = corruptedX.transpose().mmul(hiddenLoss).addi(visibleLoss.transpose().mmul(y));
         INDArray hBiasGradient = hiddenLoss.sum(0);
         INDArray vBiasGradient = visibleLoss.sum(0);
 
