@@ -30,7 +30,9 @@ namespace nd4j {
             auto first = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
-            first->applyTransform(nd4j::transform::RELU, z, &block.getTArguments()->at(0));
+            auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
+
+            first->applyScalar(nd4j::scalar::RELU, scalar, z);
 
             STORE_RESULT(*z);
 

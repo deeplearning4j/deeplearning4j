@@ -43,8 +43,10 @@ namespace nd4j {
             std::unique_ptr<ResultSet> result(op.execute({x, w, b}, {}, {}));
             REQUIRE_TRUE(Status::OK() == result->status(), 0, "relu_layer: xw_plus_b op failed on input data.");
 
+            auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
+
             auto xw = result->at(0);
-            xw->applyTransform(nd4j::transform::RELU, output, nullptr);
+            xw->applyScalar(nd4j::scalar::RELU, scalar, output);
 
             return Status::OK();
         }

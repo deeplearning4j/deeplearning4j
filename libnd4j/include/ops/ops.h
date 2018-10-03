@@ -1919,15 +1919,16 @@ namespace simdOps {
 	};
 
 
-	template <typename X>
+	template <typename X, typename Y, typename Z>
 	class RELU {
 	public:
 		no_op_exec_special_same
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-		    X t = params == nullptr ? static_cast<X>(0.0f) : params[0];
-			return d1 < t ? t : d1;
+		op_def static Z op(X d1, Y d2, Z *params) {
+			auto xt = static_cast<Z>(d1);
+			auto xf = static_cast<Z>(d2);
+			return xt < xf ? xf : xt;
 		}
 	};
 
@@ -1939,14 +1940,14 @@ namespace simdOps {
         }
     };
 
-	template <typename X>
+	template <typename X, typename Y, typename Z>
 	class RELU6 {
 	public:
 	    no_op_exec_special_same
 
-		op_def static X op(X d1, X *params) {
-			X relu = d1 < params[0] ? params[0] : d1;
-			return relu < static_cast<X>(6) ? relu : static_cast<X>(6);
+		op_def static Z op(X d1, Y d2, Z *params) {
+			auto relu = simdOps::RELU<X,Y,Z>::op(d1, d2, params);
+			return relu < static_cast<Z>(6) ? relu : static_cast<Z>(6);
 		}
 	};
 
@@ -2127,14 +2128,14 @@ namespace simdOps {
 
 
 
-	template <typename X>
+	template <typename X, typename Y, typename Z>
 	class Step {
 	public:
 		no_op_exec_special_same
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, X *params) {
-			return (d1 > params[0] ? static_cast<X>(1) : static_cast<X>(0));
+		op_def static Z op(X d1, Y d2, Z *params) {
+			return (d1 > static_cast<X>(d2) ? static_cast<Z>(1) : static_cast<Z>(0));
 		}
 	};
 

@@ -41,7 +41,7 @@ namespace nd4j {
 
             // TODO: make this configurable?
             double threshold = 0.0;
-            z->applyTransform(nd4j::transform::RELU, &threshold);
+            z->applyScalar(nd4j::scalar::RELU, threshold);
 
             STORE_RESULT(z);
 

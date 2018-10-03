@@ -80,7 +80,6 @@
         (11,Reciprocal), \
         (12,Square), \
         (15,Identity), \
-        (16,Step), \
         (17,Ceiling), \
         (18,Floor), \
         (19,ClipByValue) ,\
@@ -212,7 +211,8 @@
         (40, LogX) ,\
         (41, RELU), \
         (42, RELU6), \
-        (43, LstmClip)
+        (43,Step), \
+        (44, LstmClip)
 
 
 

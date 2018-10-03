@@ -59,7 +59,7 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
 
 	 // We first need to convert binary labels to -1/1 labels (as floats)
 	NDArray weightedLosses = ts - ((*labels)* 2.f - 1.f)*(*logits);
-    weightedLosses.applyTransform(transform::RELU, &weightedLosses, nullptr);
+    weightedLosses.applyScalar(scalar::RELU, 0.0f, &weightedLosses);
 
     // multiply weightedLosses on weights
     weightedLosses *= (*weights);

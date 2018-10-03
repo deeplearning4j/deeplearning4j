@@ -33,7 +33,7 @@ CONFIGURABLE_OP_IMPL(relu6, 1, 1, true, 1, 0) {
     auto input  = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    input->applyTransform(nd4j::transform::RELU6, output, &T_ARG(0));
+    input->applyScalar(nd4j::scalar::RELU6, T_ARG(0), output);
     
     return Status::OK();
 }
