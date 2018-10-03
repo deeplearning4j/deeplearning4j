@@ -179,10 +179,9 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
 
     if(isSameMode)                       // SAME
         ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
-
-    NDArray temp;    // does not mean anything, just to fit pooling3dBP signature
+    
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;    
-    ConvolutionUtils::pooling3dBP(temp, *gradO, *gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, 1, extraParam0);
+    ConvolutionUtils::pooling3dBP(*input, *gradO, *gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, 1, extraParam0);
 
     if(!isNCDHW) {
         delete gradI;
@@ -197,6 +196,7 @@ DECLARE_SHAPE_FN(avgpool3dnew_bp) {
 
     Nd4jLong* gradIshapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
+    ArrayOptions::setDataType(gradIshapeInfo, ArrayOptions::dataType(inputShape->at(1)));
         
     return SHAPELIST(gradIshapeInfo);        
 }

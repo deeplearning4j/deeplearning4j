@@ -1256,7 +1256,7 @@ static void pooling2dBP_(const NDArray& input, const NDArray& gradO, NDArray& gr
 
             gI[offset] = static_cast<T>(0.f);
         }
-    }
+    }    
  
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);

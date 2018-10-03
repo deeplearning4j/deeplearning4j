@@ -2498,7 +2498,7 @@ TEST_F(DeclarableOpsTests1, IsMax1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, MaxPool2d_bp1) {
+TEST_F(DeclarableOpsTests1, Maxpool2d_bp1) {
 
     auto input = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
     auto epsilon = NDArrayFactory::create_<float>('c', {bS,iD,oH,oW});
@@ -3141,9 +3141,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_bp2) {
     auto results = op.execute({&input, &epsilon}, {}, argI);
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShape(output));
-    expected.printIndexedBuffer("Expected backprop");
-    output->printIndexedBuffer("Output backprop");
+    ASSERT_TRUE(expected.isSameShape(output));    
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
