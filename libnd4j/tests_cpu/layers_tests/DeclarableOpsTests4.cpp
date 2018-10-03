@@ -46,7 +46,6 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_1) {
 
     x.linspace(1);
     
-
     nd4j::ops::avgpool2d op;
     auto result = op.execute({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1});
 
