@@ -465,7 +465,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
         // c_{t-1}, inGradCt = (gradCt + inGradCt) * ft;
         gradCt->applyPairwiseTransform(pairwise::Add, inGradCt, temp1, nullptr);         // temp1 = (gradCt + inGradCt)
-        temp1->applyPairwiseTransform(pairwise::Add, ft, inGradCt, nullptr);        // inGradCt = (gradCt + inGradCt) * ft;
+        temp1->applyPairwiseTransform(pairwise::Multiply, ft, inGradCt, nullptr);        // inGradCt = (gradCt + inGradCt) * ft;
         
         delete xt; delete zt; delete ft; delete rt; delete ct; delete inGradHt; delete ct_1; delete gradBRt; 
         delete gradBFt; delete gradHXt; delete gradUZt; delete gradUFt; delete gradURt;
