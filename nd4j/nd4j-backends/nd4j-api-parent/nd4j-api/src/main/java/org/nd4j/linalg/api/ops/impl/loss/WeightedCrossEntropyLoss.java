@@ -14,14 +14,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.accum;
+package org.nd4j.linalg.api.ops.impl.loss;
 
 import lombok.NoArgsConstructor;
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -29,43 +27,27 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 
 /**
- * Sparse softmax cross entropy loss with logits.
- * Applies softmax to the input, then calculates cross entropy loss. Labels should be in integer-index format,
- * not one-hot format
+ * Weighted cross entropy loss with logits
  *
- * @author Alex Black
+ * @author Max Pumperla
  */
 @NoArgsConstructor
-public class SparseSoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
+public class WeightedCrossEntropyLoss extends DynamicCustomOp {
 
-    public SparseSoftmaxCrossEntropyLossWithLogits(SameDiff sameDiff, SDVariable logits, SDVariable labels) {
-        super(null, sameDiff, new SDVariable[]{logits, labels}, false);
+
+    public WeightedCrossEntropyLoss(SameDiff sameDiff, SDVariable targets, SDVariable inputs, SDVariable weights) {
+        super(null, sameDiff, new SDVariable[]{targets, inputs, weights}, false);
+        this.sameDiff = sameDiff;
     }
 
-
-    public void addArgs() {
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-
-        //Switch order: TF uses [logits, labels]; libnd4j expects [labels, logits]
-        String[] inputs = initWith.getInputsForFunction(this);
-        String temp = inputs[0];
-        inputs[0] = inputs[1];
-        inputs[1] = temp;
-    }
 
     @Override
     public String opName() {
-        return "sparse_softmax_cross_entropy_loss_with_logits";
+        return "weighted_cross_entropy_with_logits";
     }
 
     @Override
@@ -75,7 +57,7 @@ public class SparseSoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "SparseSoftmaxCrossEntropyWithLogits";
+        throw new NoOpNameFoundException("No TensorFlow op opName found for " + opName());
     }
 
     @Override

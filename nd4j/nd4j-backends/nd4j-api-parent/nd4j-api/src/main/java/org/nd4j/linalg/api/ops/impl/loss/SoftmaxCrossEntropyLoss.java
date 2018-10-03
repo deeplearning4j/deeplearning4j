@@ -14,9 +14,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.accum;
+package org.nd4j.linalg.api.ops.impl.loss;
 
 import lombok.NoArgsConstructor;
+import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -31,23 +32,42 @@ import java.util.Map;
 
 
 /**
- * Weighted cross entropy loss with logits
+ * Softmax cross entropy loss
  *
  * @author Max Pumperla
  */
 @NoArgsConstructor
-public class WeightedCrossEntropyLoss extends DynamicCustomOp {
+public class SoftmaxCrossEntropyLoss extends BaseLoss {
 
+    private double labelSmoothing = 0.0;
 
-    public WeightedCrossEntropyLoss(SameDiff sameDiff, SDVariable targets, SDVariable inputs, SDVariable weights) {
-        super(null, sameDiff, new SDVariable[]{targets, inputs, weights}, false);
-        this.sameDiff = sameDiff;
+    public SoftmaxCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights, SDVariable labels,
+                                   double labelSmoothing) {
+        super(sameDiff, lossReduce, logits, weights, labels);
+        this.labelSmoothing = labelSmoothing;
+
+        addArgs();
+    }
+
+    public SoftmaxCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights, SDVariable labels) {
+        this(sameDiff, lossReduce, logits, weights, labels, 0.0);
     }
 
 
+    public void addArgs() {
+        super.addArgs();
+        addTArgument(labelSmoothing);
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+        addArgs();
+    }
+
     @Override
     public String opName() {
-        return "weighted_cross_entropy_with_logits";
+        return "softmax_cross_entropy_loss";
     }
 
     @Override
@@ -57,7 +77,7 @@ public class WeightedCrossEntropyLoss extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No TensorFlow op opName found for " + opName());
+        return "SoftmaxCrossEntropy";
     }
 
     @Override

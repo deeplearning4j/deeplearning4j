@@ -14,51 +14,49 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.accum;
+package org.nd4j.linalg.api.ops.impl.loss;
 
 import lombok.NoArgsConstructor;
+
+import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Map;
+import java.util.*;
 
 
 /**
- * Softmax cross entropy loss
+ * Sigmoid cross entropy loss with logits
  *
  * @author Max Pumperla
  */
 @NoArgsConstructor
-public class SoftmaxCrossEntropyLoss extends DynamicCustomOp {
+public class SigmoidCrossEntropyLoss extends BaseLoss {
 
-    private int reductionMode = 0;
     private double labelSmoothing = 0.0;
 
-    public SoftmaxCrossEntropyLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels,
-                                   int reductionMode, double labelSmoothing) {
-        super(null, sameDiff, new SDVariable[]{logits, weights, labels}, false);
-        this.reductionMode = reductionMode;
+    public SigmoidCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights,
+                                   SDVariable labels, double labelSmoothing) {
+        super(sameDiff, lossReduce, logits, weights, labels);
         this.labelSmoothing = labelSmoothing;
-        this.sameDiff = sameDiff;
-
         addArgs();
     }
 
-    public SoftmaxCrossEntropyLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels,
-                                   int reductionMode) {
-        this(sameDiff, logits, weights, labels, reductionMode, 0.0);
+    public SigmoidCrossEntropyLoss(SameDiff sameDiff, LossReduce reductionMode, SDVariable logits, SDVariable weights, SDVariable labels) {
+        this(sameDiff, reductionMode, logits, weights, labels, 0.0);
     }
 
 
     public void addArgs() {
-        addIArgument(reductionMode);
+        super.addArgs();
         addTArgument(labelSmoothing);
     }
 
@@ -68,32 +66,9 @@ public class SoftmaxCrossEntropyLoss extends DynamicCustomOp {
         addArgs();
     }
 
-    /*
-    @Override
-    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> attrs = new LinkedHashMap<>();
-
-        val labelSmooting = PropertyMapping.builder()
-                .propertyNames(new String[]{"label_smoothing"})
-                .tfInputPosition(4)
-                .build();
-        attrs.put("labelSmoothing", labelSmooting);
-
-        val reduction = PropertyMapping.builder()
-                .propertyNames(new String[]{"reduction"})
-                .tfInputPosition(7)
-                .build();
-        attrs.put("reductionMode", reduction);
-
-        ret.put(tensorflowName(),attrs);
-        return ret;
-    }
-    */
-
     @Override
     public String opName() {
-        return "softmax_cross_entropy_loss";
+        return "sigm_cross_entropy_loss";
     }
 
     @Override
@@ -103,7 +78,7 @@ public class SoftmaxCrossEntropyLoss extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "SoftmaxCrossEntropy";
+        return "sigmoid_cross_entropy";
     }
 
     @Override

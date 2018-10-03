@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
  */
 @Builder(builderClassName = "Builder")
 @Getter
+@Deprecated
 public class LossInfo {
     private String lossName;
     private LossFunctions.Reduction reduction;

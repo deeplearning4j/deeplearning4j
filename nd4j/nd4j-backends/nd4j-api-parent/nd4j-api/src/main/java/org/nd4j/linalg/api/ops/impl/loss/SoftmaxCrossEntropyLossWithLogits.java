@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.accum;
+package org.nd4j.linalg.api.ops.impl.loss;
 
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;

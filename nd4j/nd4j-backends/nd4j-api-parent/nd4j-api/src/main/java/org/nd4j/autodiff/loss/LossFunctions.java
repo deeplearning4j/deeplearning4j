@@ -25,6 +25,7 @@ import org.nd4j.base.Preconditions;
  *
  * @author Alex Black
  */
+@Deprecated
 public class LossFunctions {
 
     private static final int[] SCALAR = new int[]{1,1};
