@@ -537,7 +537,6 @@ public class ReductionOpValidation extends BaseOpValidation {
                 SameDiff sd = SameDiff.create();
                 sd.setLogExecution(false);
 
-
                 SDVariable in = sd.var("in", new int[]{-1, d1, d2});
                 SDVariable label = sd.var("label", outShape);
                 SDVariable second = in.mul(2);
