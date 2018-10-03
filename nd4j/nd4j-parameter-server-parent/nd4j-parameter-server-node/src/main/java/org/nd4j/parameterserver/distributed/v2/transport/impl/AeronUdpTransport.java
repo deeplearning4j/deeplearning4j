@@ -154,7 +154,6 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         }
     });
 
-
     protected void createSubscription() {
         // create subscription
         ownSubscription = aeron.addSubscription(this.id() , voidConfiguration.getStreamId());
