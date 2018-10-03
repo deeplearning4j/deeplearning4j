@@ -46,16 +46,14 @@ namespace nd4j {
             // special case - output is scalar
             if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
                 Nd4jLong* newShape;
-                ALLOCATE(newShape, block.getWorkspace(), 8, Nd4jLong);
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
 
-                newShape[0] = 2;
-                newShape[1] = 1;
+                newShape[0] = 0;
+                newShape[1] = 0;
                 newShape[2] = 1;
-                newShape[3] = 1;
-                newShape[4] = 1;
-                newShape[5] = 0;
-                newShape[6] = 1;
-                newShape[7] = 99;
+                newShape[3] = 99;
+
+                ArrayOptions::setDataType(newShape, block.dataType());
 
                 return SHAPELIST(newShape);
             }
@@ -67,7 +65,7 @@ namespace nd4j {
             Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
 
             auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), false, true, block.getWorkspace());
-
+            ArrayOptions::setDataType(newShape, block.dataType());
             return SHAPELIST(newShape);
         }
     }
