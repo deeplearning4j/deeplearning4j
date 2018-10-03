@@ -19,6 +19,7 @@
 //license available in LICENSE file, or at http://www.opensource.org/licenses/mit-license.php
 
 #include <pointercast.h>
+#include <stdexcept>
 #include"cnpy.h"
 
 
@@ -430,6 +431,7 @@ cnpy::NpyArray cnpy::npzLoad(std::string fname, std::string varname) {
 
     fclose(fp);
     printf("npz_load: Error! Variable name %s not found in %s!\n",varname.c_str(),fname.c_str());
+    throw std::runtime_error("Variable wasn't found in file");
 }
 
 
