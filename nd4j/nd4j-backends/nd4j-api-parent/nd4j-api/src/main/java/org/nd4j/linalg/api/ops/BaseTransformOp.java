@@ -187,6 +187,8 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     @Override
     public Type opType() {
+        if(sameDiff == null)
+            return Type.TRANSFORM;  //TODO we can't determine if it's transform or pairwise using this method until initialized with args
         if(args() == null || args().length == 1)
             return Type.TRANSFORM;
         else if(args().length == 2)

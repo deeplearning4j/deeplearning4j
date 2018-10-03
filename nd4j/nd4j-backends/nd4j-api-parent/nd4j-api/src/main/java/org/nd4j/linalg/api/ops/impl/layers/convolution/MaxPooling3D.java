@@ -53,11 +53,6 @@ public class MaxPooling3D extends Pooling3D {
         return "config";
     }
 
-    @Override
-    public void setValueFor(Field target, Object value) {
-        config.setValueFor(target, value);
-    }
-
 
     @Override
     public Map<String, Object> propertiesForFunction() {

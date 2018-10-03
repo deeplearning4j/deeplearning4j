@@ -83,6 +83,16 @@ public class StandardDeviation extends Variance {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
+    @Override
+    public Type getOpType() {
+        return Type.VARIANCE;
+    }
+
+    @Override
+    public Type opType(){
+        return Type.VARIANCE;
+    }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {

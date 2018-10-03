@@ -77,14 +77,26 @@ public class MaxPooling2D extends DynamicCustomOp {
         return "config";
     }
 
-    @Override
-    public void setValueFor(Field target, Object value) {
-        config.setValueFor(target, value);
-    }
-
 
     @Override
     public Map<String, Object> propertiesForFunction() {
+        if(config == null && iArguments.size() > 0){
+            //Perhaps loaded from FlatBuffers - hence we have IArgs but not Config object
+            config = Pooling2DConfig.builder()
+                    .kH(iArguments.get(0))
+                    .kW(iArguments.get(1))
+                    .sH(iArguments.get(2))
+                    .sW(iArguments.get(3))
+                    .pH(iArguments.get(4))
+                    .pW(iArguments.get(5))
+                    .dH(iArguments.get(6))
+                    .dW(iArguments.get(7))
+                    .isSameMode(iArguments.get(8) == 1)
+                    .extra(iArguments.get(9))
+                    .isNHWC(iArguments.get(10) == 1)
+                    .type(Pooling2D.Pooling2DType.MAX)
+                    .build();
+        }
         return config.toProperties();
     }
 

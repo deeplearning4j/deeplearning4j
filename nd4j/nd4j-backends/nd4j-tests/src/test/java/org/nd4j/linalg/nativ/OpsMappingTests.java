@@ -22,6 +22,7 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
@@ -69,7 +70,7 @@ public class OpsMappingTests {
             val bt = Integer.valueOf(line[0]).byteValue();
             val ops = line[1].split("<<");
 
-            val type = SameDiff.getTypeFromByte(bt);
+            val type = FlatBuffersMapper.getTypeFromByte(bt);
             val list = getOperations(type);
 
             for (val op: ops) {

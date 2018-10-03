@@ -3459,19 +3459,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @see #memoryInfo(int, InputType)
      */
     public String summary(InputType inputType) {
-        String ret = "\n";
-        ret += StringUtils.repeat("=", 250);
-        ret += "\n";
-        if (inputType != null) {
-            ret += String.format("%-40s%-10s%-12s%-40s%-75s%-75s\n", "LayerName (LayerType)", "nIn,nOut", "TotalParams",
-                    "ParamsShape","InputShape", "OutputShape");
+        StringBuilder ret = new StringBuilder();
+        ret.append("\n");
+
+        List<String[]> lines = new ArrayList<>();
+        if(inputType == null){
+            lines.add(new String[]{"LayerName (LayerType)", "nIn,nOut", "TotalParams", "ParamsShape"});
+        } else {
+            lines.add(new String[]{"LayerName (LayerType)", "nIn,nOut", "TotalParams", "ParamsShape", "InputShape", "OutputShape"});
         }
-        else {
-            ret += String.format("%-40s%-10s%-12s%-40s\n", "LayerName (LayerType)", "nIn,nOut", "TotalParams",
-                    "ParamsShape");
+        int[] maxLength = new int[inputType == null ? 4 : 6];
+        String[] header = lines.get(0);
+        for( int i=0; i<header.length; i++ ){
+            maxLength[i] = header[i].length();
         }
-        ret += StringUtils.repeat("=", 250);
-        ret += "\n";
+
         int frozenParams = 0;
         for (org.deeplearning4j.nn.api.Layer currentLayer : getLayers()) {
             String name = currentLayer.conf().getLayer().getLayerName();
@@ -3525,24 +3527,58 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 classNameArr = ((FrozenLayer) currentLayer).getInsideLayer().getClass().getName().split("\\.");
                 className = "Frozen " + classNameArr[classNameArr.length - 1];
             }
-            if (inputType!= null) {
-                ret += String.format("%-40s%-10s%-12s%-40s%-75s%-75s", name + " (" + className + ")", in + "," + out, paramCount,
-                        paramShape,inShape,outShape);
+
+            String[] line;
+            if (inputType == null) {
+                line = new String[]{name + " (" + className + ")", in + "," + out, paramCount, paramShape};
+            } else {
+                line = new String[]{name + " (" + className + ")", in + "," + out, paramCount,paramShape,inShape,outShape};
             }
-            else {
-                ret += String.format("%-40s%-12s%-10s%-40s", name + " (" + className + ")", in + "," + out, paramCount,
-                        paramShape);
+            for( int i=0; i<line.length; i++ ){
+                maxLength[i] = Math.max(maxLength[i], line[i] == null ? 0 : line[i].length());
             }
-            ret += "\n";
+            lines.add(line);
         }
-        ret += StringUtils.repeat("-", 250);
-        ret += String.format("\n%30s %d", "Total Parameters: ", params().length());
-        ret += String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams);
-        ret += String.format("\n%30s %d", "Frozen Parameters: ", frozenParams);
-        ret += "\n";
-        ret += StringUtils.repeat("=", 250);
-        ret += "\n";
-        return ret;
+
+        StringBuilder sbFormat = new StringBuilder();
+        int totalLength = 0;
+        int pos = 0;
+        for(int length : maxLength){
+            int currLength;
+            if(pos++ == maxLength.length-1){
+                currLength = length;
+            } else {
+                currLength = length+3;
+            }
+            sbFormat.append("%-").append(currLength).append("s");
+            totalLength += currLength;
+        }
+        sbFormat.append("\n");
+        String format = sbFormat.toString();
+
+
+
+        ret.append(StringUtils.repeat("=", totalLength))
+                .append("\n");
+
+        boolean first = true;
+        for(String[] line : lines){
+            String formatted = String.format(format, (Object[])line);
+            ret.append(formatted);
+            if(first){
+                ret.append(StringUtils.repeat("=", totalLength)).append("\n");
+                first = false;
+            }
+        }
+
+        ret.append(StringUtils.repeat("-", totalLength));
+        ret.append(String.format("\n%30s %d", "Total Parameters: ", params().length()));
+        ret.append(String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams));
+        ret.append(String.format("\n%30s %d", "Frozen Parameters: ", frozenParams));
+        ret.append("\n");
+        ret.append(StringUtils.repeat("=", totalLength));
+        ret.append("\n");
+        return ret.toString();
     }
 
     /**

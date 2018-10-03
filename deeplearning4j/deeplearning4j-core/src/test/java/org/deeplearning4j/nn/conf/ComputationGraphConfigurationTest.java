@@ -129,7 +129,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                         .addLayer("dense2", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
                         .addVertex("add", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1",
                                 "dense2")
-                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).lossFunction(LossFunctions.LossFunction.MSE).build(), "add")
+                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "add")
                         .setOutputs("out").build();
 
         String json = conf.toJson();

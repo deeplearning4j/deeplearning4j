@@ -4,11 +4,14 @@ namespace nd4j.graph;
 
 
 table FlatProperties {
-    name:string; // name of this property
-    i:[int]; // integer properties
-    l:[long]; // long properties
-    d:[double]; // double properties
-    a:[FlatArray]; // array properties
+    name:string;    // name of this property
+    i:[int];        // integer properties
+    l:[long];       // long properties
+    d:[double];     // double properties
+    a:[FlatArray];  // array properties
+    b:[bool];       // boolean properties
+    s:[string];     // string properties
+    shape:[int];    // array shape (for i/l/d/a/b/s). Used when encoding arrays as a 1d. Null when ildabs fields are used as length 1 for primitives/non-arrays
 }
 
 root_type FlatProperties;

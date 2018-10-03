@@ -44,7 +44,7 @@ public class Range extends DynamicCustomOp {
     private Double delta;
     //used for initWithArrays when there are place holder
     //values that need to be resolved
-    private String fromVertexId,toVertexId,deltaVertexId;
+//    private String fromVertexId,toVertexId,deltaVertexId;
     public Range() {
         // no-op
     }
@@ -52,6 +52,10 @@ public class Range extends DynamicCustomOp {
     public Range(SameDiff sd, double from, double to, double step){
         super(null, sd, new SDVariable[0]);
         addTArgument(from, to, step);
+        this.from = from;
+        this.to = to;
+        this.delta = step;
+
     }
 
 
@@ -134,9 +138,9 @@ public class Range extends DynamicCustomOp {
         val toVar = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(endNode.getName()));
         val deltaVar =  initWith.getVariable(TFGraphMapper.getInstance().getNodeName(deltaNode.getName()));
 
-        this.fromVertexId = fromVar.getVarName();
-        this.toVertexId = toVar.getVarName();
-        this.deltaVertexId = deltaVar.getVarName();
+//        this.fromVertexId = fromVar.getVarName();
+//        this.toVertexId = toVar.getVarName();
+//        this.deltaVertexId = deltaVar.getVarName();
 
     }
 

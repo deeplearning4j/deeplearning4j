@@ -16,8 +16,10 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3D;
 
 import java.util.LinkedHashMap;
@@ -25,6 +27,8 @@ import java.util.Map;
 
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Pooling3DConfig extends BaseConvolutionConfig {
     private long kD, kW, kH; // kernel
     private long sD, sW, sH; // strides

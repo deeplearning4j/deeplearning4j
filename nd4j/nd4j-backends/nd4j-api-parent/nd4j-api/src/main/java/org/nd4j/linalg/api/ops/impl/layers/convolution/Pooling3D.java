@@ -81,12 +81,6 @@ public class Pooling3D extends DynamicCustomOp {
         addArgs();
     }
 
-
-    @Override
-    public void setValueFor(Field target, Object value) {
-        config.setValueFor(target,value);
-    }
-
     @Override
     public boolean isConfigProperties() {
         return true;
