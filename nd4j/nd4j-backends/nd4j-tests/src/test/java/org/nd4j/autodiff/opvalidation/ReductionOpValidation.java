@@ -274,6 +274,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                     tc.expectedOutput("loss", inputArr.var());
                     break;
                 case 6:
+                    inputArr = Nd4j.rand(minibatch, nOut).addi(0.5);
                     loss = sd.prod("loss", input);
                     tc.expectedOutput("loss", inputArr.prod());
                     name = "prod";
