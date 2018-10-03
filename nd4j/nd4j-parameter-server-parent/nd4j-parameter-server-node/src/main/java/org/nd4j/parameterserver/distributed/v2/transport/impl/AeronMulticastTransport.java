@@ -21,6 +21,7 @@ import io.aeron.Subscription;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.agrona.concurrent.SleepingIdleStrategy;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
@@ -92,6 +93,16 @@ public class AeronMulticastTransport extends AeronUdpTransport {
 
         multicastSubscription = aeron.addSubscription(multicastChannelUri, voidConfiguration.getStreamId() + 1);
 
+        // dedicated reader thread for multicast thread
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                val idler = new SleepingIdleStrategy(5000);
+                while (true) {
+                    idler.idle(multicastSubscription.poll(messageHandler, 1024));
+                }
+            }
+        });
     }
 
     @Override
