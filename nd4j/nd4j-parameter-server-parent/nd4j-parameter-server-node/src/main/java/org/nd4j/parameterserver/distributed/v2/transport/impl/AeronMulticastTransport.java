@@ -16,11 +16,24 @@
 
 package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
+import io.aeron.Publication;
+import io.aeron.Subscription;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
+import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
+import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
+import org.nd4j.parameterserver.distributed.v2.messages.BroadcastableMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
+
+import java.io.IOException;
+import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This class is a UDP Multicast implementation of Transport interface, based on Aeron
@@ -29,6 +42,15 @@ import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
  */
 @Slf4j
 public class AeronMulticastTransport extends AeronUdpTransport {
+    // non-null only on master
+    private Publication multicastPublication;
+
+    // non-null only on worker nodes
+    private Subscription multicastSubscription;
+
+    // this lock is used only for multicast stuff
+    private ReentrantLock multicastLock = new ReentrantLock();
+
     public AeronMulticastTransport(@NonNull String rootIp, int rootPort, @NonNull VoidConfiguration configuration) {
         this(rootIp, rootPort, rootIp, rootPort, configuration);
     }
@@ -36,6 +58,10 @@ public class AeronMulticastTransport extends AeronUdpTransport {
 
     public AeronMulticastTransport(@NonNull String ownIp, int ownPort, @NonNull String rootIp, int rootPort, @NonNull VoidConfiguration configuration) {
         super(ownIp, ownPort, rootIp, rootPort, configuration);
+
+        if (voidConfiguration.getMeshBuildMode() != MeshBuildMode.PLAIN) {
+            throw new ND4JIllegalStateException("Multicast transport can only work in PLAIN MODE");
+        }
     }
 
     @Override
@@ -43,8 +69,29 @@ public class AeronMulticastTransport extends AeronUdpTransport {
         return id;
     }
 
+    protected String getMulticastChannelUri() {
+        String multicastChannelUri = "aeron:udp?endpoint=" + voidConfiguration.getMulticastNetwork() + ":"
+                + voidConfiguration.getMulticastPort();
+        if (voidConfiguration.getMulticastInterface() != null && !voidConfiguration.getMulticastInterface().isEmpty())
+            multicastChannelUri = multicastChannelUri + "|interface=" + voidConfiguration.getMulticastInterface();
+
+        multicastChannelUri = multicastChannelUri + "|ttl=" + voidConfiguration.getTtl();
+        return multicastChannelUri;
+    }
+
+    protected void createMulticastPublisher() {
+        // here we create master's multicast stream
+        val multicastChannelUri = getMulticastChannelUri();
+
+        multicastPublication = aeron.addPublication(multicastChannelUri, voidConfiguration.getStreamId() + 1);
+    }
+
     protected void createMulticastSubscription() {
         // here we connect to master's multicast stream
+        val multicastChannelUri = getMulticastChannelUri();
+
+        multicastSubscription = aeron.addSubscription(multicastChannelUri, voidConfiguration.getStreamId() + 1);
+
     }
 
     @Override
@@ -55,30 +102,55 @@ public class AeronMulticastTransport extends AeronUdpTransport {
         super.createSubscription();
     }
 
-    @Override
-    public void sendMessage(VoidMessage message, String id) {
-        // we send server-related messages via unicast messages to master
+    protected void sendMulticastMessage(VoidMessage message) {
 
-        // training-related messages are sent to
+        TransmissionStatus status = TransmissionStatus.UNKNOWN;
+        while (status != TransmissionStatus.OK) {
+            try {
+                multicastLock.lock();
+
+                status = TransmissionStatus.fromLong(multicastPublication.offer(message.asUnsafeBuffer()));
+            } finally {
+                multicastLock.unlock();
+            }
+
+            // sleep before retransmit
+            if (status != TransmissionStatus.OK)
+                LockSupport.parkNanos(50000);
+        }
+    }
+
+    @Override
+    protected void propagateBroadcastableMessage(BroadcastableMessage voidMessage, PropagationMode mode) {
+        // in multicast transport we don't need propagation for worker nodes, since every online node gets the same data
+        if (masterMode && voidMessage instanceof INDArrayMessage) {
+
+            try {
+                val splits = splitter.split(voidMessage, voidConfiguration.getMaxChunkSize());
+
+                for(val m:splits) {
+                    sendMulticastMessage(m);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override
     public void onMeshUpdate(MeshOrganizer mesh) {
-        // if there's yet unknown nodes in mesh - connect to their multicast channels
-
         super.onMeshUpdate(mesh);
     }
 
     @Override
     public synchronized void launch() {
-        // we create multicast channel here first
-
         super.launch();
     }
 
     @Override
     public synchronized void launchAsMaster() {
         // we create multicast channel here first
+        createMulticastPublisher();;
 
         super.launchAsMaster();
     }
