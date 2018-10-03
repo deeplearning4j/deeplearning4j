@@ -655,7 +655,8 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         for (long[] shape : unstackedShape) {
             for (int axis = 0; axis <= shape.length; axis++) {
-                for (int numInputs : new int[]{1, 3}) {
+//                for (int numInputs : new int[]{1, 3}) {
+                for (int numInputs : new int[]{3}) {
 
                     long[] stackedShape = new long[shape.length + 1];
                     int x = 0;
@@ -936,6 +937,8 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable x = sameDiff.var("x", shape);
         SDVariable result = sameDiff.shape(x);
         SDVariable loss = sameDiff.standardDeviation(result, true);
+
+        System.out.println(sameDiff.summary());
 
         String err = OpValidation.validate(new TestCase(sameDiff)
                 .expected(result, Nd4j.create(new double[]{2,3}, new long[]{2})));

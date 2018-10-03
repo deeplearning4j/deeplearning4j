@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 
 import java.util.LinkedHashMap;
@@ -27,6 +28,7 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 @Data
+@NoArgsConstructor
 public class Pooling2DConfig extends BaseConvolutionConfig {
 
     private long kH, kW;

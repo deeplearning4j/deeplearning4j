@@ -50,7 +50,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "unsorted_segment/unsorted_segment_max_rank2"
+            "conv2d_transpose/channels_first_b1_k2_s12_SAME"
 
     };
 

@@ -20,6 +20,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -56,24 +57,6 @@ public class Cast extends BaseDynamicTransformOp {
         addArgs();
     }
 
-
-    @Override
-    public void setValueFor(Field target, Object value) {
-        if(value == null) {
-            throw new ND4JIllegalStateException("Unable to set field " + target + " using null value!");
-        }
-
-        // FIXME!
-        if (!(value instanceof DataBuffer.Type))
-            return;
-
-        try {
-            target.set(this, (DataBuffer.Type) value);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
@@ -81,7 +64,7 @@ public class Cast extends BaseDynamicTransformOp {
     }
 
     protected void addArgs() {
-        addIArgument(SameDiff.getDataTypeAsByte(typeDst));
+        addIArgument(FlatBuffersMapper.getDataTypeAsByte(typeDst));
     }
 
     @Override
@@ -115,6 +98,14 @@ public class Cast extends BaseDynamicTransformOp {
         ret.put(tensorflowName(),map);
 
         return ret;
+    }
+
+    @Override
+    public void setValueFor(Field target, Object value) {
+        //This is a hack around a property mapping issue - TF datatype DT_DOUBLE return attribute.getType() of DT_DOUBLE which doesn't make sense
+        if(value == null || value instanceof String || value instanceof DataBuffer.Type){
+            super.setValueFor(target, value);
+        }
     }
 
     @Override

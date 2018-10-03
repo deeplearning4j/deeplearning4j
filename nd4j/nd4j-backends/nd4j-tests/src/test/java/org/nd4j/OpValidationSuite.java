@@ -18,6 +18,7 @@ package org.nd4j;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.nd4j.autodiff.opvalidation.*;
@@ -65,6 +66,9 @@ import static org.junit.Assume.assumeFalse;
         TFGraphTestAllSameDiff.class,
         TFGraphTestAllLibnd4j.class
 })
+//IMPORTANT: This ignore is added to avoid maven surefire running both the suite AND the individual tests in "mvn test"
+// With it ignored here, the individual tests will run outside (i.e., separately/independently) of the suite in both "mvn test" and IntelliJ
+@Ignore
 public class OpValidationSuite {
 
     /*

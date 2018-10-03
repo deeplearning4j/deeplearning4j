@@ -60,15 +60,6 @@ public class SplitV extends DynamicCustomOp {
         //addIArgument(numSplits);  //libnd4j op doesn't used/need it for execution
     }
 
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("numSplit",numSplit);
-        ret.put("splitDim",splitDim);
-        return ret;
-    }
-
-
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {

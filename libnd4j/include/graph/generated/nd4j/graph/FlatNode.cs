@@ -47,6 +47,10 @@ public struct FlatNode : IFlatbufferObject
   public int ScopeId { get { int o = __p.__offset(32); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public string ScopeName { get { int o = __p.__offset(34); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
   public ArraySegment<byte>? GetScopeNameBytes() { return __p.__vector_as_arraysegment(34); }
+  public string OutputNames(int j) { int o = __p.__offset(36); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
+  public int OutputNamesLength { get { int o = __p.__offset(36); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public string OpName { get { int o = __p.__offset(38); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+  public ArraySegment<byte>? GetOpNameBytes() { return __p.__vector_as_arraysegment(38); }
 
   public static Offset<FlatNode> CreateFlatNode(FlatBufferBuilder builder,
       int id = 0,
@@ -64,9 +68,13 @@ public struct FlatNode : IFlatbufferObject
       int device = 0,
       float scalar = 0.0f,
       int scope_id = 0,
-      StringOffset scope_nameOffset = default(StringOffset)) {
-    builder.StartObject(16);
+      StringOffset scope_nameOffset = default(StringOffset),
+      VectorOffset outputNamesOffset = default(VectorOffset),
+      StringOffset opNameOffset = default(StringOffset)) {
+    builder.StartObject(18);
     FlatNode.AddOpNum(builder, opNum);
+    FlatNode.AddOpName(builder, opNameOffset);
+    FlatNode.AddOutputNames(builder, outputNamesOffset);
     FlatNode.AddScopeName(builder, scope_nameOffset);
     FlatNode.AddScopeId(builder, scope_id);
     FlatNode.AddScalar(builder, scalar);
@@ -85,7 +93,7 @@ public struct FlatNode : IFlatbufferObject
     return FlatNode.EndFlatNode(builder);
   }
 
-  public static void StartFlatNode(FlatBufferBuilder builder) { builder.StartObject(16); }
+  public static void StartFlatNode(FlatBufferBuilder builder) { builder.StartObject(18); }
   public static void AddId(FlatBufferBuilder builder, int id) { builder.AddInt(0, id, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(1, nameOffset.Value, 0); }
   public static void AddOpType(FlatBufferBuilder builder, OpType opType) { builder.AddSbyte(2, (sbyte)opType, 0); }
@@ -116,6 +124,10 @@ public struct FlatNode : IFlatbufferObject
   public static void AddScalar(FlatBufferBuilder builder, float scalar) { builder.AddFloat(13, scalar, 0.0f); }
   public static void AddScopeId(FlatBufferBuilder builder, int scopeId) { builder.AddInt(14, scopeId, 0); }
   public static void AddScopeName(FlatBufferBuilder builder, StringOffset scopeNameOffset) { builder.AddOffset(15, scopeNameOffset.Value, 0); }
+  public static void AddOutputNames(FlatBufferBuilder builder, VectorOffset outputNamesOffset) { builder.AddOffset(16, outputNamesOffset.Value, 0); }
+  public static VectorOffset CreateOutputNamesVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static void StartOutputNamesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddOpName(FlatBufferBuilder builder, StringOffset opNameOffset) { builder.AddOffset(17, opNameOffset.Value, 0); }
   public static Offset<FlatNode> EndFlatNode(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatNode>(o);

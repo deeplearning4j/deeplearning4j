@@ -59,16 +59,6 @@ public class AlphaDropOut extends BaseRandomOp {
     }
 
     @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("p",p);
-        ret.put("a",a);
-        ret.put("alphaPrime",alphaPrime);
-        ret.put("b",b);
-        return ret;
-    }
-
-    @Override
     public int opNum() {
         return 12;
     }

@@ -678,7 +678,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * The extra argument in the op here is the {@link org.nd4j.linalg.api.ops.impl.transforms.IsMax#IsMax(INDArray, int...)}
          * dimension to do the ismax along
          */
-        if (op.opNum() == 41 && op.extraArgs() != null) {
+        if (op.opNum() == 41 && op.extraArgs() != null && op.extraArgs().length > 0) {
             int[] dimension = new int[(int) op.extraArgs()[0]];
 
             for (int i = 0; i < dimension.length; i++) {

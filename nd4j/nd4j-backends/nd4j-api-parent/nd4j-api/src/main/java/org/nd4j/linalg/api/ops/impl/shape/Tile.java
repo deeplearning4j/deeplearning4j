@@ -78,15 +78,6 @@ public class Tile extends DynamicCustomOp {
         }
     }
 
-
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("axis",axis);
-        return ret;
-    }
-
-
     @Override
     public void resolvePropertiesFromSameDiffBeforeExecution() {
         populateInputsAndOutputsFromSameDiff();

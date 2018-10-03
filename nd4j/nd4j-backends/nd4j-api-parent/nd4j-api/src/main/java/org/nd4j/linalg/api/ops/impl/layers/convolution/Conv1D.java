@@ -93,16 +93,16 @@ public class Conv1D extends DynamicCustomOp {
 
     @Override
     public Object getValue(Field property) {
-        if (config == null) {
-            config = Conv1DConfig.builder().build();
+        if (config == null && !iArguments.isEmpty()) {
+            config = Conv1DConfig.builder()
+                    .s(iArguments.get(0))
+                    .p(iArguments.get(1))
+                    .isSameMode(iArguments.get(2) == 1)
+                    .dataFormat(iArguments.get(3) == 1 ? Conv1DConfig.NCW : Conv1DConfig.NWC)
+                    .build();
         }
 
         return config.getValue(property);
-    }
-
-    @Override
-    public void setValueFor(Field target, Object value) {
-        config.setValueFor(target, value);
     }
 
     @Override

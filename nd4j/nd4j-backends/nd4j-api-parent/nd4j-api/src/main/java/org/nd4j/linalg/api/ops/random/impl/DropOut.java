@@ -57,14 +57,6 @@ public class DropOut extends BaseRandomOp {
         init(x, null, z, n);
     }
 
-
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("p",p);
-        return ret;
-    }
-
     @Override
     public int opNum() {
         return 1;

@@ -32,6 +32,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
@@ -6185,8 +6186,8 @@ public class Nd4j {
         val shapeOf = Shape.shapeOf(shapeInfo);
         val stridesOf = Shape.stridesOf(shapeInfo);
 
-        val _dtype = SameDiff.getDataTypeFromByte(dtype);
-        val _order = SameDiff.getOrderFromByte(order);
+        val _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
+        val _order = FlatBuffersMapper.getOrderFromByte(order);
         val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
         val doubles = new double[prod];
 

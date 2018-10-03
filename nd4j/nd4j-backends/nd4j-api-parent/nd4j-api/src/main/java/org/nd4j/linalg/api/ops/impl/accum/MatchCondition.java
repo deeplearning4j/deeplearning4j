@@ -65,16 +65,6 @@ public class MatchCondition extends BaseAccumulation {
     }
 
     @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("compare",compare);
-        ret.put("eps",eps);
-        ret.put("mode",mode);
-        return ret;
-    }
-
-
-    @Override
     public int opNum() {
         return 12;
     }
