@@ -76,7 +76,7 @@ DECLARE_SHAPE_FN(upsampling2d) {
         outputShapeInfo[4] = inputShapeInfo[4];
     }
 
-    shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
+    ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
     return SHAPELIST(outputShapeInfo);
 }

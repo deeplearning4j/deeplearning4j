@@ -140,7 +140,7 @@ DECLARE_SHAPE_FN(conv1d) {
         outputShapeInfo[3] = oC;
     }
 
-    shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
+    ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
     return SHAPELIST(outputShapeInfo);
 }
