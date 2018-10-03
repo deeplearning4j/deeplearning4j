@@ -60,7 +60,7 @@ DECLARE_SHAPE_FN(parallel_stack) {
 	for(int i = 1; i <= rank; ++i)
 		outShapeInfo[i+1] = inShapeInfo[i];
 	
-	shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
+	ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfo, shape::order(inShapeInfo));
   	
   	return SHAPELIST(outShapeInfo);
 }
