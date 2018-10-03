@@ -1086,14 +1086,6 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         return _buffer + (offset * sizeOfT());
     }
 
-/*
-    template <typename T>
-    void NDArray::p(const Nd4jLong* indices, const T value) {
-        auto xType = this->dataType();
-        BUILD_SINGLE_SELECTOR(xType, templatedSet,(this->_buffer, indices, value), LIBND4J_TYPES);
-    }
-    */
-
 //////////////////////////////////////////////////////////////////////////
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector
     NDArray* NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
@@ -2857,6 +2849,9 @@ NDArray NDArray::transp() const {
     template <typename T>
     T NDArray::e(const Nd4jLong i) const {        
 
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+
         auto rp = getOffset(i);
 
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
@@ -2869,7 +2864,7 @@ NDArray NDArray::transp() const {
     template <typename T>
     T NDArray::e(const Nd4jLong i, const Nd4jLong j) const {
         if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
-            throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
+            throw std::invalid_argument("NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !");
 
         auto xType = this->dataType();
         Nd4jLong coords[2] = {i, j};
@@ -2886,7 +2881,7 @@ NDArray NDArray::transp() const {
     T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
         //return (*this)(i, j, k);
         if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
-            throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
+            throw std::invalid_argument("NDArray::e(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
         auto xType = this->dataType();
         Nd4jLong coords[3] = {i, j, k};
@@ -2900,8 +2895,8 @@ NDArray NDArray::transp() const {
     template <typename T>
     T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const {
         //return (*this)(i, j, k);
-        if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2] || l >= shapeOf()[3])
-            throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=4 !");
+        if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])             
+            throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
 
         auto xType = this->dataType();
         Nd4jLong coords[4] = {i, j, k, l};
@@ -2914,8 +2909,10 @@ NDArray NDArray::transp() const {
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::e(const Nd4jLong i) const {
-    NDArray scalar(dataType(), _workspace);
-    BUILD_SINGLE_SELECTOR(dataType(), scalar.templatedSet, (scalar._buffer, 0, dataType(), bufferWithOffset(getOffset(i))), LIBND4J_TYPES);
+    if (i >= _length)
+            throw std::invalid_argument("scalar NDArray::e(i): input index is out of array length !");
+    NDArray scalar(_dataType, _workspace);
+    BUILD_SINGLE_SELECTOR(_dataType, scalar.templatedSet, (scalar._buffer, 0, dataType(), bufferWithOffset(getOffset(i))), LIBND4J_TYPES);
     return scalar;
 }
 
@@ -2923,6 +2920,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
 // This method sets value in linear buffer to position i
     template <typename T>
     void NDArray::p(const Nd4jLong i, const T value) {
+
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::p(i, value): input index is out of array length !");
 
         auto rp = getOffset(i);
         const void *pV = reinterpret_cast<const void*>(const_cast<T *>(&value));
@@ -2949,6 +2949,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
     void NDArray::p(const Nd4jLong i, const NDArray& scalar) {
         if(!scalar.isScalar())
             throw std::invalid_argument("NDArray::p method: input array must be scalar!");
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::p(i, NDArray_scalar): input index is out of array length !");
         // probably wrong args order
         auto rp = getOffset(i);
         BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (_buffer, rp, scalar.dataType(), scalar.getBuffer()), LIBND4J_TYPES);
@@ -2962,6 +2964,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template <typename T>
     void NDArray::p(const Nd4jLong i, const Nd4jLong j, const T value) {
         //(*this)(i,j) = value;
+        if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
+            throw std::invalid_argument("NDArray:pe(i,j, value): one of input indexes is out of array length or rank!=2 !");
 
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         auto xType = this->dataType();
@@ -2984,6 +2988,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template <typename T>
     void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value) {
         //(*this)(i,j,k) = value;
+        if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
+            throw std::invalid_argument("NDArray:pe(i,j,k, value): one of input indexes is out of array length or rank!=3 !");
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         auto xType = this->dataType();
         Nd4jLong coords[3] = {i, j, k};
@@ -3003,6 +3009,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template <typename T>
     void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const T value) {
         //(*this)(i,j,k) = value;
+        if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])             
+            throw std::invalid_argument("NDArray::p(i,j,k,l, value): one of input indexes is out of array length or rank!=4 !");
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         auto xType = this->dataType();
         Nd4jLong coords[4] = {i, j, k, l};
@@ -3019,6 +3027,26 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bool value);
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void NDArray::pIdx(const Nd4jLong* indices, const T value) {
+    for(int i = 0; i < rankOf(); ++i)
+        if (indices[i] >= sizeAt(i))
+            throw std::invalid_argument("NDArray::pIdx(const Nd4jLong* idx, const T value): input index is out of dimension length !");
+    void* v = reinterpret_cast<void *>(const_cast<T *>(&value));
+    
+    BUILD_SINGLE_PARTIAL_SELECTOR(_dataType, templatedSet<, T>(_buffer, indices, v), LIBND4J_TYPES);    
+}
+
+template void NDArray::pIdx(const Nd4jLong* indices, const double value);
+template void NDArray::pIdx(const Nd4jLong* indices, const float value);
+template void NDArray::pIdx(const Nd4jLong* indices, const float16 value);
+template void NDArray::pIdx(const Nd4jLong* indices, const Nd4jLong value);
+template void NDArray::pIdx(const Nd4jLong* indices, const int value);
+template void NDArray::pIdx(const Nd4jLong* indices, const int8_t value);
+template void NDArray::pIdx(const Nd4jLong* indices, const uint8_t value);
+template void NDArray::pIdx(const Nd4jLong* indices, const int16_t value);
+template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
     ////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::subarray(IndicesList& idx, std::vector<Nd4jLong>& strides) const {
