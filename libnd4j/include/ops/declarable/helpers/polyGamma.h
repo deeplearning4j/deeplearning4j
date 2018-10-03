@@ -30,7 +30,7 @@ namespace helpers {
 
 
 	// calculate the polygamma function
-    NDArray polyGamma(const NDArray& n, const NDArray& x);
+    void polyGamma(const NDArray& n, const NDArray& x, NDArray& output);
     
 
 }

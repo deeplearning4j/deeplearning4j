@@ -37,14 +37,14 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
 
     int arrLen = n->lengthOf();
     // FIXME: this shit should be single op call, not a loop!
-    for(int i = 0; i < arrLen; ++i ) {
-        // TODO case for n == 0 (digamma) should be of OK
-        REQUIRE_TRUE(n->e<float>(i) > 0.f, 0, "POLYGAMMA op: all elements of n array must be > 0 !");
-        REQUIRE_TRUE(x->e<float>(i) > 0.f, 0, "POLYGAMMA op: all elements of x array must be > 0 !");
-    }
+    auto nPositive =  n->reduceNumber(nd4j::reduce::IsPositive, nullptr);
+    auto xPositive =  x->reduceNumber(nd4j::reduce::IsPositive, nullptr);
+    bool nPositiveFlag = nPositive.e<bool>(0);
+    bool xPositiveFlag = xPositive.e<bool>(0);
+    REQUIRE_TRUE(nPositiveFlag, 0, "POLYGAMMA op: all elements of n array must be > 0 !");
+    REQUIRE_TRUE(xPositiveFlag, 0, "POLYGAMMA op: all elements of x array must be > 0 !");
 
-    // FIXME: we should use output to save
-    *output = helpers::polyGamma(*n, *x);
+    helpers::polyGamma(*n, *x, *output);
     return Status::OK();
 }
 

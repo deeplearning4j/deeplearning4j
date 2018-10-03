@@ -1925,7 +1925,7 @@ TEST_F(DeclarableOpsTests3, polygamma_test1) {
 
     auto n= NDArrayFactory::create<float>('c', {3,3});
     auto x= NDArrayFactory::create<float>('c', {3,3});
-    ASSERT_FALSE(true);
+//    ASSERT_FALSE(true);
     n.linspace(1.);
     x.assign(0.5);
 
@@ -1956,7 +1956,7 @@ TEST_F(DeclarableOpsTests3, polygamma_test2) {
 
     auto expected= NDArrayFactory::create<float>('c', {3,3}, {-7.43182451e+09, 3.08334759e+05,-3.25669798e+03, 1.55186197e+02,-1.46220433e+01, 2.00905201e+00,-3.48791235e-01, 7.08016273e-02,-1.60476052e-02});
 
-    ASSERT_FALSE(true);
+    //ASSERT_FALSE(true);
 
     nd4j::ops::polygamma op;
     auto results = op.execute({&n, &x}, {}, {});
@@ -1982,7 +1982,7 @@ TEST_F(DeclarableOpsTests3, polygamma_test3) {
 
     auto expected= NDArrayFactory::create<float>('c', {3,3}, {1.05166336e-01,-9.04983497e-03, 1.31009323e-03,-2.44459433e-04, 5.31593880e-05,-1.28049888e-05, 3.31755364e-06,-9.07408791e-07, 2.58758130e-07});
 
-    ASSERT_FALSE(true);
+    //ASSERT_FALSE(true);
 
     nd4j::ops::polygamma op;
     auto results = op.execute({&n, &x}, {}, {});
