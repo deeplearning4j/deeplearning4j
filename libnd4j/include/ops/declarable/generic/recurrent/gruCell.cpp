@@ -103,12 +103,6 @@ DECLARE_SHAPE_FN(gruCell) {
 
     return SHAPELIST(hShapeInfo);
 
-
-
-
-
-
-
 }
 }
 }

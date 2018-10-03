@@ -780,8 +780,6 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 // move assignment operator
 NDArray& NDArray::operator=(NDArray&& other) noexcept {
 
-    nd4j_printf("Move operator...\n","")
-
     if (this == &other) 
         return *this;
 
@@ -1281,7 +1279,6 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         if (target == nullptr || !target->isR())
             throw std::runtime_error("FloatReduce requires output array to be present and have dtype of real");
 
-
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
@@ -1312,6 +1309,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        ArrayOptions::setDataType(newShape, nd4j::DataType::BOOL);
         if(!shape::shapeEquals(newShape, target->getShapeInfo())) {
             nd4j_printf("NDArray::reduceAlongDimension method: wrong target shape!\n", "");
             throw std::runtime_error("NDArray::reduceAlongDimension method: wrong target shape!");
@@ -1364,6 +1362,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
+        ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
         if(!shape::shapeEquals(newShape, target->getShapeInfo())) {
             nd4j_printf("NDArray::reduceAlongDimension method: wrong target shape!\n", "");
             throw std::runtime_error("NDArray::reduceAlongDimension method: wrong target shape!");
@@ -1441,6 +1440,9 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 // perform array transformation
     void NDArray::applyTransform(nd4j::transform::FloatOps op, NDArray *target, void *extraParams) {
+        if (target == nullptr)
+            target = this;
+
         if (!target->isR())
             throw std::runtime_error("Target array must have one of FLOAT types");
 
@@ -1458,6 +1460,9 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     void NDArray::applyTransform(nd4j::transform::BoolOps op, NDArray *target, void *extraParams) {
+        if (target == nullptr)
+            target = this;
+
         if (target->isB())
             throw std::runtime_error("Target array must have one of BOOL types");
 
@@ -1465,6 +1470,9 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     void NDArray::applyTransform(nd4j::transform::StrictOps op, NDArray *target, void *extraParams) {
+        if (target == nullptr)
+            target = this;
+        
         if (!this->isR() || target->isR() || (this->dataType() != target->dataType()))
             throw std::runtime_error("Both Source and Target array must have one of FLOAT types");
 
