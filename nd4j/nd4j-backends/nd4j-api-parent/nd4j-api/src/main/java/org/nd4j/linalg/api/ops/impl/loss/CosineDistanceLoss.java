@@ -11,9 +11,12 @@ import org.nd4j.autodiff.samediff.SameDiff;
  */
 public class CosineDistanceLoss extends BaseLoss {
 
+    private int dimension;
 
-    public CosineDistanceLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels){
+    public CosineDistanceLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels, int dimension){
         super(sameDiff, lossReduce, predictions, weights, labels);
+        this.dimension = dimension;
+        this.addIArgument(dimension);
     }
 
     public CosineDistanceLoss(){ }

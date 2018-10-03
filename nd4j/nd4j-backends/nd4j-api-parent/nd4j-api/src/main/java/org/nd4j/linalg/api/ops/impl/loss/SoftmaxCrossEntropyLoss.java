@@ -38,6 +38,7 @@ import java.util.Map;
  */
 @NoArgsConstructor
 public class SoftmaxCrossEntropyLoss extends BaseLoss {
+    public static final double DEFAULT_LABEL_SMOOTHING = 0.0;
 
     private double labelSmoothing = 0.0;
 

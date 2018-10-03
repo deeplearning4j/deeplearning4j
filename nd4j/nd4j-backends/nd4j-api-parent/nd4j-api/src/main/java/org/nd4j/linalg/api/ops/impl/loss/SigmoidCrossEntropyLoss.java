@@ -40,7 +40,7 @@ import java.util.*;
  */
 @NoArgsConstructor
 public class SigmoidCrossEntropyLoss extends BaseLoss {
-
+    public static final double DEFAULT_LABEL_SMOOTHING = 0.0;
     private double labelSmoothing = 0.0;
 
     public SigmoidCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights,
