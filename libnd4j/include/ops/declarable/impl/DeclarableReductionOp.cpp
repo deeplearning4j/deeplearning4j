@@ -56,6 +56,7 @@ namespace nd4j {
                 newShape[5] = 0;
                 newShape[6] = 1;
                 newShape[7] = 99;
+                ArrayOptions::setDataType(newShape, ArrayOptions::dataType(inputShape->at(0)));
 
                 return SHAPELIST(newShape);
             }
