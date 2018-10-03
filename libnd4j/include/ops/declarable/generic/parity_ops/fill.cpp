@@ -62,7 +62,7 @@ namespace nd4j {
             for (int e = 0; e < shapeArray->lengthOf(); e++)
                 newShape[e+1] = shapeArray->e<Nd4jLong>(e);
             
-            shape::updateStrides(newShape, 'c');
+            ShapeUtils::updateStridesAndType(newShape, shapeArray->dataType(), 'c');
 
             return SHAPELIST(newShape);
         };
