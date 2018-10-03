@@ -40,43 +40,43 @@ namespace nd4j {
                 auto axisVector = INPUT_VARIABLE(1);
                 dims.resize(axisVector->lengthOf());
                 helpers::adjustAxis(input, axisVector, dims);
-
-                auto shape = ShapeUtils::evalReduceShapeInfo(input->ordering(), dims, *input, false, true);
+                axisVector->printIndexedBuffer("AXIS");
+                auto shape = ShapeUtils::evalReduceShapeInfo(input->ordering(), dims, *input, false, false);
                 output = new NDArray(shape, false, block.getWorkspace());
 
                 overwrite = true;
                 RELEASE(shape, input->getWorkspace());
             }
-
+            output->printShapeInfo("Output Shape Info");
             switch(mode) {
                 case 0: {
                     REQUIRE_TRUE(dims.size() == 2 || (input->rankOf() == 2 && dims.size() == 0), 0, "Norm: Frobenius is defined for 2D matrices or TADS only");
                     // fro
-                    input->reduceAlongDimension(reduce::NormFrobenius, output, dims, false, true);
+                    input->reduceAlongDimension(reduce::NormFrobenius, output, dims, false, output->rankOf() == 2);
                 }
                 break;
                 case 1: {
                     // euclidean
                     if ((input->rankOf() == 2 && dims.size() == 0) || dims.size() == 2) {
-                        input->reduceAlongDimension(reduce::NormFrobenius, output, dims, false, true);
+                        input->reduceAlongDimension(reduce::NormFrobenius, output, dims, false, output->rankOf() == 2);
                     } else {
-                        input->reduceAlongDimension(reduce::Norm2, output, dims, false, true);
+                        input->reduceAlongDimension(reduce::Norm2, output, dims, false, output->rankOf() == 2);
                     }
                 }
                 break;
                 case 2: {
                     // 1
-                    input->reduceAlongDimension(reduce::Norm1, output, dims, false, true);
+                    input->reduceAlongDimension(reduce::Norm1, output, dims, false, output->rankOf() == 2);
                 }
                 break;
                 case 3: {
                     // 2 
-                    input->reduceAlongDimension(reduce::Norm2, output, dims, false, true);
+                    input->reduceAlongDimension(reduce::Norm2, output, dims, false, output->rankOf() == 2);
                 }
                 break;
                 case 4: {
                     // inf-norm
-                    input->reduceAlongDimension(reduce::NormMax, output, dims, false, true);
+                    input->reduceAlongDimension(reduce::NormMax, output, dims, false, output->rankOf() == 2);
                 }
                 break;
                 default: {
@@ -84,7 +84,7 @@ namespace nd4j {
                     REQUIRE_TRUE(block.getIArguments()->size() > 1, 0, "P-Norm reductions requires 2 TArguments, but only 1 was provided");
                     // FIXME: p is required here
                     //T p = T_ARG(1);
-                    input->reduceAlongDimension(reduce::NormP, output, dims, false, true, nullptr);
+                    input->reduceAlongDimension(reduce::NormP, output, dims, false, output->rankOf() == 2, nullptr);
                 }
             }
 
