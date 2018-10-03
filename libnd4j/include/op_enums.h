@@ -55,11 +55,19 @@ namespace nd4j {
         enum Ops {
             BUILD_ENUMERATION(PAIRWISE_TRANSFORM_OPS)
         };
+
+        enum BoolOps {
+            BUILD_ENUMERATION(PAIRWISE_BOOL_OPS)
+        };
     }
 
     namespace scalar {
         enum Ops {
             BUILD_ENUMERATION(SCALAR_OPS)
+        };
+
+        enum BoolOps {
+            BUILD_ENUMERATION(SCALAR_BOOL_OPS)
         };
     }
 
@@ -96,6 +104,10 @@ namespace nd4j {
     namespace broadcast {
         enum Ops {
             BUILD_ENUMERATION(BROADCAST_OPS)
+        };
+
+        enum BoolOps {
+            BUILD_ENUMERATION(BROADCAST_BOOL_OPS)
         };
     }
 

@@ -20,6 +20,10 @@
 #include "../NativeOpExcutioner.h"
 #include <types/types.h>
 
+#include <pairwise_bool.h>
+#include <broadcasting_bool.h>
+#include <scalar_bool.h>
+
 #include <loops/transform_float.h>
 #include <loops/transform_bool.h>
 #include <loops/transform_same.h>
@@ -101,6 +105,14 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 }
 
+void NativeOpExcutioner::execBroadcastBool(int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 /**
@@ -122,6 +134,15 @@ void NativeOpExcutioner::execPairwiseTransform(int opNum, void *dx, Nd4jLong *xS
 
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform, ::exec(opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
 }
+
+void NativeOpExcutioner::execPairwiseBoolTransform(int opNum, void *dx, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::pairwise_transforms::PairWiseBoolTransform, ::exec(opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams), LIBND4J_TYPES, BOOL_TYPES);
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -287,6 +308,24 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
 
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 }
+
+void NativeOpExcutioner::execScalarBool(int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *scalar, Nd4jLong *scalarShapeInfo, void *extraParams) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), LIBND4J_TYPES, BOOL_TYPES);
+}
+
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExcutioner::execScalarBool(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, Nd4jLong *scalarShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(scalarShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 /**

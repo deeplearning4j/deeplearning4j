@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/headers/broadcastable.h>
+#include <ops/BroadcastBoolOpsTuple.h>
 
 namespace nd4j {
     namespace ops {
@@ -27,7 +28,7 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::CUSTOM(scalar::EqualTo, pairwise::EqualTo, broadcast::EqualTo), x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(BroadcastBoolOpsTuple::CUSTOM(scalar::EqualTo, pairwise::EqualTo, broadcast::EqualTo), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {

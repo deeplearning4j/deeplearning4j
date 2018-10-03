@@ -507,16 +507,16 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Y, typename Z>
+	template <typename X, typename Z>
 	class And {
 	public:
-		op_def static Z op(X d1, Y d2) {
+		op_def static Z op(X d1, X d2) {
 			return d2 + d1;
 		}
 
-		op_def static Z op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, X d2, X *params) {
 			auto comp = params[0];
-			return d1 != comp && static_cast<X>(d2) != comp ? static_cast<X>(1) : static_cast<X>(0);
+			return d1 != comp && d2 != comp ? static_cast<X>(1) : static_cast<X>(0);
 		}
 
 		op_def static Z op(X d1) {
@@ -529,17 +529,17 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Y, typename Z>
+	template <typename X, typename Z>
 	class Or {
 	public:
-		op_def static Z op(X d1, Y d2) {
+		op_def static Z op(X d1, X d2) {
 			return d2 + d1;
 		}
 
-		op_def static Z op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, X d2, X *params) {
 			auto comp = params[0];
 
-			return d1 != comp || static_cast<X>(d2) != comp ? static_cast<Z>(1) : static_cast<Z>(0);
+			return d1 != comp || d2 != comp ? static_cast<Z>(1) : static_cast<Z>(0);
 		}
 
 		op_def static Z op(X d1) {
@@ -547,22 +547,22 @@ namespace simdOps {
 		}
 
 		// op for MetaOps
-		op_def static Z op(X d1, Y *params) {
+		op_def static Z op(X d1, X *params) {
 			return static_cast<Z>(119);
 		}
 	};
 
-	template <typename X, typename Y, typename Z>
+	template <typename X, typename Z>
 	class Xor {
 	public:
-		op_def static Z op(X d1, Y d2) {
+		op_def static Z op(X d1, X d2) {
 			return d2 + d1;
 		}
 
-		op_def static Z op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, X d2, X *params) {
 			auto comp = params[0];
 
-			return ((d1 == comp && static_cast<X>(d2) != comp)||(d1 != comp && static_cast<X>(d2) == comp)) ? static_cast<X>(1) : static_cast<X>(0);
+			return ((d1 == comp && d2) != comp||(d1 != comp && d2 == comp)) ? static_cast<Z>(1) : static_cast<Z>(0);
 		}
 
 		op_def static Z op(X d1) {
@@ -576,10 +576,14 @@ namespace simdOps {
 		no_op_exec_special_bool
 		no_op_exec_special_cuda
 
-		op_def static Z op(X d1, X *params) {
+		op_def static Z op(X d1, X d2) {
+            return static_cast<Z>(0);
+		}
+
+		op_def static Z op(X d1, X d2, X *params) {
 			auto comp = params[0];
 
-			return d1 == comp ? static_cast<Z>(1) : static_cast<Z>(0);
+			return d1 == comp && d2 == comp ? static_cast<Z>(1) : static_cast<Z>(0);
 		}
 	};
 
@@ -718,49 +722,53 @@ namespace simdOps {
 	* Whether 2 elements in an array
 	* are epsilion equal
 	*/
-	template <typename X, typename Y, typename Z>
+	template <typename X, typename Z>
 	class Epsilon {
 	public:
-		op_def static Z op(X d1, Y d2, Z *params) {
-			X diff = d1 - d2;
-			X absDiff = nd4j::math::nd4j_abs<X>(diff);
-			if (absDiff <= static_cast<X>(MIN))
-				return static_cast<Z>(1);
-			return static_cast<Z>(0);
+
+	    op_def static Z op(X d1, X d2) {
+            X diff = d1 - d2;
+            X absDiff = nd4j::math::nd4j_abs<X>(diff);
+            if (absDiff <= static_cast<X>(MIN))
+                return static_cast<Z>(1);
+            return static_cast<Z>(0);
+	    }
+
+		op_def static Z op(X d1, X d2, X *params) {
+            return op(d1, d2);
 		}
 
-		op_def static Z op(X d1, Y *params) {
+		op_def static Z op(X d1, X *params) {
 			return d1;
 		}
 	};
 
 
-	template <typename X, typename Y, typename Z>
+	template <typename X, typename Z>
 	class EqualTo {
 	public:
-		op_def static Z op(X d1, Y d2) {
-			return d1 == static_cast<X>(d2);
+		op_def static Z op(X d1, X d2) {
+			return d1 == d2;
 		}
 
-		op_def static Z op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, X d2, X *params) {
 			return op(d1, d2);
 		}
 
 		op_def static Z op(X d1, X *params) {
 			return d1;
 		}
-
 	};
 
 
-	template <typename X, typename Y, typename Z>
+	template <typename X, typename Z>
 	class NotEqualTo {
 	public:
-		op_def static Z op(X d1, Y d2) {
-			return d1 != static_cast<X>(d2);
+		op_def static Z op(X d1, X d2) {
+			return d1 != d2;
 		}
 
-		op_def static Z op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, X d2, X *params) {
 			return op(d1, d2);
 		}
 
@@ -771,14 +779,14 @@ namespace simdOps {
 
 
 
-	template <typename X, typename Y, typename Z>
+	template <typename X, typename Z>
 	class GreaterThanOrEqual {
 	public:
-		op_def static Z op(X d1, Y d2) {
-			return d1 >= static_cast<X>(d2);
+		op_def static Z op(X d1, X d2) {
+			return d1 >= d2;
 		}
 
-		op_def static Z op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, X d2, X *params) {
 			return op(d1, d2);
 		}
 
@@ -789,14 +797,14 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y, typename Z>
+	template <typename X, typename Z>
 	class GreaterThan {
 	public:
-		op_def static Z op(X d1, Y d2) {
-			return d1 > static_cast<X>(d2);
+		op_def static Z op(X d1, X d2) {
+			return d1 > d2;
 		}
 
-		op_def static Z op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, X d2, X *params) {
 			return op(d1, d2);
 		}
 
@@ -808,14 +816,14 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y, typename Z>
+	template <typename X, typename Z>
 	class LessThan {
 	public:
-		op_def static Z op(X d1, Y d2) {
-			return d1 < static_cast<X>(d2);
+		op_def static Z op(X d1, X d2) {
+			return d1 < d2;
 		}
 
-		op_def static Z op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, X d2, X *params) {
 			return op(d1, d2);
 		}
 
@@ -826,14 +834,14 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Y, typename Z>
+	template <typename X, typename Z>
 	class LessThanOrEqual {
 	public:
-		op_def static Z op(X d1, Y d2) {
-			return d1 <= static_cast<X>(d2);
+		op_def static Z op(X d1, X d2) {
+			return d1 <= d2;
 		}
 
-		op_def static Z op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, X d2, X *params) {
 			return op(d1, d2);
 		}
 

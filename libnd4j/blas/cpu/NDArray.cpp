@@ -1538,6 +1538,16 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         NativeOpExcutioner::execPairwiseTransform(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
     }
 
+    void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, NDArray *other, NDArray *target, void *extraParams) {
+        if (other->lengthOf() != target->lengthOf())
+            throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
+
+        if (!target->isB())
+            throw std::invalid_argument("NDArray::applyPairwiseTransform method - result must have bool type");
+
+        NativeOpExcutioner::execPairwiseBoolTransform(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
+    }
+
 /*
     template<typename T>
     template<typename OpName>
@@ -1924,6 +1934,35 @@ NDArray NDArray::transp() const {
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
     }
+
+
+    template <>
+    void NDArray::applyScalar(nd4j::scalar::BoolOps op, const nd4j::NDArray* scalar, NDArray *target, void *extraParams) const {
+        if (target == nullptr || !target->isB())
+            throw std::invalid_argument("applyScalar: target must have bool type");
+
+        NativeOpExcutioner::execScalarBool(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar->getBuffer(), scalar->getShapeInfo(), extraParams);
+    }
+
+    template <typename T>
+    void NDArray::applyScalar(nd4j::scalar::BoolOps op, T scalar, NDArray *target, void *extraParams) const {
+        auto temp = NDArrayFactory::create<T>(scalar, this->_workspace);
+
+        if (target == nullptr || !target->isB())
+            throw std::invalid_argument("applyScalar: target must have bool type");
+
+        NativeOpExcutioner::execScalarBool(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, temp.buffer(), temp.shapeInfo(), extraParams);
+    }
+    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, double scalar, NDArray *target, void *extraParams) const;
+    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, float scalar, NDArray *target, void *extraParams) const;
+    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, float16 scalar, NDArray *target, void *extraParams) const;
+    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, Nd4jLong scalar, NDArray *target, void *extraParams) const;
+    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, int scalar, NDArray *target, void *extraParams) const;
+    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, int16_t scalar, NDArray *target, void *extraParams) const;
+    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, int8_t scalar, NDArray *target, void *extraParams) const;
+    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, uint8_t scalar, NDArray *target, void *extraParams) const;
+    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, bool scalar, NDArray *target, void *extraParams) const;
+
 
     template <>
     void NDArray::applyScalar(nd4j::scalar::Ops op, const nd4j::NDArray* scalar, NDArray *target, void *extraParams) const {
@@ -2586,6 +2625,110 @@ NDArray NDArray::transp() const {
         NativeOpExcutioner::execBroadcast(op, this->_buffer, this->_shapeInfo, tadArray->_buffer, tadArray->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
     }
 
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, std::vector<int>& dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
+        if (dimensions.size() == 0)
+            return;
+
+        std::vector<int> copy(dimensions);
+
+        if (dimensions.size() > 1)
+            std::sort(copy.begin(), copy.end());
+
+        Nd4jLong tadLength = shape::tadLength(this->_shapeInfo, copy.data(), (int) copy.size());
+        if (tadLength != tadArray->lengthOf())
+            throw std::runtime_error("Tad length mismatch");
+
+        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        tad.createTadOnlyShapeInfo();
+        tad.createOffsets();
+
+        auto result = target == nullptr ? this : target;
+
+        // TODO: eventually we want separate tads here
+        NativeOpExcutioner::execBroadcastBool(op, this->_buffer, this->_shapeInfo, tadArray->_buffer, tadArray->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, void *extraArgs) const {
+        if(target == nullptr || other == nullptr)
+            throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
+
+        if (isScalar()) {
+            target->assign(this);
+            const_cast<NDArray*>(this)->applyPairwiseTransform(op.p, const_cast<NDArray*>(other), target,  extraArgs);
+            return;
+        }
+        if (other->isScalar()) {
+            this->applyScalar(op.s, other, target, extraArgs);
+            return;
+        }
+
+        const NDArray* min(nullptr), *max(nullptr);
+        if(this->rankOf() >= other->rankOf()) {
+            max = this;
+            min = other;
+        }
+        else {
+            max = other;
+            min = this;
+        }
+
+        if(checkTargetShape) {
+            Nd4jLong* newShapeInfo = nullptr;
+            if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _workspace))          // the rank of target array must be equal to max->rankOf)()
+                throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
+            if(!shape::equalsSoft(target->getShapeInfo(), newShapeInfo))
+                throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape of target array is wrong !");
+
+            // if workspace is not null - do not call delete.
+            if (_workspace == nullptr)
+                delete[] newShapeInfo;
+        }
+
+        // check whether max array has to be tiled
+        if(!max->isSameShape(target)) {
+            // evaluate repeating dimensions for tile operation
+            std::vector<Nd4jLong> repeatMax(max->rankOf());
+            for(int i = 1; i <= max->rankOf(); ++i)
+                repeatMax[i-1] = (target->_shapeInfo[i] / max->_shapeInfo[i]);
+            max->tile(repeatMax, *target);
+        }
+        else
+            target->assign(max);
+
+
+        // check whether min array has to be tiled
+        std::vector<Nd4jLong> repeatMin(min->rankOf());
+        int product = 1;
+        for(int i = min->rankOf(); i >=1 ; --i) {
+            repeatMin[i-1] = (target->_shapeInfo[target->rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
+            product *= repeatMin[i-1];
+        }
+
+        auto pMin = const_cast<NDArray *>(min);
+        if(product != 1 )
+            pMin = new NDArray(min->tile(repeatMin));
+
+        std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
+
+        if(max == this) {
+            target->applyBroadcast(op.b, sameDims, pMin, nullptr, extraArgs);
+        }
+        else {
+            auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
+            const auto numOfSubArrs = ShapeUtils::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
+
+#pragma omp parallel for schedule(guided)
+            for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+                auto targetSubArr = (*target)(i, dimsToExclude);
+                pMin->applyPairwiseTransform(op.p, &targetSubArr, &targetSubArr, extraArgs);
+            }
+        }
+
+        if(pMin != min)
+            delete pMin;
+    }
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, void *extraArgs) const {
