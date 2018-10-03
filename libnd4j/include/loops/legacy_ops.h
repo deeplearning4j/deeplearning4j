@@ -29,6 +29,18 @@
         (4, aggregateOps::CBOW) ,\
         (5, aggregateOps::GEMM)
 
+#define BROADCAST_BOOL_OPS \
+        (0, EqualTo),\
+        (1, GreaterThan),\
+        (2, LessThan),\
+        (3, Epsilon),\
+        (4, GreaterThanOrEqual),\
+        (5, LessThanOrEqual),\
+        (6, NotEqualTo),\
+        (7, And),\
+        (8, Or),\
+        (9, Xor) ,\
+        (10, Not)
 
 
 #define BROADCAST_OPS \
@@ -39,12 +51,6 @@
        (4, ReverseDivide), \
        (5, ReverseSubtract), \
        (6, Copy) ,\
-       (7, EqualTo) ,\
-       (8, GreaterThan) ,\
-       (9, GreaterThanOrEqual) ,\
-       (10, LessThan) ,\
-       (11, LessThanOrEqual) ,\
-       (12, NotEqualTo) ,\
        (13, MinPairwise) ,\
        (14, MaxPairwise) ,\
        (15, AMinPairwise) ,\
@@ -56,8 +62,6 @@
        (21, SafeDivide),\
        (22, Mod) ,\
        (23, TruncateDiv), \
-       (24, And), \
-       (25, Or) ,\
        (26, Atan2) ,\
        (27, LogicalOr) ,\
        (28, LogicalXor) ,\
@@ -89,12 +93,11 @@
 // these ops return bool
 #define TRANSFORM_BOOL_OPS \
         (0,IsMax), \
-        (1,Not), \
-        (2,IsInf), \
-        (3,IsNan), \
-        (4,IsFinite), \
-        (5,IsInfOrNan), \
-        (6,MatchConditionBool)
+        (1,IsInf), \
+        (2,IsNan), \
+        (3,IsFinite), \
+        (4,IsInfOrNan), \
+        (5,MatchConditionBool)
 
 #define TRANSFORM_STRICT_OPS \
         (0,SoftMax), \
@@ -165,7 +168,18 @@
         (1, SummaryStatsStandardDeviation)
 
 
-
+#define SCALAR_BOOL_OPS \
+        (0, EqualTo),\
+        (1, GreaterThan),\
+        (2, LessThan),\
+        (3, Epsilon),\
+        (4, GreaterThanOrEqual),\
+        (5, LessThanOrEqual),\
+        (6, NotEqualTo),\
+        (7, And),\
+        (8, Or),\
+        (9, Xor) ,\
+        (10, Not)
 
 #define SCALAR_OPS \
         (0, Add),\
@@ -175,18 +189,12 @@
         (4, ReverseDivide),\
         (5, ReverseSubtract),\
         (6, MaxPairwise),\
-        (7, LessThan),\
-        (8, GreaterThan),\
-        (9, EqualTo),\
-        (10,LessThanOrEqual),\
-        (11,NotEqualTo),\
-        (12,MinPairwise),\
-        (13,Copy),\
-        (14,Mod),\
-        (15,ReverseMod),\
-        (16,GreaterThanOrEqual),\
-        (17,Remainder),\
-        (18,FMod) ,\
+        (13, MinPairwise),\
+        (14, Copy),\
+        (15, Mod),\
+        (16, ReverseMod),\
+        (17, Remainder),\
+        (18, FMod) ,\
         (19, TruncateDiv) ,\
         (20, FloorDiv) ,\
         (21, FloorMod), \
@@ -194,25 +202,23 @@
         (23, SafeDivide), \
         (24, AMaxPairwise), \
         (25, AMinPairwise), \
-        (26, And), \
-        (27, Or), \
-        (28, Atan2) ,\
-        (29, LogicalOr) ,\
-        (30, LogicalXor) ,\
-        (31, LogicalNot) ,\
-        (32, LogicalAnd) ,\
-        (33, Pow) ,\
-        (34, PowDerivative) ,\
-        (35, CompareAndSet) ,\
-        (36, SXELogitsSmoother), \
-        (37, LeakyRELU), \
-        (38, LeakyRELUDerivative), \
-        (39, ReplaceNans) ,\
-        (40, LogX) ,\
-        (41, RELU), \
-        (42, RELU6), \
-        (43,Step), \
-        (44, LstmClip)
+        (26, Atan2) ,\
+        (27, LogicalOr) ,\
+        (28, LogicalXor) ,\
+        (29, LogicalNot) ,\
+        (30, LogicalAnd) ,\
+        (31, Pow) ,\
+        (32, PowDerivative) ,\
+        (33, CompareAndSet) ,\
+        (34, SXELogitsSmoother), \
+        (35, LeakyRELU), \
+        (36, LeakyRELUDerivative), \
+        (37, ReplaceNans) ,\
+        (38, LogX) ,\
+        (39, RELU), \
+        (40, RELU6), \
+        (41, Step), \
+        (42, LstmClip)
 
 
 
@@ -287,53 +293,54 @@
         (13, ExponentialDistribution),\
         (14, ExponentialDistributionInv)
 
-
+#define PAIRWISE_BOOL_OPS \
+        (0, EqualTo),\
+        (1, GreaterThan),\
+        (2, LessThan),\
+        (3, Epsilon),\
+        (4, GreaterThanOrEqual),\
+        (5, LessThanOrEqual),\
+        (6, NotEqualTo),\
+        (7, And),\
+        (8, Or),\
+        (9, Xor) ,\
+        (10, Not)
 
 #define PAIRWISE_TRANSFORM_OPS \
         (0, Add),\
         (1, Copy),\
         (2, Divide),\
-        (3, EqualTo),\
-        (4, GreaterThan),\
-        (5, LessThan),\
-        (6, Multiply),\
-        (7, Pow),\
-        (8, ReverseSubtract),\
-        (9, Subtract),\
-        (10,Epsilon),\
-        (11,GreaterThanOrEqual),\
-        (12,LessThanOrEqual),\
-        (13,MaxPairwise),\
-        (14,MinPairwise),\
-        (15,NotEqualTo),\
-        (16,Copy2) ,\
-        (17,Axpy),\
-        (18,ReverseDivide),\
-        (45,CompareAndSet),\
-        (46,CompareAndReplace),\
-        (56,And),\
-        (57,Or),\
-        (58,Xor),\
-        (59,Remainder),\
-        (60,FMod),\
-        (69,Atan2) ,\
-        (19, TruncateDiv),\
-        (20, FloorDiv), \
-        (21, FloorMod) ,\
-        (22, SquaredSubtract) ,\
-        (23, ReverseMod),\
-        (24, SafeDivide), \
-        (25, Mod) ,\
-        (26, RelativeError) ,\
-        (27, BinaryRelativeError) ,\
-        (28, BinaryMinimumAbsoluteRelativeError) ,\
-        (29, LogicalOr) ,\
-        (30, LogicalXor) ,\
-        (31, LogicalNot) ,\
-        (32, LogicalAnd) ,\
-        (92, PowDerivative), \
-        (93, LogPoisonLoss), \
-        (94, LogPoisonLossFull)
+        (3, Multiply),\
+        (4, Pow),\
+        (5, ReverseSubtract),\
+        (6, Subtract),\
+        (7, MaxPairwise),\
+        (8, MinPairwise),\
+        (9, Copy2) ,\
+        (10, Axpy),\
+        (11, ReverseDivide),\
+        (12, CompareAndSet),\
+        (13, CompareAndReplace),\
+        (14, Remainder),\
+        (15, FMod),\
+        (16, Atan2) ,\
+        (17, TruncateDiv),\
+        (18, FloorDiv), \
+        (19, FloorMod) ,\
+        (20, SquaredSubtract) ,\
+        (21, ReverseMod),\
+        (22, SafeDivide), \
+        (23, Mod) ,\
+        (24, RelativeError) ,\
+        (25, BinaryRelativeError) ,\
+        (26, BinaryMinimumAbsoluteRelativeError) ,\
+        (27, LogicalOr) ,\
+        (28, LogicalXor) ,\
+        (29, LogicalNot) ,\
+        (30, LogicalAnd) ,\
+        (31, PowDerivative), \
+        (32, LogPoisonLoss), \
+        (33, LogPoisonLossFull)
 
 
 

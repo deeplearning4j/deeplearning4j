@@ -18,36 +18,30 @@
 // @author raver119@gmail.com
 //
 
-#ifndef DEV_TESTS_BROADCASTOPSTUPLE_H
-#define DEV_TESTS_BROADCASTOPSTUPLE_H
+#ifndef DEV_TESTS_BROADCASTBOOLOPSTUPLE_H
+#define DEV_TESTS_BROADCASTBOOLOPSTUPLE_H
 
 #include <op_enums.h>
 
 namespace nd4j {
-    class BroadcastOpsTuple {
+    class BroadcastBoolOpsTuple {
     private:
 
     public:
-        nd4j::scalar::Ops  s;
-        nd4j::pairwise::Ops p;
-        nd4j::broadcast::Ops b;
+        nd4j::scalar::BoolOps  s;
+        nd4j::pairwise::BoolOps p;
+        nd4j::broadcast::BoolOps b;
 
-        BroadcastOpsTuple() = default;
-        ~BroadcastOpsTuple() = default;
+        BroadcastBoolOpsTuple() = default;
+        ~BroadcastBoolOpsTuple() = default;
 
-        BroadcastOpsTuple(nd4j::scalar::Ops scalar, nd4j::pairwise::Ops pairwise, nd4j::broadcast::Ops broadcast) {
+        BroadcastBoolOpsTuple(nd4j::scalar::BoolOps scalar, nd4j::pairwise::BoolOps pairwise, nd4j::broadcast::BoolOps broadcast) {
             s = scalar;
             p = pairwise;
             b = broadcast;
         }
 
-        static BroadcastOpsTuple CUSTOM(nd4j::scalar::Ops scalar, nd4j::pairwise::Ops pairwise, nd4j::broadcast::Ops broadcast);
-
-        static BroadcastOpsTuple Add();
-        static BroadcastOpsTuple Assign();
-        static BroadcastOpsTuple Divide();
-        static BroadcastOpsTuple Multiply();
-        static BroadcastOpsTuple Subtract();
+        static BroadcastBoolOpsTuple CUSTOM(nd4j::scalar::BoolOps scalar, nd4j::pairwise::BoolOps pairwise, nd4j::broadcast::BoolOps broadcast);
     };
 }
 

@@ -34,6 +34,7 @@
 #include <helpers/ShapeBuilders.h>
 #include <op_enums.h>
 #include <ops/BroadcastOpsTuple.h>
+#include <ops/BroadcastBoolOpsTuple.h>
 
 
 namespace nd4j {
@@ -544,6 +545,8 @@ namespace nd4j {
         */
         void applyPairwiseTransform(nd4j::pairwise::Ops op, NDArray *other, NDArray *target, void *extraParams);
 
+        void applyPairwiseTransform(nd4j::pairwise::BoolOps op, NDArray *other, NDArray *target, void *extraParams);
+
         /**
         *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
         *  tad - array to broadcast
@@ -554,6 +557,8 @@ namespace nd4j {
         void applyBroadcast(nd4j::broadcast::Ops op, std::initializer_list<int> dimensions, const NDArray* tad, NDArray* target = nullptr, void* extraArgs = nullptr);
 
         void applyBroadcast(nd4j::broadcast::Ops op, std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, void *extraArgs = nullptr);
+
+        void applyBroadcast(nd4j::broadcast::BoolOps op, std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, void *extraArgs = nullptr);
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
@@ -573,6 +578,8 @@ namespace nd4j {
         */
         void applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, void *extraArgs = nullptr) const;
 
+        void applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, void *extraArgs = nullptr) const;
+
         /** 
         *  apply a scalar operation to an array
         *  scalar - input scalar
@@ -582,6 +589,9 @@ namespace nd4j {
         template <typename T>
         void applyScalar(nd4j::scalar::Ops op, T scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
 
+        template <typename T>
+        void applyScalar(nd4j::scalar::BoolOps op, T scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+
         /** 
         *  apply a scalar operation to an array
         *  scalar - input array which is simple scalar
@@ -589,6 +599,8 @@ namespace nd4j {
         *  extraParams - extra parameters for operation
         */ 
         void applyScalar(nd4j::scalar::Ops op, NDArray* scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+
+        void applyScalar(nd4j::scalar::BoolOps op, NDArray* scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
 
 
         /**

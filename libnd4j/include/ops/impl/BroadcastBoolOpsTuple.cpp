@@ -17,25 +17,11 @@
 //
 // @author raver119@gmail.com
 //
-
-#include <ops/declarable/generic/helpers/BroadcastHelper.h>
-#include <ops/declarable/headers/broadcastable.h>
+#include <ops/BroadcastBoolOpsTuple.h>
 
 namespace nd4j {
-    namespace ops {
-        BROADCASTABLE_OP_IMPL(greater, 0, 0) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
-
-            auto tZ = BroadcastHelper::broadcastApply(BROADCAST_BOOL(GreaterThan), x, y, z);
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z) {
-                OVERWRITE_RESULT(tZ);
-            }
-
-            return Status::OK();
-        }
+    BroadcastBoolOpsTuple BroadcastBoolOpsTuple::CUSTOM(nd4j::scalar::BoolOps scalar, nd4j::pairwise::BoolOps pairwise, nd4j::broadcast::BoolOps broadcast) {
+        BroadcastBoolOpsTuple t(scalar, pairwise, broadcast);
+        return t;
     }
 }

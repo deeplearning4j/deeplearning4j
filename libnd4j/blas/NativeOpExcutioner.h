@@ -104,6 +104,21 @@ public:
                               Nd4jLong *tadOffsetsZ);
 
 
+    static void execBroadcastBool(int opNum,
+                              void *x,
+                              Nd4jLong *xShapeInfo,
+                              void *y,
+                              Nd4jLong *yShapeInfo,
+                              void *result,
+                              Nd4jLong *resultShapeInfo,
+                              int *dimension,
+                              int dimensionLength,
+                              Nd4jLong *tadOnlyShapeInfo,
+                              Nd4jLong *tadOffsets,
+                              Nd4jLong *tadOnlyShapeInfoZ,
+                              Nd4jLong *tadOffsetsZ);
+
+
   /**
   *
   * @param opNum
@@ -117,6 +132,16 @@ public:
   * @param n
   */
     static void execPairwiseTransform(int opNum,
+                                      void *dx,
+                                      Nd4jLong *xShapeInfo,
+                                      void *y,
+                                      Nd4jLong *yShapeInfo,
+                                      void *result,
+                                      Nd4jLong *resultShapeInfo,
+                                      void *extraParams);
+
+
+    static void execPairwiseBoolTransform(int opNum,
                                       void *dx,
                                       Nd4jLong *xShapeInfo,
                                       void *y,
@@ -330,8 +355,32 @@ public:
                            Nd4jLong *scalarShapeInfo,
                            void *extraParams);
 
+    static void execScalarBool(int opNum,
+                           void *x,
+                           Nd4jLong *xShapeInfo,
+                           void *result,
+                           Nd4jLong *resultShapeInfo,
+                           void *scalar,
+                           Nd4jLong *scalarShapeInfo,
+                           void *extraParams);
+
 
     static void execScalar(int opNum,
+                           void *x,
+                           Nd4jLong *xShapeInfo,
+                           void *extraParams,
+                           void *z,
+                           Nd4jLong *zShapeInfo,
+                           void *scalars,
+                           Nd4jLong *scalarShapeInfo,
+                           int *dimension,
+                           int dimensionLength,
+                           Nd4jLong *tadShapeInfo,
+                           Nd4jLong *tadOffsets,
+                           Nd4jLong *tadShapeInfoZ,
+                           Nd4jLong *tadOffsetsZ);
+
+    static void execScalarBool(int opNum,
                            void *x,
                            Nd4jLong *xShapeInfo,
                            void *extraParams,
