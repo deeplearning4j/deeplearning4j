@@ -95,7 +95,7 @@ namespace nd4j {
                 newShape[1] = 0;
                 newShape[2] = 1;
                 newShape[3] = 99;
-
+                ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
                 shapeList->push_back(newShape);
                 return shapeList;
             }
@@ -147,15 +147,16 @@ namespace nd4j {
                 newShape[2] = 1;
                 newShape[3] = 99;
 
+                ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
                 shapeList->push_back(newShape);
                 return shapeList;
             }
 
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
             if (order == 'c')
-                shape::shapeBuffer(shape.size(), block.dataType(), shape.data(), newShape);
+                shape::shapeBuffer(shape.size(), ArrayOptions::dataType(in), shape.data(), newShape);
             else
-                shape::shapeBufferFortran(shape.size(), block.dataType(), shape.data(), newShape);
+                shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(in), shape.data(), newShape);
 
             shapeList->push_back(newShape);
 

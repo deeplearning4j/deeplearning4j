@@ -60,7 +60,7 @@ DECLARE_SHAPE_FN(triu) {
         outShapeInfo[2] = inShapeInfo[1];
     }
 
-	shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
+	ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfo, shape::order(inShapeInfo));
 
     return SHAPELIST(outShapeInfo);    
 }

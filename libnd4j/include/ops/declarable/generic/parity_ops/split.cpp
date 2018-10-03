@@ -131,7 +131,6 @@ namespace ops {
                 shape::shapeBuffer(shape.size(), ArrayOptions::dataType(input), shape.data(), newShape);
             else
                 shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(input), shape.data(), newShape);
-
             shapes->push_back(newShape);
         }
 

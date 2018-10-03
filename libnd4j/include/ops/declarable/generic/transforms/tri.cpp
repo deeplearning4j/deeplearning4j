@@ -52,7 +52,7 @@ DECLARE_SHAPE_FN(tri) {
     outShapeInfo[1] = rows;
     outShapeInfo[2] = cols;
 
-	shape::updateStrides(outShapeInfo, 'c');
+	ShapeUtils::updateStridesAndType(outShapeInfo, block.dataType(), 'c');
 
     return SHAPELIST(outShapeInfo);    
 }
