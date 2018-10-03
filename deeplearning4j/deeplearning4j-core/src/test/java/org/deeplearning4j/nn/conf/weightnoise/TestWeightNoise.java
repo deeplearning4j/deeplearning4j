@@ -96,6 +96,8 @@ public class TestWeightNoise extends BaseDL4JTest {
             assertEquals(wn, ((BaseLayer) graph.getLayer(2).conf().getLayer()).getWeightNoise());
 
             TestUtils.testModelSerialization(graph);
+
+            graph.fit(new DataSet(Nd4j.create(1,10), Nd4j.create(1,10)));
         }
     }
 

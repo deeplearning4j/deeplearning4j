@@ -21,6 +21,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
@@ -721,7 +722,7 @@ public class ModelSerializer {
         File tempFile = null;
         try {
             // copy existing model to temporary file
-            tempFile = File.createTempFile("tempcopy", "temp");
+            tempFile = DL4JFileUtils.createTempFile("dl4jModelSerializerTemp", "bin");
             tempFile.deleteOnExit();
             Files.copy(f, tempFile);
             try (ZipFile zipFile = new ZipFile(tempFile);
@@ -776,8 +777,7 @@ public class ModelSerializer {
         File tempFile = null;
         try {
             // copy existing model to temporary file
-            tempFile = File.createTempFile("tempcopy", "temp");
-            tempFile.deleteOnExit();
+            tempFile = DL4JFileUtils.createTempFile("dl4jModelSerializerTemp", "bin");
             Files.copy(f, tempFile);
             f.delete();
             try (ZipFile zipFile = new ZipFile(tempFile);
@@ -996,7 +996,8 @@ public class ModelSerializer {
 
     private static File tempFileFromStream(InputStream is) throws IOException{
         checkInputStream(is);
-        File tmpFile = File.createTempFile("dl4jModelSerializer", "bin");
+        String p = System.getProperty(DL4JSystemProperties.DL4J_TEMP_DIR_PROPERTY);
+        File tmpFile = DL4JFileUtils.createTempFile("dl4jModelSerializer", "bin");
         try {
             tmpFile.deleteOnExit();
             BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmpFile));

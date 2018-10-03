@@ -50,6 +50,14 @@ public class ND4JSystemProperties {
      * @see #JAVACPP_MEMORY_MAX_BYTES
      */
     public static final String JAVACPP_MEMORY_MAX_PHYSICAL_BYTES = "org.bytedeco.javacpp.maxphysicalbytes";
+
+    /**
+     * Applicability: ND4J Temporary file creation/extraction for ClassPathResource, memory mapped workspaces, and  <br>
+     * Description: Specify the local directory where temporary files will be written. If not specified, the default
+     * Java temporary directory (java.io.tmpdir system property) will generally be used.
+     */
+    public static final String ND4J_TEMP_DIR_PROPERTY = "org.nd4j.tempdir";
+
     /**
      * Applicability: always - but only if an ND4J backend cannot be found/loaded via standard ServiceLoader mechanisms<br>
      * Description: Set this property to a set fully qualified JAR files to attempt to load before failing on

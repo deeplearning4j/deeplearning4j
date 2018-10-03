@@ -19,6 +19,7 @@ package org.deeplearning4j.util;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -110,15 +111,18 @@ public class ModelGuesser {
      * @throws Exception
      */
     public static Object loadConfigGuess(InputStream stream) throws Exception {
-        File tmp = new File("model-" + UUID.randomUUID().toString());
+        String p = System.getProperty(DL4JSystemProperties.DL4J_TEMP_DIR_PROPERTY);
+        File tmp = DL4JFileUtils.createTempFile("model-" + UUID.randomUUID().toString(), "bin");
         BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmp));
         IOUtils.copy(stream, bufferedOutputStream);
         bufferedOutputStream.flush();
         bufferedOutputStream.close();
         tmp.deleteOnExit();
-        Object load = loadConfigGuess(tmp.getAbsolutePath());
-        tmp.delete();
-        return load;
+        try {
+            return loadConfigGuess(tmp.getAbsolutePath());
+        } finally {
+            tmp.delete();
+        }
     }
 
     /**
@@ -170,21 +174,9 @@ public class ModelGuesser {
      * @throws Exception
      */
     public static Model loadModelGuess(InputStream stream) throws Exception {
-        return loadModelGuess(stream, null);
-    }
-
-    /**
-     * Load the model from the given input stream
-     * @param stream the path of the file to "guess"
-     * @param tempFileDirectory May be null. The directory in which to create any temporary files
-     *
-     * @return the loaded model
-     * @throws Exception
-     */
-    public static Model loadModelGuess(InputStream stream, File tempFileDirectory) throws Exception {
         //Currently (Nov 2017): KerasModelImport doesn't support loading from input streams
         //Simplest solution here: write to a temporary file
-        File f = File.createTempFile("loadModelGuess",".bin",tempFileDirectory);
+        File f = DL4JFileUtils.createTempFile("loadModelGuess",".bin");
         f.deleteOnExit();
 
         try (OutputStream os = new BufferedOutputStream(new FileOutputStream(f))) {
