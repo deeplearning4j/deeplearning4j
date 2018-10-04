@@ -237,7 +237,8 @@ public abstract  class BaseTransport  implements Transport {
         val downstreams = node.getDownstreamNodes();
 
         // TODO: make chunk size configurable
-        val chunks = splitter.split(message, voidConfiguration.getMaxChunkSize());
+        val chunks = new ArrayList<VoidChunk>(splitter.split(message, voidConfiguration.getMaxChunkSize()));
+        log.info("Splitting message [{}] into [{}] chunks...", chunks.get(0).getOriginalId(), chunks.size());
         // send chunks to the upstream
         if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode))
             chunks.forEach(c -> sendMessage(c, upstream.getId()));
@@ -369,8 +370,10 @@ public abstract  class BaseTransport  implements Transport {
             Optional<INDArrayMessage> opt = splitter.merge(chunk, voidConfiguration.getChunksBufferSize());
 
             // if this chunk was the last message, we'll forward it to parameter server for actual use
-            if (opt.isPresent())
+            if (opt.isPresent()) {
+                log.info("Processing message [{}] : [{}]", chunk.getOriginalId(), opt.get().getClass().getSimpleName());
                 this.internalProcessMessage(opt.get());
+            }
         } else if (message instanceof INDArrayMessage) {
             // just forward message, but ONLY if it's not a Response message, since it's probably processed separately
             if (!(message instanceof ResponseMessage)) {
