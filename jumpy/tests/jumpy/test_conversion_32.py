@@ -19,14 +19,20 @@ import pytest
 
 import jumpy as jp
 import numpy as np
+from numpy.testing import assert_allclose
 
-jp.set_context_dtype('float64')
 
-def test_array_creation():
-    a = jp.zeros((32, 10))
-    assert int(jp.sum(a)) == 0
-    a = jp.ones((32, 12))
-    assert int(jp.sum(a)) == 32 * 12
+def test_conversion_32():
+    jp.set_context_dtype('float32')
+    shapes = [(1, 1), (2, 1), (1, 2),  (32, 12), (100, 32, 16)]
+    for shape in shapes:
+        x_np = np.random.random(shape)
+        x_np = np.cast['float32'](x_np)
+        x_jp = jp.array(x_np)
+        x_np += np.cast['float32'](np.random.random(shape))
+        x_jp = x_jp.numpy()
+
+        assert_allclose(x_jp, x_np)
 
 
 if __name__ == '__main__':
