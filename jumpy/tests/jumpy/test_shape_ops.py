@@ -56,5 +56,21 @@ def test_transpose():
         assert y_jp.shape == y_np.shape
 
 
+def test_permute():
+    shapes = [
+        [(2, 3), [0, 1], [1, 0]],
+        [(2, 1), [0, 1], [1, 0]], 
+        [(2, 3, 4), [0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
+        ]
+
+    for shape in shapes:
+        x_np = np.random.random(shape[0])
+        x_jp = jp.array(x_np)
+        for dims in shape[1:]:
+            y_np = np.transpose(x_np, dims)
+            y_jp = jp.transpose(x_jp, dims)
+            assert y_jp.shape == y_np.shape
+
+
 if __name__ == '__main__':
     pytest.main([__file__])
