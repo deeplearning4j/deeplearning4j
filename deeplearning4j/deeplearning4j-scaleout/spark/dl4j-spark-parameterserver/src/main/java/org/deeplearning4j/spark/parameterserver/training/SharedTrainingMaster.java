@@ -66,6 +66,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMess
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
+import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronMulticastTransport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -476,8 +477,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                 }
             }
 
-            val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP
+            Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP
                     ? new AeronUdpTransport(voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration)
+                    : voidConfiguration.getTransportType() == TransportType.MULTICAST
+                    ? new AeronMulticastTransport(voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration)
                     : null;
 
             if (transport == null)

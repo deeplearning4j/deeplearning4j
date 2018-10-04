@@ -12122,6 +12122,7 @@ public static final long MAX_UINT = MAX_UINT();
 // #define ND4J_CONTEXT_PROTOTYPE_H
 
 // #include <vector>
+// #include <Environment.h>
         @Name("nd4j::graph::ContextPrototype<float>") @NoOffset public static class FloatContextPrototype extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -12295,6 +12296,7 @@ public static final long MAX_UINT = MAX_UINT();
 
 // #endif //ND4J_CONTEXT_PROTOTYPE_H
 
+
 // Parsed from graph/ResultWrapper.h
 
 /*******************************************************************************
@@ -12383,6 +12385,7 @@ public static final long MAX_UINT = MAX_UINT();
 public static final int MAX_DIMENSION = 0x7fffffff;
 public static final int MAX_NUM_THREADS =  1024;
 public static final int MAX_RANK = 32;
+public static final int MAX_SHAPEINFOLENGTH = 2*MAX_RANK+4;
 public static final int MAX_COORD = 3;
 public static final int PREALLOC_SIZE = 33554432;
 // #ifdef __CUDACC__
@@ -12624,9 +12627,19 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native ShapeInformation shapeCopy( ShapeInformation toCopy);
 
 
-    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("Nd4jLong*") LongPointer shapeBuffer);
-    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("Nd4jLong*") LongBuffer shapeBuffer);
-    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("Nd4jLong*") long[] shapeBuffer);
+    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") LongPointer shapeBuffer);
+    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") LongBuffer shapeBuffer);
+    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") long[] shapeBuffer);
+
+
+/**
+ * copy-past from java hasDefaultStridesForShape function
+ * check whether array is not permuted and has contiguous elements in memory
+ */ 
+    @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") long[] shapeInfo);
+
 
 /**
  * Compute the element wise stride
@@ -12798,17 +12811,17 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native int oneDimEqualToLength(@Cast("Nd4jLong*") LongBuffer shapeInfo);
     @Namespace("shape") public static native int oneDimEqualToLength(@Cast("Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native int isVector(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native int isVector(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native int isVector(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") long[] shapeInfo);
 
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
 
-    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") long[] shapeInfo);
 
     @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("Nd4jLong*") LongPointer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("Nd4jLong*") LongBuffer shapeInfo);
@@ -12898,9 +12911,9 @@ public static final int PREALLOC_SIZE = 33554432;
 
     @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(int rank);
 
-    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 /**
  * Returns the rank portion of
@@ -12935,13 +12948,13 @@ public static final int PREALLOC_SIZE = 33554432;
 /**
  * Compute the length of the given shape
  */
-    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 /***
  * Returns the offset portion of an information buffer
@@ -12958,9 +12971,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the ordering
  * for this shape information buffer
  */
-    @Namespace("shape") public static native char order(@Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native char order(@Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native char order(@Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") long[] buffer);
 
 /**
  * Returns the element wise stride for this information
@@ -14276,6 +14289,9 @@ public static final int PREALLOC_SIZE = 33554432;
 //        delete[] shape;
 //        return ret;
 //    }
+
+////////////////////////////////////////////////////////////////////////// 
+// copy-past from java hasDefaultStridesForShape function
 
     // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)
     // also it sorts input array of dimensions, this operation is also necessary for creating TAD object

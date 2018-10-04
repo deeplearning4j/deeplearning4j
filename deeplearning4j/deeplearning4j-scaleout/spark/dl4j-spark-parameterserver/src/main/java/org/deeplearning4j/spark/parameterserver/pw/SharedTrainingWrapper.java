@@ -54,7 +54,9 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
+import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvider;
+import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronMulticastTransport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 
 import java.util.ArrayList;
@@ -308,7 +310,11 @@ public class SharedTrainingWrapper {
                     if (!ModelParameterServer.getInstance().isInitialized()) {
                         log.info("Initializing transport [{}:{}] with root as [{}:{}]...", localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort());
                         // FIXME: implement support for Custom transport implementation
-                        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration) :  null;
+                        Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP
+                                ? new AeronUdpTransport(localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration)
+                                :  voidConfiguration.getTransportType() == TransportType.MULTICAST
+                                ? new AeronMulticastTransport(localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration)
+                                : null;
 
                         if (transport == null)
                             throw new DL4JInvalidConfigException(

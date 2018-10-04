@@ -31,4 +31,10 @@ public enum TransportType {
      * This option means you'll provide own Transport interface implementation via VoidParameterServer.init() method
      */
     CUSTOM,
+
+    /**
+     * This is hardware-specific Transport implementat.
+     * PLEASE NOTE: Public cloud providers, like AWS, Azure, GCP?
+     */
+    MULTICAST,
 }
