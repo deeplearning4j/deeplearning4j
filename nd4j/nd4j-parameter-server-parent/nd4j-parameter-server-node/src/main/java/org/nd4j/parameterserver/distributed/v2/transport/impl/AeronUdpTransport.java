@@ -189,6 +189,8 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                         } catch (InterruptedException e) {
                             // just terminate loop
                             break;
+                        } catch (Exception e) {
+                            log.error("Got exception", e);
                         }
                     }
                 }
