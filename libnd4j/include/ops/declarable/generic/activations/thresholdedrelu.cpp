@@ -24,6 +24,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
+#include <ops/declarable/helpers/activations.h>
 namespace nd4j {
 namespace ops  {
 
@@ -35,8 +36,7 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
 
     auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-// FIXME: we should have proper extra set here
-    input->applyScalar(scalar::RELU, scalar, output);
+    helpers::thresholdRelu(*input, scalar, *output);
 
     return Status::OK();
 }
@@ -49,17 +49,6 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
     
     auto dLdI = OUTPUT_VARIABLE(0);
 
-    //const T theta = block.getTArguments()->size() == 0 ? static_cast<T>(1) : T_ARG(0);
-
-    // REQUIRE_TRUE(theta >= static_cast<T>(0), 0, "THRESHOLDED_RELU_BP OP: input float argument theta must be >= 0, but got %f instead !", theta);
-/*
-    auto derivative = LAMBDA_TT(i, grO, theta) {if (i > theta) return grO; else return static_cast<T>(0); };
-
-    input->applyPairwiseLambda(dLdO, derivative, dLdI);
-*/
-
-    // FIXME: we should have proper extra set here
-    //input->applyPairwiseTransform(pairwise::RELUDerivativeE, dLdO, dLdI, nullptr);
     helpers::reluDerivative(input, dLdO, dLdI);
     return Status::OK();
 }

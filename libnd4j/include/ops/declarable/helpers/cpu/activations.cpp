@@ -212,6 +212,18 @@ namespace helpers {
         Nd4jLong expectedAlphaLen = std::accumulate(expectedShape.cbegin(), expectedShape.cend(), 1, std::multiplies<Nd4jLong>());
         return expectedAlphaLen == shapeLen;
     }
+    template <typename T>
+    static void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
+        auto routine = LAMBDA_T(_x, threshold) {
+            return _x > (T)threshold? _x: (T)0.f;
+        };
+        const_cast<NDArray&>(input).applyLambda<T>(routine, &output);
+    }
+
+    void thresholdRelu(NDArray const& input, double threshold, NDArray& output) {
+        BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template void thresholdRelu_, (NDArray const& input, double threshold, NDArray& output), FLOAT_TYPES);
 }
 }
 }
