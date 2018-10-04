@@ -80,7 +80,6 @@
         (7,OneMinus), \
         (8,Col2Im), \
         (9,Im2col),\
-        (10,CubeDerivative) , \
         (11,Reciprocal), \
         (12,Square), \
         (15,Identity), \
@@ -121,7 +120,8 @@
         (17,LogSigmoidDerivative) ,\
         (18,SpecialDerivative), \
         (19,Stabilize), \
-        (20,StabilizeFP16)
+        (20,StabilizeFP16) ,\
+        (21,CubeDerivative)
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \
