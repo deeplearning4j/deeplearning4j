@@ -351,6 +351,7 @@ public abstract  class BaseTransport  implements Transport {
         /**
          * TODO: we need better isolation here
          */
+        log.info("Got message [{}] from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
         if (message instanceof PingMessage) {
 
             val msg = new PongMessage();
