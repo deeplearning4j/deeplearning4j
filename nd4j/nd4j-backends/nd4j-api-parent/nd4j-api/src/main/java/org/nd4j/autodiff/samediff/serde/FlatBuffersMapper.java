@@ -241,10 +241,6 @@ public class FlatBuffersMapper {
         for( int i=0; i<extraParams.length; i++ ){
             extraParams[i] = fn.extraParams(i);
         }
-//        Object[] extraParams = new Object[fn.extraParamsLength()];
-//        for( int i=0; i<extraParams.length; i++ ){
-//            extraParams[i] = fn.extraParams(i);
-//        }
         long[] extraInteger = new long[fn.extraIntegerLength()];
         for( int i=0; i<extraInteger.length; i++ ){
             extraInteger[i] = fn.extraInteger(i);
@@ -294,11 +290,14 @@ public class FlatBuffersMapper {
                 throw new RuntimeException("Error creating differential function (Op) instance of type " + c);
             }
 
-            Object[] extraParamsObj = new Object[extraParams.length];
-            for( int i=0; i<extraParams.length; i++ ){
-                extraParamsObj[i] = extraParams[i];
+            if(extraParams.length > 0) {
+                //Assume that extraParams length 0 means extraArgs was originally null, NOT originally length 0
+                Object[] extraParamsObj = new Object[extraParams.length];
+                for (int i = 0; i < extraParams.length; i++) {
+                    extraParamsObj[i] = extraParams[i];
+                }
+                op.setExtraArgs(extraParamsObj);
             }
-            op.setExtraArgs(extraParamsObj);
             if(opType == Op.Type.SCALAR){
                 ScalarOp sOp = (ScalarOp)op;
                 sOp.setScalar(scalar);

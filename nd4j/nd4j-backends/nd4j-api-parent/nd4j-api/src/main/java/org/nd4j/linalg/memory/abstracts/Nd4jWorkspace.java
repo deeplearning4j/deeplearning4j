@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemoryManager;
+import org.nd4j.linalg.util.ND4JFileUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -182,7 +183,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     }
             } else if (configuration.getInitialSize() > 0) {
                 try {
-                    tempFile = File.createTempFile("workspace", "tempMMAP");
+                    tempFile = ND4JFileUtils.createTempFile("workspace", "tempMMAP");
                     tempFile.deleteOnExit();
 
                     // fill temp file with zeroes, up to initialSize bytes

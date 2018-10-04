@@ -23,6 +23,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
+import org.nd4j.base.Preconditions;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
@@ -47,6 +48,7 @@ import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
+import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.LongPointerWrapper;
@@ -243,6 +245,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
+        Preconditions.checkNotNull(op.x(), "Op.x() cannot be null: Was null for op %s", op);
         dimension = Shape.normalizeAxis(op.x().rank(), dimension);
 
 
@@ -395,68 +398,103 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
-                    ret.putScalar(0, loop.execSummaryStatsScalarDouble(dummy, op.opNum(),
-                            (DoublePointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op), ((Variance) op).isBiasCorrected()));
+                    try {
+                        ret.putScalar(0, loop.execSummaryStatsScalarDouble(dummy, op.opNum(),
+                                (DoublePointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) getPointerForExtraArgs(op), ((Variance) op).isBiasCorrected()));
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    }
                 } else {
                     Variance var = (Variance) op;
-                    loop.execSummaryStatsDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op),
-                            (DoublePointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length, var.isBiasCorrected());
+                    try {
+                        loop.execSummaryStatsDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) getPointerForExtraArgs(op),
+                                (DoublePointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (IntPointer) dimensionAddress, dimension.length, var.isBiasCorrected());
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    }
                 }
 
             }
             //pairwise reduction like similarity of two arrays
             else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                 if (op.isComplexAccumulation()) {
-                    loop.execReduce3AllDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op),
-                            (DoublePointer) op.y().data().addressPointer(),
-                            (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length,
-                            (LongPointer) tadBuffers.getFirst().addressPointer(),
-                            new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
-                            (LongPointer) yTadBuffers.getFirst().addressPointer(),
-                            new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
-                    );
+                    try {
+                        loop.execReduce3AllDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) getPointerForExtraArgs(op),
+                                (DoublePointer) op.y().data().addressPointer(),
+                                (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (IntPointer) dimensionAddress, dimension.length,
+                                (LongPointer) tadBuffers.getFirst().addressPointer(),
+                                new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
+                                (LongPointer) yTadBuffers.getFirst().addressPointer(),
+                                new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
+                        );
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    }
                 } else if (ret.isScalar()) {
-                    ret.putScalar(0, loop.execReduce3ScalarDouble(dummy, op.opNum(),
-                            (DoublePointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op),
-                            (DoublePointer) op.y().data().addressPointer(),
-                            (LongPointer) op.y().shapeInfoDataBuffer().addressPointer()));
+                    try {
+                        ret.putScalar(0, loop.execReduce3ScalarDouble(dummy, op.opNum(),
+                                (DoublePointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) getPointerForExtraArgs(op),
+                                (DoublePointer) op.y().data().addressPointer(),
+                                (LongPointer) op.y().shapeInfoDataBuffer().addressPointer()));
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    }
                 } else {
-                    loop.execReduce3Double(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op),
-                            (DoublePointer) op.y().data().addressPointer(),
-                            (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length);
+                    try {
+                        loop.execReduce3Double(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) getPointerForExtraArgs(op),
+                                (DoublePointer) op.y().data().addressPointer(),
+                                (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (IntPointer) dimensionAddress, dimension.length);
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    }
                 }
 
             } else {
                 if (ret.isScalar()) {
-                    ret.putScalar(0, loop.execReduceScalarDouble(dummy, op.opNum(),
-                            (DoublePointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op)));
+                    try {
+                        ret.putScalar(0, loop.execReduceScalarDouble(dummy, op.opNum(),
+                                (DoublePointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) getPointerForExtraArgs(op)));
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    }
                 } else {
-                    loop.execReduceDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op),
-                            (DoublePointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length);
+                    try {
+                        loop.execReduceDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) getPointerForExtraArgs(op),
+                                (DoublePointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (IntPointer) dimensionAddress, dimension.length);
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    }
                 }
 
             }
@@ -464,67 +502,102 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (op instanceof Variance) {
                 Variance variance = (Variance) op;
                 if (ret.isScalar()) {
-                    ret.putScalar(0, loop.execSummaryStatsScalarFloat(dummy, op.opNum(),
-                            (FloatPointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) getPointerForExtraArgs(op), variance.isBiasCorrected()));
+                    try {
+                        ret.putScalar(0, loop.execSummaryStatsScalarFloat(dummy, op.opNum(),
+                                (FloatPointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) getPointerForExtraArgs(op), variance.isBiasCorrected()));
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (float) failed: " + str, t);
+                    }
                 } else {
-                    loop.execSummaryStatsFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) getPointerForExtraArgs(op),
-                            (FloatPointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length, variance.isBiasCorrected());
+                    try {
+                        loop.execSummaryStatsFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) getPointerForExtraArgs(op),
+                                (FloatPointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (IntPointer) dimensionAddress, dimension.length, variance.isBiasCorrected());
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (float) failed: " + str, t);
+                    }
                 }
 
             }
 
             else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                 if (op.isComplexAccumulation()) {
-                    loop.execReduce3AllFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) getPointerForExtraArgs(op),
-                            (FloatPointer) op.y().data().addressPointer(),
-                            (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length,
-                            (LongPointer) tadBuffers.getFirst().addressPointer(),
-                            new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
-                            (LongPointer) yTadBuffers.getFirst().addressPointer(),
-                            new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
-                    );
+                    try {
+                        loop.execReduce3AllFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) getPointerForExtraArgs(op),
+                                (FloatPointer) op.y().data().addressPointer(),
+                                (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (IntPointer) dimensionAddress, dimension.length,
+                                (LongPointer) tadBuffers.getFirst().addressPointer(),
+                                new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
+                                (LongPointer) yTadBuffers.getFirst().addressPointer(),
+                                new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
+                        );
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (float) failed: " + str, t);
+                    }
                 } else if (ret.isScalar()) {
-                    ret.putScalar(0, loop.execReduce3ScalarFloat(dummy, op.opNum(),
-                            (FloatPointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) getPointerForExtraArgs(op),
-                            (FloatPointer) op.y().data().addressPointer(),
-                            (LongPointer) op.y().shapeInfoDataBuffer().addressPointer()));
+                    try {
+                        ret.putScalar(0, loop.execReduce3ScalarFloat(dummy, op.opNum(),
+                                (FloatPointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) getPointerForExtraArgs(op),
+                                (FloatPointer) op.y().data().addressPointer(),
+                                (LongPointer) op.y().shapeInfoDataBuffer().addressPointer()));
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (float) failed: " + str, t);
+                    }
                 } else {
-                    loop.execReduce3Float(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) getPointerForExtraArgs(op),
-                            (FloatPointer) op.y().data().addressPointer(),
-                            (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length);
+                    try {
+                        loop.execReduce3Float(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) getPointerForExtraArgs(op),
+                                (FloatPointer) op.y().data().addressPointer(),
+                                (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (IntPointer) dimensionAddress, dimension.length);
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (float) failed: " + str, t);
+                    }
                 }
 
             } else {
                 if (ret.isScalar()) {
-                    ret.putScalar(0, loop.execReduceScalarFloat(dummy, op.opNum(),
-                            (FloatPointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) getPointerForExtraArgs(op)));
+                    try {
+                        ret.putScalar(0, loop.execReduceScalarFloat(dummy, op.opNum(),
+                                (FloatPointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) getPointerForExtraArgs(op)));
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (float) failed: " + str, t);
+                    }
                 } else {
-                    loop.execReduceFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) getPointerForExtraArgs(op),
-                            (FloatPointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length);
+                    try {
+                        loop.execReduceFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) getPointerForExtraArgs(op),
+                                (FloatPointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (IntPointer) dimensionAddress, dimension.length);
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (float) failed: " + str, t);
+                    }
                 }
 
             }
@@ -724,33 +797,52 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if ((xEWS >= 1 && yEWS >= 1
                         && xEWS == yEWS && !op.isExecSpecial()
                         && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
-                    loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                            xEWS, (DoublePointer) op.y().data().addressPointer(),
-                            yEWS, (DoublePointer) op.z().data().addressPointer(),
-                            zEWS, (DoublePointer) getPointerForExtraArgs(op), op.n());
-
+                    try {
+                        loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                                xEWS, (DoublePointer) op.y().data().addressPointer(),
+                                yEWS, (DoublePointer) op.z().data().addressPointer(),
+                                zEWS, (DoublePointer) getPointerForExtraArgs(op), op.n());
+                    } catch (Throwable t){
+                        String str = opInfoString(op, null);
+                        throw new RuntimeException("Native TransformOp execution (double) failed: " + str, t);
+                    }
                 } else {
-                    loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) op.y().data().addressPointer(),
-                            (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op));
+                    try {
+                        loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) op.y().data().addressPointer(),
+                                (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) getPointerForExtraArgs(op));
+                    } catch (Throwable t){
+                        String str = opInfoString(op, null);
+                        throw new RuntimeException("Native TransformOp execution (double) failed: " + str, t);
+                    }
                 }
 
             } else {
                 if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && !op.isExecSpecial()
                         && op.x().ordering() == op.z().ordering()) {
-                    loop.execTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                            op.x().elementWiseStride(), (DoublePointer) op.z().data().addressPointer(),
-                            op.z().elementWiseStride(), (DoublePointer) getPointerForExtraArgs(op), op.n());
+                    try {
+                        loop.execTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                                op.x().elementWiseStride(), (DoublePointer) op.z().data().addressPointer(),
+                                op.z().elementWiseStride(), (DoublePointer) getPointerForExtraArgs(op), op.n());
+                    } catch (Throwable t){
+                        String str = opInfoString(op, null);
+                        throw new RuntimeException("Native TransformOp execution (double) failed: " + str, t);
+                    }
                 } else {
-                    loop.execTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op));
+                    try {
+                        loop.execTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (DoublePointer) getPointerForExtraArgs(op));
+                    } catch (Throwable t){
+                        String str = opInfoString(op, null);
+                        throw new RuntimeException("Native TransformOp execution (double) failed: " + str, t);
+                    }
                 }
 
             }
@@ -773,32 +865,52 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if ((xEWS >= 1 && yEWS >= 1
                         && xEWS == yEWS && !op.isExecSpecial()
                         && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
+                    try{
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
                             xEWS, (FloatPointer) op.y().data().addressPointer(),
                             yEWS, (FloatPointer) op.z().data().addressPointer(),
                             zEWS, (FloatPointer) getPointerForExtraArgs(op), op.n());
+                    } catch (Throwable t){
+                        String str = opInfoString(op, null);
+                        throw new RuntimeException("Native TransformOp execution (float) failed: " + str, t);
+                    }
 
                 } else {
-                    loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) op.y().data().addressPointer(),
-                            (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) getPointerForExtraArgs(op));
+                    try{
+                        loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) op.y().data().addressPointer(),
+                                (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) getPointerForExtraArgs(op));
+                    } catch (Throwable t){
+                        String str = opInfoString(op, null);
+                        throw new RuntimeException("Native TransformOp execution (float) failed: " + str, t);
+                    }
                 }
 
             } else {
                 if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
-                    loop.execTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                            op.x().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
-                            op.z().elementWiseStride(), (FloatPointer) getPointerForExtraArgs(op), op.n());
+                    try {
+                        loop.execTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
+                                op.x().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
+                                op.z().elementWiseStride(), (FloatPointer) getPointerForExtraArgs(op), op.n());
+                    } catch (Throwable t){
+                        String str = opInfoString(op, null);
+                        throw new RuntimeException("Native TransformOp execution (float) failed: " + str, t);
+                    }
                 } else {
-                    loop.execTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) getPointerForExtraArgs(op));
+                    try {
+                        loop.execTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (FloatPointer) getPointerForExtraArgs(op));
+                    } catch (Throwable t){
+                        String str = opInfoString(op, null);
+                        throw new RuntimeException("Native TransformOp execution (float) failed: " + str, t);
+                    }
                 }
 
             }

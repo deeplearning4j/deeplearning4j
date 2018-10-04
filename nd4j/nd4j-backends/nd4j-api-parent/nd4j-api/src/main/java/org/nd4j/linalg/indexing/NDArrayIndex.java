@@ -342,6 +342,11 @@ public class NDArrayIndex implements INDArrayIndex {
         int rank = Shape.rank(shapeInfo);
         DataBuffer shape = Shape.shapeOf(shapeInfo);
         if (intendedIndexes.length >= rank || Shape.isVector(shapeInfo) && intendedIndexes.length == 1) {
+            if(Shape.rank(shapeInfo) == 1){
+                //1D edge case, with 1 index
+                return intendedIndexes;
+            }
+
             if (Shape.isRowVectorShape(shapeInfo) && intendedIndexes.length == 1) {
                 INDArrayIndex[] ret = new INDArrayIndex[2];
                 ret[0] = NDArrayIndex.point(0);
