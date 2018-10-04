@@ -736,7 +736,8 @@ public class SameDiff {
      *                                  variable name, it will be removed from the graph (to be later re-generated) if
      *                                  its shape does not match the specified shape
      */
-    public void putOrUpdateShapeForVarName(String varName, @NonNull long[] shape, boolean clearArrayOnShapeMismatch){
+    public void putOrUpdateShapeForVarName(String varName, long[] shape, boolean clearArrayOnShapeMismatch){
+        Preconditions.checkNotNull(shape, "Cannot put null shape for variable: %s", varName);
         if(variableNameToShape.containsKey(varName)){
             updateShapeForVarName(varName, shape, clearArrayOnShapeMismatch);
         } else {
@@ -2956,7 +2957,7 @@ public class SameDiff {
      * @return SDVariable
      */
     public SDVariable scalar(String name, double value) {
-        return var(name, Nd4j.scalar(value));
+        return var(name, Nd4j.trueScalar(value));
     }
 
 
@@ -8337,17 +8338,17 @@ public class SameDiff {
 
 
     /**
-     * See {@link #lossHuber(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     * See {@link #lossHuber(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
      */
-    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossHuber(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
+    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, double delta) {
+        return lossHuber(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta);
     }
 
     /**
-     * See {@link #lossHuber(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     * See {@link #lossHuber(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
      */
-    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
-        return lossHuber(name, label, predictions, null, lossReduce);
+    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce, double delta) {
+        return lossHuber(name, label, predictions, null, lossReduce, delta);
     }
 
     /**
@@ -8359,10 +8360,10 @@ public class SameDiff {
      * @return Huber loss variable
      */
     public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                             SDVariable weights, @NonNull LossReduce lossReduce) {
+                                             SDVariable weights, @NonNull LossReduce lossReduce, double delta) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossHuber(label, predictions, weights, lossReduce);
+        SDVariable result = functionFactory.lossHuber(label, predictions, weights, lossReduce, delta);
         return updateVariableNameAndReference(result, name);
     }
 

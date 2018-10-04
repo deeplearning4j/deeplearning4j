@@ -1322,8 +1322,8 @@ public class DifferentialFunctionFactory {
         return new HingeLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
     }
 
-    public SDVariable lossHuber(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
-        return new HuberLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
+    public SDVariable lossHuber(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, double delta){
+        return new HuberLoss(sameDiff(), lossReduce, predictions, weights, label, delta).outputVariable();
     }
 
     public SDVariable lossLog(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, double epsilon){
