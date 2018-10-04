@@ -23,9 +23,7 @@
 
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
-#include <ops/ops.h>
-#include <vector>
-#include <NDArray.h>
+#include <ops/declarable/helpers/choose.h>
 
 // FIXME: !!!
 /*
@@ -103,46 +101,24 @@ T processElementCondition(int mode,T d1,T d2) {
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(choose, -1, 2, false, -1, -1) {
-            /*
+
             int mode = INT_ARG(0);
+            auto result = OUTPUT_VARIABLE(0);
+            auto numResults = OUTPUT_VARIABLE(1);
+
             if (block.width() > 1) {
                 auto arg = INPUT_VARIABLE(0);
                 auto comp = INPUT_VARIABLE(1);
-                auto result = OUTPUT_VARIABLE(0);
-                auto numResults = OUTPUT_VARIABLE(1);
-                auto  arg1 = *arg;
-                auto comp1 = *comp;
-                if(arg->isScalar() || comp->isScalar()) {
-                    if(arg->isScalar()) {
-                        T scalar = arg1(0.);
-                        processCondition(mode,comp,nullptr,result,numResults,scalar);
 
-                    }
-                    else {
-                        T scalar = comp1(0.);
-                        processCondition(mode,arg,nullptr,result,numResults,scalar);
-
-                    }
-                }
-                else {
-                    processCondition(mode,arg,comp,result,numResults,0.0f);
-
-                }
-
-
-
-                STORE_2_RESULTS(result,numResults);
+                helpers::chooseFunctorArray(arg, comp, mode, result, numResults);
 
             }//scalar case
             else {
-                T scalar = (T) T_ARG(0);
+                double scalar = T_ARG(0);
                 auto arg = INPUT_VARIABLE(0);
-                auto numResults = OUTPUT_VARIABLE(1);
-                auto result = OUTPUT_VARIABLE(0);
-                processCondition(mode,arg,nullptr,result,numResults,scalar);
-                STORE_2_RESULTS(result,numResults);
+                helpers::chooseFunctorScalar(arg, scalar, mode, result, numResults);
             }
-*/
+
 
             return Status::OK();
         }
