@@ -373,6 +373,8 @@ public abstract  class BaseTransport  implements Transport {
             if (opt.isPresent()) {
                 log.info("Processing message [{}] : [{}]", chunk.getOriginalId(), opt.get().getClass().getSimpleName());
                 this.internalProcessMessage(opt.get());
+            } else {
+                log.info("Bad luck");
             }
         } else if (message instanceof INDArrayMessage) {
             // just forward message, but ONLY if it's not a Response message, since it's probably processed separately

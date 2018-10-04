@@ -147,7 +147,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     }
 
     // this executor service han
-    protected ExecutorService messagesExecutorService = Executors.newFixedThreadPool(SENDER_THREADS + MESSAGE_THREADS + SUBSCRIPTION_THREADS + 1, new ThreadFactory() {
+    protected ExecutorService messagesExecutorService = Executors.newFixedThreadPool(SENDER_THREADS + MESSAGE_THREADS + SUBSCRIPTION_THREADS + 2, new ThreadFactory() {
         @Override
         public Thread newThread(@NotNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
@@ -249,7 +249,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         if (!remoteConnections.containsKey(message.getOriginatorId()))
             addConnection(message.getOriginatorId());
 
-        log.info("Got [{}] message from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
+        log.info("Got [{}] message from [{}]; Queue size: [{}]", message.getClass().getSimpleName(), message.getOriginatorId(), messageQueue.size());
 
         // we're just putting deserialized message into the buffer
         try {

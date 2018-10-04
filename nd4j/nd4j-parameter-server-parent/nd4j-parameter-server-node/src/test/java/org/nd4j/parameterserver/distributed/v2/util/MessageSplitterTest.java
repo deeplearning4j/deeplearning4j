@@ -74,5 +74,7 @@ public class MessageSplitterTest {
 
         assertNotNull(dec);
         assertTrue(dec.isPresent());
+        val deserialized = dec.get().getPayload();
+        assertEquals(array, deserialized);
     }
 }
