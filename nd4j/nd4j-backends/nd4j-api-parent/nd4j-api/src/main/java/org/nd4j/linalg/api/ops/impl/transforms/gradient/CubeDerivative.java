@@ -21,13 +21,14 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
 /**
  * Cube derivative, e.g. 3x^2
  */
-public class CubeDerivative extends BaseTransformOp {
+public class CubeDerivative extends BaseTransformStrictOp {
     public CubeDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -50,17 +51,13 @@ public class CubeDerivative extends BaseTransformOp {
         super(x, z, n);
     }
 
-    public CubeDerivative(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public CubeDerivative(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 50;
+        return 21;
     }
 
     @Override

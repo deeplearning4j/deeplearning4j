@@ -1274,4 +1274,19 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     public boolean isEmpty() {
         return false;
     }
+
+    @Override
+    public boolean isR() {
+        return false;
+    }
+
+    @Override
+    public boolean isZ() {
+        return false;
+    }
+
+    @Override
+    public boolean isB() {
+        return false;
+    }
 }

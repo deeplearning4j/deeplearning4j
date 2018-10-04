@@ -21,43 +21,32 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**Leaky ReLU derivative. Default alpha = 0.01. Cutoff = 0
  */
-public class LeakyReLUDerivative extends BaseTransformOp {
+public class LeakyReLUDerivative extends BaseScalarOp {
     private double alpha = 0.01;
 
-    public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double alpha) {
-        super(sameDiff, i_v1, i_v2);
-        this.alpha = alpha;
-        this.extraArgs = new Object[] {alpha};
-
-    }
-
-    public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double alpha) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-        this.alpha = alpha;
-        this.extraArgs = new Object[] {alpha};
-    }
-
     public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double alpha) {
-        super(sameDiff, i_v, inPlace);
+        super(sameDiff, i_v, alpha, inPlace);
         this.alpha = alpha;
         this.extraArgs = new Object[] {alpha};
     }
-
+/*
     public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double alpha) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        super(sameDiff, i_v, shape, alpha, inPlace, extraArgs);
         this.alpha = alpha;
         this.extraArgs = new Object[] {alpha};
     }
-
+*/
     public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double alpha) {
-        super(sameDiff, i_v, extraArgs);
+        super(sameDiff, i_v, alpha, extraArgs);
         this.alpha = alpha;
         this.extraArgs = new Object[] {alpha};
     }
@@ -65,48 +54,38 @@ public class LeakyReLUDerivative extends BaseTransformOp {
     public LeakyReLUDerivative() {}
 
     public LeakyReLUDerivative(INDArray x, INDArray z) {
-        super(x, z);
+        super(x, null, z, x.length(), 0.01);
     }
 
     public LeakyReLUDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public LeakyReLUDerivative(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+        super(x, null, z, n, 0.01);
     }
 
     public LeakyReLUDerivative(INDArray x) {
-        super(x);
+        super(x, null, x, x.length(), 0.01);
     }
 
     public LeakyReLUDerivative(INDArray x, INDArray z, double alpha) {
-        super(x, z);
+        super(x, null, z, x.length(), alpha);
         this.alpha = alpha;
         init(x, y, z, n); //Need to re-init to properly set alpha in extra args array
     }
 
     public LeakyReLUDerivative(INDArray x, INDArray z, long n, double alpha) {
-        super(x, z, n);
-        this.alpha = alpha;
-        init(x, y, z, n);
-    }
-
-    public LeakyReLUDerivative(INDArray x, INDArray y, INDArray z, long n, double alpha) {
-        super(x, y, z, n);
+        super(x, null, z, n, alpha);
         this.alpha = alpha;
         init(x, y, z, n);
     }
 
     public LeakyReLUDerivative(INDArray x, double alpha) {
-        super(x);
+        super(x, alpha);
         this.alpha = alpha;
         init(x, y, z, n);
     }
 
     @Override
     public int opNum() {
-        return 32;
+        return 36;
     }
 
     @Override

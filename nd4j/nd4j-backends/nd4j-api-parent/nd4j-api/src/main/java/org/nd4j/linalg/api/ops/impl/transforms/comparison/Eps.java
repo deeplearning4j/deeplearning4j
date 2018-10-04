@@ -43,6 +43,10 @@ public class Eps extends BaseTransformBoolOp {
     public Eps(SameDiff sameDiff) {
         super(sameDiff);
     }
+    public Eps(INDArray indArray) {
+        super(indArray);
+    }
+
 
     public Eps(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
         super(sameDiff, i_v1, i_v2, extraArgs);

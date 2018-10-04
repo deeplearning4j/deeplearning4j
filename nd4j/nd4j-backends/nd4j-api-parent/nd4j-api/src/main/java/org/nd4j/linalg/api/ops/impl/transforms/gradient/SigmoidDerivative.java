@@ -20,6 +20,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseGradientOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -101,5 +102,13 @@ public class SigmoidDerivative extends BaseGradientOp  {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataType resultType() {
+        if (x() != null)
+            return x().dataType();
+
+        return Nd4j.defaultFloatintPointType();
     }
 }

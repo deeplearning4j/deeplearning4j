@@ -720,7 +720,7 @@ public class Transforms {
     }
 
     public static INDArray eps(INDArray ndArray) {
-        return eps(ndArray, true);
+        return exec(new Eps(ndArray));
     }
 
     /**
@@ -766,18 +766,6 @@ public class Transforms {
      */
     public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
         return exec(dup ? new OldGreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(first.shape()), first.length()) : new OldGreaterThanOrEqual(first, ndArray, first, first.length()));
-
-    }
-
-
-    /**
-     * Eps function
-     *
-     * @param ndArray
-     * @return
-     */
-    public static INDArray eps(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Eps(ndArray.dup()) : new Eps(ndArray));
 
     }
 

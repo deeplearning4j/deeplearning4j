@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -35,7 +36,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ELUDerivative extends BaseTransformOp {
+public class ELUDerivative extends BaseTransformStrictOp {
     public ELUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -60,21 +61,13 @@ public class ELUDerivative extends BaseTransformOp {
         super(x, z, n);
     }
 
-    public ELUDerivative(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public ELUDerivative(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
-    }
-
     public ELUDerivative(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 22;
+        return 3;
     }
 
     @Override

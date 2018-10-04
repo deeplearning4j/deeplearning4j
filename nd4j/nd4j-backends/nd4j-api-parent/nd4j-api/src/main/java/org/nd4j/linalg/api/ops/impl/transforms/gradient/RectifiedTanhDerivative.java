@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
@@ -32,7 +33,7 @@ import java.util.List;
  * @author raver119@gmail.com
  * @author AlexDBlack
  */
-public class RectifiedTanhDerivative extends BaseTransformOp {
+public class RectifiedTanhDerivative extends BaseTransformStrictOp {
     public RectifiedTanhDerivative(SameDiff sameDiff, SDVariable in, boolean inPlace) {
         super(sameDiff, in, inPlace);
     }
@@ -47,17 +48,13 @@ public class RectifiedTanhDerivative extends BaseTransformOp {
         super(x, z, n);
     }
 
-    public RectifiedTanhDerivative(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public RectifiedTanhDerivative(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 62;
+        return 12;
     }
 
     @Override
