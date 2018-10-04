@@ -30,8 +30,15 @@ def reshape(arr, *args):
 
 
 @op
-def transpose(arr):
-    return arr.transpose()
+def transpose(arr, *axis):
+    if len(axis) == 0:
+        return arr.transpose()
+    else:
+        if len(axis) == 1:
+            axis = axis[0]
+        assert set(axis) in [set(list(range(len(axis)))),
+                         set(list(range(len(arr.shape()))))]
+        return arr.permute(*axis)
 
 
 @op
