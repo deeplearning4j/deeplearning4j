@@ -41,7 +41,7 @@ namespace nd4j {
             b = broadcast;
         }
 
-        static BroadcastBoolOpsTuple CUSTOM(nd4j::scalar::BoolOps scalar, nd4j::pairwise::BoolOps pairwise, nd4j::broadcast::BoolOps broadcast);
+        static BroadcastBoolOpsTuple custom(nd4j::scalar::BoolOps scalar, nd4j::pairwise::BoolOps pairwise, nd4j::broadcast::BoolOps broadcast);
     };
 }
 

@@ -20,7 +20,7 @@
 #include <ops/BroadcastBoolOpsTuple.h>
 
 namespace nd4j {
-    BroadcastBoolOpsTuple BroadcastBoolOpsTuple::CUSTOM(nd4j::scalar::BoolOps scalar, nd4j::pairwise::BoolOps pairwise, nd4j::broadcast::BoolOps broadcast) {
+    BroadcastBoolOpsTuple BroadcastBoolOpsTuple::custom(nd4j::scalar::BoolOps scalar, nd4j::pairwise::BoolOps pairwise, nd4j::broadcast::BoolOps broadcast) {
         BroadcastBoolOpsTuple t(scalar, pairwise, broadcast);
         return t;
     }

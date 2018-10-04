@@ -2284,30 +2284,27 @@ NDArray NDArray::transp() const {
         // looping through _buffer goes automatically by means of getSubArrayIndex applying
         const int ews = target.ews();
         const int targetLen = target.lengthOf();
-        auto targetBuff = target.getBuffer();
-        auto xType = this->dataType();
         if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(Nd4jLong i=0;  i<targetLen; ++i) {
                 auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
         else if(target.ordering() == 'c' && ews > 1) {
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(int i=0;  i<targetLen; ++i) {
                 auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, i * ews, this->_buffer, yOffset), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i*ews, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
-        else {
-            
+        else {            
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) 
             for(int i=0;  i<targetLen; ++i) {
                 
                 auto xOffset = target.getOffset(i);
                 auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, xOffset, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
     }
@@ -2323,21 +2320,19 @@ NDArray NDArray::transp() const {
         // fill newBuff, loop through all elements of newBuff
         // looping through _buffer goes automatically by means of getSubArrayIndex applying
         const auto ews = target.ews();
-        const auto targetLen = target.lengthOf();
-        auto targetBuff = target.getBuffer();
-        auto xType = this->dataType();
+        const auto targetLen = target.lengthOf();        
         if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for (int i = 0; i < targetLen; ++i) {
                 auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
         else if(target.ordering() == 'c' && ews > 1) {
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(int i=0;  i<targetLen; ++i) {
                 auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, i * ews, this->_buffer, yOffset), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i*ews, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
         else {
@@ -2347,7 +2342,7 @@ NDArray NDArray::transp() const {
 
                 auto xOffset = target.getOffset(i);
                 auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, templatedAssign, (targetBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, xOffset, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
     }
@@ -2686,17 +2681,17 @@ NDArray NDArray::transp() const {
                 delete[] newShapeInfo;
         }
 
+        NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_workspace);
         // check whether max array has to be tiled
         if(!max->isSameShape(target)) {
             // evaluate repeating dimensions for tile operation
             std::vector<Nd4jLong> repeatMax(max->rankOf());
             for(int i = 1; i <= max->rankOf(); ++i)
                 repeatMax[i-1] = (target->_shapeInfo[i] / max->_shapeInfo[i]);
-            max->tile(repeatMax, *target);
+            max->tile(repeatMax, *pTarget);            
         }
         else
-            target->assign(max);
-
+            pTarget->assign(max);
 
         // check whether min array has to be tiled
         std::vector<Nd4jLong> repeatMin(min->rankOf());
@@ -2710,10 +2705,11 @@ NDArray NDArray::transp() const {
         if(product != 1 )
             pMin = new NDArray(min->tile(repeatMin));
 
+
         std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
 
         if(max == this) {
-            target->applyBroadcast(op.b, sameDims, pMin, nullptr, extraArgs);
+            pTarget->applyBroadcast(op.b, sameDims, pMin, target, extraArgs);
         }
         else {
             auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
@@ -2721,13 +2717,20 @@ NDArray NDArray::transp() const {
 
 #pragma omp parallel for schedule(guided)
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-                auto targetSubArr = (*target)(i, dimsToExclude);
-                pMin->applyPairwiseTransform(op.p, &targetSubArr, &targetSubArr, extraArgs);
+                NDArray targetSubArr = (*target)(i, dimsToExclude);
+                if (pTarget == target)                
+                    pMin->applyPairwiseTransform(op.p, &targetSubArr, &targetSubArr, extraArgs);
+                else {
+                    NDArray pTargetSubArr = (*pTarget)(i, dimsToExclude);
+                    pMin->applyPairwiseTransform(op.p, &pTargetSubArr, &targetSubArr, extraArgs);
+                }
             }
         }
 
         if(pMin != min)
             delete pMin;
+        if(pTarget != target)
+            delete pTarget;
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -2767,16 +2770,17 @@ NDArray NDArray::transp() const {
                 delete[] newShapeInfo;
         }
 
+        NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_workspace);
         // check whether max array has to be tiled
         if(!max->isSameShape(target)) {
             // evaluate repeating dimensions for tile operation
             std::vector<Nd4jLong> repeatMax(max->rankOf());
             for(int i = 1; i <= max->rankOf(); ++i)
                 repeatMax[i-1] = (target->_shapeInfo[i] / max->_shapeInfo[i]);
-            max->tile(repeatMax, *target);
+            max->tile(repeatMax, *pTarget);
         }
         else
-            target->assign(max);
+            pTarget->assign(max);
 
 
         // check whether min array has to be tiled
@@ -2794,7 +2798,7 @@ NDArray NDArray::transp() const {
         std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
 
         if(max == this) {
-            target->applyBroadcast(op.b, sameDims, pMin, nullptr, extraArgs);
+            pTarget->applyBroadcast(op.b, sameDims, pMin, target, extraArgs);
         }
         else {
             auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
@@ -2803,12 +2807,19 @@ NDArray NDArray::transp() const {
 #pragma omp parallel for schedule(guided)
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 auto targetSubArr = (*target)(i, dimsToExclude);
-                pMin->applyPairwiseTransform(op.p, &targetSubArr, &targetSubArr, extraArgs);
+                if(pTarget == target)                
+                    pMin->applyPairwiseTransform(op.p, &targetSubArr, &targetSubArr, extraArgs);
+                else {
+                    auto pTargetSubArr = (*pTarget)(i, dimsToExclude);
+                    pMin->applyPairwiseTransform(op.p, &pTargetSubArr, &targetSubArr, extraArgs);
+                }
             }
         }
 
         if(pMin != min)
             delete pMin;
+         if(pTarget != target)
+            delete pTarget;
     }
 
 //////////////////////////////////////////////////////////////////////////

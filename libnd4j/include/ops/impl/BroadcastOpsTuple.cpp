@@ -20,28 +20,28 @@
 #include <ops/BroadcastOpsTuple.h>
 
 namespace nd4j {
-    BroadcastOpsTuple BroadcastOpsTuple::CUSTOM(nd4j::scalar::Ops scalar, nd4j::pairwise::Ops pairwise, nd4j::broadcast::Ops broadcast) {
+    BroadcastOpsTuple BroadcastOpsTuple::custom(nd4j::scalar::Ops scalar, nd4j::pairwise::Ops pairwise, nd4j::broadcast::Ops broadcast) {
         BroadcastOpsTuple t(scalar, pairwise, broadcast);
         return t;
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Add() {
-        return CUSTOM(nd4j::scalar::Add, nd4j::pairwise::Add, nd4j::broadcast::Add);
+        return custom(nd4j::scalar::Add, nd4j::pairwise::Add, nd4j::broadcast::Add);
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Assign() {
-        return CUSTOM(nd4j::scalar::Copy, nd4j::pairwise::Copy, nd4j::broadcast::Copy);
+        return custom(nd4j::scalar::Copy, nd4j::pairwise::Copy, nd4j::broadcast::Copy);
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Divide() {
-        return CUSTOM(nd4j::scalar::Divide, nd4j::pairwise::Divide, nd4j::broadcast::Divide);
+        return custom(nd4j::scalar::Divide, nd4j::pairwise::Divide, nd4j::broadcast::Divide);
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Multiply() {
-        return CUSTOM(nd4j::scalar::Multiply, nd4j::pairwise::Multiply, nd4j::broadcast::Multiply);
+        return custom(nd4j::scalar::Multiply, nd4j::pairwise::Multiply, nd4j::broadcast::Multiply);
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Subtract() {
-        return CUSTOM(nd4j::scalar::Subtract, nd4j::pairwise::Subtract, nd4j::broadcast::Subtract);
+        return custom(nd4j::scalar::Subtract, nd4j::pairwise::Subtract, nd4j::broadcast::Subtract);
     }
 }
