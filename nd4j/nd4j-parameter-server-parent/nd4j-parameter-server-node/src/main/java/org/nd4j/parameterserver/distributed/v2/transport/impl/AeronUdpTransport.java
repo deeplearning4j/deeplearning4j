@@ -90,7 +90,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,25); //32MB
 
     // this is intermediate buffer for incoming messages
-    protected BlockingQueue<VoidMessage> messageQueue = new LinkedTransferQueue<>();
+    protected BlockingQueue<VoidMessage> aeronMessageQueue = new LinkedTransferQueue<>();
 
     // this is intermediate buffer for messages enqueued for propagation
     protected BlockingQueue<INDArrayMessage> propagationQueue = new LinkedBlockingQueue<>(32);
@@ -184,7 +184,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                     while (true) {
                         try {
                             // basically fetching messages from queue one by one, and processing them
-                            val msg = messageQueue.take();
+                            val msg = aeronMessageQueue.take();
                             processMessage(msg);
                         } catch (InterruptedException e) {
                             // just terminate loop
@@ -255,7 +255,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
         // we're just putting deserialized message into the buffer
         try {
-            messageQueue.put(message);
+            aeronMessageQueue.put(message);
         } catch (InterruptedException e) {
             // :(
             throw new RuntimeException(e);

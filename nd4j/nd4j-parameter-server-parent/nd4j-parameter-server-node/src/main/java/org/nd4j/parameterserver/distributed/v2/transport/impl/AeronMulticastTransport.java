@@ -98,7 +98,7 @@ public class AeronMulticastTransport extends AeronUdpTransport {
         multicastSubscription = aeron.addSubscription(multicastChannelUri, voidConfiguration.getStreamId() + 1);
 
         // dedicated reader thread for multicast thread
-        executorService.execute(new Runnable() {
+        messagesExecutorService.execute(new Runnable() {
             @Override
             public void run() {
                 val idler = new SleepingIdleStrategy(5000);
