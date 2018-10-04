@@ -201,7 +201,7 @@ def broadcast_like(y, x):
     ny = len(ys)
     if nx > ny:
         diff = nx - ny
-        ys += [1] * diff
+        ys = ([1] * diff) + ys
         y = y.reshape(ys)
         ny = nx
     elif ny > nx:
@@ -237,12 +237,12 @@ def broadcast(x, y):
     ny = len(ys)
     if nx > ny:
         diff = nx - ny
-        ys += [1] * diff
+        ys = ([1] * diff) + ys
         y = y.reshape(*ys)
         ny = nx
     elif ny > nx:
         diff = ny - nx
-        xs += [1] * diff
+        xs = ([1] * diff) + xs
         x = x.reshape(*xs)
         nx = ny
     xt = []
