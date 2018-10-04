@@ -362,8 +362,11 @@ public abstract  class BaseTransport  implements Transport {
 
             // do nothing
         }  else if (message instanceof VoidChunk) {
+            val chunk = (VoidChunk) message;
+            log.info("Got chunk [{}/{}] for [{}]...", chunk.getChunkId(), chunk.getNumberOfChunks(), chunk.getOriginalId());
+
             // we merge chunks to get full INDArrayMessage
-            Optional<INDArrayMessage> opt = splitter.merge((VoidChunk) message, voidConfiguration.getChunksBufferSize());
+            Optional<INDArrayMessage> opt = splitter.merge(chunk, voidConfiguration.getChunksBufferSize());
 
             // if this chunk was the last message, we'll forward it to parameter server for actual use
             if (opt.isPresent())

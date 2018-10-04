@@ -37,6 +37,7 @@ import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
@@ -48,6 +49,7 @@ import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -400,7 +402,9 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
         if (message instanceof INDArrayMessage) {
             try {
-                val splits = splitter.split(message, voidConfiguration.getMaxChunkSize());
+                val splits = new ArrayList<VoidChunk>(splitter.split(message, voidConfiguration.getMaxChunkSize()));
+
+                log.info("Splitting message [{}] into [{}] chunks...", splits.get(0).getOriginalId(), splits.size());
 
                 for(val m:splits) {
                     sendMessage(m, id);
