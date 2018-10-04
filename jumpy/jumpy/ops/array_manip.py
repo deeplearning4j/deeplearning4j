@@ -91,7 +91,7 @@ def permute(arr, *axis):
 
 @op
 def expand_dims(arr, axis):
-    return arr.expandDims(axis)
+    return Nd4j.expandDims(arr, axis)
 
 
 @op
@@ -105,7 +105,7 @@ def squeeze(arr, axis):
 
 
 @op
-def concatenate(arrs, axis):
+def concatenate(arrs, axis=-1):
     return Nd4j.concat(axis, *arrs)
 
 
