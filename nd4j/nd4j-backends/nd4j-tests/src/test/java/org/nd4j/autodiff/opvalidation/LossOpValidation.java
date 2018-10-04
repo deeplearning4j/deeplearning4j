@@ -77,8 +77,11 @@ public class LossOpValidation extends BaseOpValidation {
                         break;
                     case "cosine":
                         //Cosine _similarity_: dot(a,b)/(l2Norm(a) * l2Norm(b))
-                        //Cosine distance = acos(cosine similarity) / pi
-                        expOut = Nd4j.getExecutioner().exec(new CosineDistance(predictionsArr, labelsArr), 1);
+                        //Cosine distance = 1 - cosineSimilarity
+                        //NOTE: both we and TF assume the inputs are normalized
+                        predictionsArr.diviColumnVector(predictionsArr.norm2(1));
+                        labelsArr.diviColumnVector(labelsArr.norm2(1));
+                        expOut = predictionsArr.mul(labelsArr).sum(1).rsub(1.0);
                         loss = sd.lossCosineDistance("loss", labels, predictions, reduction, 1);
                         break;
                     case "hinge":
@@ -97,7 +100,7 @@ public class LossOpValidation extends BaseOpValidation {
                         INDArray lte = absDiff.lte(delta);
                         INDArray gt = absDiff.gt(delta);
                         expOut = diff.mul(diff).mul(0.5).muli(lte);
-                        expOut.addi(absDiff.mul(delta).subi(-0.5 * delta * delta).mul(gt));
+                        expOut.addi(absDiff.mul(delta).subi(0.5 * delta * delta).mul(gt));
                         loss = sd.lossHuber("loss", labels, predictions, reduction, delta);
                         break;
                     case "log":

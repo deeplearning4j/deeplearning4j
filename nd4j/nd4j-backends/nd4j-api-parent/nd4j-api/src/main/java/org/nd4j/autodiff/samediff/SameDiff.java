@@ -8258,6 +8258,8 @@ public class SameDiff {
     }
 
     /**
+     * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )
+     *
      * @param name        Name of the operation
      * @param label       Label array
      * @param predictions Predictions array
@@ -8290,6 +8292,13 @@ public class SameDiff {
     }
 
     /**
+     *
+     * Cosine distance loss: {@code 1 - cosineSimilarity(x,y)} or {@code 1 - sum_i label[i] * prediction[i]}, which is
+     * equivalent to cosine distance when both the predictions and labels are normalized.<br>
+     * <b>Note</b>: This loss function assumes that both the predictions and labels are normalized to have unit l2 norm.
+     * If this is not the case, you should normalize them first by dividing by {@link #norm2(String, SDVariable, boolean, int...)}
+     * along the cosine distance dimension (with keepDims=true).
+     *
      * @param name        Name of the operation
      * @param label       Label array
      * @param predictions Predictions array
@@ -8321,8 +8330,12 @@ public class SameDiff {
     }
 
     /**
+     * Hinge loss: a loss function used for training classifiers.
+     * Implements {@code L = max(0, 1 - t * predictions)} where t is the label values after internally converting to {-1,1}
+     * from the user specified {0,1}. Note that Labels should be provided with values {0,1}.
+     *
      * @param name        Name of the operation
-     * @param label       Label array
+     * @param label       Label array. Each value should be 0.0 or 1.0 (internally -1 to 1 is used)
      * @param predictions Predictions array
      * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
      * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
@@ -8352,11 +8365,21 @@ public class SameDiff {
     }
 
     /**
+     * Huber loss function, used for robust regression. It is similar both squared error loss and absolute difference loss,
+     * though is less sensitive to outliers than squared error.<br>
+     * Huber loss implements:
+     * <pre>
+     *{@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta
+     *  L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise
+     *     }
+     * </pre>
+     *
      * @param name        Name of the operation
      * @param label       Label array
      * @param predictions Predictions array
      * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
      * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @param delta       Loss function delta value
      * @return Huber loss variable
      */
     public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
@@ -8383,7 +8406,7 @@ public class SameDiff {
     }
 
     /**
-     * Binary log loss, or cross entropy loss:
+     * Log loss, i.e., binary cross entropy loss, usually used for binary multi-label classification. Implements:
      * {@code -1/numExamples * sum_i (labels[i] * log(predictions[i] + epsilon) + (1-labels[i]) * log(1-predictions[i] + epsilon))}
      *
      * @param name        Name of the operation
@@ -8391,7 +8414,7 @@ public class SameDiff {
      * @param predictions Predictions array
      * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
      * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @return Loss variable
+     * @return Log loss variable
      */
     public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                              SDVariable weights, @NonNull LossReduce lossReduce, double epsilon) {
@@ -8416,6 +8439,8 @@ public class SameDiff {
     }
 
     /**
+     * Mean pairwise squared error
+     *
      * @param name        Name of the operation
      * @param label       Label array
      * @param predictions Predictions array
@@ -8446,6 +8471,9 @@ public class SameDiff {
     }
 
     /**
+     * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.
+     * When averaged (using {@link LossReduce#MEAN_BY_WEIGHT} or {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT} (the default))
+     * this is the mean squared error loss function.
      * @param name        Name of the operation
      * @param label       Label array
      * @param predictions Predictions array
@@ -8476,8 +8504,13 @@ public class SameDiff {
     }
 
     /**
-     * Sigmoid cross entropy:
-     *
+     * Sigmoid cross entropy: applies the sigmoid activation function on the input logits (input "pre-sigmoid preductions")
+     * and implements the binary cross entropy loss function. This implementation is numerically more stable than using
+     * standard (but separate) sigmoid activation function and log loss (binary cross entropy) loss function.<br>
+     * Implements:
+     * {@code -1/numExamples * sum_i (labels[i] * log(sigmoid(logits[i])) + (1-labels[i]) * log(1-sigmoid(logits[i])))}
+     * though this is done in a mathematically equivalent but more numerical stable form.<br>
+     * <br>
      * When label smoothing is > 0, the following label smoothing is used:<br>
      * <pre>
      * {@code numClasses = labels.size(1);
@@ -8514,6 +8547,8 @@ public class SameDiff {
     }
 
     /**
+     * Applies the softmax activation function to the input, then implement multi-class cross entropy:<br>
+     * {@code -sum_classes label[i] * log(p[c])} where {@code p = softmax(logits)}<br>
      * If {@link LossReduce#NONE} is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;
      * otherwise, the output is a scalar.<br>
      * <p>
@@ -8523,19 +8558,19 @@ public class SameDiff {
      * oneHotLabel = (1.0 - labelSmoothing) * oneHotLabels + labelSmoothing/numClasses}
      * </pre>
      *
-     * @param name           Name of the operation
-     * @param oneHotLabels    Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut]
-     * @param predictions    Predictions array
-     * @param weights        Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce     Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @param labelSmoothing Label smoothing value. Default value: 0
+     * @param name             Name of the operation
+     * @param oneHotLabels     Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut])
+     * @param logitPreductions Predictions array (pre-softmax)
+     * @param weights          Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce       Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @param labelSmoothing   Label smoothing value. Default value: 0
      * @return Loss variable
      */
-    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable oneHotLabels, @NonNull SDVariable predictions,
+    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable oneHotLabels, @NonNull SDVariable logitPreductions,
                                              SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossSoftmaxCrossEntropy(oneHotLabels, predictions, weights, lossReduce, labelSmoothing);
+        SDVariable result = functionFactory.lossSoftmaxCrossEntropy(oneHotLabels, logitPreductions, weights, lossReduce, labelSmoothing);
         return updateVariableNameAndReference(result, name);
     }
 
