@@ -18,7 +18,9 @@ package org.nd4j.tensorflow.conversion;
 
 import com.github.os72.protobuf351.util.JsonFormat;
 import org.apache.commons.io.IOUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -98,5 +100,22 @@ public class GraphRunnerTest {
     }
 
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
+    @Test
+    public void testGraphRunnerSavedModel() throws Exception {
+        File f = testDir.newFolder();
+        new ClassPathResource("/tf_saved_models/saved_model_counter/00000123/").copyDirectory(f);
+        try(GraphRunner graphRunner = new GraphRunner(f.getAbsolutePath(),"serve","incr_counter_by")) {
+            INDArray delta = Nd4j.create(new float[] { 42 }, new long[0]);
+            Map<String,INDArray> inputs = new LinkedHashMap<>();
+            inputs.put("delta",delta);
+            Map<String,INDArray> outputs = graphRunner.run(inputs);
+            assertEquals(1, outputs.size());
+            INDArray output = outputs.get("output");
+            assertEquals(42.0, output.getDouble(0), 0.0);
+        }
+    }
 
 }

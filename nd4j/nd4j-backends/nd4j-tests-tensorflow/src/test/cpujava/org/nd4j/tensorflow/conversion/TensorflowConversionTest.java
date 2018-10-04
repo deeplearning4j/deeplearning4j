@@ -70,7 +70,8 @@ public class TensorflowConversionTest {
         TensorflowConversion tensorflowConversion =TensorflowConversion.getInstance();
         byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
         //byte[] content = Files.readAllBytes(Paths.get(new File("/home/agibsonccc/code/dl4j-test-resources/src/main/resources/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").toURI()));
-        tensorflow.TF_Graph initializedGraphForNd4jDevices = tensorflowConversion.loadGraph(content);
+        tensorflow.TF_Status status = tensorflow.TF_Status.newStatus();
+        tensorflow.TF_Graph initializedGraphForNd4jDevices = tensorflowConversion.loadGraph(content, status);
         assertNotNull(initializedGraphForNd4jDevices);
 
         String deviceName = tensorflowConversion.defaultDeviceForThread();
