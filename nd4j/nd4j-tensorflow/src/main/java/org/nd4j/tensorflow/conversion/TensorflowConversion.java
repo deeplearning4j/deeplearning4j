@@ -16,6 +16,7 @@
 
 package org.nd4j.tensorflow.conversion;
 
+import com.github.os72.protobuf351.InvalidProtocolBufferException;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -25,12 +26,16 @@ import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.tensorflow.framework.MetaGraphDef;
+import org.tensorflow.framework.SignatureDef;
+import org.tensorflow.framework.TensorInfo;
 
 import java.io.IOException;
 import java.lang.Thread;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Map;
 
 import static org.bytedeco.javacpp.tensorflow.*;
 
@@ -283,5 +288,37 @@ public class TensorflowConversion {
         TF_DeleteStatus(status);
 
         return graphC;
+    }
+
+    public TF_Session loadSavedModel(String savedModelPath, TF_SessionOptions options, TF_Buffer runOptions,
+            String tag, String key, TF_Graph graph, Map<String, String> inputsMap, Map<String, String> outputsMap) {
+        TF_Buffer metaGraph = TF_Buffer.newBuffer();
+        TF_Status status = TF_Status.newStatus();
+        TF_Session session = TF_LoadSessionFromSavedModel(options, runOptions, new BytePointer(savedModelPath),
+                new BytePointer(tag), 1, graph, metaGraph, status);
+        if (TF_GetCode(status) != TF_OK) {
+            throw new RuntimeException("ERROR: Unable to import model " + TF_Message(status).getString());
+        }
+
+        MetaGraphDef metaGraphDef;
+        try {
+            metaGraphDef = MetaGraphDef.parseFrom(metaGraph.data().capacity(metaGraph.length()).asByteBuffer());
+        } catch (InvalidProtocolBufferException ex) {
+            throw new RuntimeException("ERROR: Unable to import model " + ex);
+        }
+        Map<String, SignatureDef> signatureDefMap = metaGraphDef.getSignatureDefMap();
+        SignatureDef signatureDef = signatureDefMap.get(key);
+
+        Map<String, TensorInfo> inputs = signatureDef.getInputsMap();
+        for (Map.Entry<String, TensorInfo> e : inputs.entrySet()) {
+            inputsMap.put(e.getKey(), e.getValue().getName());
+        }
+
+        Map<String, TensorInfo> outputs = signatureDef.getOutputsMap();
+        for (Map.Entry<String, TensorInfo> e : outputs.entrySet()) {
+            outputsMap.put(e.getKey(), e.getValue().getName());
+        }
+
+        return session;
     }
 }

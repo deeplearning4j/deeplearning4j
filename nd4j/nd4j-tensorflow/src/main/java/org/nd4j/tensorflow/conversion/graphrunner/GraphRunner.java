@@ -56,6 +56,8 @@ public class GraphRunner implements Closeable {
     //a status object used
     private tensorflow.TF_Status status;
     @Getter
+    private List<String> inputNames,outputNames;
+    @Getter
     private List<String> inputOrder,outputOrder;
     @Getter
     private org.tensorflow.framework.ConfigProto protoBufConfigProto;
@@ -177,7 +179,40 @@ public class GraphRunner implements Closeable {
     }
 
 
+    /**
+     * Initialize with the SavedModel to use
+     * @param savedModelPath path of a SavedModel directory saved by tensorflow
+     * @param modelTag the tag of the model to load, typically "serve"
+     * @param signatureKey the signature of the desired inputs and outputs
+     */
+    public GraphRunner(String modelPath, String modelTag, String signatureKey) {
+        this(modelPath,modelTag,signatureKey,getAlignedWithNd4j());
+    }
 
+    /**
+     * Initialize with the SavedModel to use
+     * @param savedModelPath path of a SavedModel directory saved by tensorflow
+     * @param modelTag the tag of the model to load, typically "serve"
+     * @param signatureKey the signature of the desired inputs and outputs
+     * @param sessionOptionsConfiguration the session options to use
+     *                                    for running sessions
+     */
+    public GraphRunner(String savedModelPath, String modelTag, String signatureKey, ConfigProto sessionOptionsConfiguration) {
+        try {
+            this.protoBufConfigProto = sessionOptionsConfiguration;
+            initOptionsIfNeeded();
+            Map inputsMap = new LinkedHashMap<String, String>();
+            Map outputsMap = new LinkedHashMap<String, String>();
+            this.graph = TF_NewGraph();
+            this.session = conversion.loadSavedModel(savedModelPath, options, null, modelTag, signatureKey, graph, inputsMap, outputsMap);
+            inputNames = new ArrayList<String>(inputsMap.keySet());
+            outputNames = new ArrayList<String>(outputsMap.keySet());
+            inputOrder = new ArrayList<String>(inputsMap.values());
+            outputOrder = new ArrayList<String>(outputsMap.values());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unable to parse protobuf",e);
+        }
+    }
 
 
 
@@ -218,10 +253,11 @@ public class GraphRunner implements Closeable {
 
         TF_Tensor[] inputTensors = new TF_Tensor[inputOrder.size()];
         for(int i = 0; i < inputOrder.size(); i++) {
-            tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, inputOrder.get(i));
+            String[] name = inputOrder.get(i).split(":");
+            tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
             opsByName.put(inputOrder.get(i),inputOp);
-            inputOut.position(i).oper(inputOp).index(0);
-            TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(inputOrder.get(i)));
+            inputOut.position(i).oper(inputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
+            TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(inputNames != null ? inputNames.get(i) : inputOrder.get(i)));
             inputTensors[i] = tf_tensor;
         }
 
@@ -232,9 +268,10 @@ public class GraphRunner implements Closeable {
         TF_Output outputOut = new tensorflow.TF_Output(outputOrder.size());
         //only setup the output ops
         for(int i = 0; i < outputOrder.size(); i++) {
-            tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, outputOrder.get(i));
+            String[] name = outputOrder.get(i).split(":");
+            tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, name[0]);
             opsByName.put(outputOrder.get(i),outputOp);
-            outputOut.position(i).oper(outputOp).position(i).index(0);
+            outputOut.position(i).oper(outputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
         }
 
         //reset the position of the pointer for execution
@@ -267,7 +304,7 @@ public class GraphRunner implements Closeable {
         } else {
             for(int i = 0; i < outputOrder.size(); i++) {
                 INDArray to = conversion.ndArrayFromTensor(new TF_Tensor(outputTensorsPointer.get(i)));
-                outputArrays.put(outputOrder.get(i),to);
+                outputArrays.put(outputNames != null ? outputNames.get(i) : outputOrder.get(i),to);
             }
 
         }
@@ -276,6 +313,23 @@ public class GraphRunner implements Closeable {
     }
 
 
+    private void initOptionsIfNeeded() {
+        //setup the status object to be used for all tensorflow calls
+        if(status == null) {
+            status = TF_NewStatus();
+        }
+
+        if (options == null) {
+            options = TF_NewSessionOptions();
+            if(protoBufConfigProto != null) {
+                BytePointer bytePointer = new BytePointer(protoBufConfigProto.toByteArray());
+                TF_SetConfig(options,bytePointer,bytePointer.getStringBytes().length,status);
+                if (TF_GetCode(status) != TF_OK) {
+                    throw new RuntimeException("ERROR: Unable to set value configuration:" + TF_Message(status).getString());
+                }
+            }
+        }
+    }
 
     private void initSessionAndStatusIfNeeded( org.tensorflow.framework.GraphDef graphDef1 ) {
         outputOrder = new ArrayList<>();
@@ -294,26 +348,10 @@ public class GraphRunner implements Closeable {
             }
         }
 
-
-
-        //setup the status object to be used for all tensorflow calls
-        if(status == null) {
-            status = TF_NewStatus();
-        }
-
-
         //setup and configure the session, factoring
         //in the ConfigObject as needed
         if(session == null) {
-            options = TF_NewSessionOptions();
-            if(protoBufConfigProto != null) {
-                BytePointer bytePointer = new BytePointer(protoBufConfigProto.toByteArray());
-                TF_SetConfig(options,bytePointer,bytePointer.getStringBytes().length,status);
-                if (TF_GetCode(status) != TF_OK) {
-                    throw new RuntimeException("ERROR: Unable to set value configuration:" + TF_Message(status).getString());
-                }
-            }
-
+            initOptionsIfNeeded();
             session = tensorflow.TF_NewSession(graph, options, status);
             if (TF_GetCode(status) != TF_OK) {
                 throw new RuntimeException("ERROR: Unable to open session " + TF_Message(status).getString());
