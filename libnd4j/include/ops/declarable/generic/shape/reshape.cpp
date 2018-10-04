@@ -225,7 +225,7 @@ namespace nd4j {
                 Nd4jLong *newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shapeNew.size()), Nd4jLong);
 
-                shape::shapeBuffer(shapeNew.size(), block.dataType(), shapeNew.data(), newShape);
+                shape::shapeBuffer(shapeNew.size(), ArrayOptions::dataType(inp), shapeNew.data(), newShape);
 
                 return SHAPELIST(newShape);
             }
