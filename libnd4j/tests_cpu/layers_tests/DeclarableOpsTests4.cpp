@@ -393,9 +393,9 @@ TEST_F(DeclarableOpsTests4, Test_Split_1) {
     auto sub1 = x.subarray(list1);
     auto sub2 = x.subarray(list2);
 
-    sub0->assign(0.0f);
-    sub1->assign(1.0f);
-    sub2->assign(2.0f);
+    sub0->assign(0.0);
+    sub1->assign(1.0);
+    sub2->assign(2.0);
 
 
     nd4j::ops::split_v op;
@@ -410,12 +410,18 @@ TEST_F(DeclarableOpsTests4, Test_Split_1) {
     auto z2 = result->at(2);
 
     ASSERT_TRUE(sub0->isSameShape(z0));
-    ASSERT_TRUE(sub0->equalsTo(z0));
-
     ASSERT_TRUE(sub1->isSameShape(z1));
-    ASSERT_TRUE(sub1->equalsTo(z1));
-
     ASSERT_TRUE(sub2->isSameShape(z2));
+
+    sub0->printShapeInfo("Expect SPLIT0");
+    z0->printShapeInfo("Result SPLIT0");
+    sub1->printShapeInfo("Expect SPLIT1");
+    z1->printShapeInfo("Result SPLIT1");
+    sub2->printShapeInfo("Expect SPLIT2");
+    z2->printShapeInfo("Result SPLIT2");
+
+    ASSERT_TRUE(sub0->equalsTo(z0));
+    ASSERT_TRUE(sub1->equalsTo(z1));
     ASSERT_TRUE(sub2->equalsTo(z2));
 
     delete sub0;
@@ -2171,7 +2177,7 @@ TEST_F(DeclarableOpsTests4, tri_test1) {
     const int rows = 3;
     const int cols = 5;
     
-    auto expected = NDArrayFactory::create<double>('c', {rows, cols}, {1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0});    
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0});
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols});
@@ -2192,7 +2198,7 @@ TEST_F(DeclarableOpsTests4, tri_test2) {
     const int cols = 5;
     const int diag = 2;
     
-    auto expected = NDArrayFactory::create<double>('c', {rows, cols}, {1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1});    
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1});
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
@@ -2213,7 +2219,7 @@ TEST_F(DeclarableOpsTests4, tri_test3) {
     const int cols = 5;
     const int diag = -1;
     
-    auto expected = NDArrayFactory::create<double>('c', {rows, cols}, {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0});
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0});
    
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
@@ -2234,7 +2240,7 @@ TEST_F(DeclarableOpsTests4, tri_test4) {
     const int cols = 5;
     const int diag = -2;
     
-    auto expected = NDArrayFactory::create<double>('c', {rows, cols}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0});    
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0});
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
@@ -2253,7 +2259,7 @@ TEST_F(DeclarableOpsTests4, tri_test5) {
   
     const int rows = 5;    
     
-    auto expected = NDArrayFactory::create<double>('c', {rows, rows}, {1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1});    
+    auto expected = NDArrayFactory::create<float>('c', {rows, rows}, {1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1});
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows});
@@ -2274,7 +2280,7 @@ TEST_F(DeclarableOpsTests4, tri_test6) {
     const int cols = 5;
     const int diag = -20;
     
-    auto expected = NDArrayFactory::create<double>('c', {rows, cols}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});    
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
@@ -2295,7 +2301,7 @@ TEST_F(DeclarableOpsTests4, tri_test7) {
     const int cols = 5;
     const int diag = 20;
     
-    auto expected = NDArrayFactory::create<double>('c', {rows, cols}, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});    
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
