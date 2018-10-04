@@ -64,6 +64,16 @@ def op(f):
         for i, arg in enumerate(args):
             if _is_jumpy(arg):
                 args[i] = arg.array
+            elif type(arg) is list:
+                for j, a in enumerate(arg):
+                    if _is_jumpy(a):
+                        arg[j] = a.array
+            elif type(arg) is tuple:
+                arg = list(arg)
+                for j, a in enumerate(arg):
+                    if _is_jumpy(a):
+                        arg[j] = a.array
+                args[i] = tuple(arg)    
         for k in kwargs:
             v = kwargs[k]
             if _is_jumpy(v):
