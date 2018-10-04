@@ -35,8 +35,23 @@ def test_reshape():
     for shape1, shape2 in shapes:
         x_np = np.random.random(shape1)
         y_np = np.reshape(x_np, shape2)
+
         x_jp = jp.array(x_np)
         y_jp = jp.reshape(x_jp, shape2)
+
+        assert y_jp.shape == y_np.shape
+
+
+def test_transpose():
+    shapes = [(2, 3), (3, 1), (2, 3, 4)]
+    for shape in shapes:
+        x_np = np.random.random(shape)
+        x_jp = jp.array(x_np)
+
+        y_np = np.transpose(x_np)
+        y_jp = jp.transpose(x_jp)
+
+        y_jp = y_jp.numpy()
 
         assert y_jp.shape == y_np.shape
 
