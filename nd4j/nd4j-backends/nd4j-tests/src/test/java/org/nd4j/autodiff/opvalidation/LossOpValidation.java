@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.loss.LossFunctions;
 import org.nd4j.autodiff.loss.LossInfo;
+import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
@@ -44,66 +45,98 @@ public class LossOpValidation extends BaseOpValidation {
 
     @Test
     public void testLossSimple2d() {
-        OpValidationSuite.ignoreFailing();
 
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
 
-        for (String fn : new String[]{"mse", "l1", "l2", "mcxent"}) {
+        for (String fn : new String[]{"absdiff"}){  //, "cosine", "hinge", "huber", "log", "mpwse", "mse", "sigmoidxent", "softmaxxent"}) {
 
-            for (LossFunctions.Reduction reduction : new LossFunctions.Reduction[]{
-                    LossFunctions.Reduction.MEAN_BY_COUNT, LossFunctions.Reduction.MEAN_BY_WEIGHT, LossFunctions.Reduction.SUM}) {
+            for (LossReduce reduction : LossReduce.values()) {
 
                 SameDiff sd = SameDiff.create();
 
                 int nOut = 4;
                 int minibatch = 10;
-                SDVariable input = sd.var("in", new int[]{-1, nOut});
+                SDVariable predictions = sd.var("in", new int[]{-1, nOut});
                 SDVariable labels = sd.var("labels", new int[]{-1, nOut});
 
-                INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
+                INDArray predictionsArr = Nd4j.randn(minibatch, nOut).muli(100);
                 INDArray labelsArr = Nd4j.randn(minibatch, nOut).muli(100);
 
-                LossInfo lossInfo;
-                INDArray expOut;
+                INDArray expOut = null;
+                SDVariable loss = null;
                 switch (fn) {
+                    case "absdiff":
+                        switch (reduction){
+                            case NONE:
+                                expOut = Transforms.abs(predictionsArr.sub(labelsArr));
+                                break;
+                            case SUM:
+                                expOut = Transforms.abs(predictionsArr.sub(labelsArr)).sum().reshape();
+                                break;
+                            case MEAN_BY_WEIGHT:
+                            case MEAN_BY_NONZERO_WEIGHT_COUNT:
+                                //No weights in this test
+                                expOut = Transforms.abs(predictionsArr.sub(labelsArr)).mean().reshape();
+                                break;
+                        }
+                        loss = sd.lossAbsoluteDifference("loss", labels, predictions);
+                        break;
+                    case "cosine":
+
+                        break;
+                    case "hinge":
+
+                        break;
+                    case "huber":
+
+                        break;
+                    case "log":
+                        break;
                     case "mse":
-                        lossInfo = LossFunctions.mse("out", input, labels, null, reduction, 1);
-                        expOut = inputArr.sub(labelsArr);
-                        expOut.muli(expOut);
-                        expOut = expOut.mean(Integer.MAX_VALUE);
                         break;
-                    case "l1":
-                        lossInfo = LossFunctions.l1("out", input, labels, null, reduction, 1);
-                        //L1 = sum abs error
-                        expOut = Transforms.abs(inputArr.sub(labelsArr)).sum(1);
-                        expOut = expOut.mean(Integer.MAX_VALUE);
+                    case "sigmoidxent":
                         break;
-                    case "l2":
-                        lossInfo = LossFunctions.l2("out", input, labels, null, reduction, 1);
-                        //L2 = sum squared error
-                        expOut = Transforms.pow(inputArr.sub(labelsArr), 2.0).sum(1).mean(Integer.MAX_VALUE);
+                    case "softmaxxent":
                         break;
-                    case "mcxent":
-                        lossInfo = LossFunctions.mcxent("out", input, labels, null, reduction, 1);
-                        //mcxent = sum label * log(prob)
-                        expOut = labelsArr.mul(Transforms.log(inputArr)).sum(1).mean(Integer.MAX_VALUE);
-                        break;
+
+//                    case "mse":
+//                        lossInfo = LossFunctions.mse("out", input, labels, null, reduction, 1);
+//                        expOut = inputArr.sub(labelsArr);
+//                        expOut.muli(expOut);
+//                        expOut = expOut.mean(Integer.MAX_VALUE);
+//                        break;
+//                    case "l1":
+//                        lossInfo = LossFunctions.l1("out", input, labels, null, reduction, 1);
+//                        //L1 = sum abs error
+//                        expOut = Transforms.abs(inputArr.sub(labelsArr)).sum(1);
+//                        expOut = expOut.mean(Integer.MAX_VALUE);
+//                        break;
+//                    case "l2":
+//                        lossInfo = LossFunctions.l2("out", input, labels, null, reduction, 1);
+//                        //L2 = sum squared error
+//                        expOut = Transforms.pow(inputArr.sub(labelsArr), 2.0).sum(1).mean(Integer.MAX_VALUE);
+//                        break;
+//                    case "mcxent":
+//                        lossInfo = LossFunctions.mcxent("out", input, labels, null, reduction, 1);
+//                        //mcxent = sum label * log(prob)
+//                        expOut = labelsArr.mul(Transforms.log(inputArr)).sum(1).mean(Integer.MAX_VALUE);
+//                        break;
                     default:
                         throw new RuntimeException();
                 }
 
 
-                String msg = "test: " + lossInfo.getLossName() + ", reduction=" + reduction;
+                String msg = "test: " + fn + ", reduction=" + reduction;
                 log.info("*** Starting test: " + msg);
 
 
-                sd.associateArrayWithVariable(inputArr, input);
+                sd.associateArrayWithVariable(predictionsArr, predictions);
                 sd.associateArrayWithVariable(labelsArr, labels);
 
                 TestCase tc = new TestCase(sd)
-                        .expectedOutput("out", expOut);
+                        .expectedOutput("loss", expOut);
 
                 String error = OpValidation.validate(tc);
                 if(error != null){
