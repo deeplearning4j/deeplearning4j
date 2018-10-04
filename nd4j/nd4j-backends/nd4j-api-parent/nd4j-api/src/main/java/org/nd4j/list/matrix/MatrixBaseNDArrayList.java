@@ -46,7 +46,8 @@ public abstract  class MatrixBaseNDArrayList<X extends BaseNDArrayList> extends 
     public INDArray array() {
         List<INDArray> retList = new ArrayList<>(list.size());
         for(X x : list) {
-            retList.add(x.array());
+            INDArray arr = x.array();
+            retList.add(arr.reshape(1, arr.length()));
         }
 
         return Nd4j.concat(0,retList.toArray(new INDArray[retList.size()]));
