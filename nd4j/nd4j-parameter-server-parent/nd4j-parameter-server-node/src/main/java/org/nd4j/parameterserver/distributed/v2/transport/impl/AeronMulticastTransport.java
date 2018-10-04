@@ -84,12 +84,16 @@ public class AeronMulticastTransport extends AeronUdpTransport {
         // here we create master's multicast stream
         val multicastChannelUri = getMulticastChannelUri();
 
+        log.info("Creating multicast publication [{}]", multicastChannelUri);
+
         multicastPublication = aeron.addPublication(multicastChannelUri, voidConfiguration.getStreamId() + 1);
     }
 
     protected void createMulticastSubscription() {
         // here we connect to master's multicast stream
         val multicastChannelUri = getMulticastChannelUri();
+
+        log.info("Creating multicast subscription [{}]", multicastChannelUri);
 
         multicastSubscription = aeron.addSubscription(multicastChannelUri, voidConfiguration.getStreamId() + 1);
 
@@ -114,13 +118,14 @@ public class AeronMulticastTransport extends AeronUdpTransport {
     }
 
     protected void sendMulticastMessage(VoidMessage message) {
-
+        log.info("Trying to send multicast message [{}]", message.getClass().getSimpleName());
+        val buf = message.asUnsafeBuffer();
         TransmissionStatus status = TransmissionStatus.UNKNOWN;
         while (status != TransmissionStatus.OK) {
             try {
                 multicastLock.lock();
 
-                status = TransmissionStatus.fromLong(multicastPublication.offer(message.asUnsafeBuffer()));
+                status = TransmissionStatus.fromLong(multicastPublication.offer(buf));
             } finally {
                 multicastLock.unlock();
             }
@@ -129,6 +134,8 @@ public class AeronMulticastTransport extends AeronUdpTransport {
             if (status != TransmissionStatus.OK)
                 LockSupport.parkNanos(50000);
         }
+
+        log.info("Successfully send multicast message [{}]", message.getClass().getSimpleName());
     }
 
     @Override
