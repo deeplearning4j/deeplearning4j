@@ -116,6 +116,7 @@ import java.util.Scanner;
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/",
                                                                 "/usr/lib/powerpc64le-linux-gnu/"}),
+                @Platform(value = {"linux-arm", "linux-ppc"}, preload = {"gomp@.1", "openblas", "openblas_nolapack", "libnd4jcpu"}),
                 @Platform(value = "macosx", preload = {"gcc_s@.1", "gomp@.1", "stdc++@.6", "iomp5", "mklml", "mkldnn@.0"},
                                 preloadpath = {"/usr/local/lib/gcc/8/", "/usr/local/lib/gcc/7/", "/usr/local/lib/gcc/6/", "/usr/local/lib/gcc/5/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6",
