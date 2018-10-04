@@ -46,7 +46,7 @@ namespace nd4j {
                 outShapeInfo[i + 1] = shape::sizeAt(in, i);
             outShapeInfo[outRank] = lastDimension;
 
-            shape::updateStrides(outShapeInfo, shape::order(in));
+            ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 
             return SHAPELIST(outShapeInfo);
         }
