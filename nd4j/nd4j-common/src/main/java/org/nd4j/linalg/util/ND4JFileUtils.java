@@ -58,7 +58,7 @@ public class ND4JFileUtils {
     public static File getTempDir(){
         String p = System.getProperty(ND4JSystemProperties.ND4J_TEMP_DIR_PROPERTY);
         if(p == null || p.isEmpty()){
-            return new File(System.getProperty("java,io.tmpdir"));
+            return new File(System.getProperty("java.io.tmpdir"));
         } else {
             return new File(p);
         }
