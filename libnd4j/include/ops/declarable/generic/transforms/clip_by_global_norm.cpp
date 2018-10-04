@@ -55,7 +55,7 @@ DECLARE_SHAPE_FN(clip_by_global_norm) {
         shapeList->push_back(newShape);
     }
 
-    shapeList->push_back(ShapeBuilders::createScalarShapeInfo(block.workspace()));
+    shapeList->push_back(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace()));
     return shapeList;
 }
 
