@@ -34,7 +34,7 @@ BROADCASTABLE_OP_IMPL(tf_atan2, 0, 0) {
     auto z = OUTPUT_VARIABLE(0);
 
     // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Atan2<T>>(y, x, z);
-    x->applyTrueBroadcast(nd4j::BroadcastOpsTuple::CUSTOM(scalar::Atan2, pairwise::Atan2, broadcast::Atan2), y, z, true);
+    x->applyTrueBroadcast(nd4j::BroadcastOpsTuple::custom(scalar::Atan2, pairwise::Atan2, broadcast::Atan2), y, z, true);
     
     // if (tZ == nullptr)
     //     return ND4J_STATUS_KERNEL_FAILURE;

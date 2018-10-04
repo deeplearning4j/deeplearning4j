@@ -41,7 +41,7 @@ namespace nd4j {
             b = broadcast;
         }
 
-        static BroadcastOpsTuple CUSTOM(nd4j::scalar::Ops scalar, nd4j::pairwise::Ops pairwise, nd4j::broadcast::Ops broadcast);
+        static BroadcastOpsTuple custom(nd4j::scalar::Ops scalar, nd4j::pairwise::Ops pairwise, nd4j::broadcast::Ops broadcast);
 
         static BroadcastOpsTuple Add();
         static BroadcastOpsTuple Assign();

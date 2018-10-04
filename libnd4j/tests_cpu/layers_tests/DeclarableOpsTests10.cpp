@@ -569,3 +569,20 @@ TEST_F(DeclarableOpsTests10, split_test5) {
     delete results;
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, bool_broadcast_test_1) {
+    
+    NDArray arr1('c', {2,2,1}, {1, 2, 3, 4}, nd4j::DataType::INT32);
+    NDArray arr2('c', {  2,2}, {0, 1, 0, 4}, nd4j::DataType::INT32);
+
+    NDArray expd('c', {2,2,2}, {0,1,0,0, 0,0,0,1}, nd4j::DataType::BOOL);
+    
+    NDArray result('c', {2,2,2}, nd4j::DataType::BOOL);
+    
+    arr1.applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple::custom(scalar::EqualTo, pairwise::EqualTo, broadcast::EqualTo), &arr2, &result, true, nullptr);
+    // result.printIndexedBuffer();
+    // expd.printIndexedBuffer();
+
+    ASSERT_TRUE(expd.isSameShape(result));
+    ASSERT_TRUE(expd.equalsTo(result));
+}
