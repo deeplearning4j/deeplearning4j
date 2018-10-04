@@ -94,7 +94,8 @@ DECLARE_SHAPE_FN(triu_bp) {
     ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);    
     memcpy(outShapeInfo, gradOShapeInfo, (1 + rank) * sizeof(Nd4jLong));                     // copy rank and dimensions values only    
 
-    shape::updateStrides(outShapeInfo, shape::order(inputShape->at(0)));
+    auto in = inputShape->at(0);
+    ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 
     return SHAPELIST(outShapeInfo);    
 }

@@ -1981,8 +1981,8 @@ TEST_F(DeclarableOpsTests1, TestReductionShape1) {
     auto shapes = testop.calculateOutputShape(inshape, *block);
 
     ASSERT_EQ(1,shapes->size());
-    ASSERT_EQ(2,shapes->at(0)[0]);
-    ASSERT_EQ(1,shapes->at(0)[1]);
+    ASSERT_EQ(0,shapes->at(0)[0]); // scalar shape has rank 0
+    ASSERT_EQ(8192,shapes->at(0)[1]);
     ASSERT_EQ(1,shapes->at(0)[2]);
 
     delete[] inP;
@@ -2015,9 +2015,8 @@ TEST_F(DeclarableOpsTests1, TestReductionShape2) {
 
     auto inshapes = new ShapeList(input->getShapeInfo());
     auto shapes = testop.calculateOutputShape(inshapes, *block);
-
     ASSERT_EQ(1,shapes->size());
-    ASSERT_EQ(2,shapes->at(0)[0]);
+    ASSERT_EQ(1,shapes->at(0)[0]);
     ASSERT_EQ(4,shapes->at(0)[1]);
     ASSERT_EQ(1,shapes->at(0)[2]);
 
@@ -2924,7 +2923,8 @@ TEST_F(DeclarableOpsTests1, sru_bp) {
     auto gradW    = resultsBP->at(1);
     auto gradB    = resultsBP->at(2); 
     auto gradInit = resultsBP->at(3);
-
+    expGradX.printIndexedBuffer("Exp GRAD");
+    gradX->printIndexedBuffer("Res GRAD");
     ASSERT_TRUE(expGradX.equalsTo(gradX,1e-4)); 
     ASSERT_TRUE(expGradW.equalsTo(gradW));
     ASSERT_TRUE(expGradB.equalsTo(gradB));

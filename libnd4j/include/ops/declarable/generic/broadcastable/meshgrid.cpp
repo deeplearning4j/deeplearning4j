@@ -62,12 +62,13 @@ DECLARE_SHAPE_FN(meshgrid) {
     ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
     outShapeInfo[0] = rank;    
     for(int i = 1; i <= rank; ++i)
-        outShapeInfo[i] = (int)shape::length(inputShape->at(i - 1));
+        outShapeInfo[i] = (Nd4jLong)shape::length(inputShape->at(i - 1));
     
     if(swapFirst2Dims && rank > 1)
         math::nd4j_swap<Nd4jLong>(outShapeInfo[1], outShapeInfo[2]);
-    
-    shape::updateStrides(outShapeInfo, shape::order(inputShape->at(0)));
+
+    auto in = inputShape->at(0);
+    ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 
     auto shapes = SHAPELIST();
     shapes->push_back(outShapeInfo);

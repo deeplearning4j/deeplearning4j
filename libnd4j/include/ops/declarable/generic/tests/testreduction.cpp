@@ -28,7 +28,7 @@ namespace nd4j {
         REDUCTION_OP_IMPL(testreduction, 1, 1, false, 0, -1) {
             auto z = OUTPUT_VARIABLE(0);
 
-            STORE_RESULT(*z);
+//            STORE_RESULT(*z);
             return Status::OK();
         }
     }
