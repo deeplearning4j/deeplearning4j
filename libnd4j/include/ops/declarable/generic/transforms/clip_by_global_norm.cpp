@@ -22,42 +22,23 @@
 #if NOT_EXCLUDED(OP_clip_by_global_norm)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace nd4j {
 namespace ops  {
 
 CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
 
-    // FIXME: lambdas
-    /*
-    const T clipNorm = T_ARG(0);
-    T globalNorm = 0; //sqrt(sum([l2norm(t)**2 for t in t_list]))
-
-    for (int e = 0; e < block.width(); e++) {
-        auto input = INPUT_VARIABLE(e);
-        auto l2norm = input->reduceNumber(reduce::Norm2);
-        globalNorm += l2norm * l2norm;
+    std::vector<NDArray*> inputs(block.width());
+    std::vector<NDArray*> outputs(block.width() + 1);
+    for (size_t i = 0; i < inputs.size(); ++i) {
+        inputs[i] = INPUT_VARIABLE(i);
+        outputs[i] = OUTPUT_VARIABLE(i);
     }
-
-    globalNorm = nd4j::math::nd4j_sqrt(globalNorm);
-    OUTPUT_VARIABLE(block.width())->p(0, globalNorm);
-    const T factor = clipNorm / globalNorm;
-
-    for (int e = 0; e < block.width(); e++) {
-        // all-reduce
-        auto input = INPUT_VARIABLE(e);
-        auto output = OUTPUT_VARIABLE(e);
-
-        if (globalNorm <= clipNorm) {
-            output->assign(input);
-        } 
-        else {
-            
-            auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
-            input->applyLambda(lambda, output);
-        }
-    }
-    */
+    outputs[inputs.size()] = OUTPUT_VARIABLE(inputs.size());
+    double clipNorm = T_ARG(0);
+    bool isInplace = block.isInplace();
+    helpers::clipByGlobalNorm(inputs, clipNorm, block.workspace(), outputs, isInplace);
 
     return Status::OK();
 }

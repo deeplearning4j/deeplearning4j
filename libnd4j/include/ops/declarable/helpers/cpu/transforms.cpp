@@ -770,6 +770,41 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
 
     BUILD_SINGLE_TEMPLATE(template void clipByNorm_, (NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
 
+    template <typename T>
+    static void clipByGlobalNorm_(std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
+        NDArray globalNorm = NDArrayFactory::create<T>(0, workspace); //sqrt(sum([l2norm(t)**2 for t in t_list]))
+
+        for (auto input: inputs) {
+            auto l2norm = input->reduceNumber(reduce::Norm2);
+            globalNorm += l2norm * l2norm;
+        }
+
+        globalNorm.applyTransform(transform::Sqrt, nullptr, nullptr);// = nd4j::math::nd4j_sqrt(globalNorm);
+        outputs[inputs.size()]->p(0, globalNorm);
+
+        const T factor = clipNorm / globalNorm.e<T>(0);
+
+        for (size_t e = 0; e < inputs.size(); e++) {
+            // all-reduce
+            auto input = inputs[e];
+            auto output = outputs[e];
+
+            if (globalNorm.e<double>(0) <= clipNorm) {
+                output->assign(input);
+            }
+            else {
+
+                auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
+                input->applyLambda<T>(lambda, output);
+            }
+        }
+    }
+    void clipByGlobalNorm(std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
+        BUILD_SINGLE_SELECTOR(outputs[0]->dataType(), clipByGlobalNorm_, (inputs, clipNorm, workspace, outputs, isInplace), FLOAT_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_, (std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace), FLOAT_TYPES);
+
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
