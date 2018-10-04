@@ -72,5 +72,90 @@ def test_permute():
             assert y_jp.shape == y_np.shape
 
 
+def test_expand_dims():
+    shapes = [(2, 3), (2, 1), (2, 3, 4)]
+    for shape in shapes:
+        x_np = np.random.random(shape)
+        x_jp = jp.array(x_np)
+        for axis in range(len(shape) + 1):
+            y_np = np.expand_dims(x_np, axis)
+            y_jp = jp.expand_dims(x_jp, axis)
+            assert y_jp.shape == y_np.shape
+
+
+def test_squeeze():
+    shapes = [[2, 3, 1, 4], [2, 1, 3]]
+    for shape in shapes:
+        x_np = np.random.random(shape)
+        x_jp = jp.array(x_np)
+        axis = shape.index(1)
+        y_np = np.squeeze(x_np, axis)
+        y_jp = jp.squeeze(x_jp, axis)
+        assert y_jp.shape == y_np.shape 
+
+
+def test_concatenate():
+    shapes = [
+        [(2, 3, 4), (3, 3, 4), 0],
+        [(2, 3, 5), (2, 4, 5), 1],
+        [(3, 2, 4), (3, 2, 2), 2]
+    ]
+
+    for shape in shapes:
+        x1_np = np.random.random(shape[0])
+        x2_np = np.random.random(shape[1])
+
+        x1_jp = jp.array(x1_np)
+        x2_jp = jp.array(x2_np)
+
+        axis = shape[2]
+
+        y_np = np.concatenate([x1_np, x2_np], axis)
+        y_jp = jp.concatenate([x1_jp, x2_jp], axis)
+
+        assert y_jp.shape == y_np.shape
+
+
+def test_stack():
+    shapes = [
+        (2, 3), (2, 3, 4)
+    ]
+
+    for shape in shapes:
+        x1_np = np.random.random(shape)
+        x2_np = np.random.random(shape)
+
+        x1_jp = jp.array(x1_np)
+        x2_jp = jp.array(x2_np)
+
+        for axis in range(len(shape)):
+            y_np = np.stack([x1_np, x2_np], axis)
+            y_jp = jp.stack([x1_jp, x2_jp], axis)
+
+            assert y_jp.shape == y_np.shape 
+
+
+def test_tile():
+    shapes = [
+        (2, 3), (2, 3, 4)
+    ]
+
+    repeats = [
+        [3, 2], [3, 2, 2]
+    ]
+
+    for i in range(len(shapes)):
+        shape = shapes[i]
+        rep = repeats[i]
+
+        x_np = np.random.random(shape)
+        x_jp = jp.array(x_np)
+
+        y_np = np.tile(x_np, rep)
+        y_jp = jp.tile(x_jp, rep)
+
+        assert y_jp.shape == y_np.shape
+
+
 if __name__ == '__main__':
     pytest.main([__file__])
