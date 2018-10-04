@@ -8383,6 +8383,9 @@ public class SameDiff {
     }
 
     /**
+     * Binary log loss, or cross entropy loss:
+     * {@code -1/numExamples * sum_i (labels[i] * log(predictions[i] + epsilon) + (1-labels[i]) * log(1-predictions[i] + epsilon))}
+     *
      * @param name        Name of the operation
      * @param label       Label array
      * @param predictions Predictions array
@@ -8473,18 +8476,26 @@ public class SameDiff {
     }
 
     /**
+     * Sigmoid cross entropy:
+     *
+     * When label smoothing is > 0, the following label smoothing is used:<br>
+     * <pre>
+     * {@code numClasses = labels.size(1);
+     * label = (1.0 - labelSmoothing) * label + 0.5 * labelSmoothing}
+     * </pre>
+     *
      * @param name        Name of the operation
      * @param label       Label array
-     * @param predictions Predictions array
+     * @param predictionLogits Predictions array
      * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
      * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
      * @return Loss variable
      */
-    public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+    public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictionLogits,
                                              SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossSigmoidCrossEntropy(label, predictions, weights, lossReduce, labelSmoothing);
+        SDVariable result = functionFactory.lossSigmoidCrossEntropy(label, predictionLogits, weights, lossReduce, labelSmoothing);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8503,19 +8514,28 @@ public class SameDiff {
     }
 
     /**
+     * If {@link LossReduce#NONE} is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;
+     * otherwise, the output is a scalar.<br>
+     * <p>
+     * When label smoothing is > 0, the following label smoothing is used:<br>
+     * <pre>
+     * {@code numClasses = labels.size(1);
+     * oneHotLabel = (1.0 - labelSmoothing) * oneHotLabels + labelSmoothing/numClasses}
+     * </pre>
+     *
      * @param name           Name of the operation
-     * @param label          Label array
+     * @param oneHotLabels    Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut]
      * @param predictions    Predictions array
      * @param weights        Weights array. May be null. If null, a weight of 1.0 is used
      * @param lossReduce     Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
      * @param labelSmoothing Label smoothing value. Default value: 0
      * @return Loss variable
      */
-    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable oneHotLabels, @NonNull SDVariable predictions,
                                              SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossSoftmaxCrossEntropy(label, predictions, weights, lossReduce, labelSmoothing);
+        SDVariable result = functionFactory.lossSoftmaxCrossEntropy(oneHotLabels, predictions, weights, lossReduce, labelSmoothing);
         return updateVariableNameAndReference(result, name);
     }
 

@@ -54,6 +54,8 @@ public class LossOpValidation extends BaseOpValidation {
         for (String fn : new String[]{"absdiff", "cosine", "hinge", "huber", "log", "mse",
                 "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth" /* "mpwse" */}) {
 
+//        for (String fn : new String[]{"sigmoidxent_smooth"}) {
+
             for (LossReduce reduction : LossReduce.values()) {
 
                 SameDiff sd = SameDiff.create();
@@ -100,15 +102,13 @@ public class LossOpValidation extends BaseOpValidation {
                         break;
                     case "log":
                         double eps = 1e-7;
-                        //Loss loss aka negative log likelihood: For singe example, -sum_outputs label_i * log(p_i)
-                        //Labels are random one-hot
-                        labelsArr.assign(0);
-                        for( int i=0; i<labelsArr.size(0); i++ ){
-                            labelsArr.putScalar(i, i%labelsArr.size(1), 1.0);
-                        }
+                        //Loss loss aka binary cross entropy loss
+                        //Labels are random bernoulli
+                        Nd4j.getExecutioner().exec(new BernoulliDistribution(labelsArr, 0.5));
                         predictionsArr = Nd4j.rand(predictionsArr.shape());
                         INDArray logP = Transforms.log(predictionsArr.add(eps), true);
-                        expOut = labelsArr.mul(logP);
+                        INDArray log1p = Transforms.log(predictionsArr.rsub(1.0).add(eps), true);
+                        expOut = labelsArr.mul(logP).addi(labelsArr.rsub(1).mul(log1p)).negi();
                         loss = sd.lossLog("loss", labels, predictions, null, reduction, eps);
                         break;
                     case "mse":
@@ -121,16 +121,15 @@ public class LossOpValidation extends BaseOpValidation {
                     case "sigmoidxent_smooth":  //Sigmoid xent with label smoothing
                     case "sigmoidxent":
                         //-1/numExamples * (label * log(p) + (1-label) * log(1-p))
-                        INDArray sigmoidPredictions = Transforms.sigmoid(predictionsArr, true);
                         Nd4j.getExecutioner().exec(new BernoulliDistribution(labelsArr, 0.5));
-                        double lblSmoothing = fn.equals("sigmoidxent_smooth") ? 0.1 : 0.0;
+                        double lblSmoothing = fn.equals("sigmoidxent_smooth") ? 0.3 : 0.0;
+                        INDArray labelArrCopy = labelsArr.dup();
                         if(fn.equals("sigmoidxent_smooth")){
-                            labelsArr.muli(1.0 - lblSmoothing).addi(0.5 * lblSmoothing);
+                            labelArrCopy.muli(1.0 - lblSmoothing).addi(0.5 * lblSmoothing);
                         }
-                        INDArray oneSubLabel = labelsArr.rsub(1.0);
-                        INDArray logPr = Transforms.log(sigmoidPredictions);
-                        INDArray log1SubPr = Transforms.log(sigmoidPredictions.rsub(1.0));
-                        expOut = labelsArr.mul(logPr).addi(oneSubLabel.mul(log1SubPr)).negi();
+
+                        INDArray onePlusExpNegX = Transforms.log(Transforms.exp(predictionsArr.neg()).add(1.0));
+                        expOut = predictionsArr.mul(labelArrCopy.rsub(1.0)).add(onePlusExpNegX);
 
                         loss = sd.lossSigmoidCrossEntropy("loss", labels, predictions, null, reduction, lblSmoothing);
                         break;
@@ -138,18 +137,19 @@ public class LossOpValidation extends BaseOpValidation {
                     case "softmaxxent_smooth":
                         //Same as negative log likelihood, but apply softmax on predictions first: For singe example, -sum_outputs label_i * log(p_i)
                         //Labels are random one-hot
+                        //Note that output is shape [minibatch] for NONE reduction, or scalar otherwise
                         INDArray softmaxPredictions = Transforms.softmax(predictionsArr, true);
                         labelsArr.assign(0);
                         for( int i=0; i<labelsArr.size(0); i++ ){
                             labelsArr.putScalar(i, i%labelsArr.size(1), 1.0);
                         }
                         double lblSmooth2 = fn.equals("softmaxxent_smooth") ? 0.1 : 0.0;
+                        INDArray labelsArrCopy = labelsArr.dup();
                         if(fn.equals("softmaxxent_smooth")){
-                            labelsArr.muli(1.0 - lblSmooth2).addi(0.5 * lblSmooth2);
+                            labelsArrCopy.muli(1.0 - lblSmooth2).addi(lblSmooth2  / labelsArrCopy.size(1));
                         }
-                        double eps2 = 1e-5;
-                        INDArray logP2 = Transforms.log(softmaxPredictions.add(eps2), true);
-                        expOut = labelsArr.mul(logP2).negi();
+                        INDArray logP2 = Transforms.log(softmaxPredictions, true);
+                        expOut = labelsArrCopy.mul(logP2).negi().sum(1);
                         loss = sd.lossSoftmaxCrossEntropy("loss", labels, predictions, null, reduction, lblSmooth2);
                         break;
                     case "mpwse":
