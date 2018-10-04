@@ -274,6 +274,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                     tc.expectedOutput("loss", inputArr.var());
                     break;
                 case 6:
+                    inputArr = Nd4j.rand(minibatch, nOut).addi(0.5);
                     loss = sd.prod("loss", input);
                     tc.expectedOutput("loss", inputArr.prod());
                     name = "prod";
@@ -536,7 +537,6 @@ public class ReductionOpValidation extends BaseOpValidation {
                 SameDiff sd = SameDiff.create();
                 sd.setLogExecution(false);
 
-
                 SDVariable in = sd.var("in", new int[]{-1, d1, d2});
                 SDVariable label = sd.var("label", outShape);
                 SDVariable second = in.mul(2);
@@ -574,7 +574,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                     case 5:
                         //Variance is a bit finniky for gradient checks, due to huge score/output...
                         maxRelError = 1e-3;
-                        minAbsError = 1;        //Most gradients ane in the range 1k to >100k
+                        minAbsError = 1;        //Most gradients are in the range 1k to >100k
                         inputArr.divi(10);
                         labelArr.divi(100);
                         BooleanIndexing.replaceWhere(inputArr, Nd4j.rand(inputArr.shape()).muli(100).addi(100), Conditions.absLessThan(1.0));
@@ -582,16 +582,20 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "variance";
                         break;
                     case 6:
-                        inputArr.divi(1000);
-                        labelArr.divi(1000);
+                        inputArr.assign(Nd4j.rand(new int[]{d0, d1, d2}).addi(0.5));
+                        labelArr.assign(Nd4j.rand(outShape).addi(0.5));
                         reduced = sd.prod("reduced", second, reduceDim);
                         name = "prod";
                         break;
                     case 7:
+                        maxRelError = 1e-4;
+                        inputArr.assign(Nd4j.rand(new int[]{d0, d1, d2}).muli(10));
+                        labelArr.assign(Nd4j.rand(outShape).muli(10));
                         reduced = sd.norm1("reduced", second, reduceDim);
                         name = "norm1";
                         break;
                     case 8:
+                        maxRelError = 1e-4;
                         reduced = sd.norm2("reduced", second, reduceDim);
                         name = "norm2";
                         break;

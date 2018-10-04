@@ -23,6 +23,7 @@ import com.atilika.kuromoji.buffer.WordIdMap;
 import com.atilika.kuromoji.dict.DictionaryEntryBase;
 import com.atilika.kuromoji.dict.GenericDictionaryEntry;
 import com.atilika.kuromoji.dict.TokenInfoDictionary;
+import org.deeplearning4j.util.DL4JFileUtils;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -189,7 +190,7 @@ public abstract class TokenInfoDictionaryCompilerBase<T extends DictionaryEntryB
 
     @Deprecated
     public WordIdMap getWordIdMap() throws IOException {
-        File file = File.createTempFile("kuromoji-wordid-", ".bin");
+        File file = DL4JFileUtils.createTempFile("kuromoji-wordid-", ".bin");
         file.deleteOnExit();
 
         OutputStream output = new BufferedOutputStream(new FileOutputStream(file));

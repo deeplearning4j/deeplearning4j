@@ -20,6 +20,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.linalg.util.ND4JFileUtils;
 import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.v2.chunks.ChunksTracker;
 import org.nd4j.parameterserver.distributed.v2.chunks.impl.FileChunksTracker;
@@ -71,7 +72,7 @@ public class MessageSplitter {
         if (maxBytes <= 0)
             throw new ND4JIllegalStateException("MaxBytes must be > 0");
 
-        val tempFile = File.createTempFile("messageSplitter","temp");
+        val tempFile = ND4JFileUtils.createTempFile("messageSplitter","temp");
         val result = new ArrayList<VoidChunk>();
 
         try (val fos = new FileOutputStream(tempFile); val bos = new BufferedOutputStream(fos)) {
