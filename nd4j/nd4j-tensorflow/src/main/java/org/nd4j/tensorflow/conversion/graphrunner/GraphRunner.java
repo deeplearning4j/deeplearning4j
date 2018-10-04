@@ -149,9 +149,10 @@ public class GraphRunner implements Closeable {
 
         try {
             this.inputOrder = inputNames;
-            graphToUse = IOUtils.toByteArray(new File(filePath).toURI());
-            this.graph = conversion.loadGraph(graphToUse);
             this.protoBufConfigProto = sessionOptionsConfiguration;
+            initOptionsIfNeeded();
+            graphToUse = IOUtils.toByteArray(new File(filePath).toURI());
+            this.graph = conversion.loadGraph(graphToUse, status);
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse protobuf",e);
         }
@@ -168,9 +169,10 @@ public class GraphRunner implements Closeable {
      */
     public GraphRunner(byte[] graphToUse,List<String> inputNames,org.tensorflow.framework.ConfigProto sessionOptionsConfiguration) {
         try {
-            this.graph = conversion.loadGraph(graphToUse);
             this.inputOrder = inputNames;
             this.protoBufConfigProto = sessionOptionsConfiguration;
+            initOptionsIfNeeded();
+            this.graph = conversion.loadGraph(graphToUse, status);
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse protobuf",e);
         }
@@ -204,7 +206,7 @@ public class GraphRunner implements Closeable {
             Map inputsMap = new LinkedHashMap<String, String>();
             Map outputsMap = new LinkedHashMap<String, String>();
             this.graph = TF_NewGraph();
-            this.session = conversion.loadSavedModel(savedModelPath, options, null, modelTag, signatureKey, graph, inputsMap, outputsMap);
+            this.session = conversion.loadSavedModel(savedModelPath, options, null, modelTag, signatureKey, graph, inputsMap, outputsMap, status);
             inputNames = new ArrayList<String>(inputsMap.keySet());
             outputNames = new ArrayList<String>(outputsMap.keySet());
             inputOrder = new ArrayList<String>(inputsMap.values());
@@ -300,7 +302,7 @@ public class GraphRunner implements Closeable {
 
 
         if (TF_GetCode(status) != TF_OK) {
-            throw new RuntimeException("ERROR: Unable to run session " + TF_Message(status).getString());
+            throw new IllegalStateException("ERROR: Unable to run session " + TF_Message(status).getString());
         } else {
             for(int i = 0; i < outputOrder.size(); i++) {
                 INDArray to = conversion.ndArrayFromTensor(new TF_Tensor(outputTensorsPointer.get(i)));
@@ -325,7 +327,7 @@ public class GraphRunner implements Closeable {
                 BytePointer bytePointer = new BytePointer(protoBufConfigProto.toByteArray());
                 TF_SetConfig(options,bytePointer,bytePointer.getStringBytes().length,status);
                 if (TF_GetCode(status) != TF_OK) {
-                    throw new RuntimeException("ERROR: Unable to set value configuration:" + TF_Message(status).getString());
+                    throw new IllegalStateException("ERROR: Unable to set value configuration:" + TF_Message(status).getString());
                 }
             }
         }
@@ -354,7 +356,7 @@ public class GraphRunner implements Closeable {
             initOptionsIfNeeded();
             session = tensorflow.TF_NewSession(graph, options, status);
             if (TF_GetCode(status) != TF_OK) {
-                throw new RuntimeException("ERROR: Unable to open session " + TF_Message(status).getString());
+                throw new IllegalStateException("ERROR: Unable to open session " + TF_Message(status).getString());
             }
 
         }
@@ -444,7 +446,7 @@ public class GraphRunner implements Closeable {
         }
 
         if(status != null && TF_GetCode(status) != TF_OK) {
-            throw new RuntimeException("ERROR: Unable to delete session " + TF_Message(status).getString());
+            throw new IllegalStateException("ERROR: Unable to delete session " + TF_Message(status).getString());
         }
 
 

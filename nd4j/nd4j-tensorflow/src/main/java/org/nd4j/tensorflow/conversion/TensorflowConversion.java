@@ -226,9 +226,9 @@ public class TensorflowConversion {
      * @return the initialized graph
      * @throws IOException
      */
-    public TF_Graph loadGraph(String filePath) throws IOException {
+    public TF_Graph loadGraph(String filePath, TF_Status status) throws IOException {
         byte[] bytes = Files.readAllBytes(Paths.get(filePath));
-        return loadGraph(bytes);
+        return loadGraph(bytes, status);
     }
 
     /**
@@ -272,39 +272,36 @@ public class TensorflowConversion {
      * @throws IOException
      */
 
-    public TF_Graph loadGraph(byte[] content) {
+    public TF_Graph loadGraph(byte[] content, TF_Status status) {
         byte[] toLoad = content;
         TF_Buffer graph_def = TF_NewBufferFromString(new BytePointer(toLoad), content.length);
-        TF_Status status = TF_NewStatus();
         TF_Graph graphC = TF_NewGraph();
         TF_ImportGraphDefOptions opts = TF_NewImportGraphDefOptions();
         TF_GraphImportGraphDef(graphC, graph_def, opts, status);
         if (TF_GetCode(status) != TF_OK) {
-            throw new RuntimeException("ERROR: Unable to import graph " + TF_Message(status).getString());
+            throw new IllegalStateException("ERROR: Unable to import graph " + TF_Message(status).getString());
         }
 
 
         TF_DeleteImportGraphDefOptions(opts);
-        TF_DeleteStatus(status);
 
         return graphC;
     }
 
     public TF_Session loadSavedModel(String savedModelPath, TF_SessionOptions options, TF_Buffer runOptions,
-            String tag, String key, TF_Graph graph, Map<String, String> inputsMap, Map<String, String> outputsMap) {
+            String tag, String key, TF_Graph graph, Map<String, String> inputsMap, Map<String, String> outputsMap, TF_Status status) {
         TF_Buffer metaGraph = TF_Buffer.newBuffer();
-        TF_Status status = TF_Status.newStatus();
         TF_Session session = TF_LoadSessionFromSavedModel(options, runOptions, new BytePointer(savedModelPath),
                 new BytePointer(tag), 1, graph, metaGraph, status);
         if (TF_GetCode(status) != TF_OK) {
-            throw new RuntimeException("ERROR: Unable to import model " + TF_Message(status).getString());
+            throw new IllegalStateException("ERROR: Unable to import model " + TF_Message(status).getString());
         }
 
         MetaGraphDef metaGraphDef;
         try {
             metaGraphDef = MetaGraphDef.parseFrom(metaGraph.data().capacity(metaGraph.length()).asByteBuffer());
         } catch (InvalidProtocolBufferException ex) {
-            throw new RuntimeException("ERROR: Unable to import model " + ex);
+            throw new IllegalStateException("ERROR: Unable to import model " + ex);
         }
         Map<String, SignatureDef> signatureDefMap = metaGraphDef.getSignatureDefMap();
         SignatureDef signatureDef = signatureDefMap.get(key);
