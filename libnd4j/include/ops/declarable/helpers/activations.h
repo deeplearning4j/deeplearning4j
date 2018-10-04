@@ -41,6 +41,7 @@ namespace helpers {
 
 	void preluBP(const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA);
 
+	bool checkAlphaShapeLen(std::vector<Nd4jLong> const& expectedShape, Nd4jLong shapeLen);
 }
 }
 }
