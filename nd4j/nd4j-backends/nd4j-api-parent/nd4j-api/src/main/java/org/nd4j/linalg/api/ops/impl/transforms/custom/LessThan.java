@@ -14,46 +14,53 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.comparison;
+package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * This op takes 1 n-dimensional array as input, and returns true if input is a numeric array.
+ * Bit mask over the ndarrays as to whether
+ * the components are less than or not
+ *
+ * @author Adam Gibson
  */
+public class LessThan extends BaseDynamicTransformOp {
+    public LessThan() {}
 
-public class IsNumericTensor extends DynamicCustomOp {
-    public IsNumericTensor() {}
-
-    public IsNumericTensor( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
-        super(null, sameDiff, args, inPlace);
+    public LessThan( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(sameDiff, args, inPlace);
     }
 
-    public IsNumericTensor( INDArray[] inputs, INDArray[] outputs) {
-        super(null, inputs, outputs);
+    public LessThan( INDArray[] inputs, INDArray[] outputs) {
+        super(inputs, outputs);
     }
-
 
     @Override
     public String opName() {
-        return "is_numeric_tensor";
+        return "less";
     }
 
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
 
     @Override
     public String tensorflowName() {
-        return "IsNumericTensor";
+      return "Less";
     }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("");
+        //2 inputs, not continuously differentiable but 0s almost everywhere
+        return Arrays.asList(sameDiff.zerosLike(args()[0]), sameDiff.zerosLike(args()[1]));
     }
 }

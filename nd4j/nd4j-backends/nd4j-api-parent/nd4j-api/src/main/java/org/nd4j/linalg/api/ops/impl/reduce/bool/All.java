@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.reduce.bool;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceBoolOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 
 import java.util.Collections;
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class All extends BaseReduceOp {
+public class All extends BaseReduceBoolOp {
     public All(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
@@ -39,12 +40,6 @@ public class All extends BaseReduceOp {
     public All(INDArray x) {
         super(x);
     }
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE;
-    }
-
 
     @Override
     public int opNum() {

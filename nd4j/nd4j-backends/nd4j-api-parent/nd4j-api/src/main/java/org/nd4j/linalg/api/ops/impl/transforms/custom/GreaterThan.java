@@ -14,10 +14,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.comparison;
+package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
@@ -26,35 +27,37 @@ import java.util.List;
 
 /**
  * Bit mask over the ndarrays as to whether
- * the components are less than or equal or not
+ * the components are greater than or not
  *
  * @author Adam Gibson
  */
-public class LessThanOrEqual extends BaseDynamicTransformOp {
-    public LessThanOrEqual() {}
+public class GreaterThan extends BaseDynamicTransformOp {
+    public GreaterThan() {}
 
-    public LessThanOrEqual( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+    public GreaterThan( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
 
-    public LessThanOrEqual( INDArray[] inputs, INDArray[] outputs) {
+    public GreaterThan( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }
+
+
+
     @Override
     public String opName() {
-        return "less_equal";
+        return "greater";
     }
 
     @Override
     public String onnxName() {
-        return "LessEqual";
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "LessEqual";
+        return "Greater";
     }
-
 
 
     @Override

@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.util.*;
@@ -31,7 +32,7 @@ import java.util.*;
  *
  * @author raver119@gmail.com
  */
-public class CompareAndReplace extends BaseTransformOp {
+public class CompareAndReplace extends BaseTransformSameOp {
 
     private Condition condition;
     private double compare;
@@ -106,7 +107,7 @@ public class CompareAndReplace extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 46;
+        return 13;
     }
 
     @Override

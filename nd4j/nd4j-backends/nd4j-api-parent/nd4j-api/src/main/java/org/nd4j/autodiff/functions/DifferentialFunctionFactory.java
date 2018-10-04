@@ -604,7 +604,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable max(SDVariable first, SDVariable second) {
-        return new org.nd4j.linalg.api.ops.impl.transforms.comparison.Max(sameDiff(), first, second)
+        return new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(sameDiff(), first, second)
                 .outputVariable();
     }
 
@@ -622,7 +622,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable min(SDVariable first, SDVariable second) {
-        return new org.nd4j.linalg.api.ops.impl.transforms.comparison.Min(sameDiff(), first, second)
+        return new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(sameDiff(), first, second)
                 .outputVariable();
     }
 

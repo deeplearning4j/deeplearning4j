@@ -14,48 +14,31 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.comparison;
+package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-/**
- * This op takes 1 n-dimensional array as input,
- * and returns true if for every adjacent pair we have x[i] <= x[i+1].
- *
- */
-public class IsNonDecreasing extends DynamicCustomOp {
-    public IsNonDecreasing() {}
+public class ListDiff extends DynamicCustomOp {
 
-    public IsNonDecreasing( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
-        super(null, sameDiff, args, inPlace);
+    public ListDiff() {
+        //
     }
-
-    public IsNonDecreasing(INDArray[] inputs, INDArray[] outputs) {
-        super(null, inputs, outputs);
-    }
-
-
-    @Override
-    public String opName() {
-        return "is_non_decreasing";
-    }
-
 
     @Override
     public String tensorflowName() {
-        return "IsNonDecreasing";
+        return "ListDiff";
+    }
+
+    @Override
+    public String opName() {
+        return "listdiff";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(sameDiff.zerosLike(arg()));
+        throw new UnsupportedOperationException();
     }
 }

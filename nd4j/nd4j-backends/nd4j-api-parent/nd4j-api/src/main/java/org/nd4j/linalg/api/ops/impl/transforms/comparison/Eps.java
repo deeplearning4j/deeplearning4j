@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.List;
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Eps extends BaseTransformOp {
+public class Eps extends BaseTransformBoolOp {
     public Eps(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -47,39 +48,16 @@ public class Eps extends BaseTransformOp {
         super(sameDiff, i_v1, i_v2, extraArgs);
     }
 
-    public Eps(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
-
-    public Eps(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Eps(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Eps() {}
 
     public Eps(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public Eps(INDArray x) {
-        super(x);
-    }
-
-    public Eps(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public Eps(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
 
     @Override
     public int opNum() {
-        return 10;
+        return 3;
     }
 
     @Override

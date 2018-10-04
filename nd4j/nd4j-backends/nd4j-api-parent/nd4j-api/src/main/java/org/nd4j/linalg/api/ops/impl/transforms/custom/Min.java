@@ -14,11 +14,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.comparison;
+package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
@@ -26,43 +26,48 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Bit mask over the ndarrays as to whether
- * the components are greater than or not
+ * Min function
  *
  * @author Adam Gibson
  */
-public class GreaterThan extends BaseDynamicTransformOp {
-    public GreaterThan() {}
+public class Min extends BaseDynamicTransformOp {
+    public Min() {}
 
-    public GreaterThan( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+    public Min(SameDiff sameDiff, @NonNull SDVariable first, @NonNull SDVariable second){
+        this(sameDiff, new SDVariable[]{first, second}, false);
+    }
+
+    public Min( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
 
-    public GreaterThan( INDArray[] inputs, INDArray[] outputs) {
+    public Min( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }
 
 
-
     @Override
     public String opName() {
-        return "greater";
+        return "minimum";
     }
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+       return "Min";
     }
 
     @Override
     public String tensorflowName() {
-        return "Greater";
+        return "Minimum";
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        //2 inputs, not continuously differentiable but 0s almost everywhere
-        return Arrays.asList(sameDiff.zerosLike(args()[0]), sameDiff.zerosLike(args()[1]));
+        SDVariable min = outputVariables()[0];
+        SDVariable eq1 = sameDiff.eq(larg(), min);
+        SDVariable eq2 = sameDiff.eq(rarg(), min);
+
+        return Arrays.asList(eq1.mul(f1.get(0)), eq2.mul(f1.get(0)));
     }
 }

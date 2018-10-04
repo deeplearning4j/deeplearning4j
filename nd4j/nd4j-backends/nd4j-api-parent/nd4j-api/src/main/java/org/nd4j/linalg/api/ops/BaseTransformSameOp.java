@@ -23,6 +23,26 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 public abstract class BaseTransformSameOp extends BaseTransformOp implements TransformSameOp {
 
+    public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
+        super(sameDiff, i_v1, i_v2);
+    }
+
+    public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace);
+    }
+
+    public BaseTransformSameOp(SameDiff sameDiff) {
+        super(sameDiff);
+    }
+
+    public BaseTransformSameOp(INDArray x, INDArray y, INDArray z, long n) {
+        super(x, y, z, n);
+    }
+
+    public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
+        super(sameDiff, i_v1, i_v2, extraArgs);
+    }
+
     public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }

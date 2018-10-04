@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.comparison;
+package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -22,48 +22,47 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Not equal to function:
- * Bit mask over whether 2 elements are not equal or not
+ * Bit mask over the ndarrays as to whether
+ * the components are equal or not
  *
  * @author Adam Gibson
  */
-public class NotEqualTo extends BaseDynamicTransformOp {
-    public NotEqualTo() {}
+public class EqualTo extends BaseDynamicTransformOp {
+    public EqualTo() {}
 
-    public NotEqualTo( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+    public EqualTo( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
 
-    public NotEqualTo( INDArray[] inputs, INDArray[] outputs) {
+    public EqualTo( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }
 
 
     @Override
     public String opName() {
-        return "not_equals";
+        return "equals";
     }
 
     @Override
     public String onnxName() {
-        return "LogicalNot";
+        return "Equal";
     }
 
     @Override
     public String tensorflowName() {
-        return "NotEqual";
+        return "Equal";
     }
+
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //2 inputs, not continuously differentiable but 0s almost everywhere for gradient
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        //Equals op: 2 inputs, not continuously differentiable but 0s almost everywhere
         return Arrays.asList(sameDiff.zerosLike(args()[0]), sameDiff.zerosLike(args()[1]));
     }
-
 
 }

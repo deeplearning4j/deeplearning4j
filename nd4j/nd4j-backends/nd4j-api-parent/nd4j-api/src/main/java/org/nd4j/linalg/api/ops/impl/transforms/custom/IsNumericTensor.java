@@ -14,31 +14,46 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.comparison;
+package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
+import java.util.Arrays;
 import java.util.List;
 
-public class ListDiff extends DynamicCustomOp {
+/**
+ * This op takes 1 n-dimensional array as input, and returns true if input is a numeric array.
+ */
 
-    public ListDiff() {
-        //
+public class IsNumericTensor extends DynamicCustomOp {
+    public IsNumericTensor() {}
+
+    public IsNumericTensor( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(null, sameDiff, args, inPlace);
     }
 
-    @Override
-    public String tensorflowName() {
-        return "ListDiff";
+    public IsNumericTensor( INDArray[] inputs, INDArray[] outputs) {
+        super(null, inputs, outputs);
     }
+
 
     @Override
     public String opName() {
-        return "listdiff";
+        return "is_numeric_tensor";
+    }
+
+
+    @Override
+    public String tensorflowName() {
+        return "IsNumericTensor";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("");
     }
 }
