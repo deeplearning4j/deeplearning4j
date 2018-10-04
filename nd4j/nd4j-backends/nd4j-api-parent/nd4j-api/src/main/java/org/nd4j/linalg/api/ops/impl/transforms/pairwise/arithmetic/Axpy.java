@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.Map;
  *
  * @author raver119@gmail.com
  */
-public class Axpy extends BaseTransformOp {
+public class Axpy extends BaseTransformSameOp {
 
     private double p;
 
@@ -94,7 +95,7 @@ public class Axpy extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 17;
+        return 10;
     }
 
     @Override

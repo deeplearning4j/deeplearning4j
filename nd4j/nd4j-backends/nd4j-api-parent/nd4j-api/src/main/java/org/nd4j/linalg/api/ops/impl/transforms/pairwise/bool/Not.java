@@ -14,13 +14,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.pairwise;
+package org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Collections;
@@ -31,7 +32,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class Not extends BaseTransformOp {
+public class Not extends BaseTransformBoolOp {
 
     protected double comparable = 0.0;
 
@@ -73,7 +74,7 @@ public class Not extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 59;
+        return 10;
     }
 
     @Override

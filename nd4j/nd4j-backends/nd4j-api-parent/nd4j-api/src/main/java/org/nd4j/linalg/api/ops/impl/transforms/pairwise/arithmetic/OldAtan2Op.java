@@ -14,13 +14,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.pairwise;
+package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.List;
 
@@ -29,7 +31,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class OldAtan2Op extends BaseTransformOp {
+public class OldAtan2Op extends BaseTransformSameOp {
     public OldAtan2Op(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -74,7 +76,7 @@ public class OldAtan2Op extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 69;
+        return 16;
     }
 
     @Override

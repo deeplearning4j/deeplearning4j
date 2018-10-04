@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.List;
 
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class FModOp extends BaseTransformOp {
+public class FModOp extends BaseTransformSameOp {
     public FModOp() {}
 
     public FModOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
@@ -79,7 +80,7 @@ public class FModOp extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 60;
+        return 15;
     }
 
     @Override
