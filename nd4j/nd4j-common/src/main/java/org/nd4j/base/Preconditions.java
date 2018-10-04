@@ -719,7 +719,7 @@ public class Preconditions {
         return o.toString();
     }
 
-    private static String formatArray(Object o){
+    public static String formatArray(Object o){
         if(o == null)
             return "null";
 
