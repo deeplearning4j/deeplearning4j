@@ -548,8 +548,8 @@ void SVD<T>::perturb(const NDArray& col0, const NDArray& diag, const NDArray& pe
                     prod *= ((singVals.e<T>(j)+dk) / ((diag.e<T>(i)+dk))) * ((mus.e<T>(j)+(shifts.e<T>(j)-dk)) / ((diag.e<T>(i)-dk)));
                 }
             }
-        T tmp = math::nd4j_sqrt<T,T>(prod);
-        zhat.p(k, col0.e<T>(k) > (T)0.f ? tmp : -tmp);
+            T tmp = math::nd4j_sqrt<T,T>(prod);
+            zhat.p(k, col0.e<T>(k) > (T)0.f ? tmp : -tmp);
         }  
     }
 }

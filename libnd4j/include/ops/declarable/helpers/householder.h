@@ -69,7 +69,7 @@ class Householder {
     /**
     *  this method mathematically multiplies input matrix on Householder from the left P * matrix
     * 
-    *  x - input matrix
+    *  matrix - input matrix
     *  tail - the essential part of the Householder vector w: [w1, w2, w3, ...]
     *  coeff - scalar, scaling factor in Householder matrix formula  
     */

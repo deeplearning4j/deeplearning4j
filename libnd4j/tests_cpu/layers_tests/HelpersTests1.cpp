@@ -673,15 +673,15 @@ TEST_F(HelpersTests1, SVD_test10) {
     auto shifts = NDArrayFactory::create<double>('c', {4,1}, {4,2,5,6});    
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     
-    auto expZhat = NDArrayFactory::create<double>('c', {4,1}, {0, 0.278208, 72.502, 0});
+    auto expZhat = NDArrayFactory::create<double>('c', {4,1}, {0, 0.278208, 72.501953, 0});
 
     auto zhat = NDArrayFactory::create<double>('c', {4,1});    
 
     ops::helpers::SVD<double> svd(matrix3, 4, true, true, true, 't');        
     svd.perturb(col0, diag, permut, singVals, shifts,  mus, zhat);    
 
-    ASSERT_TRUE(expZhat.e<double>(1) == zhat.e<double>(1));
-    ASSERT_TRUE(expZhat.e<double>(2) == zhat.e<double>(2));
+    ASSERT_NEAR(expZhat.e<double>(1), zhat.e<double>(1), EPS);
+    ASSERT_NEAR(expZhat.e<double>(2), zhat.e<double>(2), EPS);
 }
 
 
@@ -749,7 +749,7 @@ TEST_F(HelpersTests1, SVD_test13) {
 
     ops::helpers::HHcolPivQR qr(matrix1);    
     
-    // qr._coeffs.printIndexedBuffer();    
+    // qr._qr.printIndexedBuffer();    
     ASSERT_TRUE(expQR.equalsTo(&qr._qr));
     ASSERT_TRUE(expCoeffs.equalsTo(&qr._coeffs));
     ASSERT_TRUE(expPermut.equalsTo(&qr._permut));

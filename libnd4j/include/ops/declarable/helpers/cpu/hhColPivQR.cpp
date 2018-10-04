@@ -72,7 +72,7 @@ void HHcolPivQR::_evalData() {
 
     for(int k = 0; k < _diagSize; ++k) {
     
-        int biggestColIndex = (int)(normsUpd({0,0, k,-1}).indexReduceNumber(indexreduce::IndexMax)).e<int>(0);
+        int biggestColIndex = normsUpd({0,0, k,-1}).indexReduceNumber(indexreduce::IndexMax).e<int>(0);
         T biggestColNorm = normsUpd({0,0, k,-1}).reduceNumber(reduce::Max).e<T>(0);
         T biggestColSqNorm = biggestColNorm * biggestColNorm;
         biggestColIndex += k;
@@ -92,37 +92,33 @@ void HHcolPivQR::_evalData() {
             delete temp1;
             delete temp2;
 
-            T _e0 = normsUpd.e<T>(k);
-            T _e1 = normsUpd.e<T>(biggestColIndex);
-            normsUpd.p(k, _e1);
-            normsUpd.p(biggestColIndex, _e0);
+            T e0 = normsUpd.e<T>(k);
+            T e1 = normsUpd.e<T>(biggestColIndex);
+            normsUpd.p(k, e1);
+            normsUpd.p(biggestColIndex, e0);
             //math::nd4j_swap<T>(normsUpd(k), normsUpd(biggestColIndex));
 
-            _e0 = normsDir.e<T>(k);
-            _e1 = normsDir.e<T>(biggestColIndex);
-            normsDir.p(k, _e1);
-            normsDir.p(biggestColIndex, _e0);
+            e0 = normsDir.e<T>(k);
+            e1 = normsDir.e<T>(biggestColIndex);
+            normsDir.p(k, e1);
+            normsDir.p(biggestColIndex, e0);
             //math::nd4j_swap<T>(normsDir(k), normsDir(biggestColIndex));
                         
             ++transpNum;
         }
         
         T normX;
-        NDArray* qrBlock = nullptr;
-        qrBlock = _qr.subarray({{k, rows}, {k,k+1}});
-
-        T _x = _coeffs.e<T>(k);
-
-        Householder<T>::evalHHmatrixDataI(*qrBlock, _x, normX);
-
-        _coeffs.p<T>(k, _x);
-
+        NDArray* qrBlock = _qr.subarray({{k, rows}, {k,k+1}});
+        T c;
+        Householder<T>::evalHHmatrixDataI(*qrBlock, c, normX);
+        _coeffs.p<T>(k, c);
         delete qrBlock;        
 
         _qr.p<T>(k,k, normX);
         
-        if(math::nd4j_abs<T>(normX) > maxPivot) 
-            maxPivot = math::nd4j_abs<T>(normX);
+        T max = math::nd4j_abs<T>(normX);
+        if(max > maxPivot) 
+            maxPivot = max;
         
         if(k < rows && (k+1) < cols) {
             qrBlock = _qr.subarray({{k, rows},{k+1, cols}});
@@ -142,7 +138,7 @@ void HHcolPivQR::_evalData() {
                 
                 if (temp2 <= threshold2) {          
                     if(k+1 < rows && j < cols)
-                        normsDir.p(j, _qr({k+1,rows, j,j+1}).reduceNumber(reduce::Norm2));
+                        normsDir.p<T>(j, _qr({k+1,rows, j,j+1}).reduceNumber(reduce::Norm2).e<T>(0));
 
                     normsUpd.p<T>(j, normsDir.e<T>(j));
                 } 

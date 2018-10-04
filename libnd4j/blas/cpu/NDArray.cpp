@@ -743,7 +743,6 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
     NDArray& NDArray::operator=(const NDArray& other) {
-        nd4j_printf("Assignment operator...\n","")
 
 	if (this == &other) return *this;
 
@@ -1403,6 +1402,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     NDArray NDArray::reduceNumber(nd4j::reduce::FloatOps op, void *extraParams) const {
         auto shape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(dataType()), this->_workspace);
         NDArray result(shape, true, this->_workspace);
+        RELEASE(shape, this->_workspace);
 
         NativeOpExcutioner::execReduceFloatScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
         return result;
@@ -1418,6 +1418,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     NDArray NDArray::reduceNumber(nd4j::reduce::BoolOps op, void *extraParams) const {
         auto shape = ShapeBuilders::createScalarShapeInfo(DataType::BOOL, this->_workspace);
         NDArray result(shape, true, this->_workspace);
+        RELEASE(shape, this->_workspace);
 
         NativeOpExcutioner::execReduceBoolScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
         return result;
@@ -1426,6 +1427,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     NDArray NDArray::reduceNumber(nd4j::reduce::LongOps op, void *extraParams) const {
         auto shape = ShapeBuilders::createScalarShapeInfo(DataType::INT64, this->_workspace);
         NDArray result(shape, true, this->_workspace);
+        RELEASE(shape, this->_workspace);
 
         NativeOpExcutioner::execReduceLongScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
         return result;
