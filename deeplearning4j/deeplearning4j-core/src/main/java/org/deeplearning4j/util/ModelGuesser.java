@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.UUID;
 
 /**
@@ -167,17 +168,34 @@ public class ModelGuesser {
 
 
     /**
-     * Load the model from the given input stream
+     * Load the model from the given input stream. The content of the stream is written to a temporary location,
+     * see {@link DL4JSystemProperties#DL4J_TEMP_DIR_PROPERTY}
+     *
      * @param stream the path of the file to "guess"
      *
      * @return the loaded model
      * @throws Exception
      */
     public static Model loadModelGuess(InputStream stream) throws Exception {
+        return loadModelGuess(stream, null);
+    }
+
+    /**
+     * As per {@link #loadModelGuess(InputStream)} but (optionally) allows copying to the specified temporary directory
+     * @param stream        Stream of the model file
+     * @param tempDirectory Temporary/working directory. May be null.
+     */
+    public static Model loadModelGuess(InputStream stream, File tempDirectory) throws Exception {
         //Currently (Nov 2017): KerasModelImport doesn't support loading from input streams
         //Simplest solution here: write to a temporary file
-        File f = DL4JFileUtils.createTempFile("loadModelGuess",".bin");
+        File f;
+        if(tempDirectory == null){
+            f = DL4JFileUtils.createTempFile("loadModelGuess",".bin");
+        } else {
+            f = File.createTempFile("loadModelGuess", ".bin", tempDirectory);
+        }
         f.deleteOnExit();
+
 
         try (OutputStream os = new BufferedOutputStream(new FileOutputStream(f))) {
             IOUtils.copy(stream, os);
