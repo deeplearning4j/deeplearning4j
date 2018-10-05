@@ -229,7 +229,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         dimension = Shape.normalizeAxis(op.x().rank(), dimension);
 
 
-        validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -273,7 +273,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 long xT = op.x().tensorssAlongDimension(dimension);
                 long yT = op.y().tensorssAlongDimension(dimension);
 
-                ret = Nd4j.create(xT, yT);
+                ret = Nd4j.create(op.resultType(), new long[]{xT, yT});
             } else {
                 if (op.y() != null) {
 
@@ -296,7 +296,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     }
                 }
 
-                ret = Nd4j.create(retShape);
+                ret = Nd4j.create(op.resultType(), retShape);
 
             }
             op.setZ(ret);
@@ -313,14 +313,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + (xT * yT) + "]");
             }
 
-            if (op.x().data().dataType() == DataType.DOUBLE) {
-                op.z().assign(op.zeroDouble());
-            } else {
-                op.z().assign(op.zeroFloat());
-            }
-
             ret = op.z();
         }
+
+        log.info("X dtype: {}; Z dtype: {}", op.x().dataType(), op.z().dataType());
 
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
@@ -433,20 +429,83 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             } else {
                 if (ret.isScalar()) {
+                    switch (op.getOpType()) {
+                        case REDUCE_FLOAT:
                             loop.execReduceFloat(dummy, op.opNum(),
-                            op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            getPointerForExtraArgs(op),
-                            ret.data().addressPointer(),
-                            (LongPointer) ret.shapeInfoDataBuffer().addressPointer());
+                                op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                getPointerForExtraArgs(op),
+                                ret.data().addressPointer(),
+                                (LongPointer) ret.shapeInfoDataBuffer().addressPointer());
+                            break;
+                        case REDUCE_BOOL:
+                            loop.execReduceBool(dummy, op.opNum(),
+                                    op.x().data().addressPointer(),
+                                    (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                    getPointerForExtraArgs(op),
+                                    ret.data().addressPointer(),
+                                    (LongPointer) ret.shapeInfoDataBuffer().addressPointer());
+                            break;
+                        case REDUCE_SAME:
+                            loop.execReduceSame(dummy, op.opNum(),
+                                    op.x().data().addressPointer(),
+                                    (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                    getPointerForExtraArgs(op),
+                                    ret.data().addressPointer(),
+                                    (LongPointer) ret.shapeInfoDataBuffer().addressPointer());
+                            break;
+                        case REDUCE_LONG:
+                            loop.execReduceLong(dummy, op.opNum(),
+                                    op.x().data().addressPointer(),
+                                    (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                    getPointerForExtraArgs(op),
+                                    ret.data().addressPointer(),
+                                    (LongPointer) ret.shapeInfoDataBuffer().addressPointer());
+                            break;
+                        default:
+                            throw new UnsupportedOperationException("Unsupported op used in reduce: "+ op.getOpType());
+                    }
                 } else {
-                    loop.execReduceFloat(dummy, op.opNum(),
-                            op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            getPointerForExtraArgs(op),
-                            op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length);
+                    switch (op.getOpType()) {
+                        case REDUCE_FLOAT:
+                            loop.execReduceFloat(dummy, op.opNum(),
+                                op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                getPointerForExtraArgs(op),
+                                op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (IntPointer) dimensionAddress, dimension.length);
+                        break;
+                        case REDUCE_LONG:
+                            loop.execReduceLong(dummy, op.opNum(),
+                                    op.x().data().addressPointer(),
+                                    (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                    getPointerForExtraArgs(op),
+                                    op.z().data().addressPointer(),
+                                    (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                    (IntPointer) dimensionAddress, dimension.length);
+                            break;
+                        case REDUCE_SAME:
+                            loop.execReduceSame(dummy, op.opNum(),
+                                    op.x().data().addressPointer(),
+                                    (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                    getPointerForExtraArgs(op),
+                                    op.z().data().addressPointer(),
+                                    (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                    (IntPointer) dimensionAddress, dimension.length);
+                            break;
+                        case REDUCE_BOOL:
+                            loop.execReduceBool(dummy, op.opNum(),
+                                    op.x().data().addressPointer(),
+                                    (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                    getPointerForExtraArgs(op),
+                                    op.z().data().addressPointer(),
+                                    (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                    (IntPointer) dimensionAddress, dimension.length);
+                            break;
+                        default:
+                            throw new UnsupportedOperationException("Unsupported op used in reduce: "+ op.getOpType());
+                    }
                 }
             }
 
