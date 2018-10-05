@@ -23,6 +23,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 /**
  *  String representation of an ndarray.
@@ -59,7 +61,7 @@ public class NDArrayStrings {
     private double minToPrintWithoutSwitching;
     private double maxToPrintWithoutSwitching;
     private String scientificFormat = "";
-    private DecimalFormat decimalFormat = new DecimalFormat("##0.####");
+    private DecimalFormat decimalFormat;
     private boolean dontOverrideFormat = false;
 
     public NDArrayStrings() {
@@ -95,7 +97,7 @@ public class NDArrayStrings {
             decFormatNum += "0";
             precision -= 1;
         }
-        this.decimalFormat = new DecimalFormat(decFormatNum);
+        this.decimalFormat = localeIndifferentDecimalFormat(decFormatNum);
     }
 
     /**
@@ -105,7 +107,7 @@ public class NDArrayStrings {
      */
     public NDArrayStrings(String colSep, String decFormat) {
         this.colSep = colSep;
-        this.decimalFormat = new DecimalFormat(decFormat);
+        this.decimalFormat = localeIndifferentDecimalFormat(decFormat);
         if (decFormat.toUpperCase().contains("E")) {
             this.padding = decFormat.length() + 3;
         } else {
@@ -153,7 +155,7 @@ public class NDArrayStrings {
             double arrElement = arr.getDouble(0);
             if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement!= 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
                 //switch to scientific notation
-                String asString = new DecimalFormat(scientificFormat).format(arrElement);
+                String asString = localeIndifferentDecimalFormat(scientificFormat).format(arrElement);
                 //from E to small e
                 asString = asString.replace('E','e');
                 return asString;
@@ -227,7 +229,7 @@ public class NDArrayStrings {
                 double arrElement = arr.getDouble(i);
                 if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement != 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
                     //switch to scientific notation
-                    String asString = new DecimalFormat(scientificFormat).format(arrElement);
+                    String asString = localeIndifferentDecimalFormat(scientificFormat).format(arrElement);
                     //from E to small e
                     asString = asString.replace('E', 'e');
                     sb.append(String.format("%1$" + padding + "s", asString));
@@ -249,4 +251,8 @@ public class NDArrayStrings {
         return sb.toString();
     }
 
+
+    private DecimalFormat localeIndifferentDecimalFormat(String pattern){
+        return new DecimalFormat(pattern, DecimalFormatSymbols.getInstance(Locale.US));
+    }
 }
