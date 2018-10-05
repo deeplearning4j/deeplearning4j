@@ -180,6 +180,8 @@ public abstract  class BaseTransport  implements Transport {
                             break;
                         } catch (Exception e) {
                             log.error("MessageQueue exception", e);
+                        } catch (Throwable t) {
+                            log.error("MessageQueue throwable", t);
                         }
                     }
                     log.error("Exiting MessageQueue loop...");
