@@ -20,14 +20,17 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
 /**
  * @author raver119@gmail.com
  */
-public class BinaryRelativeError extends BaseTransformOp {
+public class BinaryRelativeError extends BaseTransformSameOp {
     private double threshold = 0.0;
 
     public BinaryRelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {

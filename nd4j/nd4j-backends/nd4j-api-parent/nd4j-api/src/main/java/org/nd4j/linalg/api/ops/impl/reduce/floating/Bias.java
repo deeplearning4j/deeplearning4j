@@ -14,12 +14,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.reduce;
+package org.nd4j.linalg.api.ops.impl.reduce.floating;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 
 import java.util.LinkedHashMap;
@@ -31,7 +32,7 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-public class Bias extends BaseReduceOp {
+public class Bias extends BaseReduceFloatOp {
 
     private double mean;
 
@@ -47,20 +48,8 @@ public class Bias extends BaseReduceOp {
 
     public Bias() {}
 
-    public Bias(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Bias(INDArray x, INDArray y, long n) {
-        this(x, y, x, n);
-    }
-
     public Bias(INDArray x) {
         super(x);
-    }
-
-    public Bias(INDArray x, INDArray y) {
-        super(x, y);
     }
 
     @Override
@@ -100,10 +89,5 @@ public class Bias extends BaseReduceOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE;
     }
 }

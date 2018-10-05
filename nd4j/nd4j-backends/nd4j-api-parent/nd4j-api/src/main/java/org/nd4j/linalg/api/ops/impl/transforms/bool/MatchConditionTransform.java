@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -34,7 +35,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class MatchConditionTransform extends BaseTransformOp {
+public class MatchConditionTransform extends BaseTransformBoolOp {
 
     private Condition condition;
     private double compare;
@@ -78,7 +79,7 @@ public class MatchConditionTransform extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 72;
+        return 5;
     }
 
     @Override

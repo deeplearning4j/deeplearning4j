@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Collections;
@@ -30,7 +31,7 @@ import java.util.List;
  * [1, 2, 3, 1] -> [0, 0, 1, 0]
  * @author Adam Gibson
  */
-public class IsMax extends BaseTransformOp {
+public class IsMax extends BaseTransformBoolOp {
     public IsMax(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -87,7 +88,7 @@ public class IsMax extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 41;
+        return 0;
     }
 
     @Override

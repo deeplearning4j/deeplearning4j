@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.reduce.custom;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 
 import java.util.Collections;
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class LogSumExp extends BaseReduceOp {
+public class LogSumExp extends BaseReduceFloatOp {
     public LogSumExp(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
@@ -44,16 +45,8 @@ public class LogSumExp extends BaseReduceOp {
         super(x, y, z, n);
     }
 
-    public LogSumExp(INDArray x, INDArray y, long n) {
-        super(x, y, n);
-    }
-
     public LogSumExp(INDArray x) {
         super(x);
-    }
-
-    public LogSumExp(INDArray x, INDArray y) {
-        super(x, y);
     }
 
     public LogSumExp(INDArray x, INDArray y, INDArray z) {
@@ -62,7 +55,7 @@ public class LogSumExp extends BaseReduceOp {
 
     @Override
     public int opNum() {
-        return 19;
+        return 11;
     }
 
     @Override
@@ -92,10 +85,5 @@ public class LogSumExp extends BaseReduceOp {
     @Override
     public String tensorflowName() {
         return "reduce_logsumexp";
-    }
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE;
     }
 }

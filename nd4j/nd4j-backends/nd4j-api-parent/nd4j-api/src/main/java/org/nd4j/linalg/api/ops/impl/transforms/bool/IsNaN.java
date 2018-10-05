@@ -20,6 +20,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Collections;
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
   */
-public class IsNaN extends BaseTransformOp {
+public class IsNaN extends BaseTransformBoolOp {
     public IsNaN(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -63,7 +64,7 @@ public class IsNaN extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 80;
+        return 2;
     }
 
     @Override

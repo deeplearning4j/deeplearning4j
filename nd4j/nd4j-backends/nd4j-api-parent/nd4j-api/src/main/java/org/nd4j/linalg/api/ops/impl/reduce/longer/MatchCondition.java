@@ -99,9 +99,4 @@ public class MatchCondition extends BaseReduceLongOp {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE;
-    }
 }

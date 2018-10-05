@@ -21,6 +21,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +30,7 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
-public class RelativeError extends BaseTransformOp {
+public class RelativeError extends BaseTransformSameOp {
     public RelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }

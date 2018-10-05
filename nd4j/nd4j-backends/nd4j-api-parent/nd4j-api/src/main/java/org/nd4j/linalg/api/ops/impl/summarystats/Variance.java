@@ -23,7 +23,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.reduce.Bias;
+import org.nd4j.linalg.api.ops.impl.reduce.floating.Bias;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Mean;
 import org.nd4j.linalg.factory.Nd4j;
 

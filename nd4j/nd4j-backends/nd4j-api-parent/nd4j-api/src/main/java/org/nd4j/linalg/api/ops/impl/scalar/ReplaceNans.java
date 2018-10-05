@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.List;
@@ -29,22 +30,17 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class ReplaceNans extends BaseTransformOp {
+public class ReplaceNans extends BaseScalarOp {
 
     private double set;
 
     public ReplaceNans(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double set) {
-        super(sameDiff, i_v, inPlace);
-        this.set = set;
-    }
-
-    public ReplaceNans(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double set) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        super(sameDiff, i_v, set, inPlace);
         this.set = set;
     }
 
     public ReplaceNans(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double set) {
-        super(sameDiff, i_v, extraArgs);
+        super(sameDiff, i_v, set, extraArgs);
         this.set = set;
     }
 
@@ -53,13 +49,13 @@ public class ReplaceNans extends BaseTransformOp {
     }
 
     public ReplaceNans(INDArray x, double set) {
-        super(x);
+        super(x, set);
         this.set = set;
         init(x, null, x, x.length());
     }
 
     public ReplaceNans(INDArray x, INDArray z, double set) {
-        super(x, z);
+        super(x, z, set);
         this.set = set;
         init(x, null, z, x.length());
     }
