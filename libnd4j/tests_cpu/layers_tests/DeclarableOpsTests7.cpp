@@ -4391,7 +4391,6 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_BP_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
     auto output = result->at(0);
-    output->printIndexedBuffer("Result is");
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));

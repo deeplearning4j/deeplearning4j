@@ -1092,6 +1092,12 @@ namespace nd4j {
         Nd4jLong getOffset(const Nd4jLong i) const;
 
         /**
+        *  returns reference on array element with given index
+        */
+        template<typename T>
+        FORCEINLINE T& getRefOnElem(const Nd4jLong index);
+
+        /**
         *  default destructor
         */
         ~NDArray() noexcept; 
@@ -1814,6 +1820,14 @@ DataType NDArray::dataType() const {
     return _dataType;
     // return ArrayOptions::dataType(_shapeInfo);    
 }
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+T& NDArray::getRefOnElem(const Nd4jLong index) {
+
+    return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(index))));
+}
+
 
 }
  

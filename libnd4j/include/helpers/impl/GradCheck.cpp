@@ -64,6 +64,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 	// beck prop pass	
 	ResultSet* outArrsBP = opBP.execute(argsHolderBP);		// number of output arrays in back prop = numInArrsFF;
 
+	NDArray tmpScalar(nd4j::DataType::DOUBLE, inArrsFF[0]->getWorkspace()); // scalar = 0
 	for(int i = 0; i < numInArrsFF; ++i) {							// loop through input array
 		
 		if(!whatArrsToCheck.empty() && whatArrsToCheck[i] == false)
@@ -74,18 +75,19 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 		
 		for(Nd4jLong j = idxStart; j < idxEnd; ++j) {			// loop through all elements for current array
 
-			auto f = inArrsFF[i]->e<double>(j);
-			double& elem = f;
+			double& elem = inArrsFF[i]->getRefOnElem<double>(j);
 			const double orig = elem;
 
 			// add epsilon, feed forward
 			elem = orig + EPSILON;
 			ResultSet* outArrsFF = opFF.execute(argsHolderFF);
 			int numOutArrs = outArrsFF->size();
-			double scorePlus = 0.;
-			NDArray tmpScalar(nd4j::DataType::DOUBLE, inArrsFF[0]->getWorkspace()); // scalar = 0
+			double scorePlus = 0.;			
 			for(int k = 0; k < numOutArrs; ++k) {                // loop through output array
-				NativeOpExcutioner::execReduceFloatScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
+				if(loss == SUM)
+					NativeOpExcutioner::execReduceSameScalar(reduce::Sum, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());				
+				else
+					NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());				
 				scorePlus += tmpScalar.e<double>(0);
 			}
 			delete outArrsFF;
@@ -96,7 +98,10 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 			double scoreMinus = 0.;
 
 			for(int k = 0; k < numOutArrs; ++k) {            // loop through output array
-				NativeOpExcutioner::execReduceFloatScalar(loss, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
+				if(loss == SUM)
+					NativeOpExcutioner::execReduceSameScalar(reduce::Sum, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());				
+				else
+					NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());				
 				scoreMinus += tmpScalar.e<double>(0);
 			}
 			delete outArrsFF;
