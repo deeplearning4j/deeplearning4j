@@ -68,7 +68,7 @@ DECLARE_SHAPE_FN(svd) {
         sShapeInfo[rank-1] = diagSize;
     }
     
-    shape::updateStrides(sShapeInfo, shape::order(inShapeInfo));
+    ShapeUtils::updateStridesAndType(sShapeInfo, inShapeInfo, shape::order(inShapeInfo));
     
     if(calcUV){
 

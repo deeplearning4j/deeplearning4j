@@ -211,6 +211,7 @@ namespace nd4j {
 
         /**
         *  copy assignment operator
+        *  in particular, when _dataType != other._dataType and both shapes are the same, there will be allocation of new _buffer and _dataType acquires other._dataType
         */
         NDArray& operator=(const NDArray& other);
 
