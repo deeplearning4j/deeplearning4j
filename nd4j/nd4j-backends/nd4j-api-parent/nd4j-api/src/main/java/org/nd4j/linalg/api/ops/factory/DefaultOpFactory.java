@@ -237,24 +237,24 @@ public class DefaultOpFactory implements OpFactory {
     }
 
     @Override
-    public TransformOp createTransform(String name, INDArray x, INDArray y) {
+    public Op createTransform(String name, INDArray x, INDArray y) {
         return createTransform(name,x,y,x,null);
 
     }
 
     @Override
-    public TransformOp createTransform(String name, INDArray x) {
+    public Op createTransform(String name, INDArray x) {
         return createTransform(name,x,null,x,null);
     }
 
     @Override
-    public TransformOp createTransform(String name, INDArray x, Object[] extraArgs) {
+    public Op createTransform(String name, INDArray x, Object[] extraArgs) {
         return createTransform(name,x,null,x,extraArgs);
     }
 
 
     @Override
-    public TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z) {
+    public Op createTransform(String name, INDArray x, INDArray y, INDArray z) {
         return createTransform(name,x,y,z,null);
     }
 
@@ -267,12 +267,12 @@ public class DefaultOpFactory implements OpFactory {
      * @return
      */
     @Override
-    public TransformOp createTransform(String name,
+    public Op createTransform(String name,
                                        INDArray x,
                                        INDArray y,
                                        INDArray z,
                                        Object[] extraArgs) {
-        TransformOp op = null;
+        Op op = null;
 
         switch (name) {
             case "_softmaxderivative":

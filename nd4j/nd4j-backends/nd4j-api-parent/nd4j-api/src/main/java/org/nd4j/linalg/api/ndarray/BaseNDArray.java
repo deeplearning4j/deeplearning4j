@@ -4662,7 +4662,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray mean(@NonNull INDArray result, int... dimension) {
-        return Nd4j.getExecutioner().exec(new Mean(this, null, result), dimension);
+        return Nd4j.getExecutioner().exec(new Mean(this, result), dimension);
     }
 
     /**
@@ -4764,7 +4764,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray sum(@NonNull INDArray result, int... dimension) {
-        return Nd4j.getExecutioner().exec(new Sum(this, null, result), dimension);
+        return Nd4j.getExecutioner().exec(new Sum(this, result), dimension);
     }
 
 

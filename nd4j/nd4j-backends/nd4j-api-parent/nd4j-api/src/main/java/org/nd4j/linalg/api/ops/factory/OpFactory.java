@@ -121,7 +121,7 @@ public interface OpFactory {
      * @param y
      * @return
      */
-    TransformOp createTransform(String name, INDArray x, INDArray y);
+    Op createTransform(String name, INDArray x, INDArray y);
 
 
     /**
@@ -129,7 +129,7 @@ public interface OpFactory {
      * @param x
      * @return
      */
-    TransformOp createTransform(String name, INDArray x);
+    Op createTransform(String name, INDArray x);
 
     /**
      * @param name
@@ -137,7 +137,7 @@ public interface OpFactory {
      * @param extraArgs
      * @return
      */
-    TransformOp createTransform(String name, INDArray x, Object[] extraArgs);
+    Op createTransform(String name, INDArray x, Object[] extraArgs);
 
     /**
      * @param name
@@ -146,7 +146,7 @@ public interface OpFactory {
      * @param z
      * @return
      */
-    TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z);
+    Op createTransform(String name, INDArray x, INDArray y, INDArray z);
 
 
     /**
@@ -157,7 +157,7 @@ public interface OpFactory {
      * @return-m 'add more scalar ops' -a
      * git push or
      */
-    TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
+    Op createTransform(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
 
 
 

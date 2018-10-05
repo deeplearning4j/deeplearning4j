@@ -36,6 +36,8 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.*;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.reduce.same.AMax;
+import org.nd4j.linalg.api.ops.impl.reduce.same.AMin;
 import org.nd4j.linalg.api.ops.impl.reduce.same.Max;
 import org.nd4j.linalg.api.ops.impl.reduce.same.Min;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;

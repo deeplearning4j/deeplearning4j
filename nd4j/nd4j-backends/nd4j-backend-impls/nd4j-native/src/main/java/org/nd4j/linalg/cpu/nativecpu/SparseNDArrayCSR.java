@@ -129,4 +129,19 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     public boolean isEmpty() {
         return false;
     }
+
+    @Override
+    public boolean isR() {
+        return false;
+    }
+
+    @Override
+    public boolean isZ() {
+        return false;
+    }
+
+    @Override
+    public boolean isB() {
+        return false;
+    }
 }

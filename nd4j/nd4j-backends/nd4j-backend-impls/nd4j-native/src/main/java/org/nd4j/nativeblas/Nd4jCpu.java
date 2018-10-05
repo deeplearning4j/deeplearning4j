@@ -2775,6 +2775,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <helpers/ShapeBuilders.h>
 // #include <op_enums.h>
 // #include <ops/BroadcastOpsTuple.h>
+// #include <ops/BroadcastBoolOpsTuple.h>
 
 
     @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(float arg0, @Const @ByRef NDArray arg1);
@@ -3736,10 +3737,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  value - scalar value to assign
         */
 
-        /*
-        template <typename T>
-        void p(const Nd4jLong* indices, const T value);
-*/
         /**
         *  returns true if array is 2D
         */
@@ -8455,7 +8452,8 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define RANDOMTRIPLE(NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPE_Z)  _RANDOMTRIPLE(NAME, SIGNATURE, TYPE_Z, TYPES_X, TYPES_Y)
 
 
-// #define BROADCAST(NAME) nd4j::BroadcastOpsTuple::CUSTOM(nd4j::scalar::NAME, nd4j::pairwise::NAME, nd4j::broadcast::NAME)
+// #define BROADCAST(NAME) nd4j::BroadcastOpsTuple::custom(nd4j::scalar::NAME, nd4j::pairwise::NAME, nd4j::broadcast::NAME)
+// #define BROADCAST_BOOL(NAME) nd4j::BroadcastBoolOpsTuple::custom(nd4j::scalar::NAME, nd4j::pairwise::NAME, nd4j::broadcast::NAME)
 
 // #endif //TESTS_CPU_TYPE_BOILERPLATE_H
 

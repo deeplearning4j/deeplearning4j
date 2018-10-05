@@ -158,12 +158,22 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                 return OpType.SCALAR;
             case BROADCAST:
                 return OpType.BROADCAST;
-            case TRANSFORM:
-                return OpType.TRANSFORM;
-            case REDUCE:
-                return OpType.ACCUMULATION;
+            case TRANSFORM_FLOAT:
+                return OpType.TRANSFORM_FLOAT;
+            case TRANSFORM_SAME:
+                return OpType.TRANSFORM_SAME;
+            case TRANSFORM_STRICT:
+                return OpType.TRANSFORM_STRICT;
+            case TRANSFORM_BOOL:
+                return OpType.TRANSFORM_BOOL;
+            case REDUCE_FLOAT:
+                return OpType.REDUCE_FLOAT;
+            case REDUCE_BOOL:
+                return OpType.REDUCE_BOOL;
+            case REDUCE_SAME:
+                return OpType.REDUCE_SAME;
             case INDEXREDUCE:
-                return OpType.INDEX_ACCUMULATION;
+                return OpType.INDEX_REDUCE;
             case CUSTOM:
                 return OpType.CUSTOM;
             default:
