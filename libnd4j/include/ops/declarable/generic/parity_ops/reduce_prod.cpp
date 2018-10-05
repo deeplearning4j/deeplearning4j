@@ -69,7 +69,7 @@ namespace ops {
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
 
         // FIXME: double
-        double keepDimsT = (keepDims ? 1.f : 0.f);
+        double keepDimsT = (keepDims ? 1. : 0.);
         // at first step we build fwd activation
         nd4j::ops::reduce_prod op;
         std::vector<Nd4jLong> axes;
@@ -91,15 +91,8 @@ namespace ops {
     
         // tempProd has equal shape with epsilon
         if (epsilon->isScalar()) {
-            // FIXME: lambda
-            /*
-            auto backpropRoutine = LAMBDA_T(_x, epsilon, tempProd) {
-                return (*epsilon)(0.) * ((*tempProd)(0.) / _x);
-            };
-            input->applyLambda(backpropRoutine, output);
-            */
-            throw std::runtime_error("Not implemented yet");
-        } 
+            helpers::reduceProductBPScalar(input, epsilon, tempProd, output);
+        }
         else { // result 
 
             auto axes = *block.getIArguments();

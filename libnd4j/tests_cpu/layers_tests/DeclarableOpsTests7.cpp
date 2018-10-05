@@ -53,6 +53,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR_LARGE) {
 
     auto z = result->at(1);
     auto array = *z;
+    z->printIndexedBuffer("CHOOSE test");
     ASSERT_EQ(148,array.e<double>(0));
     //ASSERT_TRUE(exp.isSameShape(z));
 
@@ -4390,9 +4391,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_BP_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
     auto output = result->at(0);
-//    output->printIndexedBuffer("Result is");
+    output->printIndexedBuffer("Result is");
 
-//    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
     delete result;

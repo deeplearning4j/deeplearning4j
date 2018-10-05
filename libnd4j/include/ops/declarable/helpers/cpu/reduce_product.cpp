@@ -25,7 +25,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void reduceProductBP(NDArray* input, NDArray* epsilon, NDArray* tempProd, NDArray* output, std::vector<int> const& axes) {
+    void reduceProductBP(NDArray *input, NDArray *epsilon, NDArray *tempProd, NDArray *output,
+                         std::vector<int> const &axes) {
         std::vector<int> dimensions; //(input->rankOf() - axes.size());
 
 //#pragma omp parallel for if (input->rankOf() >  Environment::getInstance()->elementwiseThreshold()) schedule(static)        
@@ -44,6 +45,23 @@ namespace helpers {
         }
     }
 
+    template<typename T>
+    static void reduceProductBPScalar_(NDArray *input, NDArray *epsilon, NDArray *tempProd, NDArray *output) {
+
+        auto backpropRoutine = LAMBDA_T(_x, epsilon, tempProd) {
+            return (epsilon->e<T>(0) * (tempProd->e<T>(0) / _x));
+        };
+
+        input->applyLambda<T>(backpropRoutine, output);
+    }
+
+    void reduceProductBPScalar(NDArray *input, NDArray *epsilon, NDArray *tempProd, NDArray *output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), reduceProductBPScalar_, (input, epsilon, tempProd, output),
+                              FLOAT_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void reduceProductBPScalar_,
+        (NDArray * input, NDArray * epsilon, NDArray * tempProd, NDArray * output), FLOAT_TYPES);
 }
 }
 }

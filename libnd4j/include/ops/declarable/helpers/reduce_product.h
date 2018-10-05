@@ -27,6 +27,7 @@ namespace ops {
 namespace helpers {
 
     void reduceProductBP(NDArray* input, NDArray* epsilon, NDArray* tempProd, NDArray* output, std::vector<int> const& axes);
+    void reduceProductBPScalar(NDArray* input, NDArray* epsilon, NDArray* tempProd, NDArray* output);
 
 }
 }
