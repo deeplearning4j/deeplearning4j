@@ -56,7 +56,13 @@ namespace nd4j {
                 epsNext->applyPairwiseTransform(pairwise::Multiply, tmpResult->at(0), gradY, nullptr);
             else // epsNext is greater than gradY
             {
-                tmpResult->at(0)->applyPairwiseTransform(pairwise::Multiply, epsNext, gradY, nullptr);
+                std::vector<Nd4jLong> dims(epsNext->rankOf() * 2);
+                Nd4jLong gap = epsNext->rankOf() - gradY->rankOf();
+                for (Nd4jLong d = 0; d < gap; d++) {
+                    dims[d * 2 + 1] = 1;
+                }
+                auto tempIn((*tmpResult->at(0))(dims));
+                (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, &tempIn, gradY, nullptr);
             }
             return Status::OK();
         }

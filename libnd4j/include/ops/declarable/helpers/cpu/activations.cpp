@@ -188,7 +188,7 @@ namespace helpers {
         const Nd4jLong* inputShapeInfo = input.getShapeInfo();
         const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
 
-        dLdA = 0.0f;
+        dLdA.assign(0.0f);
 
 //#pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i = 0; i < inputLen; ++i) {
@@ -198,7 +198,9 @@ namespace helpers {
             if(x < 0.0) {
                 Nd4jLong alphaInd = ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i);
                 dLdI.p(i, grO * alpha.e<double>(alphaInd));
-                dLdA.p(alphaInd, dLdA.e<double>(alphaInd) + (grO * x));
+                double prevVal = dLdA.e<double>(alphaInd);
+                prevVal += (grO * x);
+                dLdA.p(alphaInd, prevVal );
             }
             else
                 dLdI.p(i, grO);
