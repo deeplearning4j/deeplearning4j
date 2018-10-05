@@ -69,8 +69,9 @@ namespace ops {
             auto output = OUTPUT_VARIABLE(0);
 
             if (epsilon->isScalar()) {
-                output->assign(epsilon->e<double>(0) * 2.f);
-                output->applyPairwiseTransform(pairwise::Multiply, input, output, nullptr);
+                output->assign(epsilon->e<double>(0) * 2.);
+                *output *= *input;
+                //output->applyPairwiseTransform(pairwise::Multiply, input, output, nullptr);
             }
             else {
                 auto axes = *block.getIArguments();

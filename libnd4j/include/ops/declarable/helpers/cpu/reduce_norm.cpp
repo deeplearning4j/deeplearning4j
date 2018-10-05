@@ -79,9 +79,11 @@ namespace helpers {
         std::unique_ptr<ResultSet> outList(output->allTensorsAlongDimension(dimensions));
         std::unique_ptr<ResultSet> inList(input->allTensorsAlongDimension(dimensions));
         for (int e = 0; e < outList->size(); ++e) {
-            outList->at(e)->assign(2.f);
-            outList->at(e)->applyPairwiseTransform(pairwise::Multiply, epsilon, outList->at(e), nullptr);
-            outList->at(e)->applyPairwiseTransform(pairwise::MinPairwise, inList->at(e), outList->at(e), nullptr);
+            auto outputS = outList->at(e);
+            auto inputS = inList->at(e);
+            outputS->assign(2.f);
+            *outputS *= *epsilon;
+            *outputS *= *inputS;
         }
     }
 }
