@@ -98,6 +98,11 @@
             <dependencies>
                 <dependency>
                     <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <artifactId>openblas</artifactId>
+                    <version>${openblas.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco.javacpp-presets</groupId>
                     <artifactId>tensorflow-platform</artifactId>
                     <version>${tensorflow.javacpp.version}</version>
                 </dependency>

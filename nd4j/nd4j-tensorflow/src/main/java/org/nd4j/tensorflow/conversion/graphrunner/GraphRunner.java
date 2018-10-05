@@ -257,6 +257,9 @@ public class GraphRunner implements Closeable {
         for(int i = 0; i < inputOrder.size(); i++) {
             String[] name = inputOrder.get(i).split(":");
             tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
+            if(inputOp == null) {
+                throw new IllegalArgumentException("Illegal input found " + inputOrder.get(i) + " - no op found! Mis specified bname perhaps?")
+            }
             opsByName.put(inputOrder.get(i),inputOp);
             inputOut.position(i).oper(inputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
             TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(inputNames != null ? inputNames.get(i) : inputOrder.get(i)));
@@ -272,6 +275,9 @@ public class GraphRunner implements Closeable {
         for(int i = 0; i < outputOrder.size(); i++) {
             String[] name = outputOrder.get(i).split(":");
             tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, name[0]);
+            if(outputOp == null) {
+                throw new IllegalArgumentException("Illegal input found " + inputOrder.get(i) + " - no op found! Mis specified bname perhaps?")
+            }
             opsByName.put(outputOrder.get(i),outputOp);
             outputOut.position(i).oper(outputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
         }

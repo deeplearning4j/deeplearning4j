@@ -199,6 +199,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_lrn.class,
         float_lrn_bp.class,
         float_batchnorm.class,
+        float_batchnorm_new.class,
         float_batchnorm_bp.class,
         float_apply_sgd.class,
         float_fused_batch_norm.class,
@@ -598,6 +599,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_lrn.class,
         half_lrn_bp.class,
         half_batchnorm.class,
+        half_batchnorm_new.class,
         half_batchnorm_bp.class,
         half_apply_sgd.class,
         half_fused_batch_norm.class,
@@ -997,6 +999,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_lrn.class,
         double_lrn_bp.class,
         double_batchnorm.class,
+        double_batchnorm_new.class,
         double_batchnorm_bp.class,
         double_apply_sgd.class,
         double_fused_batch_norm.class,
@@ -13320,6 +13323,7 @@ public static final long MAX_UINT = MAX_UINT();
 // #define ND4J_CONTEXT_PROTOTYPE_H
 
 // #include <vector>
+// #include <Environment.h>
         @Name("nd4j::graph::ContextPrototype<float>") @NoOffset public static class FloatContextPrototype extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -13493,6 +13497,7 @@ public static final long MAX_UINT = MAX_UINT();
 
 // #endif //ND4J_CONTEXT_PROTOTYPE_H
 
+
 // Parsed from graph/ResultWrapper.h
 
 /*******************************************************************************
@@ -13581,6 +13586,7 @@ public static final long MAX_UINT = MAX_UINT();
 public static final int MAX_DIMENSION = 0x7fffffff;
 public static final int MAX_NUM_THREADS =  1024;
 public static final int MAX_RANK = 32;
+public static final int MAX_SHAPEINFOLENGTH = 2*MAX_RANK+4;
 public static final int MAX_COORD = 3;
 public static final int PREALLOC_SIZE = 33554432;
 // #ifdef __CUDACC__
@@ -13822,9 +13828,19 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native ShapeInformation shapeCopy( ShapeInformation toCopy);
 
 
-    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("Nd4jLong*") LongPointer shapeBuffer);
-    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("Nd4jLong*") LongBuffer shapeBuffer);
-    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("Nd4jLong*") long[] shapeBuffer);
+    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") LongPointer shapeBuffer);
+    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") LongBuffer shapeBuffer);
+    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") long[] shapeBuffer);
+
+
+/**
+ * copy-past from java hasDefaultStridesForShape function
+ * check whether array is not permuted and has contiguous elements in memory
+ */ 
+    @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") long[] shapeInfo);
+
 
 /**
  * Compute the element wise stride
@@ -13996,17 +14012,17 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native int oneDimEqualToLength(@Cast("Nd4jLong*") LongBuffer shapeInfo);
     @Namespace("shape") public static native int oneDimEqualToLength(@Cast("Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native int isVector(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native int isVector(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native int isVector(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") long[] shapeInfo);
 
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
 
-    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") long[] shapeInfo);
 
     @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("Nd4jLong*") LongPointer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("Nd4jLong*") LongBuffer shapeInfo);
@@ -14096,9 +14112,9 @@ public static final int PREALLOC_SIZE = 33554432;
 
     @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(int rank);
 
-    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 /**
  * Returns the rank portion of
@@ -14133,13 +14149,13 @@ public static final int PREALLOC_SIZE = 33554432;
 /**
  * Compute the length of the given shape
  */
-    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 /***
  * Returns the offset portion of an information buffer
@@ -14156,9 +14172,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the ordering
  * for this shape information buffer
  */
-    @Namespace("shape") public static native char order(@Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native char order(@Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native char order(@Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") long[] buffer);
 
 /**
  * Returns the element wise stride for this information
@@ -15474,6 +15490,9 @@ public static final int PREALLOC_SIZE = 33554432;
 //        delete[] shape;
 //        return ret;
 //    }
+
+////////////////////////////////////////////////////////////////////////// 
+// copy-past from java hasDefaultStridesForShape function
 
     // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)
     // also it sorts input array of dimensions, this operation is also necessary for creating TAD object
@@ -37619,6 +37638,53 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
 //         #endif
+//         #if NOT_EXCLUDED(OP_batchnorm)
+        @Name("nd4j::ops::batchnorm_new<float>") public static class float_batchnorm_new extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_batchnorm_new(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_batchnorm_new(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_batchnorm_new position(long position) {
+                return (float_batchnorm_new)super.position(position);
+            }
+        
+                                                                                    public float_batchnorm_new() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::batchnorm_new<float16>") public static class half_batchnorm_new extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_batchnorm_new(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_batchnorm_new(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_batchnorm_new position(long position) {
+                return (half_batchnorm_new)super.position(position);
+            }
+        
+                                                                                    public half_batchnorm_new() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::batchnorm_new<double>") public static class double_batchnorm_new extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_batchnorm_new(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_batchnorm_new(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_batchnorm_new position(long position) {
+                return (double_batchnorm_new)super.position(position);
+            }
+        
+                                                                                    public double_batchnorm_new() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
 
         /**
         * back prop in batch normalization
@@ -37763,7 +37829,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * scale:  1D input array of scale factors, shape [iD]
          * offset: 1D input array of offsets (shifts), shape [iD]
          * mean: 1D input array of population mean used for inference, shape [iD], this array is required only if isTraining = false
-         * variance: 1D input array of population mean used for inference, shape [iD], this array is required only if isTraining = false         
+         * variance: 1D input array of population mean used for inference, shape [iD], this array is required only if isTraining = false
          * 
          * T input arguments:
          * 0: epsilon, it is optional argument, default value is 0.001, this is small number to be added to the variance of x
