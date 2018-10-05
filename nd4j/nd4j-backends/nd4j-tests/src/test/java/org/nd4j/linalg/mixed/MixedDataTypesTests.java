@@ -218,7 +218,7 @@ public class MixedDataTypesTests {
         assertEquals(1.0, arr, 1e-5);
     }
 
-    @Test(expected = ND4JIllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testTypesValidation_1() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.LONG);
         val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
@@ -227,4 +227,17 @@ public class MixedDataTypesTests {
         val op = new CosineSimilarity(arrayX, arrayY);
         val result = Nd4j.getExecutioner().exec(op).z();
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testTypesValidation_2() throws Exception {
+        val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+        val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.LONG);
+        val exp = new long[]{1, 0, 0, 1};
+
+        val result = Nd4j.getExecutioner().exec(new OldEqualTo(arrayX, arrayY)).z();
+        val arr = result.data().asLong();
+
+        assertArrayEquals(exp, arr);
+    }
+
 }

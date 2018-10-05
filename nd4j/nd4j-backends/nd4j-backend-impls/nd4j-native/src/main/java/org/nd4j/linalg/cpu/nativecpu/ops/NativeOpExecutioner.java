@@ -662,9 +662,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (op.y() != null) {
 
-                if (op.z() == null) {
+                if (op.z() == null)
                     op.setZ(Nd4j.create(op.resultType(), op.x().shape()));
-                }
+
+
+                op.validateDataTypes();
 
                 log.info("X type: {}; Y type: {}; Z type: {};", op.x().dataType(), op.y().dataType(), op.z().dataType());
 
@@ -707,6 +709,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         break;
                 }
             } else {
+
+                if (op.z() == null)
+                    op.setZ(Nd4j.create(op.resultType(), op.x().shape()));
+
+                op.validateDataTypes();
+
                 if (op instanceof TransformFloatOp) {
                     loop.execTransformFloat(dummy, op.opNum(),
                             op.x().data().addressPointer(),
