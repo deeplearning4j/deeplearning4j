@@ -164,8 +164,8 @@ public class OpsMappingTests {
             }
             break;
             case REDUCE3:
-            case REDUCE: {
-                Set<Class<? extends BaseReduceOp>> clazzes = f.getSubTypesOf(BaseReduceOp.class);
+            case REDUCE_FLOAT: {
+                Set<Class<? extends BaseReduceFloatOp>> clazzes = f.getSubTypesOf(BaseReduceFloatOp.class);
 
                 for (Class<? extends DifferentialFunction> clazz : clazzes)
                     addOperation(clazz, list);
@@ -186,8 +186,8 @@ public class OpsMappingTests {
             }
             break;
             case PAIRWISE:
-            case TRANSFORM: {
-                Set<Class<? extends BaseTransformOp>> clazzes = f.getSubTypesOf(BaseTransformOp.class);
+            case TRANSFORM_SAME: {
+                Set<Class<? extends BaseTransformSameOp>> clazzes = f.getSubTypesOf(BaseTransformSameOp.class);
 
                 for (Class<? extends DifferentialFunction> clazz : clazzes)
                     addOperation(clazz, list);

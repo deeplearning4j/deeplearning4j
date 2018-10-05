@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
