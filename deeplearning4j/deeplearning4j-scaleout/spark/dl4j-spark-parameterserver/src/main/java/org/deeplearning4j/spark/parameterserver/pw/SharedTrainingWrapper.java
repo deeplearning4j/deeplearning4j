@@ -387,7 +387,7 @@ public class SharedTrainingWrapper {
                     log.warn("Adding SleepyListener: {} ms", trainingConfiguration.getDebugLongerIterations());
                     model.addListeners(SleepyTrainingListener.builder()
                                     //.timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
-                            .timerIteration(10000).build());
+                            .timerIteration(20000).build());
                 //}
 
                 // we're launching PW only if number of workers is more then 1

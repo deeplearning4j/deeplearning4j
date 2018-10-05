@@ -110,6 +110,7 @@ public abstract  class BaseTransport  implements Transport {
         public Thread newThread(@NotNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
+            t.setName("BaseExecutorService thread");
             return t;
         }
     });
