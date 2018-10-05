@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.IsInf;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.IsNaN;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldEqualTo;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -187,5 +188,17 @@ public class MixedDataTypesTests {
         val result2 = z2.getInt(0);
 
         assertEquals(1, result2);
+    }
+
+    @Test
+    public void testBasicOps_8() throws Exception {
+        val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+        val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.INT);
+        val exp = new long[]{1, 0, 0, 1};
+
+        val result = Nd4j.getExecutioner().exec(new OldEqualTo(arrayX, arrayY)).z();
+        val arr = result.data().asLong();
+
+        assertArrayEquals(exp, arr);
     }
 }

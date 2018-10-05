@@ -64,6 +64,10 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
         super(x);
     }
 
+    @Override
+    public Type getOpType() {
+        return Type.TRANSFORM_STRICT;
+    }
 
     @Override
     public DataType resultType() {

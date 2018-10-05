@@ -140,6 +140,10 @@ public abstract class NativeOps extends Pointer {
                                                @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer y, @Cast("Nd4jLong *") LongPointer yShapeInfo, Pointer result,
                                                @Cast("Nd4jLong *") LongPointer resultShapeInfo, Pointer extraParams);
 
+    public abstract void execPairwiseTransformBool(PointerPointer extraPointers, int opNum, Pointer dx,
+                                               @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer y, @Cast("Nd4jLong *") LongPointer yShapeInfo, Pointer result,
+                                               @Cast("Nd4jLong *") LongPointer resultShapeInfo, Pointer extraParams);
+
     /**
      * @param opNum
      * @param x

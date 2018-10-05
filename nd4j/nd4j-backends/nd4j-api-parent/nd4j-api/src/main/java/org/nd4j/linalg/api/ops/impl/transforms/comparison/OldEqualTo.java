@@ -70,16 +70,12 @@ public class OldEqualTo extends BaseTransformBoolOp {
         super(x, y, z, n);
     }
 
-    public OldEqualTo(INDArray x) {
-        super(x);
+    public OldEqualTo(INDArray x, INDArray y) {
+        super(x, y, null, x.length());
     }
 
-    public OldEqualTo(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public OldEqualTo(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    public OldEqualTo(INDArray x, INDArray y, long n) {
+        super(x, y, null, n);
     }
 
     @Override

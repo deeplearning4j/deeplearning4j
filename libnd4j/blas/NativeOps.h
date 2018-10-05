@@ -146,6 +146,18 @@ public:
             int *dimension,
             int dimensionLength);
 
+    void   execBroadcastBool(
+            Nd4jPointer *extraPointers,
+            int opNum,
+            void *x,
+            Nd4jLong *xInfo,
+            void *y,
+            Nd4jLong *yInfo,
+            void *result,
+            Nd4jLong *resultShapeInfo,
+            int *dimension,
+            int dimensionLength);
+
     /**
      *
      * @param opNum
@@ -159,6 +171,17 @@ public:
      * @param n
      */
     void execPairwiseTransform(
+            Nd4jPointer *extraPointers,
+            int opNum,
+            void *dx,
+            Nd4jLong *xShapeInfo,
+            void *y,
+            Nd4jLong *yShapeInfo,
+            void *result,
+            Nd4jLong *resultShapeInfo,
+            void *extraParams);
+
+    void execPairwiseTransformBool(
             Nd4jPointer *extraPointers,
             int opNum,
             void *dx,
@@ -360,6 +383,16 @@ public:
                           Nd4jLong *scalarShapeInfo,
                           void *extraParams);
 
+    void execScalarBool(Nd4jPointer *extraPointers,
+                    int opNum,
+                    void *x,
+                    Nd4jLong *xInfo,
+                    void *result,
+                    Nd4jLong *resultShapeInfo,
+                    void *scalar,
+                    Nd4jLong *scalarShapeInfo,
+                    void *extraParams);
+
     /**
      *
      * @param opNum
@@ -480,6 +513,18 @@ public:
                           void *extraParams,
                           int *dimension,
                           int dimensionLength);
+
+    void execScalarBool(Nd4jPointer *extraPointers,
+                    int opNum,
+                    void *x,
+                    Nd4jLong *xShapeInfo,
+                    void *z,
+                    Nd4jLong *zShapeInfo,
+                    void *scalars,
+                    Nd4jLong *scalarShapeInfo,
+                    void *extraParams,
+                    int *dimension,
+                    int dimensionLength);
 
 
 /**

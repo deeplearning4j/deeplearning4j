@@ -58,6 +58,11 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
     }
 
     @Override
+    public Type getOpType() {
+        return Type.TRANSFORM_FLOAT;
+    }
+
+    @Override
     public DataType resultType() {
         if (this.x() != null && this.x().isR())
             return this.x().dataType();

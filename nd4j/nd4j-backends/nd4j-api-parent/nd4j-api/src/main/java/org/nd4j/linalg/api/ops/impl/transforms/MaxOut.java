@@ -100,4 +100,9 @@ public class MaxOut extends BaseTransformOp {
     public DataType resultType() {
         return Nd4j.defaultFloatintPointType();
     }
+
+    @Override
+    public Type getOpType() {
+        return Type.TRANSFORM_STRICT;
+    }
 }

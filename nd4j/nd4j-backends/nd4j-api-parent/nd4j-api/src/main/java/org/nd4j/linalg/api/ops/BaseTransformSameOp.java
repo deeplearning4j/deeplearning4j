@@ -76,6 +76,10 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
         super(x);
     }
 
+    @Override
+    public Type getOpType() {
+        return Type.TRANSFORM_SAME;
+    }
 
     @Override
     public DataType resultType() {

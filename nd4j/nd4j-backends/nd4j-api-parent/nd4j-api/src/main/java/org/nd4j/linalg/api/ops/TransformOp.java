@@ -30,4 +30,6 @@ public interface TransformOp extends Op {
      * @return
      */
     DataType resultType();
+
+    Type getOpType();
 }

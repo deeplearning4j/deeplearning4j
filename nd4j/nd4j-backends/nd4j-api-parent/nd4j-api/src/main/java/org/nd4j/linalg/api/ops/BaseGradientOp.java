@@ -91,4 +91,8 @@ public abstract class BaseGradientOp extends BaseTransformOp implements Gradient
         Preconditions.checkState(y != null,"A gradient op must define a wrt variable as a Y. ");
     }
 
+    @Override
+    public Type getOpType() {
+        return Type.TRANSFORM_STRICT;
+    }
 }

@@ -661,6 +661,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (op.y() != null) {
 
+                if (op.z() == null) {
+                    op.setZ(Nd4j.create(op.resultType(), op.x().shape()));
+                }
+
+                log.info("X type: {}; Y type: {}; Z type: {};", op.x().dataType(), op.y().dataType(), op.z().dataType());
+
                 int xEWS = op.x().elementWiseStride();
                 int yEWS = op.y().elementWiseStride();
                 int zEWS = op.z().elementWiseStride();
@@ -675,7 +681,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             "; y: " + op.y().length() + ", shape " + Arrays.toString(op.y().shape()) +
                             "; z: " + op.z().length() + ", shape " + Arrays.toString(op.z().shape()));
 
-                    loop.execPairwiseTransform(dummy, op.opNum(),
+                switch (op.getOpType()) {
+                    case TRANSFORM_FLOAT:
+                    case TRANSFORM_STRICT:
+                    case TRANSFORM_SAME:
+                        loop.execPairwiseTransform(dummy, op.opNum(),
                             op.x().data().addressPointer(),
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             op.y().data().addressPointer(),
@@ -683,6 +693,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.z().data().addressPointer(),
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             getPointerForExtraArgs(op));
+                        break;
+                    case TRANSFORM_BOOL:
+                        loop.execPairwiseTransformBool(dummy, op.opNum(),
+                                op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                op.y().data().addressPointer(),
+                                (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                                op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                getPointerForExtraArgs(op));
+                        break;
+                }
             } else {
                 if (op instanceof TransformFloatOp) {
                     loop.execTransformFloat(dummy, op.opNum(),
