@@ -8425,34 +8425,28 @@ public class SameDiff {
     }
 
     /**
-     * See {@link #lossMeanPairwiseSquaredError(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     * See {@link #lossMeanPairwiseSquaredError(String, SDVariable, SDVariable, SDVariable)}.
      */
     public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossMeanPairwiseSquaredError(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
+        return lossMeanPairwiseSquaredError(name, label, predictions, null);
     }
 
     /**
-     * See {@link #lossMeanPairwiseSquaredError(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
-        return lossMeanPairwiseSquaredError(name, label, predictions, null, lossReduce);
-    }
-
-    /**
-     * Mean pairwise squared error
+     * Mean pairwise squared error.<br>
+     * MPWSE loss calculates the difference between pairs of consecutive elements in the predictions and labels arrays.
+     * For example, if predictions = [p0, p1, p2] and labels are [l0, l1, l2] then MPWSE is:
+     * {@code [((p0-p1) - (l0-l1))^2 + ((p0-p2) - (l0-l2))^2 + ((p1-p2) - (l1-l2))^2] / 3}<br>
      *
      * @param name        Name of the operation
      * @param label       Label array
      * @param predictions Predictions array
-     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @return Loss variable
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used. Must be either null, scalar, or have shape [batchSize]
+     * @return Loss variable, scalar output
      */
-    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                             SDVariable weights, @NonNull LossReduce lossReduce) {
+    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, SDVariable weights) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossMeanPairwiseSquaredError(label, predictions, weights, lossReduce);
+        SDVariable result = functionFactory.lossMeanPairwiseSquaredError(label, predictions, weights);
         return updateVariableNameAndReference(result, name);
     }
 

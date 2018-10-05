@@ -3,17 +3,18 @@ package org.nd4j.linalg.api.ops.impl.loss;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 /**
  * Absolute difference loss
  *
  * @author Alex Black
  */
-public class MeanPairwiseSquaredErrorLoss extends BaseLoss {
+public class MeanPairwiseSquaredErrorLoss extends DynamicCustomOp {
 
 
-    public MeanPairwiseSquaredErrorLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels){
-        super(sameDiff, lossReduce, predictions, weights, labels);
+    public MeanPairwiseSquaredErrorLoss(SameDiff sameDiff, SDVariable predictions, SDVariable weights, SDVariable labels){
+        super(null, sameDiff, new SDVariable[]{predictions, weights, labels});
     }
 
     public MeanPairwiseSquaredErrorLoss(){ }
