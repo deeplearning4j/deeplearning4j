@@ -56,7 +56,6 @@ DECLARE_SHAPE_FN(reduce_mean) {
         REQUIRE_TRUE(item > -inputShape->at(0)[0] || item < inputShape->at(0)[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
     auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
-    //ArrayOptions::setDataType(outShapeInfo, block.dataType());
 
     return SHAPELIST(outShapeInfo);
 }
@@ -84,7 +83,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
     }
     else {
         
-        (*gradI).assign((gradO->lengthOf()) / input->lengthOf());
+        (*gradI).assign((gradO->lengthOf() + 0.) / input->lengthOf());
 
         Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());
         const bool isGradOShapeBroadcast = shape::equalsSoft(gradOShapeKeepDims, gradO->getShapeInfo());
@@ -115,7 +114,6 @@ DECLARE_SHAPE_FN(reduce_mean_bp) {
     
     Nd4jLong* gradIshapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
-    ArrayOptions::setDataType(gradIshapeInfo, ArrayOptions::dataType(inputShape->at(1)));
 
     return SHAPELIST(gradIshapeInfo);
 }
