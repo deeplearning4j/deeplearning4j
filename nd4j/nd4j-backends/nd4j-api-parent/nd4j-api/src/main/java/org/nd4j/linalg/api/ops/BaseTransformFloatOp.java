@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseTransformFloatOp extends BaseTransformOp implements TransformFloatOp {
@@ -73,7 +74,13 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
     @Override
     public boolean validateDataTypes() {
         if (z() != null && !z().isR())
-            return false;
+            throw new ND4JIllegalArgumentException("Op.X must be one of floating types");
+
+        if (y() != null && !y().isR())
+            throw new ND4JIllegalArgumentException("Op.Y must be one of floating types");
+
+        if (z() != null && !z().isR())
+            throw new ND4JIllegalArgumentException("Op.Z must be one of floating types");
 
         return true;
     }

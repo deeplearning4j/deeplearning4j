@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 
 public abstract class BaseTransformBoolOp extends BaseTransformOp implements TransformSameOp {
 
@@ -91,11 +92,11 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
     public boolean validateDataTypes() {
         if (y() != null) {
             if (x().dataType() != y().dataType())
-                return false;
+                throw new ND4JIllegalArgumentException("Op.X must be the same type as Op.Z");
         }
 
         if (z() != null && !z().isB())
-            return false;
+            throw new ND4JIllegalArgumentException("Op.Z type must be bool");
 
         return true;
     }

@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 
 public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoolOp {
     public BaseReduceBoolOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
@@ -73,11 +74,11 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
     public boolean validateDataTypes() {
         if (y() != null) {
             if (x().dataType() != y().dataType())
-                return false;
+                throw new ND4JIllegalArgumentException("Op.X type must be the same as Op.Y");
         }
 
         if (z() != null && !z().isB())
-            return false;
+            throw new ND4JIllegalArgumentException("Op.X type must be bool");
 
         return true;
     }

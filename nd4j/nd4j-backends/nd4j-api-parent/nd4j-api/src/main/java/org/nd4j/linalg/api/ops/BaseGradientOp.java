@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 
 /**
  * A gradient op always makes the following assumptions:
@@ -99,13 +100,13 @@ public abstract class BaseGradientOp extends BaseTransformOp implements Gradient
     @Override
     public boolean validateDataTypes() {
         if (!x().isR())
-            return false;
+            throw new ND4JIllegalArgumentException("Op.X must be one of floating types");
 
         if (y() != null && !y().isR())
-            return false;
+            throw new ND4JIllegalArgumentException("Op.Y must be one of floating types");
 
         if (z() != null && z().dataType() != x().dataType())
-            return false;
+            throw new ND4JIllegalArgumentException("Op.Z type must be the same as Op.X type");
 
         return true;
     }
