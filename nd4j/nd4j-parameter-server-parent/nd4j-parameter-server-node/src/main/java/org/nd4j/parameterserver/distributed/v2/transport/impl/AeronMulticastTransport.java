@@ -90,6 +90,9 @@ public class AeronMulticastTransport extends AeronUdpTransport {
     }
 
     protected void createMulticastSubscription() {
+        if (masterMode)
+            return;
+
         // here we connect to master's multicast stream
         val multicastChannelUri = getMulticastChannelUri();
 
@@ -135,7 +138,7 @@ public class AeronMulticastTransport extends AeronUdpTransport {
                 LockSupport.parkNanos(50000);
         }
 
-        log.info("Successfully send multicast message [{}]", message.getClass().getSimpleName());
+        log.info("Successfully sent multicast message [{}]", message.getClass().getSimpleName());
     }
 
     @Override
@@ -160,10 +163,6 @@ public class AeronMulticastTransport extends AeronUdpTransport {
         super.onMeshUpdate(mesh);
     }
 
-    @Override
-    public synchronized void launch() {
-        super.launch();
-    }
 
     @Override
     public synchronized void launchAsMaster() {

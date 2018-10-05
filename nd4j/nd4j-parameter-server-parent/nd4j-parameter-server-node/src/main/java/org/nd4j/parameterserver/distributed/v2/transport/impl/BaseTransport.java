@@ -175,11 +175,13 @@ public abstract  class BaseTransport  implements Transport {
                             if (message != null)
                                 internalProcessMessage(message);
                         } catch (InterruptedException e) {
+                            log.error("Interrupted exception", e);
                             break;
                         } catch (Exception e) {
-                            log.error("Exception: {}", e);
+                            log.error("MessageQueue exception", e);
                         }
                     }
+                    log.error("Exiting MessageQueue loop...");
                 }
             });
         }
@@ -374,7 +376,7 @@ public abstract  class BaseTransport  implements Transport {
                 log.info("Processing message [{}] : [{}]", chunk.getOriginalId(), opt.get().getClass().getSimpleName());
                 this.internalProcessMessage(opt.get());
             } else {
-                log.info("Bad luck");
+                log.info("Bad luck for [{}]", chunk.getOriginalId());
             }
         } else if (message instanceof INDArrayMessage) {
             // just forward message, but ONLY if it's not a Response message, since it's probably processed separately

@@ -383,14 +383,16 @@ public class SharedTrainingWrapper {
                 }
 
                 // if we're going to extend iteratation for debugging purposes - let's do that here
-                if (trainingConfiguration.getDebugLongerIterations() > 0) {
+                //if (trainingConfiguration.getDebugLongerIterations() > 0) {
                     log.warn("Adding SleepyListener: {} ms", trainingConfiguration.getDebugLongerIterations());
                     model.addListeners(SleepyTrainingListener.builder()
-                                    .timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
-                }
+                                    //.timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
+                            .timerIteration(10000).build());
+                //}
 
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
+                    log.info("Using ParallelWrapper with [{}] workers...", numWorkers);
                     //log.info("Params at PW:  {mean: [{}]; stdev: [{}]}", originalModel.params().meanNumber().doubleValue(), originalModel.params().stdNumber().doubleValue());
 
                     wrapper = new ParallelWrapper.Builder<>(originalModel)
@@ -404,7 +406,7 @@ public class SharedTrainingWrapper {
                                     .build();
                     wrapper.setExceptionEncountered(exceptionEncountered);
                 } else {
-                    log.debug("Using standalone model instead...");
+                    log.info("Using standalone model...");
 
                     // since there'll be only one consumer, we don't need complex sync logic anymore
                     accumulator.fallbackToSingleConsumerMode(true);
