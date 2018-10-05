@@ -24,6 +24,10 @@ import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFloatOp {
 
+    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
+        super(x, y, z, newFormat, keepDims, dimensions);
+    }
+
     protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
@@ -83,5 +87,18 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
             return this.x().dataType();
 
         return Nd4j.defaultFloatintPointType();
+    }
+
+    @Override
+    public boolean validateDataTypes() {
+        if (y() != null) {
+            if (x().dataType() != y().dataType())
+                return false;
+        }
+
+        if (z() != null && !z().isR())
+            return false;
+
+        return true;
     }
 }

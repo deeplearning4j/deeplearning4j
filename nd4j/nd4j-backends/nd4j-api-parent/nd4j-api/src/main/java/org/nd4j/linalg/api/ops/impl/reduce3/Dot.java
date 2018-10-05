@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -30,7 +31,7 @@ import java.util.List;
  * Dot product
  * @author Adam Gibson
  */
-public class Dot extends BaseReduceOp {
+public class Dot extends BaseReduceFloatOp {
 
     public Dot(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
@@ -43,7 +44,7 @@ public class Dot extends BaseReduceOp {
     }
 
     public Dot(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+        super(x, y, null, n);
     }
 
     public Dot(INDArray x) {
@@ -51,7 +52,7 @@ public class Dot extends BaseReduceOp {
     }
 
     public Dot(INDArray x, INDArray y) {
-        super(x, y);
+        super(x, y, null);
     }
 
     public Dot(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){

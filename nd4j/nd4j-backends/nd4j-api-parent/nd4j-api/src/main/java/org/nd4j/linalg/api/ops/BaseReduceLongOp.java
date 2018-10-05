@@ -69,4 +69,17 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
     public DataType resultType() {
         return DataType.LONG;
     }
+
+    @Override
+    public boolean validateDataTypes() {
+        if (y() != null) {
+            if (x().dataType() != y().dataType())
+                return false;
+        }
+
+        if (z() != null && z().dataType() != DataType.LONG)
+            return false;
+
+        return true;
+    }
 }

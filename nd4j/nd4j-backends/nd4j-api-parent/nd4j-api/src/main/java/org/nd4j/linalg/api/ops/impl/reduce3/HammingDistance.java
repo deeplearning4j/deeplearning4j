@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,7 +34,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class HammingDistance extends BaseReduceOp {
+public class HammingDistance extends BaseReduceFloatOp {
 
 
     public HammingDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
@@ -51,7 +52,7 @@ public class HammingDistance extends BaseReduceOp {
     }
 
     public HammingDistance(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+        super(x, y, null);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
         extraArgs = new Object[]{0.0f, 0.0f};
     }
@@ -63,7 +64,7 @@ public class HammingDistance extends BaseReduceOp {
     }
 
     public HammingDistance(INDArray x, INDArray y) {
-        super(x, y);
+        super(x, y, null);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
         extraArgs = new Object[]{0.0f, 0.0f};
     }

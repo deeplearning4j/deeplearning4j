@@ -85,4 +85,17 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
     public DataType resultType() {
         return this.x().dataType();
     }
+
+    @Override
+    public boolean validateDataTypes() {
+        if (y() != null) {
+            if (x().dataType() != y().dataType())
+                return false;
+        }
+
+        if (z() != null && z().dataType() != x().dataType())
+            return false;
+
+        return true;
+    }
 }

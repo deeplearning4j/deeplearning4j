@@ -24,8 +24,10 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.IsInf;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.IsNaN;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero;
+import org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldEqualTo;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -200,5 +202,29 @@ public class MixedDataTypesTests {
         val arr = result.data().asLong();
 
         assertArrayEquals(exp, arr);
+    }
+
+    @Test
+    public void testBasicOps_9() throws Exception {
+        val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+        val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+        val exp = new long[]{1, 0, 0, 1};
+
+        val op = new CosineSimilarity(arrayX, arrayY);
+        val result = Nd4j.getExecutioner().exec(op).z();
+        assertEquals(DataType.FLOAT, result.dataType());
+        val arr = result.getDouble(0);
+
+        assertEquals(1.0, arr, 1e-5);
+    }
+
+    @Test(expected = ND4JIllegalArgumentException.class)
+    public void testTypesValidation_1() {
+        val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.LONG);
+        val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+        val exp = new long[]{1, 0, 0, 1};
+
+        val op = new CosineSimilarity(arrayX, arrayY);
+        val result = Nd4j.getExecutioner().exec(op).z();
     }
 }

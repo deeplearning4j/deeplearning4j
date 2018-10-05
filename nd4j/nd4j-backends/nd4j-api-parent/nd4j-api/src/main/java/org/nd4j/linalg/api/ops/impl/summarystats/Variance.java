@@ -168,4 +168,18 @@ public class Variance extends BaseReduceOp {
     public DataType resultType() {
         return Nd4j.defaultFloatintPointType();
     }
+
+    @Override
+    public boolean validateDataTypes() {
+        if (!x().isR())
+            return false;
+
+        if (y() != null && !y().isR())
+            return false;
+
+        if (z() != null && !z().isR())
+            return false;
+
+        return true;
+    }
 }

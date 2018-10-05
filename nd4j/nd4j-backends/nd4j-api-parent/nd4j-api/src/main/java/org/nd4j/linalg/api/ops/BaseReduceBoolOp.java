@@ -68,4 +68,17 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
     public DataType resultType() {
         return DataType.BOOL;
     }
+
+    @Override
+    public boolean validateDataTypes() {
+        if (y() != null) {
+            if (x().dataType() != y().dataType())
+                return false;
+        }
+
+        if (z() != null && !z().isB())
+            return false;
+
+        return true;
+    }
 }

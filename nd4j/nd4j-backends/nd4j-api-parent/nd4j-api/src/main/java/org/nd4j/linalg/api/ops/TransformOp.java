@@ -32,4 +32,6 @@ public interface TransformOp extends Op {
     DataType resultType();
 
     Type getOpType();
+
+    boolean validateDataTypes();
 }

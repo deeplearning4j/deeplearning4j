@@ -69,4 +69,12 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
 
         return Nd4j.defaultFloatintPointType();
     }
+
+    @Override
+    public boolean validateDataTypes() {
+        if (z() != null && !z().isR())
+            return false;
+
+        return true;
+    }
 }

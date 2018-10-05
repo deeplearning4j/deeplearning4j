@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,7 +34,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class EuclideanDistance extends BaseReduceOp {
+public class EuclideanDistance extends BaseReduceFloatOp {
     public static final String OP_NAME = "euclidean";
 
     public EuclideanDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
@@ -52,17 +53,13 @@ public class EuclideanDistance extends BaseReduceOp {
     }
 
     public EuclideanDistance(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+        super(x, y,null, n);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public EuclideanDistance(INDArray x) {
-        super(x);
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
 
     public EuclideanDistance(INDArray x, INDArray y) {
-        super(x, y);
+        super(x, y, null);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 

@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -32,7 +33,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class EqualsWithEps extends BaseReduceOp {
+public class EqualsWithEps extends BaseReduceFloatOp {
     private double eps;
 
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, int[] dimensions, double eps) {
@@ -53,12 +54,12 @@ public class EqualsWithEps extends BaseReduceOp {
     }
 
     public EqualsWithEps(INDArray x, INDArray y, long n, double eps) {
-        super(x, y, n);
+        super(x, y, null, n);
         this.extraArgs = new Object[] {eps};
     }
 
     public EqualsWithEps(INDArray x, INDArray y, double eps) {
-        super(x, y);
+        super(x, y, null);
         this.extraArgs = new Object[] {eps};
     }
 

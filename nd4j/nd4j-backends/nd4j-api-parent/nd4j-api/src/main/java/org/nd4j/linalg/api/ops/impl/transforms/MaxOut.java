@@ -105,4 +105,18 @@ public class MaxOut extends BaseTransformOp {
     public Type getOpType() {
         return Type.TRANSFORM_STRICT;
     }
+
+    @Override
+    public boolean validateDataTypes() {
+        if (!x().isR())
+            return false;
+
+        if (y() != null && !y().isR())
+            return false;
+
+        if (z() != null && z().dataType() != x().dataType())
+            return false;
+
+        return true;
+    }
 }

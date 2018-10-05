@@ -47,6 +47,7 @@ import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
@@ -842,6 +843,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if(op.z() == op.x()) {
                 op.setZ(Nd4j.scalar(op.resultType(), 0));
             }
+
+            if (!op.validateDataTypes())
+                throw new ND4JIllegalArgumentException("Bad data types");
 
             // since we're going to call reduceToScalar, we must ensure equal lengths
             if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {

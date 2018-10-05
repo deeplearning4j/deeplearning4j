@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -38,7 +39,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class CosineSimilarity extends BaseReduceOp {
+public class CosineSimilarity extends BaseReduceFloatOp {
     public static final String OP_NAME = "cosinesimilarity";
 
     public CosineSimilarity(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
@@ -60,7 +61,7 @@ public class CosineSimilarity extends BaseReduceOp {
     }
 
     public CosineSimilarity(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+        super(x, y, null, n);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
         extraArgs = new Object[]{0.0f, 0.0f};
     }
@@ -72,7 +73,7 @@ public class CosineSimilarity extends BaseReduceOp {
     }
 
     public CosineSimilarity(INDArray x, INDArray y) {
-        super(x, y);
+        super(x, y, null);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
         extraArgs = new Object[]{0.0f, 0.0f};
     }

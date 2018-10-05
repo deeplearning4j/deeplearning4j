@@ -73,4 +73,19 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
     public DataType resultType() {
         return this.x().dataType();
     }
+
+
+    @Override
+    public boolean validateDataTypes() {
+        if (!x().isR())
+            return false;
+
+        if (y() != null && !y().isR())
+            return false;
+
+        if (z() != null && z().dataType() != x().dataType())
+            return false;
+
+        return true;
+    }
 }

@@ -70,4 +70,17 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
     public DataType resultType() {
         return this.x().dataType();
     }
+
+    @Override
+    public boolean validateDataTypes() {
+        if (y() != null) {
+            if (x().dataType() != y().dataType())
+                return false;
+        }
+
+        if (z() != null && z().dataType() != x().dataType())
+            return false;
+
+        return true;
+    }
 }
