@@ -342,7 +342,9 @@
         (30, LogicalAnd) ,\
         (31, PowDerivative), \
         (32, LogPoisonLoss), \
-        (33, LogPoisonLossFull)
+        (33, LogPoisonLossFull) , \
+        (34, AMaxPairwise), \
+        (35, AMinPairwise)
 
 
 

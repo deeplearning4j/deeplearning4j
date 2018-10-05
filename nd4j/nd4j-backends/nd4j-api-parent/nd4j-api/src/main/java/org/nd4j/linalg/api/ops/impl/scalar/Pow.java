@@ -20,6 +20,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
@@ -35,32 +36,27 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-public class Pow extends BaseTransformOp {
+public class Pow extends BaseScalarOp {
     private double pow;
 
     public Pow() {
     }
 
     public Pow(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double pow) {
-        super(sameDiff, i_v, inPlace);
+        super(sameDiff, i_v, pow, inPlace);
         this.pow = pow;
         this.extraArgs = new Object[]{pow};
     }
 
-    public Pow(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double pow) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.pow = pow;
-        this.extraArgs = new Object[]{pow};
-    }
 
     public Pow(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double pow) {
-        super(sameDiff, i_v, extraArgs);
+        super(sameDiff, i_v, pow, extraArgs);
         this.pow = pow;
         this.extraArgs = new Object[]{pow};
     }
 
     public Pow(INDArray x, INDArray z, double pow) {
-        super(x, z);
+        super(x, z, pow);
         this.pow = pow;
         init(x, null, z, x.lengthLong());
     }
@@ -73,21 +69,21 @@ public class Pow extends BaseTransformOp {
     }
 
     public Pow(INDArray x, INDArray y, INDArray z, long n, double pow) {
-        super(x, y, z, n);
+        super(x, y, z, n, pow);
         this.pow = pow;
         init(x, y, z, n);
 
     }
 
     public Pow(INDArray x, double pow) {
-        super(x);
+        super(x, pow);
         this.pow = pow;
         init(x, null, x, x.lengthLong());
     }
 
     @Override
     public int opNum() {
-        return 7;
+        return 31;
     }
 
     @Override

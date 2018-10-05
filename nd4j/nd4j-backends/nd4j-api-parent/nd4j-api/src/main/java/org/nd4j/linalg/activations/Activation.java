@@ -167,7 +167,7 @@ public enum Activation {
      * @param dup If true: duplicate the array before applying the transform. If false: don't duplicate
      * @return The transform op (execute using {@code Nd4j.getExecutioner().exec(op)}
      */
-    public TransformOp asTransform(INDArray in, boolean dup) {
+    public Op asTransform(INDArray in, boolean dup) {
         if (dup) {
             in = in.dup();
         }

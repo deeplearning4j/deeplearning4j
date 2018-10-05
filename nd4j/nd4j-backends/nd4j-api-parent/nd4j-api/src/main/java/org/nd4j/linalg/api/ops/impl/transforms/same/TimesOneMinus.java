@@ -21,13 +21,14 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.List;
 
 /**If x is input: output is x*(1-x)
  * @author Alex Black
  */
-public class TimesOneMinus extends BaseTransformOp {
+public class TimesOneMinus extends BaseTransformSameOp {
     public TimesOneMinus(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -60,7 +61,7 @@ public class TimesOneMinus extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 24;
+        return 5;
     }
 
     @Override

@@ -14,62 +14,57 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.scalar;
+package org.nd4j.linalg.api.ops.impl.transforms.same;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseScalarOp;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Pow derivative
- *
- * z = n * x ^ (n-1)
+ * Calculate the absolute minimum over a vector
  *
  * @author raver119@gmail.com
  */
-public class PowDerivative extends BaseScalarOp {
-    private double pow;
+public class Max extends BaseTransformSameOp  {
 
-    public PowDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double pow) {
-        super(sameDiff, i_v, pow, inPlace);
-        this.pow = pow;
-        this.extraArgs = new Object[] {pow};
+    public Max(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {
+        super(sameDiff, i_v, i_v2);
     }
 
-    public PowDerivative() {}
+    public Max() {}
 
-    public PowDerivative(INDArray x, INDArray z, double pow) {
-        super(x, z, pow);
-        this.pow = pow;
-        init(x, null, z, x.lengthLong());
+    public Max(INDArray x, INDArray y, INDArray z, long n) {
+        super(x, y, z, n);
     }
 
-    public PowDerivative(INDArray x, INDArray z, long n, double pow) {
-        super(x, z, n);
-        this.pow = pow;
-        init(x, null, z, x.lengthLong());
+    public Max(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
     }
 
-    public PowDerivative(INDArray x, double pow) {
-        super(x, pow);
-        this.pow = pow;
-        init(x, null, z, x.lengthLong());
-    }
 
     @Override
     public int opNum() {
-        return 32;
+        return 7;
     }
 
     @Override
     public String opName() {
-        return "_powderivative";
+        return "max";
     }
+
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        SDVariable sgn = sameDiff.sign(arg());
+        SDVariable minBp = f().minBp(sameDiff.abs(arg()), f1.get(0), false, dimensions);
+        return Collections.singletonList(sgn.mul(minBp));
+    }
+
 
     @Override
     public String onnxName() {
@@ -79,10 +74,5 @@ public class PowDerivative extends BaseScalarOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-       @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-       throw new UnsupportedOperationException();
     }
 }
