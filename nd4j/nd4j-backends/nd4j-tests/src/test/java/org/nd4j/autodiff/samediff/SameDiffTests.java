@@ -182,27 +182,6 @@ public class SameDiffTests {
         assertEquals(exp, resultArr);
     }
 
-//    @Test
-//    public void testSoftmaxXentWithLogits() {
-//
-//        SameDiff sameDiff = SameDiff.create();
-//        INDArray logits = Nd4j.create(new long[]{1, 1});
-//        INDArray weights = Nd4j.create(new long[]{1, 1});
-//        INDArray labels = Nd4j.create(new long[]{1, 1});
-//
-//        SDVariable sdLogits = sameDiff.var("logits", logits);
-//        SDVariable sdWeights = sameDiff.var("weights", weights);
-//        SDVariable sdLabels = sameDiff.var("labels", labels);
-//
-//        int mode = 0;
-//        double labelSmoothing = 0.0;
-//
-//        SDVariable res = sameDiff.softmaxCrossEntropyWithLogits(sdLogits, sdWeights, sdLabels, mode, labelSmoothing);
-//        sameDiff.exec();
-//        INDArray resultArray = res.getArr();
-//        assertArrayEquals(new long[]{1, 1}, res.getShape());
-//    }
-
     @Test
     public void testWeightedXentWithLogits() {
         SameDiff sameDiff = SameDiff.create();
@@ -220,27 +199,6 @@ public class SameDiffTests {
         INDArray resultArray = res.getArr();
         assertArrayEquals(new long[]{1, 5}, res.getShape());
     }
-
-//    @Test
-//    public void testSigmoidXentWithLogits() {
-//        SameDiff sameDiff = SameDiff.create();
-//        INDArray logits = Nd4j.create(new long[]{1, 5});
-//        INDArray weights = Nd4j.create(new long[]{1, 5});
-//        INDArray labels = Nd4j.create(new long[]{1, 5});
-//
-//        SDVariable sdLogits = sameDiff.var("logits", logits);
-//        SDVariable sdWeights = sameDiff.var("weights", weights);
-//        SDVariable sdLabels = sameDiff.var("labels", labels);
-//
-//        int mode = 0;
-//        double labelSmoothing = 0.0;
-//
-//        SDVariable res = sameDiff.sigmoidCrossEntropyWithLogits(sdLogits, sdWeights, sdLabels, mode, labelSmoothing);
-//        sameDiff.exec();
-//
-//        INDArray resultArray = res.getArr();
-//        assertArrayEquals(new long[]{1, 5}, res.getShape());
-//    }
 
     @Test
     public void testMseForward() {
