@@ -49,17 +49,24 @@ public class LossOpValidation extends BaseOpValidation {
         List<String> failed = new ArrayList<>();
 
         for (String fn : new String[]{"absdiff", "cosine", "hinge", "huber", "log", "mse",
-                "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth" /* "mpwse" */}) {
+                "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth", "mpwse"}) {
             for(String weights : new String[]{"none", "scalar", "perExample", "perOutput"}) {
                 if((fn.startsWith("softmax") || fn.equals("cosine")) && weights.equals("perOutput"))
                     continue;   //Skip this combination (not possible)
 
+                if(fn.equals("mpwse") && weights.equals("perOutput"))
+                    continue;   //MPWSE only supports scalar, none, or per example weights
+
                 for (LossReduce reduction : LossReduce.values()) {
-                    if(fn.equals("cosine") && (reduction == LossReduce.MEAN_BY_WEIGHT || reduction == LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT)
+                    if((fn.equals("cosine") && (reduction == LossReduce.MEAN_BY_WEIGHT || reduction == LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT)
+                            || fn.equals("mpwse") )
                             && OpValidationSuite.IGNORE_FAILING){
-                        //https://github.com/deeplearning4j/deeplearning4j/issues/6532
+                        //Both cosine and MPWSE reported here: https://github.com/deeplearning4j/deeplearning4j/issues/6532
                         continue;
                     }
+
+                    if(fn.equals("mpwse") && (reduction != LossReduce.MEAN_BY_WEIGHT || weights.equals("perOutput"))) //LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT)
+                        continue;   //MPWSE only provides scalar output - i.e., no other reduction modes. And only none/scalar/per-example weights
 
                     SameDiff sd = SameDiff.create();
 
@@ -185,7 +192,26 @@ public class LossOpValidation extends BaseOpValidation {
                             loss = sd.lossSoftmaxCrossEntropy("loss", labels, predictions, w, reduction, lblSmooth2);
                             break;
                         case "mpwse":
-                            throw new UnsupportedOperationException("Not implemented");
+                            expOut = Nd4j.create(labelsArr.size(0));
+                            int pairCount = 0;
+                            for( int i=0; i<labelsArr.size(0); i++ ){
+                                for( int j=0; j<labelsArr.size(1); j++){
+                                    for(int k=j+1; k<labelsArr.size(1); k++){
+                                        double d1 = predictionsArr.getDouble(i, j);
+                                        double d2 = predictionsArr.getDouble(i, k);
+                                        double d3 = labelsArr.getDouble(i, j);
+                                        double d4 = labelsArr.getDouble(i, k);
+                                        double add = ((d1-d2)-(d3-d4));
+                                        add *= add;
+                                        expOut.putScalar(i, expOut.getDouble(i) + add);
+                                        if(i == 0)
+                                            pairCount++;
+                                    }
+                                }
+                            }
+//                            expOut.divi(pairCount);
+                            loss = sd.lossMeanPairwiseSquaredError("loss", labels, predictions, w);
+                            break;
                         default:
                             throw new RuntimeException();
                     }
