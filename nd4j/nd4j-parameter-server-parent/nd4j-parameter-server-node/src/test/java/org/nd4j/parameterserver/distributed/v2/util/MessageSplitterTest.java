@@ -21,6 +21,7 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Optional;
+import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 
 import java.util.ArrayList;
@@ -70,7 +71,92 @@ public class MessageSplitterTest {
         for (val m:messages)
             assertEquals("123", m.getOriginalId());
 
-        Optional<GradientsUpdateMessage> dec = splitter.merge(new ArrayList<>(messages).get(0));
+        val m = new ArrayList<>(messages).get(0);
+        Optional<GradientsUpdateMessage> dec = splitter.merge(m, -1);
+
+        assertNotNull(dec);
+        assertTrue(dec.isPresent());
+        val deserialized = dec.get().getPayload();
+        assertEquals(array, deserialized);
+    }
+
+    @Test
+    public void testSmallMessageSplit_2() throws Exception {
+        val array = Nd4j.linspace(1, 15, 15).reshape(-1, 5);
+        val splitter = new MessageSplitter();
+
+        val message = new GradientsUpdateMessage("123", array);
+
+        val messages = splitter.split(message, 16384);
+
+        assertNotNull(messages);
+        assertEquals(1, messages.size());
+
+        for (val m:messages)
+            assertEquals("123", m.getOriginalId());
+
+        val m = new ArrayList<>(messages).get(0);
+        Optional<GradientsUpdateMessage> dec = splitter.merge(m, 65536);
+
+        assertNotNull(dec);
+        assertTrue(dec.isPresent());
+        val deserialized = dec.get().getPayload();
+        assertEquals(array, deserialized);
+    }
+
+    @Test
+    public void testSmallMessageSplit_3() throws Exception {
+        val array = Nd4j.linspace(1, 15, 4096);
+        val splitter = new MessageSplitter();
+
+        val message = new GradientsUpdateMessage("123", array);
+
+        val messages = new ArrayList<VoidChunk>(splitter.split(message, 16384));
+
+        assertNotNull(messages);
+        assertEquals(2, messages.size());
+
+        for (val m:messages)
+            assertEquals("123", m.getOriginalId());
+
+        val m1 = messages.get(0);
+        Optional<GradientsUpdateMessage> dec = splitter.merge(m1, 265536);
+
+        assertNotNull(dec);
+        assertFalse(dec.isPresent());
+
+        val m2 = messages.get(1);
+        dec = splitter.merge(m2, 265536);
+
+        assertNotNull(dec);
+        assertTrue(dec.isPresent());
+        val deserialized = dec.get().getPayload();
+        assertEquals(array, deserialized);
+    }
+
+    @Test
+    public void testSmallMessageSplit_4() throws Exception {
+        val array = Nd4j.linspace(1, 15, 4096);
+        val splitter = new MessageSplitter();
+
+        val message = new GradientsUpdateMessage("123", array);
+
+        val messages = new ArrayList<VoidChunk>(splitter.split(message, 16384));
+
+        assertNotNull(messages);
+        assertEquals(2, messages.size());
+
+        for (val m:messages)
+            assertEquals("123", m.getOriginalId());
+
+        val m1 = messages.get(0);
+        Optional<GradientsUpdateMessage> dec = splitter.merge(m1, -1);
+
+        assertNotNull(dec);
+        assertFalse(dec.isPresent());
+
+        val m2 = messages.get(1);
+        dec = splitter.merge(m2, 265536);
 
         assertNotNull(dec);
         assertTrue(dec.isPresent());
