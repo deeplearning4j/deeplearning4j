@@ -1389,6 +1389,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
                 return create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, dataType);
             case UBYTE:
                 return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, dataType);
+            case BOOL:
+                return create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, dataType);
             default:
                 throw new UnsupportedOperationException("Unsupported data type used: " + dataType);
         }

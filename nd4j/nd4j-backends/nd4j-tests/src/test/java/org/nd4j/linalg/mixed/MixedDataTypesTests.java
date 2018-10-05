@@ -21,6 +21,8 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.IsInf;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.IsNaN;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
@@ -169,5 +171,21 @@ public class MixedDataTypesTests {
         val result = z.getInt(0);
 
         assertEquals(2, result);
+    }
+
+    @Test
+    public void testBasicOps_7() throws Exception {
+        val arrayX = Nd4j.create(new float[]{1, 0, Float.NaN, 4}, new  long[]{4}, DataType.FLOAT);
+
+        val z = Nd4j.getExecutioner().exec(new IsInf(arrayX)).z();
+
+        assertEquals(DataType.BOOL, z.dataType());
+        val result = z.getInt(0);
+
+        val z2 = Nd4j.getExecutioner().exec(new IsNaN(arrayX)).z();
+        assertEquals(DataType.BOOL, z2.dataType());
+        val result2 = z2.getInt(0);
+
+        assertEquals(1, result2);
     }
 }

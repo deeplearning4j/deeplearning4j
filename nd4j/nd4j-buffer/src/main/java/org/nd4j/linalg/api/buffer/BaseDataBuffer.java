@@ -652,8 +652,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.BOOL) {
-            pointer = new BoolPointer(length());
-            setIndexer(ByteIndexer.create((BytePointer) pointer));
+            pointer = new BooleanPointer(length());
+            setIndexer(BooleanIndexer.create((BooleanPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
@@ -1110,6 +1110,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             return ((IntIndexer) indexer).get(offset() + i);
         } else if (dataType() == DataType.LONG) {
                 return ((LongIndexer) indexer).get(offset() + i);
+        } else if (dataType() == DataType.BOOL) {
+            return ((BooleanIndexer) indexer).get(offset() + i) ? 1.0 : 0.0;
         } else {
             return ((DoubleIndexer) indexer).get(offset() + i);
         }

@@ -2936,6 +2936,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  copy assignment operator
+        *  in particular, when _dataType != other._dataType and both shapes are the same, there will be allocation of new _buffer and _dataType acquires other._dataType
         */
         public native @ByRef @Name("operator =") NDArray put(@Const @ByRef NDArray other);
 
