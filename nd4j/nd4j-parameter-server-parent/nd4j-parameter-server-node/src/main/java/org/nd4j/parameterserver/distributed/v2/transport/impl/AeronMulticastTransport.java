@@ -114,10 +114,9 @@ public class AeronMulticastTransport extends AeronUdpTransport {
 
     @Override
     protected void createSubscription() {
-        // setting up multicast before other connections
-        createMulticastSubscription();
-
         super.createSubscription();
+
+        createMulticastSubscription();
     }
 
     protected void sendMulticastMessage(VoidMessage message) {

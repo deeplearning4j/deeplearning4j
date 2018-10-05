@@ -81,7 +81,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected Aeron.Context context;
 
     protected Subscription ownSubscription;
-    protected FragmentAssembler messageHandler;
+    protected volatile FragmentAssembler messageHandler;
     protected Thread subscriptionThread;
 
     // TODO: move this to singleton holder
