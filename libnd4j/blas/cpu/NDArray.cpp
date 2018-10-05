@@ -94,17 +94,14 @@ namespace nd4j {
 NDArray::NDArray(const NDArray& other) {
 
     _length = other._length;
-    auto shapeLength = shape::shapeInfoByteLength(other._shapeInfo);
-
     _workspace = other._workspace;    
-    ALLOCATE(_buffer, other._workspace, this->_length * other.sizeOfT(), int8_t);
-    ALLOCATE(_shapeInfo, other._workspace, shape::shapeInfoLength(other._shapeInfo), Nd4jLong);
+    _dataType = other._dataType;
 
-    REPLICATE_SHAPE(other._shapeInfo, this->shapeInfo());
+    ALLOCATE(_buffer, other._workspace, _length * other.sizeOfT(), int8_t);
+    _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _workspace);    
 
     _isBuffAlloc = true; 
-    _isShapeAlloc = true;
-    _dataType = other._dataType;
+    _isShapeAlloc = true;    
 
     this->assign(&other);
 }
@@ -744,28 +741,23 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 // assignment operator
     NDArray& NDArray::operator=(const NDArray& other) {
 
-	if (this == &other) return *this;
+	if (this == &other) 
+        return *this;
 
-    if (_shapeInfo != nullptr && _buffer != nullptr && shape::equalsSoft(_shapeInfo, other._shapeInfo))
-        this->assign(&other);        
-        // memcpy(_buffer, other._buffer, arrLength*sizeOfT());               // copy elements of other current array
+    if (_shapeInfo != nullptr && _buffer != nullptr && shape::equalsSoft(_shapeInfo, other._shapeInfo) && _dataType == other._dataType) {
+        this->assign(&other); 
+    }
     else {
         if(_isBuffAlloc && _workspace == nullptr)
             delete []_buffer;
         if(_isShapeAlloc && _workspace == nullptr)
             delete []_shapeInfo;
 
-        this->_length = other.lengthOf();
-		auto shapeLength = shape::shapeInfoLength(other.rankOf());
+        _length = other._length;
+        _dataType = other._dataType;
 
-        auto tLen = nd4j::DataTypeUtils::sizeOf(ArrayOptions::dataType(other._shapeInfo));
-
-        ALLOCATE(_buffer, _workspace, this->_length * tLen, int8_t);
-        // memcpy(_buffer, other._buffer, arrLength*sizeOfT());               // copy elements of other current array
-        ALLOCATE(_shapeInfo, _workspace, shapeLength, Nd4jLong);
-        memcpy(_shapeInfo, other._shapeInfo, shape::shapeInfoByteLength(other.rankOf()));     // copy shape information into new array
-
-        shape::updateStrides(_shapeInfo, other.ordering());
+        _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _workspace);
+        ALLOCATE(_buffer, _workspace, _length * sizeOfT(), int8_t);        
 
         _isBuffAlloc = true;
         _isShapeAlloc = true;
@@ -846,28 +838,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 // This method assigns values of given NDArray to this one, wrt order
     void NDArray::assign(const NDArray *other) {
-        if (this->isScalar() && other->isScalar()) {
-            BUILD_DOUBLE_SELECTOR(this->_dataType, other->_dataType, templatedDoubleAssign, (_buffer, 0, other->_buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
-            return;
-        } else if (other->isScalar()) {
-            NativeOpExcutioner::execScalar(scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, other->_buffer, other->_shapeInfo, nullptr);
-            return;
-        }
-
-        if (other->_length != _length) {
-            auto shapeThis = ShapeUtils::shapeAsString(this);
-            auto shapeThat = ShapeUtils::shapeAsString(other);
-            nd4j_printf("Can't assign new value to the array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());
-            throw std::runtime_error("Lengths of arrays are mismatched");
-        }
-
-        // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other->ordering() && _dataType == other->_dataType && shape::elementWiseStride(this->_shapeInfo) == 1 && shape::elementWiseStride(other->_shapeInfo) == 1) {
-            memcpy(_buffer, other->_buffer, _length * sizeOfT());
-        } else {
-            // now we invoke dup pwt against target buffer
-            NativeOpExcutioner::execPairwiseTransform(1, _buffer, _shapeInfo, other->_buffer, other->_shapeInfo, _buffer, _shapeInfo, nullptr);
-        }
+        assign(*other);
     }    
 
 // This method assigns values of given NDArray to this one
@@ -876,11 +847,13 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         if (this == &other) 
             return;
 
-        if (this->isScalar() && other.isScalar()) {
-            BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign, (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
-            return;
-        } else if (other.isScalar()) {
-            NativeOpExcutioner::execScalar(scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, other._buffer, other._shapeInfo, nullptr);
+        if (other.isScalar()) {
+            if(this->isScalar()) {
+                BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign, (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
+            }
+            else {
+                NativeOpExcutioner::execScalar(scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, other._buffer, other._shapeInfo, nullptr);
+            }
             return;
         }
                 
@@ -892,13 +865,11 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         }
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other.ordering() && _dataType == other._dataType && shape::elementWiseStride(_shapeInfo) == 1 && shape::elementWiseStride(other._shapeInfo) == 1) {
-            
+        if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1)            
             memcpy(_buffer, other._buffer, _length * sizeOfT());
-        } else {
+        else
             // now we invoke dup pwt against target buffer
-            NativeOpExcutioner::execPairwiseTransform(1, _buffer, _shapeInfo, other._buffer, other._shapeInfo, _buffer, _shapeInfo, nullptr);
-        }
+            NativeOpExcutioner::execPairwiseTransform(pairwise::Copy, _buffer, _shapeInfo, other._buffer, other._shapeInfo, _buffer, _shapeInfo, nullptr);
     }
 
 

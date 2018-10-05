@@ -741,15 +741,14 @@ TEST_F(HelpersTests1, SVD_test12) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test13) {
             
-    auto matrix1 = NDArrayFactory::create<double>('c', {6,5}, {12 ,20 ,19 ,-18 ,-6 ,3 ,6 ,2 ,-7 ,-7 ,14 ,8 ,18 ,-17 ,18 ,-14 ,-15 ,1 ,2 ,2 ,-3 ,-18 ,8 ,-17 ,-19 ,12 ,18 ,6 ,-2 ,-17});
+    NDArray matrix1('c', {6,5}, {12 ,20 ,19 ,-18 ,-6 ,3 ,6 ,2 ,-7 ,-7 ,14 ,8 ,18 ,-17 ,18 ,-14 ,-15 ,1 ,2 ,2 ,-3 ,-18 ,8 ,-17 ,-19 ,12 ,18 ,6 ,-2 ,-17});
 
     auto expQR = NDArrayFactory::create<double>('c', {6,5}, {-37.054 ,  0.323852 , 8.04231 , -22.9395 ,-13.089, 0.105164,    32.6021,  6.42277, -0.262898,-1.58766, 0.140218,  -0.485058,  29.2073,  -9.92301,-23.7111, -0.262909,-0.00866538, 0.103467,   8.55831,-1.86455, -0.315491,   0.539207,  0.40754,-0.0374124,-7.10401, 0.315491,   0.385363,-0.216459, -0.340008,0.628595});
     auto expCoeffs = NDArrayFactory::create<double>('c', {1,5}, {1.53975, 1.19431, 1.63446, 1.7905, 1.43356});
     auto expPermut = NDArrayFactory::create<double>('c', {5,5}, {0,0,0,1,0, 1,0,0,0,0, 0,0,0,0,1, 0,0,1,0,0, 0,1,0,0,0});
 
-    ops::helpers::HHcolPivQR qr(matrix1);    
+    ops::helpers::HHcolPivQR qr(matrix1);        
     
-    // qr._qr.printIndexedBuffer();    
     ASSERT_TRUE(expQR.equalsTo(&qr._qr));
     ASSERT_TRUE(expCoeffs.equalsTo(&qr._coeffs));
     ASSERT_TRUE(expPermut.equalsTo(&qr._permut));
@@ -757,6 +756,7 @@ TEST_F(HelpersTests1, SVD_test13) {
     ASSERT_TRUE(expQR.isSameShapeStrict(&qr._qr));
     ASSERT_TRUE(expCoeffs.isSameShapeStrict(&qr._coeffs));
     ASSERT_TRUE(expPermut.isSameShapeStrict(&qr._permut));
+
 }
 
 ///////////////////////////////////////////////////////////////////
