@@ -14,43 +14,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.arrow;
+package org.nd4j.serde.arrow;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import org.apache.arrow.flatbuf.Tensor;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.nd4j.arrow.ArrowSerde;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
 public class ArrowSerdeTest {
-
-    @BeforeClass
-    public static void before(){
-        Class<?> c = FlatBufferBuilder.class;
-        ClassLoader cl = ArrowSerdeTest.class.getClassLoader();
-        System.out.println("FlatBufferBuilder location: " + cl.getResource("com/google/flatbuffers/FlatBufferBuilder.class"));
-        Method[] methods = c.getDeclaredMethods();
-        System.out.println("FlatBufferBuilder Methods:");
-        for(Method m : methods){
-            Class<?>[] paramTypes = m.getParameterTypes();
-            System.out.print("  - " + m.getName() + "(");
-            boolean first = true;
-            for(Class<?> p : paramTypes){
-                if(!first){
-                    System.out.print(",");
-                }
-                System.out.print(p.getSimpleName());
-                first = false;
-            }
-            System.out.println(")");
-        }
-    }
 
     @Test
     public void testBackAndForth() {

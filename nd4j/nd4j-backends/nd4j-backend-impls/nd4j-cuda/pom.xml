@@ -280,6 +280,15 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <!-- nd4j-arrow: tests here due to CI issue with build/test run separate combined with shading -->
+        <!-- TODO Arrow 0.11 replaces com.vlkan:flatbuffers with official flatbuffers dependency, at which point tests can be moved back to nd4j-arrow module -->
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-arrow</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
