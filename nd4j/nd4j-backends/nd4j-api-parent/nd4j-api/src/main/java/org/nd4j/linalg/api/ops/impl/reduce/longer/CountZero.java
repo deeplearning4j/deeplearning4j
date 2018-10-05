@@ -66,11 +66,6 @@ public class CountZero extends BaseReduceLongOp {
     }
 
     @Override
-    public Type getOpType() {
-        return Type.AGGREGATION;
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.singletonList(f().zerosLike(arg()));
     }

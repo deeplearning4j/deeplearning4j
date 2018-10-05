@@ -815,10 +815,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         else {
             long st = profilingHookIn(op);
 
-            validateDataType(Nd4j.dataType(), op);
+            //validateDataType(Nd4j.dataType(), op);
 
             if(op.z() == op.x()) {
-                op.setZ(Nd4j.scalar(0.0));
+                op.setZ(Nd4j.scalar(op.resultType(), 0));
             }
 
             // since we're going to call reduceToScalar, we must ensure equal lengths
@@ -845,10 +845,34 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.y().data().addressPointer(),
                             (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(), op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer());
                 } else {
-                    loop.execReduceFloat(null, op.opNum(),
-                            op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            getPointerForExtraArgs(op), op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer());
+                    switch (op.getOpType()) {
+                        case REDUCE_FLOAT:
+                            loop.execReduceFloat(null, op.opNum(),
+                                    op.x().data().addressPointer(),
+                                    (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                    getPointerForExtraArgs(op), op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer());
+                            break;
+                        case REDUCE_SAME:
+                            loop.execReduceSame(null, op.opNum(),
+                                    op.x().data().addressPointer(),
+                                    (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                    getPointerForExtraArgs(op), op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer());
+                            break;
+                        case REDUCE_BOOL:
+                            loop.execReduceBool(null, op.opNum(),
+                                    op.x().data().addressPointer(),
+                                    (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                    getPointerForExtraArgs(op), op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer());
+                            break;
+                        case REDUCE_LONG:
+                            loop.execReduceLong(null, op.opNum(),
+                                op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                getPointerForExtraArgs(op), op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer());
+                            break;
+                        default:
+                            throw new UnsupportedOperationException("Unsupported reduce operation group:" + op.getOpType());
+                    }
                 }
 
 

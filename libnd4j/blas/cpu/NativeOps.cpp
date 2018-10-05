@@ -275,7 +275,7 @@ void NativeOps::execReduceLong(
         void *extraParams,
         void *result,
         Nd4jLong *resultShapeInfo) {
-    NativeOpExcutioner::execReduceFloatScalar(
+    NativeOpExcutioner::execReduceLongScalar(
             opNum,
             x,
             xShapeInfo,

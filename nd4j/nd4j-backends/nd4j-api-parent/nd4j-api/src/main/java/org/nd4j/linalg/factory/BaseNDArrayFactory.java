@@ -1371,6 +1371,30 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     @Override
+    public INDArray trueScalar(DataType dataType, Number value) {
+        switch (dataType) {
+            case DOUBLE:
+                return create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, dataType);
+            case FLOAT:
+                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType);
+            case HALF:
+                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType);
+            case INT:
+                return create(new int[] {value.intValue()}, new long[] {}, new long[] {}, dataType);
+            case LONG:
+                return create(new long[] {value.longValue()}, new long[] {}, new long[] {}, dataType);
+            case SHORT:
+                return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, dataType);
+            case BYTE:
+                return create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, dataType);
+            case UBYTE:
+                return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, dataType);
+            default:
+                throw new UnsupportedOperationException("Unsupported data type used: " + dataType);
+        }
+    }
+
+    @Override
     public INDArray trueScalar(Number value) {
         if (value instanceof Double)
                 return create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, DataType.DOUBLE);

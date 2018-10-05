@@ -21,6 +21,7 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -147,5 +148,26 @@ public class MixedDataTypesTests {
         val l = result.longValue();
 
         assertEquals(9L, l);
+    }
+
+    @Test
+    public void testBasicOps_5() throws Exception {
+        val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+
+        val result = arrayX.meanNumber().floatValue();
+
+        assertEquals(2.5f, result, 1e-5);
+    }
+
+    @Test
+    public void testBasicOps_6() throws Exception {
+        val arrayX = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.INT);
+
+        val z = Nd4j.getExecutioner().exec(new CountNonZero(arrayX)).z();
+
+        assertEquals(DataType.LONG, z.dataType());
+        val result = z.getInt(0);
+
+        assertEquals(2, result);
     }
 }

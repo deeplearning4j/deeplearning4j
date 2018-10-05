@@ -5404,6 +5404,12 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray scalar(DataType dataType, Number value) {
+        INDArray ret = INSTANCE.trueScalar(dataType, value);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
     /**
      * Create a scalar nd array with the specified value and offset
      *
@@ -5540,6 +5546,8 @@ public class Nd4j {
      */
     public synchronized void initContext() {
         try {
+            defaultFloatingPointDataType = new AtomicReference<>();
+            defaultFloatingPointDataType.set(DataType.FLOAT);
             Nd4jBackend backend = Nd4jBackend.load();
             initWithBackend(backend);
         } catch (NoAvailableBackendException e) {

@@ -993,6 +993,8 @@ public interface NDArrayFactory {
 
     INDArray trueScalar(Number value);
 
+    INDArray trueScalar(DataType dataType, Number value);
+
     INDArray trueVector(float[] data);
     INDArray trueVector(double[] data);
 
