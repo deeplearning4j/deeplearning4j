@@ -71,7 +71,7 @@ void HHcolPivQR::_evalData() {
     T maxPivot = 0.;
 
     for(int k = 0; k < _diagSize; ++k) {
-    
+
         int biggestColIndex = normsUpd({0,0, k,-1}).indexReduceNumber(indexreduce::IndexMax).e<int>(0);
         T biggestColNorm = normsUpd({0,0, k,-1}).reduceNumber(reduce::Max).e<T>(0);
         T biggestColSqNorm = biggestColNorm * biggestColNorm;

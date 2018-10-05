@@ -38,6 +38,7 @@ class HHcolPivQR {
         NDArray _permut;
         int _diagSize;
 
+        HHcolPivQR() = delete;
         HHcolPivQR(const NDArray& matrix);
 
         template <typename T>
