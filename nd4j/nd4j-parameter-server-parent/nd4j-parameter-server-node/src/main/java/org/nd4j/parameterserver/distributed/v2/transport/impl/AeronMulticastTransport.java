@@ -146,6 +146,15 @@ public class AeronMulticastTransport extends AeronUdpTransport {
     }
 
     @Override
+    public void propagateMessage(VoidMessage voidMessage, PropagationMode mode) throws IOException {
+        if (voidMessage instanceof INDArrayMessage) {
+            // since we're using multicast here, we don't want this message to be applied to original sender
+            historyHolder.storeIfUnknownMessageId(voidMessage.getMessageId());
+        }
+        super.propagateMessage(voidMessage, mode);
+    }
+
+    @Override
     protected void createSubscription() {
         super.createSubscription();
 
