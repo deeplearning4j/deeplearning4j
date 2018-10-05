@@ -18,6 +18,7 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -54,6 +55,11 @@ public class LossOpValidation extends BaseOpValidation {
                     continue;   //Skip this combination (not possible)
 
                 for (LossReduce reduction : LossReduce.values()) {
+                    if(fn.equals("cosine") && (reduction == LossReduce.MEAN_BY_WEIGHT || reduction == LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT)
+                            && OpValidationSuite.IGNORE_FAILING){
+                        //https://github.com/deeplearning4j/deeplearning4j/issues/6532
+                        continue;
+                    }
 
                     SameDiff sd = SameDiff.create();
 
@@ -62,25 +68,30 @@ public class LossOpValidation extends BaseOpValidation {
                     SDVariable predictions = sd.var("in", new int[]{-1, nOut});
                     SDVariable labels = sd.var("labels", new int[]{-1, nOut});
                     SDVariable w;
+                    INDArray wArrBroadcast;
                     switch (weights){
                         case "none":
                             w = null;
+                            wArrBroadcast = Nd4j.ones(minibatch, nOut);
                             break;
                         case "scalar":
-                            w = sd.var("weights", Nd4j.trueScalar(2.0));
+                            w = sd.var("weights", Nd4j.trueScalar(1.0));
+                            wArrBroadcast = Nd4j.valueArrayOf(minibatch, nOut, 1.0);
                             break;
                         case "perExample":
-                            w = sd.var("weights", Nd4j.trueVector(new double[]{0,0,1,1,2,2,3,3,4,4}));
+                            w = sd.var("weights", Nd4j.trueVector(new double[]{0,0,1,1,2,2,3,3,4,4}).reshape(minibatch, 1));
+                            wArrBroadcast = Nd4j.create(minibatch, nOut).addiColumnVector(w.getArr());
                             break;
                         case "perOutput":
                             w = sd.var("weights", Nd4j.create(new double[][]{
                                     {0,0,0,0}, {0,0,1,1}, {1,1,0,0}, {1,1,1,1}, {1,1,1,1},
                                     {2,2,2,2}, {2,2,2,2}, {2,2,2,2}, {2,2,2,2}, {2,2,2,2}}));
+                            wArrBroadcast = w.getArr();
                             break;
                         default:
                             throw new RuntimeException();
                     }
-                    INDArray wArr = w == null ? null : w.getArr();
+                    INDArray wArr = w == null ? Nd4j.trueScalar(1.0) : w.getArr();
 
 
                     INDArray predictionsArr = Nd4j.randn(minibatch, nOut);
@@ -91,7 +102,7 @@ public class LossOpValidation extends BaseOpValidation {
                     switch (fn) {
                         case "absdiff":
                             expOut = Transforms.abs(predictionsArr.sub(labelsArr));
-                            loss = sd.lossAbsoluteDifference("loss", labels, predictions, reduction);
+                            loss = sd.lossAbsoluteDifference("loss", labels, predictions, w, reduction);
                             break;
                         case "cosine":
                             //Cosine _similarity_: dot(a,b)/(l2Norm(a) * l2Norm(b))
@@ -100,7 +111,7 @@ public class LossOpValidation extends BaseOpValidation {
                             predictionsArr.diviColumnVector(predictionsArr.norm2(1));
                             labelsArr.diviColumnVector(labelsArr.norm2(1));
                             expOut = predictionsArr.mul(labelsArr).sum(1).rsub(1.0);
-                            loss = sd.lossCosineDistance("loss", labels, predictions, reduction, 1);
+                            loss = sd.lossCosineDistance("loss", labels, predictions, w, reduction, 1);
                             break;
                         case "hinge":
                             //0 or 1 labels, but -1 or 1 when calculating loss
@@ -108,7 +119,7 @@ public class LossOpValidation extends BaseOpValidation {
                             Nd4j.getExecutioner().exec(new BernoulliDistribution(labelsArr, 0.5));
                             INDArray labelMinusOneToOne = labelsArr.mul(2).subi(1);
                             expOut = Transforms.max(predictionsArr.mul(labelMinusOneToOne).rsubi(1), 0);
-                            loss = sd.lossHinge("loss", labels, predictions, reduction);
+                            loss = sd.lossHinge("loss", labels, predictions, w, reduction);
                             break;
                         case "huber":
                             //https://en.wikipedia.org/wiki/Huber_loss
@@ -119,7 +130,7 @@ public class LossOpValidation extends BaseOpValidation {
                             INDArray gt = absDiff.gt(delta);
                             expOut = diff.mul(diff).mul(0.5).muli(lte);
                             expOut.addi(absDiff.mul(delta).subi(0.5 * delta * delta).mul(gt));
-                            loss = sd.lossHuber("loss", labels, predictions, reduction, delta);
+                            loss = sd.lossHuber("loss", labels, predictions, w, reduction, delta);
                             break;
                         case "log":
                             double eps = 1e-7;
@@ -130,14 +141,14 @@ public class LossOpValidation extends BaseOpValidation {
                             INDArray logP = Transforms.log(predictionsArr.add(eps), true);
                             INDArray log1p = Transforms.log(predictionsArr.rsub(1.0).add(eps), true);
                             expOut = labelsArr.mul(logP).addi(labelsArr.rsub(1).mul(log1p)).negi();
-                            loss = sd.lossLog("loss", labels, predictions, null, reduction, eps);
+                            loss = sd.lossLog("loss", labels, predictions, w, reduction, eps);
                             break;
                         case "mse":
                             //To match TF, this is actually sum of squares - 1/numExamples (prediction-label)^2
                             INDArray sqDiff = labelsArr.sub(predictionsArr);
                             sqDiff.muli(sqDiff);
                             expOut = sqDiff;
-                            loss = sd.lossMeanSquaredError("loss", labels, predictions, null, reduction);
+                            loss = sd.lossMeanSquaredError("loss", labels, predictions, w, reduction);
                             break;
                         case "sigmoidxent_smooth":  //Sigmoid xent with label smoothing
                         case "sigmoidxent":
@@ -152,7 +163,7 @@ public class LossOpValidation extends BaseOpValidation {
                             INDArray onePlusExpNegX = Transforms.log(Transforms.exp(predictionsArr.neg()).add(1.0));
                             expOut = predictionsArr.mul(labelArrCopy.rsub(1.0)).add(onePlusExpNegX);
 
-                            loss = sd.lossSigmoidCrossEntropy("loss", labels, predictions, null, reduction, lblSmoothing);
+                            loss = sd.lossSigmoidCrossEntropy("loss", labels, predictions, w, reduction, lblSmoothing);
                             break;
                         case "softmaxxent":
                         case "softmaxxent_smooth":
@@ -171,7 +182,7 @@ public class LossOpValidation extends BaseOpValidation {
                             }
                             INDArray logP2 = Transforms.log(softmaxPredictions, true);
                             expOut = labelsArrCopy.mul(logP2).negi().sum(1);
-                            loss = sd.lossSoftmaxCrossEntropy("loss", labels, predictions, null, reduction, lblSmooth2);
+                            loss = sd.lossSoftmaxCrossEntropy("loss", labels, predictions, w, reduction, lblSmooth2);
                             break;
                         case "mpwse":
                             throw new UnsupportedOperationException("Not implemented");
@@ -195,14 +206,28 @@ public class LossOpValidation extends BaseOpValidation {
                             throw new RuntimeException();
                     }
 
+                    INDArray expOutBefore = expOut;
                     switch (reduction) {
                         case SUM:
                             expOut = expOut.sum().reshape();
                             break;
                         case MEAN_BY_WEIGHT:
+                            if((fn.startsWith("softmax") || fn.equals("cosine"))){
+                                //1d output, not 2d
+                                expOut = expOut.sum().divi(wArrBroadcast.getColumn(0).sumNumber().doubleValue());
+                            } else {
+                                expOut = expOut.sum().divi(wArrBroadcast.sumNumber().doubleValue());
+                            }
+                            break;
                         case MEAN_BY_NONZERO_WEIGHT_COUNT:
-                            //No weights in this test
-                            expOut = expOut.mean().reshape();
+                            if((fn.startsWith("softmax") || fn.equals("cosine"))) {
+                                //1d output, not 2d
+                                int countNonZero = wArrBroadcast.getColumn(0).neq(0.0).sumNumber().intValue();
+                                expOut = expOut.sum().divi(countNonZero);
+                            } else {
+                                int countNonZero = wArrBroadcast.neq(0.0).sumNumber().intValue();
+                                expOut = expOut.sum().divi(countNonZero);
+                            }
                             break;
                     }
 
