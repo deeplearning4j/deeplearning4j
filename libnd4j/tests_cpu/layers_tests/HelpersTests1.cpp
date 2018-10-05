@@ -1756,7 +1756,7 @@ TEST_F(HelpersTests1, OpArgsHolder_test3) {
     auto input  = NDArrayFactory::create<double>('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
     auto gradO  = NDArrayFactory::create<double>('c', {4, 9});
     auto exp    = NDArrayFactory::create<double>('c', {4, 9}, {1, 2, 3, 1, 2, 3, 1, 2, 3,4, 5, 6, 4, 5, 6, 4, 5, 6,1, 2, 3, 1, 2, 3, 1, 2, 3,4, 5, 6, 4, 5, 6, 4, 5, 6});
-    auto gradIExp = NDArrayFactory::create<float>('c', {2, 3}, {0.78, 0.84, 0.9,1.32, 1.38, 1.44});
+    auto gradIExp = NDArrayFactory::create<double>('c', {2, 3}, {0.78, 0.84, 0.9,1.32, 1.38, 1.44});
 
     gradO.linspace(0.01, 0.01);
 
@@ -1800,12 +1800,13 @@ TEST_F(HelpersTests1, checkGrad_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, checkGrad_test2) {
 
-    auto       x = NDArrayFactory::create<float>('c', {1, 1, 3, 3});
-    auto weights = NDArrayFactory::create<float>('c', {2, 1, 2, 2});
-    auto   gradO = NDArrayFactory::create<float>('c', {1, 2, 3, 3});
+    auto       x = NDArrayFactory::create<double>('c', {1, 1, 3, 3});
+    auto weights = NDArrayFactory::create<double>('c', {2, 1, 2, 2});
+    auto   gradO = NDArrayFactory::create<double>('c', {1, 2, 3, 3});
 
     x.linspace(1);
-    weights.linspace(0.1, 0.1);    
+    weights.linspace(0.1, 0.1);
+    weights.permutei({2,3,1,0});
 
     const OpArgsHolder argsHolderFF({&x, &weights},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder argsHolderBP({&x, &weights, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
@@ -1829,6 +1830,7 @@ TEST_F(HelpersTests1, checkGrad_test3) {
     x.linspace(1);
     weights.linspace(0.1, 0.1);    
     bias = 0.5;
+    weights.permutei({2,3,1,0});
 
     const OpArgsHolder argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
@@ -1852,6 +1854,7 @@ TEST_F(HelpersTests1, checkGrad_test4) {
     x.linspace(1);
     weights.linspace(0.1, 0.1);    
     bias = 0.5;
+    weights.permutei({2,3,1,0});
 
     const OpArgsHolder argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
@@ -1875,6 +1878,7 @@ TEST_F(HelpersTests1, checkGrad_test5) {
     x.linspace(1);
     weights.linspace(0.1, 0.1);    
     bias = 0.5;
+    weights.permutei({2,3,1,0});
 
     const OpArgsHolder argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
@@ -1898,6 +1902,7 @@ TEST_F(HelpersTests1, checkGrad_test6) {
     x.linspace(1);
     weights.linspace(0.1, 0.1);    
     bias = 0.5;
+    weights.permutei({2,3,1,0});
 
     const OpArgsHolder argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});

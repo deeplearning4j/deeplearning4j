@@ -88,7 +88,9 @@ DECLARE_SHAPE_FN(tile) {
         shape::shapeBuffer(shape.size(), block.dataType(), shape.data(), newShape);
     else
         shape::shapeBufferFortran(shape.size(), block.dataType(), shape.data(), newShape);
-       
+
+    ArrayOptions::copyDataType(newShape, inShape);
+
     return SHAPELIST(newShape);
 }
 
