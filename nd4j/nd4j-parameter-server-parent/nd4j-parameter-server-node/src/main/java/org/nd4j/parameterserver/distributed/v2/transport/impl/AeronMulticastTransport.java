@@ -19,9 +19,11 @@ package org.nd4j.parameterserver.distributed.v2.transport.impl;
 import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
+import io.aeron.logbuffer.Header;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -101,7 +103,7 @@ public class AeronMulticastTransport extends AeronUdpTransport {
 
         log.info("Creating multicast subscription [{}]", multicastChannelUri);
 
-        multicastMessageHandler = new FragmentAssembler((buffer, offset, length, header) -> jointMessageHandler(buffer, offset, length, header));
+        multicastMessageHandler = new FragmentAssembler((buffer, offset, length, header) -> multicastMessageHandler(buffer, offset, length, header));
 
         multicastSubscription = aeron.addSubscription(multicastChannelUri, voidConfiguration.getStreamId() + 1);
 
@@ -115,6 +117,32 @@ public class AeronMulticastTransport extends AeronUdpTransport {
                 }
             }
         });
+    }
+
+    /**
+     * This method converts aeron buffer into VoidMessage and puts into temp queue for further processing
+     *
+     * @param buffer
+     * @param offset
+     * @param length
+     * @param header
+     */
+    protected void multicastMessageHandler(DirectBuffer buffer, int offset, int length, Header header) {
+        byte[] data = new byte[length];
+        buffer.getBytes(offset, data);
+
+        // deserialize message
+        val message = VoidMessage.fromBytes(data);
+
+        log.info("Got [{}] message from multicast channel [{}]; aeronQueue size: [{}]; baseQueue size: [{}]", message.getClass().getSimpleName(), message.getOriginatorId(), aeronMessageQueue.size(), messageQueue.size());
+
+        // we're just putting deserialized message into the buffer
+        try {
+            aeronMessageQueue.put(message);
+        } catch (InterruptedException e) {
+            // :(
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
