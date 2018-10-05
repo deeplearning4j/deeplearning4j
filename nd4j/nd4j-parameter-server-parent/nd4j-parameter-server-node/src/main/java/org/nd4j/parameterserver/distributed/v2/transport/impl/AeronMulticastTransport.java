@@ -16,6 +16,7 @@
 
 package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
+import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import lombok.NonNull;
@@ -51,6 +52,8 @@ public class AeronMulticastTransport extends AeronUdpTransport {
 
     // this lock is used only for multicast stuff
     private ReentrantLock multicastLock = new ReentrantLock();
+
+    protected volatile FragmentAssembler multicastMessageHandler;
 
     public AeronMulticastTransport(@NonNull String rootIp, int rootPort, @NonNull VoidConfiguration configuration) {
         this(rootIp, rootPort, rootIp, rootPort, configuration);
@@ -98,6 +101,8 @@ public class AeronMulticastTransport extends AeronUdpTransport {
 
         log.info("Creating multicast subscription [{}]", multicastChannelUri);
 
+        multicastMessageHandler = new FragmentAssembler((buffer, offset, length, header) -> jointMessageHandler(buffer, offset, length, header));
+
         multicastSubscription = aeron.addSubscription(multicastChannelUri, voidConfiguration.getStreamId() + 1);
 
         // dedicated reader thread for multicast thread
@@ -106,7 +111,7 @@ public class AeronMulticastTransport extends AeronUdpTransport {
             public void run() {
                 val idler = new SleepingIdleStrategy(5000);
                 while (true) {
-                    idler.idle(multicastSubscription.poll(messageHandler, 1024));
+                    idler.idle(multicastSubscription.poll(multicastMessageHandler, 1024));
                 }
             }
         });
