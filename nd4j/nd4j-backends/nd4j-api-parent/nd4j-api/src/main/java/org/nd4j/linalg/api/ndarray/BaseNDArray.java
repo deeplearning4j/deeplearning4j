@@ -3548,7 +3548,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray div(INDArray other) {
-        return divi(other, Nd4j.createUninitialized(this.shape(), this.ordering()));
+        return divi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
     }
 
     /**
@@ -3571,7 +3571,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mul(INDArray other) {
-        return muli(other, Nd4j.createUninitialized(this.shape(), this.ordering()));
+        return muli(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
     }
 
     /**
@@ -3594,7 +3594,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray sub(INDArray other) {
-        return subi(other, Nd4j.createUninitialized(this.shape(), this.ordering()));
+        return subi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
     }
 
     /**
