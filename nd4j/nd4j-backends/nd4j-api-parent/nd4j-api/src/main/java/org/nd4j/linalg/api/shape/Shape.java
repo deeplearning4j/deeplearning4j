@@ -3561,6 +3561,53 @@ public class Shape {
         return Arrays.equals(input.stride(), defaultStrides);
     }
 
+    public static boolean isR(@NonNull DataType x) {
+        return x == DataType.FLOAT || x == DataType.HALF || x == DataType.DOUBLE;
+    }
+
+    private static DataType max(@NonNull DataType typeX, @NonNull DataType typeY) {
+        return DataType.values()[Math.max(typeX.ordinal(), typeY.ordinal())];
+    }
+
+    public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull DataType typeY) {
+        if (typeX == typeY)
+            return typeX;
+
+        val rX = isR(typeX);
+        val rY = isR(typeY);
+
+        // if X is float - use it
+        if (rX && !rY)
+            return typeX;
+
+        // if Y is float - use it
+        if (!rX && rY)
+            return typeY;
+
+        // if both data types are float - return biggest one
+        if (rX && rY) {
+            // if we allow precision boost, then we pick bigger data type
+            if (Nd4j.isPrecisionBoostAllowed()) {
+                return max(typeX, typeY);
+            } else {
+                // and we return first operand otherwise
+                return typeX;
+            }
+
+        }
+
+        // if that's not real type, we apply same rules
+        if (!rX && !rY) {
+            if (Nd4j.isPrecisionBoostAllowed()) {
+                return max(typeX, typeY);
+            } else {
+                // and we return first operand otherwise
+                return typeX;
+            }
+        }
+
+        return typeX;
+    }
 
     public static boolean isEmpty(long[] shapeInfo) {
         return ArrayOptionsHelper.arrayType(shapeInfo) == ArrayType.EMPTY;

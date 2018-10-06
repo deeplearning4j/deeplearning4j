@@ -191,7 +191,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray createUninitialized(DataType dataType, long[] shape, char ordering) {
-        return null;
+        return new NDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
     }
 
     @Override

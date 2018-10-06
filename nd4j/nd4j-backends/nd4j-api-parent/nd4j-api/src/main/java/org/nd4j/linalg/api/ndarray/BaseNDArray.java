@@ -3617,7 +3617,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray add(INDArray other) {
-        return addi(other, Nd4j.createUninitialized(this.shape(), this.ordering()));
+        return addi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
     }
 
     /**
@@ -5144,7 +5144,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             EqualsWithEps op = new EqualsWithEps(this, n, eps);
             Nd4j.getExecutioner().exec(op);
-            double diff = op.getFinalResult().doubleValue();
+            double diff = op.z().getDouble(0);
 
             return diff < 0.5;
         }

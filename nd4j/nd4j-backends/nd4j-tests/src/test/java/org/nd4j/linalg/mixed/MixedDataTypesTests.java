@@ -223,18 +223,26 @@ public class MixedDataTypesTests {
     public void testMethods_1() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+        val exp = Nd4j.create(new int[]{2, 4, 6, 8}, new  long[]{4}, DataType.INT);
 
         val arrayZ = arrayX.add(arrayY);
         assertEquals(DataType.INT, arrayZ.dataType());
+        assertEquals(exp, arrayZ);
     }
 
     @Test
     public void testMethods_2() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new double[]{1, 2, 3, 4}, new  long[]{4}, DataType.DOUBLE);
+        val exp = Nd4j.create(new double[]{2, 4, 6, 8}, new  long[]{4}, DataType.DOUBLE);
 
+
+        log.info("ArrayX: {}", arrayX);
+        log.info("ArrayY: {}", arrayY);
         val arrayZ = arrayX.add(arrayY);
+        log.info("ArrayZ: {}", arrayZ);
         assertEquals(DataType.DOUBLE, arrayZ.dataType());
+        assertEquals(exp, arrayZ);
     }
 
     @Test(expected = IllegalArgumentException.class)

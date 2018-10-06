@@ -4544,6 +4544,23 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray createUninitialized(DataType type, long[] shape, char ordering) {
+        if (shape.length == 0)
+            return scalar(type, 0);
+
+        shape = getEnsuredShape(shape);
+        // now we allow 1D vectors
+        /*else if (shape.length == 1) {
+            shape = new int[] {1, shape[0]};
+        }
+        */
+
+        checkShapeValues(shape);
+
+        INDArray ret = INSTANCE.createUninitialized(type, shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
 
     public static INDArray createUninitialized(long[] shape, char ordering) {
         if (shape.length == 0)
@@ -6328,5 +6345,9 @@ public class Nd4j {
 
     public static void setDefaultFloatingPointDataType(@NonNull DataType dtype) {
         defaultFloatingPointDataType.set(dtype);
+    }
+
+    public static boolean isPrecisionBoostAllowed() {
+        return false;
     }
 }
