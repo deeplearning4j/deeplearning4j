@@ -49,7 +49,7 @@ public class ReplaceNans extends BaseScalarOp {
     }
 
     public ReplaceNans(INDArray x, double set) {
-        super(x, set);
+        super(x, null, x, x.length(), set);
         this.set = set;
         init(x, null, x, x.length());
     }
@@ -68,7 +68,7 @@ public class ReplaceNans extends BaseScalarOp {
 
     @Override
     public int opNum() {
-        return 46;
+        return 37;
     }
 
     @Override

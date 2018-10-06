@@ -894,6 +894,7 @@ public:
      */
     void average(Nd4jPointer *extras,
                        Nd4jPointer *dx,
+                       Nd4jLong *xShapeInfo,
                        void *dz,
                        Nd4jLong *zShapeInfo,
                        int n,
@@ -903,6 +904,7 @@ public:
 
     void accumulate(Nd4jPointer *extras,
                        Nd4jPointer *dx,
+                       Nd4jLong *xShapeInfo,
                        void *dz,
                        Nd4jLong *zShapeInfo,
                        int n,

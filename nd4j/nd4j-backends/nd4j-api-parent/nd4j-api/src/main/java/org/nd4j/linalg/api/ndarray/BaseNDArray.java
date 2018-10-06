@@ -3417,7 +3417,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         long[] shape = {rows(), other.rank() == 1 ? 1 : other.columns()};
         INDArray result = createUninitialized(shape, 'f');
         if (result.isScalar())
-            return Nd4j.scalar(Nd4j.getBlasWrapper().dot(this, other));
+            return Nd4j.scalar(Nd4j.getBlasWrapper().dot(this, other)).reshape(1, 1);
         return mmuli(other, result);
     }
 

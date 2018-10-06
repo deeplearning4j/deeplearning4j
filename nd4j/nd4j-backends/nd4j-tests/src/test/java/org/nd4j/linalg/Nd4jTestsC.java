@@ -115,7 +115,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Before
     public void before() throws Exception {
         super.before();
-        Nd4j.setDataType(DataType.DOUBLE);
+        Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getRandom().setSeed(123);
 
     }
@@ -2393,7 +2393,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray colVec = Nd4j.ones(5, 1);
         INDArray rowVec = Nd4j.ones(1, 5);
         INDArray out = rowVec.mmul(colVec);
-        assertArrayEquals(out.shape(), new long[] {1, 1});
+        assertArrayEquals(new long[] {1, 1}, out.shape());
         assertTrue(out.equals(Nd4j.ones(1, 1).muli(5)));
 
         INDArray colVectorC = Nd4j.create(new long[] {5, 1}, 'c');

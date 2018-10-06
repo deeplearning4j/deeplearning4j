@@ -394,12 +394,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             //pairwise reduction like similarity of two arrays
             else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                 if (op.isComplexAccumulation()) {
-                    loop.execReduce3All(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                    loop.execReduce3All(dummy, op.opNum(), op.x().data().addressPointer(),
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op),
-                            (DoublePointer) op.y().data().addressPointer(),
+                            getPointerForExtraArgs(op),
+                             op.y().data().addressPointer(),
                             (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) op.z().data().addressPointer(),
+                             op.z().data().addressPointer(),
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (IntPointer) dimensionAddress, dimension.length,
                             (LongPointer) tadBuffers.getFirst().addressPointer(),
@@ -909,6 +909,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     }
                 }
 
+            if (op.z().isScalar()) {
+                    op.setFinalResult(op.z().getDouble(0));
+            }
 
             profilingHookOut(op, st);
         }

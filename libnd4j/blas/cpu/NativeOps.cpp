@@ -1305,24 +1305,26 @@ void NativeOps::tear(Nd4jPointer *extraPointers,
 
 void NativeOps::average(Nd4jPointer *extras,
         Nd4jPointer *dx,
+        Nd4jLong *xShapeInfo,
         void *dz,
         Nd4jLong *zShapeInfo,
         int n,
         Nd4jLong length,
         bool propagate) {
-    auto xType = nd4j::ArrayOptions::dataType(zShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
 
     BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(dx, dz, zShapeInfo, n, length, propagate), LIBND4J_TYPES);
 }
 
 void NativeOps::accumulate(Nd4jPointer *extras,
         Nd4jPointer *dx,
+        Nd4jLong *xShapeInfo,
         void *dz,
         Nd4jLong *zShapeInfo,
         int n,
         Nd4jLong length) {
 
-    auto xType = nd4j::ArrayOptions::dataType(zShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
 
     BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(dx, dz, zShapeInfo, n, length), LIBND4J_TYPES);
 }

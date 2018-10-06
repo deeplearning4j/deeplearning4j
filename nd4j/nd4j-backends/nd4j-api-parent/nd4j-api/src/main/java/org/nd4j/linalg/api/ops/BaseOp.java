@@ -130,9 +130,11 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             if (dtype == DataType.FLOAT || dtype == DataType.HALF) {
                 float extraz[] = new float[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
-                    Number arg = (Number) extraArgs[i];
-                    float val = arg.floatValue();
-                    extraz[i] = val;
+                    if (extraArgs[i] instanceof Number) {
+                        Number arg = (Number) extraArgs[i];
+                        float val = arg.floatValue();
+                        extraz[i] = val;
+                    }
                 }
                 extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);
                 return extraArgz;
