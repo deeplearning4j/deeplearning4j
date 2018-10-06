@@ -19,6 +19,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
@@ -744,7 +745,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
 
-        nativeOps.accumulate(null, dataPointers, (DoublePointer) target.data().addressPointer(), (LongPointer) target.shapeInfoDataBuffer().addressPointer(), arrays.length, len);
+        nativeOps.accumulate(null, dataPointers, (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(), (DoublePointer) target.data().addressPointer(), (LongPointer) target.shapeInfoDataBuffer().addressPointer(), arrays.length, len);
 
         return target;
     }
@@ -767,9 +768,12 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         long len = target != null ? target.lengthLong() : arrays[0].length();
 
         PointerPointer dataPointers = new PointerPointer(arrays.length);
+        val firstType = arrays[0].dataType();
 
         for (int i = 0; i < arrays.length; i++) {
             Nd4j.getCompressor().autoDecompress(arrays[i]);
+
+            Preconditions.checkArgument(arrays[i].dataType() == firstType, "All arrays must have the same data type");
 
             if (arrays[i].elementWiseStride() != 1)
                 throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
@@ -781,7 +785,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
 
-        nativeOps.average(null, dataPointers, target == null ? null : target.data().addressPointer(), target == null ? null : (LongPointer) target.shapeInfoDataBuffer().addressPointer(), arrays.length,
+        nativeOps.average(null, dataPointers, (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(), target == null ? null : target.data().addressPointer(), target == null ? null : (LongPointer) target.shapeInfoDataBuffer().addressPointer(), arrays.length,
                     len, true);
 
         return target;

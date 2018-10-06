@@ -446,11 +446,11 @@ public abstract class NativeOps extends Pointer {
 
     ///////////////////////
 
-    public abstract void average(PointerPointer extraPointers, PointerPointer x, Pointer z, LongPointer zShapeInfo, int n, long length, boolean propagate);
+    public abstract void average(PointerPointer extraPointers, PointerPointer x, LongPointer xShapeInfo, Pointer z, LongPointer zShapeInfo, int n, long length, boolean propagate);
 
     ///////////////////////
 
-    public abstract void accumulate(PointerPointer extraPointers, PointerPointer x, Pointer z, LongPointer zShapeInfo, int n, long length);
+    public abstract void accumulate(PointerPointer extraPointers, PointerPointer x, LongPointer xShapeInfo, Pointer z, LongPointer zShapeInfo, int n, long length);
 
     ///////////////////////
 
