@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAtan2Op;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.PowPairwise;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
@@ -598,7 +599,7 @@ public class Transforms {
      */
     public static INDArray pow(INDArray ndArray, INDArray power, boolean dup) {
         INDArray result = (dup ? Nd4j.create(ndArray.shape(), ndArray.ordering()) : ndArray);
-        return exec(new Pow(ndArray, power, result, ndArray.length(), 0));
+        return exec(new PowPairwise(ndArray, power, result, ndArray.length()));
     }
 
     /**
