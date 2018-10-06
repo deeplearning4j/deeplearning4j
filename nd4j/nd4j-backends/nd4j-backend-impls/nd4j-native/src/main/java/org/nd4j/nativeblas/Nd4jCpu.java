@@ -3725,6 +3725,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong") long i);
 
         /**
+        *  returns reference on array element with given index
+        */
+
+        /**
         *  default destructor
         */ 
 
@@ -4288,6 +4292,10 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
     
 //////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
 
 
 

@@ -236,11 +236,20 @@ public class MixedDataTypesTests {
         val arrayY = Nd4j.create(new double[]{1, 2, 3, 4}, new  long[]{4}, DataType.DOUBLE);
         val exp = Nd4j.create(new double[]{2, 4, 6, 8}, new  long[]{4}, DataType.DOUBLE);
 
-
-        log.info("ArrayX: {}", arrayX);
-        log.info("ArrayY: {}", arrayY);
         val arrayZ = arrayX.add(arrayY);
-        log.info("ArrayZ: {}", arrayZ);
+
+        assertEquals(DataType.DOUBLE, arrayZ.dataType());
+        assertEquals(exp, arrayZ);
+    }
+
+    @Test
+    public void testMethods_3() {
+        val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+        val arrayY = Nd4j.create(new double[]{0.5, 0.5, 0.5, 0.5}, new  long[]{4}, DataType.DOUBLE);
+        val exp = Nd4j.create(new double[]{1.5, 2.5, 3.5, 4.5}, new  long[]{4}, DataType.DOUBLE);
+
+        val arrayZ = arrayX.add(arrayY);
+
         assertEquals(DataType.DOUBLE, arrayZ.dataType());
         assertEquals(exp, arrayZ);
     }
@@ -272,6 +281,14 @@ public class MixedDataTypesTests {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
 
         val result = Nd4j.getExecutioner().exec(new OldSoftMax(arrayX)).z();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testTypesValidation_4() throws Exception {
+        val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+        val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.DOUBLE);
+
+        arrayX.addi(arrayY);
     }
 
 }

@@ -94,6 +94,8 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
         if (y() != null && z() != null)
             Preconditions.checkArgument(y().dataType() == z().dataType() || x().dataType() == z().dataType(), "Op.Z type must be either Op.X or Op.Y");
 
+        if (x().isR() || y().isR())
+            Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point");
 
         return true;
     }
