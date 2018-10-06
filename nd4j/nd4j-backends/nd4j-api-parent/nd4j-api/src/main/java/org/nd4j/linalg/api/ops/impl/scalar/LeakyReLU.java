@@ -100,7 +100,7 @@ public class LeakyReLU extends BaseScalarOp {
 
     @Override
     public int opNum() {
-        return 31;
+        return 35;
     }
 
     @Override

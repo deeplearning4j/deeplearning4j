@@ -69,7 +69,7 @@ public class LogX extends BaseScalarOp {
 
     @Override
     public int opNum() {
-        return 55;
+        return 38;
     }
 
     @Override

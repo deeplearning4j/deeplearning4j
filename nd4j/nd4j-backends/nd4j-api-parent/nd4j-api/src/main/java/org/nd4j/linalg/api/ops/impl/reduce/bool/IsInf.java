@@ -57,7 +57,7 @@ public class IsInf extends BaseReduceBoolOp {
 
     @Override
     public String opName() {
-        return "isinf";
+        return "hasinf";
     }
 
     @Override

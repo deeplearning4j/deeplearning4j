@@ -6340,6 +6340,9 @@ public class Nd4j {
     }
 
     public static DataType defaultFloatintPointType() {
+        if (Shape.isR(Nd4j.dataType()))
+            return Nd4j.dataType();
+
         return defaultFloatingPointDataType.get();
     }
 

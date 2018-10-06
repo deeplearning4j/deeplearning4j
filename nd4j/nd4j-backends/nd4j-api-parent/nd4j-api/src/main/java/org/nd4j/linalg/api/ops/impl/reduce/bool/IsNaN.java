@@ -56,7 +56,7 @@ public class IsNaN extends BaseReduceBoolOp {
 
     @Override
     public String opName() {
-        return "isnan";
+        return "hasnan";
     }
 
     @Override

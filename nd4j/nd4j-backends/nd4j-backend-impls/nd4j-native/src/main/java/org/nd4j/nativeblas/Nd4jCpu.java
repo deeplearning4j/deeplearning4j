@@ -1759,6 +1759,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      */
     public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
                            @Cast("Nd4jPointer*") PointerPointer dx,
+                           @Cast("Nd4jLong*") LongPointer xShapeInfo,
                            Pointer dz,
                            @Cast("Nd4jLong*") LongPointer zShapeInfo,
                            int n,
@@ -1766,6 +1767,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                            @Cast("bool") boolean propagate);
     public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
                            @Cast("Nd4jPointer*") PointerPointer dx,
+                           @Cast("Nd4jLong*") LongBuffer xShapeInfo,
                            Pointer dz,
                            @Cast("Nd4jLong*") LongBuffer zShapeInfo,
                            int n,
@@ -1773,6 +1775,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                            @Cast("bool") boolean propagate);
     public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
                            @Cast("Nd4jPointer*") PointerPointer dx,
+                           @Cast("Nd4jLong*") long[] xShapeInfo,
                            Pointer dz,
                            @Cast("Nd4jLong*") long[] zShapeInfo,
                            int n,
@@ -1782,18 +1785,21 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
                            @Cast("Nd4jPointer*") PointerPointer dx,
+                           @Cast("Nd4jLong*") LongPointer xShapeInfo,
                            Pointer dz,
                            @Cast("Nd4jLong*") LongPointer zShapeInfo,
                            int n,
                            @Cast("Nd4jLong") long length);
     public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
                            @Cast("Nd4jPointer*") PointerPointer dx,
+                           @Cast("Nd4jLong*") LongBuffer xShapeInfo,
                            Pointer dz,
                            @Cast("Nd4jLong*") LongBuffer zShapeInfo,
                            int n,
                            @Cast("Nd4jLong") long length);
     public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
                            @Cast("Nd4jPointer*") PointerPointer dx,
+                           @Cast("Nd4jLong*") long[] xShapeInfo,
                            Pointer dz,
                            @Cast("Nd4jLong*") long[] zShapeInfo,
                            int n,
