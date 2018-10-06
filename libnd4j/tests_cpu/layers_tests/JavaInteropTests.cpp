@@ -690,7 +690,17 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_float) {
     ASSERT_TRUE(exp.equalsTo(z));
 }
 
+TEST_F(JavaInteropTests, Test_Mixed_Add_1) {
+    auto arrayX = NDArrayFactory::create<int>({1, 2, 3, 4});
+    auto arrayY = NDArrayFactory::create<double>({1, 2, 3, 4});
+    auto arrayZ = NDArrayFactory::create<double>({0, 0, 0, 0});
+    auto arrayE = NDArrayFactory::create<double>({2, 4, 6, 8});
 
+    NativeOps ops;
+    ops.execPairwiseTransform(nullptr, pairwise::Add, arrayX.buffer(), arrayX.shapeInfo(), arrayY.buffer(), arrayY.shapeInfo(), arrayZ.buffer(), arrayZ.shapeInfo(), nullptr);
+
+    ASSERT_EQ(arrayE, arrayZ);
+}
 
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     NativeOps ops;
