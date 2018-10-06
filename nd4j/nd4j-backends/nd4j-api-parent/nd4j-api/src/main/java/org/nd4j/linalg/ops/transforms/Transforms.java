@@ -766,7 +766,7 @@ public class Transforms {
      * @return
      */
     public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(dup ? new OldGreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(first.shape()), first.length()) : new OldGreaterThanOrEqual(first, ndArray, first, first.length()));
+        return exec(dup ? new OldGreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering()), first.length()) : new OldGreaterThanOrEqual(first, ndArray, first, first.length()));
 
     }
 

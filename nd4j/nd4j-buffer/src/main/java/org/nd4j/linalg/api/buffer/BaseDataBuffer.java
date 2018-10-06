@@ -1164,6 +1164,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             return ((LongIndexer) indexer).get(offset() + i);
         } else if (dataType() == DataType.HALF) {
             return ((HalfIndexer) indexer).get(offset() + i);
+        } else if (dataType() == DataType.BOOL) {
+            return ((BooleanIndexer) indexer).get(offset() + i) ? 1.0f : 0.0f;
         } else {
             return ((FloatIndexer) indexer).get(offset() + i);
         }
@@ -1310,6 +1312,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             ((ShortIndexer) indexer).put(offset() + i, element ? (short) 1 : (short) 0);
         } else if (dataType() == DataType.BYTE) {
             ((ByteIndexer) indexer).put(offset() + i, element ? (byte)1 : (byte) 0);
+        } else if (dataType() == DataType.BOOL) {
+            ((BooleanIndexer) indexer).put(offset() + i, element);
         }
         if (i == length) {
             length++;

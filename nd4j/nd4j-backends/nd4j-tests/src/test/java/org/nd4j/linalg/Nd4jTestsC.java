@@ -17,6 +17,7 @@
 package org.nd4j.linalg;
 
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
@@ -6752,8 +6753,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val ex = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
         val ey = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
 
-        val ez = Nd4j.create(new double[]{0.0, 1.0, 1.0, 1.0});
+        val ez = Nd4j.create(new boolean[]{false, true, true, true}, new long[]{4}, DataType.BOOL);
         val z = Transforms.greaterThanOrEqual(x, y, true);
+
+        val str = ez.toString();
+        log.info("exp: {}", str);
 
         assertEquals(ex, x);
         assertEquals(ey, y);

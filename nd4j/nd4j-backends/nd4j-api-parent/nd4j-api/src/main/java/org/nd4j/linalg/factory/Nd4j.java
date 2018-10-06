@@ -3429,6 +3429,12 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray create(boolean[] data, long[] shape, DataType type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
     /**
      * This method creates new 0D INDArray, aka scalar.
      *
