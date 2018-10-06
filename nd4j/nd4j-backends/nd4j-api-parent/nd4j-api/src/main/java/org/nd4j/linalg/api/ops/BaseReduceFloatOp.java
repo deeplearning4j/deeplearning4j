@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
@@ -92,13 +93,11 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
 
     @Override
     public boolean validateDataTypes() {
-        if (y() != null) {
-            if (x().dataType() != y().dataType())
-                throw new ND4JIllegalArgumentException("Op.X type must be the same as Op.Y ");
-        }
+        if (y() != null)
+            Preconditions.checkArgument(x().dataType() == y().dataType(),"Op.X type must be the same as Op.Y ");
 
-        if (z() != null && !z().isR())
-            throw new ND4JIllegalArgumentException("Op.X must be one of floating types");
+        if (z() != null)
+            Preconditions.checkArgument(z().isR(),"Op.X must be one of floating types");
 
         return true;
     }

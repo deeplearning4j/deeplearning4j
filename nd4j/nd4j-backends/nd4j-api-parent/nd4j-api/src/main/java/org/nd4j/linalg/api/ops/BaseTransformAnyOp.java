@@ -91,9 +91,9 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
     @Override
     public boolean validateDataTypes() {
 
-        if (y() != null && z() != null) {
+        if (y() != null && z() != null)
             Preconditions.checkArgument(y().dataType() == z().dataType() || x().dataType() == z().dataType(), "Op.Z type must be either Op.X or Op.Y");
-        }
+
 
         return true;
     }

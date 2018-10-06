@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
@@ -78,14 +79,13 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
 
     @Override
     public boolean validateDataTypes() {
-        if (!x().isR())
-            throw new ND4JIllegalArgumentException("Op.X must be one of floating types");
+        Preconditions.checkArgument(x().isR(), "Op.X must be one of floating types");
 
-        if (y() != null && !y().isR())
-            throw new ND4JIllegalArgumentException("Op.Y must be one of floating types");
+        if (y() != null)
+            Preconditions.checkArgument(y().isR(),"Op.Y must be one of floating types");
 
-        if (z() != null && z().dataType() != x().dataType())
-            throw new ND4JIllegalArgumentException("Op.Z must have the same type as Op.X ");
+        if (z() != null)
+            Preconditions.checkArgument(z().dataType() == x().dataType(), "Op.Z must have the same type as Op.X ");
 
         return true;
     }
