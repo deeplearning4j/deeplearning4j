@@ -3311,6 +3311,10 @@ public class Nd4j {
         return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL);
     }
 
+    public static INDArray create(boolean[][] data, long[] shape) {
+        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL);
+    }
+
     public static INDArray create(double[][][] data) {
         return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length});
     }

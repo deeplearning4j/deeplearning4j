@@ -823,8 +823,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray alongDim0 = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup(), 0));
         INDArray alongDim1 = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup(), 1));
 
-        INDArray expAlong0 = Nd4j.ones(4);
-        INDArray expAlong1 = Nd4j.create(new double[] {0, 0, 1, 0});
+        INDArray expAlong0 = Nd4j.create(new boolean[]{true, true, true, true});
+        INDArray expAlong1 = Nd4j.create(new boolean[] {false, false, true, false});
 
         assertEquals(expAlong0, alongDim0);
         assertEquals(expAlong1, alongDim1);
@@ -835,8 +835,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray alongDim0col = Nd4j.getExecutioner().execAndReturn(new IsMax(col.dup(), 0));
         INDArray alongDim1col = Nd4j.getExecutioner().execAndReturn(new IsMax(col.dup(), 1));
 
-        INDArray expAlong0col = Nd4j.create(new double[] {0, 0, 1, 0}, new long[] {4, 1});
-        INDArray expAlong1col = Nd4j.ones(new long[] {4, 1});
+        INDArray expAlong0col = Nd4j.create(new boolean[] {false, false, true, false});
+        INDArray expAlong1col = Nd4j.create(new boolean[] {true, true, true, true});
 
 
 
@@ -872,8 +872,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray alongDim0f_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('f'), 0));
         INDArray alongDim1c_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('c'), 1));
         INDArray alongDim1f_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('f'), 1));
-        INDArray expAlong0_2d = Nd4j.create(new double[][] {{0, 0, 1}, {1, 1, 0}});
-        INDArray expAlong1_2d = Nd4j.create(new double[][] {{0, 0, 1}, {0, 1, 0}});
+
+        INDArray expAlong0_2d = Nd4j.create(new boolean[][] {{false, false, true}, {true, true, false}});
+        INDArray expAlong1_2d = Nd4j.create(new boolean[][] {{false, false, true}, {false, true, false}});
 
         assertEquals(expAlong0_2d, alongDim0c_2d);
         assertEquals(expAlong0_2d, alongDim0f_2d);
@@ -895,7 +896,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testIsMaxSingleDim1() {
         INDArray orig2d = Nd4j.create(new double[][] {{1, 0, 2}, {2, 3, 1}});
         INDArray alongDim0c_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('c'), 0));
-        INDArray expAlong0_2d = Nd4j.create(new double[][] {{0, 0, 1}, {1, 1, 0}});
+        INDArray expAlong0_2d = Nd4j.create(new boolean[][] {{false, false, true}, {true, true, false}});
 
         System.out.println("Original shapeInfo: " + orig2d.dup('c').shapeInfoDataBuffer());
 
@@ -6742,7 +6743,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val ex = Nd4j.create(new double[]{1.0, 2.0, 3.0, -1.0});
         val ey = Nd4j.create(new double[]{2.0, 2.0, 3.0, -2.0});
 
-        val ez = Nd4j.create(new double[]{1.0, 1.0, 1.0, 0.0});
+        val ez = Nd4j.create(new boolean[]{true, true, true, false});
         val z = Transforms.lessThanOrEqual(x, y, true);
 
         assertEquals(ex, x);

@@ -55,7 +55,7 @@ public class AMin extends BaseTransformSameOp  {
 
     @Override
     public String opName() {
-        return "amin";
+        return "amin_pairwise";
     }
 
 

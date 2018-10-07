@@ -54,7 +54,7 @@ public class AMax extends BaseTransformSameOp  {
 
     @Override
     public String opName() {
-        return "amax";
+        return "amax_pairwise";
     }
 
 

@@ -54,7 +54,7 @@ public class Min extends BaseTransformSameOp  {
 
     @Override
     public String opName() {
-        return "min";
+        return "min_pairwise";
     }
 
 

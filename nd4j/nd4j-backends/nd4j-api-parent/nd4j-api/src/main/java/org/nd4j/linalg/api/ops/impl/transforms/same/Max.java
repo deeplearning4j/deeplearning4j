@@ -54,7 +54,7 @@ public class Max extends BaseTransformSameOp  {
 
     @Override
     public String opName() {
-        return "max";
+        return "max_pairwise";
     }
 
 
