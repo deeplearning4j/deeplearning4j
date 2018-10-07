@@ -633,7 +633,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * The extra argument in the op here is the {@link IsMax#IsMax(INDArray, int...)}
          * dimension to do the ismax along
          */
-        if (op.opNum() == 41 && op.extraArgs() != null) {
+        if (op.opName().equalsIgnoreCase("ismax") && op.extraArgs() != null) {
             int[] dimension = new int[(int) op.extraArgs()[0]];
 
             for (int i = 0; i < dimension.length; i++) {
@@ -715,36 +715,46 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 op.validateDataTypes();
 
-                if (op instanceof TransformFloatOp) {
-                    loop.execTransformFloat(dummy, op.opNum(),
-                            op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            getPointerForExtraArgs(op));
-                } else if (op instanceof TransformStrictOp) {
-                    loop.execTransformStrict(dummy, op.opNum(),
-                            op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            getPointerForExtraArgs(op));
-                } else if (op instanceof TransformSameOp) {
-                    loop.execTransformSame(dummy, op.opNum(),
-                            op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            getPointerForExtraArgs(op));
-                } else if (op instanceof TransformBoolOp) {
-                    loop.execTransformBool(dummy, op.opNum(),
-                            op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            getPointerForExtraArgs(op));
+                switch (op.getOpType()) {
+                    case TRANSFORM_FLOAT: {
+                        loop.execTransformFloat(dummy, op.opNum(),
+                                op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                getPointerForExtraArgs(op));
+                        break;
+                        }
+                    case TRANSFORM_STRICT: {
+                        loop.execTransformStrict(dummy, op.opNum(),
+                                op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                getPointerForExtraArgs(op));
+                        break;
+                        }
+                    case TRANSFORM_SAME: {
+                        loop.execTransformSame(dummy, op.opNum(),
+                                op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                getPointerForExtraArgs(op));
+                        break;
+                        }
+                    case TRANSFORM_BOOL: {
+                        loop.execTransformBool(dummy, op.opNum(),
+                                op.x().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                getPointerForExtraArgs(op));
+                        break;
+                        }
+                    default:
+                        throw new UnsupportedOperationException("Unknown transform type: [" + op.getOpType() + "]");
                 }
-
 
             }
 

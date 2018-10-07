@@ -54,10 +54,6 @@ public class IsMax extends BaseTransformBoolOp {
         super(x, z, n);
     }
 
-    public IsMax(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public IsMax(INDArray x) {
         super(x);
     }

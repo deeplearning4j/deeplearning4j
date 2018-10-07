@@ -664,8 +664,8 @@ void NativeOps::execTransformFloat(
         void *result,
         Nd4jLong *resultShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
+    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformFloat(
             opNum,
@@ -686,8 +686,8 @@ void NativeOps::execTransformSame(
         void *result,
         Nd4jLong *resultShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
+    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformSame(
             opNum,
@@ -708,8 +708,8 @@ void NativeOps::execTransformBool(
         void *result,
         Nd4jLong *resultShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
+    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformBool(
             opNum,
@@ -730,8 +730,8 @@ void NativeOps::execTransformStrict(
         void *result,
         Nd4jLong *resultShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
+    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformStrict(
             opNum,

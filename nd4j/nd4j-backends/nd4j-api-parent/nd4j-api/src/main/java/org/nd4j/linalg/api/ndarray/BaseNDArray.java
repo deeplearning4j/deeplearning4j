@@ -6436,4 +6436,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public boolean isB() {
         return dataType() == DataType.BOOL;
     }
+
+    @Override
+    public INDArray castTo(DataType dataType) {
+        val result = Nd4j.createUninitialized(dataType, this.shape(), this.ordering());
+        result.assign(this);
+        return result;
+    }
 }

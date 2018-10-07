@@ -20,6 +20,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.*;
 
 
@@ -143,5 +144,10 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     @Override
     public boolean isB() {
         return false;
+    }
+
+    @Override
+    public INDArray castTo(DataType dataType) {
+        return null;
     }
 }

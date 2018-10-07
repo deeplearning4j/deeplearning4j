@@ -23,6 +23,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import net.ericaro.neoitertools.Generator;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1288,5 +1289,10 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public boolean isB() {
         return false;
+    }
+
+    @Override
+    public INDArray castTo(DataType dataType) {
+        return null;
     }
 }

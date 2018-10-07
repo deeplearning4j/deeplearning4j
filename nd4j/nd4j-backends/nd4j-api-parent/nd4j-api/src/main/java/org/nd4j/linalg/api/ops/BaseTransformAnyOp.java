@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -91,11 +92,14 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
     @Override
     public boolean validateDataTypes() {
 
+        val op = opNum();
+
         if (y() != null && z() != null)
             Preconditions.checkArgument(y().dataType() == z().dataType() || x().dataType() == z().dataType(), "Op.Z type must be either Op.X or Op.Y");
 
         if (x().isR() || y().isR())
-            Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point");
+            if (op != 1)
+                Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point");
 
         return true;
     }

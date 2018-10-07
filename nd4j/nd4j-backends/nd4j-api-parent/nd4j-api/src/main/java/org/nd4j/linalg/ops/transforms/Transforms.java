@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
@@ -754,7 +755,7 @@ public class Transforms {
      * @return
      */
     public static INDArray lessThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(dup ? new OldLessThanOrEqual(first, ndArray, Nd4j.createUninitialized(first.shape()), first.length()) : new OldLessThanOrEqual(first, ndArray, first, first.length()));
+        return exec(new OldLessThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering()), first.length()));
 
     }
 
@@ -766,7 +767,7 @@ public class Transforms {
      * @return
      */
     public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(dup ? new OldGreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering()), first.length()) : new OldGreaterThanOrEqual(first, ndArray, first, first.length()));
+        return exec(new OldGreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering()), first.length()));
 
     }
 
@@ -950,6 +951,14 @@ public class Transforms {
      */
     public static INDArray identity(INDArray ndArray, boolean dup) {
         return exec(dup ? new OldIdentity(ndArray, ndArray.dup()) : new OldIdentity(ndArray));
+    }
+
+    public static INDArray isMax(INDArray input) {
+        return isMax(input, Nd4j.createUninitialized(DataType.BOOL, input.shape(), input.ordering()));
+    }
+
+    public static INDArray isMax(INDArray input, INDArray output) {
+        return Nd4j.getExecutioner().execAndReturn(new IsMax(input, output));
     }
 
 

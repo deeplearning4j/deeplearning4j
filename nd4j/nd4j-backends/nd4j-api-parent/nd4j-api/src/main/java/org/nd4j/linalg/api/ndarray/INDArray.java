@@ -2845,4 +2845,12 @@ public interface INDArray extends Serializable {
      * @return
      */
     boolean isB();
+
+    /**
+     * This method cast elements of this INDArray to new data type
+     *
+     * @param dataType
+     * @return
+     */
+    INDArray castTo(DataType dataType);
 }
