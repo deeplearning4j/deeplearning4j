@@ -579,12 +579,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 && op.x().data().dataType() != DataType.COMPRESSED)
             throw new ND4JIllegalStateException("op.X dataType is [" + op.x().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
-
+/*
         if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava())
                         && op.z().data().dataType() != expectedType
                         && op.z().data().dataType() != DataType.COMPRESSED)
             throw new ND4JIllegalStateException("op.Z dataType is [" + op.z().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
+        */
 
         if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava())
                 && op.y().data().dataType() != expectedType)

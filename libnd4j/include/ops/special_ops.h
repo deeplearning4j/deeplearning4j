@@ -2311,7 +2311,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
                 int span = (tads / num_threads) + 8;
 
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
+//#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
                 {
                     int tid = omp_get_thread_num();
                     int start = span * tid;
@@ -2334,9 +2334,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                                     }
                                 }
 
-#pragma omp simd
+//#pragma omp simd
                                 for (int i = 0; i < tadLength; i++) {
-                                    rZ[i] = maxIdx == i ? (X) 1.0f : (X) 0.0f;
+                                    rZ[i] = maxIdx == i;
                                 }
 
                             } else {
@@ -2349,9 +2349,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                                     }
                                 }
 
-#pragma omp simd
+//#pragma omp simd
                                 for (int i = 0; i < tadLength; i++) {
-                                    rZ[i * zEWS] = maxIdx == i ? (X) 1.0f : (X) 0.0f;
+                                    rZ[i * zEWS] = maxIdx == i;
                                 }
                             }
                         } else {
@@ -2375,7 +2375,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
                             auto maxCursor = resultPointer;
                             Nd4jPointer maxCursorLong = reinterpret_cast<Nd4jPointer>(maxCursor);
-                            if (PrepareTwoRawArrayIter<X>(rank,
+                            if (PrepareTwoRawArrayIter<X,Z>(rank,
                                                              xShape,
                                                              xPointer,
                                                              xStride,
@@ -2394,7 +2394,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                                            maxValue = xPointer[0];
                                        }
 
-                                       resultPointer[0] = 0.0;
+                                       resultPointer[0] = false;
                                    }
                                    ND4J_RAW_ITER_TWO_NEXT(dim,
                                                           rank,
@@ -2405,7 +2405,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                                                           resultPointer,
                                                           resultStridesIter);
                                    maxCursor = reinterpret_cast<Z *>(maxCursorLong);
-                                   maxCursor[0] = 1.0;
+                                   maxCursor[0] = true;
                             }
                         }
                     }

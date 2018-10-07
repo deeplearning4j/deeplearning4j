@@ -3824,7 +3824,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  returns true if buffer && shapeInfo were defined (non nullptr)
         */
-        public native @Cast("bool") boolean nonNull();        
+        public native @Cast("bool") boolean nonNull();
 
         /** 
         *  returns array element with given index from linear buffer

@@ -178,7 +178,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, long offset, char ordering) {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, Nd4j.dataType()));
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, buffer.dataType()));
         init(shape, stride);
         // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
 
@@ -187,7 +187,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering) {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, Nd4j.dataType()));
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, buffer.dataType()));
         init(shape, stride);
         // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
     }
@@ -5934,8 +5934,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isEmpty())
             return false;
 
-        if (data == null && !isEmpty())
-            throw new IllegalStateException();
+        Preconditions.checkArgument(!(data == null && !isEmpty()), "Array has no buffer!");
 
         return data.isAttached() ||
                 (data.underlyingDataBuffer() != null && data.underlyingDataBuffer().isAttached()) ||

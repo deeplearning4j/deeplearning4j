@@ -20,9 +20,11 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -55,7 +57,7 @@ public class IsMax extends BaseTransformBoolOp {
     }
 
     public IsMax(INDArray x) {
-        super(x);
+        super(x, Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering()));
     }
 
     public IsMax(INDArray x, INDArray z, long n, int... dimensions) {
@@ -75,7 +77,7 @@ public class IsMax extends BaseTransformBoolOp {
     }
 
     public IsMax(INDArray x, int... dimensions) {
-        super(x);
+        super(x, Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering()));
         this.extraArgs = new Object[dimensions.length + 1];
         this.extraArgs[0] = dimensions.length;
         for (int i = 0; i < dimensions.length; i++)

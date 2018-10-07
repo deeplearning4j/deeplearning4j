@@ -714,6 +714,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     op.setZ(Nd4j.create(op.resultType(), op.x().shape()));
 
                 op.validateDataTypes();
+                val xtraz = getPointerForExtraArgs(op);
 
                 switch (op.getOpType()) {
                     case TRANSFORM_FLOAT: {
@@ -722,7 +723,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 op.z().data().addressPointer(),
                                 (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                getPointerForExtraArgs(op));
+                                xtraz);
                         break;
                         }
                     case TRANSFORM_STRICT: {
@@ -731,7 +732,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 op.z().data().addressPointer(),
                                 (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                getPointerForExtraArgs(op));
+                                xtraz);
                         break;
                         }
                     case TRANSFORM_SAME: {
@@ -740,7 +741,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 op.z().data().addressPointer(),
                                 (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                getPointerForExtraArgs(op));
+                                xtraz);
                         break;
                         }
                     case TRANSFORM_BOOL: {
@@ -749,7 +750,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 op.z().data().addressPointer(),
                                 (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                getPointerForExtraArgs(op));
+                                xtraz);
                         break;
                         }
                     default:
@@ -828,7 +829,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         } else {
             if(op.z() == op.x() || op.z() == null) {
-                op.setZ(Nd4j.scalar(0.0));
+                op.setZ(Nd4j.scalar(DataType.LONG, 0.0));
             }
 
             long st = profilingHookIn(op);
@@ -841,6 +842,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         getPointerForExtraArgs(op),
                         op.z().data().addressPointer(),
                         (LongPointer) op.z().shapeInfoDataBuffer().addressPointer());
+
+            op.setFinalResult(op.z().getInt(0));
 
             profilingHookOut(op, st);
         }

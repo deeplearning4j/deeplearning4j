@@ -1271,6 +1271,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             ((ShortIndexer) indexer).put(offset() + i,  (short) element);
         } else if (dataType() == DataType.BYTE) {
             ((ByteIndexer) indexer).put(offset() + i, (byte) element);
+        } else if (dataType() == DataType.BYTE) {
+            ((UByteIndexer) indexer).put(offset() + i, (short) element);
+        } else if (dataType() == DataType.BOOL) {
+            ((BooleanIndexer) indexer).put(offset() + i,  element > 0.0);
         }
         if (i == length) {
             length++;

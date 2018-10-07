@@ -69,6 +69,16 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
             return new IntBuffer(underlyingBuffer, length, offset);
         } else if (underlyingBuffer.dataType() == DataType.LONG) {
             return new LongBuffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.BOOL) {
+            return new BoolBuffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.SHORT) {
+            return new Int16Buffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.BYTE) {
+            return new Int8Buffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.UBYTE) {
+            return new UInt8Buffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.HALF) {
+            return new HalfBuffer(underlyingBuffer, length, offset);
         }
         return null;
     }

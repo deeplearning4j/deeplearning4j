@@ -244,7 +244,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testIsMax() {
         INDArray arr = Nd4j.create(new double[] {1, 2, 4, 3}, new long[] {2, 2});
-        INDArray assertion = Nd4j.create(new double[] {0, 0, 1, 0}, new long[] {2, 2});
+        INDArray assertion = Nd4j.create(new boolean[] {false, false, true, false}, new long[] {2, 2}, DataType.BOOL);
         INDArray test = Nd4j.getExecutioner().exec(new IsMax(arr)).z();
         assertEquals(assertion, test);
     }
@@ -1058,11 +1058,12 @@ public class Nd4jTestsC extends BaseNd4jTest {
                         + Arrays.toString(shape) + ")");
                 INDArray arrC = Nd4j.linspace(1, length, length).reshape('c', shape);
                 INDArray arrF = arrC.dup('f');
-                Nd4j.getExecutioner().execAndReturn(new IsMax(arrC, alongDimension));
-                Nd4j.getExecutioner().execAndReturn(new IsMax(arrF, alongDimension));
+                val resC = Nd4j.getExecutioner().execAndReturn(new IsMax(arrC, alongDimension));
+                val resF = Nd4j.getExecutioner().execAndReturn(new IsMax(arrF, alongDimension));
 
-                double[] cBuffer = arrC.data().asDouble();
-                double[] fBuffer = arrF.data().asDouble();
+
+                double[] cBuffer = resC.data().asDouble();
+                double[] fBuffer = resF.data().asDouble();
                 for (int i = 0; i < length; i++) {
                     assertTrue("c buffer value at [" + i + "]=" + cBuffer[i] + ", expected 0 or 1; dimension = "
                                     + alongDimension + ", rank = " + rank + ", shape=" + Arrays.toString(shape),
@@ -3933,26 +3934,28 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testIsMax2Of3d() {
         double[][][] slices = new double[3][][];
-        double[][][] isMax = new double[3][][];
+        boolean[][][] isMax = new boolean[3][][];
 
         slices[0] = new double[][] {{1, 10, 2}, {3, 4, 5}};
         slices[1] = new double[][] {{-10, -9, -8}, {-7, -6, -5}};
         slices[2] = new double[][] {{4, 3, 2}, {1, 0, -1}};
 
-        isMax[0] = new double[][] {{0, 1, 0}, {0, 0, 0}};
-        isMax[1] = new double[][] {{0, 0, 0}, {0, 0, 1}};
-        isMax[2] = new double[][] {{1, 0, 0}, {0, 0, 0}};
+        isMax[0] = new boolean[][] {{false, true, false}, {false, false, false}};
+        isMax[1] = new boolean[][] {{false, false, false}, {false, false, true}};
+        isMax[2] = new boolean[][] {{true, false, false}, {false, false, false}};
 
         INDArray arr = Nd4j.create(3, 2, 3);
-        INDArray expected = Nd4j.create(3, 2, 3);
+        INDArray expected = Nd4j.create(DataType.BOOL, new long[]{3, 2, 3});
         for (int i = 0; i < 3; i++) {
             arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(slices[i]));
-            expected.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(isMax[i]));
+            val t = Nd4j.create(ArrayUtil.flatten(isMax[i]), new long[]{2, 3}, DataType.BOOL);
+            val v = expected.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all());
+            v.assign(t);
         }
 
-        Nd4j.getExecutioner().exec(new IsMax(arr, 1, 2));
+        val result = Nd4j.getExecutioner().exec(new IsMax(arr, 1, 2)).z();
 
-        assertEquals(expected, arr);
+        assertEquals(expected, result);
     }
 
     @Test
@@ -3963,7 +3966,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.rand(s);
 
         //Test 0,1
-        INDArray exp = Nd4j.create(s);
+        INDArray exp = Nd4j.create(DataType.BOOL, s);
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 5; j++) {
                 INDArray subset = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i),
@@ -3985,7 +3988,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                     }
                 }
 
-                subsetExp.putScalar(maxIdx, 1.0);
+                subsetExp.putScalar(maxIdx, 1);
             }
         }
 

@@ -713,6 +713,21 @@ TEST_F(JavaInteropTests, Test_Is_Max_1) {
     ASSERT_EQ(arrayE, arrayZ);
 }
 
+TEST_F(JavaInteropTests, Test_Is_Max_2) {
+    auto arrayX = NDArrayFactory::create<float>('c', {3, 2, 3}, {1, 10, 2, 3, 4, 5, -10, -9, -8, -7, -6, -5, 4, 3, 2, 1, 0, -1});
+    auto arrayZ = NDArrayFactory::create<bool>('c', {3, 2, 3});
+    Nd4jLong tad[] = {2, 2, 3, 3, 1, 524288, -1, 99};
+    Nd4jLong off[] = {0, 6, 12};
+    Nd4jLong *ex[] = {tad, off};
+    float ea[] = {2, 1, 2};
+
+    NativeOps ops;
+    ops.execTransformBool(reinterpret_cast<void **>(ex), transform::IsMax, arrayX.buffer(), arrayX.shapeInfo(), arrayZ.buffer(), arrayZ.shapeInfo(), ea);
+
+    arrayZ.printIndexedBuffer("Z");
+}
+
+
 
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     NativeOps ops;

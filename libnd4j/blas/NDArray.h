@@ -1186,7 +1186,10 @@ namespace nd4j {
         /**
         *  returns true if buffer && shapeInfo were defined (non nullptr)
         */
-        FORCEINLINE bool nonNull() const;        
+        FORCEINLINE bool nonNull() const;
+
+        template <typename T>
+        T r(const Nd4jLong i) const;
 
         /** 
         *  returns array element with given index from linear buffer

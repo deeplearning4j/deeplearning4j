@@ -1584,11 +1584,28 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             printf("%s: [", msg);
         else
             printf("[");
+        if (this->isR()) {
+            for (Nd4jLong e = 0; e < limit; e++) {
+                printf("%f", this->r<float>(e));
+                if (e < limit - 1)
+                    printf(", ");
+            }
+        } else if (this->isZ()) {
+            for (Nd4jLong e = 0; e < limit; e++) {
+                printf("%llu", this->r<Nd4jLong>(e));
+                if (e < limit - 1)
+                    printf(", ");
+            }
+        } else if (this->isB()) {
+            for (Nd4jLong e = 0; e < limit; e++) {
+                if (this->r<bool>(e))
+                    printf("true");
+                else
+                    printf("false");
 
-        for (Nd4jLong e = 0; e < limit; e++) {
-            printf("%f", (float) this->_buffer[e]);
-            if (e < limit - 1)
-                printf(", ");
+                if (e < limit - 1)
+                    printf(", ");
+            }
         }
         printf("]\n");
         fflush(stdout);
@@ -1599,7 +1616,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             limit = (int) this->lengthOf();
 
         if (msg != nullptr)
-            printf("%s [", msg);
+            printf("%s: [", msg);
         else
             printf("[");
         if (this->isR()) {
@@ -2979,6 +2996,19 @@ NDArray NDArray::transp() const {
         return result;
     }
 
+
+    //////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    T NDArray::r(const Nd4jLong i) const {
+
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+
+
+        BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, i), LIBND4J_TYPES);
+        return static_cast<T>(119);
+    }
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::r(const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
     template <typename T>
