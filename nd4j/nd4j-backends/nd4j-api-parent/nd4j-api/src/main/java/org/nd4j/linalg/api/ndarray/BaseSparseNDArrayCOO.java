@@ -1295,4 +1295,9 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     public INDArray castTo(DataType dataType) {
         return null;
     }
+
+    @Override
+    public boolean all() {
+        return false;
+    }
 }

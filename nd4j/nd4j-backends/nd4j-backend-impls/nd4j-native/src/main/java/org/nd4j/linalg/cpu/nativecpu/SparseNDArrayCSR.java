@@ -150,4 +150,9 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     public INDArray castTo(DataType dataType) {
         return null;
     }
+
+    @Override
+    public boolean all() {
+        return false;
+    }
 }

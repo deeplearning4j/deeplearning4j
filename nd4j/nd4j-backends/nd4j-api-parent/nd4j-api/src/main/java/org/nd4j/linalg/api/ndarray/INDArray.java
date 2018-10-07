@@ -2853,4 +2853,10 @@ public interface INDArray extends Serializable {
      * @return
      */
     INDArray castTo(DataType dataType);
+
+    /**
+     * This method checks if all elements within this array are non-zero (or true, in case of boolean)
+     * @return
+     */
+    boolean all();
 }

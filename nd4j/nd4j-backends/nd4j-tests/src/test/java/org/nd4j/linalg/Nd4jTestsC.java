@@ -46,6 +46,7 @@ import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.reduce.*;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.custom.LogSumExp;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2;
@@ -974,14 +975,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray first = Nd4j.linspace(1, 10, 10);
         INDArray second = Nd4j.linspace(20, 30, 10);
 
-        INDArray expAllZeros = Nd4j.getExecutioner().execAndReturn(new Eps(first, second, Nd4j.create(10), 10));
-        INDArray expAllOnes = Nd4j.getExecutioner().execAndReturn(new Eps(first, first, Nd4j.create(10), 10));
+        INDArray expAllZeros = Nd4j.getExecutioner().execAndReturn(new Eps(first, second, Nd4j.create(DataType.BOOL, 10), 10));
+        INDArray expAllOnes = Nd4j.getExecutioner().execAndReturn(new Eps(first, first, Nd4j.create(DataType.BOOL, 10), 10));
 
         System.out.println(expAllZeros);
         System.out.println(expAllOnes);
 
+        val allones = Nd4j.getExecutioner().exec(new All(expAllOnes)).z().getDouble(0);
+
         assertEquals(0, expAllZeros.sumNumber().doubleValue(), 0.0);
-        assertEquals(10, expAllOnes.sumNumber().doubleValue(), 0.0);
+        assertEquals(1, allones, 0.0);
     }
 
     @Test
@@ -2085,8 +2088,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testEps() {
         INDArray ones = Nd4j.ones(5);
-        double sum = Nd4j.getExecutioner().exec(new Eps(ones, ones, ones, ones.length())).z().sumNumber().doubleValue();
-        assertEquals(5, sum, 1e-1);
+        val res = Nd4j.create(DataType.BOOL, 5);
+        Nd4j.getExecutioner().exec(new Eps(ones, ones, res, ones.length()));
+
+        assertTrue(res.all());
     }
 
     @Test
@@ -2096,9 +2101,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray second = Nd4j.zeros(10); //0.0
 
         INDArray expAllZeros1 = Nd4j.getExecutioner()
-                .execAndReturn(new Eps(first, second, Nd4j.create(new long[] {1, 10}, 'f'), 10));
+                .execAndReturn(new Eps(first, second, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f'), 10));
         INDArray expAllZeros2 = Nd4j.getExecutioner()
-                .execAndReturn(new Eps(second, first, Nd4j.create(new long[] {1, 10}, 'f'), 10));
+                .execAndReturn(new Eps(second, first, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f'), 10));
 
         System.out.println(expAllZeros1);
         System.out.println(expAllZeros2);
