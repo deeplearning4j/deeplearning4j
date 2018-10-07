@@ -723,8 +723,14 @@ TEST_F(JavaInteropTests, Test_Is_Max_2) {
 
     NativeOps ops;
     ops.execTransformBool(reinterpret_cast<void **>(ex), transform::IsMax, arrayX.buffer(), arrayX.shapeInfo(), arrayZ.buffer(), arrayZ.shapeInfo(), ea);
+}
 
-    arrayZ.printIndexedBuffer("Z");
+TEST_F(JavaInteropTests, Test_IAMax_1) {
+    auto arrayX = NDArrayFactory::create<float>({-0.24f, -0.26f, -0.07f, -0.01f});
+    auto arrayZ = arrayX.indexReduceNumber(indexreduce::IndexAbsoluteMax, nullptr);
+    auto exp = NDArrayFactory::create<Nd4jLong>(1);
+
+    ASSERT_EQ(exp, arrayZ);
 }
 
 

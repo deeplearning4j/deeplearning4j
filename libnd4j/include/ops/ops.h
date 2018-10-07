@@ -3441,7 +3441,7 @@ namespace simdOps {
         __host__ __device__
 #endif
 		static inline X startingValue(X *input) {
-			return -nd4j::DataTypeUtils::max<X>();
+			return 0;
 		}
 
 #ifdef __CUDACC__
