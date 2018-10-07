@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -179,4 +180,12 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     }
 
 
+    @Override
+    public boolean validateDataTypes() {
+
+        if (z() != null)
+            Preconditions.checkArgument(z().dataType() == DataType.LONG, "IndexReduce operations require LONG output");
+
+        return true;
+    }
 }

@@ -255,9 +255,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray argMaxZero = Nd4j.argMax(toArgMax, 0);
         INDArray argMax = Nd4j.argMax(toArgMax, 1);
         INDArray argMaxTwo = Nd4j.argMax(toArgMax, 2);
-        INDArray valueArray = Nd4j.valueArrayOf(new long[] {4, 2}, 2.0);
-        INDArray valueArrayTwo = Nd4j.valueArrayOf(new long[] {3, 2}, 3.0);
-        INDArray valueArrayThree = Nd4j.valueArrayOf(new long[] {4, 3}, 1.0);
+        INDArray valueArray = Nd4j.valueArrayOf(new long[] {4, 2}, 2, DataType.LONG);
+        INDArray valueArrayTwo = Nd4j.valueArrayOf(new long[] {3, 2}, 3, DataType.LONG);
+        INDArray valueArrayThree = Nd4j.valueArrayOf(new long[] {4, 3}, 1, DataType.LONG);
         assertEquals(valueArrayTwo, argMaxZero);
         assertEquals(valueArray, argMax);
 
@@ -744,13 +744,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
         //Tests: full buffer...
         //1d
         INDArray arr1 = Nd4j.create(new double[] {1, 2, 3, 1});
-        Nd4j.getExecutioner().execAndReturn(new IsMax(arr1));
-        INDArray exp1 = Nd4j.create(new double[] {0, 0, 1, 0});
+        val res1 = Nd4j.getExecutioner().execAndReturn(new IsMax(arr1));
+        INDArray exp1 = Nd4j.create(new boolean[] {false, false, true, false});
 
-        assertEquals(exp1, arr1);
+        assertEquals(exp1, res1);
 
         arr1 = Nd4j.create(new double[] {1, 2, 3, 1});
-        INDArray result = Nd4j.zeros(4);
+        INDArray result = Nd4j.createUninitialized(DataType.BOOL, new long[]{4});
         Nd4j.getExecutioner().execAndReturn(new IsMax(arr1, result));
 
         assertEquals(Nd4j.create(new double[] {1, 2, 3, 1}), arr1);
@@ -758,7 +758,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         //2d
         INDArray arr2d = Nd4j.create(new double[][] {{0, 1, 2}, {2, 9, 1}});
-        INDArray exp2d = Nd4j.create(new double[][] {{0, 0, 0}, {0, 1, 0}});
+        INDArray exp2d = Nd4j.create(new boolean[][] {{false, false, false}, {false, true, false}});
 
         INDArray f = arr2d.dup('f');
         INDArray out2dc = Nd4j.getExecutioner().execAndReturn(new IsMax(arr2d.dup('c')));
@@ -4043,7 +4043,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         slices[2] = new double[][] {{4, 3, 2}, {1, 0, -1}};
 
         //Based on a c-order traversal of each tensor
-        double[] imax = new double[] {1, 5, 0};
+        val imax = new long[] {1, 5, 0};
 
         INDArray arr = Nd4j.create(3, 2, 3);
         for (int i = 0; i < 3; i++) {
@@ -4052,7 +4052,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray out = Nd4j.getExecutioner().exec(new IMax(arr), 1, 2);
 
-        INDArray exp = Nd4j.create(imax);
+        assertEquals(DataType.LONG, out.dataType());
+
+        INDArray exp = Nd4j.create(imax, new long[]{3}, DataType.LONG);
 
         assertEquals(exp, out);
     }
@@ -5586,12 +5588,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testMatchTransform() throws Exception {
         val array = Nd4j.create(new double[] {1, 1, 1, 0, 1, 1},'c');
-        val exp = Nd4j.create(new double[] {0, 0, 0, 1, 0, 0},'c');
-        Op op = new MatchConditionTransform(array, array, 1e-5, Conditions.epsEquals(0.0));
+        val result = Nd4j.createUninitialized(DataType.BOOL, array.shape());
+        val exp = Nd4j.create(new boolean[] {false, false, false, true, false, false});
+        Op op = new MatchConditionTransform(array, result, 1e-5, Conditions.epsEquals(0.0));
 
         Nd4j.getExecutioner().exec(op);
 
-        assertEquals(exp, array);
+        assertEquals(exp, result);
     }
 
     @Test

@@ -172,7 +172,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         if(op.z() == null || op.x() == op.z()) {
-            val ret = Nd4j.create(retShape);
+            val ret = Nd4j.createUninitialized(DataType.LONG, retShape);
 
             op.setZ(ret);
         } else if(!Arrays.equals(retShape, op.z().shape())){
@@ -185,6 +185,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
 
+        op.validateDataTypes();
 
         Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension).addressPointer();
 

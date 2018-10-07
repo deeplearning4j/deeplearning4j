@@ -69,4 +69,7 @@ public interface IndexAccumulation extends Op {
      */
     Pair<Double, Integer> zeroPair();
 
+
+    boolean validateDataTypes();
+
 }

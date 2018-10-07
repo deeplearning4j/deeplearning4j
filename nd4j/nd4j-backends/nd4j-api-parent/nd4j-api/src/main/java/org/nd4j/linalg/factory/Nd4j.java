@@ -3240,6 +3240,10 @@ public class Nd4j {
         return create(data, order());
     }
 
+    public static INDArray create(boolean[] data) {
+        return INSTANCE.create(data, new long[]{data.length}, new long[]{1}, DataType.BOOL);
+    }
+
 
     /**
      * Creates a row vector with the data
@@ -3302,6 +3306,10 @@ public class Nd4j {
         return INSTANCE.create(data);
     }
 
+    public static INDArray create(boolean[][] data) {
+        val shape = new long[]{data.length, data[0].length};
+        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL);
+    }
 
     public static INDArray create(double[][][] data) {
         return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length});
@@ -4550,6 +4558,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray createUninitialized(DataType type, long[] shape) {
+        return createUninitialized(type, shape, Nd4j.order());
+    }
+
     public static INDArray createUninitialized(DataType type, long[] shape, char ordering) {
         if (shape.length == 0)
             return scalar(type, 0);
@@ -4945,6 +4957,30 @@ public class Nd4j {
 
         INDArray ret = INSTANCE.valueArrayOf(shape, value);
         logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray valueArrayOf(long[] shape, double value, DataType type) {
+        if (shape.length == 0)
+            return trueScalar(value);
+
+        checkShapeValues(shape);
+
+        INDArray ret = createUninitialized(type, shape);
+        logCreationIfNecessary(ret);
+        ret.assign(value);
+        return ret;
+    }
+
+    public static INDArray valueArrayOf(long[] shape, long value, DataType type) {
+        if (shape.length == 0)
+            return trueScalar(value);
+
+        checkShapeValues(shape);
+
+        INDArray ret = createUninitialized(type, shape);
+        logCreationIfNecessary(ret);
+        ret.assign(value);
         return ret;
     }
 
