@@ -45,12 +45,13 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
     auto input = INPUT_VARIABLE(0);
-    auto dLdO  = INPUT_VARIABLE(1);
+    auto dLdO  = INPUT_VARIABLE(1);    
     
     auto dLdI = OUTPUT_VARIABLE(0);
     auto threshold = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
     helpers::thresholdReluDerivative(input, threshold, dLdO, dLdI);
+
     return Status::OK();
 }
 

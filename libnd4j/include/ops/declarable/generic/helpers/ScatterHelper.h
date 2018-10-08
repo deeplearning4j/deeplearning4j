@@ -76,7 +76,7 @@ class ScatterHelper {
                     auto t0 = tadsOperand->at(e);
                     auto t1 = tadsUpdate->at(e);
                     
-                    t0->template applyPairwiseTransform<OpClass>(t1, nullptr);
+                    t0->template applyPairwiseTransform<OpClass>(*t1, nullptr);
                 }
 
                 delete tadsOperand;
@@ -96,7 +96,7 @@ class ScatterHelper {
                     auto t0 = tadsOperand->at(idx);
                     auto t1 = tadsUpdates->at(e);
 
-                    t0->template applyPairwiseTransform<OpClass>(t1, nullptr);
+                    t0->template applyPairwiseTransform<OpClass>(*t1, nullptr);
                 }
 
                 delete _input;
@@ -146,7 +146,7 @@ class ScatterHelper {
                     NDArray updSubArr = updates(i, dimsToExcludeUpd);
 
 #pragma omp critical
-                    outSubArr.template applyPairwiseTransform<OpClass>(&updSubArr, nullptr);
+                    outSubArr.template applyPairwiseTransform<OpClass>(updSubArr, nullptr);
                 }
             }
         }
@@ -193,7 +193,7 @@ static FORCEINLINE void scatterND(const NDArray& indices, const NDArray& updates
             NDArray<T> updSubArr = updates(i, dimsToExcludeUpd);
 
 #pragma omp critical                             
-            outSubArr.template applyPairwiseTransform<OpClass>(&updSubArr, nullptr);
+            outSubArr.template applyPairwiseTransform<OpClass>(updSubArr, nullptr);
         }        
     }
 }

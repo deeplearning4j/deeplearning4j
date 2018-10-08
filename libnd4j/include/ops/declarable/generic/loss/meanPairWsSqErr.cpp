@@ -78,7 +78,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 		//throw std::runtime_error("Not implemented yet");
 	}
 	
-	sumSqrsDiffPerBatch.applyPairwiseTransform(pairwise::SafeDivide, &numOfNonZeroWeights, nullptr);
+	sumSqrsDiffPerBatch.applyPairwiseTransform(pairwise::SafeDivide, numOfNonZeroWeights, nullptr);
 
 	auto sumDiff = diffs.reduceAlongDims(reduce::Sum, reductionIdx, true);
 	auto nonZerosSquared = numOfNonZeroWeights*numOfNonZeroWeights;

@@ -47,7 +47,7 @@ namespace helpers {
 
     void thresholdRelu(const NDArray &input, double threshold, NDArray &output);
 
-    void thresholdReluDerivative(NDArray *input, double threshold, NDArray*dLdO, NDArray *output);
+    void thresholdReluDerivative(NDArray *input, double threshold, NDArray* dLdO, NDArray *output);
 }
 }
 }

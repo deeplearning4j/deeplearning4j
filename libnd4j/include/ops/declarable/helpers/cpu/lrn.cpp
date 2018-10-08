@@ -75,13 +75,13 @@ namespace helpers {
             std::unique_ptr<NDArray> tmp(sumPart->subarray(indA));
             std::unique_ptr<NDArray> addVal(activitySqr->subarray(indB));
 
-            tmp->applyPairwiseTransform(pairwise::Add, addVal.get(), nullptr);
+            tmp->applyPairwiseTransform(pairwise::Add, *addVal.get(), nullptr);
 
 
             std::unique_ptr<NDArray> tmp2(sumPart->subarray(indB));
             std::unique_ptr<NDArray> addVal2(activitySqr->subarray(indA));
 
-            tmp2->applyPairwiseTransform(pairwise::Add, addVal2.get(), nullptr);
+            tmp2->applyPairwiseTransform(pairwise::Add, *addVal2.get(), nullptr);
         }
 
         /*

@@ -536,7 +536,7 @@ namespace nd4j {
         *  other - second array necessary for pairwise operation
         *  extraParams - extra parameters for operation
         */
-        void applyPairwiseTransform(nd4j::pairwise::Ops op, NDArray *other, void *extraParams);
+        void applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray& other, void *extraParams);
 
         /**
         *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in target array
@@ -544,9 +544,9 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */
-        void applyPairwiseTransform(nd4j::pairwise::Ops op, NDArray *other, NDArray *target, void *extraParams);
+        void applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray *other, NDArray *target, void *extraParams) const;
 
-        void applyPairwiseTransform(nd4j::pairwise::BoolOps op, NDArray *other, NDArray *target, void *extraParams);
+        void applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, void *extraParams) const;
 
         /**
         *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
