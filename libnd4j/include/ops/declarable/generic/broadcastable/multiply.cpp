@@ -65,8 +65,8 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     const Nd4jLong yLen = y->lengthOf();
     
     if(xLen == 1 && yLen == 1) {    // both are scalars
-        y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
-        x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
+        y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx, nullptr);
+        x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy, nullptr);
     }
     else if(xLen == 1) {            // x is scalar and y is not
         (*dLdx) = (*y * *dLdz).reduceNumber(reduce::Sum);
