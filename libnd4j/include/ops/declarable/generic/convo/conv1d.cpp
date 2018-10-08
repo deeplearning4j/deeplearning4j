@@ -22,11 +22,13 @@
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_conv1d)
 
+#include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/CustomOperations.h>
 #include <declarable/generic/helpers/convolutions.h>
 
 namespace nd4j {
 namespace ops  {
+
 
 
 CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 4) {
@@ -140,11 +142,18 @@ DECLARE_SHAPE_FN(conv1d) {
         outputShapeInfo[3] = oC;
     }
 
-    ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
+    ShapeUtils::updateStridesAndType(outputShapeInfo, weightsShapeInfo, shape::order(weightsShapeInfo));
 
     return SHAPELIST(outputShapeInfo);
 }
 
+DECLARE_TYPES(conv1d) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS, DataType::QINT8, DataType::QINT16})
+        ->setAllowedInputTypes(1, {ALL_FLOATS})
+        ->setAllowedInputTypes(2, {ALL_FLOATS}) 
+        ->setAllowedOutputTypes(0, {ALL_FLOATS});
+}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -263,17 +272,31 @@ DECLARE_SHAPE_FN(conv1d_bp) {
 
 
     Nd4jLong* gradIshapeInfo(nullptr), *gradWshapeInfo(nullptr);
-    COPY_SHAPE(inputShapeInfo, gradIshapeInfo);
-    COPY_SHAPE(weightsShapeInfo, gradWshapeInfo);
+    COPY_SHAPE(inputShapeInfo, gradIshapeInfo);    
+    COPY_SHAPE(weightsShapeInfo, gradWshapeInfo); 
+    ArrayOptions::copyDataType(gradIshapeInfo, gradOShapeInfo);
+    ArrayOptions::copyDataType(gradWshapeInfo, gradOShapeInfo);
 
     if(biasShapeInfo) {
         Nd4jLong* gradBshapeInfo(nullptr);
         COPY_SHAPE(biasShapeInfo, gradBshapeInfo);
+        ArrayOptions::copyDataType(gradBshapeInfo, gradOShapeInfo);
         return SHAPELIST(gradIshapeInfo, gradWshapeInfo, gradBshapeInfo);
     }
 
     return SHAPELIST(gradIshapeInfo, gradWshapeInfo);
 }
+
+DECLARE_TYPES(conv1d_bp) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS, DataType::QINT8, DataType::QINT16})
+        ->setAllowedInputTypes(1, {ALL_FLOATS})
+        ->setAllowedInputTypes(2, {ALL_FLOATS}) 
+        ->setAllowedInputTypes(3, {ALL_FLOATS}) 
+        ->setAllowedOutputTypes(0, {ALL_FLOATS})
+        ->setAllowedOutputTypes(1, {ALL_FLOATS});
+}
+
 
 
 }
