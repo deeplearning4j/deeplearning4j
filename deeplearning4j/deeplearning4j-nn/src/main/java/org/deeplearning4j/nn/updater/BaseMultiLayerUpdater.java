@@ -363,12 +363,16 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             case RenormalizeL2PerLayer:
                 if (layerGradientView != null) {
                     double l2 = layerGradientView.norm2Number().doubleValue();
+                    if (l2 == 0.0)
+                        l2 = 1e-5;  //Avoid 0/0 -> NaN
                     layerGradientView.divi(l2);
                 }
                 break;
             case RenormalizeL2PerParamType:
                 for (INDArray g : gradient.gradientForVariable().values()) {
                     double l2 = Nd4j.getExecutioner().execAndReturn(new Norm2(g)).getFinalResult().doubleValue();
+                    if (l2 == 0.0)
+                        l2 = 1e-5;  //Avoid 0/0 -> NaN
                     g.divi(l2);
                 }
                 break;
