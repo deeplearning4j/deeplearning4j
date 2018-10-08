@@ -41,6 +41,10 @@ CUSTOM_OP_IMPL(triu, 1, 1, false, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(triu) {
+            getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
+                ->setAllowedOutputTypes(0, {ALL_FLOATS});
+        }
 
 DECLARE_SHAPE_FN(triu) {
 
@@ -84,6 +88,11 @@ CUSTOM_OP_IMPL(triu_bp, 2, 1, false, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(triu_bp) {
+            getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
+        }
 
 DECLARE_SHAPE_FN(triu_bp) {
 

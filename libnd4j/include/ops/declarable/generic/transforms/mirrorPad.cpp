@@ -53,7 +53,12 @@ CUSTOM_OP_IMPL(mirror_pad, 2, 1, false, 0, 1) {
 
     return Status::OK();
 }
- 
+
+    DECLARE_TYPES(mirror_pad) {
+        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+        getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
+        getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+    }
 
 DECLARE_SHAPE_FN(mirror_pad) {
 

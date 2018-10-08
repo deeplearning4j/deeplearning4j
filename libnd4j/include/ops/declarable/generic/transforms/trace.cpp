@@ -39,6 +39,10 @@ CUSTOM_OP_IMPL(trace, 1, 1, false, 0, 0) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(trace) {
+        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
+                ->setAllowedOutputTypes(0, {ALL_FLOATS});
+    }
 
 DECLARE_SHAPE_FN(trace) {
     auto inShapeInfo = inputShape->at(0);
