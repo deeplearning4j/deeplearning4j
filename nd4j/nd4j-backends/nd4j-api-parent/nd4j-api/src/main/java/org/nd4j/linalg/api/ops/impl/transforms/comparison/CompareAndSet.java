@@ -200,7 +200,11 @@ public class CompareAndSet extends BaseTransformSameOp {
 
     @Override
     public int opNum() {
-        return 12;
+        if (y() == null) {
+            return 12;
+        } else {
+            return 13;
+        }
     }
 
     @Override

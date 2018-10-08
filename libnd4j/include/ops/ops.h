@@ -4134,6 +4134,9 @@ namespace simdOps {
 	template <typename X>
 	class CompareAndSetTransform {
 	public:
+		no_op_exec_special_same;
+
+
         // op definition for Transform
         op_def static X op(X d1, X *params) {
             auto compare = params[0];
