@@ -113,6 +113,11 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
     return Status::OK();
 }
 
+		DECLARE_TYPES(absolute_difference_loss) {
+			getOpDescriptor()
+					->setAllowedInputTypes(nd4j::DataType::ANY)
+					->setAllowedOutputTypes({ALL_FLOATS});
+		}
 
 DECLARE_SHAPE_FN(absolute_difference_loss) {
 

@@ -693,4 +693,8 @@
 #define BROADCAST(NAME) nd4j::BroadcastOpsTuple::custom(nd4j::scalar::NAME, nd4j::pairwise::NAME, nd4j::broadcast::NAME)
 #define BROADCAST_BOOL(NAME) nd4j::BroadcastBoolOpsTuple::custom(nd4j::scalar::NAME, nd4j::pairwise::NAME, nd4j::broadcast::NAME)
 
+
+#define ALL_INTS  nd4j::DataType::INT8, nd4j::DataType::UINT8, nd4j::DataType::INT16, nd4j::DataType::INT32, nd4j::DataType::INT64
+#define ALL_FLOATS  nd4j::DataType::HALF, nd4j::DataType::FLOAT32, nd4j::DataType::DOUBLE
+
 #endif //TESTS_CPU_TYPE_BOILERPLATE_H
