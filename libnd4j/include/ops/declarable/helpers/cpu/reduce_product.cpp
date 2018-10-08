@@ -40,8 +40,8 @@ namespace helpers {
 //#pragma omp parallel for if (outList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static) 
         for (Nd4jLong e = 0; e < outList->size(); ++e) {
             outList->at(e)->assign(epsilon);
-            outList->at(e)->applyPairwiseTransform(pairwise::Multiply, tempProd, nullptr);
-            outList->at(e)->applyPairwiseTransform(pairwise::Divide, inList->at(e), nullptr);
+            outList->at(e)->applyPairwiseTransform(pairwise::Multiply, *tempProd, nullptr);
+            outList->at(e)->applyPairwiseTransform(pairwise::Divide, *inList->at(e), nullptr);
         }
     }
 

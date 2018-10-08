@@ -188,16 +188,16 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
         // ct = ft * c_t-1 + (1 - ft) * zt,
         ft->applyPairwiseTransform(pairwise::Multiply, ct_1, ct, nullptr);
         ft->applyTransform(transform::OneMinus, ft);
-        ft->applyPairwiseTransform(pairwise::Multiply, zt, nullptr);
-        ct->applyPairwiseTransform(pairwise::Add, ft, nullptr);
+        ft->applyPairwiseTransform(pairwise::Multiply, *zt, nullptr);
+        ct->applyPairwiseTransform(pairwise::Add, *ft, nullptr);
         // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
         ct->applyTransform(transform::Tanh, gct);
 
         // ht = rt * gct + (1 - rt) * xt
         rt->applyPairwiseTransform(pairwise::Multiply, gct, ht, nullptr);
         rt->applyTransform(transform::OneMinus, rt);
-        rt->applyPairwiseTransform(pairwise::Multiply, xt, nullptr);
-        ht->applyPairwiseTransform(pairwise::Add, rt, nullptr);
+        rt->applyPairwiseTransform(pairwise::Multiply, *xt, nullptr);
+        ht->applyPairwiseTransform(pairwise::Add, *rt, nullptr);
 
         delete xt; delete zt; delete ft; delete rt; delete ht; delete ct_1;
         ct_1 = ct;
@@ -435,7 +435,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         // bR, *grad_brt_ptr = inGradHt * (g_ct - xt) * (1.0f - rt) * rt;
         gct->applyPairwiseTransform(pairwise::Subtract, xt, temp1, nullptr);                 // temp1 = (g_ct - xt)
         rtMinus->applyPairwiseTransform(pairwise::Multiply, rt, temp2, nullptr);             // temp2 = (1.0f - rt) * rt;
-        temp1->applyPairwiseTransform(pairwise::Multiply, temp2, nullptr);                   // temp1 = (g_ct - xt) * (1.0f - rt) * rt;
+        temp1->applyPairwiseTransform(pairwise::Multiply, *temp2, nullptr);                   // temp1 = (g_ct - xt) * (1.0f - rt) * rt;
         inGradHt->applyPairwiseTransform(pairwise::Multiply, temp1, gradBRt, nullptr);       // = inGradHt * (g_ct - xt) * (1.0f - rt) * rt;
         
         // bF, TODO - tanh

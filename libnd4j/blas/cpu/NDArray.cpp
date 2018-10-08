@@ -1499,19 +1499,19 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 
 // perform pairwise transformation
-    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, NDArray *other, void *extraParams) {
-        applyPairwiseTransform(op, other, this, extraParams);
+    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray& other, void *extraParams) {
+        applyPairwiseTransform(op, &other, this, extraParams);
     }
 
 // perform pairwise transformation
-    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, NDArray *other, NDArray *target, void *extraParams) {
+    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, void *extraParams) const{
         if (other->lengthOf() != target->lengthOf())
             throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
 
         NativeOpExcutioner::execPairwiseTransform(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
     }
 
-    void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, NDArray *other, NDArray *target, void *extraParams) {
+    void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, void *extraParams) const{
         if (other->lengthOf() != target->lengthOf())
             throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
 
@@ -2730,7 +2730,7 @@ NDArray NDArray::transp() const {
 
         if (isScalar()) {
             target->assign(this);
-            target->applyPairwiseTransform(op.p, const_cast<NDArray*>(other), extraArgs);
+            target->applyPairwiseTransform(op.p, *other, extraArgs);
             return;
         }
         if (other->isScalar()) {

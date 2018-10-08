@@ -39,12 +39,12 @@ namespace nd4j {
                 } else if (x->isScalar() && !y->isScalar()) {
                     if (z->isSameShape(y)) {
                         z->assign(x);
-                        z->applyPairwiseTransform(op.p, y, extraArgs);
+                        z->applyPairwiseTransform(op.p, *y, extraArgs);
                         return z;
                     } else {
                         auto v = y->getShapeAsVector();
                         auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
-                        tZ->applyPairwiseTransform(op.p, y, extraArgs);
+                        tZ->applyPairwiseTransform(op.p, *y, extraArgs);
                         return tZ;
                     }
                 } else if (x->isScalar() && y->isScalar()) { // x->isScalar() && y->isScalar()
@@ -76,7 +76,7 @@ namespace nd4j {
                     } else {
                         auto v = y->getShapeAsVector();
                         auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
-                        //tZ->applyPairwiseTransform(op.p, y, extraArgs);
+                        //tZ->applyPairwiseTransform(op.p, *y, extraArgs);
                         return tZ;
                     }
                 } else if (x->isScalar() && y->isScalar()) { // x->isScalar() && y->isScalar()
