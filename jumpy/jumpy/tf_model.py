@@ -25,6 +25,6 @@ class TFModel(object):
     def __call__(self, input):
         input = array(input).array  # INDArray
         shape = input.shape()
-        self.sd.associateArrayWithVariable(input)
+        self.sd.associateArrayWithVariable(input, self.sd.variables().get(0))
         out = self.sd.execAndEndResult()
         return array(out)
