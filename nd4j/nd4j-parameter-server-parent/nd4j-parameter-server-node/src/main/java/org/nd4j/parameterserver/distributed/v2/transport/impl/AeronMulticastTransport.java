@@ -141,6 +141,7 @@ public class AeronMulticastTransport extends AeronUdpTransport {
             aeronMessageQueue.put(message);
         } catch (InterruptedException e) {
             // :(
+            storeThrowable(e);
             throw new RuntimeException(e);
         }
     }
@@ -194,6 +195,7 @@ public class AeronMulticastTransport extends AeronUdpTransport {
                     sendMulticastMessage(m);
                 }
             } catch (IOException e) {
+                storeThrowable(e);
                 throw new RuntimeException(e);
             }
         }

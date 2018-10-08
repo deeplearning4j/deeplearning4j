@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
@@ -409,6 +410,8 @@ public final class ModelParameterServer {
     }
 
     public void sendUpdate(@NonNull INDArray array, int iteration, int epoch) {
+        checkForPropagatedException();
+
         try {
             //transport.outgoingConsumer().accept(new GradientsUpdateMessage(java.util.UUID.randomUUID().toString(), array));
             val msg = new GradientsUpdateMessage(java.util.UUID.randomUUID().toString(), array);
@@ -433,9 +436,27 @@ public final class ModelParameterServer {
      * @return
      */
     public Collection<INDArray> getUpdates() {
+        checkForPropagatedException();
+
         // just drain stuff from the queue
         val list = new ArrayList<INDArray>();
         updatesQueue.drainTo(list);
         return list;
+    }
+
+    protected void checkForPropagatedException() {
+        val opt = transport.getPropagatedException();
+
+        if (opt.isPresent()) {
+            throw new RuntimeException(opt.get());
+        }
+    }
+
+    /**
+     * This method propagates optional throwable from Transport layer
+     * @return
+     */
+    public Optional<Throwable> getPropagatedException() {
+        return transport.getPropagatedException();
     }
 }

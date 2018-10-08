@@ -76,6 +76,9 @@ public abstract  class BaseTransport  implements Transport {
 
     protected boolean masterMode = false;
 
+    // we store thrown exceptions here, to re-throw it somewhere else
+    protected Atomic<Throwable> propagated = new Atomic<>();
+
     // this is simple storage for replies
     protected final Map<String, ResponseMessage> replies = new ConcurrentHashMap<>();
 
@@ -177,11 +180,14 @@ public abstract  class BaseTransport  implements Transport {
                                 internalProcessMessage(message);
                         } catch (InterruptedException e) {
                             log.error("Interrupted exception", e);
+                            storeThrowable(e);
                             break;
                         } catch (Exception e) {
                             log.error("MessageQueue exception", e);
+                            storeThrowable(e);
                         } catch (Throwable t) {
                             log.error("MessageQueue throwable", t);
+                            storeThrowable(t);
                         }
                     }
                     log.error("Exiting MessageQueue loop...");
@@ -209,6 +215,7 @@ public abstract  class BaseTransport  implements Transport {
             try {
                 sendMessageBlocking(new HandshakeRequest(), rootId);
             } catch (Exception e) {
+                storeThrowable(e);
                 throw new ND4JIllegalStateException("Can't proceed with handshake from [" + this.id() + "] to [" + rootId + "]", e);
             }
         }
@@ -349,6 +356,7 @@ public abstract  class BaseTransport  implements Transport {
         try {
             incomingFlow.accept(message);
         } catch (Exception e) {
+            storeThrowable(e);
             throw new RuntimeException(e);
         }
     }
@@ -433,6 +441,7 @@ public abstract  class BaseTransport  implements Transport {
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
                 log.error("MeshUpdateMessage propagation failed:", e);
+                storeThrowable(e);
                 throw new RuntimeException(e);
             }
         } else if (message instanceof HandshakeResponse) {
@@ -514,6 +523,7 @@ public abstract  class BaseTransport  implements Transport {
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message [{}] from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
                 log.error("BroadcastableMessage propagation exception:", e);
+                storeThrowable(e);
                 throw new RuntimeException(e);
             }
         }
@@ -526,6 +536,7 @@ public abstract  class BaseTransport  implements Transport {
                 try {
                     consumer.accept(message);
                 } catch (Exception e) {
+                    storeThrowable(e);
                     throw new RuntimeException(e);
                 }
             }
@@ -547,6 +558,7 @@ public abstract  class BaseTransport  implements Transport {
         try {
             messageQueue.transfer(message);
         } catch (InterruptedException e) {
+            storeThrowable(e);
             throw new RuntimeException(e);
         }
     }
@@ -661,7 +673,7 @@ public abstract  class BaseTransport  implements Transport {
     }
 
 
-    protected static class HeartbeatThread extends Thread implements Runnable {
+    protected  class HeartbeatThread extends Thread implements Runnable {
         protected final long delay;
         protected final Atomic<MeshOrganizer> mesh;
         protected final Transport transport;
@@ -699,12 +711,14 @@ public abstract  class BaseTransport  implements Transport {
                         try {
                             transport.propagateMessage(new MeshUpdateMessage(mesh.get()), PropagationMode.ONLY_DOWN);
                         } catch (IOException e) {
+                            storeThrowable(e);
                             // hm.
                         }
                     }
                 }
             } catch (InterruptedException e) {
                 //
+                storeThrowable(e);
             }
         }
     }
@@ -740,5 +754,14 @@ public abstract  class BaseTransport  implements Transport {
     @Override
     public void ensureConnection(String id) {
         // no-op for local transports
+    }
+
+    protected void storeThrowable(Throwable t) {
+        propagated.cas(null, t);
+    }
+
+    @Override
+    public Optional<Throwable> getPropagatedException() {
+        return Optional.ofNullable(propagated.get());
     }
 }

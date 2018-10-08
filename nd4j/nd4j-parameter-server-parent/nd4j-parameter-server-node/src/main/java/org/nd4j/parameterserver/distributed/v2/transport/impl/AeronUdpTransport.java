@@ -189,9 +189,11 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                             processMessage(msg);
                         } catch (InterruptedException e) {
                             // just terminate loop
+                            storeThrowable(e);
                             break;
                         } catch (Exception e) {
                             log.error("Got exception", e);
+                            storeThrowable(e);
                         }
                     }
                 }
@@ -208,9 +210,11 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                             val msg = propagationQueue.take();
                             redirectedPropagateArrayMessage(msg);
                         } catch (InterruptedException e) {
+                            storeThrowable(e);
                             break;
                         } catch (IOException e) {
                             log.error("Exception: {}", e);
+                            storeThrowable(e);
                             throw new RuntimeException(e);
                         }
                     }
@@ -225,6 +229,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             propagationQueue.put(message);
         } catch (InterruptedException e) {
             // just swallow this
+            storeThrowable(e);
             throw new RuntimeException(e);
         }
     }
@@ -259,6 +264,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             aeronMessageQueue.put(message);
         } catch (InterruptedException e) {
             // :(
+            storeThrowable(e);
             throw new RuntimeException(e);
         }
     }
@@ -276,6 +282,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                     v.getPublication().close();
                 } catch (Exception e) {
                     // no-op
+                    storeThrowable(e);
                 }
 
                 remoteConnections.remove(id);
@@ -313,6 +320,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                         throw new ND4JIllegalStateException("Can't establish connection afet 10 seconds. Terminating...");
                 } catch (InterruptedException e) {
                     //
+                    storeThrowable(e);
                 }
             }
 
@@ -413,6 +421,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                     sendMessage(m, id);
                 }
             } catch (IOException e) {
+                storeThrowable(e);
                 throw new RuntimeException(e);
             }
 
@@ -449,6 +458,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                             Thread.sleep(voidConfiguration.getRetransmitTimeout());
                         } catch (InterruptedException e) {
                             //
+                            storeThrowable(e);
                         }
                     }
                     break;
@@ -463,6 +473,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                             Thread.sleep(voidConfiguration.getRetransmitTimeout());
                         } catch (InterruptedException e) {
                             //
+                            storeThrowable(e);
                         }
                     }
                     break;
@@ -474,6 +485,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                                 Thread.sleep(voidConfiguration.getRetransmitTimeout());
                             } catch (InterruptedException e) {
                                 //
+                                storeThrowable(e);
                             }
                         }
                         break;
@@ -484,6 +496,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                         Thread.sleep(voidConfiguration.getRetransmitTimeout());
                     } catch (InterruptedException e) {
                         //
+                        storeThrowable(e);
                     }
                 }
             }

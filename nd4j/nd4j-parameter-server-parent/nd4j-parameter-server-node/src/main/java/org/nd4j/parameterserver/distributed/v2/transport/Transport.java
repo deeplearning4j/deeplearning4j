@@ -17,6 +17,7 @@
 package org.nd4j.parameterserver.distributed.v2.transport;
 
 import io.reactivex.functions.Consumer;
+import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
@@ -185,4 +186,10 @@ public interface Transport {
      * @param id
      */
     void ensureConnection(String id);
+
+    /**
+     * This method will return propagated exception (if any)
+     * @return
+     */
+    Optional<Throwable> getPropagatedException();
 }
