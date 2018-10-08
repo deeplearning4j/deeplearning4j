@@ -225,7 +225,21 @@ namespace helpers {
     void thresholdRelu(NDArray const& input, double threshold, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void thresholdRelu_, (NDArray const& input, double threshold, NDArray& output), FLOAT_TYPES);
+
+    template <typename T>
+    static void thresholdReluDerivative_(NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
+        auto derivative = LAMBDA_TT(_x, grO, theta) {if (_x > theta) return grO; else return static_cast<T>(0); };
+
+        input->applyPairwiseLambda<T>(dLdO, derivative, output);
+
+    }
+
+    void thresholdReluDerivative(NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdO, output), FLOAT_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
+
 }
 }
 }
