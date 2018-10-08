@@ -31,6 +31,7 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.flow.FlowPath;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
@@ -38,7 +39,6 @@ import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -63,6 +63,9 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
+import org.nd4j.linalg.api.ops.impl.loss.LogLoss;
+import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
+import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
@@ -89,7 +92,6 @@ import org.nd4j.weightinit.impl.ZeroInitScheme;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -734,7 +736,8 @@ public class SameDiff {
      *                                  variable name, it will be removed from the graph (to be later re-generated) if
      *                                  its shape does not match the specified shape
      */
-    public void putOrUpdateShapeForVarName(String varName, @NonNull long[] shape, boolean clearArrayOnShapeMismatch){
+    public void putOrUpdateShapeForVarName(String varName, long[] shape, boolean clearArrayOnShapeMismatch){
+        Preconditions.checkNotNull(shape, "Cannot put null shape for variable: %s", varName);
         if(variableNameToShape.containsKey(varName)){
             updateShapeForVarName(varName, shape, clearArrayOnShapeMismatch);
         } else {
@@ -2954,7 +2957,7 @@ public class SameDiff {
      * @return SDVariable
      */
     public SDVariable scalar(String name, double value) {
-        return var(name, Nd4j.scalar(value));
+        return var(name, Nd4j.trueScalar(value));
     }
 
 
@@ -8214,165 +8217,6 @@ public class SameDiff {
     }
 
     /**
-     * Binary cross entropy loss.
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossBinaryXENT(SDVariable x, SDVariable y, int... dimensions) {
-        return lossBinaryXENT(generateNewVarName(new LossBinaryXENT().opName(), 0), x, y, dimensions);
-    }
-
-    /**
-     * TODO doc string
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossCosineSimilarity(SDVariable x, SDVariable y, int... dimensions) {
-        return lossCosineSimilarity(generateNewVarName(new LossCosineProximity().opName(), 0), x, y, dimensions);
-    }
-
-    // TODO: document all losses
-    /**
-     * Hinge loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossHinge(SDVariable x, SDVariable y, int... dimensions) {
-        return lossHinge(generateNewVarName(new LossHinge().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * Kullback-Leibler divergence loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossKLD(SDVariable x, SDVariable y, int... dimensions) {
-        return lossKLD(generateNewVarName(new LossKLD().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * L1 loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossL1(SDVariable x, SDVariable y, int... dimensions) {
-        return lossL1(generateNewVarName(new LossL1().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * L2 loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossL2(SDVariable x, SDVariable y, int... dimensions) {
-        return lossL2(generateNewVarName(new LossL2().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * Mean absolute error loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossMAE(SDVariable x, SDVariable y, int... dimensions) {
-        return lossMAE(generateNewVarName(new LossMAE().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * Mean squared error loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossMSE(SDVariable x, SDVariable y, int... dimensions) {
-        return lossMSE(generateNewVarName(new LossMSE().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossMCXENT(SDVariable x, SDVariable y, int... dimensions) {
-        return lossMCXENT(generateNewVarName(new LossMCXENT().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossMSLE(SDVariable x, SDVariable y, int... dimensions) {
-        return lossMSLE(generateNewVarName(new LossMSLE().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossNegativeLogLikelihood(SDVariable x, SDVariable y, int... dimensions) {
-        return lossNegativeLogLikelihood(generateNewVarName(new LossNegativeLogLikelihood().opName(), 0),
-                x, y, dimensions);
-
-    }
-
-    /**
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossPoisson(SDVariable x, SDVariable y, int... dimensions) {
-        return lossPoisson(generateNewVarName(new LossPoisson().opName(), 0), x, y, dimensions);
-
-    }
-
-
-    /**
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossSquaredHinge(SDVariable x, SDVariable y, int... dimensions) {
-        return lossSquaredHinge(generateNewVarName(new LossSquaredHinge().opName(), 0), x, y, dimensions);
-    }
-
-    /**
      * @param x
      * @return
      */
@@ -8400,67 +8244,328 @@ public class SameDiff {
     }
 
     /**
-     * TODO
-     *
-     * @param logits
-     * @param weights
-     * @param labels
-     * @param reductionMode
-     * @param labelSmoothing
-     * @return
+     * See {@link #lossAbsoluteDifference(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
      */
-    public SDVariable sigmoidCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
-                                                    int reductionMode, double labelSmoothing) {
-        return sigmoidCrossEntropyWithLogits(null, logits, weights, labels, reductionMode, labelSmoothing);
+    public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossAbsoluteDifference(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
     }
 
     /**
-     * TODO
-     *
-     * @param name
-     * @param logits
-     * @param weights
-     * @param labels
-     * @param reductionMode
-     * @param labelSmoothing
-     * @return
+     * See {@link #lossAbsoluteDifference(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
      */
-    public SDVariable sigmoidCrossEntropyWithLogits(String name, SDVariable logits, SDVariable weights, SDVariable labels,
-                                                    int reductionMode, double labelSmoothing) {
-        SDVariable res = f().sigmoidCrossEntropyWithLogits(logits, weights, labels, reductionMode, labelSmoothing);
-        return updateVariableNameAndReference(res, name);
+    public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossAbsoluteDifference(name, label, predictions, null, lossReduce);
     }
 
     /**
-     * TODO
+     * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )
      *
-     * @param logits
-     * @param weights
-     * @param labels
-     * @param reductionMode
-     * @param labelSmoothing
-     * @return
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Loss variable
      */
-    public SDVariable softmaxCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
-                                                    int reductionMode, double labelSmoothing) {
-        return softmaxCrossEntropyWithLogits(null, logits, weights, labels, reductionMode, labelSmoothing);
+    public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossAbsoluteDifference(label, predictions, weights, lossReduce);
+        return updateVariableNameAndReference(result, name);
+    }
+
+
+    /**
+     * See {@link #lossCosineDistance(String, SDVariable, SDVariable, SDVariable, LossReduce, int)}.
+     */
+    public SDVariable lossCosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, int dimension) {
+        return lossCosineDistance(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, dimension);
     }
 
     /**
-     * TODO
-     *
-     * @param name
-     * @param logits
-     * @param weights
-     * @param labels
-     * @param reductionMode
-     * @param labelSmoothing
-     * @return
+     * See {@link #lossCosineDistance(String, SDVariable, SDVariable, SDVariable, LossReduce, int)}.
      */
-    public SDVariable softmaxCrossEntropyWithLogits(String name, SDVariable logits, SDVariable weights, SDVariable labels,
-                                                    int reductionMode, double labelSmoothing) {
-        SDVariable res = f().softmaxCrossEntropyWithLogits(logits, weights, labels, reductionMode, labelSmoothing);
-        return updateVariableNameAndReference(res, name);
+    public SDVariable lossCosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                         @NonNull LossReduce lossReduce, int dimension) {
+        return lossCosineDistance(name, label, predictions, null, lossReduce, dimension);
+    }
+
+    /**
+     *
+     * Cosine distance loss: {@code 1 - cosineSimilarity(x,y)} or {@code 1 - sum_i label[i] * prediction[i]}, which is
+     * equivalent to cosine distance when both the predictions and labels are normalized.<br>
+     * <b>Note</b>: This loss function assumes that both the predictions and labels are normalized to have unit l2 norm.
+     * If this is not the case, you should normalize them first by dividing by {@link #norm2(String, SDVariable, boolean, int...)}
+     * along the cosine distance dimension (with keepDims=true).
+     *
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @param dimension   Dimension to perform the cosine distance over
+     * @return Cosine distance loss variable
+     */
+    public SDVariable lossCosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce, int dimension) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossCosineDistance(label, predictions, weights, lossReduce, dimension);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossHinge(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossHinge(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossHinge(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
+    }
+
+    /**
+     * See {@link #lossHinge(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossHinge(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossHinge(name, label, predictions, null, lossReduce);
+    }
+
+    /**
+     * Hinge loss: a loss function used for training classifiers.
+     * Implements {@code L = max(0, 1 - t * predictions)} where t is the label values after internally converting to {-1,1}
+     * from the user specified {0,1}. Note that Labels should be provided with values {0,1}.
+     *
+     * @param name        Name of the operation
+     * @param label       Label array. Each value should be 0.0 or 1.0 (internally -1 to 1 is used)
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Loss variable
+     */
+    public SDVariable lossHinge(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossHinge(label, predictions, weights, lossReduce);
+        return updateVariableNameAndReference(result, name);
+    }
+
+
+    /**
+     * See {@link #lossHuber(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, double delta) {
+        return lossHuber(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta);
+    }
+
+    /**
+     * See {@link #lossHuber(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce, double delta) {
+        return lossHuber(name, label, predictions, null, lossReduce, delta);
+    }
+
+    /**
+     * Huber loss function, used for robust regression. It is similar both squared error loss and absolute difference loss,
+     * though is less sensitive to outliers than squared error.<br>
+     * Huber loss implements:
+     * <pre>
+     *{@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta
+     *  L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise
+     *     }
+     * </pre>
+     *
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @param delta       Loss function delta value
+     * @return Huber loss variable
+     */
+    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce, double delta) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossHuber(label, predictions, weights, lossReduce, delta);
+        return updateVariableNameAndReference(result, name);
+    }
+
+
+    /**
+     * See {@link #lossLog(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossLog(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, LogLoss.DEFAULT_EPSILON);
+    }
+
+    /**
+     * See {@link #lossLog(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossLog(name, label, predictions, null, lossReduce, LogLoss.DEFAULT_EPSILON);
+    }
+
+    /**
+     * Log loss, i.e., binary cross entropy loss, usually used for binary multi-label classification. Implements:
+     * {@code -1/numExamples * sum_i (labels[i] * log(predictions[i] + epsilon) + (1-labels[i]) * log(1-predictions[i] + epsilon))}
+     *
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Log loss variable
+     */
+    public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce, double epsilon) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossLog(label, predictions, weights, lossReduce, epsilon);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossMeanPairwiseSquaredError(String, SDVariable, SDVariable, SDVariable)}.
+     */
+    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossMeanPairwiseSquaredError(name, label, predictions, null);
+    }
+
+    /**
+     * Mean pairwise squared error.<br>
+     * MPWSE loss calculates the difference between pairs of consecutive elements in the predictions and labels arrays.
+     * For example, if predictions = [p0, p1, p2] and labels are [l0, l1, l2] then MPWSE is:
+     * {@code [((p0-p1) - (l0-l1))^2 + ((p0-p2) - (l0-l2))^2 + ((p1-p2) - (l1-l2))^2] / 3}<br>
+     *
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used. Must be either null, scalar, or have shape [batchSize]
+     * @return Loss variable, scalar output
+     */
+    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, SDVariable weights) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossMeanPairwiseSquaredError(label, predictions, weights);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossMeanSquaredError(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossMeanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossMeanSquaredError(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
+    }
+
+    /**
+     * See {@link #lossMeanSquaredError(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossMeanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossMeanSquaredError(name, label, predictions, null, lossReduce);
+    }
+
+    /**
+     * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.
+     * When averaged (using {@link LossReduce#MEAN_BY_WEIGHT} or {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT} (the default))
+     * this is the mean squared error loss function.
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Loss variable
+     */
+    public SDVariable lossMeanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossMeanSquaredError(label, predictions, weights, lossReduce);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossSigmoidCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossSigmoidCrossEntropy(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, SigmoidCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
+    }
+
+    /**
+     * See {@link #lossSigmoidCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossSigmoidCrossEntropy(name, label, predictions, null, lossReduce, SigmoidCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
+    }
+
+    /**
+     * Sigmoid cross entropy: applies the sigmoid activation function on the input logits (input "pre-sigmoid preductions")
+     * and implements the binary cross entropy loss function. This implementation is numerically more stable than using
+     * standard (but separate) sigmoid activation function and log loss (binary cross entropy) loss function.<br>
+     * Implements:
+     * {@code -1/numExamples * sum_i (labels[i] * log(sigmoid(logits[i])) + (1-labels[i]) * log(1-sigmoid(logits[i])))}
+     * though this is done in a mathematically equivalent but more numerical stable form.<br>
+     * <br>
+     * When label smoothing is > 0, the following label smoothing is used:<br>
+     * <pre>
+     * {@code numClasses = labels.size(1);
+     * label = (1.0 - labelSmoothing) * label + 0.5 * labelSmoothing}
+     * </pre>
+     *
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictionLogits Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Loss variable
+     */
+    public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictionLogits,
+                                             SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossSigmoidCrossEntropy(label, predictionLogits, weights, lossReduce, labelSmoothing);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossSoftmaxCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossSoftmaxCrossEntropy(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, SoftmaxCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
+    }
+
+    /**
+     * See {@link #lossSoftmaxCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossSoftmaxCrossEntropy(name, label, predictions, null, lossReduce, SoftmaxCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
+    }
+
+    /**
+     * Applies the softmax activation function to the input, then implement multi-class cross entropy:<br>
+     * {@code -sum_classes label[i] * log(p[c])} where {@code p = softmax(logits)}<br>
+     * If {@link LossReduce#NONE} is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;
+     * otherwise, the output is a scalar.<br>
+     * <p>
+     * When label smoothing is > 0, the following label smoothing is used:<br>
+     * <pre>
+     * {@code numClasses = labels.size(1);
+     * oneHotLabel = (1.0 - labelSmoothing) * oneHotLabels + labelSmoothing/numClasses}
+     * </pre>
+     *
+     * @param name             Name of the operation
+     * @param oneHotLabels     Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut])
+     * @param logitPreductions Predictions array (pre-softmax)
+     * @param weights          Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce       Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @param labelSmoothing   Label smoothing value. Default value: 0
+     * @return Loss variable
+     */
+    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable oneHotLabels, @NonNull SDVariable logitPreductions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossSoftmaxCrossEntropy(oneHotLabels, logitPreductions, weights, lossReduce, labelSmoothing);
+        return updateVariableNameAndReference(result, name);
     }
 
     /**
@@ -8489,151 +8594,6 @@ public class SameDiff {
                                                      SDVariable weights) {
         SDVariable res = f().weightedCrossEntropyWithLogits(targets, inputs, weights);
         return updateVariableNameAndReference(res, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossBinaryXENT(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossBinaryXENT(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossCosineSimilarity(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossCosineSimilarity(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossHinge(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossHinge(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossKLD(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossKLD(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossL1(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossL1(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossL2(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossL2(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossMAE(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossMAE(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossMSE(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossMSE(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossMCXENT(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossMCXENT(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossMSLE(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossMSLE(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossNegativeLogLikelihood(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossNegativeLogLikelihood(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossPoisson(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossPoisson(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossSquaredHinge(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossSquaredHinge(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
     }
 
     /**

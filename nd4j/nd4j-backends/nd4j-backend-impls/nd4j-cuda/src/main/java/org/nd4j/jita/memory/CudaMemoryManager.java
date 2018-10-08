@@ -211,8 +211,10 @@ public class CudaMemoryManager extends BasicMemoryManager {
     public void release(Pointer pointer, MemoryKind kind) {
         if (kind == MemoryKind.DEVICE) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pointer, null);
+            pointer.setNull();
         } else if (kind == MemoryKind.HOST) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pointer);
+            pointer.setNull();
         }
     }
 

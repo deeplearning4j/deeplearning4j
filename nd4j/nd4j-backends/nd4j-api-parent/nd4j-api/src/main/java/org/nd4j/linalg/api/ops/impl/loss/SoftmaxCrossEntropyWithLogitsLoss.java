@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.accum;
+package org.nd4j.linalg.api.ops.impl.loss;
 
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -31,23 +31,35 @@ import java.util.Map;
 
 
 /**
- * Weighted cross entropy loss with logits
+ * Softmax cross entropy loss with Logits
  *
  * @author Max Pumperla
  */
 @NoArgsConstructor
-public class WeightedCrossEntropyLoss extends DynamicCustomOp {
+public class SoftmaxCrossEntropyWithLogitsLoss extends DynamicCustomOp {
 
+    public SoftmaxCrossEntropyWithLogitsLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels,
+                                             int reductionMode, double labelSmoothing) {
+        super(null, sameDiff, new SDVariable[]{logits, weights, labels}, false);
+    }
 
-    public WeightedCrossEntropyLoss(SameDiff sameDiff, SDVariable targets, SDVariable inputs, SDVariable weights) {
-        super(null, sameDiff, new SDVariable[]{targets, inputs, weights}, false);
-        this.sameDiff = sameDiff;
+    public SoftmaxCrossEntropyWithLogitsLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels,
+                                             int reductionMode) {
+        this(sameDiff, logits, weights, labels, reductionMode, 0.0);
     }
 
 
+    public void addArgs() {
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+    }
+
     @Override
     public String opName() {
-        return "weighted_cross_entropy_with_logits";
+        return "softmax_cross_entropy_loss_with_logits";
     }
 
     @Override
@@ -57,7 +69,7 @@ public class WeightedCrossEntropyLoss extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No TensorFlow op opName found for " + opName());
+        return "SoftmaxCrossEntropyWithLogits";
     }
 
     @Override
