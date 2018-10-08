@@ -383,10 +383,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             ((Variance) op).isBiasCorrected());
                 } else {
                     Variance var = (Variance) op;
-                    loop.execSummaryStats(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                    loop.execSummaryStats(dummy, op.opNum(), op.x().data().addressPointer(),
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op),
-                            (DoublePointer) op.z().data().addressPointer(),
+                            getPointerForExtraArgs(op),
+                            op.z().data().addressPointer(),
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (IntPointer) dimensionAddress, dimension.length, var.isBiasCorrected());
                 }
@@ -772,6 +772,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         validateDataType(Nd4j.dataType(), op);
 
+        op.validateDataTypes();
+
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
@@ -810,7 +812,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension).addressPointer();
 
-            loop.execBroadcast(dummy, op.opNum(),
+
+        switch (op.getOpType()) {
+            case BROADCAST:
+                loop.execBroadcast(dummy, op.opNum(),
                     op.x().data().addressPointer(),
                     (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                     op.y().data().addressPointer(),
@@ -819,6 +824,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                     (IntPointer) dimensionAddress,
                     dimension.length);
+                break;
+            case BROADCAST_BOOL:
+                loop.execBroadcastBool(dummy, op.opNum(),
+                        op.x().data().addressPointer(),
+                        (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        op.y().data().addressPointer(),
+                        (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                        op.z().data().addressPointer(),
+                        (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (IntPointer) dimensionAddress,
+                        dimension.length);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
+
+        }
 
 
         return op.z();

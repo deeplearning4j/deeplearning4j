@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -153,6 +154,23 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Override
     public void setDimension(int... dimension) {
         this.dimensions = dimension;
+    }
+
+    @Override
+    public boolean validateDataTypes() {
+        if (y() != null) {
+            if (y().isR() || x().isR())
+                Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point");
+        } else if (x().isR())
+            Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point");
+
+
+        return true;
+    }
+
+    @Override
+    public Type getOpType() {
+        return Type.SCALAR;
     }
 
 }

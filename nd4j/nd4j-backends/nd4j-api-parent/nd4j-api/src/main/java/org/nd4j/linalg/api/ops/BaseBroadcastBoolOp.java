@@ -37,23 +37,23 @@ import java.util.Map;
 
 @NoArgsConstructor
 @Slf4j
-public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
+public abstract class BaseBroadcastBoolOp extends BaseOp implements BroadcastOp {
 
     protected int[] dimension;
 
 
-    public BaseBroadcastOp(SameDiff sameDiff,
-                           SDVariable i_v1,
-                           SDVariable i_v2,
-                           int[] dimension) {
+    public BaseBroadcastBoolOp(SameDiff sameDiff,
+                               SDVariable i_v1,
+                               SDVariable i_v2,
+                               int[] dimension) {
         this(sameDiff, i_v1, i_v2, false, dimension);
     }
 
-    public BaseBroadcastOp(SameDiff sameDiff,
-                           SDVariable i_v1,
-                           SDVariable i_v2,
-                           boolean inPlace,
-                           int[] dimension) {
+    public BaseBroadcastBoolOp(SameDiff sameDiff,
+                               SDVariable i_v1,
+                               SDVariable i_v2,
+                               boolean inPlace,
+                               int[] dimension) {
         super(sameDiff, inPlace, new Object[]{i_v2});
         if (i_v1 != null && i_v2 != null) {
             f().validateDifferentialFunctionsameDiff(i_v1);
@@ -76,15 +76,15 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     }
 
-    public BaseBroadcastOp(SameDiff sameDiff) {
+    public BaseBroadcastBoolOp(SameDiff sameDiff) {
         this.sameDiff = sameDiff;
     }
 
-    public BaseBroadcastOp(SameDiff sameDiff,
-                           SDVariable i_v1,
-                           SDVariable i_v2,
-                           int[] dimension,
-                           Object[] extraArgs) {
+    public BaseBroadcastBoolOp(SameDiff sameDiff,
+                               SDVariable i_v1,
+                               SDVariable i_v2,
+                               int[] dimension,
+                               Object[] extraArgs) {
         super(sameDiff, extraArgs);
         this.dimension = dimension;
         if (i_v1 != null && i_v2 != null) {
@@ -102,26 +102,26 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     }
 
 
-    public BaseBroadcastOp(SameDiff sameDiff, SDVariable i_v, int[] dimension, boolean inPlace) {
+    public BaseBroadcastBoolOp(SameDiff sameDiff, SDVariable i_v, int[] dimension, boolean inPlace) {
         this(sameDiff, i_v, i_v.getShape(), inPlace, dimension, null);
     }
 
-    public BaseBroadcastOp(SameDiff sameDiff,
-                           SDVariable i_v,
-                           int[] shape,
-                           boolean inPlace,
-                           int[] dimension,
-                           Object[] extraArgs) {
+    public BaseBroadcastBoolOp(SameDiff sameDiff,
+                               SDVariable i_v,
+                               int[] shape,
+                               boolean inPlace,
+                               int[] dimension,
+                               Object[] extraArgs) {
         // FIXME: int cast
         this(sameDiff, i_v, ArrayUtil.toLongArray(shape), inPlace, dimension, extraArgs);
     }
 
-    public BaseBroadcastOp(SameDiff sameDiff,
-                           SDVariable i_v,
-                           long[] shape,
-                           boolean inPlace,
-                           int[] dimension,
-                           Object[] extraArgs) {
+    public BaseBroadcastBoolOp(SameDiff sameDiff,
+                               SDVariable i_v,
+                               long[] shape,
+                               boolean inPlace,
+                               int[] dimension,
+                               Object[] extraArgs) {
         super(sameDiff, inPlace, extraArgs);
         this.dimension = dimension;
         if (i_v != null) {
@@ -137,14 +137,14 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     }
 
 
-    public BaseBroadcastOp(SameDiff sameDiff,
-                           SDVariable i_v,
-                           int[] dimension,
-                           Object[] extraArgs) {
+    public BaseBroadcastBoolOp(SameDiff sameDiff,
+                               SDVariable i_v,
+                               int[] dimension,
+                               Object[] extraArgs) {
         this(sameDiff, i_v, i_v.getShape(), false, dimension, extraArgs);
     }
 
-    public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, int... dimension) {
+    public BaseBroadcastBoolOp(INDArray x, INDArray y, INDArray z, int... dimension) {
         super(x, y, z, x.lengthLong());
         Broadcast.validateBroadcastDims(x,y,z, dimension);
 
@@ -207,20 +207,15 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
         val op = opNum();
 
-        if (y() != null && z() != null)
-            Preconditions.checkArgument(y().dataType() == z().dataType() || x().dataType() == z().dataType(), "Op.Z type must be either Op.X or Op.Y");
+        Preconditions.checkArgument(x().dataType() == y().dataType(), "Op.X and Op.Y must have the same data type");
 
-        if (y() != null) {
-            if (op != 1 && (y().isR() || x().isR()))
-                Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point");
-        } else if (x().isR())
-            Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point");
+        Preconditions.checkArgument(z().isB(), "Op.Z must have bool type");
 
         return true;
     }
 
     @Override
     public Type getOpType() {
-        return Type.BROADCAST;
+        return Type.BROADCAST_BOOL;
     }
 }

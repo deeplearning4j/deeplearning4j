@@ -19,6 +19,7 @@ package org.nd4j.linalg.factory;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.*;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.same.AMax;

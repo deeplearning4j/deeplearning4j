@@ -17,7 +17,6 @@
 package org.nd4j.linalg;
 
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
@@ -45,6 +44,10 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThan;
 import org.nd4j.linalg.api.ops.impl.reduce.*;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.custom.LogSumExp;
@@ -4073,7 +4076,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.rand(s);
 
         //Test 0,1
-        INDArray exp = Nd4j.create(new long[] {4, 5});
+        INDArray exp = Nd4j.create(DataType.LONG, new long[] {4, 5});
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 5; j++) {
                 INDArray subset = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i),
@@ -4107,7 +4110,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
         //Test 2,3
-        exp = Nd4j.create(new long[] {2, 3});
+        exp = Nd4j.create(DataType.LONG, new long[] {2, 3});
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 3; j++) {
                 INDArray subset = arr.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(),
@@ -4471,9 +4474,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNewBroadcastComparison1() throws Exception {
-        INDArray initial = Nd4j.create(3, 5);
-        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
-        INDArray exp = Nd4j.create(new double[] {1, 1, 1, 0, 0});
+        val initial = Nd4j.create(3, 5);
+        val mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        val result = Nd4j.createUninitialized(DataType.BOOL, initial.shape());
+        val exp = Nd4j.create(new boolean[] {true, true, true, false, false});
 
         for (int i = 0; i < initial.columns(); i++) {
             initial.getColumn(i).assign(i);
@@ -4482,12 +4486,12 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().commit();
 
 
-        Nd4j.getExecutioner().exec(new BroadcastLessThan(initial, mask, initial, 1));
+        Nd4j.getExecutioner().exec(new BroadcastLessThan(initial, mask, result, 1));
 
 
 
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, initial.getRow(i));
+            assertEquals(exp, result.getRow(i));
         }
     }
 
@@ -4495,9 +4499,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNewBroadcastComparison2() throws Exception {
-        INDArray initial = Nd4j.create(3, 5);
-        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
-        INDArray exp = Nd4j.create(new double[] {0, 0, 0, 1, 1});
+        val initial = Nd4j.create(3, 5);
+        val mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        val result = Nd4j.createUninitialized(DataType.BOOL, initial.shape());
+        val exp = Nd4j.create(new boolean[] {false, false, false, true, true});
 
         for (int i = 0; i < initial.columns(); i++) {
             initial.getColumn(i).assign(i);
@@ -4506,21 +4511,22 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().commit();
 
 
-        Nd4j.getExecutioner().exec(new BroadcastGreaterThan(initial, mask, initial, 1));
+        Nd4j.getExecutioner().exec(new BroadcastGreaterThan(initial, mask, result, 1));
 
 
 
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, initial.getRow(i));
+            assertEquals(exp, result.getRow(i));
         }
     }
 
 
     @Test
     public void testNewBroadcastComparison3() throws Exception {
-        INDArray initial = Nd4j.create(3, 5);
-        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
-        INDArray exp = Nd4j.create(new double[] {0, 0, 1, 1, 1});
+        val initial = Nd4j.create(3, 5);
+        val mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        val result = Nd4j.createUninitialized(DataType.BOOL, initial.shape());
+        val exp = Nd4j.create(new boolean[] {false, false, true, true, true});
 
         for (int i = 0; i < initial.columns(); i++) {
             initial.getColumn(i).assign(i + 1);
@@ -4529,19 +4535,20 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().commit();
 
 
-        Nd4j.getExecutioner().exec(new BroadcastGreaterThanOrEqual(initial, mask, initial, 1));
+        Nd4j.getExecutioner().exec(new BroadcastGreaterThanOrEqual(initial, mask, result, 1));
 
 
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, initial.getRow(i));
+            assertEquals(exp, result.getRow(i));
         }
     }
 
     @Test
     public void testNewBroadcastComparison4() throws Exception {
-        INDArray initial = Nd4j.create(3, 5);
-        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
-        INDArray exp = Nd4j.create(new double[] {0, 0, 1, 0, 0});
+        val initial = Nd4j.create(3, 5);
+        val mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        val result = Nd4j.createUninitialized(DataType.BOOL, initial.shape());
+        val exp = Nd4j.create(new boolean[] {false, false, true, false, false});
 
         for (int i = 0; i < initial.columns(); i++) {
             initial.getColumn(i).assign(i+1);
@@ -4550,11 +4557,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().commit();
 
 
-        Nd4j.getExecutioner().exec(new BroadcastEqualTo(initial, mask, initial, 1 ));
+        Nd4j.getExecutioner().exec(new BroadcastEqualTo(initial, mask, result, 1 ));
 
 
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, initial.getRow(i));
+            assertEquals(exp, result.getRow(i));
         }
     }
 

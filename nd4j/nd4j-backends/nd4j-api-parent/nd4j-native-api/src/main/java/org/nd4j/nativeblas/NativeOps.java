@@ -125,6 +125,10 @@ public abstract class NativeOps extends Pointer {
                                        @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer y, @Cast("Nd4jLong *") LongPointer yShapeInfo, Pointer result,
                                        @Cast("Nd4jLong *") LongPointer resultShapeInfo, IntPointer dimension, int dimensionLength);
 
+    public abstract void execBroadcastBool(PointerPointer extraPointers, int opNum, Pointer x,
+                                       @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer y, @Cast("Nd4jLong *") LongPointer yShapeInfo, Pointer result,
+                                       @Cast("Nd4jLong *") LongPointer resultShapeInfo, IntPointer dimension, int dimensionLength);
+
 
     /**
      * @param opNum
@@ -233,8 +237,9 @@ public abstract class NativeOps extends Pointer {
      * @param scalar
      * @param extraParams
      */
-    public abstract void execScalar(PointerPointer extraPointers, int opNum, Pointer x,
-                                    @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, Pointer scalar, LongPointer scalarShapeInfo,Pointer extraParams);
+    public abstract void execScalar(PointerPointer extraPointers, int opNum, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, Pointer scalar, LongPointer scalarShapeInfo,Pointer extraParams);
+
+    public abstract void execScalarBool(PointerPointer extraPointers, int opNum, Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo, Pointer scalar, LongPointer scalarShapeInfo,Pointer extraParams);
 
     /**
      * @param opNum
@@ -307,6 +312,10 @@ public abstract class NativeOps extends Pointer {
      * @param dimensionLength
      */
     public abstract void execScalar(PointerPointer extraPointers, int opNum, Pointer x,
+                                    @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer z, @Cast("Nd4jLong *") LongPointer zShapeInfo, Pointer scalars, @Cast("Nd4jLong *") LongPointer scalarShapeInfo,
+                                    Pointer extraParams, IntPointer dimension, int dimensionLength);
+
+    public abstract void execScalarBool(PointerPointer extraPointers, int opNum, Pointer x,
                                     @Cast("Nd4jLong *") LongPointer xShapeInfo, Pointer z, @Cast("Nd4jLong *") LongPointer zShapeInfo, Pointer scalars, @Cast("Nd4jLong *") LongPointer scalarShapeInfo,
                                     Pointer extraParams, IntPointer dimension, int dimensionLength);
 
