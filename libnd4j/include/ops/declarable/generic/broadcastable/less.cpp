@@ -26,13 +26,19 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
-
-            auto tZ = BroadcastHelper::broadcastApply(BROADCAST_BOOL(LessThan), x, y, z);
+            Nd4jLong* newShape;
+            COPY_SHAPE_EX(z->shapeInfo(), newShape, block.workspace());
+            ArrayOptions::setDataType(newShape, DataType::BOOL);
+            NDArray* tempZ = new NDArray(newShape);
+            auto tZ = BroadcastHelper::broadcastApply(BROADCAST_BOOL(LessThan), x, y, tempZ);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z) {
+            else if (tZ != tempZ) {
                 OVERWRITE_RESULT(tZ);
+                delete tempZ;
             }
+            else
+                OVERWRITE_RESULT(tempZ);
 
             return Status::OK();
         }
