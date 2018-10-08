@@ -16,14 +16,13 @@
 
 package org.nd4j.imports.TFGraphs;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -50,7 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "conv2d_transpose/channels_first_b1_k2_s12_SAME"
+            "losses/absdiff_rank2"
 
     };
 
@@ -67,6 +66,11 @@ public class TFGraphTestList {
 
     public static final String MODEL_DIR = "tf_graphs/examples";
     public static final String MODEL_FILENAME = "frozen_model.pb";
+
+    @BeforeClass
+    public static void beforeClass(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+    }
 
     private String modelName;
 

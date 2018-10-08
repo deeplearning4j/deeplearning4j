@@ -292,18 +292,18 @@
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
         <javacpp.version>1.4.3-SNAPSHOT</javacpp.version>
-        <javacpp-presets.version>1.4.2</javacpp-presets.version>
+        <javacpp-presets.version>1.4.3-SNAPSHOT</javacpp-presets.version>
         <javacv.version>1.4.3-SNAPSHOT</javacv.version>
-        <openblas.version>0.3.0</openblas.version>
-        <mkl.version>2018.3</mkl.version>
+        <openblas.version>0.3.3</openblas.version>
+        <mkl.version>2019.0</mkl.version>
         <mkl-dnn.version>0.16</mkl-dnn.version>
         <mkl-dnn.javacpp.version>${mkl-dnn.version}-${javacpp.version}</mkl-dnn.javacpp.version>
-        <opencv.version>3.4.2</opencv.version>
-        <ffmpeg.version>4.0.1</ffmpeg.version>
+        <opencv.version>3.4.3</opencv.version>
+        <ffmpeg.version>4.0.2</ffmpeg.version>
         <leptonica.version>1.76.0</leptonica.version>
-        <hdf5.version>1.10.2</hdf5.version>
+        <hdf5.version>1.10.3</hdf5.version>
         <ale.version>0.6.0</ale.version>
-        <tensorflow.version>1.9.0</tensorflow.version>
+        <tensorflow.version>1.11.0</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
         <commons-compress.version>1.16.1</commons-compress.version>
@@ -333,7 +333,7 @@
         <geo.jackson.version>2.8.7</geo.jackson.version>
         <lombok.version>1.18.2</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
-        <lucene-solr.version>7.4.0</lucene-solr.version>
+        <lucene-solr.version>7.5.0</lucene-solr.version>
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>

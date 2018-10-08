@@ -211,7 +211,12 @@ public class ClassPathResource extends AbstractFileResolvingResource {
             }
 
         } else {
-            File source = new File(path);
+            File source;
+            try{
+                source = new File(url.toURI());
+            } catch (URISyntaxException e) {
+                throw new IOException("Error converting URL to a URI - path may be invalid? Path=" + url);
+            }
             Preconditions.checkState(source.isDirectory(), "Source must be a directory: %s", source);
             Preconditions.checkState(destination.exists() && destination.isDirectory(), "Destination must be a directory and must exist: %s", destination);
             FileUtils.copyDirectory(source, destination);

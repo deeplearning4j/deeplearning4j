@@ -90,7 +90,7 @@ import java.util.*;
 
 
 /**
- * MultiLayerNetwork is a neural network with multiple layers in a stack, and usually an output layer.
+ * MultiLayerNetwork is a neural network with multiple layers in a stack, and usually an output layer.<br>
  * For neural networks with a more complex connection architecture, use {@link org.deeplearning4j.nn.graph.ComputationGraph}
  * which allows for an arbitrary directed acyclic graph connection structure between layers.
  * MultiLayerNetwork is trainable via backprop, with optional pretraining, depending on the type of layers it contains.
@@ -3600,7 +3600,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     /**
      * This method just makes sure there's no state preserved within layers
      */
-    protected void clearLayersStates() {
+    public void clearLayersStates() {
         for (Layer layer : layers) {
             layer.clear();
             layer.clearNoiseWeightParams();

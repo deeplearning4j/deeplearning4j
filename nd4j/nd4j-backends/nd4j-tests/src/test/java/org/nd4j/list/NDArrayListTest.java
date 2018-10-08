@@ -17,6 +17,7 @@
 package org.nd4j.list;
 
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.list.matrix.MatrixNDArrayList;
 
 import java.util.ArrayList;
@@ -73,7 +74,8 @@ public class NDArrayListTest {
             matrixNDArrayList.add(ndArrayList);
         }
 
-        assertEquals(5,matrixNDArrayList.array().rows());
+        INDArray arr = matrixNDArrayList.array();
+        assertEquals(5,arr.rows());
         assertFalse(matrixNDArrayList.isEmpty());
         assertEquals(0.0,matrixNDArrayList.getEntry(0,0));
     }

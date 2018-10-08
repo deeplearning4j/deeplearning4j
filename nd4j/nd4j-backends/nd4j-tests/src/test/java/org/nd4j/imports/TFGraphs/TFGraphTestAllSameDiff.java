@@ -25,6 +25,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -164,6 +165,7 @@ public class TFGraphTestAllSameDiff {
     @BeforeClass
     public static void beforeClass() throws Exception {
         Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 
     @Before
@@ -209,8 +211,14 @@ public class TFGraphTestAllSameDiff {
         Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,
-                TFGraphTestAllHelper.LOADER, maxRE, minAbs);
+        try {
+            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,
+                    TFGraphTestAllHelper.LOADER, maxRE, minAbs);
+        } catch (Throwable t){
+            log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);
+            t.printStackTrace();
+            throw t;
+        }
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 

@@ -3,6 +3,7 @@ package org.nd4j.imports.TFGraphs;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -120,6 +121,11 @@ public class TFGraphTestZooModels {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    @BeforeClass
+    public static void beforeClass(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 
     @Parameterized.Parameters(name="{2}")
