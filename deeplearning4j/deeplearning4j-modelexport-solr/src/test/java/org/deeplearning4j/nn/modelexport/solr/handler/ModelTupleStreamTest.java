@@ -145,8 +145,8 @@ public class ModelTupleStreamTest {
           assertNotNull(outputValue);
           final double tupleScore = outputValue.doubleValue();
           assertEquals(
-            originalModel.getClass().getSimpleName()+" (originalScore-tupleScore["+ii+"])="+(originalScore-outputValue.doubleValue()),
-            originalScore, outputValue.doubleValue(), 1e-5);
+            originalModel.getClass().getSimpleName()+" (originalScore-tupleScore["+ii+"])="+(originalScore-tupleScore),
+            originalScore, tupleScore, 1e-5);
         }
 
         final Tuple tuple2 = modelTupleStream.read();
