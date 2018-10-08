@@ -43,7 +43,7 @@ namespace nd4j {
         }
         DECLARE_SYN(squareddifference, squaredsubtract);
 
-        DECLARE_TYPES(squared_subtract) {
+        DECLARE_TYPES(squaredsubtract) {
             getOpDescriptor()
                     ->setAllowedInputTypes(0, DataType::ANY)
                     ->setAllowedInputTypes(1, DataType::ANY)
