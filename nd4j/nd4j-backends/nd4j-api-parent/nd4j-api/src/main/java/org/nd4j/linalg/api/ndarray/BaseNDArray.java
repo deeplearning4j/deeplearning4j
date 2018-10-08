@@ -3721,7 +3721,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             // However, user might have called mmuli with a c order array for the result
             // In which case, we need to allocate a temporary f order array, and later do an assign to the real result array
 
-            boolean requiresTemp = result.ordering() == 'c';
+            boolean requiresTemp = result.ordering() != 'f' || result.isView() || !Shape.hasDefaultStridesForShape(result);
             INDArray gemmResultArr;
             if (requiresTemp) {
                 //Can use createUninitialized due to beta==0.0 parameter in gemm

@@ -26,6 +26,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -152,6 +154,47 @@ public class BlasTests extends BaseNd4jTest {
         assertEquals(result, view);
     }
 
+
+    @Test
+    public void testMmuli1() {
+        final INDArray activations = Nd4j.createUninitialized(new long[]{1, 3, 1}, 'f');
+        final INDArray z = activations.tensorAlongDimension(0, 1, 2);
+
+        Nd4j.getRandom().setSeed(12345);
+        final INDArray a = Nd4j.rand(3, 4);
+        final INDArray b = Nd4j.rand(4, 1);
+
+        INDArray ab = a.mmul(b);
+        a.mmul(b, z);
+        assertEquals(ab, z);
+    }
+
+    @Test
+    public void testMmuli2() {
+        final INDArray activations = Nd4j.createUninitialized(new long[]{2, 3, 1}, 'f');
+        final INDArray z = activations.tensorAlongDimension(0, 1, 2);
+
+        Nd4j.getRandom().setSeed(12345);
+        final INDArray a = Nd4j.rand(3, 4);
+        final INDArray b = Nd4j.rand(4, 1);
+
+        INDArray ab = a.mmul(b);
+        a.mmul(b, z);
+        assertEquals(ab, z);
+    }
+
+    @Test
+    public void testMmuli3(){
+        final INDArray activations = Nd4j.createUninitialized(new long[]{1, 3, 2}, 'f');
+        final INDArray z = activations.tensorAlongDimension(0, 1, 2);
+
+        final INDArray a = Nd4j.rand(3, 4);
+        final INDArray b = Nd4j.rand(4, 2);
+
+        INDArray ab = a.mmul(b);
+        a.mmul(b, z);
+        assertEquals(ab, z);
+    }
 
     @Override
     public char ordering() {
