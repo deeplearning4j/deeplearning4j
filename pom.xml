@@ -767,6 +767,7 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
             <id>trimSnapshots</id>
             <build>
