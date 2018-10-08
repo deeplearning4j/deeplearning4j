@@ -56,14 +56,6 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class ModelTupleStream extends TupleStream implements Expressible {
 
-  public Map toMap(Map<String, Object> map) {
-    // We (ModelTupleStream) extend TupleStream which implements MapWriter which extends MapSerializable.
-    // MapSerializable says to have a toMap method.
-    // org.apache.solr.common.MapWriter has a toMap method which has 'default' visibility.
-    // So MapWriter.toMap here is not 'visible' but it is 'callable' it seems.
-    return super.toMap(map);
-  }
-
   final private static String SERIALIZED_MODEL_FILE_NAME_PARAM = "serializedModelFileName";
   final private static String INPUT_KEYS_PARAM = "inputKeys";
   final private static String OUTPUT_KEYS_PARAM = "outputKeys";
@@ -113,6 +105,14 @@ public class ModelTupleStream extends TupleStream implements Expressible {
     } else {
       return operandValue;
     }
+  }
+
+  public Map toMap(Map<String, Object> map) {
+    // We (ModelTupleStream) extend TupleStream which implements MapWriter which extends MapSerializable.
+    // MapSerializable says to have a toMap method.
+    // org.apache.solr.common.MapWriter has a toMap method which has 'default' visibility.
+    // So MapWriter.toMap here is not 'visible' but it is 'callable' it seems.
+    return super.toMap(map);
   }
 
   public void setStreamContext(StreamContext streamContext) {
