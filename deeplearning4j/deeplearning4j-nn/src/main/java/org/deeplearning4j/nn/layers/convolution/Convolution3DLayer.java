@@ -182,7 +182,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to Convolution3DLayer (layer name = " + layerName + ", layer index = "
                     + index + ") with shape " + Arrays.toString(input.shape()) + ". "
-                    + "Expected rank 5 array with shape [minibatchSize, numChannels, inputHeight,"
+                    + "Expected rank 5 array with shape [minibatchSize, numChannels, inputHeight, "
                     + "inputWidth, inputDepth]."
                     + (input.rank() == 2
                     ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)"
