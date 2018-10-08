@@ -6991,7 +6991,26 @@ public class Nd4jTestsC extends BaseNd4jTest {
         } catch (IllegalArgumentException e){
             assertTrue(e.getMessage().toLowerCase().contains("order"));
         }
+    }
 
+    @Test
+    public void testAssignValid(){
+        INDArray arr1 = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
+        INDArray arr2 = Nd4j.create(3,4);
+        arr2.assign(arr1);
+        assertEquals(arr1, arr2);
+    }
+
+    @Test
+    public void testAssignInvalid(){
+        INDArray arr1 = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
+        INDArray arr2 = Nd4j.create(4,3);
+        try {
+            arr2.assign(arr1);
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage(), e.getMessage().contains("shape"));
+        }
     }
 
     ///////////////////////////////////////////////////////
@@ -7018,7 +7037,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray ret = Nd4j.createUninitialized(input.size(0), W.size(1));
         input.mmuli(W, ret);
         ret.addiRowVector(b);
-
         return ret;
     }
 

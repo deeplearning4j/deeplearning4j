@@ -1400,6 +1400,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(final INDArray arr) {
+        Preconditions.checkState((this.isScalar() && arr.isScalar()) || (this.isVector() && arr.isVector()) || this.equalShapes(arr),
+                "Cannot assign arrays: arrays must both be scalars, both vectors, or shapes must be equal. Attempting to do x.assign(y)" +
+                        " with x.shape=%ndShape and y.shape=%ndShape", this, arr );
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this, arr, this, length()));
         return this;
 
