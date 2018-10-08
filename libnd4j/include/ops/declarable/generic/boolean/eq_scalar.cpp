@@ -36,6 +36,13 @@ namespace nd4j {
         }
         DECLARE_SYN(Equals, eq_scalar);
         //DECLARE_SYN(equals, eq_scalar);
+
+        DECLARE_TYPES(eq_scalar) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::BOOL);
+        }
     }
 }
 

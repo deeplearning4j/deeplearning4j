@@ -59,6 +59,12 @@ namespace nd4j {
             return SHAPELIST(outputShape);
         }
 
+        DECLARE_TYPES(relu_layer) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
     }
 }
 

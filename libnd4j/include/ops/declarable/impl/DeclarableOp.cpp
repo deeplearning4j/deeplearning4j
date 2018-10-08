@@ -666,6 +666,9 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
+        void DeclarableOp::registerTypes() {
+            this->getOpDescriptor()->setSameMode(true);
+        }
 
         /*
         template <typename T>

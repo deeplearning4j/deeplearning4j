@@ -36,6 +36,13 @@ namespace nd4j {
         }
         DECLARE_SYN(LessOrEquals, lte_scalar);
         DECLARE_SYN(lessorequals, lte_scalar);
+
+        DECLARE_TYPES(lte_scalar) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::BOOL);
+        }
     }
 }
 

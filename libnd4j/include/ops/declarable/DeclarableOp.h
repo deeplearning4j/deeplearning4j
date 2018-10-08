@@ -66,6 +66,8 @@ namespace nd4j {
         protected:
             OpDescriptor *_descriptor;
 
+            virtual void registerTypes();
+
             /**
              * This method executes this Op, and defined for most of individual ops separately
              */

@@ -52,6 +52,12 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(add) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(DataType::ANY)
+                ->setAllowedOutputTypes(DataType::INHERIT)
+                ->setSameMode(true);
+    }
 
 
 DECLARE_SHAPE_FN(meshgrid) {

@@ -38,7 +38,15 @@ namespace nd4j {
                 OVERWRITE_RESULT(tZ);
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
+        }
+
+
+        DECLARE_TYPES(floordiv) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT);
         }
 
         CUSTOM_OP_IMPL(floordiv_bp, 3, 2, false, 0, 0) {

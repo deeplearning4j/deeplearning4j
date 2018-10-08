@@ -42,6 +42,13 @@ namespace nd4j {
         }
         DECLARE_SYN(RealDiv, realdiv);
 
+        DECLARE_TYPES(realdiv) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType::HALF, DataType::DOUBLE});
+        }
+
         CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);

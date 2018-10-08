@@ -153,6 +153,14 @@ namespace nd4j {
             }
             return shapes;
         }
+
+        DECLARE_TYPES(where_np) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::BOOL)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedInputTypes(2, DataType::ANY)
+                    ->setAllowedOutputTypes(1, DataType::INHERIT);
+        }
     }
 }
 

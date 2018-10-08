@@ -115,6 +115,13 @@ DECLARE_SHAPE_FN(matmul) {
     return SHAPELIST( newShape );
 }
 
+    DECLARE_TYPES(matmul) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+    }
+
 }
 }
 

@@ -129,6 +129,13 @@ namespace nd4j {
 
             return shapeList;
         }
+
+        DECLARE_TYPES(batched_gemm) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
     }
 }
 

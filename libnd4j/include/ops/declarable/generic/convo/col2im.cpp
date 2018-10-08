@@ -82,6 +82,13 @@ namespace nd4j {
 
             return SHAPELIST(zShape);
         }
+
+        DECLARE_TYPES(col2im) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT)
+                    ->setSameMode(true);
+        }
     }
 }
 

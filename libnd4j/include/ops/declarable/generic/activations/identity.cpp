@@ -49,6 +49,14 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(LinearGrad, identity_bp);
+
+
+        DECLARE_TYPES(identity_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
     }
 }
 

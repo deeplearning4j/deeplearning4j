@@ -1263,6 +1263,7 @@
                                                     NAME(); \
                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block); \
                                                 protected: \
+                                                    void registerTypes(); \
                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context& block); \
                                                 };\
                                                 REGISTER_H(NAME)
@@ -1271,6 +1272,7 @@
                                                 public:\
                                                     NAME(); \
                                                 protected: \
+                                                    void registerTypes(); \
                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context& block); \
                                                 }; \
                                                 REGISTER_H(NAME)
@@ -1283,6 +1285,7 @@
                                                             public:\
                                                                 NAME(); \
                                                             protected: \
+                                                                void registerTypes(); \
                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context& block); \
                                                             };\
                                                             REGISTER_H(NAME)
@@ -1295,6 +1298,7 @@
                                     public:\
                                         NAME(); \
                                     protected: \
+                                        void registerTypes(); \
                                         Nd4jStatus validateAndExecute(nd4j::graph::Context& block); \
                                     };\
                                     REGISTER_H(NAME)
@@ -1343,6 +1347,7 @@
                                                                 NAME(); \
                                                                 nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block); \
                                                             protected: \
+                                                                void registerTypes(); \
                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context& block); \
                                                             };\
                                                             REGISTER_H(NAME)
@@ -1365,6 +1370,7 @@
                                                                                     NAME(); \
                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block); \
                                                                                 protected: \
+                                                                                    void registerTypes(); \
                                                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context& block); \
                                                                                 };\
                                                                                 REGISTER_H(NAME)
@@ -1390,6 +1396,7 @@
                                                                                 public:\
                                                                                     NAME(); \
                                                                                 protected: \
+                                                                                    void registerTypes(); \
                                                                                     Nd4jStatus validateAndExecute(Context& block); \
                                                                                 };\
                                                                                 REGISTER_H(NAME)
@@ -1401,6 +1408,7 @@
 
 #define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           class ND4J_EXPORT NAME: public nd4j::ops::DeclarableCustomOp { \
                                                                                 protected: \
+                                                                                    void registerTypes(); \
                                                                                     Nd4jStatus validateAndExecute(Context& block); \
                                                                                 public:\
                                                                                     NAME(); \
@@ -1415,8 +1423,14 @@
 // this declaration MUST follow DECLARE_CUSTOM_OP
 #define DECLARE_SHAPE_FN(NAME)                                                  nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block)
 
+
+#define DECLARE_SAME_TYPE(NAME)                                                 void nd4j::ops::NAME::registerTypes() {this->getOpDescriptor()->setSameMode(true);}
+
+#define DECLARE_TYPES(NAME)                                                     void nd4j::ops::NAME::registerTypes()
+
 #define DECLARE_BROADCASTABLE_OP(NAME,TARGS, IARGS)                             class ND4J_EXPORT NAME: public nd4j::ops::BroadcastableOp { \
                                                                                 protected: \
+                                                                                    void registerTypes(); \
                                                                                     Nd4jStatus validateAndExecute(Context& block); \
                                                                                 public:\
                                                                                     NAME(); \
@@ -1467,6 +1481,7 @@
 
 #define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    ALLOCATE(TGT, WORKSPACE, shape::shapeInfoLength(SRC), Nd4jLong);\
                                 REPLICATE_SHAPE(SRC, TGT);
+
 
 // define macros for compiler enforcement to make function inline  
 #ifdef __clang__

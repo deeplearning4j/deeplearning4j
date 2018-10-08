@@ -54,6 +54,13 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+
+        DECLARE_TYPES(axpy) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
     }
 }
 

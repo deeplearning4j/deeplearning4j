@@ -57,6 +57,7 @@ namespace nd4j {
 
             return Status::OK();
         }
+
         DECLARE_SHAPE_FN(im2col) {
             auto inShape = inputShape->at(0);
 
@@ -103,6 +104,7 @@ namespace nd4j {
 
             return SHAPELIST(zShape);
         }
+
 		CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
             auto input = INPUT_VARIABLE(0);
 			auto gradAtOutput = INPUT_VARIABLE(1);
@@ -136,6 +138,20 @@ namespace nd4j {
             STORE_RESULT(*z);
 
             return Status::OK();
+        }
+
+        DECLARE_TYPES(im2col) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT)
+                    ->setSameMode(true);
+        }
+
+        DECLARE_TYPES(im2col_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT)
+                    ->setSameMode(true);
         }
 		
 		DECLARE_SHAPE_FN(im2col_bp) {

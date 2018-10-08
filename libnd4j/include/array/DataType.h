@@ -40,6 +40,8 @@ namespace nd4j {
         UINT64 = 14,
         QINT8 = 15,
         QINT16 = 16,
+        ANY = 100,
+        AUTO = 200,
     };
 }
 

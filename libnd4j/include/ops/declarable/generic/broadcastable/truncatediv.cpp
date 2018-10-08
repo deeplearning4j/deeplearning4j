@@ -37,5 +37,12 @@ namespace nd4j {
 
             return Status::OK();
         }
+
+        DECLARE_TYPES(truncatediv) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT);
+        }
     }
 }

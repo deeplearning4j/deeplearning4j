@@ -45,6 +45,12 @@ namespace ops {
     }
     DECLARE_SYN(Mul, multiply);
 
+    DECLARE_TYPES(multiply) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(0, DataType::ANY)
+                ->setAllowedInputTypes(1, DataType::ANY)
+                ->setAllowedOutputTypes(0, DataType::INHERIT);
+    }
 
 ///////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {

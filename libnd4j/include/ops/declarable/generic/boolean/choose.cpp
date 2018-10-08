@@ -50,6 +50,14 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(choose) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(1, {DataType::INT64, DataType::INT32, DataType::INT16, DataType::UINT8, DataType::UINT8});
+        }
+
         DECLARE_SHAPE_FN(choose) {
             Nd4jLong *shape;
             int rank;

@@ -58,6 +58,12 @@ namespace nd4j {
 
             return SHAPELIST(newShape);
         }
+
+        DECLARE_TYPES(to_double) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(nd4j::DataType::AUTO);
+        }
     }
 }
 

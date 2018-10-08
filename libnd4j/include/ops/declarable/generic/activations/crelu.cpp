@@ -67,6 +67,9 @@ namespace nd4j {
             return SHAPELIST(newShape);
         }
 
+        DECLARE_TYPES(crelu) {
+            getOpDescriptor()->setSameMode(true);
+        }
 
         CUSTOM_OP_IMPL(crelu_bp, 2, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -99,6 +102,13 @@ namespace nd4j {
             delete tmpResult;
             delete dec;
             return ND4J_STATUS_OK;
+        }
+
+        DECLARE_TYPES(crelu_bp) {
+            getOpDescriptor()
+            ->setAllowedInputTypes(0, DataType::ANY)
+            ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+            ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
         }
 
         DECLARE_SHAPE_FN(crelu_bp) {

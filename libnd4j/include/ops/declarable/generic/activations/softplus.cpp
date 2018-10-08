@@ -48,6 +48,13 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(SoftplusGrad, softplus_bp);
+
+        DECLARE_TYPES(softplus_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
     }
 }
 

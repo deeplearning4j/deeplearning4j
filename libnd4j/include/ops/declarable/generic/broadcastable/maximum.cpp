@@ -42,6 +42,13 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(maximum) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT);
+        }
+
         CUSTOM_OP_IMPL(maximum_bp, 3, 2, false, 0, 0) {
             // FIXME: lambdas
             /*

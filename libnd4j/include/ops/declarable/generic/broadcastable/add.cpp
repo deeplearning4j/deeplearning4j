@@ -41,6 +41,13 @@ namespace nd4j {
     		return Status::OK();
         }
 
+        DECLARE_TYPES(add) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT);
+        }
+
 
         CUSTOM_OP_IMPL(add_bp, 3, 2, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);

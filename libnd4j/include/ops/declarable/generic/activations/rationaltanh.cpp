@@ -46,6 +46,13 @@ namespace nd4j {
             helpers::rationalTanhDerivative(input, epsilon, z);
             return Status::OK();
         }
+
+        DECLARE_TYPES(rationaltanh_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
     }
 }
 

@@ -36,6 +36,13 @@ namespace nd4j {
         }
         //DECLARE_SYN(Greater, gt_scalar);
         //DECLARE_SYN(greater, gt_scalar);
+
+        DECLARE_TYPES(gt_scalar) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::BOOL);
+        }
     }
 }
 

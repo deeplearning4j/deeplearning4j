@@ -45,6 +45,13 @@ BROADCASTABLE_OP_IMPL(tf_atan2, 0, 0) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(tf_atan2) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(0, DataType::ANY)
+                ->setAllowedInputTypes(1, DataType::ANY)
+                ->setAllowedOutputTypes(0, DataType::INHERIT);
+    }
+
 }
 }
 

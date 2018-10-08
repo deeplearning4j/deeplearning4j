@@ -40,6 +40,12 @@ namespace nd4j {
             }
             return Status::OK();
         }
+
+        DECLARE_TYPES(tanh_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes({DataType::INT16, DataType::INT8, DataType::INT32, DataType::INT64, DataType::UINT8})
+                    ->setSameMode(true);
+        }
     }
 }
 

@@ -43,6 +43,12 @@ namespace nd4j {
         }
         DECLARE_SYN(squareddifference, squaredsubtract);
 
+        DECLARE_TYPES(squared_subtract) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT);
+        }
 
         CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);

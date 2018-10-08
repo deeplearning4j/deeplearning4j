@@ -48,6 +48,13 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(TanhGrad, tanh_bp);
+
+        DECLARE_TYPES(tanh_bp) {
+                getOpDescriptor()
+                        ->setAllowedInputTypes(0, DataType::ANY)
+                        ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                        ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
     }
 }
 

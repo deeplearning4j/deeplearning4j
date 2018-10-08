@@ -55,6 +55,13 @@ CUSTOM_OP_IMPL(percentile, 1, 1, false, 1, -2) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(percentile) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(0, DataType::ANY)
+                ->setAllowedOutputTypes(0, DataType::INHERIT)
+                ->setSameMode(true);
+    }
+
 
 DECLARE_SHAPE_FN(percentile) {
 
