@@ -6102,8 +6102,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 {1,1,1,0},
                 {1,1,0,0}});
 
-        INDArray exp0 = Nd4j.create(new double[]{1,1,0,-1});
-        INDArray exp1 = Nd4j.create(new double[]{2,1}).transpose();
+        INDArray exp0 = Nd4j.create(new long[]{1,1,0,-1}, new long[]{4}, DataType.LONG);
+        INDArray exp1 = Nd4j.create(new long[]{2,1}, new long[]{2}, DataType.LONG);
 
         INDArray out0 = BooleanIndexing.lastIndex(in, Conditions.equals(1), 0);
         INDArray out1 = BooleanIndexing.lastIndex(in, Conditions.equals(1), 1);

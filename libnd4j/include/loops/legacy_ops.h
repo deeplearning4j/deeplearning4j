@@ -70,96 +70,97 @@
 
 // these ops return same data type as input
 #define TRANSFORM_SAME_OPS \
-        (0,Abs), \
-        (1,Sign), \
-        (2,Ones), \
+        (0, Abs), \
+        (1, Sign), \
+        (2, Ones), \
         (3, Neg), \
         (4, Round), \
-        (5,TimesOneMinus), \
-        (6,Cube), \
-        (7,OneMinus), \
-        (8,Col2Im), \
-        (9,Im2col),\
-        (11,Reciprocal), \
-        (12,Square), \
-        (15,Identity), \
-        (17,Ceiling), \
-        (18,Floor), \
-        (19,ClipByValue) ,\
-        (20,Reverse)
+        (5, TimesOneMinus), \
+        (6, Cube), \
+        (7, OneMinus), \
+        (8, Col2Im), \
+        (9, Im2col),\
+        (11, Reciprocal), \
+        (12, Square), \
+        (13, CompareAndSetTransform) ,\
+        (15, Identity), \
+        (17, Ceiling), \
+        (18, Floor), \
+        (19, ClipByValue) ,\
+        (20, Reverse)
 
 
 // these ops return bool
 #define TRANSFORM_BOOL_OPS \
-        (0,IsMax), \
-        (1,IsInf), \
-        (2,IsNan), \
-        (3,IsFinite), \
-        (4,IsInfOrNan), \
-        (5,MatchConditionBool), \
-        (7,IsPositive)
+        (0, IsMax), \
+        (1, IsInf), \
+        (2, IsNan), \
+        (3, IsFinite), \
+        (4, IsInfOrNan), \
+        (5, MatchConditionBool), \
+        (7, IsPositive)
 
 #define TRANSFORM_STRICT_OPS \
-        (0,SoftMax), \
-        (1,SoftMaxDerivative), \
-        (2,LogSoftMax) ,\
-        (3,ELUDerivative), \
-        (4,TanhDerivative), \
-        (5,HardTanhDerivative), \
-        (6,SigmoidDerivative), \
-        (7,SoftSignDerivative), \
-        (8,TanDerivative) ,\
-        (9,SELUDerivative) ,\
-        (10,HardSigmoidDerivative) ,\
-        (11,RationalTanhDerivative) ,\
-        (12,RectifiedTanhDerivative) ,\
-        (13,SwishDerivative) ,\
-        (14,ACoshDerivative) ,\
-        (15,ASinhDerivative) ,\
-        (16,SinhDerivative), \
-        (17,LogSigmoidDerivative) ,\
-        (18,SpecialDerivative), \
-        (19,Stabilize), \
-        (20,StabilizeFP16) ,\
-        (21,CubeDerivative)
+        (0, SoftMax), \
+        (1, SoftMaxDerivative), \
+        (2, LogSoftMax) ,\
+        (3, ELUDerivative), \
+        (4, TanhDerivative), \
+        (5, HardTanhDerivative), \
+        (6, SigmoidDerivative), \
+        (7, SoftSignDerivative), \
+        (8, TanDerivative) ,\
+        (9, SELUDerivative) ,\
+        (10, HardSigmoidDerivative) ,\
+        (11, RationalTanhDerivative) ,\
+        (12, RectifiedTanhDerivative) ,\
+        (13, SwishDerivative) ,\
+        (14, ACoshDerivative) ,\
+        (15, ASinhDerivative) ,\
+        (16, SinhDerivative), \
+        (17, LogSigmoidDerivative) ,\
+        (18, SpecialDerivative), \
+        (19, Stabilize), \
+        (20, StabilizeFP16) ,\
+        (21, CubeDerivative)
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \
-        (0,Cosine), \
-        (1,Exp), \
-        (2,Log), \
-        (3,SetRange), \
-        (4,Sigmoid), \
-        (5,Sin), \
-        (6,SoftPlus), \
-        (7,Sqrt), \
-        (8,Tanh), \
-        (9,ACos), \
-        (10,ASin), \
-        (11,ATan), \
-        (12,HardTanh), \
-        (13,SoftSign), \
-        (14,ELU), \
-        (15,Histogram), \
-        (16,HardSigmoid), \
-        (17,RationalTanh) ,\
-        (18,RectifiedTanh) ,\
-        (19,Sinh) ,\
-        (20,Cosh) ,\
-        (21,Tan) ,\
-        (22,SELU) ,\
-        (23,Pooling2D) ,\
-        (24,Swish) ,\
-        (25,RSqrt), \
-        (26,Log1p), \
-        (27,Erf), \
-        (28,ACosh), \
-        (29,ASinh), \
-        (30,Rint), \
-        (31,LogSigmoid), \
-        (32,Erfc) ,\
-        (33,Expm1), \
-        (34,ATanh)
+        (0, Cosine), \
+        (1, Exp), \
+        (2, Log), \
+        (3, SetRange), \
+        (4, Sigmoid), \
+        (5, Sin), \
+        (6, SoftPlus), \
+        (7, Sqrt), \
+        (8, Tanh), \
+        (9, ACos), \
+        (10, ASin), \
+        (11, ATan), \
+        (12, HardTanh), \
+        (13, SoftSign), \
+        (14, ELU), \
+        (15, Histogram), \
+        (16, HardSigmoid), \
+        (17, RationalTanh) ,\
+        (18, RectifiedTanh) ,\
+        (19, Sinh) ,\
+        (20, Cosh) ,\
+        (21, Tan) ,\
+        (22, SELU) ,\
+        (23, Pooling2D) ,\
+        (24, Swish) ,\
+        (25, RSqrt), \
+        (26, Log1p), \
+        (27, Erf), \
+        (28, ACosh), \
+        (29, ASinh), \
+        (30, Rint), \
+        (31, LogSigmoid), \
+        (32, Erfc) ,\
+        (33, Expm1), \
+        (34, ATanh)
 
 
 

@@ -4047,90 +4047,7 @@ namespace simdOps {
 	template <typename X, typename Y, typename Z>
 	class CompareAndSet {
 	public:
-        // op definition for Transform
-		op_def static X op(X d1, X *params) {
-			auto compare = params[0];
-			auto set = params[1];
-			auto eps = params[2];
 
-            // with mode == 0 we do set if d1 equals to compare, and with mode == 1 - we go otherwise
-            int mode = (int) params[3];
-            if (mode == 0) // equals
-                if (nd4j::math::nd4j_abs<X>(d1 - compare) <= eps)
-                    return set;
-				else
-                    return d1;
-			    //return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? set : d1;
-            else if (mode == 1) // not equals
-                if (nd4j::math::nd4j_abs<X>(d1 - compare) > eps)
-                    return set;
-                else
-                    return d1;
-                //return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? set : d1;
-            else if (mode == 2) // less_than
-                if (d1 < compare)
-                    return set;
-                else
-                    return d1;
-            else if (mode ==3) // greater_than
-                if (d1 > compare)
-                    return set;
-                else
-                    return d1;
-            else if (mode == 4) // less_or_equals_than
-                if (d1 <= compare)
-                    return set;
-                else
-                    return d1;
-            else if (mode == 5) // greater_or_equals_than
-                if (d1 >= compare)
-                    return set;
-                else
-                    return d1;
-            else if (mode == 6) // abs_less_than
-                if (nd4j::math::nd4j_abs<X>(d1) < compare)
-                    return set;
-                else
-                    return d1;
-            else if (mode == 7) // abs_greater_than
-                if (nd4j::math::nd4j_abs<X>(d1) > compare)
-                    return set;
-                else
-                    return d1;
-            else if (mode == 8) // is inf
-                if (nd4j::math::nd4j_isinf(d1))
-                    return set;
-                else
-                    return d1;
-            else if (mode == 9) // is nan
-                if (nd4j::math::nd4j_isnan(d1))
-                    return set;
-                else
-                    return d1;
-            else if (mode == 10)
-                if (d1 == compare)
-                    return set;
-                else
-                    return d1;
-            else if (mode == 11)
-                if (d1 != compare)
-                    return set;
-                else
-                    return d1;
-            else if (mode == 12) // abs_greater_or_equals_than
-                if (nd4j::math::nd4j_abs<X>(d1) >= compare)
-                    return set;
-                else
-                    return d1;
-            else if (mode == 13) // abs_less_or_equals_than
-                if (nd4j::math::nd4j_abs<X>(d1) <= compare)
-                    return set;
-                else
-                    return d1;
-            else
-                printf("Undefined boolean operation: [%i]\n", mode);
-            return d1;
-		}
 
         // op definition for PairWise Transform
         op_def static Z op(X d1, Y dY, Z *params) {
@@ -4206,6 +4123,95 @@ namespace simdOps {
             else if (mode == 13) // abs_less_or_equals_than
                 if (nd4j::math::nd4j_abs<X>(d1) <= compare)
                     return d2;
+                else
+                    return d1;
+            else
+                printf("Undefined boolean operation: [%i]\n", mode);
+            return d1;
+        }
+	};
+
+	template <typename X>
+	class CompareAndSetTransform {
+	public:
+        // op definition for Transform
+        op_def static X op(X d1, X *params) {
+            auto compare = params[0];
+            auto set = params[1];
+            auto eps = params[2];
+
+            // with mode == 0 we do set if d1 equals to compare, and with mode == 1 - we go otherwise
+            int mode = (int) params[3];
+            if (mode == 0) // equals
+                if (nd4j::math::nd4j_abs<X>(d1 - compare) <= eps)
+                    return set;
+                else
+                    return d1;
+                //return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? set : d1;
+            else if (mode == 1) // not equals
+                if (nd4j::math::nd4j_abs<X>(d1 - compare) > eps)
+                    return set;
+                else
+                    return d1;
+                //return nd4j::math::nd4j_abs<T>(d1 - compare) > eps ? set : d1;
+            else if (mode == 2) // less_than
+                if (d1 < compare)
+                    return set;
+                else
+                    return d1;
+            else if (mode ==3) // greater_than
+                if (d1 > compare)
+                    return set;
+                else
+                    return d1;
+            else if (mode == 4) // less_or_equals_than
+                if (d1 <= compare)
+                    return set;
+                else
+                    return d1;
+            else if (mode == 5) // greater_or_equals_than
+                if (d1 >= compare)
+                    return set;
+                else
+                    return d1;
+            else if (mode == 6) // abs_less_than
+                if (nd4j::math::nd4j_abs<X>(d1) < compare)
+                    return set;
+                else
+                    return d1;
+            else if (mode == 7) // abs_greater_than
+                if (nd4j::math::nd4j_abs<X>(d1) > compare)
+                    return set;
+                else
+                    return d1;
+            else if (mode == 8) // is inf
+                if (nd4j::math::nd4j_isinf(d1))
+                    return set;
+                else
+                    return d1;
+            else if (mode == 9) // is nan
+                if (nd4j::math::nd4j_isnan(d1))
+                    return set;
+                else
+                    return d1;
+            else if (mode == 10)
+                if (d1 == compare)
+                    return set;
+                else
+                    return d1;
+            else if (mode == 11)
+                if (d1 != compare)
+                    return set;
+                else
+                    return d1;
+            else if (mode == 12) // abs_greater_or_equals_than
+                if (nd4j::math::nd4j_abs<X>(d1) >= compare)
+                    return set;
+                else
+                    return d1;
+            else if (mode == 13) // abs_less_or_equals_than
+                if (nd4j::math::nd4j_abs<X>(d1) <= compare)
+                    return set;
                 else
                     return d1;
             else
