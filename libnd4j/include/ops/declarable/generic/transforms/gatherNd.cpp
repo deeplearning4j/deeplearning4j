@@ -47,6 +47,11 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
     return Status::OK();
 }
 
+DECLARE_TYPES(gather_nd) {
+    getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+    getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
+    getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+}
 
 DECLARE_SHAPE_FN(gather_nd) {
 

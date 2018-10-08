@@ -63,6 +63,9 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
 DECLARE_SYN(pack, stack);
 DECLARE_SYN(Pack, stack);
 
+	DECLARE_TYPES(stack) {
+		getOpDescriptor()->setSameMode(true);
+	}
 
 DECLARE_SHAPE_FN(stack) {
 	

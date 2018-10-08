@@ -58,6 +58,10 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(cumprod) {
+            getOpDescriptor()->setSameMode(true);
+        }
+
         CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
             auto input = INPUT_VARIABLE(0);
             auto axis = block.width() == 3 ? INPUT_VARIABLE(1) : nullptr;
@@ -111,6 +115,12 @@ namespace nd4j {
             }
                 
             return Status::OK();
+        }
+
+        DECLARE_TYPES(cumprod_bp) {
+            getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+            getOpDescriptor()->setAllowedInputTypes(1, {ALL_FLOATS});
+            getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
         }
 
         DECLARE_SHAPE_FN(cumprod_bp) {

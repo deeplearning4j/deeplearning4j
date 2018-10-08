@@ -34,13 +34,18 @@ namespace ops {
         return Status::OK();
     }
 
+    DECLARE_TYPES(eye) {
+        getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS});
+        getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
+        getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+    }
 
     DECLARE_SHAPE_FN(eye) {
 
         std::vector<int> params;
 
         // FIX ME: original has a dtype param - so should be used here instead. e.g. (DataType) INT_ARG(0);
-        nd4j::DataType dtype = nd4j::DataType::DOUBLE;
+        nd4j::DataType dtype = nd4j::DataType::FLOAT32;
 
         if(block.width() == 0) {
             params = *block.getIArguments();

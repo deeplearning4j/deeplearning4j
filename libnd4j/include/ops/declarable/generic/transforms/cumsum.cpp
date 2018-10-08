@@ -60,6 +60,9 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
     
     return Status::OK();
 }
+    DECLARE_TYPES(cumsum) {
+        getOpDescriptor()->setSameMode(true);
+    }
 
 CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
     auto input = INPUT_VARIABLE(0);
@@ -109,6 +112,11 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
         
     return Status::OK();
 }
+    DECLARE_TYPES(cumsum_bp) {
+        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+        getOpDescriptor()->setAllowedInputTypes(1, {ALL_FLOATS});
+        getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+    }
 
     DECLARE_SHAPE_FN(cumsum_bp) {
         auto inp = inputShape->at(0);
