@@ -1942,9 +1942,14 @@ TEST_F(DeclarableOpsTests9, multiply_bp_test1) {
 
     nd4j::ops::multiply opFF;
     nd4j::ops::multiply_bp opBP;
-
+    auto resFF = opFF.execute({&x, &y}, {}, {});
+    auto resBP = opBP.execute({&x, &y, &dLdz}, {}, {});
+//    resFF->at(0)->printIndexedBuffer("Multiply 1x1");
+//    resBP->at(0)->printIndexedBuffer("Multiply BP 1x1 x");
+//    resBP->at(1)->printIndexedBuffer("Multyply BP 1x1 y");*/
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
+    delete resFF;
+    delete resBP;
     ASSERT_TRUE(isGradCorrect);
 }
 

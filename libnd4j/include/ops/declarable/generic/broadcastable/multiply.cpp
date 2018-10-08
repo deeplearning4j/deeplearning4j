@@ -73,7 +73,7 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
         dLdz->applyScalar(scalar::Multiply, x, dLdy, nullptr);
     }
     else if(yLen == 1) {            // y is scalar and x is not
-        (*dLdy) = (*x * *dLdz).reduceNumber(reduce::Sum);
+        dLdy->assign((*x * *dLdz).reduceNumber(reduce::Sum));
         dLdz->applyScalar(scalar::Multiply, y, dLdx);
     }    
     else if(x->isSameShape(y)) {
