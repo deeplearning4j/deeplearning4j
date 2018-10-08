@@ -37,13 +37,14 @@ import java.util.List;
  *     <li>BALANCED: 131,600 examples total. 47 classes (equal number of examples in each class)</li>
  *     <li>LETTERS: 145,600 examples total. 26 balanced classes</li>
  *     <li>DIGITS: 280,000 examples total. 10 balanced classes</li>
- *     <li>MNIST: 70,000 examples total. 10 balanced classes. Equivalent to the original MNIST dataset in
- *     {@link MnistDataSetIterator}</li>
+ *     <li>MNIST: 70,000 examples total. 10 balanced classes. Equivalent to the original MNIST dataset in {@link MnistDataSetIterator}</li>
  * </ul>
  * <br>
  * See: <a href="https://www.nist.gov/itl/iad/image-group/emnist-dataset">
  *     https://www.nist.gov/itl/iad/image-group/emnist-dataset</a> and
  * <a href="https://arxiv.org/abs/1702.05373">https://arxiv.org/abs/1702.05373</a>
+ *
+ * As per {@link MnistDataSetIterator}, the features data is in "flattened" format: shape [minibatch, 784].
  *
  * @author Alex Black
  */
@@ -97,23 +98,41 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
     @Getter
     protected DataSetPreProcessor preProcessor;
 
+    /**
+     * Create an EMNIST iterator with randomly shuffled data based on a random RNG seed
+     *
+     * @param dataSet Dataset (subset) to return
+     * @param batch   Batch size
+     * @param train   If true: use training set. If false: use test set
+     * @throws IOException If an error occurs when loading/downloading the dataset
+     */
     public EmnistDataSetIterator(Set dataSet, int batch, boolean train) throws IOException {
         this(dataSet, batch, train, System.currentTimeMillis());
     }
 
+    /**
+     * Create an EMNIST iterator with randomly shuffled data based on a specified RNG seed
+     *
+     * @param dataSet   Dataset (subset) to return
+     * @param batchSize Batch size
+     * @param train     If true: use training set. If false: use test set
+     * @param seed      Random number generator seed
+     */
     public EmnistDataSetIterator(Set dataSet, int batchSize, boolean train, long seed) throws IOException {
         this(dataSet, batchSize, false, train, true, seed);
     }
 
-    /**Get the specified number of MNIST examples (test or train set), with optional shuffling and binarization.
-     * @param batch Size of each patch
+    /**
+     * Get the specified number of MNIST examples (test or train set), with optional shuffling and binarization.
+     *
+     * @param batch    Size of each minibatch
      * @param binarize whether to binarize the data or not (if false: normalize in range 0 to 1)
-     * @param train Train vs. test set
-     * @param shuffle whether to shuffle the examples
-     * @param rngSeed random number generator seed to use when shuffling examples
+     * @param train    Train vs. test set
+     * @param shuffle  whether to shuffle the examples
+     * @param rngSeed  random number generator seed to use when shuffling examples
      */
     public EmnistDataSetIterator(Set dataSet, int batch, boolean binarize, boolean train, boolean shuffle, long rngSeed)
-                    throws IOException {
+            throws IOException {
         super(batch, numExamples(train, dataSet), new EmnistDataFetcher(dataSet, binarize, train, shuffle, rngSeed));
         this.dataSet = dataSet;
     }

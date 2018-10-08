@@ -29,11 +29,11 @@ import org.nd4j.linalg.activations.Activation;
 /**
  * Inception is based on GoogleLeNet configuration of convolutional layers for optimization of
  * resources and learning. You can use this module to add Inception to your own custom models.
- *
- * The GoogleLeNet paper: https://arxiv.org/abs/1409.4842
- *
+ * <br>
+ * The GoogleLeNet paper: <a href="https://arxiv.org/abs/1409.4842">https://arxiv.org/abs/1409.4842</a>
+ * <br>
  * This module is based on the Inception-ResNet paper that combined residual shortcuts with
- * Inception-style networks: https://arxiv.org/abs/1602.07261
+ * Inception-style networks: <a href="https://arxiv.org/abs/1602.07261">https://arxiv.org/abs/1602.07261</a>
  *
  * Revised and consolidated. Likely needs further tuning for specific applications.
  *

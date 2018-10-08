@@ -518,6 +518,11 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
         return backendExecutioner.calculateOutputShape(op);
     }
 
+    @Override
+    public INDArray[] allocateOutputArrays(CustomOp op) {
+        return backendExecutioner.allocateOutputArrays(op);
+    }
+
 
     @Override
     public void registerGraph(long id, Pointer graph) {
@@ -574,5 +579,15 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     @Override
     public ExecutionerType type() {
         return backendExecutioner.type();
+    }
+
+    @Override
+    public boolean isVerbose() {
+        return backendExecutioner.isVerbose();
+    }
+
+    @Override
+    public boolean isDebug() {
+        return backendExecutioner.isDebug();
     }
 }

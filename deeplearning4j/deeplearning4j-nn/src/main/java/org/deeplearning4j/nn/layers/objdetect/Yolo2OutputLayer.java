@@ -53,10 +53,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
  * Output (loss) layer for YOLOv2 object detection model, based on the papers:
- * YOLO9000: Better, Faster, Stronger - Redmon & Farhadi (2016) - https://arxiv.org/abs/1612.08242<br>
+ * YOLO9000: Better, Faster, Stronger - Redmon & Farhadi (2016) - <a href="https://arxiv.org/abs/1612.08242">https://arxiv.org/abs/1612.08242</a><br>
  * and<br>
  * You Only Look Once: Unified, Real-Time Object Detection - Redmon et al. (2016) -
- * http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf<br>
+ * <a href="http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf">http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf</a>
  * <br>
  * This loss function implementation is based on the YOLOv2 version of the paper. However, note that it doesn't
  * currently support simultaneous training on both detection and classification datasets as described in the

@@ -3,7 +3,7 @@ title: Deeplearning4j Zoo Models
 short_title: Zoo Models
 description: Prebuilt model architectures and weights for out-of-the-box application.
 category: Models
-weight: 3
+weight: 10
 ---
 
 ## Available models

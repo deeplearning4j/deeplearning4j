@@ -8,6 +8,10 @@
     {
       "page": "training.md",
       "class": []
+    },
+    {
+      "page": "parameter-server.md",
+      "class": []
     }
   ]
 }

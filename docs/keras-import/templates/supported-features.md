@@ -1,4 +1,12 @@
-# Keras Model Import: Supported Features
+---
+title: Keras Import Supported Features
+short_title: Supported Features
+description: Supported Keras features.
+category: Keras Import
+weight: 2
+---
+
+## Keras Model Import: Supported Features
 
 Little-known fact: Deeplearning4j's creator, Skymind, has two of the top 
 five [Keras contributors](https://github.com/keras-team/keras/graphs/contributors) 
@@ -34,7 +42,7 @@ Mapping keras to DL4J layers is done in the [layers](https://github.com/deeplear
 * <i class="fa fa-check-square-o"></i> [RepeatVector](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/core/KerasRepeatVector.java)
 * <i class="fa fa-check-square-o"></i> [Lambda](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/core/KerasLambda.java)
 * <i class="fa fa-square-o"></i> ActivityRegularization
-* <i class="fa fa-square-o"></i> Masking
+* <i class="fa fa-check-square-o"></i> [Masking](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/core/KerasMasking.java)
 * <i class="fa fa-check-square-o"></i> [SpatialDropout1D](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/core/KerasSpatialDropout.java)
 * <i class="fa fa-check-square-o"></i> [SpatialDropout2D](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/core/KerasSpatialDropout.java)
 * <i class="fa fa-check-square-o"></i> [SpatialDropout3D](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/core/KerasSpatialDropout.java)

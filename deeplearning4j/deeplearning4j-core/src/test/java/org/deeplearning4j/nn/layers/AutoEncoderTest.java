@@ -58,7 +58,7 @@ public class AutoEncoderTest extends BaseDL4JTest {
                 .addLayer("out2",new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(in2Size).build(),"L4")
                 .setOutputs("out1","out2")
                 .setInputTypes(InputType.feedForward(in1Size), InputType.feedForward(in2Size))
-                .pretrain(true).backprop(true)
+                .pretrain(true)
                 .build();
 
         ComputationGraph net = new ComputationGraph(conf);

@@ -52,8 +52,8 @@ public class MergeAddOp extends BaseDynamicTransformOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "add_n";
+    public String[] tensorflowNames(){
+        return new String[]{"add_n", "AccumulateNV2"};
     }
 
     @Override

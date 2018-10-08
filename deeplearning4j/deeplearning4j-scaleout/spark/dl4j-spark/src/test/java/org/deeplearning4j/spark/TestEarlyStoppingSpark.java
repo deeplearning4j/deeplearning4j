@@ -64,7 +64,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -117,7 +117,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY)
                                         .lossFunction(LossFunctions.LossFunction.MSE).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -153,7 +153,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                         .updater(new Sgd(1e-6)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -196,7 +196,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                         .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -229,7 +229,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(1));
 

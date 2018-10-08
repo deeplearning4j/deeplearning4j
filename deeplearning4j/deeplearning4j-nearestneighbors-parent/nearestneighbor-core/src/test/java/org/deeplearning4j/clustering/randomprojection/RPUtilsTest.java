@@ -32,7 +32,8 @@ public class RPUtilsTest {
         INDArray distances = RPUtils.computeDistanceMulti("euclidean",x,y,result);
         INDArray scalarResult = Nd4j.scalar(1.0);
         for(int i = 0; i < result.length(); i++) {
-            assertEquals(RPUtils.computeDistance("euclidean",x,y.slice(i),scalarResult),distances.getDouble(i),1e-3);
+            double dist = RPUtils.computeDistance("euclidean",x,y.slice(i),scalarResult);
+            assertEquals(dist,distances.getDouble(i),1e-3);
         }
     }
 

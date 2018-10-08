@@ -25,7 +25,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, 1) {
+        CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
@@ -34,7 +34,7 @@ namespace nd4j {
                 return ND4J_STATUS_OK;
             }
 
-            auto axis = INT_ARG(0);
+            auto axis = block.numI() > 0 ? INT_ARG(0) : static_cast<int>(INPUT_VARIABLE(1)->getScalar(0));
 
             if (axis < 0)
                 axis += input->rankOf() + 1;
@@ -57,6 +57,7 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+
         DECLARE_SHAPE_FN(expand_dims) {
             auto inShape = inputShape->at(0);
 
@@ -82,7 +83,7 @@ namespace nd4j {
             auto x_rank = shape::rank(inShape);
             char order = shape::order(inShape);
 
-            auto axis = INT_ARG(0);
+            auto axis = block.numI() > 0 ? INT_ARG(0) : static_cast<int>(INPUT_VARIABLE(1)->getScalar(0));
 
             if (axis < 0)
                 axis += x_rank + 1;

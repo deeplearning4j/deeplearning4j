@@ -52,7 +52,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         for (boolean hasBias : new boolean[]{true, false}) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                     .layer(0, new EmbeddingLayer.Builder().hasBias(hasBias).nIn(10).nOut(5).build())
-                    .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).build()).pretrain(false).backprop(true)
+                    .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).activation(Activation.SOFTMAX).build())
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -85,7 +85,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                     .layer(new EmbeddingSequenceLayer.Builder().hasBias(hasBias)
                             .inputLength(inputLength).nIn(nIn).nOut(embeddingDim).build())
-                    .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nout).build()).pretrain(false).backprop(true)
+                    .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nout).activation(Activation.SOFTMAX).build())
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -117,7 +117,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                 .layer(new EmbeddingSequenceLayer.Builder().inputLength(inputLength)
                         .hasBias(true).nIn(nClassesIn).nOut(embeddingDim).build())
-                .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).build()).pretrain(false).backprop(true)
+                .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).activation(Activation.SOFTMAX).build())
                 .build();
 
 
@@ -136,7 +136,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
 
         INDArray output = net.output(inEmbedding);
 
-        assert Arrays.equals(new long[]{batchSize, nOut, inputLength}, output.shape());
+        assertArrayEquals(new long[]{batchSize, nOut, inputLength}, output.shape());
     }
 
     @Test
@@ -148,11 +148,11 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                 .layer(new EmbeddingSequenceLayer.Builder().inputLength(1)
                         .hasBias(true).nIn(nClassesIn).nOut(embeddingDim).build())
-                .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).build()).pretrain(false).backprop(true)
+                .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).activation(Activation.SOFTMAX).build())
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                 .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build())
-                .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).build()).pretrain(false).backprop(true)
+                .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
                 .build();
 
@@ -196,11 +196,11 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                 .layer(0, new EmbeddingLayer.Builder().hasBias(true).nIn(nClassesIn).nOut(5).build())
-                .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).build()).pretrain(false).backprop(true)
+                .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).activation(Activation.SOFTMAX).build())
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                 .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build())
-                .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).build()).pretrain(false).backprop(true)
+                .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).activation(Activation.SOFTMAX).build())
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -241,13 +241,13 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 .layer(0, new EmbeddingLayer.Builder().hasBias(true).nIn(nClassesIn).nOut(5).build()).layer(1,
                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(4)
                                 .activation(Activation.SOFTMAX).build())
-                .pretrain(false).backprop(true).build();
+                .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH)
                 .weightInit(WeightInit.XAVIER).list()
                 .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build()).layer(1,
                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(4)
                                 .activation(Activation.SOFTMAX).build())
-                .pretrain(false).backprop(true).build();
+                .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
@@ -302,11 +302,11 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                 .layer(new EmbeddingSequenceLayer.Builder().inputLength(inputLength)
                         .hasBias(true).nIn(nClassesIn).nOut(embeddingDim).build())
-                .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).build()).pretrain(false).backprop(true)
+                .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).activation(Activation.SOFTMAX).build())
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                 .layer(new DenseLayer.Builder().nIn(nClassesIn).nOut(embeddingDim).build())
-                .layer(new OutputLayer.Builder().nIn(embeddingDim).nOut(nOut).build()).pretrain(false).backprop(true)
+                .layer(new OutputLayer.Builder().nIn(embeddingDim).nOut(nOut).activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
                 .build();
 
@@ -363,7 +363,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
                         .activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
-                .inputPreProcessor(1, new FeedForwardToRnnPreProcessor()).pretrain(false).backprop(true)
+                .inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH)
                 .weightInit(WeightInit.XAVIER).list()
@@ -372,7 +372,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
                         .activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
-                .inputPreProcessor(1, new FeedForwardToRnnPreProcessor()).pretrain(false).backprop(true)
+                .inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

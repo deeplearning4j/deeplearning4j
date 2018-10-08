@@ -32,8 +32,8 @@ public class MatrixSetDiag extends DynamicCustomOp {
     public MatrixSetDiag(){ }
 
     @Override
-    public String tensorflowName() {
-        return "MatrixSetDiag";
+    public String[] tensorflowNames() {
+        return new String[]{"MatrixSetDiag", "BatchMatrixSetDiag"};
     }
 
     @Override

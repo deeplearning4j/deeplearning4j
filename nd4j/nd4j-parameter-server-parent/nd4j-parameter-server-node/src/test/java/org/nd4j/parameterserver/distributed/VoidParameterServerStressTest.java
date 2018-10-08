@@ -58,6 +58,8 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Ignore
+@Deprecated
 public class VoidParameterServerStressTest {
     private static final int NUM_WORDS = 100000;
 

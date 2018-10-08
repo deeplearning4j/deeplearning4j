@@ -33,6 +33,7 @@ import java.util.*;
 
 /**
  * RandomMultiDataSetIterator: Generates random values (or zeros, ones, integers, etc) according to some distribution.<br>
+ * The type of values produced can be specified by the {@link Values} enumeration.<br>
  * Note: This is typically used for testing, debugging and benchmarking purposes.
  *
  * @author Alex Black
@@ -50,6 +51,11 @@ public class RandomMultiDataSetIterator implements MultiDataSetIterator {
 
     private int position;
 
+    /**
+     * @param numMiniBatches Number of minibatches per epoch
+     * @param features       Each triple in the list specifies the shape, array order and type of values for the features arrays
+     * @param labels         Each triple in the list specifies the shape, array order and type of values for the labels arrays
+     */
     public RandomMultiDataSetIterator(int numMiniBatches, @NonNull List<Triple<long[], Character, Values>> features, @NonNull List<Triple<long[], Character, Values>> labels){
         Preconditions.checkArgument(numMiniBatches > 0, "Number of minibatches must be positive: got %s", numMiniBatches);
         Preconditions.checkArgument(features.size() > 0, "No features defined");

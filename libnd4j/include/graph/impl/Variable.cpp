@@ -304,6 +304,29 @@ namespace nd4j {
             _index = idx;
         }
 
+        template <typename T>
+        flatbuffers::Offset<FlatVariable> Variable<T>::asFlatVariable(flatbuffers::FlatBufferBuilder &builder) {
+            if (this->hasNDArray()) {
+                auto array = this->getNDArray();
+                auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
+                auto fBuffer = builder.CreateVector(array->asByteVector());
+
+                // packing array
+                auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DataType::DataType_FLOAT);
+
+                // packing id/index of this var
+                auto fVid = CreateIntPair(builder, this->_id, this->_index);
+
+                // name is still optional
+                flatbuffers::Offset<flatbuffers::String> stringId = 0;
+                if (!this->_name.empty())
+                    stringId = builder.CreateString(this->_name);
+
+                // returning array
+                return CreateFlatVariable(builder, fVid, stringId, 0, fArray);
+            }
+        }
+
         template class ND4J_EXPORT Variable<float>;
         template class ND4J_EXPORT Variable<float16>;
         template class ND4J_EXPORT Variable<double>;

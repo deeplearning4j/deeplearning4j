@@ -208,7 +208,7 @@ public class YOLO2 extends ZooModel {
                                 .boundingBoxPriors(priors)
                                 .build(),
                         "convolution2d_23")
-                .setOutputs("outputs").backprop(true).pretrain(false);
+                .setOutputs("outputs");
 
         return graphBuilder.build();
     }

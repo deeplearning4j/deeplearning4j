@@ -20,6 +20,10 @@ import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.BaseDatasetIterator;
 
+/**
+ * IrisDataSetIterator: An iterator for the well-known Iris dataset. 4 features, 3 label classes<br>
+ * <a href="https://archive.ics.uci.edu/ml/datasets/Iris">https://archive.ics.uci.edu/ml/datasets/Iris</a>
+ */
 public class IrisDataSetIterator extends BaseDatasetIterator {
 
     /**
@@ -28,27 +32,18 @@ public class IrisDataSetIterator extends BaseDatasetIterator {
     private static final long serialVersionUID = -2022454995728680368L;
 
     /**
-     * IrisDataSetIterator handles
-     * traversing through the Iris Data Set.
+     * Create an iris iterator for full batch training - i.e., all 150 examples are included per minibatch
+     */
+    public IrisDataSetIterator(){
+        this(150, 150);
+    }
+
+    /**
+     * IrisDataSetIterator handles traversing through the Iris Data Set.
      * @see <a href="https://archive.ics.uci.edu/ml/datasets/Iris">https://archive.ics.uci.edu/ml/datasets/Iris</a>
-     * 
-     * 
-     * Typical usage of an iterator is akin to:
-     * 
-     * DataSetIterator iter = ..;
-     * 
-     * while(iter.hasNext()) {
-     *     DataSet d = iter.next();
-     *     //iterate network...
-     * }
-     * 
-     * 
-     * For custom numbers of examples/batch sizes you can call:
-     * 
-     * iter.next(num)
-     * 
-     * where num is the number of examples to fetch
-     * 
+     *
+     * @param batch Batch size
+     * @param numExamples Total number of examples
      */
     public IrisDataSetIterator(int batch, int numExamples) {
         super(batch, numExamples, new IrisDataFetcher());

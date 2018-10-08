@@ -29,12 +29,6 @@
     <name>DataVec Camel Component</name>
     <url>http://deeplearning4j.org</url>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <camel.version>2.16.3</camel.version>
-    </properties>
-
     <dependencies>
 
         <dependency>

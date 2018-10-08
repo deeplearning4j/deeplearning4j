@@ -247,7 +247,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                                         LossFunctions.LossFunction.MCXENT).nIn(100).nOut(3)
                                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                                         .build())
-                        .backprop(true).build();
+                        .build();
 
 
         return conf;

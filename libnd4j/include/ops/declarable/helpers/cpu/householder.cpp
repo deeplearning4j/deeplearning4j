@@ -94,9 +94,9 @@ void Householder<T>::evalHHmatrixData(const NDArray<T>& x, NDArray<T>& tail, T& 
 		coeff = -u0 / normX;				
 
 		if(x.isRowVector())
-			tail.assign(x({{}, {1, -1}}) / u0);		
+			tail.assign(x({0,0, 1,-1}) / u0);		
 		else
-			tail.assign(x({{1, -1}, {}}) / u0);		
+			tail.assign(x({1,-1, 0,0,}) / u0);		
 	}		
 }
 

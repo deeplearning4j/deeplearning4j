@@ -81,10 +81,10 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testScalarOps() throws Exception {
         INDArray n = Nd4j.create(Nd4j.ones(27).data(), new long[] {3, 3, 3});
         assertEquals(27d, n.length(), 1e-1);
-        n.checkDimensions(n.addi(Nd4j.scalar(1d)));
-        n.checkDimensions(n.subi(Nd4j.scalar(1.0d)));
-        n.checkDimensions(n.muli(Nd4j.scalar(1.0d)));
-        n.checkDimensions(n.divi(Nd4j.scalar(1.0d)));
+        n.addi(Nd4j.scalar(1d));
+        n.subi(Nd4j.scalar(1.0d));
+        n.muli(Nd4j.scalar(1.0d));
+        n.divi(Nd4j.scalar(1.0d));
 
         n = Nd4j.create(Nd4j.ones(27).data(), new long[] {3, 3, 3});
         assertEquals(27, n.sumNumber().doubleValue(), 1e-1);
@@ -578,15 +578,15 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testInplaceTranspose() {
-        INDArray test = Nd4j.rand(34, 484);
+        INDArray test = Nd4j.rand(3, 4);
+        INDArray orig = test.dup();
         INDArray transposei = test.transposei();
 
-        for (int i = 0; i < test.rows(); i++) {
-            for (int j = 0; j < test.columns(); j++) {
-                assertEquals(test.getDouble(i, j), transposei.getDouble(j, i), 1e-1);
+        for (int i = 0; i < orig.rows(); i++) {
+            for (int j = 0; j < orig.columns(); j++) {
+                assertEquals(orig.getDouble(i, j), transposei.getDouble(j, i), 1e-1);
             }
         }
-
     }
 
 
@@ -842,7 +842,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         twos.assign(rand);
         assertEquals(rand, twos);
 
-        INDArray tensor = Nd4j.rand((long) 3, 3, 3, 3);
+        INDArray tensor = Nd4j.rand(new long[]{3, 3, 3});
         INDArray ones = Nd4j.ones(3, 3, 3);
         assertTrue(Arrays.equals(tensor.shape(), ones.shape()));
         ones.assign(tensor);
@@ -1129,59 +1129,6 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
             assertEquals(dupany.length(), dupany.data().length());
         }
     }
-
-    @Test
-    public void testTensorStats() {
-        List<Pair<INDArray, String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(9, 13, 123);
-
-        for (Pair<INDArray, String> pair : testInputs) {
-            INDArray arr = pair.getFirst();
-            String msg = pair.getSecond();
-
-            val nTAD0 = arr.tensorssAlongDimension(0);
-            val nTAD1 = arr.tensorssAlongDimension(1);
-
-            OpExecutionerUtil.Tensor1DStats t0 = OpExecutionerUtil.get1DTensorStats(arr, 0);
-            OpExecutionerUtil.Tensor1DStats t1 = OpExecutionerUtil.get1DTensorStats(arr, 1);
-
-            assertEquals(nTAD0, t0.getNumTensors());
-            assertEquals(nTAD1, t1.getNumTensors());
-
-            INDArray tFirst0 = arr.tensorAlongDimension(0, 0);
-            INDArray tSecond0 = arr.tensorAlongDimension(1, 0);
-
-            INDArray tFirst1 = arr.tensorAlongDimension(0, 1);
-            INDArray tSecond1 = arr.tensorAlongDimension(1, 1);
-
-            assertEquals(tFirst0.offset(), t0.getFirstTensorOffset());
-            assertEquals(tFirst1.offset(), t1.getFirstTensorOffset());
-            long separation0 = tSecond0.offset() - tFirst0.offset();
-            long separation1 = tSecond1.offset() - tFirst1.offset();
-            assertEquals(separation0, t0.getTensorStartSeparation());
-            assertEquals(separation1, t1.getTensorStartSeparation());
-
-            for (int i = 0; i < nTAD0; i++) {
-                INDArray tad0 = arr.tensorAlongDimension(i, 0);
-                assertEquals(tad0.length(), t0.getTensorLength());
-                assertEquals(tad0.elementWiseStride(), t0.getElementWiseStride());
-
-                long offset = tad0.offset();
-                long calcOffset = t0.getFirstTensorOffset() + i * t0.getTensorStartSeparation();
-                assertEquals(offset, calcOffset);
-            }
-
-            for (int i = 0; i < nTAD1; i++) {
-                INDArray tad1 = arr.tensorAlongDimension(i, 1);
-                assertEquals(tad1.length(), t1.getTensorLength());
-                assertEquals(tad1.elementWiseStride(), t1.getElementWiseStride());
-
-                long offset = tad1.offset();
-                long calcOffset = t1.getFirstTensorOffset() + i * t1.getTensorStartSeparation();
-                assertEquals(offset, calcOffset);
-            }
-        }
-    }
-
 
 
     @Override

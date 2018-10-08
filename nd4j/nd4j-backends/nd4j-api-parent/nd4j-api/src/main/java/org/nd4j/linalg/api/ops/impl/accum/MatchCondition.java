@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Absolute sum the components
+ * This operation returns number of elements matching specified condition
  *
  * @author raver119@gmail.com
  */
@@ -63,16 +63,6 @@ public class MatchCondition extends BaseAccumulation {
 
         this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
-
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("compare",compare);
-        ret.put("eps",eps);
-        ret.put("mode",mode);
-        return ret;
-    }
-
 
     @Override
     public int opNum() {

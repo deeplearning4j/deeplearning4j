@@ -20,14 +20,19 @@ import lombok.NonNull;
 import org.nd4j.linalg.primitives.Pair;
 
 /**
- * float[] wrapper for DataSetIterator impementation.
  *
- * This iterator creates DataSets out of externally-originated pairs of floats.
+ * A simple utility iterator for creating a DataSetIterator from an {@code Iterable<Pair<float[], float[]>>}
+ * First value in pair is the features vector, second value in pair is the labels.
+ * Supports generating 2d features/labels only
  *
  * @author raver119@gmail.com
  */
 public class FloatsDataSetIterator extends AbstractDataSetIterator<float[]> {
 
+    /**
+     * @param iterable  Iterable to source data from
+     * @param batchSize Batch size for generated DataSet objects
+     */
     public FloatsDataSetIterator(@NonNull Iterable<Pair<float[], float[]>> iterable, int batchSize) {
         super(iterable, batchSize);
     }

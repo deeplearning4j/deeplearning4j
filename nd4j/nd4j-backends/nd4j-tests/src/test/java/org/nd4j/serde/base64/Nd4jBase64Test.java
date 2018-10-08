@@ -45,4 +45,13 @@ public class Nd4jBase64Test {
         INDArray from = Nd4jBase64.fromBase64(base64);
         assertEquals(arr, from);
     }
+
+    @Test
+    public void testBase64Npy() throws Exception {
+        INDArray arr = Nd4j.linspace(1, 4, 4);
+        String base64Npy = Nd4jBase64.base64StringNumpy(arr);
+        INDArray fromBase64 = Nd4jBase64.fromNpyBase64(base64Npy);
+        assertEquals(arr,fromBase64);
+    }
+
 }

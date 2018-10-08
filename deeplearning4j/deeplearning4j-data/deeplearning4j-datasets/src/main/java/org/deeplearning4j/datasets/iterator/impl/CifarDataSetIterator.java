@@ -24,10 +24,10 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.util.List;
 
 /**
- * CifarDataSetIterator is an iterator for Cifar10 dataset explicitly
+ * CifarDataSetIterator is an iterator for Cifar10 dataset - 10 classes, with 32x32 images with 3 channels (RGB)
  *
- * There is a special preProcessor used to normalize the dataset based on Sergey Zagoruyko example
- * https://github.com/szagoruyko/cifar.torch
+ * Also supports a special preProcessor used to normalize the dataset based on Sergey Zagoruyko example
+ * <a href="https://github.com/szagoruyko/cifar.torch">https://github.com/szagoruyko/cifar.torch</a>
  */
 
 public class CifarDataSetIterator extends RecordReaderDataSetIterator {

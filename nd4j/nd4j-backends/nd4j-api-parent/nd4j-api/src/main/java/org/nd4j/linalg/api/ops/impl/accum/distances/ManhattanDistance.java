@@ -108,12 +108,7 @@ public class ManhattanDistance extends BaseAccumulation {
         SDVariable difference = larg().sub(rarg());
         SDVariable gradBroadcastable;
         int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
-        if(!(dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE) ){
-            //1x1 output case
-            gradBroadcastable = i_v1.get(0);
-        } else {
-            gradBroadcastable = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-        }
+        gradBroadcastable = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
 
         SDVariable gradX = sameDiff.sign(difference).mul(gradBroadcastable);
         SDVariable gradY = f().neg(gradX);

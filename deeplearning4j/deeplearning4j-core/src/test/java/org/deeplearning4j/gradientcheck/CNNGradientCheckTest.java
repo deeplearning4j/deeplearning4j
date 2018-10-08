@@ -90,7 +90,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             .weightInit(WeightInit.XAVIER).seed(12345L).list()
                             .layer(0, new ConvolutionLayer.Builder(1, 1).nOut(6).activation(afn).build())
                             .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).build())
-                            .setInputType(InputType.convolutionalFlat(1, 4, 1)).pretrain(false).backprop(true);
+                            .setInputType(InputType.convolutionalFlat(1, 4, 1));
 
                     MultiLayerConfiguration conf = builder.build();
 
@@ -178,7 +178,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                         .updater(new NoOp()).build())
                                 .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3)
                                         .weightInit(WeightInit.XAVIER).updater(new NoOp()).build())
-                                .pretrain(false).backprop(true)
+
                                 .setInputType(InputType.convolutionalFlat(1, 4, 1));
 
                         MultiLayerConfiguration conf = builder.build();
@@ -882,40 +882,6 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testDeconvolution2DUnsupportedSameModeLayer() {
-        /*
-         * When setting border mode same on layer directly, we can catch
-         * it in the builder
-         */
-        Deconvolution2D.Builder deconv = new Deconvolution2D.Builder();
-        deconv.convolutionMode(Same);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testDeconvolution2DUnsupportedSameModeNetwork() {
-        /*
-         * When convolution mode Same is set for the network and a deconvolution layer is added
-         * then only layer activation will fail. Suboptimal, but I don't think we want special
-         * logic for NNC in this case.
-         */
-        NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
-                .updater(new NoOp())
-                .activation(Activation.SIGMOID)
-                .convolutionMode(Same)
-                .list()
-                .layer(new Deconvolution2D.Builder().name("deconvolution")
-                        .nIn(3).nOut(2).build());
-
-        MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                .activation(Activation.SOFTMAX).nOut(2).build())
-                .setInputType(InputType.convolutionalFlat(7, 7, 3)).build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-        net.getLayer(0).activate(Nd4j.rand(10, 7 * 7 * 3), false, LayerWorkspaceMgr.noWorkspaces());
-    }
-
     @Test
     public void testDeconvolution2D() {
         int nOut = 2;
@@ -925,7 +891,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int[] strides = {1, 1, 1, 1, 2, 2, 2, 2};
         int[] dilation = {1, 2, 2, 1, 1, 1, 2, 2};
         Activation[] activations = new Activation[]{Activation.SIGMOID, Activation.TANH, Activation.TANH, Activation.TANH, Activation.TANH, Activation.SIGMOID, Activation.SIGMOID, Activation.SIGMOID};
-        ConvolutionMode[] cModes = new ConvolutionMode[]{Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate};
+        ConvolutionMode[] cModes = new ConvolutionMode[]{Same, Same, Same, Same, Truncate, Truncate, Truncate, Truncate};
         int width = 7;
         int height = 7;
         int inputDepth = 3;

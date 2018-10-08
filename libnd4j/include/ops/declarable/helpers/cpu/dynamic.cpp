@@ -24,7 +24,7 @@ namespace nd4j {
         namespace helpers {
 
             template <typename T>
-            void dynamicPartitionFunctor(NDArray<T>* input, NDArray<T>* indices, std::vector<NDArray<T>*>& outputList) {
+            void dynamicPartitionFunctor(NDArray<T> const* input, NDArray<T> const* indices, std::vector<NDArray<T>*>& outputList) {
                 std::vector<std::pair<NDArray<T> *, int>> outputs(outputList.size());
                 int sourceDimsLen = input->rankOf() - indices->rankOf();
                 if (sourceDimsLen) {
@@ -67,7 +67,7 @@ namespace nd4j {
                     }
             }
             template <typename T>
-            int dynamicStitchFunctor(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& indices, NDArray<T>* output){
+            int dynamicStitchFunctor(std::vector<NDArray<T>*> const& inputs, std::vector<NDArray<T>*> const& indices, NDArray<T>* output){
 
                 int numOfData = inputs.size();
 
@@ -125,13 +125,78 @@ namespace nd4j {
                 return ND4J_STATUS_OK;
             }
 
-            template void dynamicPartitionFunctor(NDArray<float>* input, NDArray<float>* indices, std::vector<NDArray<float>*>& outputList);
-            template void dynamicPartitionFunctor(NDArray<float16>* input, NDArray<float16>* indices, std::vector<NDArray<float16>*>& outputList);
-            template void dynamicPartitionFunctor(NDArray<double>* input, NDArray<double>* indices, std::vector<NDArray<double>*>& outputList);
+            template void dynamicPartitionFunctor(NDArray<float> const* input, NDArray<float> const* indices, std::vector<NDArray<float>*>& outputList);
+            template void dynamicPartitionFunctor(NDArray<float16> const* input, NDArray<float16> const* indices, std::vector<NDArray<float16>*>& outputList);
+            template void dynamicPartitionFunctor(NDArray<double> const* input, NDArray<double> const* indices, std::vector<NDArray<double>*>& outputList);
 
-            template int dynamicStitchFunctor(std::vector<NDArray<float>*>& inputs, std::vector<NDArray<float>*>& indices, NDArray<float>* output);
-            template int dynamicStitchFunctor(std::vector<NDArray<float16>*>& inputs, std::vector<NDArray<float16>*>& indices, NDArray<float16>* output);
-            template int dynamicStitchFunctor(std::vector<NDArray<double>*>& inputs, std::vector<NDArray<double>*>& indices, NDArray<double>* output);
+            template int dynamicStitchFunctor(std::vector<NDArray<float>*> const& inputs, std::vector<NDArray<float>*> const& indices, NDArray<float>* output);
+            template int dynamicStitchFunctor(std::vector<NDArray<float16>*> const& inputs, std::vector<NDArray<float16>*> const& indices, NDArray<float16>* output);
+            template int dynamicStitchFunctor(std::vector<NDArray<double>*> const& inputs, std::vector<NDArray<double>*> const& indices, NDArray<double>* output);
+
+            template <typename T>
+            void dynamicPartitionFunctorBP(NDArray<T>const* input, NDArray<T>const* indices, std::vector<NDArray<T>*> const& inputGradientList, std::vector<NDArray<T>*>& outputList) {
+                std::vector<std::pair<NDArray<T> *, int>> outputs(inputGradientList.size());
+
+                int sourceDimsLen = input->rankOf() - indices->rankOf();
+                if (sourceDimsLen) { // multidimensional case
+                    std::vector<int> sourceDims(sourceDimsLen);
+
+//#pragma omp parallel for if(sourceDims.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                    for (int i = sourceDimsLen; i > 0; i--)
+                        sourceDims[sourceDimsLen - i] = input->rankOf() - i;
+
+                    std::unique_ptr<ResultSet<T>> listOfTensors(outputList[0]->allTensorsAlongDimension(sourceDims));
+
+//#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                    for (unsigned int i = 0; i < inputGradientList.size(); i++) {
+                        outputs[i].first = inputGradientList[i];
+                        if (outputs[i].first->rankOf() < 1) continue; // skip empty gradient outs
+                        std::vector<int> outDims(outputs[i].first->rankOf() - 1);
+
+//#pragma omp parallel for if(outputs[i].first->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                        for (int k = 1; k < outputs[i].first->rankOf(); k++)
+                            outDims[k - 1] = k;
+
+                        std::unique_ptr<ResultSet<T>> listOutForCurrent(
+                                outputs[i].first->allTensorsAlongDimension(outDims));
+
+                        outputs[i].second = 0;
+
+//#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                        for (int e = 0; e < indices->lengthOf(); ++e)
+                            if ((*indices)(e) == T(i))
+                                listOfTensors->at(e)->assign(listOutForCurrent->at(outputs[i].second++));
+                    }
+                }
+                else { // one-dimensional case
+                    NDArray<T>* output = outputList[0];
+#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                    for (unsigned int i = 0; i < inputGradientList.size(); i++) {
+                        outputs[i].first = inputGradientList[i];
+                        outputs[i].second = 0;
+                        for (int e = 0; e < indices->lengthOf(); ++e)
+                            if ((*indices)(e) == T(i))
+                                (*output)(e) = outputs[i].first->getScalar(outputs[i].second++);
+                    }
+                }
+
+                outputList[1]->assign(indices);
+            }
+
+            template <typename T>
+            int dynamicStitchFunctorBP(std::vector<NDArray<T>*> const& inputs, std::vector<NDArray<T>*> const& indices, NDArray<T> const* gradInput, std::vector<NDArray<T>*>& outputList){
+
+                return ND4J_STATUS_OK;
+            }
+
+            template void dynamicPartitionFunctorBP(NDArray<float> const* input, NDArray<float> const* indices, std::vector<NDArray<float>*> const& inputGradientList, std::vector<NDArray<float>*>& outputList);
+            template void dynamicPartitionFunctorBP(NDArray<float16> const* input, NDArray<float16> const* indices, std::vector<NDArray<float16>*> const& inputGradientList, std::vector<NDArray<float16>*>& outputList);
+            template void dynamicPartitionFunctorBP(NDArray<double> const* input, NDArray<double> const* indices, std::vector<NDArray<double>*> const& inputGradientList, std::vector<NDArray<double>*>& outputList);
+
+            template int dynamicStitchFunctorBP(std::vector<NDArray<float>*> const& inputs, std::vector<NDArray<float>*> const& indices, NDArray<float> const* gradInput, std::vector<NDArray<float>*>& outputList);
+            template int dynamicStitchFunctorBP(std::vector<NDArray<float16>*> const& inputs, std::vector<NDArray<float16>*> const& indices, NDArray<float16> const* gradInput, std::vector<NDArray<float16>*>& outputList);
+            template int dynamicStitchFunctorBP(std::vector<NDArray<double>*> const& inputs, std::vector<NDArray<double>*> const& indices, NDArray<double> const* gradInput, std::vector<NDArray<double>*>& outputList);
+
         }
     }
 }

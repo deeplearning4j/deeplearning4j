@@ -31,9 +31,9 @@ import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
+import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
-import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
@@ -69,7 +69,6 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @Slf4j
 public class TestDL4JLocalExecution {
@@ -222,7 +221,7 @@ public class TestDL4JLocalExecution {
                                                         .activation(new DiscreteParameterSpace<>(Activation.RELU,
                                                                         Activation.TANH))
                                                         .build(),
-                                        new IntegerParameterSpace(1, 2), true) //1-2 identical layers (except nIn)
+                                        new IntegerParameterSpace(1, 2)) //1-2 identical layers (except nIn)
                         .addLayer(new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .numEpochs(3).pretrain(false).backprop(true).build();
@@ -278,7 +277,7 @@ public class TestDL4JLocalExecution {
                                                         .activation(new DiscreteParameterSpace<>(Activation.RELU,
                                                                         Activation.TANH))
                                                         .build(),
-                                        new IntegerParameterSpace(1, 2), true) //1-2 identical layers (except nIn)
+                                        new IntegerParameterSpace(1, 2)) //1-2 identical layers (except nIn)
                         .addLayer(new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
@@ -330,7 +329,7 @@ public class TestDL4JLocalExecution {
                                 .activation(new DiscreteParameterSpace<>(Activation.RELU,
                                         Activation.TANH))
                                 .build(),
-                        new IntegerParameterSpace(1, 2), true) //1-2 identical layers (except nIn)
+                        new IntegerParameterSpace(1, 2)) //1-2 identical layers (except nIn)
                 .addLayer(new OCNNLayerSpace.Builder().nu(new ContinuousParameterSpace(0.0001, 0.1))
                         .numHidden(new DiscreteParameterSpace<Integer>(784 / 2,784 / 4))
                         .activation(Activation.HARDSIGMOID)

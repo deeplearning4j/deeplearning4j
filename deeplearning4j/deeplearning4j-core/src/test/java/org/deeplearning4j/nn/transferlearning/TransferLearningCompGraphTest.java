@@ -22,15 +22,18 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
+import org.deeplearning4j.nn.conf.distribution.ConstantDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
@@ -40,6 +43,7 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -294,7 +298,7 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
                                                         .activation(Activation.SOFTMAX)
                                                         .build(),
                                                 "layer5")
-                                        .setOutputs("layer6").backprop(true).pretrain(false).build());
+                                        .setOutputs("layer6").build());
         modelToFineTune.init();
 
         //this will override the learning configuration set in the model
@@ -372,7 +376,7 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
                                                 .activation(Activation.SOFTMAX)
                                                 .build(),
                                         "layer7")
-                                .setOutputs("layer8").backprop(true).pretrain(false).build());
+                                .setOutputs("layer8").build());
         modelExpectedArch.init();
         modelExpectedArch.getVertex("layer0").setLayerAsFrozen();
         modelExpectedArch.getVertex("layer1").setLayerAsFrozen();
@@ -478,5 +482,92 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
         assertNull(l.getWeightNoise());
         assertNull(l.getConstraints());
         assertEquals(0.0, l.getL2(), 0.0);
+    }
+
+
+    @Test
+    public void testTransferLearningSubsequent() {
+        String inputName = "in";
+        String outputName = "out";
+
+        final String firstConv = "firstConv";
+        final String secondConv = "secondConv";
+        final INDArray input = Nd4j.create(6,6,6,6);
+        final ComputationGraph graph = new ComputationGraph(new NeuralNetConfiguration.Builder()
+                .weightInit(new ConstantDistribution(666))
+                .graphBuilder()
+                .addInputs(inputName)
+                .setOutputs(outputName)
+                .setInputTypes(InputType.inferInputTypes(input))
+                .addLayer(firstConv, new Convolution2D.Builder(3, 3)
+                        .nOut(10)
+                        .build(), inputName)
+                .addLayer(secondConv, new Convolution2D.Builder(1, 1)
+                        .nOut(3)
+                        .build(), firstConv)
+                .addLayer(outputName, new OutputLayer.Builder()
+                        .nOut(2)
+                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .build(), secondConv)
+                .build());
+        graph.init();
+
+        final ComputationGraph newGraph = new TransferLearning
+                .GraphBuilder(graph)
+                .nOutReplace(firstConv, 7, new ConstantDistribution(333))
+                .nOutReplace(secondConv, 3, new ConstantDistribution(111))
+                .removeVertexAndConnections(outputName)
+                .addLayer(outputName, new OutputLayer.Builder()
+                        .nIn(48).nOut(2)
+                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .build(), new CnnToFeedForwardPreProcessor(4,4,3), secondConv)
+                .setOutputs(outputName)
+                .build();
+        newGraph.init();
+
+        assertEquals("Incorrect # inputs", 7, newGraph.layerInputSize(secondConv));
+
+        newGraph.outputSingle(input);
+    }
+
+
+
+    @Test
+    public void testChangeNOutNIn() {
+        final String inputName = "input";
+        final String changeNoutName = "changeNout";
+        final String poolName = "pool";
+        final String afterPoolName = "afterPool";
+        final String outputName = "output";
+        final INDArray input = Nd4j.create(new long[] {1, 2, 4, 4});
+        final ComputationGraph graph = new ComputationGraph(new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs(inputName)
+                .setOutputs(outputName)
+                .setInputTypes(InputType.inferInputTypes(input))
+                .addLayer(changeNoutName, new Convolution2D.Builder(1, 1)
+                        .nOut(10)
+                        .build(), inputName)
+                .addLayer(poolName, new SubsamplingLayer.Builder(1,1).build(), changeNoutName)
+                .addLayer(afterPoolName, new Convolution2D.Builder(1, 1)
+                        .nOut(7)
+                        .build(), poolName)
+                .addLayer(outputName, new OutputLayer.Builder()
+                        .activation(Activation.SOFTMAX)
+                        .nOut(2)
+                        .build(), afterPoolName)
+                .build());
+        graph.init();
+
+        final ComputationGraph newGraph = new TransferLearning.GraphBuilder(graph)
+                .nOutReplace(changeNoutName, 5, WeightInit.XAVIER)
+                .nInReplace(afterPoolName, 5, WeightInit.XAVIER)
+                .build();
+
+        newGraph.init();
+
+        assertEquals("Incorrect number of outputs!", 5 , newGraph.layerSize(changeNoutName));
+        assertEquals("Incorrect number of inputs!", 5, newGraph.layerInputSize(afterPoolName));
+        newGraph.output(input);
     }
 }

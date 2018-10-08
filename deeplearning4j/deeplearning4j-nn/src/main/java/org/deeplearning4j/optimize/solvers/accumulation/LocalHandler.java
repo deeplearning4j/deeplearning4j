@@ -40,7 +40,7 @@ public class LocalHandler implements MessageHandler {
     }
 
     @Override
-    public boolean broadcastUpdates(INDArray updates) {
+    public boolean broadcastUpdates(INDArray updates, int iterationNumber, int epochNumber) {
         // we just loop back data immediately
         accumulator.receiveUpdate(updates);
 

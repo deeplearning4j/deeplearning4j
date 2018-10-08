@@ -89,7 +89,7 @@ namespace ops {
         // tempProd has equal shape with epsilon
         if (epsilon->isScalar()) {
             auto backpropRoutine = LAMBDA_T(_x, epsilon, tempProd) {
-                return (*epsilon)(0) * ((*tempProd)(0) / _x);
+                return (*epsilon)(0.) * ((*tempProd)(0.) / _x);
             };
             input->applyLambda(backpropRoutine, output);  
         } 

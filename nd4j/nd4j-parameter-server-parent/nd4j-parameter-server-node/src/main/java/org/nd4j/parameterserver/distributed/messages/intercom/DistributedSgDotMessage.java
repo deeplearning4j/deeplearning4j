@@ -36,6 +36,7 @@ import java.util.Arrays;
  */
 @Data
 @Slf4j
+@Deprecated
 public class DistributedSgDotMessage extends BaseVoidMessage implements DistributedMessage {
     protected int[] rowsA;
     protected int[] rowsB;

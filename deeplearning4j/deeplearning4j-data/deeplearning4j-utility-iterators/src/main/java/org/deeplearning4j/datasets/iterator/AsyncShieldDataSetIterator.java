@@ -26,12 +26,18 @@ import java.util.List;
 
 /**
  * This wrapper takes your existing DataSetIterator implementation and prevents asynchronous prefetch
+ * when using methods such as {@code MultiLayerNetwork.fit(DataSetIterator)}
+ * This is mainly used for debugging purposes; generally an iterator that isn't safe to asynchronously prefetch from
+ * should simply return {@code asyncSupported() == false}
  *
  * @author raver119@gmail.com
  */
 public class AsyncShieldDataSetIterator implements DataSetIterator {
     private DataSetIterator backingIterator;
 
+    /**
+     * @param iterator Iterator to wrop, to disable asynchronous prefetching for
+     */
     public AsyncShieldDataSetIterator(@NonNull DataSetIterator iterator) {
         this.backingIterator = iterator;
     }

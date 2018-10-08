@@ -22,6 +22,11 @@
 #define LIBND4J_CONVOLUTIONS_H
 
 #include <NDArray.h>
+#include <graph/Context.h>
+
+#ifdef HAVE_MKLDNN
+#include <helpers/MKLDNNStream.h>
+#endif
 
 namespace nd4j {
     namespace ops {
@@ -61,6 +66,8 @@ namespace nd4j {
 
             // calculation of output height and width in 2D deconvolution procedure
             static void calcOutSizeDeconv2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode);
+            // calculation of output height and width in 3D deconvolution procedure
+            static void calcOutSizeDeconv3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int isSameMode);
 
             // evaluates sizes values and indexes using input and output arrays depending on data format
             static void getSizesAndIndexesConv2d(const bool isNCHW, const NDArray<T>& input, const NDArray<T>& output, int& bS, int& iC, int& iH, int& iW, int& oC, int& oH, int& oW, int& indIOioC, int& indIiH, int& indWiC, int& indWoC, int& indWkH, int& indOoH);
@@ -70,7 +77,9 @@ namespace nd4j {
             static void getSizesAndIndexesConv3d(const bool isNCDHW, const NDArray<T>& input, const NDArray<T>& output, int& bS, int& iC, int& iD, int& iH, int& iW, int& oC, int& oD, int& oH, int& oW, int& indIOioC, int& indIOioD, int& indWiC, int& indWoC, int& indWkD);
 
             static void conv2d(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs);
-
+#ifdef HAVE_MKLDNN
+            static void mkldnn_conv2d(MKLDNNStream<T> &stream, const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs);
+#endif
             static void conv2dBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const std::vector<int>& intArgs);
 
             static void depthwiseConv2d(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs);

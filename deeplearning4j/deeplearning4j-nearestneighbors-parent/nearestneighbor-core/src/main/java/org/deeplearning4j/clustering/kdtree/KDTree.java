@@ -28,7 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * KDTree based on: https://github.com/nicky-zs/kdtree-python/blob/master/kdtree.py
+ * KDTree based on: <a href="https://github.com/nicky-zs/kdtree-python/blob/master/kdtree.py">https://github.com/nicky-zs/kdtree-python/blob/master/kdtree.py</a>
  *
  * @author Adam Gibson
  */

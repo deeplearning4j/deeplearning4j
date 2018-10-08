@@ -63,7 +63,7 @@ public class TestListeners extends BaseSparkTest {
                                         LossFunctions.LossFunction.MCXENT).nIn(100).nOut(3)
                                                         .activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER)
                                                         .build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
 
 

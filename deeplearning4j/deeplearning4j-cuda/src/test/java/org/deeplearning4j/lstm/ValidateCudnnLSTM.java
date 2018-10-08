@@ -72,7 +72,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
                         .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         MultiLayerNetwork mln1 = new MultiLayerNetwork(conf.clone());
         mln1.init();
@@ -152,7 +152,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         MultiLayerNetwork mln1 = new MultiLayerNetwork(conf.clone());
         mln1.init();
@@ -236,7 +236,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                        .pretrain(false).backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                        .backpropType(BackpropType.TruncatedBPTT)
                         .tBPTTLength(tbpttLength).build();
 
         MultiLayerNetwork mln1 = new MultiLayerNetwork(conf.clone());
@@ -304,7 +304,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
                             .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
                     .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                             .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                    .pretrain(false).backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                    .backpropType(BackpropType.TruncatedBPTT)
                     .tBPTTLength(tbpttLength).build();
 
             MultiLayerNetwork mln1 = new MultiLayerNetwork(conf.clone());

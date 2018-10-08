@@ -105,8 +105,41 @@ namespace nd4j {
         * 0: epsilon
         */
         #if NOT_EXCLUDED(OP_batchnorm)
-        DECLARE_CUSTOM_OP(batchnorm, 5, 1, false, 1, 2);
+        DECLARE_CUSTOM_OP(batchnorm, 3, 1, false, 1, 2);
         #endif
+        #if NOT_EXCLUDED(OP_batchnorm)
+        DECLARE_CUSTOM_OP(batchnorm_new, 3, 1, false, 1, 2);
+        #endif
+
+        /**
+        * back prop in batch normalization
+        * 
+        * Expected arguments:
+        * input: input array (any number of dimensions)
+        * mean:
+        * variance:
+        * gamma: optional
+        * beta: optional
+        * dLdOut: next epsilon
+        * 
+        * Int args:
+        * 0: apply scale
+        * 1: apply offset 
+        * 
+        * T args:
+        * 0: epsilon
+        *
+        * output arrays:
+        * dL/dInput
+        * dL/dMean
+        * dL/dVariance
+        * dL/dGamma
+        * dL/dBeta
+        */
+        #if NOT_EXCLUDED(OP_batchnorm)
+        DECLARE_CUSTOM_OP(batchnorm_bp, 4, 3, false, 1, 2);
+        #endif
+
 
         /**
          * This operation updates parameters with provided gradients, wrt learning rate
@@ -133,7 +166,7 @@ namespace nd4j {
          * scale:  1D input array of scale factors, shape [iD]
          * offset: 1D input array of offsets (shifts), shape [iD]
          * mean: 1D input array of population mean used for inference, shape [iD], this array is required only if isTraining = false
-         * variance: 1D input array of population mean used for inference, shape [iD], this array is required only if isTraining = false         
+         * variance: 1D input array of population mean used for inference, shape [iD], this array is required only if isTraining = false
          * 
          * T input arguments:
          * 0: epsilon, it is optional argument, default value is 0.001, this is small number to be added to the variance of x

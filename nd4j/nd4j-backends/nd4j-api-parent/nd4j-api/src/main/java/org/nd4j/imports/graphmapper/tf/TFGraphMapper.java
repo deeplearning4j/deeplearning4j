@@ -395,7 +395,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     @Override
     public Map<String, NodeDef> variablesForGraph(GraphDef graphDef) {
         Map<String,NodeDef> ret = new LinkedHashMap<>();
-        for(NodeDef nodeDef : graphDef.getNodeList()) {
+        List<NodeDef> nodeList = graphDef.getNodeList();
+        for(NodeDef nodeDef : nodeList) {
             if(nodeDef.getName().endsWith("/read")) {
                 continue;
             }
@@ -587,7 +588,30 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         if (tfProperties == null)
             return;
 
-        for(val entry : tfProperties.entrySet()) {
+        //Can't execute in just any order: sometimes there are dependencies between attribute mappings
+        //For example, conv2d strides depend on data format -> need to map data format before mapping strides
+        //Solution: map nodes without adapters before nodes with adapters. This doesn't guarantee we'll always be
+        // mapping in the right order (for example, we might have adapter(x) depends on adapter(y)) but it should catch most cases
+        Map<String,PropertyMapping> map;
+        if(attributeAdapters == null || !attributeAdapters.containsKey(mappedTfName)) {
+            map = tfProperties;
+        } else {
+            map = new LinkedHashMap<>();
+            for (Map.Entry<String, PropertyMapping> e : tfProperties.entrySet()) {
+                if (!attributeAdapters.get(mappedTfName).containsKey(e.getKey())) {
+                    //No adapter for this attribute
+                    map.put(e.getKey(), e.getValue());
+                }
+            }
+            for (Map.Entry<String, PropertyMapping> e : tfProperties.entrySet()) {
+                if (!map.containsKey(e.getKey())) {
+                    //Not added on first pass -> must have attribute mapper
+                    map.put(e.getKey(), e.getValue());
+                }
+            }
+        }
+
+        for(Map.Entry<String,PropertyMapping> entry : map.entrySet()){
             val tfAttrName = entry.getValue().getTfAttrName();
             val currentField = fields.get(entry.getKey());
 
@@ -738,11 +762,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                             on.setValueFor(currentField,tensor.getFloat(0));
                         }
                     }
-
-
-                }
-
-                else {
+                } else {
                     on.getSameDiff().addPropertyToResolve(on,entry.getKey());
                 }
             }
@@ -768,6 +788,19 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         }
     }
 
+    @Override
+    public boolean unknownTypeNodeImportable(NodeDef tensorProto) {
+        DataType dt = null;
+        if(tensorProto.containsAttr("dtype")){
+            dt = tensorProto.getAttrOrThrow("dtype").getType();
+        } else if(tensorProto.containsAttr("T")){
+            dt = tensorProto.getAttrOrThrow("T").getType();
+        } else if(tensorProto.containsAttr("Tidx")){
+            dt = tensorProto.getAttrOrThrow("Tidx").getType();
+        }
+
+        return dt == DataType.DT_BOOL;
+    }
 
 
     @Override
@@ -791,6 +824,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
+    public boolean isConstant(NodeDef nodeDef) {
+        return nodeDef.getOp().startsWith("Const");
+    }
+
+    @Override
     public  INDArray getNDArrayFromTensor(String tensorName, NodeDef node, GraphDef graph) {
         //placeholder of some kind
         if(!node.getAttrMap().containsKey("value")) {
@@ -806,24 +844,19 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     public INDArray mapTensorProto(TensorProto tfTensor) {
         // building shape first
         int dims = tfTensor.getTensorShape().getDimCount();
-        int[] arrayShape = null;
         List<Integer> dimensions = new ArrayList<>();
-        // we allow vectors now
-        //if(dims == 1) {
-        //    dimensions.add(1);
-        //    dimensions.add( (int) Math.max(1,tfTensor.getTensorShape().getDim(0).getSize()));
-        // }
-
         for (int e = 0; e < dims; e++) {
             // TODO: eventually we want long shapes :(
             int dim = (int) tfTensor.getTensorShape().getDim(e).getSize();
-
             dimensions.add(dim);
         }
 
 
 
-        arrayShape = Ints.toArray(dimensions);
+        long[] arrayShape = new long[dimensions.size()];
+        for(int i=0; i< arrayShape.length; i++ ){
+            arrayShape[i] = dimensions.get(i);
+        }
 
         if (tfTensor.getDtype() == DataType.DT_INT32 || tfTensor.getDtype() == DataType.DT_INT16 || tfTensor.getDtype() == DataType.DT_INT8) {
             // valueOf
@@ -868,7 +901,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 if (arrayShape.length == 1)
                     return Nd4j.trueVector(fa);
 
-                val array = Nd4j.create(fa, arrayShape, 'c', 0);
+                val array = Nd4j.create(fa, arrayShape, 'c');
                 //log.debug("SUM1: {}", array.sumNumber());
                 //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
                 return array;
@@ -883,7 +916,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 float val = tfTensor.getFloatVal(0);
 
                 if (arrayShape == null || arrayShape.length == 0)
-                    arrayShape = new int[]{};
+                    arrayShape = new long[]{};
 
                 INDArray array = Nd4j.valueArrayOf(arrayShape, (double) val);
                 return array;
@@ -894,7 +927,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 }
 
                 // FIXME: we're missing float[] signature
-                INDArray array = Nd4j.create(Nd4j.createBuffer(jArray), arrayShape,  'c');
+                INDArray array = Nd4j.create(Nd4j.createBuffer(jArray), arrayShape);
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0){
                 // binary representation
@@ -913,7 +946,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 if (arrayShape.length == 1)
                     return Nd4j.trueVector(fa);
 
-                val array = Nd4j.create(fa, arrayShape, 'c', 0);
+                val array = Nd4j.create(fa, arrayShape, 'c');
                 return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_DOUBLE) {
@@ -961,22 +994,22 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         } else if (tfTensor.getDtype() == DataType.DT_INT64) {
             if (tfTensor.getInt64ValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
-                if(tfTensor.getDoubleValCount() < 1)
+                if (tfTensor.getDoubleValCount() < 1)
                     return Nd4j.trueScalar(0.0);
 
                 double val = (double) tfTensor.getInt64Val(0);
                 INDArray array = Nd4j.trueScalar(val);
                 return array;
-            } else if (tfTensor.getInt64ValCount() > 0)  {
+            } else if (tfTensor.getInt64ValCount() > 0) {
                 double[] jArray = new double[tfTensor.getInt64ValCount()];
                 for (int e = 0; e < tfTensor.getInt64ValCount(); e++) {
-                    jArray[e] =  (double) tfTensor.getInt64Val(e);
+                    jArray[e] = (double) tfTensor.getInt64Val(e);
                 }
 
                 // TF arrays are always C
                 INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
                 return array;
-            } else if (tfTensor.getTensorContent().size() > 0){
+            } else if (tfTensor.getTensorContent().size() > 0) {
                 //throw new UnsupportedOperationException("To be implemented yet");
                 //Mapping INT bytebuffers should be converted to floating point
                 val bb = tfTensor.getTensorContent().asReadOnlyByteBuffer();
@@ -992,10 +1025,30 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                 if (arrayShape.length == 1)
                     return Nd4j.trueVector(fa);
-                val array = Nd4j.create(fa, arrayShape, 'c', 0);
+                val array = Nd4j.create(fa, arrayShape, 'c');
                 //log.debug("SUM1: {}", array.sumNumber());
                 //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
                 return array;
+            }
+        } else if (tfTensor.getDtype() == DataType.DT_BOOL){
+            if (tfTensor.getBoolValCount() == 1 || ArrayUtil.prod(arrayShape) == 1){
+                //straight zero case
+                if(tfTensor.getBoolValCount() < 1)
+                    return Nd4j.trueScalar(0.0);
+
+                boolean val = tfTensor.getBoolVal(0);
+                return Nd4j.trueScalar(val ? 1.0 : 0.0);
+            } else if (tfTensor.getBoolValCount() > 0) {
+                float[] jArray = new float[tfTensor.getBoolValCount()];
+                for (int e = 0; e < tfTensor.getBoolValCount(); e++) {
+                    jArray[e] = tfTensor.getBoolVal(e) ? 1.0f : 0.0f;
+                }
+
+                // TF arrays are always C
+                INDArray array = Nd4j.create(jArray, arrayShape, 'c');
+                return array;
+            } else if (tfTensor.getTensorContent().size() > 0) {
+                throw new UnsupportedOperationException("Not yet implemented for DataType.DT_BOOL");
             }
         }  else {
             throw new UnsupportedOperationException("Unknown dataType found: [" + tfTensor.getDtype() + "]");

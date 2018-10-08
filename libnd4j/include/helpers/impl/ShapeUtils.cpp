@@ -367,7 +367,8 @@ Nd4jLong* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>&
         for(int i=0; i<rank; ++i) {
             isAbsent = true;
             for(int j=0; j<size; ++j) {
-                if(i == dimensions[j]) {
+                int dim = dimensions[j] >= 0 ? dimensions[j] : dimensions[j] + rank;
+                if(i == dim) {
                     isAbsent = false;
                     break;
                 }
@@ -425,19 +426,19 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<
 template <typename T>
 bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
 
-    if (shape::isScalar(max) && shape::isScalar(min)) {
-        resultShapeInfo = nullptr;
-        if (shape::rank(max) >= shape::rank(min)) {
-            COPY_SHAPE_EX(max, resultShapeInfo, workspace);
-        } else {
-            COPY_SHAPE_EX(min, resultShapeInfo, workspace);
-        }
-        return true;
-    } else if ((shape::rank(max) == 0 && shape::isScalar(min))) {
-        // X is the driver here
-        resultShapeInfo = ShapeUtils<T>::createScalarShapeInfo(workspace);
-        return true;
-    }
+    // if (shape::isScalar(max) && shape::isScalar(min)) {
+    //     resultShapeInfo = nullptr;
+    //     if (shape::rank(max) >= shape::rank(min)) {
+    //         COPY_SHAPE_EX(max, resultShapeInfo, workspace);
+    //     } else {
+    //         COPY_SHAPE_EX(min, resultShapeInfo, workspace);
+    //     }
+    //     return true;
+    // } else if ((shape::rank(max) == 0 && shape::isScalar(min))) {
+    //     // X is the driver here
+    //     resultShapeInfo = ShapeUtils<T>::createScalarShapeInfo(workspace);
+    //     return true;
+    // }
 
     // check whether broadcast operation is possible for input arrays
     if(!areShapesBroadcastable(max, min))
@@ -451,8 +452,8 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const b
         minShapeInfo = max;
     }
        
-    const int  maxRank      = maxShapeInfo[0];
-    const int  minRank      = minShapeInfo[0];  
+    const int  maxRank = maxShapeInfo[0];
+    const int  minRank = minShapeInfo[0];  
     
     // evaluate shapeInfo for resulting array
     if(resultShapeInfo != nullptr)
@@ -980,9 +981,14 @@ void ShapeUtils<T>::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4j
     const int rank  = shapeInfo[0];    
     const int subArrRank = dimsToExclude.size();
 
-    if(subArrRank == 0 || subArrRank > rank)
+    if(subArrRank > rank)
         throw std::invalid_argument("ShapeUtils::evalIdxRangesForSubArr static method: dimsToExclude is empty or has size > rank of array !");
-    
+
+    if(subArrRank == 0) { // means whole array
+        memset(idxRanges, 0, 2 * rank * sizeof(Nd4jLong));
+        return;
+    }
+
     std::vector<Nd4jLong> shapeOfSubArr(subArrRank), indexes(subArrRank);    
     for(int i = 0; i < subArrRank; ++i)
         shapeOfSubArr[i] = shapeInfo[dimsToExclude[i] + 1];
@@ -990,9 +996,9 @@ void ShapeUtils<T>::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4j
     shape::ind2subC(subArrRank, shapeOfSubArr.data(), subArrIdx, indexes.data());
 
     memset(idxRanges, 0, 2 * rank * sizeof(Nd4jLong));
-    
+
     for(int i = 0; i < subArrRank; ++i) {
-        
+
         int currIdx = 2 * dimsToExclude[i];
         idxRanges[currIdx]    = indexes[i];
         idxRanges[currIdx +1] = indexes[i] + 1;
@@ -1022,6 +1028,21 @@ Nd4jLong* ShapeUtils<T>::createShapeInfo(const char order, const std::vector<Nd4
     }
 
     return shapeInfo;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+std::vector<Nd4jLong> ShapeUtils<T>::evalDimsWithoutUnities(const Nd4jLong* shapeInfo) {
+
+    std::vector<Nd4jLong> result;
+    for(int i = 1; i <= shapeInfo[0]; ++i)
+        if(shapeInfo[i] != 1)
+            result.push_back(shapeInfo[i]);
+
+    if(result.size() == 0)  // shape consists of unities only 
+        return std::vector<Nd4jLong>(1,1);  // return [1]
+
+    return result;
 }
 
 template class ND4J_EXPORT ShapeUtils<float>;

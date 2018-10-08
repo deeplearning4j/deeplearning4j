@@ -27,7 +27,8 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
  * Tiny ImageNet is a subset of the ImageNet database. TinyImageNet is the default course challenge for CS321n
  * at Stanford University.
  *
- * Tiny ImageNet has 200 classes, each consisting of 500 training images.
+ * Tiny ImageNet has 200 classes, each consisting of 500 training images.<br>
+ * Images are 64x64 pixels, RGB.
  *
  * See: <a href="http://cs231n.stanford.edu/">http://cs231n.stanford.edu/</a> and
  * <a href="https://tiny-imagenet.herokuapp.com/">https://tiny-imagenet.herokuapp.com/</a>
@@ -39,20 +40,38 @@ public class TinyImageNetDataSetIterator extends RecordReaderDataSetIterator {
     @Getter
     protected DataSetPreProcessor preProcessor;
 
+    /**
+     * Create an iterator for the training set, with random iteration order (RNG seed fixed to 123)
+     *
+     * @param batchSize Minibatch size for the iterator
+     */
     public TinyImageNetDataSetIterator(int batchSize) {
         this(batchSize, null, DataSetType.TRAIN, null, 123);
     }
 
+    /**
+     * * Create an iterator for the training or test set, with random iteration order (RNG seed fixed to 123)
+     *
+     * @param batchSize Minibatch size for the iterator
+     * @param set       The dataset (train or test)
+     */
     public TinyImageNetDataSetIterator(int batchSize, DataSetType set) {
         this(batchSize, null, set, null, 123);
     }
 
+    /**
+     * Get the Tiny ImageNet iterator with specified train/test set, with random iteration order (RNG seed fixed to 123)
+     *
+     * @param batchSize Size of each patch
+     * @param imgDim Dimensions of desired output - for example, {64, 64}
+     * @param set Train, test, or validation
+     */
     public TinyImageNetDataSetIterator(int batchSize, int[] imgDim, DataSetType set) {
         this(batchSize, imgDim, set, null, 123);
     }
 
     /**
-     * Get the Tiny ImageNet iterator with specified train/test set and custom transform.
+     * Get the Tiny ImageNet iterator with specified train/test set and (optional) custom transform.
      *
      * @param batchSize Size of each patch
      * @param imgDim Dimensions of desired output - for example, {64, 64}

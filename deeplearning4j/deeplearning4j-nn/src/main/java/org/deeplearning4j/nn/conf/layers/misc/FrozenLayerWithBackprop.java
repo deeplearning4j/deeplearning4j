@@ -41,7 +41,8 @@ import java.util.List;
 /**
  * Frozen layer freezes parameters of the layer it wraps, but allows the backpropagation to continue.
  * 
- * Created by Ugljesa Jovanovic (jovanovic.ugljesa@gmail.com) on 06/05/2018.
+ * @author Ugljesa Jovanovic (jovanovic.ugljesa@gmail.com) on 06/05/2018.
+ * @see FrozenLayer
  */
 @Data
 public class FrozenLayerWithBackprop extends BaseWrapperLayer {

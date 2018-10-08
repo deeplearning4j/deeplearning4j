@@ -1387,6 +1387,15 @@ public class RandomTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testJavaInt_1() throws Exception {
+        for (int e = 0; e < 100000; e++) {
+            val i = Nd4j.getRandom().nextInt(10, 20);
+
+            assertTrue(i >= 10 && i < 20);
+        }
+    }
+
     private List<INDArray> getList(int numBatches){
         Nd4j.getRandom().setSeed(12345);
         List<INDArray> out = new ArrayList<>();

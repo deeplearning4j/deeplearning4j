@@ -275,7 +275,7 @@ public class ArrowConverter {
     public static void writeRecordBatchTo(BufferAllocator bufferAllocator ,List<List<Writable>> recordBatch, Schema inputSchema,OutputStream outputStream) {
         if(!(recordBatch instanceof ArrowWritableRecordBatch)) {
             val convertedSchema = toArrowSchema(inputSchema);
-            val columns  = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
+            List<FieldVector> columns  = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
             try {
                 VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,columns,recordBatch.size());
 

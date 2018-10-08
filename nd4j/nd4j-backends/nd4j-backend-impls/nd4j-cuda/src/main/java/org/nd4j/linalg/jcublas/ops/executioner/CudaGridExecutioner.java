@@ -120,7 +120,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         invokeWatchdog(op);
 
-        if (op instanceof Accumulation) {
+        if (op instanceof GradientOp) {
+            commit();
+            op.exec();
+        } else if (op instanceof Accumulation) {
             exec((Accumulation) op, new int[] {Integer.MAX_VALUE});
         } else if (op instanceof IndexAccumulation) {
             exec((IndexAccumulation) op, new int[] {Integer.MAX_VALUE});

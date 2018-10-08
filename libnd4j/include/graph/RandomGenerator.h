@@ -14,7 +14,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-
 //
 //  @author raver119@protonmail.com
 //

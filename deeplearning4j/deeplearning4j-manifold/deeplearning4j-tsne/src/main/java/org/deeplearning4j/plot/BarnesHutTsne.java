@@ -14,7 +14,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-
 package org.deeplearning4j.plot;
 
 
@@ -63,7 +62,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sign;
 /**
  * Barnes hut algorithm for TSNE, uses a dual tree approximation approach.
  * Work based on:
- * http://lvdmaaten.github.io/tsne/
+ * <a href="http://lvdmaaten.github.io/tsne/">http://lvdmaaten.github.io/tsne/</a>
  * For hight dimensions, it's recommended to reduce the dimension up to 50 using another method (PCA or other)
  * @author Adam Gibson
  */
@@ -242,6 +241,12 @@ public class BarnesHutTsne implements Model {
                 List<DataPoint> results = new ArrayList<>();
                 tree.search(d.slice(i), k + 1, results, new ArrayList<Double>());
                 double betas = beta.getDouble(i);
+
+                if(results.size() == 0){
+                    throw new IllegalStateException("Search returned no values for vector " + i +
+                            " - similarity \"" + simiarlityFunction + "\" may not be defined (for example, vector is" +
+                            " all zeros with cosine similarity)");
+                }
 
                 INDArray cArr = VPTree.buildFromData(results);
                 Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);

@@ -26,6 +26,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public interface TrainingDriver<T extends TrainingMessage> {
 
     void init(VoidConfiguration voidConfiguration, Transport transport, Storage storage, Clipboard clipboard);

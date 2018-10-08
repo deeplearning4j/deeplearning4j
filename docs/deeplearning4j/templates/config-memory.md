@@ -6,7 +6,7 @@ category: Configuration
 weight: 1
 ---
 
-# Memory Management for ND4J/DL4J: How does it work?
+## Memory Management for ND4J/DL4J: How does it work?
 
 ND4J uses off-heap memory to store NDArrays, to provide better performance while working with NDArrays from native code such as BLAS and CUDA libraries.
 
@@ -22,10 +22,6 @@ Despite the differences between these two approaches, the idea is the same: once
 - For JVM/GC memory: whenever an INDArray is collected by the garbage collector, its off-heap memory will be deallocated, assuming it is not used elsewhere.
 - For `MemoryWorkspaces`: whenever an INDArray leaves the workspace scope - for example, when a layer finished forward pass/predictions - its memory may be reused without deallocation and reallocation. This results in better performance for cyclical workloads.
 
-<p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
-</p>
-
 ## Configuring Memory Limits
 
 With DL4J/ND4J, there are two types of memory limits to be aware of and configure: The on-heap JVM memory limit, and the off-heap memory limit, where NDArrays live. Both limits are controlled via Java command-line arguments:
@@ -40,7 +36,9 @@ With DL4J/ND4J, there are two types of memory limits to be aware of and configur
 
 Example: Configuring 1GB initial on-heap, 2GB max on-heap, 8GB off-heap:
 
-```-Xms1G -Xmx2G -Dorg.bytedeco.javacpp.maxbytes=8G -Dorg.bytedeco.javacpp.maxphysicalbytes=8G```
+```shell
+-Xms1G -Xmx2G -Dorg.bytedeco.javacpp.maxbytes=8G -Dorg.bytedeco.javacpp.maxphysicalbytes=8G
+```
 
 ## Gotchas: A few things to watch out for
 
@@ -62,7 +60,7 @@ As of 0.9.2-SNAPSHOT, it's possible to use a memory-mapped file instead of RAM w
 
 Here's sample code:
 
-```
+```java
 WorkspaceConfiguration mmap = WorkspaceConfiguration.builder()
                 .initialSize(1000000000)
                 .policyLocation(LocationPolicy.MMAP)
@@ -74,7 +72,7 @@ try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mma
 ``` 
 In this case, a 1GB temporary file will be created and mmap'ed, and NDArray `x` will be created in that space. Obviously, this option is mostly viable for cases when you need NDArrays that can't fit into your RAM.
 
-# GPUs
+## GPUs
 
 When using GPUs, oftentimes your CPU RAM will be greater than GPU ram. When GPU RAM is less than CPU RAM, you need to monitor how much RAM is being used off-heap. You can check this based on the JavaCPP options specified above.
 
@@ -91,13 +89,13 @@ Note that if your GPU has < 2g of RAM, it's probably not usable for deep learnin
 It is possible to use HOST-only memory with a CUDA backend. That can be done using workspaces.
 
 Example:
-```
+```java
 WorkspaceConfiguration basicConfig = WorkspaceConfiguration.builder()
-                .policyAllocation(AllocationPolicy.STRICT)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyMirroring(MirroringPolicy.HOST_ONLY) // <--- this option does this trick
-                .policySpill(SpillPolicy.EXTERNAL)
-                .build();
+    .policyAllocation(AllocationPolicy.STRICT)
+    .policyLearning(LearningPolicy.FIRST_LOOP)
+    .policyMirroring(MirroringPolicy.HOST_ONLY) // <--- this option does this trick
+    .policySpill(SpillPolicy.EXTERNAL)
+    .build();
 ```
 
 It's not recommended to use HOST-only arrays directly, since they will dramatically reduce performance. But they might be useful as in-memory cache pairs with the `INDArray.unsafeDuplication()` method.

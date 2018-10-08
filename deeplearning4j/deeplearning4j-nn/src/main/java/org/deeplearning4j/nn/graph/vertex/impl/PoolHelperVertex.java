@@ -32,7 +32,8 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * A custom layer for removing the first column and row from an input. This is meant to allow
- * importation of Caffe's GoogLeNet from https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14.
+ * importation of Caffe's GoogLeNet from <a href="https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14">
+ *     https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14</a>.
  *
  * @author Justin Long (crockpotveggies)
  */

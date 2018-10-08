@@ -92,7 +92,7 @@ public class Min extends BaseAccumulation {
 
     @Override
     public String tensorflowName() {
-        return "ReduceMin";
+        return "Min";
     }
 
 

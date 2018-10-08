@@ -25,7 +25,11 @@ import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 
 import java.util.Random;
 
-
+/**
+ * LFW iterator - Labeled Faces from the Wild dataset<br>
+ * See <a href="http://vis-www.cs.umass.edu/lfw/">http://vis-www.cs.umass.edu/lfw/</a><br>
+ * 13233 images total, with 5749 classes.
+ */
 public class LFWDataSetIterator extends RecordReaderDataSetIterator {
 
     /** Loads subset of images with given imgDim returned by the generator. */

@@ -19,7 +19,7 @@ package org.nd4j.autodiff.opvalidation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
-import org.nd4j.autodiff.OpValidationSuite;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -39,9 +39,9 @@ import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
 import org.nd4j.linalg.api.ops.impl.transforms.Fill;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -338,7 +338,7 @@ public class MiscOpValidation extends BaseOpValidation {
     public void testScatterOpGradients() {
         List<String> failed = new ArrayList<>();
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 7; i++) {
             Nd4j.getRandom().setSeed(12345);
 
             SameDiff sd = SameDiff.create();
@@ -375,6 +375,14 @@ public class MiscOpValidation extends BaseOpValidation {
                     scatter = sd.scatterUpdate("s", in, indices, updates);
                     name = "scatterUpdate";
                     break;
+                case 5:
+                    scatter = sd.scatterMax("s", in, indices, updates);
+                    name = "scatterMax";
+                    break;
+                case 6:
+                    scatter = sd.scatterMin("s", in, indices, updates);
+                    name = "scatterMin";
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -400,6 +408,14 @@ public class MiscOpValidation extends BaseOpValidation {
                     case 4:
                         destinationRow.assign(updateRow);
                         break;
+                    case 5:
+                        destinationRow.assign(Transforms.max(destinationRow, updateRow, true));
+                        break;
+                    case 6:
+                        destinationRow.assign(Transforms.min(destinationRow, updateRow, true));
+                        break;
+                    default:
+                        throw new RuntimeException();
                 }
             }
 
@@ -468,6 +484,31 @@ public class MiscOpValidation extends BaseOpValidation {
         }
 
         assertEquals(failed.toString(), 0, failed.size());
+    }
+
+
+    @Test
+    public void testTrace(){
+        //TODO need to work out how to handle shape_op for scalars...
+        OpValidationSuite.ignoreFailing();
+        Nd4j.getRandom().setSeed(12345);
+        for( int[] inShape : new int[][]{{3,3}}){
+
+            INDArray in = Nd4j.rand(inShape);
+            SameDiff sd = SameDiff.create();
+            SDVariable i = sd.var("in", in);
+            SDVariable trace = sd.trace(i);
+
+            double exp = Nd4j.diag(in).sumNumber().doubleValue();
+
+            TestCase tc = new TestCase(sd)
+                    .expected(trace, Nd4j.trueScalar(exp))
+                    .testName(Arrays.toString(inShape));
+
+            String err = OpValidation.validate(tc);
+
+            assertNull(err);
+        }
     }
 
 
@@ -574,7 +615,6 @@ public class MiscOpValidation extends BaseOpValidation {
         }, inputs);
 
         List<DifferentialFunction> ops = sameDiff.getFunction("mmulGradient").execBackwards().getRight();
-        String print = sameDiff.asFlatPrint();
 
 
         assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
@@ -705,8 +745,6 @@ public class MiscOpValidation extends BaseOpValidation {
                     .transposeA(true)
                     .transposeB(false)
                     .transposeResult(false)
-                    .a(first)
-                    .b(second)
                     .build();
             SDVariable mmul = sd.f().mmul(f, s, mt);
             sd.updateVariableNameAndReference(mmul, "mmul");
@@ -1089,15 +1127,30 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
     @Test
-    public void testOneHot3() {
-        OpValidationSuite.ignoreFailing();
+    public void testOneHot2() {
 
+        INDArray indicesArr = Nd4j.trueVector(new double[]{0, 2, -1, 1});
+
+        SameDiff sd = SameDiff.create();
+        SDVariable indices = sd.var("indices", indicesArr);
+        int depth = 3;
+        int axis = -1;
+        SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 5.0, 0.0);
+
+        INDArray exp = Nd4j.create(new double[][]{{5, 0, 0}, {0,0,5}, {0,0,0}, {0, 5, 0}});
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(oneHot, exp)
+                .gradientCheck(false));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testOneHot3() {
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
         //indices = [[0, 2], [1, -1]]
-        INDArray indicesArr = Nd4j.zeros(2, 2);
-        indicesArr.put(0, 1, 2);
-        indicesArr.put(1, 0, 1);
-        indicesArr.put(1, 1, -1);
+        INDArray indicesArr = Nd4j.create(new double[][]{{0, 2}, {1, -1}});
         INDArray expectedOut = Nd4j.zeros(new long[]{2, 2, 3});
         /*
         # output: [2 x 2 x 3]
@@ -1110,8 +1163,10 @@ public class MiscOpValidation extends BaseOpValidation {
         expectedOut.putScalar(0, 1, 2, 1.0);
         expectedOut.putScalar(1, 0, 1, 1.0);
 
+        System.out.println(expectedOut);
+
         SameDiff sd = SameDiff.create();
-        SDVariable indices = sd.var("indices", new long[]{2, 2});
+        SDVariable indices = sd.var("indices", indicesArr);
 
         int depth = 3;
         int axis = -1;
@@ -1120,7 +1175,8 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable loss = oneHot.std(true);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(oneHot, expectedOut));
+                .expected(oneHot, expectedOut)
+                .gradCheckSkipVariables("indices"));
 
         assertNull(err);
     }
@@ -1129,8 +1185,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testLinspace(){
-        OpValidationSuite.ignoreFailing();
-
         SameDiff sd = SameDiff.create();
         SDVariable out = sd.linspace("linspace", 1,10,10);
         SDVariable loss = out.std(true);

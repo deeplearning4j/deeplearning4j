@@ -32,6 +32,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
@@ -56,6 +57,8 @@ import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
+import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
+import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.transforms.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
@@ -88,6 +91,8 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -2181,14 +2186,13 @@ public class Nd4j {
             String[] data = line.trim().split(split);
             if (numColumns < 0) {
                 numColumns = data.length;
-
             } else
-                assert data.length == numColumns : "Data has inconsistent number of columns";
+                Preconditions.checkState(data.length == numColumns,
+                        "Data has inconsistent number of columns: data length %s, numColumns %s", data.length, numColumns);
             data2.add(readSplit(data));
 
 
         }
-
         ret = Nd4j.create(data2.size(), numColumns);
         for (int i = 0; i < data2.size(); i++)
             ret.putRow(i, Nd4j.create(Nd4j.createBuffer(data2.get(i))));
@@ -2205,33 +2209,6 @@ public class Nd4j {
 
 
 
-    /**
-     * Read line via input streams
-     *
-     * @param filePath the input stream ndarray
-     * @param split    the split separator
-     * @return the read txt method
-     */
-    @Deprecated
-    public static void writeNumpy(INDArray write, String filePath, String split) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
-        for (int i = 0; i < write.rows(); i++) {
-            StringBuilder sb = new StringBuilder();
-            INDArray row = write.getRow(i);
-            for (int j = 0; j < row.columns(); j++) {
-                sb.append(row.getDouble(j));
-                if (j < row.columns() - 1) // not the last element
-                    sb.append(split);
-            }
-            sb.append("\n");
-            writer.write(sb.toString());
-        }
-
-        writer.flush();
-        writer.close();
-
-
-    }
 
     /**
      * Read line via input streams
@@ -2374,32 +2351,6 @@ public class Nd4j {
 
 
 
-    /**
-     * Read line via input streams
-     *
-     * @param ndarray the input stream ndarray
-     * @param  sep character, defaults to ","
-     * @return NDArray
-     * Custom separators no longer supported; Use {@link #writeTxt(INDArray, String)} along with {@link #readTxt(String)}
-     */
-    @Deprecated
-    public static INDArray readTxtString(InputStream ndarray, String sep) {
-        return readTxtString(ndarray);
-    }
-
-
-    /**
-     * Read line via input streams
-     *
-     * @param filePath the input stream ndarray
-     * @param  sep character, defaults to ","
-     * @return NDArray
-     * Custom separators no longer supported; Use {@link #writeTxt(INDArray, String)} along with {@link #readTxt(String)}
-     */
-    @Deprecated
-    public static INDArray readTxt(String filePath, String sep) {
-        return readTxt(filePath);
-    }
 
     /**
      * Read line via input streams
@@ -2610,12 +2561,18 @@ public class Nd4j {
      * in the matrix
      *
      * @param x the diagonal values
-     * @param k the kth diagonal to getDouble
+     * @param k the kth diagonal to get
      * @return new matrix
      */
     public static INDArray diag(INDArray x, int k) {
-        INDArray ret = Nd4j.create(new long[] {x.length(),x.length()});
-        Nd4j.getExecutioner().exec(new Diag(new INDArray[]{x},new INDArray[]{ret}));
+        INDArray ret;
+        if(x.isMatrix()) {
+            ret = Nd4j.createUninitialized(new long[]{Math.min(x.size(0), x.size(1))});
+            Nd4j.getExecutioner().exec(new DiagPart(x,ret));
+        } else {
+            ret = Nd4j.create(new long[]{x.length(), x.length()});
+            Nd4j.getExecutioner().exec(new Diag(new INDArray[]{x},new INDArray[]{ret}));
+        }
         return ret;
     }
 
@@ -2787,19 +2744,6 @@ public class Nd4j {
         return rand(ret, seed);
     }
 
-    /**
-     * Create a random ndarray with the given shape using the given seed
-     *
-     * @param seed the seed
-     * @param shape  the shape
-     * @return the random ndarray with the specified shape
-     */
-    @Deprecated
-    public static INDArray rand(long seed, int... shape) {
-        INDArray ret = createUninitialized(shape, Nd4j.order());//INSTANCE.rand(shape, seed);
-        logCreationIfNecessary(ret);
-        return rand(ret, seed);
-    }
 
     /**
      * Create a random ndarray with the given shape using the given seed
@@ -3805,6 +3749,12 @@ public class Nd4j {
         return create(shape, stride, order());
     }
 
+    /**
+     *
+     * @param shape
+     * @param stride
+     * @return
+     */
     public static INDArray create(long[] shape, long[] stride) {
         return create(shape, stride, order());
     }
@@ -4400,6 +4350,12 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     *
+     * @param shape
+     * @param ordering
+     * @return
+     */
     public static INDArray create(@NonNull long[] shape, char ordering) {
         if(shape.length == 0)
             return Nd4j.trueScalar(0.0);
@@ -4412,6 +4368,11 @@ public class Nd4j {
         return ret;
     }
 
+
+    /**
+     *
+     * @param shape
+     */
     public static void checkShapeValues(long[] shape) {
         for (long e: shape) {
             if (e < 1)
@@ -4420,6 +4381,10 @@ public class Nd4j {
         }
     }
 
+    /**
+     *
+     * @param shape
+     */
     public static void checkShapeValues(int[] shape) {
         for (int e: shape) {
             if (e < 1)
@@ -4515,6 +4480,12 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     *
+     * @param shape
+     * @param ordering
+     * @return
+     */
     public static INDArray createUninitializedDetached(long[] shape, char ordering) {
         if (shape.length == 0)
             return trueScalar(0.0);
@@ -5184,6 +5155,32 @@ public class Nd4j {
     }
 
     /**
+     * Stack a set of N SDVariables of rank X into one rank X+1 variable.
+     * If inputs have shape [a,b,c] then output has shape:<br>
+     * axis = 0: [N,a,b,c]<br>
+     * axis = 1: [a,N,b,c]<br>
+     * axis = 2: [a,b,N,c]<br>
+     * axis = 3: [a,b,c,N]<br>
+     *
+     * @param axis   Axis to stack on
+     * @param values Input variables to stack. Must have the same shape for all inputs
+     * @return Output array
+     * @see #concat(int, INDArray...)
+     */
+    public static INDArray stack(int axis, INDArray... values){
+        Preconditions.checkArgument(values != null && values.length > 0, "No inputs: %s", values);
+        Preconditions.checkState(axis >= -(values[0].rank()+1) && axis < values[0].rank()+1, "Invalid axis: must be between " +
+                "%s (inclusive) and %s (exclusive) for rank %s input, got %s", -(values[0].rank()+1), values[0].rank()+1,
+                values[0].rank(), axis);
+
+        Stack stack = new Stack(values, null, axis);
+        INDArray[] outputArrays = Nd4j.getExecutioner().allocateOutputArrays(stack);
+        stack.addOutputArgument(outputArrays);
+        Nd4j.getExecutioner().exec(stack);
+        return outputArrays[0];
+    }
+
+    /**
      * Concatneate ndarrays along a dimension
      *
      * @param dimension the dimension to concatneate along
@@ -5677,11 +5674,11 @@ public class Nd4j {
         }
         return (fallback.equalsIgnoreCase("true") || fallback.equalsIgnoreCase("1"));
     }
-    
+
     /**
      * Get ensured shapes that wind up being scalar end up with the write shape
      * @param shape
-     * @return 
+     * @return
      */
     private static int[] getEnsuredShape(int[] shape) {
         if (shape.length == 1 && shape[0] == 0) {
@@ -5697,12 +5694,12 @@ public class Nd4j {
         }
         return shape;
     }
-    
+
     /**
      * Get ensured shapes that wind up being scalar end up with the write shape
      * @param rows
      * @param columns
-     * @return 
+     * @return
      */
     private static int[] getEnsuredShape(int rows, int columns) {
         return getEnsuredShape(new int[] {rows, columns});
@@ -5889,6 +5886,18 @@ public class Nd4j {
     }
 
 
+    /**
+     *   Upper triangle of an array.
+
+     Return a copy of a matrix with the elements below the `k`-th diagonal
+     zeroed.
+
+     Please refer to the documentation for `tril` for further details.
+
+     * @param m
+     * @param k
+     * @return
+     */
     public static INDArray triu(INDArray m,int k) {
         /**
          *     """
@@ -5993,6 +6002,100 @@ public class Nd4j {
     }
 
     /**
+     * Similar to numpy.where operation.
+     * Supports two modes of operation:<br>
+     * (a) condition array only is provided: returns N 1d arrays of the indices where "condition" values are non-zero.
+     * Specifically, each output out has shape [numNonZero(condition)], such that in[out[0], ..., out[n-1]] is non-zero<br>
+     * (b) all 3 arrays are provided: returns {@code out[i] = (condition[i] != 0 ? x[i] : y[i])}<br>
+     * @param condition Condition array
+     * @param x         X array. If null, y must be null also.
+     * @param y         Y array. If null, x must be null also
+     * @return Either the indices where condition is non-zero (if x and y are null), or values from x/y depending on
+     * value of condition
+     */
+    public static INDArray[] where(INDArray condition, INDArray x, INDArray y){
+        Preconditions.checkState((x == null && y == null) || (x != null && y != null), "Both X and Y must be" +
+                "null, or neither must be null");
+        INDArray out;
+        DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("where_np");
+        List<long[]> outShapes;
+        if(x == null){
+            //First case: condition only...
+            op.addInputs(condition);
+        } else {
+            if(!x.equalShapes(y) || !x.equalShapes(condition)){
+                Preconditions.throwStateEx("Shapes must be equal: condition=%s, x=%s, y=%s", condition.shape(), x.shape(), y.shape());
+            }
+            op.addInputs(condition, x, y);
+        }
+        DynamicCustomOp o = op.build();
+        outShapes = Nd4j.getExecutioner().calculateOutputShape(o);
+        INDArray[] outputs = new INDArray[outShapes.size()];
+
+        if(x == null && (outShapes.get(0) == null || outShapes.get(0).length == 0 || outShapes.get(0)[0] == 0)){
+            //Empty: no conditions match
+            for( int i=0; i<outputs.length; i++ ){
+                outputs[i]  = Nd4j.empty();
+            }
+            return outputs;
+        }
+
+        for(int i=0; i<outputs.length; i++){
+            outputs[i] = Nd4j.createUninitialized(outShapes.get(i));
+        }
+        op.addOutputs(outputs);
+
+        Nd4j.getExecutioner().exec(op.build());
+        return outputs;
+    }
+
+
+    /**
+     * Write an {@link INDArray}
+     * to a {@link File}
+     * @param arr the array to write
+     * @param file the file to write
+     * @throws IOException if an error occurs when writing the file
+     */
+    public static void writeAsNumpy(INDArray arr,File file) throws IOException {
+        writeAsNumpy(arr, new FileOutputStream(file));
+    }
+
+
+    /**
+     * Converts an {@link INDArray}
+     * to a numpy struct.
+     * @param arr the array to convert
+     * @return a pointer to the numpy struct
+     */
+    public static Pointer convertToNumpy(INDArray arr)  {
+        return INSTANCE.convertToNumpy(arr);
+    }
+
+
+    /**
+     * Writes an array to an output stream
+     * @param arr the array to write
+     * @param writeTo the output stream to write to
+     * @throws IOException
+     */
+    public static void writeAsNumpy(INDArray arr,OutputStream writeTo) throws IOException {
+        try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(writeTo)) {
+            Pointer asNumpy = convertToNumpy(arr);
+            WritableByteChannel channel = Channels.newChannel(bufferedOutputStream);
+
+            int written = channel.write(asNumpy.asByteBuffer());
+            if(written != asNumpy.capacity()) {
+                throw new IllegalStateException("Not all bytes were written! Original capacity " + asNumpy.capacity() + " but wrote " + written);
+            }
+
+            bufferedOutputStream.flush();
+        }
+
+    }
+
+
+    /**
      * Create from an in memory numpy pointer
      *
      * @param pointer the pointer to the
@@ -6024,15 +6127,41 @@ public class Nd4j {
      */
     public static INDArray createNpyFromInputStream(InputStream is) throws IOException {
         byte[] content = IOUtils.toByteArray(is);
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(content.length);
-        byteBuffer.put(content);
+        return createNpyFromByteArray(content);
+    }
+
+
+    /**
+     * Create an {@link INDArray} from
+     * the given numpy input.
+     * The numpy input follows the format:
+     * https://docs.scipy.org/doc/numpy-1.14.0/neps/npy-format.html
+     *
+     * @param input the input byte array with the npy format
+     * @return the equivalent {@link INDArray}
+     */
+    public static INDArray createNpyFromByteArray(byte[] input) {
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(input.length);
+        byteBuffer.put(input);
         byteBuffer.rewind();
         Pointer pointer = new Pointer(byteBuffer);
         return createFromNpyPointer(pointer);
     }
 
-
-
+    /**
+     * Converts an {@link INDArray}
+     * to a byte array
+     * @param input the input array
+     * @return the {@link INDArray} as a byte array
+     * with the numpy format.
+     * For more on the format, see: https://docs.scipy.org/doc/numpy-1.14.0/neps/npy-format.html
+     * @throws IOException
+     */
+    public static byte[] toNpyByteArray(INDArray input) throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        writeAsNumpy(input,byteArrayOutputStream);
+        return byteArrayOutputStream.toByteArray();
+    }
 
 
     /**
@@ -6057,8 +6186,8 @@ public class Nd4j {
         val shapeOf = Shape.shapeOf(shapeInfo);
         val stridesOf = Shape.stridesOf(shapeInfo);
 
-        val _dtype = SameDiff.getDataTypeFromByte(dtype);
-        val _order = SameDiff.getOrderFromByte(order);
+        val _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
+        val _order = FlatBuffersMapper.getOrderFromByte(order);
         val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
         val doubles = new double[prod];
 

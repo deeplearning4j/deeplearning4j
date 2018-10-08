@@ -51,7 +51,7 @@ public class TestCustomLayer extends BaseSparkTest {
                                         .layer(1, new CustomLayer(3.14159)).layer(2,
                                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                                         .nIn(10).nOut(10).build())
-                                        .pretrain(false).backprop(true).build();
+                                        .build();
 
         ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1).averagingFrequency(2)
                         .batchSizePerWorker(5).saveUpdater(true).workerPrefetchNumBatches(0).build();

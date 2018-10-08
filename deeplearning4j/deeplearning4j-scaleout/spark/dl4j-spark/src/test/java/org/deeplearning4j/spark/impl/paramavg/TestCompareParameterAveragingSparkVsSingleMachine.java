@@ -73,7 +73,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                         .weightInit(WeightInit.XAVIER).updater(updater).seed(seed).list()
                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1, new OutputLayer.Builder()
                                         .lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
         return conf;
     }
 
@@ -88,7 +88,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                                         .activation(Activation.TANH).build())
                         .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10)
                                         .build())
-                        .setInputType(InputType.convolutional(10, 10, 3)).pretrain(false).backprop(true).build();
+                        .setInputType(InputType.convolutional(10, 10, 3)).build();
         return conf;
     }
 
@@ -102,7 +102,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                                         new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10)
                                                         .nOut(10).build(),
                                         "0")
-                        .setOutputs("1").pretrain(false).backprop(true).build();
+                        .setOutputs("1").build();
         return conf;
     }
 
@@ -118,8 +118,8 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                                         .padding(0, 0).activation(Activation.TANH).build(), "0")
                         .addLayer("2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10)
                                         .build(), "1")
-                        .setOutputs("2").setInputTypes(InputType.convolutional(10, 10, 3)).pretrain(false)
-                        .backprop(true).build();
+                        .setOutputs("2").setInputTypes(InputType.convolutional(10, 10, 3))
+                        .build();
         return conf;
     }
 

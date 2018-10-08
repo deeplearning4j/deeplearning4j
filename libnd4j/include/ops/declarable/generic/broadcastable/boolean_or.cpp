@@ -19,7 +19,7 @@
 //
 
 #include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_neq_scalar)
+#if NOT_EXCLUDED(OP_boolean_or)
 
 #include <ops/declarable/CustomOperations.h>
 
@@ -30,7 +30,7 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Or<T>>(x, y, z);
+            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::LogicalOr<T>>(x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z)

@@ -51,40 +51,12 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
     }
 
     @Override
-    public ParamInitializer initializer() {
-        return EmptyParamInitializer.getInstance();
-    }
-
-
-    @Override
-    public void setNIn(InputType inputType, boolean override) {
-        //No op: upsampling layer doesn't have nIn value
-    }
-
-    @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Upsampling layer (layer name=\"" + getLayerName()
                             + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
-    }
-
-    @Override
-    public double getL1ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public boolean isPretrainParam(String paramName) {
-        throw new UnsupportedOperationException("UpsamplingLayer does not contain parameters");
     }
 
 

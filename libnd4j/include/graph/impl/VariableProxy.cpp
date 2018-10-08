@@ -94,7 +94,25 @@ namespace nd4j {
 
         template <typename T>
         void VariableProxy<T>::dropVariable(int id, int idx) {
+            assert(_current->hasVariable(id, idx));
 
+            _current->dropVariable(id, idx);
+        }
+
+        template <typename T>
+        std::vector<Variable<T>*> VariableProxy<T>::getVariables() {
+            std::vector<Variable<T>*> result;
+
+            auto b = _backed->getVariables();
+            auto c = _current->getVariables();
+
+            for (auto v: b)
+                result.emplace_back(v);
+
+            for (auto v: c)
+                result.emplace_back(v);
+
+            return result;
         }
 
         template <typename T>
@@ -148,6 +166,20 @@ namespace nd4j {
 
             nd4j_printf("Unable to get Variable to proxy: [%s]\n", symbol->c_str());
             throw std::runtime_error("Bad arguments");
+        }
+
+        template <typename T>
+        void VariableProxy<T>::replaceVariable(Variable<T> *variable) {
+            if (variable->getName() != nullptr && !variable->getName()->empty()) {
+                // if variable has name defined - we should resolve it via backing var space
+                if (_backed->hasVariable(variable->getName())) {
+                    auto origVar = _backed->getVariable(variable->getName());
+                    variable->setId(origVar->id(), origVar->index());
+                    _current->replaceVariable(variable);
+                } else
+                    _current->replaceVariable(variable);
+            } else // if proxy has variable - that's one story
+                _current->replaceVariable(variable);
         }
 
         template <typename T>

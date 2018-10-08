@@ -57,10 +57,9 @@ DECLARE_SHAPE_FN(svd) {
     
     Nd4jLong* sShapeInfo(nullptr);
     if(rank == 2) {
-        ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong); 
-        sShapeInfo[0] = 2;
-        sShapeInfo[1] = 1;
-        sShapeInfo[2] = diagSize;
+        ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong); 
+        sShapeInfo[0] = 1;
+        sShapeInfo[1] = diagSize;
     }
     else {
         ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank-1), Nd4jLong); 

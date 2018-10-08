@@ -37,6 +37,7 @@
 #include <sstream>
 #include <helpers/ArrayUtils.h>
 #include <MmulHelper.h>
+#include <helpers/threshold.h>
 
 namespace nd4j {
 
@@ -210,7 +211,16 @@ template <typename T>
     if (workspace == nullptr) {
         _buffer =  new T[this->_length];
         _shapeInfo = new Nd4jLong[shapeLength];
-    } else {
+    }
+    else if (shape::isEmpty(const_cast<Nd4jLong*>(shapeInfo)))         {
+        _buffer    = nullptr;
+        _shapeInfo = reinterpret_cast<Nd4jLong *>(_workspace->allocateBytes(shape::shapeInfoByteLength(const_cast<Nd4jLong*>(shapeInfo))));
+
+        _workspace = workspace;
+
+        triggerAllocationFlag(false, true);
+    }
+    else {
         _buffer = reinterpret_cast<T*>(_workspace->allocateBytes(this->_length * sizeOfT()));
         _shapeInfo = reinterpret_cast<Nd4jLong *>(_workspace->allocateBytes(shape::shapeInfoByteLength(const_cast<Nd4jLong*>(shapeInfo))));
     }
@@ -881,7 +891,17 @@ void NDArray<T>::replacePointers(T *buffer, Nd4jLong *shapeInfo, const bool rele
     template<typename T>
     void NDArray<T>::assign(const NDArray<T> *other) {
         if (this->isScalar() && other->isScalar()) {
-            this ->_buffer[0] = other->_buffer[0];
+            if (!other->isEmpty())
+                this ->_buffer[0] = other->_buffer[0];
+            else {
+                if (this->_buffer != nullptr)
+                    RELEASE(_buffer, _workspace);
+                _buffer = nullptr;
+                _length = 0;
+                ArrayOptions::setPropertyBit(this->_shapeInfo, ARRAY_EMPTY);
+                this->triggerAllocationFlag(false, true);
+
+            }
             return;
         } else if (other->isScalar()) {
             this->assign(other->_buffer[0]);
@@ -2390,7 +2410,7 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
             delete[] newShapeInfo;
     }
 
-    // check whether min array has to be tiled
+    // check whether max array has to be tiled
     if(!max->isSameShape(target)) {
         // evaluate repeating dimensions for tile operation
         std::vector<Nd4jLong> repeatMax(max->rankOf());
@@ -2401,6 +2421,7 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
     else
         target->assign(max);
 
+
     // check whether min array has to be tiled
     std::vector<Nd4jLong> repeatMin(min->rankOf());
     int product = 1;
@@ -2409,15 +2430,30 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
         product *= repeatMin[i-1];
     }
 
-    if(product != 1 ) {
-        NDArray<T> tiledMin = min->tile(repeatMin);
-        std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(target, &tiledMin);
-        target->template applyBroadcast<OpName>(sameDims, &tiledMin, nullptr, extraArgs);
+    NDArray<T>* pMin = const_cast<NDArray<T>*>(min);
+    if(product != 1 )
+        pMin = new NDArray<T>(min->tile(repeatMin));
+
+    std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(target, pMin);
+
+    if(max == this) {        
+        target->template applyBroadcast<OpName>(sameDims, pMin, nullptr, extraArgs);
     }
     else {
-        std::vector<int> sameDims = ShapeUtils<T>::getDimsWithSameShape(target, min);
-        target->template applyBroadcast<OpName>(sameDims, min, nullptr, extraArgs);
+    
+        std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(target->rankOf(), sameDims);
+        const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
+        
+#pragma omp parallel for schedule(guided)
+        for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+            
+            NDArray<T> targetSubArr = (*target)(i, dimsToExclude);
+            pMin->template applyPairwiseTransform<OpName>(&targetSubArr, &targetSubArr, extraArgs);
+        }
     }
+
+    if(pMin != min)
+        delete pMin;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2962,7 +2998,7 @@ bool NDArray<T>::isUnitary() {
     ////////////////////////////////////////////////////////////////////////
     // operator returns sub-array with buffer pointing at this->_buffer + certain offset
     template<typename T>
-    NDArray<T> NDArray<T>::operator()(const Nd4jLong* idx, bool keepUnitiesInShape)  const {
+    NDArray<T> NDArray<T>::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
 
         const int rank = rankOf();
         Nd4jLong *newShape;
@@ -2992,72 +3028,34 @@ bool NDArray<T>::isUnitary() {
         result._isShapeAlloc = true;
 
         if(!keepUnitiesInShape) {
-            // check whether units are present in newShape, if yes then remove them by applying corresponding reshape
-            // for example if result has shape {1,a,1,b} then after reshaping it acquire new shape {a,b}
-            std::vector<Nd4jLong > nonUnitDims;
-            for(int i = 0; i < result.rankOf(); ++i)
-                if(newShape[i+1] != 1)
-                    nonUnitDims.push_back(newShape[i+1]);
 
-            if(nonUnitDims.size() != result.rankOf())
-                result.reshapei(nonUnitDims);
-        }
-
-        return result;
-    }
-
-
-    ////////////////////////////////////////////////////////////////////////
-    // operator returns sub-array with buffer pointing at this->_buffer + certain offset
-    template<typename T>
-    NDArray<T> NDArray<T>::operator()(const Intervals& idx, bool keepUnitiesInShape)  const {
-
-        const int rank = rankOf();
-        if (idx.size() != rank)
-            throw std::runtime_error("NDArray::operator(Intervals): number of indices should match the rank of array!");
-
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
-        memcpy(newShape, _shapeInfo, shape::shapeInfoByteLength(rank));
-        newShape[shape::shapeInfoLength(rank) - 2] = -1;
-
-        auto shapeOf = shape::shapeOf(newShape);
-        auto stridesOf = shape::stride(newShape);
-
-        Nd4jLong offset = 0;
-        int first, last;
-        for (int d = 0; d < idx.size(); ++d) {
-            // building new shape first
-            if (!idx[d].empty()) {
-                if (idx[d].size() != 2)
-                    throw std::runtime_error("NDArray::operator(Intervals): the interval must contain only two numbers {first, last} !");
-                first = idx[d][0] >= 0 ? idx[d][0] : idx[d][0] + sizeAt(d) + 1;
-                last  = idx[d][1] >= 0 ? idx[d][1] : idx[d][1] + sizeAt(d) + 1;
-
-                shapeOf[d] = last - first;
-                // for offset we're taking only the first index
-                offset += first * stridesOf[d];
-            }
-        }
-
-        NDArray<T> result(_buffer + offset, newShape, _workspace);
-        result._isShapeAlloc = true;
-
-        if(!keepUnitiesInShape) {
-            // check whether units are present in newShape, if yes then remove them by applying corresponding reshape
-            // for example if result has shape {1,a,1,b} then after reshaping it acquire new shape {a,b}
             std::vector<Nd4jLong> nonUnitDims;
-            for(int i = 0; i < result.rankOf(); ++i)
-                if(newShape[i+1] != 1)
-                    nonUnitDims.push_back(newShape[i+1]);
-
-            if(nonUnitDims.size() != result.rankOf())
+            for (int d = 0; d < rank; ++d) {
+                if(!(idx[2*d] != idx[2*d+1] && newShape[d+1] == 1))
+                    nonUnitDims.push_back(newShape[d+1]);
+            }
+            if(nonUnitDims.size() != rank)
                 result.reshapei(nonUnitDims);
+
+            // std::vector<Nd4jLong> nonUnitDims = ShapeUtils<T>::evalDimsWithoutUnities(newShape);
+            // if(nonUnitDims.size() != result.rankOf())
+            //     result.reshapei(nonUnitDims);
         }
 
         return result;
     }
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+NDArray<T> NDArray<T>::operator()(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape)  const {
+
+    std::vector<Nd4jLong> idxRanges(2 * rankOf());        
         
+    ShapeUtils<T>::evalIdxRangesForSubArr(subArrIdx, _shapeInfo, dimsToExclude, idxRanges.data());
+
+    return (*this)(idxRanges, keepUnitiesInShape);
+}
+      
 ////////////////////////////////////////////////////////////////////////
 // addition operator array + array
 template<typename T>
@@ -3671,6 +3669,29 @@ NDArray<T>* NDArray<T>::createUninitialized() const {
     T* buffer(nullptr);
     ALLOCATE(buffer, _workspace, _length, T);
     NDArray<T>* result = new NDArray<T>(buffer, newShape, _workspace);
+    result->triggerAllocationFlag(true, true);
+
+    return result;
+}
+
+template<typename T>
+NDArray<T> NDArray<T>::quantize(NDArray<T> &array) {
+    return *(quantize(&array));
+}
+
+template<typename T>
+NDArray<T>* NDArray<T>::quantize(NDArray<T> *array) {
+    auto ws = array->getWorkspace();
+    char *buffer = nullptr;
+    Nd4jLong *shapeInfo;
+
+    // allocate buffers
+    ALLOCATE(buffer, ws, TypeCast::estimateQuantizedSize(array->lengthOf()), char);
+    COPY_SHAPE_EX(array->shapeInfo(), shapeInfo, ws);
+
+    ArrayOptions::setPropertyBit(shapeInfo, ARRAY_QUANTIZED);
+
+    auto result = new NDArray<T>(reinterpret_cast<T *>(buffer), shapeInfo, ws);
     result->triggerAllocationFlag(true, true);
 
     return result;

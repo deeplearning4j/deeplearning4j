@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
             
             if(INPUT_VARIABLE(i)->rankOf() == 0) {
                 NDArray<T>* vec = new NDArray<T>('c', {1}, block.getWorkspace());
-                (*vec)(0) = (*INPUT_VARIABLE(i))(0);
+                (*vec)(0.) = (*INPUT_VARIABLE(i))(0.);
                 nonEmptyArrs.push_back(vec);
                 arrsToDelete.push_back(index);
             }

@@ -31,8 +31,8 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 
 /**
- * A GraphVertex is a vertex in the computation graph. It may contain Layer, or define some arbitrary forward/backward pass
- * behaviour based on the inputs
+ * A GraphVertex is a vertex in the computation graph type of neural network. It may contain Layer, or define some
+ * arbitrary forward/backward pass behaviour based on the inputs. GraphVertex instances may also have trainable parameters.
  *
  * @author Alex Black
  */

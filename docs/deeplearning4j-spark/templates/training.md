@@ -112,7 +112,7 @@ The process of training a network using parameter averaging is conceptually quit
 For example, the diagram below shows the parameter averaging process with 5 workers (W1, ..., W5) and a parameter averaging frequency of 1.
 Just as with offline training, a training data set is split up into a number of subsets (generally known as minibatches, in the non-distributed setting); training proceeds over each split, with each worker getting a subset of the split. In practice, the number of splits is determined automatically, based on the training configuration (based on number of workers, averaging frequency and worker minibatch sizes - see configuration section).
 
-![Parameter Averaging](./img/parameter_averaging.png)
+![Parameter Averaging](/images/guide/parameter_averaging.png)
 
 ## <a name="minimal">A Minimal Example</a>
 
@@ -406,11 +406,11 @@ Note that as of Deeplearning4j version 0.6.0, the current HTML rendering impleme
 
 Timeline information available via Spark training stats collection functionality:
 
-![Spark Stats](./img/spark_stats_v060.png)
+![Spark Stats](/images/guide/spark_stats_v060.png)
 
 One of the charts (Worker fit(DataSet) times) available via Spark Stats
 
-![Spark Stats](./img/spark_stats_v060_2.png)
+![Spark Stats](/images/guide/spark_stats_v060_2.png)
 
 
 

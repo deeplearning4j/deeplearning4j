@@ -136,7 +136,7 @@ public class TestOptimizers extends BaseDL4JTest {
                                                         .build())
                         .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         return c;
     }

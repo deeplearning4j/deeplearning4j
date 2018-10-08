@@ -899,9 +899,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.type = t;
 
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asLongPointer();
-                indexer = LongRawIndexer.create((LongPointer) pointer);
+                indexer = LongIndexer.create((LongPointer) pointer);
 
-                LongRawIndexer Lindexer = (LongRawIndexer) indexer;
+                LongIndexer Lindexer = (LongIndexer) indexer;
 
                 for (long i = 0; i < length(); i++) {
                     if (t == Type.LONG)

@@ -71,7 +71,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                             .updater(new Sgd(0.1)).seed(12345).list()
                             .layer(0, new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(1, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2)
-                                            .nOut(1).build())
+                                            .nOut(1).activation(Activation.TANH).build())
                             .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -161,7 +161,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                             .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2)
-                                            .nOut(1).build())
+                                            .nOut(1).activation(Activation.TANH).build())
                             .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
                             .inputPreProcessor(2, new FeedForwardToRnnPreProcessor()).build();
 
@@ -309,7 +309,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                                                                                         .nIn(5).nOut(nOut)
                                                                                         .weightInit(WeightInit.ZERO)
                                                                                         .updater(new NoOp()).build())
-                                                        .pretrain(false).backprop(true).build();
+                                                        .build();
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
 
@@ -372,7 +372,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                                                                                         .nIn(5).nOut(nOut)
                                                                                         .weightInit(WeightInit.XAVIER)
                                                                                         .updater(new NoOp()).build())
-                                                        .pretrain(false).backprop(true).build();
+                                                        .build();
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
 
@@ -383,12 +383,12 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
                                                         .layer(1, new RnnOutputLayer.Builder(
-                                                                        LossFunctions.LossFunction.MCXENT)
-                                                                                        .activation(Activation.SOFTMAX)
+                                                                        LossFunctions.LossFunction.MSE)
+                                                                                        .activation(Activation.IDENTITY)
                                                                                         .nIn(5).nOut(nOut)
                                                                                         .weightInit(WeightInit.XAVIER)
                                                                                         .updater(new NoOp()).build())
-                                                        .pretrain(false).backprop(true).build();
+                                                        .build();
                         MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
                         mln2.init();
 

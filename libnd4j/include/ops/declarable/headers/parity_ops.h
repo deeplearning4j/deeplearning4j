@@ -35,7 +35,7 @@ namespace nd4j {
          * 0: optional axis
          */
         #if NOT_EXCLUDED(OP_argmax)
-        DECLARE_REDUCTION_OP(argmax, 1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(argmax, 1, 1, false, 0, -2);
         #endif
 
         /**
@@ -48,7 +48,7 @@ namespace nd4j {
          * 0: optional axis
          */
         #if NOT_EXCLUDED(OP_argmin)
-        DECLARE_REDUCTION_OP(argmin, 1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(argmin, 1, 1, false, 0, -2);
         #endif
 
         /**
@@ -229,6 +229,50 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_scatter_min)
         DECLARE_OP(scatter_min, 3, 1, true);
+        #endif
+
+        /**
+         * This operation scatter "updates" elements into new output array according to given "indices"
+         * Expected arguments:         
+         * indices: array containing elements/slices indexes of output array to put "updates" elements into, the rest output elements will be zeros
+         * updates: array containing elements to be inserted into output array
+         * shape: contains shape of output array
+         */
+        #if NOT_EXCLUDED(OP_scatter_nd)
+        DECLARE_CUSTOM_OP(scatter_nd, 3, 1, false, 0, 0);
+        #endif
+
+        /**
+         * This operation scatter "updates" elements into input array along given "indices"
+         * Expected arguments:   
+         * input: array to be updated      
+         * indices: array containing elements/slices indexes of input array to put "updates" elements into
+         * updates: array containing elements to be inserted into input array
+         */
+        #if NOT_EXCLUDED(OP_scatter_nd_update)
+        DECLARE_OP(scatter_nd_update, 3, 1, true);
+        #endif
+
+        /**
+         * This operation adds "updates" elements to input array along given "indices"
+         * Expected arguments:
+         * input: array to be updated
+         * indices: array containing elements/slices indexes of input array to add "updates" elements to
+         * updates: array containing elements to be interfered with input 
+         */
+        #if NOT_EXCLUDED(OP_scatter_add)
+        DECLARE_OP(scatter_nd_add, 3, 1, true);
+        #endif
+
+        /**
+         * This operation subtract "updates" elements from input array along given "indices"
+         * Expected arguments:
+         * input: array to be updated
+         * indices: array containing elements/slices indexes of input array to subtract "updates" elements from
+         * updates: array containing elements to be interfered with input 
+         */
+        #if NOT_EXCLUDED(OP_scatter_sub)
+        DECLARE_OP(scatter_nd_sub, 3, 1, true);
         #endif
 
         /**
@@ -642,6 +686,10 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(dynamic_partition, 2, 1, false, 0, 1);
         #endif
 
+        #if NOT_EXCLUDED(OP_dynamic_partition_bp)
+        DECLARE_CUSTOM_OP(dynamic_partition_bp, 3, 2, false, 0, 1);
+        #endif
+
         /**
          * dynamic_stitch - merge partitions from the second param a input tensor 
          * into a single tensor accordingly to index array given.
@@ -756,14 +804,6 @@ namespace nd4j {
         #endif
 
         /**
-         * Special atan2 op impl for TF's args order
-         * @tparam T
-         */
-        #if NOT_EXCLUDED(OP_tf_atan2)
-        DECLARE_OP(tf_atan2, 2, 1, true);
-        #endif
-
-        /**
          * This op calculates weighted logarithmic loss of input
          * Input arguments
          *  0 - target
@@ -863,8 +903,9 @@ namespace nd4j {
          * return value:
          *    (N+1)D tensor filled by 0 and 1 accordingly the mask
          */
+        #if NOT_EXCLUDED(OP_sequence_mask)
         DECLARE_CUSTOM_OP(sequence_mask, 1, 1, false, 0, 0);
-
+        #endif
         /**
          * segment_max op. - make a tensor filled by max values according to index tensor given.
          *
@@ -875,7 +916,13 @@ namespace nd4j {
          * return value:
          *    tensor with max values according to indices sets.
          */
+
+        #if NOT_EXCLUDED(OP_segment_max)
         DECLARE_CUSTOM_OP(segment_max, 2, 1, false, 0, 0);
+        #endif
+        #if NOT_EXCLUDED(OP_segment_max_bp)
+        DECLARE_CUSTOM_OP(segment_max_bp, 3, 2, false, 0, 0);
+        #endif
 
         /**
          * segment_min op. - make a tensor filled by min values according to index tensor given.
@@ -887,7 +934,12 @@ namespace nd4j {
          * return value:
          *    tensor with min values according to indices sets.
          */
+        #if NOT_EXCLUDED(OP_segment_min_bp)
         DECLARE_CUSTOM_OP(segment_min, 2, 1, false, 0, 0);
+        #endif
+        #if NOT_EXCLUDED(OP_segment_min_bp)
+        DECLARE_CUSTOM_OP(segment_min_bp, 3, 2, false, 0, 0);
+        #endif
 
         /**
          * segment_sum op. - make a tensor filled by sum of values according to index tensor given.
@@ -899,7 +951,12 @@ namespace nd4j {
          * return value:
          *    tensor with sum of values according to indices sets.
          */
+        #if NOT_EXCLUDED(OP_segment_sum)
         DECLARE_CUSTOM_OP(segment_sum, 2, 1, false, 0, 0);
+        #endif
+        #if NOT_EXCLUDED(OP_segment_sum_bp)
+        DECLARE_CUSTOM_OP(segment_sum_bp, 3, 2, false, 0, 0);
+        #endif
 
         /**
          * segment_prod op. - make a tensor filled by product of values according to index tensor given.
@@ -911,8 +968,12 @@ namespace nd4j {
          * return value:
          *    tensor with product of values according to indices sets.
          */
+        #if NOT_EXCLUDED(OP_segment_prod)
         DECLARE_CUSTOM_OP(segment_prod, 2, 1, false, 0, 0);
-
+        #endif
+        #if NOT_EXCLUDED(OP_segment_prod_bp)
+        DECLARE_CUSTOM_OP(segment_prod_bp, 3, 2, false, 0, 0);
+        #endif
         /**
          * segment_mean op. - make a tensor filled by average of values according to index tensor given.
          *
@@ -923,7 +984,129 @@ namespace nd4j {
          * return value:
          *    tensor with average of values according to indices sets.
          */
+        #if NOT_EXCLUDED(OP_segment_mean)
         DECLARE_CUSTOM_OP(segment_mean, 2, 1, false, 0, 0);
+        #endif
+        #if NOT_EXCLUDED(OP_segment_mean_bp)
+        DECLARE_CUSTOM_OP(segment_mean_bp, 3, 2, false, 0, 0);
+        #endif
+
+        /**
+         * unsorted_segment_max op. - make a tensor filled by max values according to index tensor given.
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * return value:
+         *    tensor with max values according to indices sets.
+         */
+        #if NOT_EXCLUDED(OP_unsorted_segment_max)
+        DECLARE_CUSTOM_OP(unsorted_segment_max, 2, 1, false, 0, 1);
+        #endif
+        #if NOT_EXCLUDED(OP_unsorted_segment_max_bp)
+        DECLARE_CUSTOM_OP(unsorted_segment_max_bp, 3, 2, false, 0, 1);
+        #endif
+
+        /**
+         * unsorted_segment_min op. - make a tensor filled by min values according to index tensor given.
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * integer param:
+         *    0 - num of segments
+         *
+         * return value:
+         *    tensor with min values according to indices sets.
+         */
+        #if NOT_EXCLUDED(OP_unsorted_segment_min_bp)
+        DECLARE_CUSTOM_OP(unsorted_segment_min, 2, 1, false, 0, 1);
+        #endif
+        #if NOT_EXCLUDED(OP_unsorted_segment_min_bp)
+        DECLARE_CUSTOM_OP(unsorted_segment_min_bp, 3, 2, false, 0, 1);
+        #endif
+
+        /**
+         * unsorted_segment_sum op. - make a tensor filled by sum of values according to index tensor given.
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * integer param:
+         *    0 - num of segments
+         *
+         * return value:
+         *    tensor with sum of values according to indices sets.
+         */
+        #if NOT_EXCLUDED(OP_unsorted_segment_sum)
+        DECLARE_CUSTOM_OP(unsorted_segment_sum, 2, 1, false, 0, 1);
+        #endif
+        #if NOT_EXCLUDED(OP_unsorted_segment_sum_bp)
+        DECLARE_CUSTOM_OP(unsorted_segment_sum_bp, 3, 2, false, 0, 1);
+        #endif
+
+        /**
+         * unsorted_segment_prod op. - make a tensor filled by product of values according to index tensor given.
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * integer param:
+         *    0 - num of segments
+         *
+         * return value:
+         *    tensor with product of values according to indices sets.
+         */
+        #if NOT_EXCLUDED(OP_unsorted_segment_prod)
+        DECLARE_CUSTOM_OP(unsorted_segment_prod, 2, 1, false, 0, 1);
+        #endif
+        #if NOT_EXCLUDED(OP_unsorted_segment_prod_bp)
+        DECLARE_CUSTOM_OP(unsorted_segment_prod_bp, 3, 2, false, 0, 1);
+        #endif
+
+        /**
+         * unsorted_segment_mean op. - make a tensor filled by average of values according to index tensor given.
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * integer param:
+         *    0 - num of segments
+         *
+         * return value:
+         *    tensor with average of values according to indices sets.
+         */
+        #if NOT_EXCLUDED(OP_unsorted_segment_mean)
+        DECLARE_CUSTOM_OP(unsorted_segment_mean, 2, 1, false, 0, 1);
+        #endif
+        #if NOT_EXCLUDED(OP_unsorted_segment_mean_bp)
+        DECLARE_CUSTOM_OP(unsorted_segment_mean_bp, 3, 2, false, 0, 1);
+        #endif
+
+        /**
+         * unsorted_segment_sqrt_n op. - computes the sum along segments of a tensor divided by the sqrt(N).
+         *
+         * input params:
+         *    0 - the tensor with data;
+         *    1 - the tensor with indices.
+         *
+         * integer param:
+         *    0 - num of segments
+         *
+         * return value:
+         *    tensor with average of values according to indices sets.
+         */
+        #if NOT_EXCLUDED(OP_unsorted_segment_sqrt)
+        DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n, 2, 1, false, 0, 1);
+        #endif
+        #if NOT_EXCLUDED(OP_unsorted_segment_sqrt_n_bp)
+        DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n_bp, 3, 2, false, 0, 1);
+        #endif
 
         /**
          * extract_image_patches op - Extract patches from images and put them in the "depth" output dimension.
@@ -940,7 +1123,9 @@ namespace nd4j {
          *    5 - rates_cols
          *    6 - padding_type - 0 - equiv 'VALID', 1 - 'SAME'
          */
+        #if NOT_EXCLUDED(OP_extract_image_patches)
         DECLARE_CUSTOM_OP(extract_image_patches, 1, 1, false, 0, 7);
+        #endif
 
         /**
          * roll - op porting from numpy (https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.roll.html)
@@ -1228,7 +1413,29 @@ namespace nd4j {
         */
 
         #if NOT_EXCLUDED(OP_reduce_dot_bp)
-        DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 2, false, 0, 0);
+        #endif
+
+        /**
+        * This op calculates backprop dot for two tensors along given dimensions
+        *
+        * input array:
+        *    x: tensor to calculate dot for
+        *    y: tensor to calculate dot for
+        *    z: tensor with gradient output of the FF dot for x and y
+        *
+        * int arguments:
+        *   list of integers - dimensions to calculate dot along,
+        *   default corresponds to empty list in which case calculation
+        *   is performed for all dimensions and scalar is returned.
+        *
+        * output array:
+        *   the tensor with calculated backproped dots
+        *
+        */
+
+        #if NOT_EXCLUDED(OP_matrix_band_part)
+        DECLARE_CONFIGURABLE_OP(matrix_band_part, 1, 1, true, 0, 2);
         #endif
 
     }

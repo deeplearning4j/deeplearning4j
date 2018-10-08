@@ -59,7 +59,12 @@
        (22, simdOps::Mod) ,\
        (23, simdOps::TruncateDiv), \
        (24, simdOps::And), \
-       (25, simdOps::Or)
+       (25, simdOps::Or) ,\
+       (26, simdOps::Atan2) ,\
+       (27, simdOps::LogicalOr) ,\
+       (28, simdOps::LogicalXor) ,\
+       (29, simdOps::LogicalNot) ,\
+       (30, simdOps::LogicalAnd)
 
 
 
@@ -196,7 +201,12 @@
         (24, simdOps::AMax), \
         (25, simdOps::AMin), \
         (26, simdOps::And), \
-        (27, simdOps::Or)
+        (27, simdOps::Or), \
+        (28, simdOps::Atan2) ,\
+        (29, simdOps::LogicalOr) ,\
+        (30, simdOps::LogicalXor) ,\
+        (31, simdOps::LogicalNot) ,\
+        (32, simdOps::LogicalAnd)
 
 
 
@@ -305,6 +315,10 @@
         (26, simdOps::RelativeError) ,\
         (27, simdOps::BinaryRelativeError) ,\
         (28, simdOps::BinaryMinimumAbsoluteRelativeError) ,\
+        (29, simdOps::LogicalOr) ,\
+        (30, simdOps::LogicalXor) ,\
+        (31, simdOps::LogicalNot) ,\
+        (32, simdOps::LogicalAnd) ,\
         (92, simdOps::PowDerivative), \
         (93, simdOps::LogPoisonLoss), \
         (94, simdOps::LogPoisonLossFull)

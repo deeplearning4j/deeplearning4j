@@ -51,7 +51,7 @@ namespace ops {
 
             block_dims = (int) blocks->lengthOf();
 
-            REQUIRE_TRUE(blocks->isVector(), 0, "SpaceToBatch: blocks supposed to be vector, but got %iD instead", blocks->rankOf());
+            REQUIRE_TRUE(blocks->isVector() || blocks->lengthOf() == 1, 0, "SpaceToBatch: blocks supposed to be vector or scalar, but got %iD instead", blocks->rankOf());
             REQUIRE_TRUE(input->rankOf() >= 1 + blocks->lengthOf() + 1, 0, "SpaceToBatch: blocks length + 2 should match input rank at least");
             REQUIRE_TRUE(padding->rankOf() == 2, 0, "SpaceToBatch: padding should have rank of 2, but got %i instead", padding->rankOf());
             REQUIRE_TRUE(padding->columns() == 2 && blocks->lengthOf() == padding->rows(), 0, "SpaceToBatch: padding should have M rows and 2 columns");

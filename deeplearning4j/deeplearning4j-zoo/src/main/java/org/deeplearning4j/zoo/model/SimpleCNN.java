@@ -36,7 +36,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 
 /**
  * A simple convolutional network for generic image classification.
- * Reference: https://github.com/oarriaga/face_classification/
+ * Reference: <a href="https://github.com/oarriaga/face_classification/">https://github.com/oarriaga/face_classification/</a>
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -134,7 +134,7 @@ public class SimpleCNN extends ZooModel {
 
                                         .setInputType(InputType.convolutional(inputShape[2], inputShape[1],
                                                         inputShape[0]))
-                                        .backprop(true).pretrain(false).build();
+                                        .build();
 
         return conf;
     }

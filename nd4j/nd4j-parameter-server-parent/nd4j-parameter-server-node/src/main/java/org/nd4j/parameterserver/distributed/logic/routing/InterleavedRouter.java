@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class InterleavedRouter extends BaseRouter {
     protected short targetIndex = (short) -1;
     protected AtomicLong counter = new AtomicLong(0);

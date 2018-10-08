@@ -101,6 +101,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>arbiter-core</artifactId>
             <version>${project.version}</version>
@@ -182,7 +188,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <scalaVersion>2.11.7</scalaVersion>
+                    <scalaVersion>${scala.version}</scalaVersion>
                 </configuration>
             </plugin>
 

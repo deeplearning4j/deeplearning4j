@@ -107,7 +107,7 @@ public class MathUtils {
     }
 
     /**
-     * See: http://stackoverflow.com/questions/466204/rounding-off-to-nearest-power-of-2
+     * See: <a href="http://stackoverflow.com/questions/466204/rounding-off-to-nearest-power-of-2">http://stackoverflow.com/questions/466204/rounding-off-to-nearest-power-of-2</a>
      *
      * @param v the number to getFromOrigin the next power of 2 for
      * @return the next power of 2 for the passed in value
@@ -1346,13 +1346,43 @@ public class MathUtils {
         return (y2 - y1) / (x2 - x1);
     }//end slope
 
+    /**
+     * Shuffle the array elements using the specified RNG seed.
+     * Uses Fisher Yates shuffle internally: <a href="https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm">
+     * https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm</a>
+     *
+     * @param array   Array to shuffle
+     * @param rngSeed RNG seed to use for shuffling
+     */
     public static void shuffleArray(int[] array, long rngSeed) {
         shuffleArray(array, new Random(rngSeed));
     }
 
+    /**
+     * Shuffle the array elements using the specified Random instance
+     * Uses Fisher Yates shuffle internally: <a href="https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm">
+     * https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm</a>
+     *
+     * @param array Array to shuffle
+     * @param rng   Random instance to use for shuffling
+     */
     public static void shuffleArray(int[] array, Random rng) {
-        //https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-        for (int i = array.length - 1; i > 0; i--) {
+        shuffleArraySubset(array, array.length, rng);
+    }
+
+    /**
+     * Shuffle the first N elements of the array using the specified Random instance.<br>
+     * If shuffleFirst < array.length, only the elements 0 to shuffleFirst-1 are modified; values at indices shuffleFirst to
+     * array.length-1 are not changed.
+     * Uses Fisher Yates shuffle internally: <a href="https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm">
+     * https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm</a>
+     *
+     * @param array Array to shuffle first N elements of
+     *
+     * @param rng   Random instance to use for shuffling
+     */
+    public static void shuffleArraySubset(int[] array, int shuffleFirst, Random rng) {
+        for (int i = shuffleFirst-1; i > 0; i--) {
             int j = rng.nextInt(i + 1);
             int temp = array[j];
             array[j] = array[i];

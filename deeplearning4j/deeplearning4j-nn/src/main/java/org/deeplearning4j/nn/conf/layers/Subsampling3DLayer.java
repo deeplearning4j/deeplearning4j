@@ -41,7 +41,6 @@ import java.util.Map;
  *
  * @author Max Pumperla
  */
-
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

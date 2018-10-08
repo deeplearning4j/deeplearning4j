@@ -78,7 +78,7 @@ public class RandomTests extends BaseDL4JTest {
                                     .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                                     .nOut(10).activation(Activation.SOFTMAX).build())
                                     .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
-                                    .backprop(true).pretrain(false).build();
+                                    .build();
 
                     MultiLayerNetwork network = new MultiLayerNetwork(conf);
                     network.init();

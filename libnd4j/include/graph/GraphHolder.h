@@ -22,6 +22,8 @@
 #include <pointercast.h>
 #include <map>
 #include <graph/Graph.h>
+#include <helpers/SimpleReadWriteLock.h>
+#include <graph/exceptions/unknown_graph_exception.h>
 
 namespace nd4j {
     namespace graph {
@@ -31,6 +33,9 @@ namespace nd4j {
             std::map<Nd4jLong, Graph<float>*> _graphF;
             std::map<Nd4jLong, Graph<double>*> _graphD;
             std::map<Nd4jLong, Graph<float16>*> _graphH;
+
+
+            std::map<Nd4jLong, SimpleReadWriteLock> _locks;
 
             GraphHolder() = default;
             ~GraphHolder() = default;
@@ -57,6 +62,44 @@ namespace nd4j {
 
             template <typename T>
             bool hasGraph(Nd4jLong graphId);
+
+            bool hasGraphAny(Nd4jLong graphId);
+
+
+            flatbuffers::Offset<FlatResult> execute(Nd4jLong graphId, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request);
+
+            template <typename T>
+            void replaceGraph(Nd4jLong graphId, Graph<T>* graph);
+
+            /////////////////////////////
+
+            FORCEINLINE void lockWrite(Nd4jLong graphId) {
+                if (_locks.count(graphId) == 0)
+                    return;
+
+                _locks[graphId].lockWrite();
+            }
+
+            FORCEINLINE void unlockWrite(Nd4jLong graphId) {
+                if (_locks.count(graphId) == 0)
+                    return;
+
+                _locks[graphId].unlockWrite();
+            }
+
+            FORCEINLINE void lockRead(Nd4jLong graphId) {
+                if (_locks.count(graphId) == 0)
+                    return;
+
+                _locks[graphId].lockRead();
+            }
+
+            FORCEINLINE void unlockRead(Nd4jLong graphId) {
+                if (_locks.count(graphId) == 0)
+                    return;
+
+                _locks[graphId].unlockRead();
+            }
         };
     }
 }

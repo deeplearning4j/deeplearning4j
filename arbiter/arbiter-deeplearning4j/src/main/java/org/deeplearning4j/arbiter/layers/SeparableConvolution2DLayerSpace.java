@@ -22,7 +22,11 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -30,10 +34,12 @@ import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
 public class SeparableConvolution2DLayerSpace extends BaseConvolutionLayerSpace<SeparableConvolution2D> {
 
     private ParameterSpace<Integer> depthMultiplier;
+    protected ParameterSpace<List<LayerConstraint>> pointWiseConstraints;
 
     protected SeparableConvolution2DLayerSpace(Builder builder){
         super(builder);
         this.depthMultiplier = builder.depthMultiplier;
+        this.pointWiseConstraints = builder.pointWiseConstraints;
     }
 
     @Override
@@ -57,11 +63,27 @@ public class SeparableConvolution2DLayerSpace extends BaseConvolutionLayerSpace<
             builder.hasBias(hasBias.getValue(values));
         if (depthMultiplier != null)
             builder.depthMultiplier(depthMultiplier.getValue(values));
+        if (pointWiseConstraints != null){
+            List<LayerConstraint> c = pointWiseConstraints.getValue(values);
+            if(c != null){
+                builder.constrainPointWise(c.toArray(new LayerConstraint[c.size()]));
+            }
+        }
     }
 
 
     public static class Builder extends BaseConvolutionLayerSpace.Builder<Builder>{
         private ParameterSpace<Integer> depthMultiplier;
+        protected ParameterSpace<List<LayerConstraint>> pointWiseConstraints;
+
+        public Builder constrainPointWise(LayerConstraint... constraints){
+            return constrainPointWise(new FixedValue<List<LayerConstraint>>(Arrays.asList(constraints)));
+        }
+
+        public Builder constrainPointWise(ParameterSpace<List<LayerConstraint>> constraints){
+            this.pointWiseConstraints = constraints;
+            return this;
+        }
 
         public Builder depthMultiplier(int depthMultiplier){
             return depthMultiplier(new FixedValue<>(depthMultiplier));

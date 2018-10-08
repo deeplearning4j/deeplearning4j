@@ -545,7 +545,7 @@ TEST_F(FlatBuffersTest, ReduceDim_1) {
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_false.fb");
 
-    //graph->printOut();
+    graph->printOut();
 
     auto variableSpace = graph->getVariableSpace();
 
@@ -577,7 +577,7 @@ TEST_F(FlatBuffersTest, ReduceDim_2) {
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_true.fb");
 
-    //graph->printOut();
+    graph->printOut();
 
     auto variableSpace = graph->getVariableSpace();
 
@@ -667,6 +667,7 @@ TEST_F(FlatBuffersTest, Test_Stitches) {
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/partition_stitch_misc.fb");
     //graph->printOut();
 
+
     auto result = GraphExecutioner<float>::execute(graph);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
@@ -747,6 +748,17 @@ TEST_F(FlatBuffersTest, Test_MNIST_00_1) {
     delete graph;
 }
 
+
+
+TEST_F(FlatBuffersTest, Test_MNIST_1) {
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/mnist.fb");
+    //graph->printOut();
+
+    auto result = GraphExecutioner<float>::execute(graph);
+    ASSERT_EQ(Status::OK(), result);
+
+    delete graph;
+}
 
 /*
 // FIXME: uncomment this test once conv_0 fb reexported

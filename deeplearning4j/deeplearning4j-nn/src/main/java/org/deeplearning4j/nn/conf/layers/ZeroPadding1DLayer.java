@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -27,6 +28,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
@@ -146,11 +148,19 @@ public class ZeroPadding1DLayer extends NoParamLayer {
             this(padding, padding);
         }
 
+        /**
+         * @param padLeft  Padding value for left
+         * @param padRight Padding value for right
+         */
         public Builder(int padLeft, int padRight) {
             this(new int[] {padLeft, padRight});
         }
 
-        public Builder(int[] padding) {
+        /**
+         * @param padding Padding value for left and right. Must be length 2 array
+         */
+        public Builder(@NonNull int... padding) {
+            Preconditions.checkArgument(padding.length == 2, "Must have 2 padding values - got %s", padding);
             this.padding = padding;
         }
 

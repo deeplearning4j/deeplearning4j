@@ -52,9 +52,9 @@ This is especially important when comparing results between libraries: for examp
 
 For better or worse, DL4J and ND4J allow a lot of configuration. The default values for a lot of this configuration is adequate for most users - but sometimes manual configuration is required for optimal performance. This can be especially true in some benchmarks!
 Some of these configuration options allow users to trade off higher memory use for better performance, for example. Some configuration options of note:
-(a) [Memory configuration](https://deeplearning4j.org/memory)
-(b) [Workspaces and garbage collection](https://deeplearning4j.org/workspaces)
-(c) [CuDNN](https://deeplearning4j.org/cudnn)
+(a) [Memory configuration](./deeplearning4j-config-memory)
+(b) [Workspaces and garbage collection](./deeplearning4j-config-workspaces)
+(c) [CuDNN](./deeplearning4j-config-cudnn)
 (d) DL4J Cache Mode (enable using ```.cacheMode(CacheMode.DEVICE)```)
 
 
@@ -64,7 +64,7 @@ If you aren't sure if you are only measuring what you intend to measure when run
 4. What versions are you using?
 
 When benchmarking, you should use the latest version of whatever libraries you are benchmarking. There's no point identifying and reporting a bottleneck that was fixed 6 months ago. An exception to this would be when you are comparing performance over time between versions.
-Note also that snapshot versions of DL4J and ND4J are also available - these may contain performance improvements (feel free to ask) - https://deeplearning4j.org/snapshots
+Note also that snapshot versions of DL4J and ND4J are also available - these may contain performance improvements (feel free to ask)
 
 
 **Guideline 4: Focus on Real-World Use Cases - And Run a Range of Sizes**
@@ -163,8 +163,8 @@ Most of what has been said for ND4J also applies to DL4J.
 
 In addition:
 1. If you are using the nd4j-native (CPU) backend, ensure you are using Intel MKL. This is faster than the default of OpenBLAS in most cases.
-2. If you are using CUDA, ensure you are using CuDNN ([link](https://deeplearning4j.org/cudnn)
-3. Check the [Workspaces](https://deeplearning4j.org/workspaces) and [Memory](https://deeplearning4j.org/memory) guides. The defaults are usually good - but sometimes better performance can be obtained with some tweaking. This is especially important if you have a lot of Java objects (such as, Word2Vec vectors) in memory while training.
+2. If you are using CUDA, ensure you are using CuDNN ([link](./deeplearning4j-config-cudnn)
+3. Check the [Workspaces](./deeplearning4j-config-workspaces) and [Memory](./deeplearning4j-config-memory) guides. The defaults are usually good - but sometimes better performance can be obtained with some tweaking. This is especially important if you have a lot of Java objects (such as, Word2Vec vectors) in memory while training.
 4. Watch out for ETL bottlenecks. You can add PerformanceListener to your network training to see if ETL is a bottleneck.
 5. Don't forget that performance is dependent on minibatch sizes. Don't benchmark with minibatch size 1 - use something more realistic.
 6. If you need multi-GPU training or inference support, use ParallelWrapper or ParallelInference.
@@ -281,9 +281,9 @@ This is the [relevant code](https://github.com/deeplearning4j/deeplearning4j/blo
             iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
         } else iterator = source;
 
-There are actually two types of asynchronous dataset iterators. The `AsyncDataSetIterator` is what you would use most of the time. It's described in the [Javadoc here](https://deeplearning4j.org/doc/org/deeplearning4j/datasets/iterator/AsyncDataSetIterator.html).
+There are actually two types of asynchronous dataset iterators. The `AsyncDataSetIterator` is what you would use most of the time. It's described in the [Javadoc here](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/datasets/iterator/AsyncDataSetIterator.html).
 
-For special cases such as recurrent neural nets applied to time series, or for computation graphs, you would use a `AsyncMultiDataSetIterator`, described in the [Javadoc here](https://deeplearning4j.org/doc/org/deeplearning4j/datasets/iterator/AsyncMultiDataSetIterator.html).
+For special cases such as recurrent neural nets applied to time series, or for computation graphs, you would use a `AsyncMultiDataSetIterator`, described in the [Javadoc here](https://deeplearning4j.org/api/{{page.version}}/org/deeplearning4j/datasets/iterator/AsyncMultiDataSetIterator.html).
 
 Notice in the code above that `prefetchSize` is another parameter to set. Normal batch size might be 1000 examples, but if you set `prefetchSize` to 3, it would pre-fetch 3,000 instances.
 

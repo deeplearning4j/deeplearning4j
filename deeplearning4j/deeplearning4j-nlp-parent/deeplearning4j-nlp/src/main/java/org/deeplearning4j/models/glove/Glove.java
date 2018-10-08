@@ -39,8 +39,7 @@ import java.util.List;
 
 /**
  * GlobalVectors standalone implementation for DL4j.
- * Based on original Stanford GloVe
- * http://www-nlp.stanford.edu/pubs/glove.pdf
+ * Based on original Stanford GloVe <a href="http://www-nlp.stanford.edu/pubs/glove.pdf">http://www-nlp.stanford.edu/pubs/glove.pdf</a>
  *
  * @author raver119@gmail.com
  */

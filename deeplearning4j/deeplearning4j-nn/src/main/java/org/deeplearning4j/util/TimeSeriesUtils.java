@@ -17,6 +17,7 @@
 package org.deeplearning4j.util;
 
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -66,7 +67,7 @@ public class TimeSeriesUtils {
         if (timeSeriesMask.ordering() != 'f')
             timeSeriesMask = timeSeriesMask.dup('f');
 
-        return timeSeriesMask.reshape('f', new long[] {timeSeriesMask.length(), 1});
+        return timeSeriesMask.reshape('f', timeSeriesMask.length(), 1);
     }
 
 
@@ -82,7 +83,23 @@ public class TimeSeriesUtils {
         if (timeSeriesMask.ordering() != 'f' || !Shape.hasDefaultStridesForShape(timeSeriesMask))
             timeSeriesMask = workspaceMgr.dup(arrayType, timeSeriesMask, 'f');
 
-        return workspaceMgr.leverageTo(arrayType, timeSeriesMask.reshape('f', new long[] {timeSeriesMask.length(), 1}));
+        return workspaceMgr.leverageTo(arrayType, timeSeriesMask.reshape('f', timeSeriesMask.length(), 1));
+    }
+
+    /**
+     * Reshape time series mask arrays. This should match the assumptions (f order, etc) in RnnOutputLayer
+     * This reshapes from [X,1] to [X,1,1,1] suitable for per-example masking in CNNs
+     * @param timeSeriesMask    Mask array to reshape for CNN per-example masking
+     * @return                  Mask array as 4D CNN mask array: [X, 1, 1, 1]
+     */
+    public static INDArray reshapeTimeSeriesMaskToCnn4dMask(INDArray timeSeriesMask, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
+        if (timeSeriesMask.rank() != 2)
+            throw new IllegalArgumentException("Cannot reshape mask: rank is not 2");
+
+        if (timeSeriesMask.ordering() != 'f' || !Shape.hasDefaultStridesForShape(timeSeriesMask))
+            timeSeriesMask = workspaceMgr.dup(arrayType, timeSeriesMask, 'f');
+
+        return workspaceMgr.leverageTo(arrayType, timeSeriesMask.reshape('f', timeSeriesMask.length(), 1, 1, 1));
     }
 
     /**
@@ -96,7 +113,24 @@ public class TimeSeriesUtils {
 
         val timeSeriesLength = timeSeriesMaskAsVector.length() / minibatchSize;
 
-        return timeSeriesMaskAsVector.reshape('f', new long[] {minibatchSize, timeSeriesLength});
+        return timeSeriesMaskAsVector.reshape('f', minibatchSize, timeSeriesLength);
+    }
+
+    /**
+     * Reshape CNN-style 4d mask array of shape [seqLength*minibatch,1,1,1] to time series mask [mb,seqLength]
+     * This should match the assumptions (f order, etc) in RnnOutputLayer
+     * @param timeSeriesMaskAsCnnMask    Mask array to reshape
+     * @return                  Sequence mask array - [minibatch, sequenceLength]
+     */
+    public static INDArray reshapeCnnMaskToTimeSeriesMask(INDArray timeSeriesMaskAsCnnMask, int minibatchSize) {
+        Preconditions.checkArgument(timeSeriesMaskAsCnnMask.rank() == 4 || timeSeriesMaskAsCnnMask.size(1) != 1 ||
+                timeSeriesMaskAsCnnMask.size(2) != 1 || timeSeriesMaskAsCnnMask.size(3) != 1,
+                "Expected rank 4 mask with shape [mb*seqLength, 1, 1, 1]. Got rank %s mask array with shape %s",
+                timeSeriesMaskAsCnnMask.rank(), timeSeriesMaskAsCnnMask.shape());
+
+        val timeSeriesLength = timeSeriesMaskAsCnnMask.length() / minibatchSize;
+
+        return timeSeriesMaskAsCnnMask.reshape('f', minibatchSize, timeSeriesLength);
     }
 
     public static INDArray reshapePerOutputTimeSeriesMaskTo2d(INDArray perOutputTimeSeriesMask) {

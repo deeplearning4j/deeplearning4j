@@ -37,7 +37,7 @@ The only exclusion is the `output()` method that uses workspaces (if enabled) in
 
 If your training process uses workspaces, we recommend that you disable (or reduce the frequency of) periodic GC calls. That can be done like so:
 
-```
+```java
 // this will limit frequency of gc calls to 5000 milliseconds
 Nd4j.getMemoryManager().setAutoGcWindow(5000)
 
@@ -52,24 +52,24 @@ Put that somewhere before your `model.fit(...)` call.
 For `ParallelWrapper`, the workspace-mode configuration option was also added. As such, each of the trainer threads will use a separate workspace attached to the designated device.
 
 
-```
+```java
 ParallelWrapper wrapper = new ParallelWrapper.Builder(model)
-            // DataSets prefetching options. Buffer size per worker.
-            .prefetchBuffer(8)
+      // DataSets prefetching options. Buffer size per worker.
+      .prefetchBuffer(8)
 
-            // set number of workers equal to number of GPUs.
-            .workers(2)
+      // set number of workers equal to number of GPUs.
+      .workers(2)
 
-            // rare averaging improves performance but might reduce model accuracy
-            .averagingFrequency(5)
+      // rare averaging improves performance but might reduce model accuracy
+      .averagingFrequency(5)
 
-            // if set to TRUE, on every averaging model score will be reported
-            .reportScoreAfterAveraging(false)
+      // if set to TRUE, on every averaging model score will be reported
+      .reportScoreAfterAveraging(false)
 
-            // 3 options here: NONE, SINGLE, SEPARATE
-            .workspaceMode(WorkspaceMode.SINGLE)
+      // 3 options here: NONE, SINGLE, SEPARATE
+      .workspaceMode(WorkspaceMode.SINGLE)
 
-            .build();
+      .build();
 ```
 
 ## Iterators
@@ -112,8 +112,6 @@ org.nd4j.linalg.exception.ND4JIllegalStateException: Op [set] Y argument uses le
 For more details, see the ND4J User Guide: nd4j.org/userguide#workspaces-panic
 ```
 
-For more details on these exceptions, see <a href="https://nd4j.org/userguide#workspaces-panic">ND4J User Guide - Workspaces</a>
-
 
 ## DL4J's LayerWorkspaceMgr
 
@@ -124,11 +122,11 @@ For example, the activations out of a layer may be placed in one workspace durin
 However, with the LayerWorkspaceMgr design, implementers of layers don't need to wory about about this.
 
 What does this mean in practice? Usually it's quite simple...
-* When returning activations (```activate(boolean training, LayerWorkspaceMgr workspaceMgr)``` method), make sure the returned array is defined in ```ArrayType.ACTIVATIONS``` (i.e., use LayerWorkspaceMgr.create(ArrayType.ACTIVATIONS, ...) or similar)
-* When returning activation gradients (```backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr)```), similarly return an array defined in ```ArrayType.ACTIVATION_GRAD```
+* When returning activations (`activate(boolean training, LayerWorkspaceMgr workspaceMgr)` method), make sure the returned array is defined in `ArrayType.ACTIVATIONS` (i.e., use LayerWorkspaceMgr.create(ArrayType.ACTIVATIONS, ...) or similar)
+* When returning activation gradients (`backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr)`), similarly return an array defined in `ArrayType.ACTIVATION_GRAD`
 
-You can also leverage an array defined in any workspace to the appropriate workspace using, for example, ```LayerWorkspaceMgr.leverageTo(ArrayType.ACTIVATIONS, myArray)```
+You can also leverage an array defined in any workspace to the appropriate workspace using, for example, `LayerWorkspaceMgr.leverageTo(ArrayType.ACTIVATIONS, myArray)`
 
 
-Note that if you are *not* implementing a custom layer (and instead just want to perform forward pass for a layer outside of a MultiLayerNetwork/ComputationGraph) you can use ```LayerWorkspaceMgr.noWorkspaces()```.
+Note that if you are *not* implementing a custom layer (and instead just want to perform forward pass for a layer outside of a MultiLayerNetwork/ComputationGraph) you can use `LayerWorkspaceMgr.noWorkspaces()`.
 

@@ -120,7 +120,7 @@ public class MultipleEpochsIteratorTest extends BaseDL4JTest {
                         .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation(Activation.RELU).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
-                        .pretrain(false).backprop(true)
+
                         .inputPreProcessor(0, new CnnToFeedForwardPreProcessor(20, 20, 1)).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

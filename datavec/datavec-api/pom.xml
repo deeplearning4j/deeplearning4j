@@ -58,6 +58,11 @@
             <artifactId>joda-time</artifactId>
             <version>${jodatime.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>${snakeyaml.version}</version>
+        </dependency>
         <!-- ND4J Shaded Jackson Dependencies -->
         <dependency>
             <groupId>org.nd4j</groupId>

@@ -16,7 +16,6 @@
 
 package org.datavec.image.recordreader.objdetect;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data

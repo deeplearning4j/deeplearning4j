@@ -2998,7 +2998,7 @@ NDArray<double> exp('c', {3,3,5,5}, {
         
     ASSERT_EQ(Status::OK(), results->status());
 //    ASSERT_TRUE(exp.isSameShape(out));
-    out->printIndexedBuffer("LRN BP out");
+//    out->printIndexedBuffer("LRN BP out");
 //    exp.printIndexedBuffer("LRN exp");
     ASSERT_TRUE(exp.equalsTo(out));    
     
@@ -3024,7 +3024,7 @@ TEST_F(DeclarableOpsTests8, LrnTest_BP_2) {
         
     ASSERT_EQ(Status::OK(), results->status());
 //    ASSERT_TRUE(exp.isSameShape(out));
-    out->printIndexedBuffer("LRN BP out");
+//    out->printIndexedBuffer("LRN BP out");
 //    exp.printIndexedBuffer("LRN exp");
 //    ASSERT_TRUE(exp.equalsTo(out));    
     

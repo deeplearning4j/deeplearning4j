@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.autodiff.OpValidationSuite;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -669,9 +669,6 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testCumSumBP() {
-        OpValidationSuite.ignoreFailing();
-        //CumSum is not *technically* a reduction...
-
         //Standard case, non-reverse, non-exclusive
         //dL/dIn_i  = sum_j dL/dOut_j * dOut_j/dIn_i
         //          = sum_j dL/dOut_j * d(in_0 + ... + in_j)/dIn_i
@@ -694,43 +691,50 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
 
 
-//        for(boolean exclusive : new boolean[]{false, true}) {
-//            for(boolean reverse : new boolean[]{false, true}) {
-//
-//                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
-//                INDArray dLdOut = preReduceInput.dup().addi(100);
-//                INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), 0.5);
-//                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
-//
-//                String err = OpValidation.validate(new OpTestCase(new CumSumBp(preReduceInput, dLdOut, dLdIn, keepDims))
-//                        .expectedOutput(0, dLdInExpected));
-//                assertNull(err);
-//            }
-//        }
-    }
+        for(boolean exclusive : new boolean[]{false, true}) {
+            for(boolean reverse : new boolean[]{false, true}) {
 
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+                INDArray dLdOut = Nd4j.valueArrayOf(new long[]{3,4}, 0.5);
+                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
 
-    @Test
-    public void testCumProdBP() {
-        OpValidationSuite.ignoreFailing();
+                INDArray dLdInExpected;
+                if(exclusive){
+                    if(reverse){
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {0.0, 0.0, 0.0, 0.0},
+                                {0.5, 0.5, 0.5, 0.5},
+                                {1.0, 1.0, 1.0, 1.0}});
+                    } else {
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {1.0, 1.0, 1.0, 1.0},
+                                {0.5, 0.5, 0.5, 0.5},
+                                {0.0, 0.0, 0.0, 0.0}});
+                    }
+                } else {
+                    if(reverse){
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {0.5, 0.5, 0.5, 0.5},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {1.5, 1.5, 1.5, 1.5}});
+                    } else {
+                        //Standard case
+                        dLdInExpected = Nd4j.create(new double[][]{
+                                {1.5, 1.5, 1.5, 1.5},
+                                {1.0, 1.0, 1.0, 1.0},
+                                {0.5, 0.5, 0.5, 0.5}});
+                    }
+                }
 
-        //Standard case: non-reverse, non-exclusive
-        //dL/dIn_i  = sum_j dL/dOut_j * dOut_j/dIn_i
-        //          = sum_j dL/dOut_j * d(in_0 * ... * in_j)/dIn_i
-        //          = sum_j dL/dOut_j * prod_(k=0..j)(in_j)
-        //          = reverseCumSum( dL/dOut * cumProd(in)/in_i )
-
-        //Reverse case:
-        //dL/dIn_i  = sum_j dL/dOut_j * dOut_j/dIn_i
-        //          = sum_j dL/dOut_j * d(in_N * ... * in_j)/dIn_i
-        //          = sum_j dL/dOut_j * prod_(k=N..j)(in_j)
-        //          = cumSum( dL/dOut * reverseCumProd(in)/in_i )
-
-        //Exclusive case
-        //
-
-
-        fail();
+                String err = OpValidation.validate(new OpTestCase(
+                        new CumSumBp(preReduceInput, dLdOut, dLdIn, exclusive, reverse, 0))
+                        .expectedOutput(0, dLdInExpected));
+                if(err != null){
+                    err = err + " - exclusive=" + exclusive + ", reverse=" + reverse;
+                }
+                assertNull(err);
+            }
+        }
     }
 
 

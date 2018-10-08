@@ -35,6 +35,9 @@ public class MultiDataSetWrapperIterator implements DataSetIterator {
     protected MultiDataSetIterator iterator;
     protected DataSetPreProcessor preProcessor;
 
+    /**
+     * @param iterator Undelying iterator to wrap
+     */
     public MultiDataSetWrapperIterator(MultiDataSetIterator iterator) {
         this.iterator = iterator;
     }

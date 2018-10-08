@@ -113,8 +113,6 @@ public class TestInstantiation extends BaseDL4JTest {
                 .setOutputs("fc1000")
                 .build();
         initializedModel.fit(new org.nd4j.linalg.dataset.DataSet(f, TestUtils.randomOneHot(1, 1000, 12345)));
-        System.out.println("FIT COMPLETE");
-
 
         // clean up for current model
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -206,6 +204,96 @@ public class TestInstantiation extends BaseDL4JTest {
         log.info(initializedModel.summary());
         result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 227, 227}));
         assertArrayEquals(result[0].shape(), new long[] {1, 1000, 1, 1});
+    }
+
+
+    @Test
+    public void testInitRandomModel() throws IOException {
+        //Test initialization of NON-PRETRAINED models
+        ZooModel model = ResNet50.builder().numClasses(1000).build(); //num labels doesn't matter since we're getting pretrained imagenet
+
+        ComputationGraph initializedModel = model.init();
+        INDArray f = Nd4j.rand(new int[] {1, 3, 224, 224});
+        INDArray[] result = initializedModel.output(f);
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
+        initializedModel.fit(new org.nd4j.linalg.dataset.DataSet(f, TestUtils.randomOneHot(1, 1000, 12345)));
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+//        model = VGG16.builder().numClasses(1000).build();
+//        initializedModel = model.init();
+//        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
+//        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
+//
+//        // clean up for current model
+//        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+//        System.gc();
+
+
+        model = VGG19.builder().numClasses(1000).build();
+        initializedModel = model.init();
+        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        model = Darknet19.builder().numClasses(1000).build(); //num labels doesn't matter since we're getting pretrained imagenet
+
+        initializedModel = model.init();
+        result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 224, 224}));
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        model = Darknet19.builder().numClasses(1000).build();
+        model.setInputShape(new int[][] {{3, 448, 448}});
+
+        initializedModel = model.init();
+        result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 448, 448}));
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+//        model = TinyYOLO.builder().numClasses(1000).build();
+//        initializedModel = model.init();
+//        result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 416, 416}));
+//        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+//        model = YOLO2.builder().numClasses(1000).build();
+//        initializedModel = model.init();
+//        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 608, 608}));
+//        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        model = Xception.builder().numClasses(1000).build();
+        initializedModel = model.init();
+        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 299, 299}));
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        model = SqueezeNet.builder().numClasses(1000).build();
+        initializedModel = model.init();
+        log.info(initializedModel.summary());
+        result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 227, 227}));
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
     }
 
 

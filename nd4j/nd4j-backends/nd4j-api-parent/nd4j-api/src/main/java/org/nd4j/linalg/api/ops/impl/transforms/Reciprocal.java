@@ -71,6 +71,11 @@ public class Reciprocal extends BaseTransformOp {
     }
 
     @Override
+    public String[] tensorflowNames(){
+        return new String[]{"Reciprocal", "Inv"};
+    }
+
+    @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
     }

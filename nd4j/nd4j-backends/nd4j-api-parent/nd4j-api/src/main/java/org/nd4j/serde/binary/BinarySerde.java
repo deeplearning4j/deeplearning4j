@@ -71,7 +71,7 @@ public class BinarySerde {
      * @return
      */
     public static Pair<INDArray, ByteBuffer> toArrayAndByteBuffer(ByteBuffer buffer, int offset) {
-        ByteBuffer byteBuffer = buffer == null ? ByteBuffer.allocateDirect(buffer.array().length).put(buffer.array())
+        ByteBuffer byteBuffer = buffer.hasArray() ? ByteBuffer.allocateDirect(buffer.array().length).put(buffer.array())
                 .order(ByteOrder.nativeOrder()) : buffer.order(ByteOrder.nativeOrder());
         //bump the byte buffer to the proper position
         byteBuffer.position(offset);

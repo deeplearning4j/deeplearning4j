@@ -49,4 +49,9 @@ public class Where extends DynamicCustomOp {
     public String opName() {
         return "Where";
     }
+
+    @Override
+    public String tensorflowName() {
+        return "Where";
+    }
 }

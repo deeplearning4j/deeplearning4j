@@ -217,7 +217,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
                                                         .stride(1, 1).build())
                                         .layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).build())
-                                        .backprop(true).pretrain(false)
+
                                         .setInputType(InputType.convolutional(imageHeight, imageWidth, nChannels));
 
         MultiLayerConfiguration conf = builder.build();

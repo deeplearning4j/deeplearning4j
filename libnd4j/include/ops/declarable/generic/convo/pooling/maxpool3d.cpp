@@ -48,7 +48,7 @@ CUSTOM_OP_IMPL(maxpool3dnew, 1, 1, false, 0, 14) {
     int dW = INT_ARG(11);                                                       // dilations width
     int isSameMode = INT_ARG(12);                                               // 1-SAME,  0-VALID
     // int extraParam0 = INT_ARG(13);                                           // unnecessary for max case, required only for avg and pnorm cases
-    int isNCDHW  = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 0-NDHWC, 1-NCDHW    
+    int isNCDHW  = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 1-NDHWC, 0-NCDHW    
 
     REQUIRE_TRUE(input->rankOf() == 5, 0, "MAXPOOL3DNEW OP: rank of input array must be equal to 5, but got %i instead !", input->rankOf());    
     REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0, "MAXPOOL3DNEW op: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
@@ -98,7 +98,7 @@ DECLARE_SHAPE_FN(maxpool3dnew) {
     int dW = INT_ARG(11);                                                       // dilations width
     int isSameMode = INT_ARG(12);                                               // 1-SAME,  0-VALID
     // int extraParam0 = INT_ARG(13);
-    int isNCDHW  = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 0-NDHWC, 1-NCDHW    
+    int isNCDHW  = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 1-NDHWC, 0-NCDHW    
     
     REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0, "MAXPOOL3DNEW op: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
 
@@ -161,7 +161,7 @@ CUSTOM_OP_IMPL(maxpool3dnew_bp, 2, 1, false, 0, 14) {
     const int dW = INT_ARG(11);                                                 // dilations width
     const int isSameMode = INT_ARG(12);                                         // 1-SAME,  0-VALID
     // int extraParam0 = INT_ARG(13);                                           // unnecessary for max case, required only for avg and pnorm cases
-    int isNCDHW  = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 0-NDHWC, 1-NCDHW    
+    int isNCDHW  = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 1-NDHWC, 0-NCDHW    
 
     REQUIRE_TRUE(input->rankOf() == 5, 0, "MAXPOOL3D_BP op: input should have rank of 5, but got %i instead", input->rankOf());    
     REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0, "MAXPOOL3DNEW op: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);

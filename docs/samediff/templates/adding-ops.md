@@ -1,4 +1,12 @@
-# How to add new operations to SameDiff
+---
+title: How to add new operations to SameDiff
+short_title: Adding Ops
+description: How to add differential functions and other ops to SameDiff graph.
+category: SameDiff
+weight: 2
+---
+
+## How to add new operations to SameDiff
 
 ### A quick SameDiff overview
 

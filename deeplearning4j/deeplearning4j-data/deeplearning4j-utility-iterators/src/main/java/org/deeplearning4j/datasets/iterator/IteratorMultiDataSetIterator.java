@@ -27,11 +27,13 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.*;
 
 /**
- * A DataSetIterator that works on an Iterator<DataSet>, combining and splitting the input DataSet objects as
- * required to get a consistent batch size.
+ * A DataSetIterator that works on an {@code Iterator<MultiDataSet>}, combining and splitting the input DataSet objects as
+ * required to get a specified batch size.<br>
  *
  * Typically used in Spark training, but may be used elsewhere.
  * NOTE: reset method is not supported here.
+ *
+ * @author Alex Black
  */
 public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
 

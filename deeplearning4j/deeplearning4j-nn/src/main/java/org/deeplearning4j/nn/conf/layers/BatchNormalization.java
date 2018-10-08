@@ -39,7 +39,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Batch normalization configuration
+ * Batch normalization layer<br>
+ * See: Ioffe and Szegedy, 2014, <i>Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift</i>
+ * <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a>
+ *
  */
 @Data
 @ToString(callSuper = true)
@@ -282,7 +285,7 @@ public class BatchNormalization extends FeedForwardLayer {
 
         /**
          * Epsilon value for batch normalization; small floating point value added to variance
-         * (algorithm 1 in http://arxiv.org/pdf/1502.03167v3.pdf) to reduce/avoid underflow issues.<br>
+         * (algorithm 1 in <a href="http://arxiv.org/pdf/1502.03167v3.pdf">http://arxiv.org/pdf/1502.03167v3.pdf</a>) to reduce/avoid underflow issues.<br>
          * Default: 1e-5
          *
          * @param eps Epsilon values to use

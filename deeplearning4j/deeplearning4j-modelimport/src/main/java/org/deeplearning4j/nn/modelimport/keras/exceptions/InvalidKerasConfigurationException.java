@@ -21,7 +21,7 @@ package org.deeplearning4j.nn.modelimport.keras.exceptions;
  * Indicates that user is attempting to import a Keras model configuration that
  * is malformed or invalid in some other way.
  *
- * See http://deeplearning4j.org/model-import-keras for more information.
+ * See <a href="http://deeplearning4j.org/model-import-keras">http://deeplearning4j.org/model-import-keras</a> for more information.
  *
  * @author dave@skymind.io
  */

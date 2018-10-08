@@ -30,7 +30,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**Dense layer: fully connected feed forward layer trainable by backprop.
+/**
+ * Dense layer: a standard fully connected feed forward layer
  */
 @Data
 @NoArgsConstructor

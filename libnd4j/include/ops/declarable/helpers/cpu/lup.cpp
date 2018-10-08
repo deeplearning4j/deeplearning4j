@@ -121,7 +121,9 @@ namespace helpers {
             if( pivotValue != T(0.0) ) {
                 swapRows(compoundMatrix.get(), pivot, i);
                 swapRows(permutationMatrix.get(), pivot, i);
-                swapCount++;
+                if (pivot != i)
+                    swapCount++;
+
                 for( int j = i + 1; j < rowNum; j++ ) {
                     (*compoundMatrix)(j, i) /= (*compoundMatrix)(i, i);
                     for( int k = i + 1; k < rowNum; k++ ) {
@@ -138,8 +140,7 @@ namespace helpers {
             // nd4j_printf("Compound matrix diag %i %f.\n", e, (*compoundMatrix)(e, e));
             determinant *= (*compoundMatrix)(e, e);
         }
-        if (0 == swapCount % 2) determinant = -determinant;
-
+        if (swapCount % 2) determinant = -determinant;
         if (compound != nullptr)
             *compound = *compoundMatrix;
         if (permutation != nullptr)

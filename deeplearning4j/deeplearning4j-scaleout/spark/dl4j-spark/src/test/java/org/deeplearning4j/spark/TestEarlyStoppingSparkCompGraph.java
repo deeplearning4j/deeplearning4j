@@ -67,7 +67,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
-                        .setOutputs("0").pretrain(false).backprop(true).build();
+                        .setOutputs("0").build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -118,7 +118,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                         .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY)
                                         .lossFunction(LossFunctions.LossFunction.MSE).build(), "in")
-                        .setOutputs("0").pretrain(false).backprop(true).build();
+                        .setOutputs("0").build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -156,7 +156,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                         .addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
-                        .setOutputs("0").pretrain(false).backprop(true).build();
+                        .setOutputs("0").build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -201,7 +201,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                         .addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
-                        .setOutputs("0").pretrain(false).backprop(true).build();
+                        .setOutputs("0").build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 
@@ -236,7 +236,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
-                        .setOutputs("0").pretrain(false).backprop(true).build();
+                        .setOutputs("0").build();
         ComputationGraph net = new ComputationGraph(conf);
         net.setListeners(new ScoreIterationListener(1));
 

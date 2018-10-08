@@ -94,7 +94,7 @@ public class KerasEmbeddingTest {
         config.put(conf.getLAYER_FIELD_MASK_ZERO(), maskZero);
         KerasEmbedding kerasEmbedding = new KerasEmbedding(layerConfig, false);
         assertEquals(kerasEmbedding.getNumParams(), 1);
-        assertEquals(kerasEmbedding.isHasZeroMasking(), maskZero);
+        assertEquals(kerasEmbedding.isZeroMasking(), maskZero);
 
         EmbeddingSequenceLayer layer = kerasEmbedding.getEmbeddingLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());

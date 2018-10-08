@@ -70,7 +70,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         out.writeInt((int) compressionDescriptor.getCompressedLength());
         out.writeUTF(Type.COMPRESSED.name());
         // at this moment we don't care about mimics anymore
-        //ByteRawIndexer indexer = new ByteRawIndexer((BytePointer) pointer);
+        //ByteIndexer indexer = ByteIndexer.create((BytePointer) pointer);
         out.writeUTF(compressionDescriptor.getCompressionAlgorithm());
         out.writeLong(compressionDescriptor.getCompressedLength());
         out.writeLong(compressionDescriptor.getOriginalLength());

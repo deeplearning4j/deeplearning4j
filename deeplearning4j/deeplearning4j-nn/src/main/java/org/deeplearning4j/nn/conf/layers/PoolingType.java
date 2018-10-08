@@ -17,7 +17,11 @@
 package org.deeplearning4j.nn.conf.layers;
 
 /**
- * Created by Alex on 17/01/2017.
+ * Pooling type:<br>
+ * <b>MAX</b>: Max pooling - output is the maximum value of the input values<br>
+ * <b>AVG</b>: Average pooling - output is the average value of the input values<br>
+ * <b>SUM</b>: Sum pooling - output is the sum of the input values<br>
+ * <b>PNORM</b>: P-norm pooling<br>
  */
 public enum  PoolingType {
     MAX, AVG, SUM, PNORM

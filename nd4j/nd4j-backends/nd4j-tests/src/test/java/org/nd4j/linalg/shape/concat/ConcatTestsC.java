@@ -142,7 +142,7 @@ public class ConcatTestsC extends BaseNd4jTest {
         twos.assign(rand);
         assertEquals(rand, twos);
 
-        INDArray tensor = Nd4j.rand((long) 3, 3, 3, 3);
+        INDArray tensor = Nd4j.rand(new long[]{3L, 3L, 3L});
         INDArray ones = Nd4j.ones(3, 3, 3);
         assertTrue(Arrays.equals(tensor.shape(), ones.shape()));
         ones.assign(tensor);

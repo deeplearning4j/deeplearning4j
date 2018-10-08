@@ -75,6 +75,10 @@ public class Cropping3D extends NoParamLayer {
         this(new Builder(cropLeftD, cropRightD, cropLeftH, cropRightH, cropLeftW, cropRightW));
     }
 
+    /**
+     * @param cropping Cropping as either a length 3 array, with values {@code [cropDepth, cropHeight, cropWidth]},
+     *                 or as a length 4 array, with values {@code [cropLeftDepth, cropRightDepth, cropLeftHeight, cropRightHeight, cropLeftWidth, cropRightWidth]}
+     */
     public Cropping3D(int[] cropping) {
         this(new Builder(cropping));
     }

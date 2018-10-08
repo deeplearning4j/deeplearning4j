@@ -49,6 +49,8 @@ import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.util.DL4JFileUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.compression.impl.NoOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -112,7 +114,7 @@ public class WordVectorSerializer {
             int currLine = 0;
             while ((line = reader.readLine()) != null) {
                 String[] split = line.split(" ");
-                assert split.length == layerSize + 1;
+                Preconditions.checkState(split.length == layerSize + 1, "Expected %s values, got %s", layerSize+1, split.length);
                 String word = split[0].replaceAll(WHITESPACE_REPLACEMENT, " ");
 
                 float[] vector = new float[split.length - 1];
@@ -455,12 +457,12 @@ public class WordVectorSerializer {
         zipfile.putNextEntry(syn0);
 
         // writing out syn0
-        File tempFileSyn0 = File.createTempFile("word2vec", "0");
-        File tempFileSyn1 = File.createTempFile("word2vec", "1");
-        File tempFileSyn1Neg = File.createTempFile("word2vec", "n");
-        File tempFileCodes = File.createTempFile("word2vec", "h");
-        File tempFileHuffman = File.createTempFile("word2vec", "h");
-        File tempFileFreqs = File.createTempFile("word2vec", "f");
+        File tempFileSyn0 = DL4JFileUtils.createTempFile("word2vec", "0");
+        File tempFileSyn1 = DL4JFileUtils.createTempFile("word2vec", "1");
+        File tempFileSyn1Neg = DL4JFileUtils.createTempFile("word2vec", "n");
+        File tempFileCodes = DL4JFileUtils.createTempFile("word2vec", "h");
+        File tempFileHuffman = DL4JFileUtils.createTempFile("word2vec", "h");
+        File tempFileFreqs = DL4JFileUtils.createTempFile("word2vec", "f");
         tempFileSyn0.deleteOnExit();
         tempFileSyn1.deleteOnExit();
         tempFileSyn1Neg.deleteOnExit();
@@ -597,11 +599,11 @@ public class WordVectorSerializer {
         zipfile.putNextEntry(syn0);
 
         // writing out syn0
-        File tempFileSyn0 = File.createTempFile("paravec", "0");
-        File tempFileSyn1 = File.createTempFile("paravec", "1");
-        File tempFileCodes = File.createTempFile("paravec", "h");
-        File tempFileHuffman = File.createTempFile("paravec", "h");
-        File tempFileFreqs = File.createTempFile("paravec", "h");
+        File tempFileSyn0 = DL4JFileUtils.createTempFile("paravec", "0");
+        File tempFileSyn1 = DL4JFileUtils.createTempFile("paravec", "1");
+        File tempFileCodes = DL4JFileUtils.createTempFile("paravec", "h");
+        File tempFileHuffman = DL4JFileUtils.createTempFile("paravec", "h");
+        File tempFileFreqs = DL4JFileUtils.createTempFile("paravec", "h");
         tempFileSyn0.deleteOnExit();
         tempFileSyn1.deleteOnExit();
         tempFileCodes.deleteOnExit();
@@ -772,11 +774,11 @@ public class WordVectorSerializer {
      */
     @Deprecated
     public static Word2Vec readWord2Vec(File file) throws IOException {
-        File tmpFileSyn0 = File.createTempFile("word2vec", "0");
-        File tmpFileSyn1 = File.createTempFile("word2vec", "1");
-        File tmpFileC = File.createTempFile("word2vec", "c");
-        File tmpFileH = File.createTempFile("word2vec", "h");
-        File tmpFileF = File.createTempFile("word2vec", "f");
+        File tmpFileSyn0 = DL4JFileUtils.createTempFile("word2vec", "0");
+        File tmpFileSyn1 = DL4JFileUtils.createTempFile("word2vec", "1");
+        File tmpFileC = DL4JFileUtils.createTempFile("word2vec", "c");
+        File tmpFileH = DL4JFileUtils.createTempFile("word2vec", "h");
+        File tmpFileF = DL4JFileUtils.createTempFile("word2vec", "f");
 
         tmpFileSyn0.deleteOnExit();
         tmpFileSyn1.deleteOnExit();
@@ -895,7 +897,7 @@ public class WordVectorSerializer {
      * @return
      */
     public static ParagraphVectors readParagraphVectors(InputStream stream) throws IOException {
-        File tmpFile = File.createTempFile("restore", "paravec");
+        File tmpFile = DL4JFileUtils.createTempFile("restore", "paravec");
         try {
             FileUtils.copyInputStreamToFile(stream, tmpFile);
             return readParagraphVectors(tmpFile);
@@ -2275,9 +2277,9 @@ public class WordVectorSerializer {
             } else {
                 log.debug("Trying simplified model restoration...");
 
-                tmpFileSyn0 = File.createTempFile("word2vec", "syn");
+                tmpFileSyn0 = DL4JFileUtils.createTempFile("word2vec", "syn");
                 tmpFileSyn0.deleteOnExit();
-                tmpFileConfig = File.createTempFile("word2vec", "config");
+                tmpFileConfig = DL4JFileUtils.createTempFile("word2vec", "config");
                 tmpFileConfig.deleteOnExit();
                 // we don't need full model, so we go directly to syn0 file
 
@@ -2503,7 +2505,7 @@ public class WordVectorSerializer {
         // if zip - that's dl4j format
         try {
             log.debug("Trying DL4j format...");
-            File tmpFileSyn0 = File.createTempFile("word2vec", "syn");
+            File tmpFileSyn0 = DL4JFileUtils.createTempFile("word2vec", "syn");
             tmpFileSyn0.deleteOnExit();
 
             ZipFile zipFile = new ZipFile(file);

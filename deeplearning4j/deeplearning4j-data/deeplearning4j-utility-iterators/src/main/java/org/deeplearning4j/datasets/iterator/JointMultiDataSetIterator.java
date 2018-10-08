@@ -27,10 +27,15 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * This dataset iterator combines multiple DataSetIterators into 1 MultiDataSetIterator
+ * This dataset iterator combines multiple DataSetIterators into 1 MultiDataSetIterator.
+ * Values from each iterator are joined on a per-example basis - i.e., the values from each DataSet are combined
+ * as different feature arrays for a multi-input neural network.
+ * Labels can come from either one of the underlying DataSetIteartors only (if 'outcome' is >= 0) or from all
+ * iterators (if outcome is < 0)
  *
  * @author raver119@gmail.com
  */
@@ -42,17 +47,23 @@ public class JointMultiDataSetIterator implements MultiDataSetIterator {
     protected Collection<DataSetIterator> iterators;
     protected int outcome = -1;
 
-
+    /**
+     * @param iterators Underlying iterators to wrap
+     */
     public JointMultiDataSetIterator(DataSetIterator... iterators) {
         this.iterators = new ArrayList<DataSetIterator>();
-
-        for (val i: iterators)
-            ((ArrayList<DataSetIterator>) this.iterators).add(i);
+        this.iterators.addAll(Arrays.asList(iterators));
+        this.outcome = -1;
     }
 
+    /**
+     *
+     * @param outcome   Index to get the label from. If < 0, labels from all iterators will be used to create the
+     *                  final MultiDataSet
+     * @param iterators Underlying iterators to wrap
+     */
     public JointMultiDataSetIterator(int outcome, DataSetIterator... iterators){
         this(iterators);
-
         this.outcome = outcome;
     }
 

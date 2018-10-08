@@ -93,14 +93,14 @@ void lstmCell(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<
     
     NDArray<T> z = mmul(*xt, *Wx) + mmul(*ht_1, *Wh) + *b;      // [bS x 4*numUnits] + [bS x 4*numUnits] + [1 x 4*numUnits] = [bS x 4*numUnits]    
     
-    NDArray<T> zit = z({{},{0,            numUnits}});      	// z for input gate,  = mmul(Wxi,xt) + mmul(Whi,ht_1) + bi    = [bS x numUnits]
-    NDArray<T> zft = z({{},{numUnits,   2*numUnits}});      	// z for forget gate, = mmul(Wxf,xt) + mmul(Whf,ht_1) + bf    = [bS x numUnits]
-    NDArray<T> zct = z({{},{2*numUnits, 3*numUnits}});      	// z for cell state,  = mmul(Wxc,xt) + mmul(Whc,ht_1) + bc    = [bS x numUnits]     
-    NDArray<T> zot = z({{},{3*numUnits, 4*numUnits}});      	// z for output gate, = mmul(Wxo,xt) + mmul(Who,ht_1) + bo    = [bS x numUnits] 
+    NDArray<T> zit = z({0,0, 0,            numUnits});      	// z for input gate,  = mmul(Wxi,xt) + mmul(Whi,ht_1) + bi    = [bS x numUnits]
+    NDArray<T> zft = z({0,0, numUnits,   2*numUnits});      	// z for forget gate, = mmul(Wxf,xt) + mmul(Whf,ht_1) + bf    = [bS x numUnits]
+    NDArray<T> zct = z({0,0, 2*numUnits, 3*numUnits});      	// z for cell state,  = mmul(Wxc,xt) + mmul(Whc,ht_1) + bc    = [bS x numUnits]     
+    NDArray<T> zot = z({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, = mmul(Wxo,xt) + mmul(Who,ht_1) + bo    = [bS x numUnits] 
 
     if(peephole) {                                              // add peephole connections: z  +  ct_1*Wc
-        zit += (*ct_1) * (*Wc)({{0,          numUnits}});       // add peephole connections to input gate
-        zft += (*ct_1) * (*Wc)({{numUnits, 2*numUnits}});       // add peephole connections to forget gate
+        zit += (*ct_1) * (*Wc)({0,          numUnits});       // add peephole connections to input gate
+        zft += (*ct_1) * (*Wc)({numUnits, 2*numUnits});       // add peephole connections to forget gate
     }
 
     // current sell state = ft*ct_1 + it*activation(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
@@ -153,9 +153,9 @@ void lstmTimeLoop(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDAr
     // loop through time steps
     for (int t = 0; t < time; ++t) {
         
-        NDArray<T> xt = (*x)({{t,t+1}, {}, {}});
-        NDArray<T> ht = (*h)({{t,t+1}, {}, {}});
-        NDArray<T> ct = (*c)({{t,t+1}, {}, {}});
+        NDArray<T> xt = (*x)({t,t+1, 0,0, 0,0});
+        NDArray<T> ht = (*h)({t,t+1, 0,0, 0,0});
+        NDArray<T> ct = (*c)({t,t+1, 0,0, 0,0});
 
         helpers::lstmCell<T>({&xt,&currentH,&currentC, Wx,Wh,Wc,Wp, b},   {&ht, &ct},   params);
         currentH.assign(ht);

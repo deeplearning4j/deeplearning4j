@@ -27,13 +27,11 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.imports.descriptors.properties.adapters.ConditionalFieldValueIntIndexArrayAdapter;
-import org.nd4j.imports.descriptors.properties.adapters.ConditionalFieldValueNDArrayShapeAdapter;
-import org.nd4j.imports.descriptors.properties.adapters.SizeThresholdIntArrayIntIndexAdpater;
-import org.nd4j.imports.descriptors.properties.adapters.StringEqualsAdapter;
+import org.nd4j.imports.descriptors.properties.adapters.*;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
@@ -85,6 +83,20 @@ public class DeConv2DTF extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
+        if(config == null && !iArguments.isEmpty()){
+            config = DeConv2DConfig.builder()
+                    .kH(iArguments.get(0))
+                    .kW(iArguments.get(1))
+                    .sH(iArguments.get(2))
+                    .sW(iArguments.get(3))
+                    .pH(iArguments.get(4))
+                    .pW(iArguments.get(5))
+                    .dH(iArguments.get(6))
+                    .dW(iArguments.get(7))
+                    .isSameMode(iArguments.get(8) == 1)
+                    .dataFormat(iArguments.get(9) == 1 ? DeConv2DConfig.NHWC : Conv2DConfig.NCHW)
+                    .build();
+        }
         return config.toProperties();
     }
 
@@ -98,8 +110,7 @@ public class DeConv2DTF extends DynamicCustomOp {
         addIArgument(config.getDH());
         addIArgument(config.getDW());
         addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));
-        addIArgument(ArrayUtil.fromBoolean(config.isNHWC()));
-
+        addIArgument(config.getDataFormat().equalsIgnoreCase(DeConv2DConfig.NCHW) ? 0 : 1);
     }
 
     @Override
@@ -120,11 +131,6 @@ public class DeConv2DTF extends DynamicCustomOp {
         }
 
         return config.getValue(property);
-    }
-
-    @Override
-    public void setValueFor(Field target, Object value) {
-        config.setValueFor(target, value);
     }
 
 
@@ -159,7 +165,7 @@ public class DeConv2DTF extends DynamicCustomOp {
         val dataFormat = PropertyMapping.builder()
                 .onnxAttrName("data_format")
                 .tfAttrName("data_format")
-                .propertyNames(new String[]{"isNHWC"})
+                .propertyNames(new String[]{"dataFormat"})
                 .build();
 
 
@@ -170,7 +176,7 @@ public class DeConv2DTF extends DynamicCustomOp {
         map.put("dW", dilationMapping);
         map.put("dH", dilationMapping);
         map.put("isSameMode", sameMode);
-        map.put("isNHWC", dataFormat);
+        map.put("dataFormat", dataFormat);
 
         ret.put(tensorflowName(), map);
         return ret;
@@ -183,8 +189,11 @@ public class DeConv2DTF extends DynamicCustomOp {
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
 
-        tfMappings.put("kH", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 2, 0, fields.get("dataFormat")));
-        tfMappings.put("kW", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 3, 1, fields.get("dataFormat")));
+        //TF uses [kH, kW, outC, inC] always for weights
+        tfMappings.put("kH", new NDArrayShapeAdapter(0));
+        tfMappings.put("kW", new NDArrayShapeAdapter(1));
+//        tfMappings.put("sH", new IntArrayIntIndexAdpater(1));
+//        tfMappings.put("sW", new IntArrayIntIndexAdpater(2));
         tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
         tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
         tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));

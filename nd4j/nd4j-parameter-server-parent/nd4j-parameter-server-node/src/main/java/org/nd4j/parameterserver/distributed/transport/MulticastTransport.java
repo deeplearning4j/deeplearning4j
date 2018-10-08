@@ -37,6 +37,7 @@ import org.nd4j.parameterserver.distributed.messages.VoidMessage;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class MulticastTransport extends BaseTransport {
     protected String multicastChannelUri;
 

@@ -67,7 +67,7 @@ public class TestTrainingStatsCollection {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                             .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                            .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).build()).pretrain(false).backprop(true)
+                            .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).build())
                             .build();
 
             int miniBatchSizePerWorker = 10;

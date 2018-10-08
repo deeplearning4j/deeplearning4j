@@ -33,8 +33,8 @@ import java.util.List;
 /**
  * Given a set of latitude/longitude coordinates, encoded in {@link Text} writables with format "lat,long" (the
  * delimiter is configurable), determine the geographic midpoint.
- * See "geographic midpoint" at: http://www.geomidpoint.com/methods.html
- * For implementation algorithm, see: http://www.geomidpoint.com/calculation.html
+ * See "geographic midpoint" at: <a href="http://www.geomidpoint.com/methods.html">http://www.geomidpoint.com/methods.html</a>
+ * For implementation algorithm, see: <a href="http://www.geomidpoint.com/calculation.html">http://www.geomidpoint.com/calculation.html</a>
  *
  * @author Alex Black
  */

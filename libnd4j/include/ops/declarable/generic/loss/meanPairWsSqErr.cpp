@@ -63,7 +63,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 
 	NDArray<T> numOfNonZeroWeights(sumSqrsDiffPerBatch.getShapeInfo(), block.getWorkspace());
 	if(weights->isScalar()) {
-		if((*weights)(0) != (T)0.)
+		if((*weights)(0.) != (T)0.)
 			numOfNonZeroWeights.assign((T)(labels->lengthOf()/labels->sizeAt(0)));
 	}
 	else {
@@ -84,14 +84,14 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 
     // multiply weightedLosses on weights
  	if(weights->isScalar())
- 		weightedLosses *= (*weights)(0);
+ 		weightedLosses *= (*weights)(0.);
  	else
  		weightedLosses *= (*weights); 	
  		
 	if(numOfNonZeroWeights.template reduceNumber<simdOps::Sum<T>>() == (T)0.)
-		(*output)(0) = (T)0.;
+		(*output)(0.) = (T)0.;
 	else
-		(*output)(0) = weightedLosses.template reduceNumber<simdOps::Sum<T>>();
+		(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>();
 
 
     STORE_RESULT(*output);

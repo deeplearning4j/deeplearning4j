@@ -101,7 +101,7 @@ public class JsonTest extends BaseDL4JTest {
                             .layer(0, new DenseLayer.Builder().nIn(4).nOut(nOut[i]).activation(Activation.TANH).build())
                             .layer(1, new LossLayer.Builder().lossFunction(lossFunctions[i])
                                             .activation(outputActivationFn[i]).build())
-                            .pretrain(false).backprop(true).build();
+                            .validateOutputLayerConfig(false).build();
 
             String json = conf.toJson();
             String yaml = conf.toYaml();

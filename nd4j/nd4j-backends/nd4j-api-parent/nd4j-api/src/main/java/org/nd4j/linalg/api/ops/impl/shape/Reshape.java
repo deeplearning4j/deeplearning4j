@@ -147,14 +147,6 @@ public class Reshape extends DynamicCustomOp {
     }
 
     @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("shape", shape);
-        return ret;
-    }
-
-
-    @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
         val shape = new OnnxGraphMapper().getShape(node);
         this.shape = shape;

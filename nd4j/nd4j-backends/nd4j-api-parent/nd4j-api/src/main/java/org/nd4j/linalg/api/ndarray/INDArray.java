@@ -1011,17 +1011,6 @@ public interface INDArray extends Serializable {
     long linearIndex(long i);
 
 
-
-    /**
-     * Validate dimensions are equal
-     *
-     * @param other the other ndarray to compare
-     */
-
-    void checkDimensions(INDArray other);
-
-
-
     /**
      *
      * @param list

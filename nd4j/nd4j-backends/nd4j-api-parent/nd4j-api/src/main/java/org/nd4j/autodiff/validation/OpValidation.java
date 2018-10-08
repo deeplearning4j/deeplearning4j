@@ -20,9 +20,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
+import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DefaultOpConverter;
@@ -45,6 +48,7 @@ import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
@@ -59,9 +63,11 @@ import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.primitives.Pair;
+import org.tensorflow.framework.OpDef;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.Set;
 
@@ -121,6 +127,12 @@ public class OpValidation {
         //First: collect coverage information
         collectCoverageInformation(testCase);
 
+        //Check serialization
+        ByteBuffer serializedBeforeExec = null;
+        if(testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH){
+            serializedBeforeExec = testCase.sameDiff().asFlatBuffers();
+            Preconditions.checkNotNull(serializedBeforeExec, "Serialization failed? Null output");
+        }
 
         //Check forward pass:
         if (testCase.fwdTestFns() != null && testCase.fwdTestFns().size() > 0) {
@@ -155,6 +167,17 @@ public class OpValidation {
                     return testCase.testNameErrMsg() + ": Variable " + e.getKey() + " failed: " + error;
                 }
             }
+
+            ByteBuffer serializedAfterExec = null;
+            if(testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH){
+                serializedAfterExec = testCase.sameDiff().asFlatBuffers();
+                Preconditions.checkNotNull(serializedAfterExec, "Serialization failed? Null output");
+            }
+
+            //Now: deserialize, and check the results
+            if(serializedBeforeExec != null){
+                checkDeserializedEquality(sd, serializedBeforeExec, testCase);
+            }
         }
 
         //Check gradients:
@@ -172,6 +195,54 @@ public class OpValidation {
         }
 
         return null;    //OK - passed
+    }
+
+    public static void checkDeserializedEquality(SameDiff original, ByteBuffer bbSerialized, TestCase tc) {
+        SameDiff deserialized;
+        try{
+           deserialized = SameDiff.fromFlatBuffers(bbSerialized);
+        } catch (IOException e){
+            throw new RuntimeException("IOException deserializing from FlatBuffers", e);
+        }
+
+        //Check variables:
+        List<SDVariable> vars = original.variables();
+        List<SDVariable> varsDe = deserialized.variables();
+        Preconditions.checkState(vars.size() == varsDe.size(), "Number of variables differs: expected %s, got %s", vars.size(), varsDe.size());
+        for( int i=0; i<vars.size(); i++ ){
+            SDVariable vO = vars.get(i);
+            SDVariable vD = varsDe.get(i);
+            Preconditions.checkState(vO.getVarName().equals(vD.getVarName()), "Names should be equal for variable %s: expected %s vs %s",
+                    i, vO.getVarName(), vD.getVarName());
+        }
+
+        //Check ops:
+        DifferentialFunction[] dfOrig = original.functions();
+        DifferentialFunction[] dfDe = deserialized.functions();
+        Preconditions.checkState(dfOrig.length == dfDe.length, "Number of functions differs: %s vs. %s", dfOrig.length, dfDe.length);
+        for( int i=0; i<dfOrig.length; i++ ){
+            Preconditions.checkState(dfOrig[i].getClass().equals(dfDe[i].getClass()), "Different classes: op %s - %s vs %s",
+                    i, dfOrig[i].getClass(), dfDe[i].getClass());
+        }
+
+        //Finally: check execution/output
+        INDArray[] outOrig = original.execAndEndResults();
+        INDArray[] outDe = deserialized.execAndEndResults();
+        Preconditions.checkState(outOrig.length == outDe.length, "Different number of outputs: %s expected vs. %s actual", outOrig.length, outDe.length);
+        DifferentialFunction[] functions = original.functions();
+        String[] outNames = original.getOutputsForFunction(functions[functions.length-1]);
+        for(int i=0; i<outOrig.length; i++ ){
+            Function<INDArray,String> fn = tc.fwdTestFns().get(outNames[i]);
+            String err = null;
+            if(fn != null){
+                err = fn.apply(outDe[i]);
+            } else {
+                if(!outOrig[i].equals(outDe[i])) {
+                    err = "INDArray equality failed";
+                }
+            }
+            Preconditions.checkState(err == null, "Output array %s failed check - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10\nError:%s", i, outOrig[i], outDe[i], outOrig[i], outDe[i], err);
+        }
     }
 
     /**
@@ -239,6 +310,8 @@ public class OpValidation {
     private static Map<Class, Integer> gradCheckCoverageCountPerClass = new LinkedHashMap<>();
     private static Map<Class, Integer> fwdPassCoverageCountPerClass = new LinkedHashMap<>();
     private static Map<Class, Integer> singleOpTestCountPerClass = new LinkedHashMap<>();
+    private static Map<Class, Integer> opsWithTFMappingTFImportCounts = new LinkedHashMap<>();
+    private static Map<String, Integer> tfMappedOpsImportTestCounts = new LinkedHashMap<>();
 
 
     private static void collectCoverageInformation(TestCase testCase) {
@@ -283,6 +356,38 @@ public class OpValidation {
         //TODO we're basically assuming subtypes of DynamicCustomOp here, for coverage... not DCO itself
         singleOpTestCountPerClass.put(testCase.op().getClass(),
                 singleOpTestCountPerClass.get(testCase.op().getClass()) + 1);
+    }
+
+
+    public static void collectTensorflowImportCoverage(SameDiff graph){
+
+        Map<String,DifferentialFunction> map = graph.getFunctionInstancesById();
+        for(DifferentialFunction d : map.values()){
+            String[] tfNames = null;
+            try{
+                tfNames = d.tensorflowNames();
+            } catch (Throwable t){
+                //Ignore
+                continue;
+            }
+
+            if(tfNames != null && tfNames.length > 0){
+                Integer currCount = opsWithTFMappingTFImportCounts.get(d.getClass());
+                if(currCount == null)
+                    currCount = 0;
+                currCount++;
+                opsWithTFMappingTFImportCounts.put(d.getClass(), currCount);
+
+                for(String s : tfNames){
+                    currCount = tfMappedOpsImportTestCounts.get(s);
+                    if(currCount == null)
+                        currCount = 0;
+                    currCount++;
+                    tfMappedOpsImportTestCounts.put(s, currCount);
+                }
+            }
+        }
+
     }
 
     //Collect coverage information
@@ -389,7 +494,8 @@ public class OpValidation {
      * @param logAdequatelyTested If true: log details of each op that has both forward and (if appropriate) backward tests
      * @param logInadequate       If false: log details of each op that does NOT have both forward and (if appropriate) backward tests
      */
-    public static void logCoverageInformation(boolean logAdequatelyTested, boolean logInadequate, boolean logUnmappedLibnd4jOps) {
+    public static void logCoverageInformation(boolean logAdequatelyTested, boolean logInadequate, boolean logUnmappedLibnd4jOps,
+                                              boolean logUntestedTFImport, boolean logUnmappedTFOps) {
         //Set of ops that we can't gradient check
         Set<Class> excludedFromBackpropCoverage = excludedFromGradientCheckCoverage();
         Set<Class> excludedFromAllTestCoverage = excludedFromAllTests();
@@ -461,6 +567,51 @@ public class OpValidation {
             }
         }
 
+        //Log info for TF import op coverage:
+        Map<String,DifferentialFunction> tfOpsMap = DifferentialFunctionClassHolder.getInstance().getTensorFlowNames();
+        int totalTFMappedOps = tfOpsMap.size();
+        int tfOpsWithImportTests = 0;
+        if(logUntestedTFImport)
+            log.info(" --- Ops with TF Mapping but No TF Import Tests ---");
+        List<String> tfOpsKeys = new ArrayList<>(tfOpsMap.keySet());
+        Collections.sort(tfOpsKeys);
+        Set<String> tfIgnored = excludeFromTfImportCoverage();
+        int tfImportIgnored = 0;
+        for(String s : tfOpsKeys){
+            Integer count = tfMappedOpsImportTestCounts.get(s);
+            if(count == null || count == 0){
+                if(tfIgnored.contains(s)){
+                    tfImportIgnored++;
+                } else if(logUntestedTFImport)
+                    log.info("TF mapped op with no import tests: {}", s);
+            } else {
+                tfOpsWithImportTests++;
+            }
+        }
+
+        if(logUnmappedTFOps){
+            Map<String,OpDef> allTFOps;
+            try{
+                allTFOps = TensorflowDescriptorParser.opDescs();
+            } catch (Throwable t){
+                throw new RuntimeException(t);
+            }
+
+            List<String> notMapped = new ArrayList<>();
+            for(String s : allTFOps.keySet()){
+                if(DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(s) == null &&
+                        !tfIgnored.contains(s)){
+                    notMapped.add(s);
+                }
+            }
+
+            Collections.sort(notMapped);
+            int subsets = (int)Math.ceil(notMapped.size() / 10);
+            for( int i=0; i<subsets; i++ ){
+                log.info("TF ops not mapped for import: {}", notMapped.subList(10*i, Math.min(10*(i+1), notMapped.size())));
+            }
+        }
+
 
         int totalFwd = 0;
         for(Class c : allOps){
@@ -489,15 +640,17 @@ public class OpValidation {
         int countLibnd4jMapped = countTotalLibnd4jOps - nonMappedLibnd4jOps.size();
         String fracLibnd4j = String.format("%.2f", 100.0 * (countLibnd4jMapped / (double)countTotalLibnd4jOps));
 
+        String fracTFMappedTested = String.format("%.2f", 100.0 * tfOpsWithImportTests / (double)(totalTFMappedOps-tfImportIgnored));
 
         log.info("*****************************************************");
-        log.info("Op Validation:        {} of {} classes with adequate tests ({}% coverage)", countAdequate, totalFwd, pc);
-        log.info("Forward pass tests:   {} of {} classes ({}% coverage)", countAdequateFwd, totalFwd, pcFwd);
-        log.info("Gradient check tests: {} of {} classes ({}% coverage)", countAdequateBwd, totalBwd, pcBwd);
+        log.info("Op Validation:                        {} of {} classes with adequate tests ({}% coverage)", countAdequate, totalFwd, pc);
+        log.info("Forward pass tests:                   {} of {} classes ({}% coverage)", countAdequateFwd, totalFwd, pcFwd);
+        log.info("Gradient check tests:                 {} of {} classes ({}% coverage)", countAdequateBwd, totalBwd, pcBwd);
         log.info("({} ops excluded from gradient check coverage)", excludedFromBackpropCoverage.size());
         log.info("({} ops excluded from fwd+gradient tests)", excludedFromAllTestCoverage.size());
-        log.info("TF mapped ops:        {} of {} ({}%)", countTfMapped, countTf, fracTfStr);
-        log.info("Libnd4j mapped ops:   {} of {} ({}%)", countLibnd4jMapped, countTotalLibnd4jOps, fracLibnd4j);
+        log.info("TF mapped ops:                        {} of {} ({}%)", countTfMapped, countTf, fracTfStr);
+        log.info("SD ops with TF import mapping + test  {} of {} ({}%) - {} ignored for coverage", tfOpsWithImportTests, (totalTFMappedOps-tfImportIgnored), fracTFMappedTested, tfImportIgnored);
+        log.info("Libnd4j mapped ops:                   {} of {} ({}%)", countLibnd4jMapped, countTotalLibnd4jOps, fracLibnd4j);
         log.info("*****************************************************");
     }
 
@@ -554,6 +707,9 @@ public class OpValidation {
                 RSubBpOp.class,
                 SquaredDifferenceBpOp.class,
                 SubBpOp.class,
+                CumProdBp.class,
+                DotBp.class,
+                SquaredNormBp.class,
 
                 CubeDerivative.class,
                 ELUDerivative.class,
@@ -580,6 +736,7 @@ public class OpValidation {
 
                 BiasAddGrad.class,
                 ConcatBp.class,
+                TileBp.class,
 
                 BatchNormDerivative.class,
                 Conv2DDerivative.class,
@@ -675,6 +832,52 @@ public class OpValidation {
                 StandardDeviationBp.class,
                 SumBp.class,
                 VarianceBp.class
+        );
+
+        return new HashSet<>(list);
+    }
+
+    /**
+     * These ops are excluded from TF import test coverage, for various reasons
+     */
+    private static Set<String> excludeFromTfImportCoverage(){
+        List<String> list = Arrays.asList(
+                "Reverse",      //Can be excluded because "Reverse_v2" is synonym that TF uses with tf.reverse(...); ReverseV2 is also Java op that is synonym for same op
+                "LogSigmoid",    //Not in ops.proto. Have tests for tf.log_sigmoid, but can't test LogSigmoid op directly: tf.log_sigmoid actually just uses "y = -tf.nn.softplus(-x)" - i.e., 3 separate ops :/
+                "HardSigmoid",   //Also implemented as python, NOT a single native op
+                "SpaceToBatch", //Old name - SpaceToBatchNd is used in practice (inc. for tf.space_to_batch)
+                "BatchToSpace", //Old name - BatchToSpaceNd is used in practice
+                "Pad",          //As far as I can tell: Only PadV2 and MirrorPad are used in practice
+                "TopK",         //TopKV2 used
+                "InTopK",       //InTopKV2 used
+                "BatchMatrixDeterminant",   //Deprecated in favor of "MatrixDeterminant"
+                "BatchMatrixDiagPart",      //Deprecated in favor of "MatrixDiagPart"
+                "BatchMatrixDiag",          //Deprecated in favor of "MatrixDiag"
+                "BatchMatrixBandPart",      //Deprecated in favor of "MatrixBandPart"
+                "BatchMatrixInverse",       //Deprecated in favor of "MatrixInverse"
+                "BatchMatrixSetDiag",       //Deprecated in favor of "MatrixSetDiag"
+                "BatchMatrixSolve",         //Deprecated in favor of "MatrixSolve"
+                "BatchMatrixSolveLs",       //Deprecated in favor of "MatrixSolveLs"
+                "BatchMatrixTriangularSolve",   //Deprecated in favor of "MatrixTriangularSolve"
+                "BatchSelfAdjointEig",      //Deprecated in favor of "SelfAdjointEigV2"
+                "BatchSelfAdjointEigV2",    //Deprecated in favor of "SelfAdjointEigV2"
+                "BatchSvd",                 //Deprecated in favor of "Svd"
+
+                //All of the following ops - not available in TF (can't find them) - op mapping is wrong?
+                //TODO: Check these and remove the import mapping from the Java classes if they are indeed bad
+                "HardTanh",
+                "Swish",
+                "RDiv",
+                "DivScalar",
+                "LogX",
+                "RationalTanh",
+                "absargmax",
+                "absargmin",
+                "entropy_shannon",   //This is a thing, but quite different from our op: https://www.tensorflow.org/versions/r1.2/api_docs/python/tf/contrib/bayesflow/entropy/entropy_shannon
+                "count_zero"
+
+
+
         );
 
         return new HashSet<>(list);

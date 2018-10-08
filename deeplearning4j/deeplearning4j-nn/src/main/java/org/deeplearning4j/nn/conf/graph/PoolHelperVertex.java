@@ -27,7 +27,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Removes the first column and row from an input. This is to fix inconsistencies from ZeroPadding
- * layers in imported models from Caffe. See https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14.
+ * layers in imported models from Caffe.<br>
+ * See <a href="https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14">https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14</a>.
  *
  * @author Justin Long (crockpotveggies)
  */

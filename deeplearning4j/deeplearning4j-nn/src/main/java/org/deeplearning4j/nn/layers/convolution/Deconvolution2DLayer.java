@@ -46,10 +46,10 @@ import java.util.Arrays;
  * In essence, deconvolutions swap forward and backward pass with regular 2D convolutions.
  *
  * See the paper by Matt Zeiler for details:
- * http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf
+ * <a href="http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf">http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf</a>
  *
  * For an intuitive guide to convolution arithmetic and shapes, see:
- * https://arxiv.org/abs/1603.07285v1
+ * <a href="https://arxiv.org/abs/1603.07285v1">https://arxiv.org/abs/1603.07285v1</a>
  *
  *
  * @author Max Pumperla
@@ -122,15 +122,20 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         Pair<INDArray, INDArray> p = preOutput4d(true, true, workspaceMgr);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
+        //DL4J Deconv weights: [inputDepth, outputDepth, kH, kW]
+        //libnd4j weights: [kH, kW, oC, iC]
+        weights = weights.permute(2, 3, 1, 0);
+        INDArray weightGradViewOp = weightGradView.permute(2, 3, 1, 0);
+
         INDArray[] opInputs;
         INDArray[] opOutputs;
         if(layerConf().hasBias()){
             INDArray bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
             opInputs = new INDArray[]{input, weights, bias, delta};
-            opOutputs = new INDArray[]{outEps, weightGradView, biasGradView};
+            opOutputs = new INDArray[]{outEps, weightGradViewOp, biasGradView};
         } else {
             opInputs = new INDArray[]{input, weights, delta};
-            opOutputs = new INDArray[]{outEps, weightGradView};
+            opOutputs = new INDArray[]{outEps, weightGradViewOp};
         }
         CustomOp op = DynamicCustomOp.builder("deconv2d_bp")
                 .addInputs(opInputs)
@@ -153,9 +158,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
     @Override
     protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
-        if (convolutionMode == ConvolutionMode.Same) {
-            throw new IllegalArgumentException("Border mode Same currently not supported.");
-        }
 
         INDArray bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
@@ -179,7 +181,9 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         int inDepth = (int) weights.size(0);
         int outDepth = (int) weights.size(1);
 
-        if (input.size(1) != inDepth) {
+        if (input.size(1) != inDepth && input.size(3) == inDepth) {
+            input = input.permute(0, 3, 1, 2);
+        } else if (input.size(1) != inDepth && input.size(3) != inDepth) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
@@ -221,6 +225,10 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                 kH, kW, strides[0], strides[1],
                 pad[0], pad[1], dilation[0], dilation[1], sameMode, 0   //Last arg: 0 for nchw
         };
+
+        //DL4J Deconv weights: [inputDepth, outputDepth, kH, kW]
+        //libnd4j weights: [kH, kW, oC, iC]
+        weights = weights.permute(2, 3, 1, 0);
 
         INDArray[] opInputs;
         if (layerConf().hasBias()) {

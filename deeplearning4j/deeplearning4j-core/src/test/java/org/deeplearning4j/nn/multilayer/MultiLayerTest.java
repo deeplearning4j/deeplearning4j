@@ -139,7 +139,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).nIn(2).nOut(3).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -171,7 +171,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(2, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).nIn(2).nOut(3).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -260,8 +260,8 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(7, new DenseLayer.Builder().nIn(250).nOut(500).build())
                         .layer(8, new DenseLayer.Builder().nIn(500).nOut(1000).build())
                         .layer(9, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(1000)
-                                        .nOut(numRows * numColumns).build())
-                        .pretrain(true).backprop(true).build();
+                                        .nOut(numRows * numColumns).activation(Activation.SOFTMAX).build())
+                        .pretrain(true).build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
@@ -347,8 +347,8 @@ public class MultiLayerTest extends BaseDL4JTest {
                                 .build())
                         .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                 LossFunctions.LossFunction.MCXENT).nIn(100).nOut(25)
-                                .weightInit(WeightInit.DISTRIBUTION)
-                                .dist(new NormalDistribution(0, 1e-5)).build())
+                                .activation(Activation.SOFTMAX)
+                                .weightInit(new NormalDistribution(0, 1e-5)).build())
                         .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -528,7 +528,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.SIGMOID).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(3).nOut(3).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -552,7 +552,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .seed(12345L).list().layer(0, new ConvolutionLayer.Builder(2, 2).nOut(1).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(2).build())
-                        .setInputType(InputType.convolutionalFlat(height, width, depth)).pretrain(false).backprop(true)
+                        .setInputType(InputType.convolutionalFlat(height, width, depth))
                         .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -578,7 +578,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(0, new DenseLayer.Builder().nIn(784).nOut(50).activation(Activation.RELU).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
-                        .pretrain(false).backprop(true).setInputType(InputType.convolutional(28, 28, 1)).build();
+                        .setInputType(InputType.convolutional(28, 28, 1)).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -618,7 +618,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(0, new DenseLayer.Builder().nIn(784).nOut(50).activation(Activation.RELU).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
-                        .pretrain(false).backprop(true).setInputType(InputType.convolutional(28, 28, 1)).build();
+                        .setInputType(InputType.convolutional(28, 28, 1)).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -655,7 +655,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                                         .layer(1, new OutputLayer.Builder().name("output").nIn(5).nOut(3)
                                                         .activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER)
                                                         .build())
-                                        .backprop(true).pretrain(false).build();
+                                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
         net.fit(iter.next());
@@ -696,7 +696,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                                         .nOut(2).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(2).build())
-                        .setInputType(InputType.convolutional(height, width, depth)).pretrain(false).backprop(true)
+                        .setInputType(InputType.convolutional(height, width, depth))
                         .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -769,7 +769,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3)
                                                         .build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -809,7 +809,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(10).nOut(10)
                                                         .build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -818,7 +818,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(10).nOut(10)
                                                         .build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
         net1.init();
@@ -929,8 +929,8 @@ public class MultiLayerTest extends BaseDL4JTest {
                                                         .gradientNormalizationThreshold(10).build())
                                         .inputPreProcessor(0, new RnnToCnnPreProcessor(V_HEIGHT, V_WIDTH, 3))
                                         .inputPreProcessor(3, new CnnToFeedForwardPreProcessor(7, 7, 10))
-                                        .inputPreProcessor(4, new FeedForwardToRnnPreProcessor()).pretrain(false)
-                                        .backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                                        .inputPreProcessor(4, new FeedForwardToRnnPreProcessor())
+                                        .backpropType(BackpropType.TruncatedBPTT)
                                         .tBPTTForwardLength(V_NFRAMES / 5).tBPTTBackwardLength(V_NFRAMES / 5).build();
         MultiLayerNetwork modelExpectedArch = new MultiLayerNetwork(confForArchitecture);
         modelExpectedArch.init();
@@ -972,7 +972,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3)
                                         .build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(987).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
@@ -983,7 +983,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3)
                                         .build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
         net1.init();
@@ -1013,7 +1013,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                 .layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3)
                         .build())
-                .backprop(true).pretrain(false).build();
+                .build();
 
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(123).list()
                 .layer(new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
@@ -1024,7 +1024,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                 .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3)
                         .build())
-                .backprop(true).pretrain(false).build();
+                .build();
 
         assertEquals(conf1, conf2);
     }
@@ -1035,7 +1035,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
-                .layer(new OutputLayer.Builder().nIn(4).nOut(3).build())
+                .layer(new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).build())
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -1068,7 +1068,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                 .layer(new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nIn(1).nOut(1).build())
                 .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(1,1).build())
                 .layer(new DenseLayer.Builder().nOut(10).build())
-                .layer(new OutputLayer.Builder().nOut(10).build())
+                .layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28,28,1))
                 .build();
 
@@ -1214,7 +1214,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                 .layer(new ConvolutionLayer.Builder().kernelSize(2,2).nOut(6).build())
                 .layer(new SubsamplingLayer.Builder().kernelSize(2,2).build())
                 .layer(new DenseLayer.Builder().nOut(30).build())
-                .layer(new OutputLayer.Builder().nOut(13).build())
+                .layer(new OutputLayer.Builder().nOut(13).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28,28,3))
                 .build();
 
@@ -1310,7 +1310,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                 .layer(new LSTM.Builder().nOut(6).build())
                 .layer(new LSTM.Builder().nOut(7).build())
                 .layer(new GlobalPoolingLayer())
-                .layer(new OutputLayer.Builder().nOut(8).build())
+                .layer(new OutputLayer.Builder().nOut(8).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.recurrent(10));
 
         MultiLayerConfiguration conf = builder.build();
@@ -1337,7 +1337,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
-                .layer(new OutputLayer.Builder().nIn(4).nOut(3).build())
+                .layer(new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).build())
                 .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -1359,8 +1359,8 @@ public class MultiLayerTest extends BaseDL4JTest {
                 .list()
                 .layer(new VariationalAutoencoder.Builder()
                         .nIn(10).nOut(10).encoderLayerSizes(10).decoderLayerSizes(10).build())
-                .layer(new OutputLayer.Builder().nIn(10).nOut(10).build())
-                .pretrain(true).backprop(true)
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build())
+                .pretrain(true)
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

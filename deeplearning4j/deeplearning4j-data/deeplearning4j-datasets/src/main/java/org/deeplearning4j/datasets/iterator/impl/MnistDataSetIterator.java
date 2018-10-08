@@ -22,8 +22,13 @@ import org.nd4j.linalg.dataset.api.iterator.BaseDatasetIterator;
 import java.io.IOException;
 
 /**
- * Mnist data applyTransformToDestination iterator.
+ * MNIST data set iterator - 60000 training digits, 10000 test digits, 10 classes.
+ * Digits have 28x28 pixels and 1 channel (grayscale).<br>
+ * Produces data in c-order "flattened" format, with shape {@code [minibatch, 784]}<br>
+ * For futher details, see <a href="http://yann.lecun.com/exdb/mnist/">http://yann.lecun.com/exdb/mnist/</a>
+ *
  * @author Adam Gibson
+ * @see EmnistDataSetIterator
  */
 public class MnistDataSetIterator extends BaseDatasetIterator {
 
@@ -62,6 +67,6 @@ public class MnistDataSetIterator extends BaseDatasetIterator {
      */
     public MnistDataSetIterator(int batch, int numExamples, boolean binarize, boolean train, boolean shuffle,
                     long rngSeed) throws IOException {
-        super(batch, numExamples, new MnistDataFetcher(binarize, train, shuffle, rngSeed));
+        super(batch, numExamples, new MnistDataFetcher(binarize, train, shuffle, rngSeed, numExamples));
     }
 }

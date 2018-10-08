@@ -198,7 +198,7 @@ make install
 
 ##### Linux & OS X
 
-Detailed instructions for installing GPU architectures such as CUDA can be found [here](http://nd4j.org/gpu_native_backends.html).
+Detailed instructions for installing GPU architectures such as CUDA can be found [here](./deeplearning4j-config-gpu-cpu).
 
 ##### Windows
 

@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -94,7 +95,7 @@ public class BaseLayerTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(nOut).build())
-                        .layer(1, new OutputLayer.Builder().nIn(nIn).nOut(nOut).build()).build();
+                        .layer(1, new OutputLayer.Builder().nIn(nIn).nOut(nOut).activation(Activation.SOFTMAX).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();

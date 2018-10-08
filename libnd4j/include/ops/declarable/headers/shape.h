@@ -50,11 +50,15 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_expand_dims)
-        DECLARE_CUSTOM_OP(expand_dims, 1, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(expand_dims, 1, 1, false, 0, -2);
         #endif
 
         #if NOT_EXCLUDED(OP_reshape)
         DECLARE_CUSTOM_OP(reshape, 1, 1, true, 0, -2);
+        #endif
+
+        #if NOT_EXCLUDED(OP_size_at)
+        DECLARE_CUSTOM_OP(size_at, 1, 1, true, 0, 1);
         #endif
 
         /**
@@ -78,6 +82,17 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_tile_to_shape)
         DECLARE_CUSTOM_OP(tile_to_shape, 1, 1, true, 0, -1);
         DECLARE_CUSTOM_OP(tile_to_shape_bp, 2, 1, true, 0, -1);
+        #endif
+
+        /**
+         * This op broadcast given input up to given shape
+         *  
+         * inputs:
+         *  input array - array to be broadcasted to given shape
+         *  shape array - array containing shape be broadcasted to
+         */
+        #if NOT_EXCLUDED(OP_broadcast_to)
+        DECLARE_CUSTOM_OP(broadcast_to, 2, 1, false, 0, 0);        
         #endif
     }
 }

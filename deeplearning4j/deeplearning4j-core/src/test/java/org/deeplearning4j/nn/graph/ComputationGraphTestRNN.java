@@ -78,7 +78,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
                                         .activation(Activation.SOFTMAX).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 0.5)).build(), "2")
                         .setOutputs("3").inputPreProcessor("2", new RnnToFeedForwardPreProcessor())
-                        .inputPreProcessor("3", new FeedForwardToRnnPreProcessor()).pretrain(false).backprop(true)
+                        .inputPreProcessor("3", new FeedForwardToRnnPreProcessor())
                         .build();
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -234,7 +234,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
                                         .dist(new NormalDistribution(0, 0.5)).build(), "dense")
                         .setOutputs("out0", "out1").inputPreProcessor("dense", new RnnToFeedForwardPreProcessor())
                         .inputPreProcessor("out0", new FeedForwardToRnnPreProcessor())
-                        .inputPreProcessor("out1", new FeedForwardToRnnPreProcessor()).pretrain(false).backprop(true)
+                        .inputPreProcessor("out1", new FeedForwardToRnnPreProcessor())
                         .build();
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -350,7 +350,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
                                         .weightInit(WeightInit.DISTRIBUTION).nIn(8).nOut(nOut)
                                         .activation(Activation.SOFTMAX).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 0.5)).build(), "1")
-                        .setOutputs("out").backprop(true).build();
+                        .setOutputs("out").build();
         assertEquals(BackpropType.Standard, conf.getBackpropType());
 
         ComputationGraphConfiguration confTBPTT = new NeuralNetConfiguration.Builder().seed(12345)
@@ -369,7 +369,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
                                         .weightInit(WeightInit.DISTRIBUTION).nIn(8).nOut(nOut)
                                         .activation(Activation.SOFTMAX).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 0.5)).build(), "1")
-                        .setOutputs("out").backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                        .setOutputs("out").backpropType(BackpropType.TruncatedBPTT)
                         .tBPTTForwardLength(timeSeriesLength).tBPTTBackwardLength(timeSeriesLength).build();
         assertEquals(BackpropType.TruncatedBPTT, confTBPTT.getBackpropType());
 
@@ -462,7 +462,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
                                         .weightInit(WeightInit.DISTRIBUTION).nIn(8).nOut(nOut)
                                         .activation(Activation.SOFTMAX).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 0.5)).build(), "1")
-                        .setOutputs("out").pretrain(false).backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                        .setOutputs("out").backpropType(BackpropType.TruncatedBPTT)
                         .tBPTTBackwardLength(timeSeriesLength).tBPTTForwardLength(timeSeriesLength).build();
 
         Nd4j.getRandom().setSeed(12345);
@@ -498,7 +498,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
                                         .weightInit(WeightInit.DISTRIBUTION).nIn(8).nOut(nOut)
                                         .activation(Activation.SOFTMAX).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 0.5)).build(), "1")
-                        .setOutputs("out").pretrain(false).backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                        .setOutputs("out").backpropType(BackpropType.TruncatedBPTT)
                         .tBPTTBackwardLength(tbpttLength).tBPTTForwardLength(tbpttLength).build();
 
         Nd4j.getRandom().setSeed(12345);

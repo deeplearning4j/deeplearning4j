@@ -22,6 +22,7 @@ import org.datavec.api.io.converters.WritableConverterException;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -165,7 +166,7 @@ public class DataVecDataSetFunction implements Function<List<Writable>, DataSet>
                 } catch (UnsupportedOperationException e) {
                     // This isn't a scalar, so check if we got an array already
                     if (current instanceof NDArrayWritable) {
-                        assert featureVector == null;
+                        Preconditions.checkState(featureVector == null, "Already got an array");
                         featureVector = ((NDArrayWritable) current).get();
                     } else {
                         throw e;

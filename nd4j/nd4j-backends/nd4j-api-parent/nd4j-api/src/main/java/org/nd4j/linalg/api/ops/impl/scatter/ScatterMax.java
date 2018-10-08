@@ -22,11 +22,13 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
 /**
  * @author raver119@protonmail.com
+ * @author Alex Black
  */
 
 public class ScatterMax extends DynamicCustomOp {
@@ -54,7 +56,21 @@ public class ScatterMax extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradOut){
-        throw new UnsupportedOperationException("Not implemented yet");
+        //3 args: ref, indices, updates
+        //For non-modified indices, input gradient (reference) is same as output gradient
+        //For modified indices, dL/dref = dL/dOut if(ref[index[i],j] == max) or 0 otherwise
+        //And for updates, dL/du = dL/dOut if(update[i,j]==max) or 0 otherwise
+
+        List<SDVariable> ret = new ArrayList<>(3);
+        SDVariable notModified = arg(0).eq(outputVariable());   //0 if modified, 1 otherwise
+        SDVariable refGrad = gradOut.get(0).mul(notModified);
+
+        SDVariable gatherOut = f().gather(outputVariable(), arg(1), 0);
+        SDVariable gatherGrad = f().gather(gradOut.get(0), arg(1), 0);
+        SDVariable outIsUpdate = gatherOut.eq(arg(2));
+        SDVariable updateGrad = gatherGrad.mul(outIsUpdate);
+
+        return Arrays.asList(refGrad, f().zerosLike(arg(1)), updateGrad);
     }
 
 }

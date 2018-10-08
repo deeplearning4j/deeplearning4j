@@ -71,7 +71,7 @@ public class TestPlayUI {
         //                .list()
         //                .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
         //                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
-        //                .pretrain(false).backprop(true).build();
+        //                .build();
         //
         //        MultiLayerNetwork net = new MultiLayerNetwork(conf);
         //        net.init();
@@ -115,7 +115,7 @@ public class TestPlayUI {
                                         .pzxActivationFunction(Activation.IDENTITY)
                                         .reconstructionDistribution(new GaussianReconstructionDistribution())
                                         .activation(Activation.LEAKYRELU).build())
-                        .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build()).pretrain(true).backprop(true)
+                        .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build()).pretrain(true)
                         .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -150,7 +150,7 @@ public class TestPlayUI {
                             .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
                             .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
-                            .pretrain(false).backprop(true).build();
+                            .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -182,7 +182,7 @@ public class TestPlayUI {
                                         "in")
                         .addLayer("L1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(4).nOut(3).build(), "L0")
-                        .pretrain(false).backprop(true).setOutputs("L1").build();
+                        .setOutputs("L1").build();
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();

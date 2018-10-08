@@ -34,16 +34,7 @@ import java.util.Map;
 import static org.deeplearning4j.nn.conf.layers.InputTypeUtil.getOutputTypeCnnLayers;
 
 /**
- * 1D (temporal) convolutional layer. Currently, we just subclass off the
- * ConvolutionLayer and hard code the "width" dimension to 1. Also, this
- * layer accepts RNN InputTypes instead of CNN InputTypes.
- * <p>
- * This approach treats a multivariate time series with L timesteps and
- * P variables as an L x 1 x P image (L rows high, 1 column wide, P
- * channels deep). The kernel should be H<L pixels high and W=1 pixels
- * wide.
- * <p>
- * TODO: We will eventually want to NOT subclass off of ConvolutionLayer.
+ * 1D (temporal) convolutional layer. This layer accepts RNN InputTypes instead of CNN InputTypes
  *
  * @author dave@skymind.io
  */
@@ -52,6 +43,14 @@ import static org.deeplearning4j.nn.conf.layers.InputTypeUtil.getOutputTypeCnnLa
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class Convolution1DLayer extends ConvolutionLayer {
+    /*
+    //TODO: We will eventually want to NOT subclass off of ConvolutionLayer.
+    //Currently, we just subclass off the ConvolutionLayer and hard code the "width" dimension to 1
+     * This approach treats a multivariate time series with L timesteps and
+     * P variables as an L x 1 x P image (L rows high, 1 column wide, P
+     * channels deep). The kernel should be H<L pixels high and W=1 pixels
+     * wide.
+     */
 
     private Convolution1DLayer(Builder builder) {
         super(builder);
@@ -125,14 +124,27 @@ public class Convolution1DLayer extends ConvolutionLayer {
             this.kernelSize = null;
         }
 
+        /**
+         * @param kernelSize Kernel size
+         * @param stride     Stride
+         */
         public Builder(int kernelSize, int stride) {
             this(kernelSize, stride, 0);
         }
 
+        /**
+         * Constructor with specified kernel size, stride of 1, padding of 0
+         * @param kernelSize Kernel size
+         */
         public Builder(int kernelSize) {
             this(kernelSize, 1, 0);
         }
 
+        /**
+         * @param kernelSize Kernel size
+         * @param stride     Stride
+         * @param padding    Padding
+         */
         public Builder(int kernelSize, int stride, int padding) {
             this.kernelSize = new int[]{kernelSize, 1};
             this.stride = new int[]{stride, 1};
@@ -149,11 +161,19 @@ public class Convolution1DLayer extends ConvolutionLayer {
             return this;
         }
 
+        /**
+         * Stride for the convolution. Must be > 0
+         * @param stride Stride
+         */
         public Builder stride(int stride) {
             this.stride[0] = stride;
             return this;
         }
 
+        /**
+         * Padding value for the convolution. Not used with {@link org.deeplearning4j.nn.conf.ConvolutionMode#Same}
+         * @param padding Padding value
+         */
         public Builder padding(int padding) {
             this.padding[0] = padding;
             return this;

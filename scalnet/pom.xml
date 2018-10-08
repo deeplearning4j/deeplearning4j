@@ -153,7 +153,7 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.1</version>
+                <version>${maven-scala-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -165,6 +165,11 @@
                 </executions>
                 <configuration>
                     <scalaVersion>${scala.version}</scalaVersion>
+                    <args>
+                        <arg>-deprecation</arg>
+                        <arg>-explaintypes</arg>
+                        <arg>-nobootcp</arg>
+                    </args>
                 </configuration>
             </plugin>
             <plugin>

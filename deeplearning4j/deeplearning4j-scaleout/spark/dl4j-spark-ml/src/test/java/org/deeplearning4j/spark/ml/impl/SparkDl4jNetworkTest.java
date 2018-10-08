@@ -119,7 +119,7 @@ public class SparkDl4jNetworkTest {
                                         .activation(Activation.RELU).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SOFTMAX).nIn(120)
                                         .nOut(2).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
     }
 
     private static VectorAssembler getAssembler(String[] input, String output) {

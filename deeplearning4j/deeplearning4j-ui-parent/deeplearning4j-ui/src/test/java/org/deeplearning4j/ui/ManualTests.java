@@ -177,7 +177,7 @@ public class ManualTests {
                         .layer(7, new DenseLayer.Builder().name("ffn1").nOut(160).dropOut(0.5).build())
                         .layer(8, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false)
+
                         .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
         MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
@@ -296,7 +296,7 @@ public class ManualTests {
                         .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutional(28, 28, nChannels));
+                        .setInputType(InputType.convolutional(28, 28, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);

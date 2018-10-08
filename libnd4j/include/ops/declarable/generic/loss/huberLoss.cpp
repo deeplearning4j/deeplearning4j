@@ -66,7 +66,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 
     // multiply weightedLosses on weights
  	if(weights->isScalar())
- 		weightedLosses *= (*weights)(0);
+ 		weightedLosses *= (*weights)(0.);
  	else
  		weightedLosses *= (*weights); 	
  	// regard 4 possible reduction modes below
@@ -77,26 +77,26 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 			break;
 		
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
-			(*output)(0) = weightedLosses.template reduceNumber<simdOps::Sum<T>>();
+			(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>();
 			break;
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
 			T sum;
 			if (weights->isScalar())
-				sum = (*weights)(0) * weightedLosses.lengthOf();
+				sum = (*weights)(0.) * weightedLosses.lengthOf();
 			else 
 				sum = weightsBroad->template reduceNumber<simdOps::Sum<T>>();
 			
 			if (sum == (T)0.)
-				(*output)(0) = (T)0.;
+				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / sum;
+				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / sum;
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
 			int numOfNonZeroWeights = 0;
 			if(weights->isScalar()) {
-				if((*weights)(0) != (T)0.)
+				if((*weights)(0.) != (T)0.)
 					numOfNonZeroWeights = weightedLosses.lengthOf();
 			}
 			else {
@@ -106,9 +106,9 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 			}
 
 			if (numOfNonZeroWeights == 0)
-				(*output)(0) = (T)0.;
+				(*output)(0.) = (T)0.;
 			else 
-				(*output)(0) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / numOfNonZeroWeights;
+				(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>() / numOfNonZeroWeights;
 			break;
 		}
 		

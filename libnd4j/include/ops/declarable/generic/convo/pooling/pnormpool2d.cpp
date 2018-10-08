@@ -52,7 +52,7 @@ namespace nd4j {
             int oY = 0;
             int oX = 0;
 
-            int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NDHWC, 1-NCDHW    
+            int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 1-NHWC, 0-NCHW    
 
             if (!isNCHW) {
                 input  = input->permute({0, 3, 1, 2});                  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
@@ -109,7 +109,7 @@ namespace nd4j {
             int dH = INT_ARG(6);
             int dW = INT_ARG(7);
             int isSameMode = INT_ARG(8);
-            int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NDHWC, 1-NCDHW    
+            int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 1-NHWC, 0-NCHW
 
             REQUIRE_TRUE(dH != 0 && dW != 0, 0, "PNORMPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
@@ -159,7 +159,7 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int pnorm = INT_ARG(9);
-    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;           // 0-NHWC, 1-NCHW    
+    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // 1-NHWC, 0-NCHW
 
     T eps = T_ARG(0);
 

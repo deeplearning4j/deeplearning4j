@@ -860,8 +860,10 @@ TEST_F(DeclarableOpsTests4, Test_Reshape_Negative_1) {
 }
 
 TEST_F(DeclarableOpsTests4, Test_TileToShape_1) {
-    NDArray<float> x('c', {2, 1, 3});
-    NDArray<float> exp('c', {2, 4, 3});
+    NDArray<float> x('c', {2, 1, 3}); 
+    NDArray<float> exp('c', {2, 4, 3}, {1.f, 2.f, 3.f,1.f, 2.f, 3.f,1.f, 2.f, 3.f,1.f, 2.f, 3.f,
+                                        4.f, 5.f, 6.f,4.f, 5.f, 6.f,4.f, 5.f, 6.f,4.f, 5.f, 6.f});
+    x.linspace(1.f);
 
     nd4j::ops::tile_to_shape<float> op;
     auto result = op.execute({&x},{}, {2, 4, 3});
@@ -871,10 +873,10 @@ TEST_F(DeclarableOpsTests4, Test_TileToShape_1) {
     auto z = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
 }
-
 
 TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_1) {
     NDArray<float> x('c', {3, 4, 5});
@@ -1381,7 +1383,7 @@ TEST_F(DeclarableOpsTests4, lstm_test1) {
 
     NDArray<double> *h = results->at(0);    
     NDArray<double> *c = results->at(1);
-    NDArray<double> cLast = (*c)({{4,5},{},{}},true);
+    NDArray<double> cLast = (*c)({4,5,0,0,0,0},true);
 
     ASSERT_TRUE(expH.isSameShape(h));
     ASSERT_TRUE(expH.equalsTo(h));    

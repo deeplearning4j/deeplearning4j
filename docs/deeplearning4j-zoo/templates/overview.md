@@ -3,7 +3,7 @@ title: Deeplearning4j Model Zoo
 short_title: Zoo Usage
 description: Prebuilt model architectures and weights for out-of-the-box application.
 category: Models
-weight: 3
+weight: 10
 ---
 
 ## About the Deeplearning4j model zoo
@@ -113,8 +113,8 @@ zooModel.setInputShape(new int[]{3,28,28});
 
 ### Transfer Learning
 
-Pretrained models are perfect for transfer learning! You can read more about transfer learning using DL4J [here](https://deeplearning4j.org/transfer-learning).
+Pretrained models are perfect for transfer learning! You can read more about transfer learning using DL4J [here](./deeplearning4j-nn-transfer-learning).
 
 ### Workspaces
 
-Initialization methods often have an additional parameter named `workspaceMode`. For the majority of users you will not need to use this; however, if you have a large machine that has "beefy" specifications, you can pass `WorkspaceMode.SINGLE` for models such as VGG-19 that have many millions of parameters. To learn more about workspaces, please see [this section](https://deeplearning4j.org/workspaces).
+Initialization methods often have an additional parameter named `workspaceMode`. For the majority of users you will not need to use this; however, if you have a large machine that has "beefy" specifications, you can pass `WorkspaceMode.SINGLE` for models such as VGG-19 that have many millions of parameters. To learn more about workspaces, please see [this section](./deeplearning4j-config-workspaces).

@@ -49,7 +49,7 @@ nd4j::NDArray<T>  * processCondition(int mode,nd4j::NDArray<T> *arg, nd4j::NDArr
             nd4j::NDArray<T> arg1 = *arg;
             nd4j::NDArray<T> comp1 = *comp;
             for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
-                T result2 = processElementCondition<T>(mode,arg1(i),comp1(0));
+                T result2 = processElementCondition<T>(mode,arg1(i),comp1(0.));
                 if(result2 > 0) {
                     output->putScalar(numResults, arg1(i));
                     numResults++;
@@ -113,12 +113,12 @@ namespace nd4j {
                 auto comp1 = *comp;
                 if(arg->isScalar() || comp->isScalar()) {
                     if(arg->isScalar()) {
-                        T scalar = arg1(0);
+                        T scalar = arg1(0.);
                         processCondition<T>(mode,comp,nullptr,result,numResults,scalar);
 
                     }
                     else {
-                        T scalar = comp1(0);
+                        T scalar = comp1(0.);
                         processCondition<T>(mode,arg,nullptr,result,numResults,scalar);
 
                     }

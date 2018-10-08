@@ -50,12 +50,12 @@ void HHsequence<T>::mulLeft(NDArray<T>& matrix) const {
     	if(_type == 'u') {
     		
     		block = matrix.subarray({{inRows - rows + _shift + i, inRows}, {}});
-    		Householder<T>::mulLeft(*block, _vectors({{i + 1 + _shift, rows}, {i, i+1}}, true), _coeffs(i));
+    		Householder<T>::mulLeft(*block, _vectors({i + 1 + _shift, rows, i, i+1}, true), _coeffs(i));
     	}
     	else {
 
     		block = matrix.subarray({{inRows - cols + _shift + i, inRows}, {}});
-    		Householder<T>::mulLeft(*block, _vectors({{i, i+1}, {i + 1 + _shift, cols}}, true), _coeffs(i));    	
+    		Householder<T>::mulLeft(*block, _vectors({i, i+1, i + 1 + _shift, cols}, true), _coeffs(i));    	
     	}
 
     	delete block;
@@ -71,9 +71,9 @@ NDArray<T> HHsequence<T>::getTail(const int idx) const {
     int first = idx + 1 + _shift;
     
     if(_type == 'u')
-        return _vectors({{first, -1},{idx, idx+1}}, true);
+        return _vectors({first, -1, idx, idx+1}, true);
     else
-        return _vectors({{idx, idx+1},{first, -1}}, true);    
+        return _vectors({idx, idx+1, first, -1}, true);    
 }
 
 

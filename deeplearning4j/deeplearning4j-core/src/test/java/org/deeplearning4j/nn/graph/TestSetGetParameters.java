@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -43,11 +44,11 @@ public class TestSetGetParameters extends BaseDL4JTest {
                         .addLayer("2", new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build(), "in")
                         .addLayer("3", new ConvolutionLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2)
                                         .padding(2, 2).build(), "in")
-                        .addLayer("4", new OutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build(), "3")
-                        .addLayer("5", new OutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build(), "0")
-                        .addLayer("6", new RnnOutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build(), "1",
+                        .addLayer("4", new OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(10).build(), "3")
+                        .addLayer("5", new OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(10).build(), "0")
+                        .addLayer("6", new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(10).build(), "1",
                                         "2")
-                        .setOutputs("4", "5", "6").pretrain(false).backprop(true).build();
+                        .setOutputs("4", "5", "6").build();
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();

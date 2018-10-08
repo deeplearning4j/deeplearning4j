@@ -15,26 +15,19 @@
 ################################################################################
 
 
-import unittest
+import pytest
 
 import jumpy as jp
 import numpy as np
 
+jp.set_context_dtype('float64')
 
-import gc
-gc.disable()
+def test_array_creation():
+    a = jp.zeros((32, 10))
+    assert int(jp.sum(a)) == 0
+    a = jp.ones((32, 12))
+    assert int(jp.sum(a)) == 32 * 12
 
 
-class TestArrayCreation(unittest.TestCase):
-
-    def setUp(self):
-        self.x_np = np.random.random((100, 32, 16))
-        self.x_jp = jp.array(self.x_np)
-        self.x_np_2 = x_jp.numpy()
-
-    def test_arr_creation(self):
-        self.assertEquals(self.x_np.shape, self.x_jp.shape)
-        self.assertEquals(self.x_np.shape, self.x_np_2.shape)
-        x_np = self.x_np.ravel()
-        x_np_2 = x_np_2.ravel()
-        assertEquals(list(x_np), list(x_np_2))
+if __name__ == '__main__':
+    pytest.main([__file__])

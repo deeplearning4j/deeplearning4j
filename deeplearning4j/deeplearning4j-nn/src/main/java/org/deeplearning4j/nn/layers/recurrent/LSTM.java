@@ -37,7 +37,7 @@ import java.util.Properties;
  *
  * See also for full/vectorized equations (and a comparison to other LSTM variants):
  * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "no peephole" variant in said paper
- * http://arxiv.org/pdf/1503.04069.pdf
+ * <a href="http://arxiv.org/pdf/1503.04069.pdf">http://arxiv.org/pdf/1503.04069.pdf</a>
  *
  * @author Alex Black
  * @see GravesLSTM GravesLSTM class, for the version with peephole connections

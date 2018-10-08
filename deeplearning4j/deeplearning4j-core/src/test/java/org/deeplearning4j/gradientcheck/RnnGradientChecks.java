@@ -108,7 +108,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
                                         (simple ?
                                                 new SimpleRnn.Builder().nIn(3).nOut(3).build() :
                                                 new LSTM.Builder().nIn(3).nOut(3).build())))
-                                .layer(new RnnOutputLayer.Builder().nOut(nOut).build())
+                                .layer(new RnnOutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).build())
                                 .build();
 
 

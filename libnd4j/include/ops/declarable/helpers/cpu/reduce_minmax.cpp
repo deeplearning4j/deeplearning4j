@@ -29,8 +29,8 @@ namespace helpers {
             if (tempVals->isScalar()) {
                 for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
                     T compared = (normalize?nd4j::math::nd4j_abs((*input)(e)):(*input)(e));
-                    if (nd4j::math::nd4j_abs((*tempVals)(0) - compared) < T(1.E-5f)) { // if input value equals to max
-                         (*output)(e) = (normalize?(*gradOut)(0) * nd4j::math::nd4j_sign((*input)(e)):(*gradOut)(0));
+                    if (nd4j::math::nd4j_abs((*tempVals)(0.) - compared) < T(1.E-5f)) { // if input value equals to max
+                         (*output)(e) = (normalize?(*gradOut)(0.) * nd4j::math::nd4j_sign((*input)(e)):(*gradOut)(0.));
                     }
                 }
             }

@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 /**
- * 1D convolution layer
+ * 1D convolution layer. Expects input activations of shape [minibatch,channels,sequenceLength]
  *
  * @author Max Pumperla
  */

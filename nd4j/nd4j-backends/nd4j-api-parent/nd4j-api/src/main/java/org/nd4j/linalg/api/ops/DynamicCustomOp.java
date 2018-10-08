@@ -18,7 +18,6 @@ package org.nd4j.linalg.api.ops;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.FunctionProperties;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -152,6 +150,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.inplaceCall = inPlace;
     }
 
+    public DynamicCustomOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        this(null, sameDiff, args, inPlace);
+    }
+
     protected DynamicCustomOp(String opName) {
         this.opName = opName;
         iArguments = new ArrayList<>();
@@ -272,7 +274,12 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 if (!shape.isEmpty()) {
                     if (currShape != null && !Shape.isPlaceholderShape(currShape)) {
                         sameDiff.putShapeForVarName(var.getVarName(), currShape);
-                        arr = var.storeAndAllocateNewArray();
+                        if(currShape.length == 1 && currShape[0] == Long.MIN_VALUE){
+                            //Temporary sentinel for empty array
+                            arr = Nd4j.empty();
+                        } else {
+                            arr = var.storeAndAllocateNewArray();
+                        }
                     }
 
                 } else
@@ -642,21 +649,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         if(log.isTraceEnabled()){
             log.trace("Populating inputs and outputs for op {}: {}", opName, (nullArr ? "Unsuccessful" : "Successful"));
         }
-    }
-
-
-    /**
-     * Return function properties for the given function
-     *
-     * @return
-     */
-    public FunctionProperties asProperties() {
-        return FunctionProperties.builder()
-                .name(opName())
-                .l(iArguments)
-                .d(tArguments)
-                .fieldNames(propertiesForFunction())
-                .build();
     }
 
 

@@ -34,7 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
 @Slf4j
 public class VGG16ImagePreProcessor implements DataNormalization {
 
-    public static final INDArray VGG_MEAN_OFFSET_BGR = Nd4j.create(new double[] {123.68, 116.779, 103.939});
+    public static final INDArray VGG_MEAN_OFFSET_BGR = Nd4j.create(new double[] {103.939, 116.779, 123.68});
 
     /**
      * Fit a dataset (only compute

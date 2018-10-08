@@ -55,7 +55,7 @@ void HHcolPivQR<T>::evalData() {
 
     for (int k = 0; k < cols; ++k) {
         
-        T norm = _qr({{},{k, k+1}}).template reduceNumber<simdOps::Norm2<T>>();
+        T norm = _qr({0,0, k,k+1}).template reduceNumber<simdOps::Norm2<T>>();
         normsDir(k) = norm;
         normsUpd(k) = norm;
     }
@@ -69,8 +69,8 @@ void HHcolPivQR<T>::evalData() {
 
     for(int k = 0; k < _diagSize; ++k) {
     
-        int biggestColIndex = (int)(normsUpd({{}, {k, -1}}).template indexReduceNumber<simdOps::IndexMax<T>>());
-        T biggestColNorm = normsUpd({{}, {k, -1}}).template reduceNumber<simdOps::Max<T>>();
+        int biggestColIndex = (int)(normsUpd({0,0, k,-1}).template indexReduceNumber<simdOps::IndexMax<T>>());
+        T biggestColNorm = normsUpd({0,0, k,-1}).template reduceNumber<simdOps::Max<T>>();
         T biggestColSqNorm = biggestColNorm * biggestColNorm;
         biggestColIndex += k;
     
@@ -124,7 +124,7 @@ void HHcolPivQR<T>::evalData() {
                 
                 if (temp2 <= threshold2) {          
                     if(k+1 < rows && j < cols)
-                        normsDir(j) = _qr({{k+1, rows},{j, j+1}}).template reduceNumber<simdOps::Norm2<T>>();                    
+                        normsDir(j) = _qr({k+1,rows, j,j+1}).template reduceNumber<simdOps::Norm2<T>>();                    
                     normsUpd(j) = normsDir(j);
                 } 
                 else 

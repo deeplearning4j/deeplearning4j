@@ -49,7 +49,7 @@ import java.util.List;
  * Record reader dataset iterator. Takes a DataVec {@link RecordReader} as input, and handles the conversion to ND4J
  * DataSet objects as well as producing minibatches from individual records.<br>
  * <br>
- * Multiple constructors are available, though a {@link Builder} class is also available.<br>
+ * Multiple constructors are available, and a {@link Builder} class is also available.<br>
  * <br>
  * Example 1: Image classification, batch size 32, 10 classes<br>
  * <pre>

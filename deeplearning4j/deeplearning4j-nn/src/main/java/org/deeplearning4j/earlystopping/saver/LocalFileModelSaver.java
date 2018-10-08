@@ -46,6 +46,10 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNe
     private String directory;
     private Charset encoding;
 
+    public LocalFileModelSaver(File directory){
+        this(directory.getAbsolutePath());
+    }
+
     /**Constructor that uses default character set for configuration (json) encoding
      * @param directory Directory to save networks
      */

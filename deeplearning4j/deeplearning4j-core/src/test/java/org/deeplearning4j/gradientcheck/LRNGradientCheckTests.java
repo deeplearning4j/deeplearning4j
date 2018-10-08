@@ -78,7 +78,7 @@ public class LRNGradientCheckTests extends BaseDL4JTest {
                         .layer(1, new LocalResponseNormalization.Builder().build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(nOut).build())
-                        .setInputType(InputType.convolutional(hw, hw, depth)).pretrain(false).backprop(true);
+                        .setInputType(InputType.convolutional(hw, hw, depth));
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();

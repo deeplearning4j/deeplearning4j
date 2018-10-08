@@ -42,6 +42,7 @@ import org.deeplearning4j.ui.play.staticroutes.I18NRoute;
 import org.deeplearning4j.ui.storage.FileStatsStorage;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
+import org.deeplearning4j.util.DL4JFileUtils;
 import org.nd4j.linalg.primitives.Pair;
 import play.Mode;
 import play.api.routing.Router;
@@ -231,7 +232,7 @@ public class PlayUIServer extends UIServer {
         }
         else if(enableRemote) {
             try {
-                File tempStatsFile = File.createTempFile("dl4j", "UIstats");
+                File tempStatsFile = DL4JFileUtils.createTempFile("dl4j", "UIstats");
                 tempStatsFile.delete();
                 tempStatsFile.deleteOnExit();
                 enableRemoteListener(new FileStatsStorage(tempStatsFile), true);

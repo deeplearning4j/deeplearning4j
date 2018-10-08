@@ -42,10 +42,9 @@ public class EncodedGradientsAccumulatorTest {
 
         int workers[] = new int[] {2, 4, 8};
 
-        EncodingHandler handler = new EncodingHandler(1e-3);
-
-
         for (int numWorkers : workers) {
+            EncodingHandler handler = new EncodingHandler(1e-3);
+
             val bufferSize = EncodedGradientsAccumulator.getOptimalBufferSize(numParams, numWorkers, 2);
             log.info("Workers: {}; Buffer size: {} bytes", numWorkers, bufferSize);
             EncodedGradientsAccumulator accumulator =
@@ -73,9 +72,9 @@ public class EncodedGradientsAccumulatorTest {
     public void testEncodingLimits1() throws Exception {
         int numParams = 100000;
 
-        EncodingHandler handler = new EncodingHandler(1e-3);
-
         for (int e = 10; e < numParams / 5; e++) {
+            EncodingHandler handler = new EncodingHandler(1e-3);
+
             INDArray encoded = handler.encodeUpdates(getGradients(numParams, e, 2e-3));
 
             //  log.info("enc len: {}", encoded.data().length());

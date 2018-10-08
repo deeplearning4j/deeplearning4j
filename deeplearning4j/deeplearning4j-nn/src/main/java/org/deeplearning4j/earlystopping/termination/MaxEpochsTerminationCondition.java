@@ -39,7 +39,7 @@ public class MaxEpochsTerminationCondition implements EpochTerminationCondition 
     }
 
     @Override
-    public boolean terminate(int epochNum, double score) {
+    public boolean terminate(int epochNum, double score, boolean minimize) {
         return epochNum + 1 >= maxEpochs; //epochNum starts at 0
     }
 

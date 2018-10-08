@@ -18,7 +18,7 @@
     <parent>
         <artifactId>spark_2.11</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>1.0.0_spark_1-SNAPSHOT</version>
+        <version>1.0.0_spark_2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>dl4j-spark_2.11</artifactId>
@@ -85,6 +85,13 @@
             <artifactId>nd4j-kryo_2.11</artifactId>
             <version>${nd4j.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.11</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

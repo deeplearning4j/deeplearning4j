@@ -20,6 +20,7 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,6 +35,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 
 import java.io.*;
 
@@ -238,6 +241,26 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
         assertArrayEquals(old, buffer.asDouble(), 1e-1);
         workspace.close();
 
+    }
+
+    @Test
+    public void testAddressPointer(){
+        if( Nd4j.getExecutioner().type() !=  OpExecutioner.ExecutionerType.NATIVE_CPU ){
+            return;
+        }
+        DataBuffer buffer = Nd4j.createBuffer(new double[] {1, 2, 3, 4});
+        DataBuffer wrappedBuffer = Nd4j.createBuffer(buffer, 1, 2);
+
+        DoublePointer pointer = (DoublePointer) wrappedBuffer.addressPointer();
+        Assert.assertEquals(buffer.getDouble(1), pointer.get(0), 1e-1);
+        Assert.assertEquals(buffer.getDouble(2), pointer.get(1), 1e-1);
+
+        try {
+            pointer.asBuffer().get(3); // Try to access element outside pointer capacity.
+            Assert.fail("Accessing this address should not be allowed!");
+        } catch (IndexOutOfBoundsException e) {
+            // do nothing
+        }
     }
 
     @Override

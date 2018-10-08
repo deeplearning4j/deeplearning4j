@@ -19,7 +19,7 @@
     <parent>
         <artifactId>spark_2.11</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>1.0.0_spark_1-SNAPSHOT</version>
+        <version>1.0.0_spark_2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -58,6 +58,13 @@
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-parallel-wrapper_2.11</artifactId>
             <version>${nd4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.11</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

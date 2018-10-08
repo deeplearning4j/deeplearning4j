@@ -16,15 +16,11 @@
 
 package org.datavec.api.records.reader.impl;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.jackson.FieldSelection;
 import org.datavec.api.records.reader.impl.jackson.JacksonLineRecordReader;
 import org.datavec.api.records.reader.impl.jackson.JacksonLineSequenceRecordReader;
+import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
@@ -34,6 +30,12 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+
+import java.io.File;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -85,7 +87,13 @@ public class JacksonLineRecordReaderTest {
 				.addField(new Text("MISSING_CX"), "c", "x").build();
 
 		JacksonLineSequenceRecordReader rr = new JacksonLineSequenceRecordReader(f, new ObjectMapper(new JsonFactory()));
-		rr.initialize(new FileSplit(dir));
+		File[] files = dir.listFiles();
+		Arrays.sort(files);
+		URI[] u = new URI[files.length];
+		for( int i=0; i<files.length; i++ ){
+			u[i] = files[i].toURI();
+		}
+		rr.initialize(new CollectionInputSplit(u));
 
 		List<List<Writable>> expSeq0 = new ArrayList<>();
 		expSeq0.add(Arrays.asList((Writable) new Text("aValue0"), new Text("bValue0"), new Text("cxValue0")));

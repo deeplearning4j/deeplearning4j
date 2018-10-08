@@ -41,7 +41,7 @@ import java.util.Map;
  * ImageNet-based convolutional networks.
  *
  * "If example x is in class Y, ensure that embedding(x) is close to
- * average(embedding(y)) for all examples y in Y"
+ * {@code average(embedding(y))} for all examples y in Y"
  *
  * @author Justin Long (@crockpotveggies)
  * @author Alex Black (@AlexDBlack)

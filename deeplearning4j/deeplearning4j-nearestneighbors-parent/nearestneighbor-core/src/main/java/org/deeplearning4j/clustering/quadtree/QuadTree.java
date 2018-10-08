@@ -26,10 +26,10 @@ import java.io.Serializable;
 import static java.lang.Math.max;
 
 /**
- * QuadTree: http://en.wikipedia.org/wiki/Quadtree
+ * QuadTree: <a href="http://en.wikipedia.org/wiki/Quadtree">http://en.wikipedia.org/wiki/Quadtree</a>
  *
  * Reference impl based on the paper by:
- * http://arxiv.org/pdf/1301.3342v2.pdf
+ * <a href="http://arxiv.org/pdf/1301.3342v2.pdf">http://arxiv.org/pdf/1301.3342v2.pdf</a>
  *
  * Primarily focused on 2 dimensions, may expand later if there's a reason.
  *

@@ -285,6 +285,6 @@ class SecondIterationFunctionAdapter
         /*
             we use wordIndex as part of seed here, to guarantee that during word syn0 initialization on dwo distinct nodes, initial weights will be the same for the same word
          */
-        return Nd4j.rand(lseed * seed, new int[] {1, vectorLength}).subi(0.5).divi(vectorLength);
+        return Nd4j.rand(new int[] {1, vectorLength}, lseed * seed).subi(0.5).divi(vectorLength);
     }
 }

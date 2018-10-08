@@ -104,6 +104,20 @@ public interface Random extends AutoCloseable {
      */
     int nextInt(int n);
 
+
+    /**
+     * Returns a pseudorandom, uniformly distributed <tt>int</tt> value
+     * between 0 (inclusive) and the specified value (exclusive), drawn from
+     * this random number generator's sequence.
+     *
+     * @param n the bound on the random number to be returned.  Must be
+     *          positive.
+     * @return a pseudorandom, uniformly distributed <tt>int</tt>
+     * value between 0 (inclusive) and n (exclusive).
+     * @throws IllegalArgumentException if n is not positive.
+     */
+    int nextInt(int a, int n);
+
     /**
      * Returns the next pseudorandom, uniformly distributed <code>long</code>
      * value from this random number generator's sequence.  All

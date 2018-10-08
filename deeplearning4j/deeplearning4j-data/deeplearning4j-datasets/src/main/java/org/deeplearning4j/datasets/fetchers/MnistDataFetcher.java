@@ -62,6 +62,9 @@ public class MnistDataFetcher extends BaseDataFetcher {
     protected boolean oneIndexed = false;
     protected boolean fOrder = false; //MNIST is C order, EMNIST is F order
 
+    protected boolean firstShuffle = true;
+    protected final int numExamples;
+
 
     /**
      * Constructor telling whether to binarize the dataset or not
@@ -69,10 +72,10 @@ public class MnistDataFetcher extends BaseDataFetcher {
      * @throws IOException
      */
     public MnistDataFetcher(boolean binarize) throws IOException {
-        this(binarize, true, true, System.currentTimeMillis());
+        this(binarize, true, true, System.currentTimeMillis(), NUM_EXAMPLES);
     }
 
-    public MnistDataFetcher(boolean binarize, boolean train, boolean shuffle, long rngSeed) throws IOException {
+    public MnistDataFetcher(boolean binarize, boolean train, boolean shuffle, long rngSeed, int numExamples) throws IOException {
         if (!mnistExists()) {
             new MnistFetcher().downloadAndUntar();
         }
@@ -121,6 +124,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
         for (int i = 0; i < order.length; i++)
             order[i] = i;
         rng = new Random(rngSeed);
+        this.numExamples = numExamples;
         reset(); //Shuffle order
     }
 
@@ -232,8 +236,19 @@ public class MnistDataFetcher extends BaseDataFetcher {
     public void reset() {
         cursor = 0;
         curr = null;
-        if (shuffle)
-            MathUtils.shuffleArray(order, rng);
+        if (shuffle) {
+            if((train && numExamples < NUM_EXAMPLES) || (!train && numExamples < NUM_EXAMPLES_TEST)){
+                //Shuffle only first N elements
+                if(firstShuffle){
+                    MathUtils.shuffleArray(order, rng);
+                    firstShuffle = false;
+                } else {
+                    MathUtils.shuffleArraySubset(order, numExamples, rng);
+                }
+            } else {
+                MathUtils.shuffleArray(order, rng);
+            }
+        }
     }
 
     @Override

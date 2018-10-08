@@ -40,12 +40,6 @@
             <artifactId>junit</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>commons-dbutils</groupId>
             <artifactId>commons-dbutils</artifactId>
             <version>${commons-db.version}</version>
@@ -66,6 +60,15 @@
     <profiles>
         <profile>
             <id>testresources</id>
+            <!-- Put nd4j-native in profile so that CUDA-only builds succeed -->
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 </project>

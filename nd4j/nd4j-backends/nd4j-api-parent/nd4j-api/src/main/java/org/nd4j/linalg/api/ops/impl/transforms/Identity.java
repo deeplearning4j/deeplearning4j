@@ -54,7 +54,7 @@ public class Identity extends BaseDynamicTransformOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[]{"Identity", "NoOp"};
+        return new String[]{"Identity"};
     }
 
     @Override

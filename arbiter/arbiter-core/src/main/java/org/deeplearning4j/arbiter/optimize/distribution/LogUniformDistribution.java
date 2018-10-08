@@ -27,7 +27,7 @@ import java.util.Random;
 /**
  * Log uniform distribution, with support in range [min, max] for min > 0
  *
- * Reference: https://www.vosesoftware.com/riskwiki/LogUniformdistribution.php
+ * Reference: <a href="https://www.vosesoftware.com/riskwiki/LogUniformdistribution.php">https://www.vosesoftware.com/riskwiki/LogUniformdistribution.php</a>
  *
  * @author Alex Black
  */

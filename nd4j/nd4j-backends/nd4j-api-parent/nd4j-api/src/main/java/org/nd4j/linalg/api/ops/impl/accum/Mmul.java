@@ -114,41 +114,14 @@ public class Mmul extends DynamicCustomOp {
 
     }
 
-
-    @Override
-    public List<long[]> calculateOutputShape() {
-        if(mt == null)
-            mt = MMulTranspose.allFalse();
-
-
-        long[] aShape = larg().getShape();
-        long[] bShape = rarg().getShape();
-        if(Shape.isPlaceholderShape(aShape) || Shape.isPlaceholderShape(bShape))
-            return Collections.emptyList();
-        aShape = mt.isTransposeA() ? transposeShapeArray(aShape) : aShape;
-        bShape = mt.isTransposeB() ? transposeShapeArray(bShape) : bShape;
-
-        long[] shape =  Shape.getMatrixMultiplyShape(aShape,bShape);
-        if(mt.isTransposeResult())
-            shape = transposeShapeArray(shape);
-
-        for(int i = 0; i < shape.length; i++) {
-            if(shape[i] < 1)
-                throw new ND4JIllegalStateException("Invalid shape computed at index " +  i + ": shape " + Arrays.toString(shape));
-        }
-
-        return Collections.singletonList(shape);
-    }
-
-
     @Override
     public String onnxName() {
         return "MatMul";
     }
 
     @Override
-    public String tensorflowName() {
-        return "MatMul";
+    public String[] tensorflowNames() {
+        return new String[]{"MatMul", "BatchMatMul"};
     }
 
 
@@ -163,8 +136,25 @@ public class Mmul extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-        val isTransposeA = attributesForNode.get("transpose_a").getB();
-        val isTransposeB = attributesForNode.get("transpose_b").getB();
+
+        boolean isTransposeA;
+        boolean isTransposeB;
+        if(nodeDef.getOp().equalsIgnoreCase("BatchMatMul")){
+            //In practice, BatchMatMul seems to use "adj_x" and "adj_y" instead of "transpose_a" and "transpose_b"
+            if(attributesForNode.containsKey("transpose_a")){
+                isTransposeA = attributesForNode.get("transpose_a").getB();
+            } else {
+                isTransposeA = attributesForNode.get("adj_x").getB();
+            }
+            if(attributesForNode.containsKey("transpose_b")){
+                isTransposeB = attributesForNode.get("transpose_b").getB();
+            } else {
+                isTransposeB = attributesForNode.get("adj_y").getB();
+            }
+        } else {
+            isTransposeA = attributesForNode.get("transpose_a").getB();
+            isTransposeB = attributesForNode.get("transpose_b").getB();
+        }
         MMulTranspose mMulTranspose = MMulTranspose.builder()
                 .transposeA(isTransposeA).transposeB(isTransposeB)
                 .build();
@@ -175,6 +165,8 @@ public class Mmul extends DynamicCustomOp {
                 sameDiff.addPropertyToResolve(this,arg.getVarName());
             }
         }
+        iArguments.clear();
+        addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()), ArrayUtil.fromBoolean(mt.isTransposeB()));
     }
 
     @Override
@@ -193,21 +185,6 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-//        List<SDVariable> ret = new ArrayList<>();
-//        SDVariable dLdOut = i_v1.get(0);
-//
-//        SDVariable dLdx = sameDiff.mmul(dLdOut, rarg(), MMulTranspose.builder()
-//                .transposeB(true)
-//                .build());
-//
-//        SDVariable dLdy = sameDiff.mmul(larg(), dLdOut, MMulTranspose.builder()
-//                .transposeA(true)
-//                .build());
-//
-//        ret.add(dLdx);
-//        ret.add(dLdy);
-//        return ret;
-
         List<SDVariable> ret = new ArrayList<>();
         SDVariable dLdOut = i_v1.get(0);
         /*
@@ -260,7 +237,9 @@ public class Mmul extends DynamicCustomOp {
         map.put("transposeA",transposeA);
         map.put("transposeB",transposeB);
 
-        ret.put(tensorflowName(),map);
+        for(String s : tensorflowNames()){
+            ret.put(s,map);
+        }
         ret.put(onnxName(),map);
 
         return ret;

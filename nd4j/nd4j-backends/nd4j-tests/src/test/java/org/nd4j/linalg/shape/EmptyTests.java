@@ -23,6 +23,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -75,6 +77,26 @@ public class EmptyTests extends BaseNd4jTest {
 
         assertTrue(array.isEmpty());
         assertEquals(DataBuffer.Type.LONG, array.dataType());
+    }
+
+    @Test
+    public void testConcat_1() {
+        val row1 = Nd4j.create(new double[]{1, 1, 1, 1}, new long[]{1, 4});
+        val row2 = Nd4j.create(new double[]{2, 2, 2, 2}, new long[]{1, 4});
+        val row3 = Nd4j.create(new double[]{3, 3, 3, 3}, new long[]{1, 4});
+
+        val exp = Nd4j.create(new double[]{1, 1, 1, 1,    2, 2, 2, 2,   3, 3, 3, 3}, new int[]{3, 4});
+
+        val op = DynamicCustomOp.builder("concat")
+                .addInputs(row1, row2, row3)
+                .addIntegerArguments(0)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        val z = op.getOutputArgument(0);
+
+        assertEquals(exp, z);
     }
 
     @Override

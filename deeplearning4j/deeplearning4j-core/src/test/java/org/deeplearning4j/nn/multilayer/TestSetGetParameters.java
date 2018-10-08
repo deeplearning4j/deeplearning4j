@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -120,8 +121,8 @@ public class TestSetGetParameters extends BaseDL4JTest {
                         .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
                         .layer(2, new GravesLSTM.Builder().nIn(10).nOut(10).build())
                         .layer(3, new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build())
-                        .layer(4, new OutputLayer.Builder(LossFunction.MCXENT).nIn(10).nOut(10).build()).pretrain(false)
-                        .backprop(true).build();
+                        .layer(4, new OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();

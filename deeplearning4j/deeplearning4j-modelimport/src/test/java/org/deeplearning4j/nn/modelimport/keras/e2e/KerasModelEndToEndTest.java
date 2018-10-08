@@ -292,6 +292,31 @@ public class KerasModelEndToEndTest {
     }
 
     /**
+     * Auxillary classifier GAN import test
+     */
+    @Test
+    public void importAcganDiscriminator() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_discriminator_1_epochs.h5");
+        INDArray input = Nd4j.create(10, 1, 28, 28);
+        INDArray[] output = model.output(input);
+    }
+
+    @Test
+    public void importAcganGenerator() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_generator_1_epochs.h5");
+        //System.out.println(model.summary()) ;
+        INDArray latent = Nd4j.create(10, 100);
+        INDArray label = Nd4j.create(10, 1);
+        INDArray[] output = model.output(latent, label);
+    }
+
+    @Test
+    public void importAcganCombined() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_combined_1_epochs.h5");
+        // TODO: imports, but incorrectly. Has only one input, should have two.
+    }
+
+    /**
      * Deep convolutional GAN import test
      */
     @Test
@@ -405,7 +430,9 @@ public class KerasModelEndToEndTest {
      */
     @Test
     public void importMobileNet() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/mobilenet/mobilenet_tf_keras_2.h5");
+        ComputationGraph graph = importFunctionalModelH5Test("modelimport/keras/examples/mobilenet/alternative.hdf5");
+        INDArray input = Nd4j.ones(10, 3, 299, 299);
+        graph.output(input);
     }
 
     /**
@@ -480,11 +507,97 @@ public class KerasModelEndToEndTest {
     }
 
 
+    /**
+     * Import all AlphaGo Zero model variants, i.e.
+     * - Dual residual architecture
+     * - Dual convolutional architecture
+     * - Separate (policy and value) residual architecture
+     * - Separate (policy and value) convolutional architecture
+     */
+    @Test
+    public void importSepConvPolicy() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_policy.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importSepResPolicy() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_policy.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+
+    @Test
+    public void importSepConvValue() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_value.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importSepResValue() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_value.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importDualRes() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_res.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    @Test
+    public void importDualConv() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_conv.h5");
+        INDArray input = Nd4j.create(32, 19, 19, 10);
+        model.output(input);
+    }
+
+    /**
+     * MTCNN
+     */
+    @Test
+    public void importMTCNN() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/48net_complete.h5");
+    }
+
+    @Test
+    public void importMTCNN2D() throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/12net.h5",
+                new int[] {24, 24, 3}, false);
+        INDArray input = Nd4j.create(10, 3, 24, 24);
+        model.output(input);
+        System.out.println(model.summary());
+    }
+
+    /**
+     * Masking layers (simple Masking into LSTM)
+     */
+    @Test
+    public void testMaskingZeroValue() throws Exception {
+        MultiLayerNetwork model = importSequentialModelH5Test(
+                "modelimport/keras/examples/masking/masking_zero_lstm.h5");
+        model.summary();
+    }
+
+    @Test
+    public void testMaskingTwoValue() throws Exception {
+        MultiLayerNetwork model = importSequentialModelH5Test(
+                "modelimport/keras/examples/masking/masking_two_lstm.h5");
+        model.summary();
+    }
+
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
         return importFunctionalModelH5Test(modelPath, null, false);
     }
 
-    private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape, boolean train) throws Exception {
+
+    private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape, boolean train)
+            throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
@@ -499,12 +612,12 @@ public class KerasModelEndToEndTest {
         return model.getComputationGraph();
     }
 
-    private void importSequentialModelH5Test(String modelPath) throws Exception {
-        importSequentialModelH5Test(modelPath, null);
+    private MultiLayerNetwork importSequentialModelH5Test(String modelPath) throws Exception {
+        return importSequentialModelH5Test(modelPath, null);
     }
 
 
-    private void importSequentialModelH5Test(String modelPath, int[] inputShape) throws Exception {
+    private MultiLayerNetwork importSequentialModelH5Test(String modelPath, int[] inputShape) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
@@ -516,7 +629,7 @@ public class KerasModelEndToEndTest {
             builder.inputShape(inputShape);
         }
         KerasSequentialModel model = builder.buildSequential();
-        model.getMultiLayerNetwork();
+        return model.getMultiLayerNetwork();
     }
 
 

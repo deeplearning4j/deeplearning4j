@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Simple iterator working with list of files.
- * File -> DataSet conversion will be handled via provided FileCallback implementation
+ * File to DataSet conversion will be handled via provided FileCallback implementation
  *
  * @author raver119@gmail.com
  */
@@ -42,6 +42,10 @@ public class FileSplitDataSetIterator implements DataSetIterator {
     private AtomicInteger counter = new AtomicInteger(0);
     private FileCallback callback;
 
+    /**
+     * @param files    List of files to iterate over
+     * @param callback Callback for loading the files
+     */
     public FileSplitDataSetIterator(@NonNull List<File> files, @NonNull FileCallback callback) {
         this.files = files;
         this.numFiles = files.size();

@@ -122,7 +122,7 @@ public class CNN2DTestCases {
                                 .activation(Activation.SOFTMAX)
                                 .build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
                 return conf;
             }
@@ -417,7 +417,7 @@ public class CNN2DTestCases {
                                 .activation(Activation.SOFTMAX)
                                 .build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);

@@ -69,7 +69,6 @@
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-enforcer-plugin</artifactId>
-              <version>1.4.1</version>
               <executions>
                 <execution>
                   <phase>package</phase>
@@ -149,6 +148,13 @@
               <phase>package</phase>
             </execution>
           </executions>
+        </plugin>
+        <plugin>
+          <groupId>com.lewisd</groupId>
+            <artifactId>lint-maven-plugin</artifactId>
+              <configuration>
+                <failOnViolation>false</failOnViolation>
+              </configuration>
         </plugin>
       </plugins>
     </build>

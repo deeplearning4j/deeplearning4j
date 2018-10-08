@@ -624,10 +624,13 @@ public class JcublasLapack extends BaseLapack {
 		int tmp1 = N ;
 		N = M ;
 		M = tmp1 ;
+        byte tmp2 = jobu;
+        jobu = jobvt;
+        jobvt = tmp2;
 
 		a = A.transpose().dup('f') ;
-		u = VT.dup('f') ;
-		vt = U.dup('f') ;
+		u = (VT == null) ? null : VT.transpose().dup('f');
+        vt = (U == null) ? null : U.transpose().dup('f');
 	} else {
 	        // cuda requires column ordering - we'll register a warning in case
        	 	if (A.ordering() == 'c')
@@ -675,8 +678,8 @@ public class JcublasLapack extends BaseLapack {
             // Do the actual decomp
             stat = cusolverDnSgesvd(solverDn, jobu, jobvt, M, N, (FloatPointer) xAPointer.getDevicePointer(), M,
                             new CudaPointer(allocator.getPointer(S, ctx)).asFloatPointer(),
-                            U == null ? null : new CudaPointer(allocator.getPointer(u, ctx)).asFloatPointer(), M,
-                            VT == null ? null : new CudaPointer(allocator.getPointer(vt, ctx)).asFloatPointer(), N,
+                            u == null ? null : new CudaPointer(allocator.getPointer(u, ctx)).asFloatPointer(), M,
+                            vt == null ? null : new CudaPointer(allocator.getPointer(vt, ctx)).asFloatPointer(), N,
                             new CudaPointer(workspace).asFloatPointer(), worksize,
                             new CudaPointer(allocator.getPointer(rwork, ctx)).asFloatPointer(),
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
@@ -687,21 +690,23 @@ public class JcublasLapack extends BaseLapack {
         allocator.registerAction(ctx, INFO);
         allocator.registerAction(ctx, S);
 
-	if (U != null)
-            	allocator.registerAction(ctx, u);
-	if (VT != null)
-		allocator.registerAction(ctx, vt);
+        if (u != null)
+            allocator.registerAction(ctx, u);
+        if (vt != null)
+            allocator.registerAction(ctx, vt);
 
-	// if we transposed A then swap & transpose U & V'
-	if( hadToTransposeA ) {
-		U.assign(vt.transpose());
-		VT.assign(u.transpose());
-	} else {
-		if (u != U)
-			U.assign(u);
-		if (vt != VT)
-			VT.assign(vt);
-	}
+        // if we transposed A then swap & transpose U & V'
+        if( hadToTransposeA ) {
+            if (vt != null)
+                U.assign(vt.transpose());
+            if (u != null)
+                VT.assign(u.transpose());
+        } else {
+            if (u != U)
+                U.assign(u);
+            if (vt != VT)
+                VT.assign(vt);
+        }
     }
 
 
@@ -725,10 +730,13 @@ public class JcublasLapack extends BaseLapack {
 		int tmp1 = N ;
 		N = M ;
 		M = tmp1 ;
+        byte tmp2 = jobu;
+        jobu = jobvt;
+        jobvt = tmp2;
 
 		a = A.transpose().dup('f') ;
-		u = VT.dup('f') ;
-		vt = U.dup('f') ;
+		u = (VT == null) ? null : VT.transpose().dup('f');
+        vt = (U == null) ? null : U.transpose().dup('f');
 	} else {
 	        // cuda requires column ordering - we'll register a warning in case
        	 	if (A.ordering() == 'c')
@@ -781,8 +789,8 @@ public class JcublasLapack extends BaseLapack {
             // Do the actual decomp
             stat = cusolverDnDgesvd(solverDn, jobu, jobvt, M, N, (DoublePointer) xAPointer.getDevicePointer(), M,
                             new CudaPointer(allocator.getPointer(S, ctx)).asDoublePointer(),
-                            U == null ? null : new CudaPointer(allocator.getPointer(u, ctx)).asDoublePointer(), M,
-                            VT == null ? null : new CudaPointer(allocator.getPointer(vt, ctx)).asDoublePointer(), N,
+                            u == null ? null : new CudaPointer(allocator.getPointer(u, ctx)).asDoublePointer(), M,
+                            vt == null ? null : new CudaPointer(allocator.getPointer(vt, ctx)).asDoublePointer(), N,
                             new CudaPointer(workspace).asDoublePointer(), worksize,
                             new CudaPointer(allocator.getPointer(rwork, ctx)).asDoublePointer(),
                             new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
@@ -795,22 +803,24 @@ public class JcublasLapack extends BaseLapack {
         allocator.registerAction(ctx, S);
         allocator.registerAction(ctx, a);
 
-        if (U != null)
+        if (u != null)
             allocator.registerAction(ctx, u);
 
-        if (VT != null)
+        if (vt != null)
             allocator.registerAction(ctx, vt);
 
-	// if we transposed A then swap & transpose U & V'
-	if( hadToTransposeA ) {
-		U.assign(vt.transpose());
-		VT.assign(u.transpose());
-	} else {
-		if (u != U)
-			U.assign(u);
-		if (vt != VT)
-			VT.assign(vt);
-	}
+        // if we transposed A then swap & transpose U & V'
+        if( hadToTransposeA ) {
+            if (vt != null)
+                U.assign(vt.transpose());
+            if (u != null)
+                VT.assign(u.transpose());
+        } else {
+            if (u != U)
+                U.assign(u);
+            if (vt != VT)
+                VT.assign(vt);
+        }
     }
 
     public int ssyev( char _jobz, char _uplo, int N, INDArray A, INDArray R ) {

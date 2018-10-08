@@ -107,12 +107,7 @@ public class EuclideanDistance extends BaseAccumulation {
         SDVariable difference = larg().sub(rarg());
         SDVariable divBroadcastable;
         int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
-        if(!(dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE) ){
-            //1x1 output case
-            divBroadcastable = i_v1.get(0).div(euc);
-        } else {
-            divBroadcastable = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0).div(euc));
-        }
+        divBroadcastable = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0).div(euc));
 
         SDVariable gradX = difference.mul(divBroadcastable);
         SDVariable gradY = f().neg(gradX);

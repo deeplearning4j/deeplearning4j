@@ -2,13 +2,11 @@
 
 ## Building
 
-Run `./gen_all_docs.sh` to generate documentation from source for all supported projects,
-then change into the subdirectory of a project and run `mkdocs serve` to see the respective documentation
-at `http://localhost:8000`.
+Run `./gen_all_docs.sh` to generate documentation from source for all supported projects. For each documentation module, files will be put into a `doc_sources` folder where they are staged for copying to the primary docs repository.
 
 To deploy a new version of documentation, first make sure to set `$DL4J_DOCS_DIR` to your local copy of 
-https://github.com/deeplearning4j/deeplearning4j-docs and set `$DL4J_VERSION` to a directory-friendly version string such as `v100-RC` (note the lack of decimals). Then run `./copy-to-dl4j-docs.sh`. This puts documentation
-into the right folders and you can create a PR from there to change docs.
+https://github.com/deeplearning4j/deeplearning4j-docs and set `$DL4J_VERSION` to a URI-friendly version string such as `v100-RC` (note the lack of decimals). Then run `./copy-to-dl4j-docs.sh`. This puts documentation
+into the right folders and you can use `git` to create a PR and update the live docs.
 
 The structure of this project (template files, generating code, mkdocs YAML) is closely aligned
 with the [Keras documentation](keras.io) and heavily inspired by the [Keras docs repository](https://github.com/keras-team/keras/tree/master/docs).
@@ -47,12 +45,18 @@ All of these definitions are necessary.
 - `category` is the high-level category in the user guide.
 - `weight` is the ordering that the doc will appear in navigation, the larger the lower the listing.
 
-## Testing with Mkdocs
+## Creating links
 
-Although Mkdocs is not actually used for serving the Deeplearning4j website, you can locally test the documentation with Mkdocs (`pip install mkdocs`).
+**All links to other docs need to be relative.** This prolongs the life of the documentation and reduces maintenance. The basic structure of a link to another doc looks like:
 
-After installation, to locally test or build documentation modules by doing the following:
+```
+<module name>-<file name>
+```
 
-- `cd keras-import`          # Change into project directory.
-- `mkdocs serve`             # Starts a [local webserver on port 8000](localhost:8000).
-- `mkdocs build`             # Builds a static site in `docs/site` directory.
+So if you created a DataVec doc with the name `iterators.md` in the `datavec` module, your relative link will look like:
+
+```
+./datavec-iterators
+```
+
+Note the omission of the file extension `.md`. Jekyll automatically generates a clean URL for us to use.

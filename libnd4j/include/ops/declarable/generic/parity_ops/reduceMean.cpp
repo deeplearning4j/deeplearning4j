@@ -84,7 +84,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
     
     if(gradO->isScalar()) {
         
-        *gradI = (*gradO)(0) / input->lengthOf();            
+        *gradI = (*gradO)(0.) / input->lengthOf();            
     }
     else {
         

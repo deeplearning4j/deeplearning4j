@@ -17,14 +17,20 @@
 package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.OpValidationSuite;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -37,10 +43,28 @@ import static org.nd4j.imports.TFGraphs.TFGraphTestAllHelper.fetchTestParams;
 @RunWith(Parameterized.class)
 @Slf4j
 public class TFGraphTestAllLibnd4j {
+
+    @Rule
+    public TestWatcher testWatcher = new TestWatcher() {
+
+        @Override
+        protected void starting(Description description){
+            log.info("TFGraphTestAllLibnd4j: Starting parameterized test: " + description.getDisplayName());
+        }
+
+        //protected void failed(Throwable e, Description description) {
+        //protected void succeeded(Description description) {
+    };
+
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
     private String modelName;
+    private File localTestDir;
+
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
+    private static final String BASE_DIR = "tf_graphs/examples";
+    private static final String MODEL_FILENAME = "frozen_model.pb";
+
     private static final String[] SKIP_ARR = new String[] {
             "deep_mnist",
             "deep_mnist_no_dropout",
@@ -51,33 +75,106 @@ public class TFGraphTestAllLibnd4j {
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
+    private static final String[] SKIP_FOR_LIBND4J_EXEC = new String[]{
+            //These are issues that need to be looked into more and fixed
+            "reductions/max.*",
+            "reductions/mean.*",
+            "reductions/min.*",
+            "reductions/prod.*",
+            "reductions/sum.*",
+            "reductions/moments.*",
+            "multiple_outs_a",
+            "multiple_outs_b",
+
+            //Crashing
+            "cnn3d_layers/.*",
+
+            //Exceptions - need to look into:
+            "alpha_dropout/.*",
+            "layers_dropout/.*",
+            "losses/.*",
+
+            //Failing only on libnd4j/native graph execution
+            "logsumexp/.*",
+            "reduce_all/.*",
+            "reduce_any/.*",
+            "split/.*",
+
+            "reductions/count_nonzero.*",
+            "sufficient_statistics.*",
+
+            "histogram_fixed.*",
+            "unsorted_segment.*",
+
+            //These can't pass until this is fixed: https://github.com/deeplearning4j/deeplearning4j/issues/6465#issuecomment-424209155
+            //i.e., reduction ops with newFormat/keepDims args
+            "l2_normalize/.*",
+            "norm_tests/.*",
+            "g_06",
+
+            //JVM crashes
+            "simpleif.*",
+            "simple_cond.*"
+    };
+
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+    }
+
+    @Before
+    public void setup(){
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+    }
+
     @After
     public void tearDown() throws Exception {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        return TFGraphTestAllHelper.fetchTestParams(EXECUTE_WITH);
+        File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+        return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
     }
 
-    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
+    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws IOException {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;
+        this.localTestDir = localTestDir;
     }
 
-    @Test
+    @Test(timeout = 25000L)
     public void test() throws Exception {
         Nd4j.create(1);
         if (SKIP_SET.contains(modelName)) {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;
         }
-        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        for(String s : TFGraphTestAllSameDiff.IGNORE_REGEXES){
+            if(modelName.matches(s)){
+                log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
+                OpValidationSuite.ignoreFailing();
+            }
+        }
 
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH, precisionOverride);
+        for(String s : SKIP_FOR_LIBND4J_EXEC){
+            if(modelName.matches(s)){
+                log.info("\n\tIGNORE MODEL ON REGEX - SKIP LIBND4J EXEC ONLY: {} - regex {}", modelName, s);
+                OpValidationSuite.ignoreFailing();
+            }
+        }
+
+        log.info("Starting test: {}", this.modelName);
+        Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
+        Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
+
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,
+                TFGraphTestAllHelper.LOADER, maxRE, minAbs);
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 

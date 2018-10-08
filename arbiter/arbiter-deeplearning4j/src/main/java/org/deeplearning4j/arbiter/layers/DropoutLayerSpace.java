@@ -30,31 +30,29 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
-public class DropoutLayerSpace extends AbstractParameterSpace<DropoutLayer> {
-
-    protected ParameterSpace<IDropout> dropout;
+public class DropoutLayerSpace extends LayerSpace<DropoutLayer> {
 
     public DropoutLayerSpace(@NonNull ParameterSpace<IDropout> dropout){
-        this.dropout = dropout;
+        this.dropOut = dropout;
     }
 
     protected DropoutLayerSpace(Builder builder){
-        this(builder.dropout);
+        super(builder);
     }
 
     @Override
     public DropoutLayer getValue(double[] parameterValues) {
-        return new DropoutLayer.Builder().dropOut(dropout.getValue(parameterValues)).build();
+        return new DropoutLayer.Builder().dropOut(dropOut.getValue(parameterValues)).build();
     }
 
     @Override
     public int numParameters() {
-        return dropout.numParameters();
+        return dropOut.numParameters();
     }
 
     @Override
     public List<ParameterSpace> collectLeaves() {
-        return Collections.<ParameterSpace>singletonList(dropout);
+        return Collections.<ParameterSpace>singletonList(dropOut);
     }
 
     @Override
@@ -64,12 +62,10 @@ public class DropoutLayerSpace extends AbstractParameterSpace<DropoutLayer> {
 
     @Override
     public void setIndices(int... indices) {
-        dropout.setIndices(indices);
+        dropOut.setIndices(indices);
     }
 
-    public static class Builder {
-
-        private ParameterSpace<IDropout> dropout;
+    public static class Builder extends LayerSpace.Builder<Builder> {
 
         public Builder dropOut(double d){
             return iDropOut(new DropoutSpace(new FixedValue<>(d)));
@@ -80,7 +76,7 @@ public class DropoutLayerSpace extends AbstractParameterSpace<DropoutLayer> {
         }
 
         public Builder iDropOut(ParameterSpace<IDropout> dropout){
-            this.dropout = dropout;
+            this.dropOut = dropout;
             return this;
         }
 

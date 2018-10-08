@@ -27,7 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 
 /**
- * LastTimeStep is a "wrapper" layer: it wraps any RNN layer, and extracts out the last time step during forward pass,
+ * LastTimeStep is a "wrapper" layer: it wraps any RNN (or CNN1D) layer, and extracts out the last time step during forward pass,
  * and returns it as a row vector (per example). That is, for 3d (time series) input (with shape [minibatch, layerSize,
  * timeSeriesLength]), we take the last time step and return it as a 2d array with shape [minibatch, layerSize].<br>
  * Note that the last time step operation takes into account any mask arrays, if present: thus, variable length time

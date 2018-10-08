@@ -72,11 +72,6 @@ public class FullConv3D extends DynamicCustomOp {
         return super.iArgs();
     }
 
-    @Override
-    public void setValueFor(Field target, Object value) {
-        config.setValueFor(target,value);
-    }
-
 
     @Override
     public boolean isConfigProperties() {

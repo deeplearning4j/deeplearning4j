@@ -18,11 +18,13 @@ package org.datavec.api.util.jdbc;
 
 import java.math.BigDecimal;
 import java.sql.Types;
+
 import org.datavec.api.writable.BooleanWritable;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.FloatWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.LongWritable;
+import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
@@ -34,7 +36,10 @@ import org.datavec.api.writable.Writable;
 public class JdbcWritableConverter {
 
     public static Writable convert(final Object columnValue, final int columnType) {
-        switch (columnType) {
+    	if (columnValue == null)
+    		return new NullWritable();
+
+    	switch (columnType) {
             case Types.BOOLEAN:
                 return new BooleanWritable((boolean) columnValue);
 

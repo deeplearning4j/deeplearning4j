@@ -55,6 +55,7 @@ import static java.lang.System.setProperty;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class RoutedTransport extends BaseTransport {
 
     private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,25); //32MB
@@ -88,8 +89,9 @@ public class RoutedTransport extends BaseTransport {
             System.setProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP, String.valueOf(DEFAULT_TERM_BUFFER_PROP));
         }
 
-        context = new Aeron.Context().publicationConnectionTimeout(30000000000L).driverTimeoutMs(30000)
-                        .keepAliveInterval(100000000);
+
+        context = new Aeron.Context().driverTimeoutMs(30000)
+                       .keepAliveInterval(100000000);
 
         driver = MediaDriver.launchEmbedded();
         context.aeronDirectoryName(driver.aeronDirectoryName());

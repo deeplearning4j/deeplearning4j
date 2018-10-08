@@ -678,9 +678,9 @@ public class TestUpdaters extends BaseDL4JTest {
                                         .updater(new NoOp()).build())
                         .layer(2, new DenseLayer.Builder().nIn(6).nOut(7)
                                         .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
-                        .layer(3, new OutputLayer.Builder().nIn(7).nOut(nOut)
+                        .layer(3, new OutputLayer.Builder().nIn(7).nOut(nOut).activation(Activation.SOFTMAX)
                                         .updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -709,9 +709,9 @@ public class TestUpdaters extends BaseDL4JTest {
                                         .updater(new NoOp()).build())
                         .layer(2, new DenseLayer.Builder().nIn(6).nOut(7)
                                         .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
-                        .layer(3, new OutputLayer.Builder().nIn(7).nOut(nOut)
+                        .layer(3, new OutputLayer.Builder().nIn(7).nOut(nOut).activation(Activation.SOFTMAX)
                                         .updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -830,7 +830,7 @@ public class TestUpdaters extends BaseDL4JTest {
                                                 .updater(new AdaDelta()).build())
                                 .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).name("l3")
                                                 .updater(new AdaGrad(0.5)).build())
-                                .layer(4, new OutputLayer.Builder().nIn(10).nOut(10).name("l4")
+                                .layer(4, new OutputLayer.Builder().nIn(10).nOut(10).name("l4").activation(Activation.SOFTMAX)
                                                 .updater(new AdaMax(0.5)).build())
                                 .build();
 
@@ -852,6 +852,7 @@ public class TestUpdaters extends BaseDL4JTest {
                                 .addLayer("l3", new DenseLayer.Builder().nIn(10).nOut(10)
                                                 .updater(new AdaGrad(0.5)).build(), "l2")
                                 .addLayer("l4", new OutputLayer.Builder().nIn(10).nOut(10)
+                                                .activation(Activation.SOFTMAX)
                                                 .updater(new AdaMax(0.5)).build(), "l3")
                                 .setOutputs("l4").build();
 

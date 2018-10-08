@@ -629,25 +629,27 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_3) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_4) {
+TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_5) {
 
-    NDArray<double> x({2., 2., 2.});
+    NDArray<double> x({2., 1.});
 
-    NDArray<double> y({2., 2.});
+    NDArray<double> y({4.,});
 
 // ------------------------------------
 
-    NDArray<double> exp({2., 2., 2.});
+    NDArray<double> exp({2., 4.});
 
     nd4j::ops::broadcast_dynamic_shape<double> op;
-
     auto res = op.execute({&x, &y}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
+//    res->at(0)->printIndexedBuffer("Output");
+//    exp.printIndexedBuffer("Expect");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
 
     delete res;
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_1) {
@@ -796,6 +798,97 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_2) {
     //z->printIndexedBuffer("Output ");
     //exp.printIndexedBuffer("Expected ");
 
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MatrixDeterminant_3) {
+
+    NDArray<double> x('c', {1, 3, 3}, {3.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 3.0});
+    NDArray<double> exp({-54.0});
+
+    nd4j::ops::matrix_determinant<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MatrixDeterminant_4) {
+
+    NDArray<double> x('c', {1, 3, 3}, {12.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 13.0});
+    NDArray<double> exp({189.0});
+
+    nd4j::ops::matrix_determinant<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MatrixDeterminant_5) {
+
+    NDArray<double> x('c', {1, 4, 4});
+    NDArray<double> exp({-16.0});
+    x.linspace(1);
+    x(5) = 4.0;
+    x(12) = 12.0;
+
+    nd4j::ops::matrix_determinant<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MatrixDeterminant_6) {
+
+    NDArray<double> x('c', {4, 4});
+    NDArray<double> exp(-16.0);
+    x.linspace(1);
+    x(5) = 4.0;
+    x(12) = 12.0;
+
+    nd4j::ops::matrix_determinant<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    //z->printIndexedBuffer("Output ");
+    //z->printShapeInfo("Shape");
+    //exp.printIndexedBuffer("Expected ");
+    ASSERT_TRUE(z->isScalar());
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 

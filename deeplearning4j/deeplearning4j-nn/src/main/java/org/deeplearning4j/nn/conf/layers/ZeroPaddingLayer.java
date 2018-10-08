@@ -34,7 +34,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Zero padding layer for convolutional neural networks.
+ * Zero padding layer for convolutional neural networks (2D CNNs).
  * Allows padding to be done separately for top/bottom/left/right
  *
  * @author Alex Black
@@ -119,10 +119,20 @@ public class ZeroPaddingLayer extends NoParamLayer {
             this(padHeight, padHeight, padWidth, padWidth);
         }
 
+        /**
+         * @param padTop    Top padding value
+         * @param padBottom Bottom padding value
+         * @param padLeft   Left padding value
+         * @param padRight  Right padding value
+         */
         public Builder(int padTop, int padBottom, int padLeft, int padRight) {
             this(new int[] {padTop, padBottom, padLeft, padRight});
         }
 
+        /**
+         * @param padding Must be a length 2 array with values [padTopBottom, padLeftRight] or a length 4 array with
+         *                values [padTop, padBottom, padLeft, padRight]
+         */
         public Builder(int[] padding) {
             if(padding.length == 2){
                 padding = new int[]{padding[0], padding[0], padding[1], padding[1]};

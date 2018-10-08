@@ -117,7 +117,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                                 .layer(new RnnLossLayer.Builder(lf)
                                         .activation(oa)
                                         .build())
-                                .pretrain(false).backprop(true).build();
+                                .validateOutputLayerConfig(false).build();
 
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
@@ -223,7 +223,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                                     .layer(new CnnLossLayer.Builder(lf)
                                             .activation(oa)
                                             .build())
-                                    .pretrain(false).backprop(true).build();
+                                    .validateOutputLayerConfig(false).build();
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                     mln.init();

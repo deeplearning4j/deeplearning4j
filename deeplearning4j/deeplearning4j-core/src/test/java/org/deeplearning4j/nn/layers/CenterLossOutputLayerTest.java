@@ -65,7 +65,7 @@ public class CenterLossOutputLayerTest extends BaseDL4JTest {
                         .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(numLabels)
                                         .lambda(lambda).activation(Activation.SOFTMAX).build(), "l1")
-                        .setOutputs("lossLayer").pretrain(false).backprop(true).build();
+                        .setOutputs("lossLayer").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();

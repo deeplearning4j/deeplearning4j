@@ -23,8 +23,8 @@ import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * Terminate hyperparameter search when the total number
- * of candidates exceeds a specified value
+ * Terminate hyperparameter search when the number of candidates exceeds a specified value.
+ * Note that this is counted as number of completed candidates, plus number of failed candidates.
  */
 @AllArgsConstructor
 @NoArgsConstructor
@@ -40,7 +40,7 @@ public class MaxCandidatesCondition implements TerminationCondition {
 
     @Override
     public boolean terminate(IOptimizationRunner optimizationRunner) {
-        return optimizationRunner.numCandidatesTotal() >= maxCandidates;
+        return optimizationRunner.numCandidatesCompleted() + optimizationRunner.numCandidatesFailed() >= maxCandidates;
     }
 
     @Override

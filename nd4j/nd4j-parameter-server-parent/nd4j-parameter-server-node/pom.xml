@@ -31,12 +31,6 @@
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
             <artifactId>nd4j-parameter-server-client</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -55,11 +49,33 @@
             <artifactId>nd4j-parameter-server</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.reactivex.rxjava2</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>2.2.0</version>
+        </dependency>
     </dependencies>
 
     <profiles>
         <profile>
             <id>testresources</id>
+            <!-- Put nd4j-native in profile so that CUDA-only builds succeed -->
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 </project>

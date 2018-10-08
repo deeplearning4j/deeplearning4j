@@ -22,7 +22,7 @@ Add a backend by adding the following to your `pom.xml`:
 
     compile "org.nd4j:nd4j-native-platform:{{ page.version }}"
 
-You can also swap the standard CPU implementation for [GPUs](./gpu-cpu-setup).
+You can also swap the standard CPU implementation for [GPUs](./deeplearning4j-config-gpu-cpu).
 
 ## SBT
 
@@ -34,7 +34,7 @@ Add a backend by adding the following to your `pom.xml`:
 
     libraryDependencies += "org.nd4j" % "nd4j-native-platform" % "{{ page.version }}"
 
-You can also swap the standard CPU implementation for [GPUs](./gpu-cpu-setup).
+You can also swap the standard CPU implementation for [GPUs](./deeplearning4j-config-gpu-cpu).
 
 ## Ivy
 
@@ -47,7 +47,7 @@ Add a backend by adding the following to your `pom.xml`:
 
     <dependency org="org.nd4j" name="nd4j-native-platform" rev="{{ page.version }}" conf="build" />
 
-You can also swap the standard CPU implementation for [GPUs](./gpu-cpu-setup).
+You can also swap the standard CPU implementation for [GPUs](./deeplearning4j-config-gpu-cpu).
 
 ## Leinengen
 

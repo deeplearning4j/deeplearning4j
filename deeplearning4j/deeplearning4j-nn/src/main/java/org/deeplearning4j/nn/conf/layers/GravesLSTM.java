@@ -37,7 +37,7 @@ import java.util.Map;
 
 /**
  * LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * http://www.cs.toronto.edu/~graves/phd.pdf
+ * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
  *
  * @author Alex Black
  * @see LSTM LSTM class, for the version without peephole connections

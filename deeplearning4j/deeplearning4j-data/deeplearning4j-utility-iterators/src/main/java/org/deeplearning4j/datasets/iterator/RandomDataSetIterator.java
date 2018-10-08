@@ -20,6 +20,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * RandomDataSetIterator: Generates random values (or zeros, ones, integers, etc) according to some distribution.<br>
+ * The type of values produced can be specified by the {@link Values} enumeration.<br>
  * Note: This is typically used for testing, debugging and benchmarking purposes.
  *
  * @author Alex Black
@@ -33,10 +34,26 @@ public class RandomDataSetIterator extends MultiDataSetWrapperIterator {
         }
     };
 
+    /**
+     * @param numMiniBatches Number of minibatches per epoch
+     * @param featuresShape  Features shape
+     * @param labelsShape    Labels shape
+     * @param featureValues  Type of values for the features
+     * @param labelValues    Type of values for the labels
+     */
     public RandomDataSetIterator(int numMiniBatches, long[] featuresShape, long[] labelsShape, Values featureValues, Values labelValues){
         this(numMiniBatches, featuresShape, labelsShape, featureValues, labelValues, Nd4j.order(), Nd4j.order());
     }
 
+    /**
+     * @param numMiniBatches Number of minibatches per epoch
+     * @param featuresShape  Features shape
+     * @param labelsShape    Labels shape
+     * @param featureValues  Type of values for the features
+     * @param labelValues    Type of values for the labels
+     * @param featuresOrder  Array order ('c' or 'f') for the features array
+     * @param labelsOrder    Array order ('c' or 'f') for the labels array
+     */
     public RandomDataSetIterator(int numMiniBatches, long[] featuresShape, long[] labelsShape, Values featureValues, Values labelValues,
                                  char featuresOrder, char labelsOrder){
         super(new RandomMultiDataSetIterator.Builder(numMiniBatches)

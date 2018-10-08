@@ -117,8 +117,14 @@ public class Fill extends DynamicCustomOp {
         val shape = args()[0].getArr();
         if(shape == null)
             return Collections.emptyList();
-        else
-            return Arrays.asList(shape.data().asLong());
+        else {
+            if(shape.isEmpty()){
+                //Edge case, mainly for TF import
+                return Collections.singletonList(new long[0]);   //TODO is this OK?
+            } else {
+                return Arrays.asList(shape.data().asLong());
+            }
+        }
     }
 
     @Override

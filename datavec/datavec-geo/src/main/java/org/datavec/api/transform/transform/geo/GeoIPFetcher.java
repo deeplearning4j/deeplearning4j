@@ -17,6 +17,7 @@
 package org.datavec.api.transform.transform.geo;
 
 import org.apache.commons.io.FileUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ import java.net.URL;
 public class GeoIPFetcher {
     protected static final Logger log = LoggerFactory.getLogger(GeoIPFetcher.class);
 
-    /** Default directory for http://dev.maxmind.com/geoip/geoipupdate/ */
+    /** Default directory for <a href="http://dev.maxmind.com/geoip/geoipupdate/">http://dev.maxmind.com/geoip/geoipupdate/</a> */
     public static final String GEOIP_DIR = "/usr/local/share/GeoIP/";
     public static final String GEOIP_DIR2 = System.getProperty("user.home") + "/.datavec-geoip";
 
@@ -64,7 +65,7 @@ public class GeoIPFetcher {
         dir.mkdirs();
         FileUtils.copyURLToFile(new URL(CITY_LITE_URL), archive);
         ArchiveUtils.unzipFileTo(archive.getAbsolutePath(), dir.getAbsolutePath());
-        assert cityFile.isFile();
+        Preconditions.checkState(cityFile.isFile(), "Error extracting files: expected city file does not exist after extraction");
 
         return cityFile;
     }

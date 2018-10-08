@@ -38,6 +38,8 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Ignore
+@Deprecated
 public class ClipboardTest {
     @Before
     public void setUp() throws Exception {

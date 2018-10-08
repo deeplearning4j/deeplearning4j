@@ -18,7 +18,7 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
-import org.nd4j.autodiff.OpValidationSuite;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
@@ -26,10 +26,8 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
-import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -133,7 +131,8 @@ public class RandomOpValidation extends BaseOpValidation {
                 TestCase tc = new TestCase(sd)
                         .gradCheckSkipVariables("shape")
                         .testName(msg)
-                        .expected(rand, checkFn);
+                        .expected(rand, checkFn)
+                        .testFlatBufferSerialization(TestCase.TestSerialization.NONE);  //Can't compare values due to randomness
 
                 log.info("TEST: " + msg);
 
@@ -258,7 +257,8 @@ public class RandomOpValidation extends BaseOpValidation {
                 TestCase tc = new TestCase(sd)
                         .gradCheckSkipVariables("shape")
                         .testName(msg)
-                        .expected(rand, checkFn);
+                        .expected(rand, checkFn)
+                        .testFlatBufferSerialization(TestCase.TestSerialization.NONE);  //Can't compare values due to randomness
 
                 log.info("TEST: " + msg);
 

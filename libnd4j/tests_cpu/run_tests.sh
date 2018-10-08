@@ -19,39 +19,15 @@
 
 set -exo pipefail
 
-#IS_RELEASE='true'
-#OSARCH=$(arch)
-#
-#if [[ "$OSTYPE" == "darwin"* ]]; then
-#    export CC=$(ls -1 /usr/local/bin/gcc-? | head -n 1)
-#    export CXX=$(ls -1 /usr/local/bin/g++-? | head -n 1)
-#elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-#    export CC=$(which gcc)
-#    export CXX=$(which g++)
-#fi
-#
-#parse_commandline ()
-#{
-#	while test $# -gt 0
-#	do
-#		_key="$1"
-#		case "$_key" in
-#			--release=*)
-#				IS_RELEASE="${_key##--release=}"
-#				;;
-#			*)
-#				;;
-#		esac
-#		shift
-#	done
-#}
-#
-#parse_commandline "$@"
-#
-#if [[ "$IS_RELEASE" == "false" ]]; then
-#    ../buildnativeoperations.sh -t -b debug
-#else
-#    ../buildnativeoperations.sh -t -b release
-#fi
+# On Mac, make sure it can find libraries for GCC
+export DYLD_LIBRARY_PATH=/usr/local/lib/gcc/8/:/usr/local/lib/gcc/7/:/usr/local/lib/gcc/6/:/usr/local/lib/gcc/5/
+
+# For Windows, add DLLs of MKL-DNN and OpenBLAS to the PATH
+if [ -n "$BUILD_PATH" ]; then
+    if which cygpath; then
+        BUILD_PATH=$(cygpath -p $BUILD_PATH)
+    fi
+    export PATH="$PATH:$BUILD_PATH"
+fi
 
 ../blasbuild/cpu/tests_cpu/layers_tests/runtests --gtest_output="xml:../target/surefire-reports/TEST-results.xml"

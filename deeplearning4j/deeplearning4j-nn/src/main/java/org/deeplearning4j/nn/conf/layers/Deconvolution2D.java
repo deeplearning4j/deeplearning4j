@@ -34,16 +34,15 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * 2D deconvolution layer configuration
+ * 2D deconvolution layer configuration<br>
  *
  * Deconvolutions are also known as transpose convolutions or fractionally strided convolutions.
  * In essence, deconvolutions swap forward and backward pass with regular 2D convolutions.
  *
- * See the paper by Matt Zeiler for details:
- * http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf
+ * See the paper by Matt Zeiler for details: <a href="http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf">http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf</a>
  *
  * For an intuitive guide to convolution arithmetic and shapes, see:
- * https://arxiv.org/abs/1603.07285v1
+ * <a href="https://arxiv.org/abs/1603.07285v1">https://arxiv.org/abs/1603.07285v1</a>
  *
  * @author Max Pumperla
  */
@@ -138,9 +137,6 @@ public class Deconvolution2D extends ConvolutionLayer {
          * @param convolutionMode    Convolution mode for layer
          */
         public Builder convolutionMode(ConvolutionMode convolutionMode) {
-            if(convolutionMode == ConvolutionMode.Same){
-                throw new IllegalArgumentException("SAME mode not yet supported for deconvolution layer");
-            }
             return super.convolutionMode(convolutionMode);
         }
 

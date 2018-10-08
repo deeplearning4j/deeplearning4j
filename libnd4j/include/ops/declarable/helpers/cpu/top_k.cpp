@@ -26,7 +26,7 @@ namespace helpers {
 
     template <typename T>
     int topKFunctor(NDArray<T>* input, NDArray<T>* values, NDArray<T>* indeces, int k, bool needSort) {
-        int width = input->sizeAt(-1);
+        int width = input->sizeAt(-1); // last dim of input
         std::unique_ptr<ResultSet<T>> lastDimList(input->allTensorsAlongDimension({input->rankOf() - 1}));
 
 // ----------------------------------------------------------------------------------------------- //
@@ -39,11 +39,13 @@ namespace helpers {
 
             if (k == 1) {
                 int pos = 0;
-#pragma omp parallel for if(lastDimList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
-                for (int e = 0; e < lastDimList->size(); ++e) {
+//#pragma omp parallel for if(lastDimList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                for (size_t e = 0; e < lastDimList->size(); ++e) {
                     int maxPos = lastDimList->at(e)->argMax();
-                    (*indeces)(e) = maxPos; //topIndex;
-                    (*values)(e) = (*lastDimList->at(e))(maxPos);
+                    if (indeces)
+                        (*indeces)(e) = maxPos; //topIndex;
+                    if (values)
+                        (*values)(e) = (*lastDimList->at(e))(maxPos);
                 }
             }
             else { 
@@ -67,11 +69,13 @@ namespace helpers {
                     for (int i = k; i < width; ++i) {
                         T val = (*trial)(i);
                         if (sortedVals[0] < val) { // value should be inserted to top k
-                            // only if it is not contained in 
-                            if (sortedVals.end() == std::find(sortedVals.begin(), sortedVals.end(), val)) {    
-                                // exchangePos - a distance between begin and minimal existed to be suppressed by val
+                            // only if it is not contained in
+                            auto itPos = std::find(sortedVals.begin(), sortedVals.end(), val);
+                            if (sortedVals.end() == itPos) {
+                                //exchangePos - a distance between begin and minimal existed to be suppressed by val
                                 auto exchangePos = std::distance(topValues.begin(), std::find(topValues.begin(), topValues.end(), sortedVals[0]));
-                                topValues[exchangePos] = val;
+                                topValues[exchangePos] = val; //*exchangeIt = val;
+                                topIndices[exchangePos] = i;
                                 sortedVals[0] = val; // suppress in sorted
                                 std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
                             }
@@ -82,16 +86,34 @@ namespace helpers {
                         std::sort(topValues.begin(), topValues.end(), [](T a, T b) {
                             return a > b;   
                         });
-                    }
 
-                    for (int j = 0; j < width; j++)
-                        for (int pos = 0; pos < k; ++pos)
-                            if (topValues[pos] == (*trial)(j))
-                                topIndices[pos] = j;
+                        for (int j = 0; j < width; j++)
+                            for (int pos = 0; pos < k; ++pos)
+                                if (topValues[pos] == (*trial)(j))
+                                    topIndices[pos] = j;
+                    }
+                    else { // else sort by indices
+
+                        std::vector<std::pair<int, T>> data(topValues.size());
+                        for (size_t e = 0; e < topValues.size(); ++e) {
+                            data[e].first = topIndices[e];
+                            data[e].second = topValues[e];
+                        }
+
+                        std::sort(data.begin(), data.end(), [](std::pair<int, T> const& a, std::pair<int, T> const& b) {
+                            return a.first < b.first;
+                        });
+
+                        for (size_t e = 0; e < topValues.size(); ++e) {
+                            topIndices[e] = data[e].first;
+                            topValues[e] = data[e].second;
+                        }
+
+                    }
 
                     for (int pos = 0; pos < k; ++pos, ++nextPos) {
                         if (values != nullptr)
-                            (*values)(nextPos)  =  topValues[pos];
+                            (*values)(nextPos) = topValues[pos];
 
                         (*indeces)(nextPos) = topIndices[pos];
                     }

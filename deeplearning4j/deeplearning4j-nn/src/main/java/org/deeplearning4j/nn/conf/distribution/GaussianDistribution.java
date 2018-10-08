@@ -20,9 +20,11 @@ import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * A normal distribution.
+ * A normal (Gaussian) distribution, with two parameters: mean and standard deviation
+ *
+ * @deprecated Use {@link NormalDistribution} which is identical to this implementation
  */
-
+@Deprecated
 public class GaussianDistribution extends NormalDistribution {
 
     /**

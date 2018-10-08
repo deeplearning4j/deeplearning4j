@@ -29,6 +29,14 @@ namespace helpers {
     int bdsFunctor(NDArray<T>* x_shape, NDArray<T>* y_shape, NDArray<T>* output) {
         int e = 0, x = 0, y = 0;
 //#pragma omp parallel for
+        if (x_shape->lengthOf() == 1 || y_shape->lengthOf() == 1) {// except case
+            NDArray<T>* lesser = (x_shape->lengthOf() == 1 ? x_shape: y_shape);
+            NDArray<T>* greater = (x_shape->lengthOf() == 1 ? y_shape: x_shape);
+            output->assign(greater);
+
+            output->putScalar(greater->lengthOf() - 1, lesser->getScalar(0L));
+        }
+        else
         for ( ; e < output->lengthOf(); e++) {
             T val;
             if (x < x_shape->lengthOf() && y < y_shape->lengthOf()) {
@@ -46,7 +54,7 @@ namespace helpers {
             }
             if (e)
                 if (val != (*output)(e - 1)) {
-                    nd4j_printf("broadcast_dynamic_shape: Input shapes should be compatible", "");
+                    nd4j_printf("broadcast_dynamic_shape: Input shapes should be compatible, but %f and %f were given.", val, (*output)(e - 1));
                     return ND4J_STATUS_VALIDATION;
                 }
             (*output)(e) = val;

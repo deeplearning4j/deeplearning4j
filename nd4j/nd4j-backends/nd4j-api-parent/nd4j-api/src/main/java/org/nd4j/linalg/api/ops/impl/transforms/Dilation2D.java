@@ -170,11 +170,6 @@ public class Dilation2D extends DynamicCustomOp {
         return ret;
     }
 
-    @Override
-    public boolean isConfigProperties() {
-        return true;
-    }
-
 
     @Override
     public String opName() {

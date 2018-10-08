@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -107,7 +108,7 @@ public class OldSoftMax extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "Softmax";
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
 

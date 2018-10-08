@@ -39,7 +39,7 @@ CUSTOM_OP_IMPL(mirror_pad, 2, 1, false, 0, 1) {
 
     if(input->rankOf() <= 1) {  // when in put scalar or vector;
         REQUIRE_TRUE(paddings->lengthOf() == 2, 0, "MIRROR_PAD OP: the length of paddings array must be equal 2, when input array is vector or scalar, bot but got %i instead !", paddings->rankOf());
-        REQUIRE_TRUE( ((*paddings)(0) <= (input->lengthOf() - includeBorder)) && ((*paddings)(1) <= (input->lengthOf() - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then length of input array (being vector or scalar) for symmetric mode (or length-1 for reflect mode) !");    
+        REQUIRE_TRUE( ((*paddings)(0.) <= (input->lengthOf() - includeBorder)) && ((*paddings)(1) <= (input->lengthOf() - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then length of input array (being vector or scalar) for symmetric mode (or length-1 for reflect mode) !");    
     }
     else {
         REQUIRE_TRUE(paddings->rankOf() == 2, 0, "MIRROR_PAD OP: the rank of paddings array must be equal 2, but got %i instead !", paddings->rankOf());
@@ -64,7 +64,7 @@ DECLARE_SHAPE_FN(mirror_pad) {
 
     if(rank == 1) {  // when in put scalar or vector;
         REQUIRE_TRUE(paddings->lengthOf() == 2, 0, "MIRROR_PAD OP: the length of paddings array must be equal 2, when input array is vector or scalar, bot but got %i instead !", paddings->rankOf());
-        REQUIRE_TRUE( ((*paddings)(0) <= (input->lengthOf() - includeBorder)) && ((*paddings)(1) <= (input->lengthOf() - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then length of input array (being vector or scalar) for symmetric mode (or length-1 for reflect mode) !");
+        REQUIRE_TRUE( ((*paddings)(0.) <= (input->lengthOf() - includeBorder)) && ((*paddings)(1) <= (input->lengthOf() - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then length of input array (being vector or scalar) for symmetric mode (or length-1 for reflect mode) !");
     }
     else {
         REQUIRE_TRUE(paddings->rankOf() == 2, 0, "MIRROR_PAD OP: the rank of paddings array must be equal 2, but got %i instead !", paddings->rankOf());
@@ -74,17 +74,14 @@ DECLARE_SHAPE_FN(mirror_pad) {
     }
     
     Nd4jLong* outShapeInfo(nullptr);
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
-    outShapeInfo[0] = rank;
     if(rank == 1) {
-        outShapeInfo[1] = input->lengthOf() + (*paddings)(0) + (*paddings)(1);
-        outShapeInfo[2] = 1;
-        outShapeInfo[3] = 0;
-        outShapeInfo[4] = 1;
-        outShapeInfo[5] = 99;
+        Nd4jLong len = input->lengthOf() + paddings->getScalar(0L) + (*paddings)(1);
+        outShapeInfo = ShapeUtils<T>::createVectorShapeInfo(len, block.getWorkspace());
     }
     else {
+        ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
+        outShapeInfo[0] = rank;
         for(int i = 0; i < rank; ++i)
             outShapeInfo[i+1] = input->sizeAt(i) + (*paddings)(i,0) + (*paddings)(i,1);
         shape::updateStrides(outShapeInfo, input->ordering());

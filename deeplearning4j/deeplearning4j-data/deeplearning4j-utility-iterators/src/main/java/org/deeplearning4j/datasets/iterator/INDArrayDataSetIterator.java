@@ -21,10 +21,16 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
 /**
+ * A simple utility iterator for creating a DataSetIterator from an {@code Iterable<Pair<INDArray,INDArray>>}.
+ * First value in pair is the features vector, second value in pair is the labels.
  * @author raver119@gmail.com
  */
 public class INDArrayDataSetIterator extends AbstractDataSetIterator<INDArray> {
 
+    /**
+     * @param iterable  Iterable to source data from
+     * @param batchSize Batch size for generated DataSet objects
+     */
     public INDArrayDataSetIterator(@NonNull Iterable<Pair<INDArray, INDArray>> iterable, int batchSize) {
         super(iterable, batchSize);
     }

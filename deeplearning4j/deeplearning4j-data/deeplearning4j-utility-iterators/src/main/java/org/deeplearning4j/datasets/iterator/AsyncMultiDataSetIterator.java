@@ -37,6 +37,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Async prefetching iterator wrapper for MultiDataSetIterator implementations
+ * This will asynchronously prefetch the specified number of minibatches from the underlying iterator.<br>
+ * Also has the option (enabled by default for most constructors) to use a cyclical workspace to avoid creating INDArrays
+ * with off-heap memory that needs to be cleaned up by the JVM garbage collector.<br>
+ *
+ * Note that appropriate DL4J fit methods automatically utilize this iterator, so users don't need to manually wrap
+ * their iterators when fitting a network
  *
  * @author raver119@gmail.com
  */

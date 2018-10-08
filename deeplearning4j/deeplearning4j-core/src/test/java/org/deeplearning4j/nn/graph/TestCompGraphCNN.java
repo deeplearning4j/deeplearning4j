@@ -75,8 +75,8 @@ public class TestCompGraphCNN extends BaseDL4JTest {
                                                                         .stride(1, 1).kernelSize(2, 2).build(),
                                                         "cnn1", "cnn2")
                                         .addLayer("dnn1", new DenseLayer.Builder().nOut(7).build(), "max1")
-                                        .addLayer("output", new OutputLayer.Builder().nIn(7).nOut(10).build(), "dnn1")
-                                        .setOutputs("output").pretrain(false).backprop(true).build();
+                                        .addLayer("output", new OutputLayer.Builder().nIn(7).nOut(10).activation(Activation.SOFTMAX).build(), "dnn1")
+                                        .setOutputs("output").build();
 
         return conf;
     }
@@ -169,8 +169,8 @@ public class TestCompGraphCNN extends BaseDL4JTest {
                                                                         .kernelSize(imageHeight - kernelHeight + 1, 1)
                                                                         .stride(1, 1).build(),
                                                         "conv1")
-                                        .addLayer("output", new OutputLayer.Builder().nOut(classes).build(), "pool1")
-                                        .setOutputs("output").backprop(true).pretrain(false).build();
+                                        .addLayer("output", new OutputLayer.Builder().nOut(classes).activation(Activation.SOFTMAX).build(), "pool1")
+                                        .setOutputs("output").build();
 
 
         ComputationGraph model = new ComputationGraph(conf);

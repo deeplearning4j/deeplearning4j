@@ -38,6 +38,21 @@ namespace nd4j {
             //convert the string stream into a string and return
             return os.str() ;
         };
+
+        /**
+         * This method just concatenates error message with a given graphId
+         * @param message
+         * @param graphId
+         * @return
+         */
+        static FORCEINLINE std::string buildGraphErrorMessage(const char *message, Nd4jLong graphId) {
+            std::string result(message);
+            result += " [";
+            result += valueToString<Nd4jLong>(graphId);
+            result += "]";
+
+            return result;
+        }
     };
 }
 

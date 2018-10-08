@@ -23,7 +23,11 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * LayerSpace for batch normalization layers
@@ -41,6 +45,8 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
     protected ParameterSpace<Boolean> lockGammaBeta;
     protected ParameterSpace<Double> gamma;
     protected ParameterSpace<Double> beta;
+    protected ParameterSpace<List<LayerConstraint>> constrainBeta;
+    protected ParameterSpace<List<LayerConstraint>> constrainGamma;
 
     private BatchNormalizationSpace(Builder builder) {
         super(builder);
@@ -50,6 +56,8 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
         this.lockGammaBeta = builder.lockGammaBeta;
         this.gamma = builder.gamma;
         this.beta = builder.beta;
+        this.constrainBeta = builder.betaConstraints;
+        this.constrainGamma = builder.gammaConstraints;
 
         this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
@@ -75,6 +83,18 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
             builder.gamma(gamma.getValue(values));
         if (beta != null)
             builder.beta(beta.getValue(values));
+        if (constrainBeta != null){
+            List<LayerConstraint> c = constrainBeta.getValue(values);
+            if(c != null){
+                builder.constrainBeta(c.toArray(new LayerConstraint[c.size()]));
+            }
+        }
+        if (constrainGamma != null){
+            List<LayerConstraint> c = constrainGamma.getValue(values);
+            if(c != null){
+                builder.constrainGamma(c.toArray(new LayerConstraint[c.size()]));
+            }
+        }
     }
 
     @Override
@@ -110,6 +130,8 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
         protected ParameterSpace<Boolean> lockGammaBeta;
         protected ParameterSpace<Double> gamma;
         protected ParameterSpace<Double> beta;
+        protected ParameterSpace<List<LayerConstraint>> betaConstraints;
+        protected ParameterSpace<List<LayerConstraint>> gammaConstraints;
 
         public Builder minibatch(boolean minibatch) {
             return minibatch(new FixedValue<>(minibatch));
@@ -164,6 +186,25 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
             this.lockGammaBeta = lockGammaBeta;
             return this;
         }
+
+        public Builder constrainBeta(LayerConstraint... constraints) {
+            return constrainBeta(new FixedValue<>(Arrays.asList(constraints)));
+        }
+
+        public Builder constrainBeta(ParameterSpace<List<LayerConstraint>> constraints) {
+            this.betaConstraints = constraints;
+            return this;
+        }
+
+        public Builder constrainGamma(LayerConstraint... constraints) {
+            return constrainGamma(new FixedValue<>(Arrays.asList(constraints)));
+        }
+
+        public Builder constrainGamma(ParameterSpace<List<LayerConstraint>> constraints) {
+            this.gammaConstraints = constraints;
+            return this;
+        }
+
 
         @Override
         public BatchNormalizationSpace build() {

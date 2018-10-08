@@ -69,8 +69,7 @@ public class KerasModelUtils {
         /* Iterate over layers in model, setting weights when relevant. */
         Set<String> layerNames = new HashSet<>(kerasLayers.keySet());
         for (org.deeplearning4j.nn.api.Layer layer : layersFromModel) {
-            String layerName;
-            layerName = layer.conf().getLayer().getLayerName();
+            String layerName = layer.conf().getLayer().getLayerName();
             if (!kerasLayers.containsKey(layerName))
                 throw new InvalidKerasConfigurationException(
                         "No weights found for layer in model (named " + layerName + ")");

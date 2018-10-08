@@ -26,13 +26,16 @@
 namespace nd4j {
 namespace ops {
     CUSTOM_OP_IMPL(tile_to_shape, 1, 1, true, 0, -1) {
+        
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
+        
+        std::vector<Nd4jLong> outShape(block.getIArguments()->begin(), block.getIArguments()->end());
 
         if (block.isInplace()) {
-            //input->tileToShape(*block.getIArguments());
+            input->tileToShape(outShape);
         } else {
-            //input->tileToShape(*block.getIArguments(), output);
+            input->tileToShape(outShape, output);
         }
 
         return Status::OK();

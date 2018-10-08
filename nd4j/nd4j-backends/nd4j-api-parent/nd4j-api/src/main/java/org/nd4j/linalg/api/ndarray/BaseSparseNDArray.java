@@ -934,11 +934,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public void checkDimensions(INDArray other) {
-
-    }
-
-    @Override
     public void sliceVectors(List<INDArray> list) {
 
     }

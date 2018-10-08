@@ -26,7 +26,11 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * L2Vertex calculates the L2 least squares error of two inputs.
+ * L2Vertex calculates the L2 (Euclidean) least squares error of two inputs, on a per-example basis.
+ * It outputs a single value for each input - i.e., for input [minibatch,X] it outputs shape [minibatch,1]
+ * where each value {@code out[i,0] = l2Distance(in1[i,...], in2[i,...])}<br>
+ * Note however than epsilon value (1e-8 by default) will be added to inputs to avoid the gradient being undefined
+ * for all zero inputs
  *
  * For example, in Triplet Embedding you can input an anchor and a pos/neg class and use two parallel
  * L2 vertices to calculate two real numbers which can be fed into a LossLayer to calculate TripletLoss.
@@ -36,10 +40,16 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class L2Vertex extends GraphVertex {
     protected double eps;
 
+    /**
+     * Constructor with default epsilon value of 1e-8
+     */
     public L2Vertex() {
         this.eps = 1e-8;
     }
 
+    /**
+     * @param eps Epsilon value to add to inputs (to avoid all zeros input and hence undefined gradients)
+     */
     public L2Vertex(double eps) {
         this.eps = eps;
     }

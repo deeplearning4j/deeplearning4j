@@ -275,9 +275,9 @@ namespace ops {
         DECLARE_CUSTOM_OP(cosine_distance_loss, 3, 1, false, 0, 2);
         #endif
 
-          //////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////
     /**
-       * Implementation of softmax cross-entropy loss function max(logits, 0.) - logits * labels + log(1. + exp(-abs(logits))); 
+       * Implementation of softmax cross-entropy loss function 
        * 
        * Input arrays: 
        *    0: logits - logits, type float
@@ -293,6 +293,23 @@ namespace ops {
         #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss_with_logits)
         DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);  
         #endif
+
+        //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of sparse softmax cross-entropy loss function
+       * 
+       * Input arrays:        
+       *    0: labels - ground truth vales, expected to be within range [0, num_classes), type float.
+       *       Must have rank equal logits rank minus 1.
+       *    1: logits - logits, type float
+       *  
+       * Output array: 
+       *    0: loss values, type float. Has the same shape as labels
+       */      
+        #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
+        DECLARE_OP(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false);  
+        #endif
+
 
 }
 }

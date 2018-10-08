@@ -107,7 +107,7 @@ public class AutoEncoderNetworkTest {
                         .layer(4, new DenseLayer.Builder().nIn(5).nOut(8).build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(8)
                                         .nOut(10).build())
-                        .pretrain(true).backprop(true).build();
+                        .pretrain(true).build();
     }
 
     private static VectorAssembler getAssembler(String[] input, String output) {

@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -37,6 +38,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -78,18 +80,47 @@ public class KerasSimpleRnn extends KerasLayer {
      */
     public KerasSimpleRnn(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        this(layerConfig, true);
+        this(layerConfig, true,  Collections.<String, KerasLayer>emptyMap());
     }
+
+    /**
+     * Constructor from parsed Keras layer configuration dictionary.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration.
+     * @param previousLayers dictionary containing the previous layers in the topology
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public KerasSimpleRnn(Map<String, Object> layerConfig, Map<String, ? extends KerasLayer> previousLayers)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this(layerConfig, true, previousLayers);
+    }
+
+    /**
+     * Constructor from parsed Keras layer configuration dictionary.
+     *
+     * @param layerConfig           dictionary containing Keras layer configuration.
+     * @param enforceTrainingConfig whether to load Keras training configuration
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public KerasSimpleRnn(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this(layerConfig, enforceTrainingConfig, Collections.<String, KerasLayer>emptyMap());
+    }
+
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
      * @param layerConfig           dictionary containing Keras layer configuration
      * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @param previousLayers dictionary containing the previous layers in the topology
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasSimpleRnn(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasSimpleRnn(Map<String, Object> layerConfig, boolean enforceTrainingConfig,
+                          Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
@@ -108,6 +139,8 @@ public class KerasSimpleRnn extends KerasLayer {
 
         KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
         this.unroll = KerasRnnUtils.getUnrollRecurrentLayer(conf, layerConfig);
+
+        Pair<Boolean, Double> maskingConfig = KerasLayerUtils.getMaskingConfiguration(inboundLayerNames, previousLayers);
 
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
@@ -136,10 +169,14 @@ public class KerasSimpleRnn extends KerasLayer {
             builder.constrainInputWeights(weightConstraint);
         if (recurrentConstraint != null)
             builder.constrainRecurrent(recurrentConstraint);
-        if (this.returnSequences)
-            this.layer = builder.build();
-        else
-            this.layer = new LastTimeStep(builder.build());
+
+        this.layer = builder.build();
+        if (!returnSequences) {
+            this.layer = new LastTimeStep(this.layer);
+        }
+        if (maskingConfig.getFirst()) {
+            this.layer = new MaskZeroLayer(this.layer, maskingConfig.getSecond());
+        }
     }
 
     /**

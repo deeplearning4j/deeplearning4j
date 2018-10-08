@@ -22,13 +22,14 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Dataset iterator for simulated inputs, or input derived from a DataSet example. Primarily
- * used for benchmarking.
+ * Dataset iterator for simulated inputs, or input derived from a DataSet example. Primarily used for benchmarking.
+ * Note that features/labels are re-used on each call of next() and are not re-created.
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -39,21 +40,44 @@ public class BenchmarkDataSetIterator implements DataSetIterator {
     private long limit;
     private AtomicLong counter = new AtomicLong(0);
 
+    /**
+     * @param featuresShape   Shape of the features data to randomly generate
+     * @param numLabels       Number of label classes (for classification)
+     * @param totalIterations Total number of iterations per epoch
+     */
     public BenchmarkDataSetIterator(int[] featuresShape, int numLabels, int totalIterations) {
         this(featuresShape, numLabels, totalIterations, -1, -1);
     }
 
+    /**
+     * Creates 2d (shape [minibatch, numLabels]) or 4d labels ([minibatch, numLabels, gridWidth, gridHeight]),
+     * depending on value of gridWidth and gridHeight.
+     *
+     * @param featuresShape   Shape of the features data to randomly generate
+     * @param numLabels       Number of label classes (for classification)
+     * @param totalIterations Total number of iterations
+     * @param gridWidth       If > 0, use to create 4d labels
+     * @param gridHeight      If > 0, use to create 4d labels
+     */
     public BenchmarkDataSetIterator(int[] featuresShape, int numLabels, int totalIterations, int gridWidth, int gridHeight) {
         this.baseFeatures = Nd4j.rand(featuresShape);
         this.baseLabels = gridWidth > 0 && gridHeight > 0
                         ? Nd4j.create(featuresShape[0], numLabels, gridWidth, gridHeight)
                         : Nd4j.create(featuresShape[0], numLabels);
-        this.baseLabels.getColumn(1).assign(1.0);
+        if(this.baseLabels.rank() == 2){
+            this.baseLabels.getColumn(1).assign(1.0);
+        } else {
+            this.baseLabels.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all());
+        }
 
         Nd4j.getExecutioner().commit();
         this.limit = totalIterations;
     }
 
+    /**
+     * @param example         DataSet to return on each call of next()
+     * @param totalIterations Total number of iterations
+     */
     public BenchmarkDataSetIterator(DataSet example, int totalIterations) {
         this.baseFeatures = example.getFeatures().dup();
         this.baseLabels = example.getLabels().dup();

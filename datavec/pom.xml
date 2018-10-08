@@ -71,10 +71,6 @@
         <module>datavec-perf</module>
     </modules>
 
-    <properties>
-        <jackson.version>2.8.7</jackson.version> <!-- To match spark and geoip2 -->
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -249,8 +245,9 @@
                         <rule>DuplicateDep</rule>
                         <rule>RedundantDepVersion</rule>
                         <rule>RedundantPluginVersion</rule>
+                        <!-- Rules incompatible with Java 9
                         <rule>VersionProp</rule>
-                        <rule>DotVersionProperty</rule>
+                        <rule>DotVersionProperty</rule> -->
                     </onlyRunRules>
                     <xmlOutputFile>${project.build.directory}/maven-lint-result.xml</xmlOutputFile>
                 </configuration>

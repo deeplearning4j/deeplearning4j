@@ -232,22 +232,27 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         }
 
         /**
-         * Size of the convolution
-         * rows/columns
-         * @param kernelSize the height and width of the
-         *                   kernel
-         * @return
+         * Size of the convolution rows/columns (height/width)
+         * @param kernelSize the height and width of the kernel
          */
         public Builder kernelSize(int... kernelSize) {
             this.kernelSize = kernelSize;
             return this;
         }
 
+        /**
+         * Stride of the convolution rows/columns (height/width)
+         * @param stride the stride of the kernel (in h/w dimensions)
+         */
         public Builder stride(int... stride) {
             this.stride = stride;
             return this;
         }
 
+        /**
+         * Padding - rows/columns (height/width)
+         * @param padding the padding in h/w dimensions
+         */
         public Builder padding(int... padding) {
             this.padding = padding;
             return this;

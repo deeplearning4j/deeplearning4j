@@ -29,8 +29,9 @@
     <name>deeplearning4j-scaleout-parallelwrapper-parameter-server</name>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
+        <!-- Default scala versions, may be overwritten by build profiles -->
+        <scala.version>2.11.12</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
     </properties>
 
     <build>
@@ -85,6 +86,16 @@
         </dependency>
 
         <!-- Akka/Play seems to require these to be manually set to avoid class not found exception issues -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-cluster_2.11</artifactId>

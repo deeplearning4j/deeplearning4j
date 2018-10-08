@@ -88,7 +88,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                                 .build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation(Activation.SOFTMAX).nIn(3).nOut(3).build())
-                .pretrain(false).backprop(true).build();
+                .build();
 
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
         mln.init();
@@ -179,7 +179,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                                     .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nIn(3).nOut(3)
                                                     .weightInit(WeightInit.DISTRIBUTION)
                                                     .dist(new NormalDistribution(0, 1)).build())
-                                    .pretrain(false).backprop(true).build();
+                                    .build();
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                     mln.init();
@@ -274,7 +274,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp())
                                                                         .activation(outputActivation).build())
-                                                        .pretrain(false).backprop(true).build();
+                                                        .build();
 
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
@@ -339,7 +339,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                 .layer(new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
                         .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).activation(Activation.SOFTMAX).build())
-                .pretrain(false).backprop(true).build();
+                .build();
 
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
         mln.init();
@@ -379,7 +379,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                         .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
                                         .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
                                         .updater(new NoOp()).activation(Activation.SOFTMAX).build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
         mln.init();
@@ -446,7 +446,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                                                                                         .activation(afn).build())
                                                         .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
                                                                         .activation(outputActivation).build())
-                                                        .pretrain(true).backprop(true).build();
+                                                        .pretrain(true).build();
 
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
@@ -510,7 +510,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                     .addLayer("loss", new LossLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY)
                             .activation(Activation.IDENTITY).build(), "elementWiseMul")
                     .setOutputs("loss")
-                    .pretrain(false).backprop(true).build();
+                    .build();
 
             ComputationGraph netGraph = new ComputationGraph(conf);
             netGraph.init();

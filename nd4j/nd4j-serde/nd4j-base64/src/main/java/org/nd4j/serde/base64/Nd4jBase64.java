@@ -84,6 +84,34 @@ public class Nd4jBase64 {
         return sb.toString();
     }
 
+
+    /**
+     * Convert an {@link INDArray}
+     * to numpy byte array using
+     * {@link Nd4j#toNpyByteArray(INDArray)}
+     * @param arr the input array
+     * @return the base 64ed binary
+     * @throws IOException
+     */
+    public static String base64StringNumpy(INDArray arr) throws IOException  {
+        byte[] bytes = Nd4j.toNpyByteArray(arr);
+        return Base64.encodeBase64String(bytes);
+    }
+
+
+    /**
+     * Convert a numpy array from base64
+     * to a byte array and then
+     * create an {@link INDArray}
+     * from {@link Nd4j#createNpyFromByteArray(byte[])}
+     * @param base64 the base 64 byte array
+     * @return the created {@link INDArray}
+     */
+    public static INDArray fromNpyBase64(String base64) {
+        byte[] bytes = Base64.decodeBase64(base64);
+        return Nd4j.createNpyFromByteArray(bytes);
+    }
+
     /**
      * Returns an ndarray
      * as base 64

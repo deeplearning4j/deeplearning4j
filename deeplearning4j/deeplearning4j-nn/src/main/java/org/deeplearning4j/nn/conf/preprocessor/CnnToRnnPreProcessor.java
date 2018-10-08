@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.util.TimeSeriesUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
@@ -71,6 +72,11 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
             throw new IllegalArgumentException(
                             "Invalid input: expect CNN activations with rank 4 (received input with shape "
                                             + Arrays.toString(input.shape()) + ")");
+        if(input.size(1) != numChannels || input.size(2) != inputHeight || input.size(3) != inputWidth){
+            throw new IllegalStateException("Invalid input, does not match configuration: expected [minibatch, numChannels="
+                    + numChannels + ", inputHeight=" + inputHeight + ", inputWidth=" + inputWidth + "] but got input array of" +
+                    "shape " + Arrays.toString(input.shape()));
+        }
         //Input: 4d activations (CNN)
         //Output: 3d activations (RNN)
 
@@ -133,16 +139,12 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
-        //Assume mask array is 1d - a mask array that has been reshaped from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
+        //Assume mask array is 4d - a mask array that has been reshaped from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1, 1, 1]
         if (maskArray == null) {
             return new Pair<>(maskArray, currentMaskState);
-        } else if (maskArray.isVector()) {
-            //Need to reshape mask array from [minibatch*timeSeriesLength, 1] to [minibatch,timeSeriesLength]
-            return new Pair<>(TimeSeriesUtils.reshapeVectorToTimeSeriesMask(maskArray, minibatchSize),
-                            currentMaskState);
         } else {
-            throw new IllegalArgumentException("Received mask array with shape " + Arrays.toString(maskArray.shape())
-                            + "; expected vector.");
+            //Need to reshape mask array from [minibatch*timeSeriesLength, 1, 1, 1] to [minibatch,timeSeriesLength]
+            return new Pair<>(TimeSeriesUtils.reshapeCnnMaskToTimeSeriesMask(maskArray, minibatchSize),currentMaskState);
         }
     }
 }

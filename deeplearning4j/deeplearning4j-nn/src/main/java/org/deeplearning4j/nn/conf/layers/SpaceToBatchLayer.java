@@ -41,17 +41,21 @@ import java.util.Map;
  * dimensions are optionally padded, as specified in "padding", a tensor of dim (2, 2), denoting the padding range.
  * <p>
  * Example:
+ * <pre>
  * input:         [[[[1], [2]], [[3], [4]]]]
  * input shape:   [1, 2, 2, 1]
  * blocks:        [2, 2]
  * padding:       [[0, 0], [0, 0]]
+ * </pre>
  * <p>
+ * <pre>
  * output:        [[[[1]]], [[[2]]], [[[3]]], [[[4]]]]
  * output shape:  [4, 1, 1, 1]
+ * </pre>
+ * Note that after zero padding, the height and width of the input must be divisible by the block size.
  *
  * @author Max Pumperla
  */
-
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
@@ -159,21 +163,34 @@ public class SpaceToBatchLayer extends NoParamLayer {
         protected int[] blocks;
         protected int[][] padding;
 
+        /**
+         * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width dimensions
+         */
         public Builder(int[] blocks) {
             this.blocks = blocks;
             this.padding = new int[][]{{0, 0}, {0, 0}};
         }
 
+        /**
+         * @param blocks  Block size for SpaceToBatch layer. Should be a length 2 array for the height and width dimensions
+         * @param padding Padding - should be a 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
+         */
         public Builder(int[] blocks, int[][] padding) {
             this.blocks = blocks;
             this.padding = padding;
         }
 
+        /**
+         * @param blocks  Block size for SpaceToBatch layer. Should be a length 2 array for the height and width dimensions
+         */
         public T blocks(int[] blocks) {
             this.blocks = blocks;
             return (T) this;
         }
 
+        /**
+         * @param padding Padding - should be a 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
+         */
         public T padding(int[][] padding) {
             this.padding = padding;
             return (T) this;

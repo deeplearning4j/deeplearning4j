@@ -31,12 +31,13 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = this->getZ(block);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::ReverseDivide<T>>(x, y, z);
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z) {
-                OVERWRITE_RESULT(tZ);
-            }
+            // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::ReverseDivide<T>>(x, y, z);
+            x->template applyTrueBroadcast<simdOps::ReverseDivide<T>>(y, z, true);
+            // if (tZ == nullptr)
+            //     return ND4J_STATUS_KERNEL_FAILURE;
+            // else if (tZ != z) {
+            //     OVERWRITE_RESULT(tZ);
+            // }
 
 			return ND4J_STATUS_OK;
         }

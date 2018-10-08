@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * SDVertexParams is used to define the inputs - and the parameters - for a SameDiff layer
+ * SDVertexParams is used to define the inputs - and the parameters - for a SameDiff vertex
  *
  * @author Alex Black
  */

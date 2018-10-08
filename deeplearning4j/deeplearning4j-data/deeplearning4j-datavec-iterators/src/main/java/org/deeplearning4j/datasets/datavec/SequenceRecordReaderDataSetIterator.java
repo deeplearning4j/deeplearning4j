@@ -38,7 +38,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Sequence record reader data set iterator
+ * Sequence record reader data set iterator.<br>
  * Given a record reader (and optionally another record reader for the labels) generate time series (sequence) data sets.<br>
  * Supports padding for one-to-many and many-to-one type data loading (i.e., with different number of inputs vs.
  * labels via the {@link AlignmentMode} mode.

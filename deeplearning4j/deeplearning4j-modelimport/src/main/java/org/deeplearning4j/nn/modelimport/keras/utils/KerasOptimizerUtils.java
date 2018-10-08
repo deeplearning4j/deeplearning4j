@@ -116,7 +116,13 @@ public class KerasOptimizerUtils {
             }
             case "SGD": {
                 double lr = (double) optimizerParameters.get("lr");
-                double momentum = (double) optimizerParameters.get("epsilon");
+                double momentum = 0.0;
+                try {
+                    momentum = (double) optimizerParameters.get("epsilon");
+                } catch (Exception e) {
+                    log.warn("couldn't read momentum parameter");
+                }
+
                 double decay = (double) optimizerParameters.get("decay");
 
                 dl4jOptimizer = new Nesterovs.Builder()

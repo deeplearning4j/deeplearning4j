@@ -51,6 +51,9 @@
 #include <Status.h>
 #include <deque>
 #include <graph/ResultWrapper.h>
+#include <graph/ExecutionResult.h>
+#include <graph/exceptions/graph_execution_exception.h>
+#include <graph/exceptions/no_results_exception.h>
 
 namespace nd4j{
 namespace graph {
@@ -849,6 +852,45 @@ uint8_t* readFlatBuffers(const char * filename) {
     fclose(in);
 
     return data;
+}
+
+
+template <typename T>
+flatbuffers::Offset<FlatResult> GraphExecutioner<T>::execute(Graph<T> *graph, flatbuffers::FlatBufferBuilder &builder, const FlatInferenceRequest* request) {
+    ExecutionResult<T> result;
+    auto varSpace = graph->getVariableSpace();
+
+    if (request != nullptr && request->variables() != nullptr) {
+        auto vars = request->variables();
+        for (int e = 0; e < vars->size(); e++) {
+            auto fv = vars->Get(e);
+            auto v = new Variable<T>(fv);
+            varSpace->replaceVariable(v);
+        }
+    }
+
+    if (Environment::getInstance()->isDebugAndVerbose())
+        graph->printOut();
+
+    auto status = GraphExecutioner<T>::execute(graph);
+    if (status != nd4j::Status::OK())
+        throw graph_execution_exception(request->id());
+
+    auto outputs = graph->fetchOutputs();
+
+    if (outputs->size() == 0)
+        throw no_results_exception(request->id());
+
+
+    for (auto v: *outputs) {
+        result.emplace_back(v);
+    }
+
+    auto t = result.asFlatResult(builder);
+
+    delete outputs;
+
+    return t;
 }
 
 

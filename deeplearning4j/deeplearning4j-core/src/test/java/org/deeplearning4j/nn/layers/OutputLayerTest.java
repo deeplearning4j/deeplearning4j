@@ -181,7 +181,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                             .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                             .updater(new NoOp()).build())
-                            .inputPreProcessor(1, new RnnToFeedForwardPreProcessor()).pretrain(false).backprop(true)
+                            .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
                             .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -198,7 +198,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                             .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                             .updater(new NoOp()).build())
-                            .pretrain(false).backprop(true).build();
+                            .build();
 
             MultiLayerNetwork mlnRnn = new MultiLayerNetwork(confRnn);
             mlnRnn.init();
@@ -280,7 +280,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                         .layer(new RnnLossLayer.Builder(LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX)
                                 .build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         MultiLayerNetwork mln = new MultiLayerNetwork(conf1);
         mln.init();
@@ -297,7 +297,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                                 .activation(Activation.SOFTMAX)
                                 .nIn(layerSize).nOut(nOut)
                                 .build())
-                        .pretrain(false).backprop(true).build();
+                        .build();
 
         MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
         mln2.init();

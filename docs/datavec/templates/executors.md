@@ -1,6 +1,6 @@
 ---
-title: DataVec Local
-short_title: Local
+title: DataVec Executors
+short_title: Executors
 description: Execute ETL and vectorization in a local instance.
 category: DataVec
 weight: 3

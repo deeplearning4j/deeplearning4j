@@ -23,12 +23,12 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
 /**
  * UCI synthetic control chart time series dataset. This dataset is useful for classification of univariate
- * time series with six categories:
+ * time series with six categories:<br>
  * Normal, Cyclic, Increasing trend, Decreasing trend, Upward shift, Downward shift
  *
- * Details:     https://archive.ics.uci.edu/ml/datasets/Synthetic+Control+Chart+Time+Series
- * Data:        https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/synthetic_control.data
- * Image:       https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/data.jpeg
+ * Details:     <a href="https://archive.ics.uci.edu/ml/datasets/Synthetic+Control+Chart+Time+Series">https://archive.ics.uci.edu/ml/datasets/Synthetic+Control+Chart+Time+Series</a><br>
+ * Data:        <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/synthetic_control.data">https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/synthetic_control.data</a><br>
+ * Image:       <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/data.jpeg">https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/data.jpeg</a>
  *
  * @author Briton Park (bpark738)
  */
@@ -36,14 +36,32 @@ public class UciSequenceDataSetIterator extends SequenceRecordReaderDataSetItera
 
     protected DataSetPreProcessor preProcessor;
 
+    /**
+     * Create an iterator for the training set, with the specified minibatch size. Randomized with RNG seed 123
+     *
+     * @param batchSize Minibatch size
+     */
     public UciSequenceDataSetIterator(int batchSize) {
         this(batchSize, DataSetType.TRAIN, 123);
     }
 
+    /**
+     * Create an iterator for the training or test set, with the specified minibatch size. Randomized with RNG seed 123
+     *
+     * @param batchSize Minibatch size
+     * @param set       Set: training or test
+     */
     public UciSequenceDataSetIterator(int batchSize, DataSetType set) {
         this(batchSize, set, 123);
     }
 
+    /**
+     * Create an iterator for the training or test set, with the specified minibatch size
+     *
+     * @param batchSize Minibatch size
+     * @param set       Set: training or test
+     * @param rngSeed   Random number generator seed to use for randomization
+     */
     public UciSequenceDataSetIterator(int batchSize, DataSetType set, long rngSeed) {
         super(new UciSequenceDataFetcher().getRecordReader(rngSeed, set), batchSize, UciSequenceDataFetcher.NUM_LABELS, 1);
         // last parameter is index of label

@@ -94,7 +94,7 @@ public class CNN3DTestCases {
                                 .activation(Activation.SOFTMAX)
                                 .build())
                         .setInputType(InputType.convolutional3D(8,8,8,nChannels))
-                        .backprop(true).pretrain(false).build();
+                        .build();
 
                 return conf;
             }

@@ -23,7 +23,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
 /**
- * Constrain the weights to be non-negative
+ * Constrain the parameters to be non-negative. All values less than zero will be set to 0.0
  *
  * @author Alex Black
  */

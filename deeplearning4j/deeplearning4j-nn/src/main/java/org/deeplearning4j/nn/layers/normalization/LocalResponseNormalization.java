@@ -58,10 +58,9 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * sumPart = sum(a^j_{x,y} * gb^j_{x,y})
  * gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}
  * <p>
- * Reference:
- * http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf
- * https://github.com/vlfeat/matconvnet/issues/10
- * Chainer
+ * Reference:<br>
+ * <a href="http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf">http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf</a><br>
+ * <a href="https://github.com/vlfeat/matconvnet/issues/10">https://github.com/vlfeat/matconvnet/issues/10</a><br>
  * <p>
  * Created by nyghtowl on 10/29/15.
  */

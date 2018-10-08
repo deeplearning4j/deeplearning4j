@@ -47,6 +47,6 @@ public interface EpochTerminationCondition extends Serializable {
      * @param score Score calculate for this epoch
      * @return Whether training should be terminated at this epoch
      */
-    boolean terminate(int epochNum, double score);
+    boolean terminate(int epochNum, double score, boolean minimize);
 
 }
