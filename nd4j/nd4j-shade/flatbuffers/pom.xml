@@ -19,6 +19,54 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>custom-lifecycle</id>
+            <activation>
+                <property><name>!skip.custom.lifecycle</name></property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.portals.jetspeed-2</groupId>
+                        <artifactId>jetspeed-mvn-maven-plugin</artifactId>
+                        <version>2.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>compile-and-pack</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>mvn</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.shared</groupId>
+                                <artifactId>maven-invoker</artifactId>
+                                <version>2.2</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <targets combine.children="merge">
+                                <target>
+                                    <id>create-shaded-jars</id>
+                                    <dir>@rootdir@/nd4j/nd4j-shade/flatbuffers/</dir>
+                                    <goals>clean,compile,package</goals>
+                                    <properties>
+                                        <skip.custom.lifecycle>true</skip.custom.lifecycle>
+                                    </properties>
+                                </target>
+                            </targets>
+                            <defaultTarget>create-shaded-jars</defaultTarget>
+                        </configuration>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 
     <build>
         <plugins>
