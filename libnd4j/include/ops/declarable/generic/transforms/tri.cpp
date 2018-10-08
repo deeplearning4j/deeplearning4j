@@ -38,6 +38,13 @@ CUSTOM_OP_IMPL(tri, -2, 1, false, 0, 1) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(tri) {
+            getOpDescriptor()
+//                    ->setAllowedInputTypes(0, {ALL_FLOATS})
+//                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS});
+        }
+
 
 DECLARE_SHAPE_FN(tri) {
 

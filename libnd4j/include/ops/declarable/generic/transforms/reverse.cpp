@@ -70,6 +70,12 @@ namespace ops  {
 
     DECLARE_SYN(reverse_v2, reverse);
 
+    DECLARE_TYPES(pad) {
+        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+        getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
+        getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+    }
+
     CUSTOM_OP_IMPL(reverse_bp, 2, 1, false, 0, -2) {
         auto input = INPUT_VARIABLE(0);
         auto eps = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);

@@ -56,6 +56,11 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(tile) {
+        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
+                ->setAllowedOutputTypes(0, {ALL_FLOATS});
+    }
+
 
 DECLARE_SHAPE_FN(tile) {
     
@@ -130,6 +135,11 @@ CUSTOM_OP_IMPL(tile_bp, 1, 1, false, 0, -2) {
 
     return Status::OK();
 }
+
+        DECLARE_TYPES(tile_bp) {
+            getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
+        }
 
 DECLARE_SHAPE_FN(tile_bp) {
     
