@@ -958,7 +958,7 @@ public class Nd4j {
     /** Matrix multiply: Implements c = alpha*op(a)*op(b) + beta*c where op(X) means transpose X (or not)
      * depending on setting of arguments transposeA and transposeB.<br>
      * Note that matrix c MUST be fortran order, have zero offset and have c.data().length == c.length().
-     * An exception will be thrown otherwise.<br>
+     * i.e., the result array must not be a view. An exception will be thrown otherwise.<br>
      * Don't use this unless you know about level 3 blas and NDArray storage orders.
      * @param a First matrix
      * @param b Second matrix
@@ -975,6 +975,9 @@ public class Nd4j {
                                 boolean transposeB,
                                 double alpha,
                                 double beta) {
+        Preconditions.checkState(c.length() == 1 || (c.ordering() == 'f' && Shape.hasDefaultStridesForShape(c) && !c.isView()),
+                "C (result) array is not F order or is a view. Nd4j.gemm requires the result array to be F order " +
+                        "and not a view. C (result) array: [%ndSInfo]", c);
         getBlasWrapper().level3().gemm(a, b, c, transposeA, transposeB, alpha, beta);
         return c;
     }
