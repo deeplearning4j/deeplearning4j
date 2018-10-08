@@ -359,6 +359,11 @@ public final class ModelParameterServer {
                 if (epochNumber.get() < gum.getEpoch())
                     epochNumber.set(gum.getEpoch());
 
+                val opt = transport.getPropagatedException();
+                if (opt.isPresent()) {
+                    throw new RuntimeException(opt.get());
+                }
+
                 // it's possible to get updates messages BEFORE model was properly initalized
                 if (updatesSubscribers.isEmpty()) {
                     log.info("Storing GradientsUpdateMessage into backlog queue...");
