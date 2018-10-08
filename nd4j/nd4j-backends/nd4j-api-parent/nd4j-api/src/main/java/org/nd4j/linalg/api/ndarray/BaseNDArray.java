@@ -3683,6 +3683,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mmuli(INDArray other, INDArray result) {
         LinAlgExceptions.assertMultiplies(this, other);
+        Preconditions.checkState(result.rank() == 2 && result.size(0) == this.size(0) && result.size(1) == other.size(1),
+                "Invalid result array shape: expected shape [%s,%s], got shape %ndShape result array for %ndShape x %ndShape", this.size(0), other.size(1), result,
+                this, other);
 
 
         if (other.isScalar()) {

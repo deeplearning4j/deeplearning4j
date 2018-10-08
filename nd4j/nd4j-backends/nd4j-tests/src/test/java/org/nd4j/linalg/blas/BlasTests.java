@@ -30,6 +30,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -79,6 +80,7 @@ public class BlasTests extends BaseNd4jTest {
 
         try {
             Nd4j.gemm(a, b, view, false, false, 1.0, 0.0);
+            fail("Expected exception");
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("view"));
         }
@@ -93,6 +95,7 @@ public class BlasTests extends BaseNd4jTest {
 
         try {
             Nd4j.gemm(a, b, target, true, false, 1.0, 0.0);
+            fail("Expected exception");
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("view"));
         }
@@ -108,6 +111,7 @@ public class BlasTests extends BaseNd4jTest {
 
         try {
             Nd4j.gemm(a, b, view, true, false, 1.0, 0.0);
+            fail("Expected exception");
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("view"));
         }
@@ -194,6 +198,16 @@ public class BlasTests extends BaseNd4jTest {
         INDArray ab = a.mmul(b);
         a.mmul(b, z);
         assertEquals(ab, z);
+    }
+
+    @Test
+    public void testMmuli4(){
+        try {
+            Nd4j.rand(1, 3).mmuli(Nd4j.rand(3, 1), Nd4j.createUninitialized(new int[]{10, 10, 1}));
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage().contains("shape"));
+        }
     }
 
     @Override
