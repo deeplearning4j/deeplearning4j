@@ -1,4 +1,4 @@
-package org.nd4j.serde.arrow;
+package org.nd4j.arrow;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import org.apache.arrow.memory.BufferAllocator;
@@ -31,7 +31,6 @@ public class DependencyIssueTest {
 
     @BeforeClass
     public static void before(){
-        /*
         Class<?> c = FlatBufferBuilder.class;
         ClassLoader cl = ArrowSerdeTest.class.getClassLoader();
         System.out.println("FlatBufferBuilder location: " + cl.getResource("com/google/flatbuffers/FlatBufferBuilder.class"));
@@ -49,7 +48,7 @@ public class DependencyIssueTest {
                 first = false;
             }
             System.out.println(")");
-        }*/
+        }
     }
 
     @Rule
