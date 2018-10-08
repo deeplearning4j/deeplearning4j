@@ -16,6 +16,7 @@
             <groupId>com.google.flatbuffers</groupId>
             <artifactId>flatbuffers-java</artifactId>
             <version>${flatbuffers.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
