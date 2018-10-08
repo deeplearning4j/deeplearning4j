@@ -38,9 +38,8 @@ public:
 
 TEST_F(JavaInteropTests, TestShapeExposure1) {
     auto input = NDArrayFactory::create<float>('c', {1, 2, 5, 4});
-    auto weights = NDArrayFactory::create<float>('c', {3, 2, 2, 2});
-    auto exp = NDArrayFactory::create<float>('c', {1, 3, 5, 4});
-
+    auto weights = NDArrayFactory::create<float>('c', {2, 2, 2, 3});
+    auto exp = NDArrayFactory::create<float>('c', {1, 3, 5, 4});    
 
     NativeOps nativeOps;
 
@@ -147,6 +146,8 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
     weightsD.linspace(1);
     weightsP.linspace(1);
     bias.linspace(1);
+    weightsD.permutei({2,3,1,0});
+    weightsP.permutei({2,3,1,0});
 
     auto expOutput = NDArrayFactory::create<float>('c', {3, 2, 8, 8});
 
@@ -181,6 +182,7 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
 
     input.linspace(1);
     weightsD.linspace(1);
+    weightsD.permutei({2,3,1,0});
 
     auto expOutput = NDArrayFactory::create<float>('c', {3, 3, 8, 8});
 
