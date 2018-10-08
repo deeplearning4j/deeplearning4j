@@ -305,6 +305,8 @@ namespace nd4j {
 
                 // returning array
                 return CreateFlatVariable(builder, fVid, stringId, static_cast<nd4j::graph::DataType>(array->dataType()), 0, fArray);
+            } else {
+                throw std::runtime_error("Variable::asFlatVariable isn't possible for NDArrayList");
             }
         }
     }
