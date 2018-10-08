@@ -211,6 +211,13 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @param viewArray The new updater state
      */
     public void setStateViewArray(INDArray viewArray) {
+        if(this.updaterStateViewArray == null){
+            if(viewArray == null)
+                return; //No op - for example, SGD and NoOp updater - i.e., no stored state
+            else {
+                throw new IllegalStateException("Attempting to set updater state view array with null value");
+            }
+        }
         if (this.updaterStateViewArray.length() != viewArray.length())
             throw new IllegalStateException("Invalid input: view arrays differ in length. " + "Expected length "
                             + this.updaterStateViewArray.length() + ", got length " + viewArray.length());

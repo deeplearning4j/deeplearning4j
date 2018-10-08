@@ -1140,10 +1140,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
                 //Configure updaters:
                 if(iUpdater != null && bLayer.getIUpdater() == null){
-                    bLayer.setIUpdater(iUpdater);
+                    bLayer.setIUpdater(iUpdater.clone());   //Clone the updater to avoid shared instances - in case of setLearningRate calls later
                 }
                 if(biasUpdater != null && bLayer.getBiasUpdater() == null){
-                    bLayer.setBiasUpdater(biasUpdater);
+                    bLayer.setBiasUpdater(biasUpdater.clone());     //Clone the updater to avoid shared instances - in case of setLearningRate calls later
                 }
 
                 if(bLayer.getIUpdater() == null && iUpdater == null && bLayer.initializer().numParams(bLayer) > 0){

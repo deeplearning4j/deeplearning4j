@@ -3752,7 +3752,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return Learning rate for the specified layer, or null
      */
     public Double getLearningRate(int layerNumber){
-        return NetworkUtils.getLearningRate(this, layerIndex);
+        return NetworkUtils.getLearningRate(this, layerNumber);
     }
 
     /**

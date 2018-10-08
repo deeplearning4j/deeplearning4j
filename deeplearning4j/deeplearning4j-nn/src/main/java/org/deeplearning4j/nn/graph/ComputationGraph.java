@@ -306,7 +306,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Get a given layer by name.
      */
     public Layer getLayer(String name) {
-        return verticesMap.get(name).getLayer(); //TODO checks
+        Preconditions.checkState(verticesMap.containsKey(name), "Layer with name %s does not exist in the network", name);
+        return verticesMap.get(name).getLayer();
     }
 
     /**

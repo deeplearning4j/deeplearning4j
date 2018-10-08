@@ -1405,7 +1405,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                         " with x.shape=%ndShape and y.shape=%ndShape", this, arr );
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this, arr, this, length()));
         return this;
-
     }
 
     @Override
