@@ -76,7 +76,7 @@
         </dependency>
 
         <!-- Arrow dependencies - minus FlatBuffers. More recent FlatBuffers pulled in via nd4j-api -->
-        <!-- TODO Arrow 0.11 should replace com.vlkan:flatbuffers with official flatbuffers dependency, at which point this exclusion can be removed -->
+        <!-- TODO Arrow 0.11 replaces com.vlkan:flatbuffers with official flatbuffers dependency, at which point this exclusion can be removed -->
         <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-vector</artifactId>
@@ -109,15 +109,6 @@
     <profiles>
         <profile>
             <id>testresources</id>
-            <!-- Put nd4j-native in profile so that CUDA-only builds succeed -->
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
         </profile>
     </profiles>
 </project>
