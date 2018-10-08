@@ -28,6 +28,13 @@
 
 namespace nd4j {
     namespace ops {
+
+        DECLARE_TYPES(lrn) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
         CONFIGURABLE_OP_IMPL(lrn, 1, 1, true, 3, 1) {
             auto input  = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
@@ -41,6 +48,12 @@ namespace nd4j {
             int depth = INT_ARG(0);
 
             return helpers::lrnFunctor(input, output, depth, bias, alpha, beta);
+        }
+
+        DECLARE_TYPES(lrn_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
         CONFIGURABLE_OP_IMPL(lrn_bp, 2, 1, true, 3, 1) {
@@ -90,6 +103,12 @@ namespace nd4j {
             return helpers::lrnFunctorEx(input, output, unitScale, scale, (int)depth, bias, alpha, beta);
         }
         DECLARE_SYN(LRN, lrn_old);
+
+        DECLARE_TYPES(lrn_old) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
         
         DECLARE_SHAPE_FN(lrn_old) {
             auto inp = inputShape->at(0);

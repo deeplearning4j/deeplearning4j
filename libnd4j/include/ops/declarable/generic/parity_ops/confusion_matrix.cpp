@@ -30,6 +30,12 @@
 
 namespace nd4j {
     namespace ops {
+        DECLARE_TYPES(log_softmax) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
         CUSTOM_OP_IMPL(confusion_matrix, 2, 1, false, 0, -2) {
 
             auto labels = INPUT_VARIABLE(0);

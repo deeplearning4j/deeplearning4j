@@ -27,6 +27,12 @@
 namespace nd4j {
 namespace ops  {
 
+    DECLARE_TYPES(betainc) {
+        getOpDescriptor()
+                ->setAllowedInputTypes({ALL_FLOATS})
+                ->setSameMode(true);
+    }
+
 CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
 	auto a = INPUT_VARIABLE(0);
     auto b = INPUT_VARIABLE(1);

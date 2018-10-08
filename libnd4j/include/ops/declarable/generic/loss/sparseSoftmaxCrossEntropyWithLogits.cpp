@@ -58,6 +58,12 @@ OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false) {
 }
 
 
+        DECLARE_TYPES(sparse_softmax_cross_entropy_loss_with_logits) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 
 }
 }

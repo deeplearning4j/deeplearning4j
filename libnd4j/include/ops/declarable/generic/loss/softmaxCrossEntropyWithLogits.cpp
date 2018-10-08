@@ -49,6 +49,12 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
 }
 
 
+        DECLARE_TYPES(softmax_cross_entropy_loss_with_logits) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 DECLARE_SHAPE_FN(softmax_cross_entropy_loss_with_logits) {
 	
 	auto logitsShapeInfo  = inputShape->at(0);

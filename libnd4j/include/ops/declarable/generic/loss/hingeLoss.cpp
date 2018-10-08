@@ -117,6 +117,12 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
 }
 
 
+		DECLARE_TYPES(hinge_loss) {
+			getOpDescriptor()
+					->setAllowedInputTypes(nd4j::DataType::ANY)
+					->setAllowedOutputTypes({ALL_FLOATS});
+		}
+
 DECLARE_SHAPE_FN(hinge_loss) {
 	
 	auto logitsShapeInfo  = inputShape->at(0);    

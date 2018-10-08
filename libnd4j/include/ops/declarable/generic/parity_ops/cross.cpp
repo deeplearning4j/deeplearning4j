@@ -26,6 +26,11 @@
 
 namespace nd4j {
 namespace ops {
+    DECLARE_TYPES(cross) {
+        getOpDescriptor()
+                ->setSameMode(true);
+    }
+
     OP_IMPL(cross, 2, 1, false) {
         auto a = INPUT_VARIABLE(0);
         auto b = INPUT_VARIABLE(1);

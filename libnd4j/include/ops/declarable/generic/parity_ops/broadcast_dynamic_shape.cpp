@@ -27,6 +27,11 @@
 
 namespace nd4j {
     namespace ops {
+        DECLARE_TYPES(log_softmax) {
+            getOpDescriptor()
+                    ->setSameMode(true);
+        }
+
         CUSTOM_OP_IMPL(broadcast_dynamic_shape, 2, 1, false, 0, 0) {
             auto x_shape = INPUT_VARIABLE(0);
             auto y_shape = INPUT_VARIABLE(1);

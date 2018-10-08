@@ -26,6 +26,12 @@
 namespace nd4j {
 namespace ops {
 
+    DECLARE_TYPES(fused_batch_norm) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
 CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
     auto x      = INPUT_VARIABLE(0);                 // [bS,iH,iW,iD] (NHWC) or [bS,iD,iH,iW] (NCHW)
     auto scale  = INPUT_VARIABLE(1);                 // [iD]

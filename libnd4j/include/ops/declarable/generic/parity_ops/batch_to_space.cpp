@@ -42,6 +42,12 @@ namespace nd4j {
 namespace ops {
     const int kMaxSpaceToBatchBlockDims = 4;
 
+    DECLARE_TYPES(batch_to_space) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
     CUSTOM_OP_IMPL(batch_to_space, 1, 1, false, 0, -2) {
         auto input = INPUT_VARIABLE(0);
 

@@ -25,6 +25,12 @@
 #include <ops/declarable/helpers/axis.h>
 namespace nd4j {
     namespace ops {
+        DECLARE_TYPES(argmax) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(DataType::INT64);
+        }
+
         CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);

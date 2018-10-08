@@ -56,6 +56,12 @@ namespace nd4j {
         }
         DECLARE_SYN(ApplyGradientDescent, apply_sgd);
     }
+
+    DECLARE_TYPES(sparse_softmax_cross_entropy_loss_with_logits) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 }
 
 #endif

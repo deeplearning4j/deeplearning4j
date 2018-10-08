@@ -112,6 +112,12 @@ CUSTOM_OP_IMPL(mean_sqerr_loss, 3, 1, false, 0, 1) {
     return Status::OK();
 }
 
+		DECLARE_TYPES(mean_sqerr_loss) {
+			getOpDescriptor()
+					->setAllowedInputTypes(nd4j::DataType::ANY)
+					->setAllowedOutputTypes({ALL_FLOATS});
+		}
+
 
 DECLARE_SHAPE_FN(mean_sqerr_loss) {
 

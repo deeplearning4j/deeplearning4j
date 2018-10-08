@@ -27,6 +27,12 @@
 
 namespace nd4j {
     namespace ops {
+        DECLARE_TYPES(bincount) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
         CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
             auto values = INPUT_VARIABLE(0);
             

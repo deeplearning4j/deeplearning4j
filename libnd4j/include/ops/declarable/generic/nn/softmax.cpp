@@ -28,6 +28,11 @@
 namespace nd4j {
 namespace ops {
 
+    DECLARE_TYPES(softmax) {
+        getOpDescriptor()
+                ->setAllowedInputTypes({ALL_FLOATS})
+                ->setSameMode(true);
+    }
 
 CONFIGURABLE_OP_IMPL(softmax, 1, 1, true, 0, 0) {
     auto input  = INPUT_VARIABLE(0);

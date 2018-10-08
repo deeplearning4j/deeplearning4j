@@ -27,6 +27,12 @@
 
 namespace nd4j {
 namespace ops {
+    DECLARE_TYPES(adjust_saturation) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
     CONFIGURABLE_OP_IMPL(adjust_saturation, 1, 1, true, -2, -2) {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);

@@ -126,6 +126,12 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
     return Status::OK();
 }
 
+		DECLARE_TYPES(sigm_cross_entropy_loss) {
+			getOpDescriptor()
+					->setAllowedInputTypes(nd4j::DataType::ANY)
+					->setAllowedOutputTypes({ALL_FLOATS});
+		}
+
 
 DECLARE_SHAPE_FN(sigm_cross_entropy_loss) {
 

@@ -25,6 +25,12 @@
 
 namespace nd4j {
     namespace ops {
+        DECLARE_TYPES(biasadd) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
         OP_IMPL(biasadd, 2, 1, true) {
             //REQUIRE_OK(this->validateInput2D(block));
             auto input = INPUT_VARIABLE(0);

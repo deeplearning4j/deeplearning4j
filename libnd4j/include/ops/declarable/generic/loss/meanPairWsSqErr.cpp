@@ -103,6 +103,12 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
     return Status::OK();
 }
 
+		DECLARE_TYPES(mean_pairwssqerr_loss) {
+			getOpDescriptor()
+					->setAllowedInputTypes(nd4j::DataType::ANY)
+					->setAllowedOutputTypes({ALL_FLOATS});
+		}
+
 
 DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
 

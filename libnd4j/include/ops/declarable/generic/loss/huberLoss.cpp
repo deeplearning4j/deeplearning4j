@@ -118,6 +118,11 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
     return Status::OK();
 }
 
+		DECLARE_TYPES(huber_loss) {
+			getOpDescriptor()
+					->setAllowedInputTypes(nd4j::DataType::ANY)
+					->setAllowedOutputTypes({ALL_FLOATS});
+		}
 
 DECLARE_SHAPE_FN(huber_loss) {
 

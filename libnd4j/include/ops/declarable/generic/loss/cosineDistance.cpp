@@ -119,6 +119,11 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
     return Status::OK();
 }
 
+		DECLARE_TYPES(cosine_distance_loss) {
+			getOpDescriptor()
+					->setAllowedInputTypes(nd4j::DataType::ANY)
+					->setAllowedOutputTypes({ALL_FLOATS});
+		}
 
 DECLARE_SHAPE_FN(cosine_distance_loss) {
 

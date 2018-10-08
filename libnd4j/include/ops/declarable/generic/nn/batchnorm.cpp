@@ -82,6 +82,13 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(batchnorm) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
+
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(batchnorm) {        
 
@@ -199,6 +206,12 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
     return Status::OK();
 }
+
+        DECLARE_TYPES(batchnorm_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(batchnorm_bp) {
