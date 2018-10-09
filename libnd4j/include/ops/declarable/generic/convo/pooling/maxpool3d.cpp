@@ -83,7 +83,7 @@ CUSTOM_OP_IMPL(maxpool3dnew, 1, 1, false, 0, 14) {
         DECLARE_TYPES(maxpool3dnew) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setSameMode(true);
         }
 
 DECLARE_SHAPE_FN(maxpool3dnew) {
@@ -225,7 +225,7 @@ CUSTOM_OP_IMPL(maxpool3dnew_bp, 2, 1, false, 0, 14) {
 
 DECLARE_SHAPE_FN(maxpool3dnew_bp) {
 
-    Nd4jLong* gradIshapeInfo(nullptr);
+    Nd4jLong* gradIshapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());    
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
         
     return SHAPELIST(gradIshapeInfo);        

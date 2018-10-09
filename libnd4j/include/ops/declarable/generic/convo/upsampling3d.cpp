@@ -82,7 +82,7 @@ DECLARE_SHAPE_FN(upsampling3d) {
         outputShapeInfo[5] = inputShapeInfo[5];
     }
 
-    shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
+    ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
     return SHAPELIST(outputShapeInfo);
 }
@@ -116,9 +116,8 @@ DECLARE_SHAPE_FN(upsampling3d_bp) {
     REQUIRE_TRUE(inputShape->at(0)[0] == 5, 0, "UPSAMPLING3D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
     REQUIRE_TRUE(inputShape->at(1)[0] == 5, 0, "UPSAMPLING3D_BP op: output's gradient array must be 4D, but got %i instead!", inputShape->at(1)[0]);
     
-    Nd4jLong *gradIShapeInfo(nullptr);
-    COPY_SHAPE(inputShape->at(0), gradIShapeInfo);
-    
+    Nd4jLong* gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());
+
     return SHAPELIST(gradIShapeInfo);
 }
 

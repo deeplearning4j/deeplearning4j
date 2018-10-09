@@ -137,7 +137,7 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
         outputShapeInfo[5] = iC;
     }
     // TF DOC: A Tensor. Has the same type as input.
-    ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
+    ShapeUtils::updateStridesAndType(outputShapeInfo, block.dataType(), shape::order(inputShapeInfo));
 
     return SHAPELIST(outputShapeInfo);
 }
@@ -205,10 +205,7 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
 
 DECLARE_SHAPE_FN(avgpool3dnew_bp) {
 
-    Nd4jLong* gradIshapeInfo(nullptr);
-    COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
-    ArrayOptions::setDataType(gradIshapeInfo, ArrayOptions::dataType(inputShape->at(1)));
-        
+    Nd4jLong* gradIshapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());
     return SHAPELIST(gradIshapeInfo);        
 }
 

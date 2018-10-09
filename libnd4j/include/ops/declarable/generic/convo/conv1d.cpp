@@ -270,17 +270,11 @@ DECLARE_SHAPE_FN(conv1d_bp) {
     if(biasShapeInfo)
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM CONV1D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
-
-    Nd4jLong* gradIshapeInfo(nullptr), *gradWshapeInfo(nullptr);
-    COPY_SHAPE(inputShapeInfo, gradIshapeInfo);    
-    COPY_SHAPE(weightsShapeInfo, gradWshapeInfo); 
-    ArrayOptions::copyDataType(gradIshapeInfo, gradOShapeInfo);
-    ArrayOptions::copyDataType(gradWshapeInfo, gradOShapeInfo);
+    Nd4jLong* gradIshapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo,  gradOShapeInfo, false, block.getWorkspace());
+    Nd4jLong* gradWshapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, gradOShapeInfo, false, block.getWorkspace());
 
     if(biasShapeInfo) {
-        Nd4jLong* gradBshapeInfo(nullptr);
-        COPY_SHAPE(biasShapeInfo, gradBshapeInfo);
-        ArrayOptions::copyDataType(gradBshapeInfo, gradOShapeInfo);
+        Nd4jLong* gradBshapeInfo = ShapeBuilders::copyShapeInfoAndType(biasShapeInfo,  gradOShapeInfo, false, block.getWorkspace());
         return SHAPELIST(gradIshapeInfo, gradWshapeInfo, gradBshapeInfo);
     }
 

@@ -51,14 +51,12 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(max_pool_with_argmax) {
+            
             auto in = inputShape->at(0);
-            Nd4jLong* valuesShape = nullptr;
-            Nd4jLong* indicesShape = nullptr;
-            COPY_SHAPE(in, valuesShape);
-            COPY_SHAPE(in, indicesShape);
-            auto shapes = SHAPELIST(valuesShape, indicesShape);
-
-            return shapes;
+            Nd4jLong* valuesShape = ShapeBuilders::copyShapeInfo(in, false, block.getWorkspace());    
+            Nd4jLong* indicesShape = ShapeBuilders::copyShapeInfoAndType(in, DataType::INT64, false, block.getWorkspace());    
+            
+            return SHAPELIST(valuesShape, indicesShape);
         }
     }
 }

@@ -138,7 +138,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
         newShapeInfo[3] = oW;
         newShapeInfo[4] = iD;
     }
-    ShapeUtils::updateStridesAndType(newShapeInfo, inShape, order); // Accordingly with TF doc
+    ShapeUtils::updateStridesAndType(newShapeInfo, block.dataType(), order); // Accordingly with TF doc
 
     return SHAPELIST(newShapeInfo);
 }
@@ -219,10 +219,7 @@ DECLARE_SHAPE_FN(avgpool2d_bp) {
     REQUIRE_TRUE(inputShape->at(0)[0] == 4, 0, "AVGPOOL2D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
     REQUIRE_TRUE(inputShape->at(1)[0] == 4, 0, "AVGPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!", inputShape->at(1)[0]);
     
-    Nd4jLong* gradIShapeInfo(nullptr);
-    COPY_SHAPE(inputShape->at(0), gradIShapeInfo);
-    ArrayOptions::setDataType(gradIShapeInfo, ArrayOptions::dataType(inputShape->at(1)));
-    
+    Nd4jLong* gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());
     return SHAPELIST(gradIShapeInfo);
 }
 

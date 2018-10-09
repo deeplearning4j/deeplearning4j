@@ -110,5 +110,20 @@ Nd4jLong* ShapeBuilders::copyShapeInfo(const Nd4jLong* inShapeInfo, const bool c
     return outShapeInfo;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+Nd4jLong* ShapeBuilders::copyShapeInfoAndType(const Nd4jLong* inShapeInfo, const DataType dtype, const bool copyStrides, memory::Workspace* workspace) {
+    
+    Nd4jLong* outShapeInfo = ShapeBuilders::copyShapeInfo(inShapeInfo, copyStrides, workspace);
+    ArrayOptions::setDataType(outShapeInfo, dtype);
+
+    return outShapeInfo;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+Nd4jLong* ShapeBuilders::copyShapeInfoAndType(const Nd4jLong* inShapeInfo, const Nd4jLong* shapeInfoToGetTypeFrom, const bool copyStrides, memory::Workspace* workspace) {
+    
+    return ShapeBuilders::copyShapeInfoAndType(inShapeInfo, ArrayOptions::dataType(shapeInfoToGetTypeFrom), copyStrides, workspace);
+}
+
 
 }

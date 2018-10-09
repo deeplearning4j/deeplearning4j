@@ -179,7 +179,7 @@ DECLARE_SHAPE_FN(sconv2d) {
         outputShapeInfo[4] = oC;
     }
     
-    ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
+    ShapeUtils::updateStridesAndType(outputShapeInfo, weightsDShapeInfo, shape::order(inputShapeInfo));
 
     return SHAPELIST(outputShapeInfo);
 }
@@ -365,25 +365,24 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
     if (biasShapeInfo)
         REQUIRE_TRUE((biasShapeInfo[0] == 1 || biasShapeInfo[0] == 2) && oC == shape::length(biasShapeInfo), 0, "SCONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
-    Nd4jLong* gradIshapeInfo(nullptr), *gradWDshapeInfo(nullptr);
-    COPY_SHAPE(inputShapeInfo, gradIshapeInfo);
-    COPY_SHAPE(weightsDShapeInfo, gradWDshapeInfo);
+    Nd4jLong* gradIshapeInfo  = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo,    gradOShapeInfo, false, block.getWorkspace());
+    Nd4jLong* gradWDshapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsDShapeInfo, gradOShapeInfo, false, block.getWorkspace());    
 
     Nd4jLong* gradWPshapeInfo(nullptr), *gradBshapeInfo(nullptr);
 
     if(weightsPShapeInfo && biasShapeInfo) {
-        COPY_SHAPE(weightsPShapeInfo, gradWPshapeInfo);
-        COPY_SHAPE(biasShapeInfo, gradBshapeInfo);
+        gradWPshapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsPShapeInfo, gradOShapeInfo, false, block.getWorkspace());
+        gradBshapeInfo  = ShapeBuilders::copyShapeInfoAndType(biasShapeInfo, gradOShapeInfo, false, block.getWorkspace());
         return SHAPELIST(gradIshapeInfo, gradWDshapeInfo, gradWPshapeInfo, gradBshapeInfo);
     }
 
     if(weightsPShapeInfo && !biasShapeInfo) {
-        COPY_SHAPE(weightsPShapeInfo, gradWPshapeInfo);
+        gradWPshapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsPShapeInfo, gradOShapeInfo, false, block.getWorkspace());
         return SHAPELIST(gradIshapeInfo, gradWDshapeInfo, gradWPshapeInfo);
     }
 
     if(!weightsPShapeInfo && biasShapeInfo) {
-        COPY_SHAPE(biasShapeInfo, gradBshapeInfo);
+        gradBshapeInfo  = ShapeBuilders::copyShapeInfoAndType(biasShapeInfo, gradOShapeInfo, false, block.getWorkspace());
         return SHAPELIST(gradIshapeInfo, gradWDshapeInfo, gradBshapeInfo);
     }
 

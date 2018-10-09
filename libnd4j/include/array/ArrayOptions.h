@@ -106,7 +106,7 @@ namespace nd4j {
 
 
         static void resetDataType(Nd4jLong *shapeInfo);
-        static void setDataType(Nd4jLong *shapeInfo, nd4j::DataType dataType);
+        static void setDataType(Nd4jLong *shapeInfo, const nd4j::DataType dataType);
 
         static void copyDataType(Nd4jLong* to, const Nd4jLong* from);
     };
