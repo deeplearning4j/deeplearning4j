@@ -52,9 +52,10 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(max_pool_with_argmax) {
             
+            auto in = inputShape->at(0);
             Nd4jLong* valuesShape = ShapeBuilders::copyShapeInfo(in, false, block.getWorkspace());    
             Nd4jLong* indicesShape = ShapeBuilders::copyShapeInfoAndType(in, DataType::INT64, false, block.getWorkspace());    
-
+            
             return SHAPELIST(valuesShape, indicesShape);
         }
     }
