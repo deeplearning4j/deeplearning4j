@@ -43,7 +43,7 @@ OP_IMPL(random_shuffle, 1, 1, true) {
 }
 
 
-    DECLARE_TYPES(random_crop) {
+    DECLARE_TYPES(random_shuffle) {
         getOpDescriptor()
                 ->setAllowedInputTypes(nd4j::DataType::ANY)
                 ->setSameMode(true);
