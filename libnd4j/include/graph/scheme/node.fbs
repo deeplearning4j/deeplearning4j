@@ -20,11 +20,14 @@ table FlatNode {
     extraInteger:[long]; // optional integer extra params
     dimensions:[int]; // dimension for this operation
     device:int; // default is -1, which means _auto_
-    scalar:float; // optional scalar. used in scalar ops & SummaryStats
+    scalar:double; // optional scalar. used in scalar ops & SummaryStats
 
     // fields related to Scopes
     scope_id:int; // unique scope id, where this op belongs to
     scope_name:string; // literal scope id, where this op belongs to
+
+    // output data types (optional)
+    outputTypes:[DataType];
 }
 
 root_type FlatNode;
