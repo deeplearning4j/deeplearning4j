@@ -93,6 +93,12 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     DECLARE_SYN(concat_v2, concat);
     DECLARE_SYN(concatv2, concat);
 
+        DECLARE_TYPES(concat) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
 DECLARE_SHAPE_FN(concat) {
     
     // first of all take into account possible presence of empty arrays
@@ -338,6 +344,11 @@ DECLARE_SHAPE_FN(concat) {
         //     return SHAPELIST(newShape);
         // }
 
+        DECLARE_TYPES(concat_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
         CUSTOM_OP_IMPL(concat_bp, -1, -1, false, 0, 1) {
             auto epsilonNext = INPUT_VARIABLE(block.width() - 1);

@@ -36,6 +36,12 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(floor, Floor);
+
+        DECLARE_TYPES(Floor) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

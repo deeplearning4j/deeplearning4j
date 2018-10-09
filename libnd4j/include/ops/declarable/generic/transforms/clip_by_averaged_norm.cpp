@@ -40,6 +40,11 @@ CONFIGURABLE_OP_IMPL(clipbyavgnorm, 1, 1, true, 1, 0) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(clipbyavgnorm) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 }
 }

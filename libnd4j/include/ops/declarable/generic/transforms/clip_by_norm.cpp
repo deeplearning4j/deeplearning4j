@@ -61,7 +61,17 @@ namespace ops  {
         return SHAPELIST(newShape);
     }
 
+    DECLARE_TYPES(clipbynorm) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
+    DECLARE_TYPES(clipbynorm_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 }
 }
 

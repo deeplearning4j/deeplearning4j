@@ -47,7 +47,7 @@ namespace nd4j {
         DECLARE_SYN(enter, expose);
 
 
-        DECLARE_TYPES(embedding_lookup) {
+        DECLARE_TYPES(expose) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
                     ->setSameMode(true);

@@ -48,9 +48,9 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(gather_nd) {
-    getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+    getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY);
     getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
-    getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
 }
 
 DECLARE_SHAPE_FN(gather_nd) {

@@ -42,7 +42,11 @@ CONFIGURABLE_OP_IMPL(invert_permutation, 1, 1, false, 0, 0) {
         
 DECLARE_SYN(InvertPermutation, invert_permutation);
 
-
+        DECLARE_TYPES(invert_permutation) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
 }
 }
 

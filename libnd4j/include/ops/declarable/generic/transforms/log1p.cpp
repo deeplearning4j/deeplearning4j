@@ -37,6 +37,12 @@ namespace nd4j {
         }
         DECLARE_SYN(log1p, Log1p);
     }
+
+    DECLARE_TYPES(Log1p) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 }
 
 #endif

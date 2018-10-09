@@ -49,7 +49,11 @@ DECLARE_SYN(addn, mergeadd);
 DECLARE_SYN(accumulaten, mergeadd);
 DECLARE_SYN(accumulate_n, mergeadd);
 
-
+    DECLARE_TYPES(mergeadd) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
 }
 }
 

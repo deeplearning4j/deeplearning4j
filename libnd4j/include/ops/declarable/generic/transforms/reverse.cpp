@@ -71,9 +71,9 @@ namespace ops  {
     DECLARE_SYN(reverse_v2, reverse);
 
     DECLARE_TYPES(pad) {
-        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+        getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY);
         getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
-        getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+        getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
     }
 
     CUSTOM_OP_IMPL(reverse_bp, 2, 1, false, 0, -2) {
