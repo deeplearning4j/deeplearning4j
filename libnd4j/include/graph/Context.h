@@ -27,6 +27,9 @@
 #include <graph/ContextPrototype.h>
 #include <memory/Workspace.h>
 
+#ifdef HAVE_MKLDNN
+#include <MKLDNNStream.h>
+#endif
 
 // CUDA-specific includes
 #ifdef __CUDACC__
@@ -53,6 +56,10 @@ namespace nd4j {
             nd4j::DataType _dataType = nd4j::DataType::FLOAT32;
             // branch for divergent_op
             int _branch = 0;
+
+#ifdef HAVE_MKLDNN
+            MKLDNNStream<T>* _mkldnnStream = nullptr;
+#endif
         public:
             // TODO: maybe override new here as well?
 
@@ -61,7 +68,7 @@ namespace nd4j {
             cudaStream_t* _stream;
 #endif
 
-            Context(ContextPrototype *prototype, VariableSpace *variableSpace);
+            Context(ContextPrototype* prototype, VariableSpace* variableSpace);
 
             explicit Context(int nodeId, VariableSpace *variableSpace = nullptr);
             Context(int nodeId, VariableSpace *variableSpace, bool isInplace);
@@ -76,6 +83,8 @@ namespace nd4j {
             Nd4jLong getInnerTime();
 
             nd4j::DataType dataType() override;
+
+            nd4j::DataType dataType(int index) override;
 
             // these methods are related to Workspace abstraction
             bool hasWorkspaceProvided();
@@ -94,7 +103,7 @@ namespace nd4j {
             nd4j::memory::Workspace* oWorkspace();
 
 
-            void setVariableSpace(VariableSpace *variableSpace);
+            void setVariableSpace(VariableSpace* variableSpace);
 
             nd4j::random::RandomBuffer* getRNG();
             void setRNG(nd4j::random::RandomBuffer* rng);
@@ -108,6 +117,10 @@ namespace nd4j {
             int getBranch();
             void setBranch(int branch);
 
+#ifdef HAVE_MKLDNN
+            MKLDNNStream<T> *getMKLDNNStream() { return _mkldnnStream; }
+            void setMKLDNNStream(MKLDNNStream<T> *mkldnnStream) { _mkldnnStream = mkldnnStream; }
+#endif
             /**
              *
              * @return
@@ -117,7 +130,7 @@ namespace nd4j {
             /**
              *
              */
-            void trackList(NDArrayList *list);
+            void trackList(NDArrayList* list);
 
 
             /**

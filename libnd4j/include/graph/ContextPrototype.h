@@ -24,6 +24,7 @@
 #include <vector>
 #include <array/DataType.h>
 #include <dll.h>
+#include <RandomGenerator.h>
 
 namespace nd4j {
     namespace graph {
@@ -40,6 +41,10 @@ namespace nd4j {
 
             // opNum for legacy XYZ ops
             int _opNum = -1;
+            uint64_t _rootSeed;
+            RandomGenerator _randomGenerator;
+
+            bool _useMKLDNN = true;
 
         public:
             explicit ContextPrototype(int nodeId = 1, bool inPlace = false);
@@ -52,6 +57,7 @@ namespace nd4j {
             bool hasVariablesFilled();
 
             virtual nd4j::DataType dataType();
+            virtual nd4j::DataType dataType(int index);
 
             bool isInplace();
             void markInplace(bool reallyInplace);
@@ -74,6 +80,9 @@ namespace nd4j {
             int opNum();
             void setOpNum(int opNum);
 
+            bool isUseMKLDNN() { return _useMKLDNN; }
+            void setUseMKLDNN(bool useMKLDNN) { _useMKLDNN = useMKLDNN; }
+
             /**
              * This method returns number of inputs available in this block
              * @return
@@ -85,6 +94,11 @@ namespace nd4j {
 
             template <typename N>
             ContextPrototype* asT();
+
+            RandomGenerator& randomGenerator() {return _randomGenerator;}
+            RandomGenerator const& getRng() const { return _randomGenerator; }
+            uint64_t randomSeed() const { return _rootSeed; }
+            void setRandomSeed(uint64_t seed) { _rootSeed = seed; }
         };
     }
 }

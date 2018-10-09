@@ -94,6 +94,10 @@ namespace nd4j {
         }
 
         nd4j::DataType ContextPrototype::dataType() {
+            return dataType(0);
+        }
+
+        nd4j::DataType ContextPrototype::dataType(int index) {
             return _dataType;
         }
 
