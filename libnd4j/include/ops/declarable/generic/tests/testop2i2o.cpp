@@ -43,6 +43,12 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(TestOp2i2o, testop2i2o);
+
+        DECLARE_TYPES(testop2i2o) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

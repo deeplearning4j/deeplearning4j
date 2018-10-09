@@ -29,6 +29,12 @@ namespace nd4j {
             // Fastest op ever.
             return Status::OK();
         }
+
+        DECLARE_TYPES(noop) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 
