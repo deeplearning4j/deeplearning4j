@@ -55,6 +55,18 @@ namespace ops {
         return SHAPELIST(newShape);
     }
 
+    DECLARE_TYPES(tile_to_shape) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
+    DECLARE_TYPES(tile_to_shape_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
 
     CUSTOM_OP_IMPL(tile_to_shape_bp, 2, 1, true, 0, -1) {
         auto input = INPUT_VARIABLE(0);

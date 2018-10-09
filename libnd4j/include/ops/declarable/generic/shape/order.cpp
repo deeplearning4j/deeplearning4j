@@ -34,6 +34,12 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(reshape) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_INTS});
+        }
+
         DECLARE_SHAPE_FN(order) {
             auto input = inputShape->at(0);
             Nd4jLong *newShape;

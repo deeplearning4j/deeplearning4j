@@ -90,6 +90,11 @@ namespace ops {
         return Status::OK();
     }
 
+    DECLARE_TYPES(transpose) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
 
     DECLARE_SHAPE_FN(transpose) {
         if (block.width() == 1) {

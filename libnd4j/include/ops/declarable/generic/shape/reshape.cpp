@@ -138,6 +138,15 @@ namespace nd4j {
 
             return ND4J_STATUS_BAD_INPUT;
         }
+
+
+        DECLARE_TYPES(reshape) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setSameMode(true);
+        }
+
         DECLARE_SHAPE_FN(reshape) {
             auto inp = inputShape->at(0);
 

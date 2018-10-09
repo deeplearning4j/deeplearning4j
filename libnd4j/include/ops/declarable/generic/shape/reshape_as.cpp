@@ -59,6 +59,11 @@ namespace nd4j {
     return SHAPELIST(outputShapeInfo);
 }
 
+        DECLARE_TYPES(reshapeas) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
 }
 }
 

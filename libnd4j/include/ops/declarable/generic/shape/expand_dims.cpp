@@ -57,6 +57,12 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(expand_dims) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
         DECLARE_SHAPE_FN(expand_dims) {
             auto inShape = inputShape->at(0);
 

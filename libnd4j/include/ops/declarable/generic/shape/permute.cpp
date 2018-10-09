@@ -82,6 +82,13 @@ namespace nd4j {
         return Status::OK();
         }
 
+        DECLARE_TYPES(permute) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setSameMode(true);
+        }
+
         DECLARE_SHAPE_FN(permute) {
             auto shapeList = SHAPELIST();
             auto arguments = block.getIArguments();
