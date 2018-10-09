@@ -61,6 +61,11 @@ OP_IMPL(scatter_nd_sub, 3, 1, true) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(scatter_nd_sub) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
 
 }
 }

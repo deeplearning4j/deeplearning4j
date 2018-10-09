@@ -34,6 +34,12 @@ namespace nd4j {
 
             return helpers::inverse(input, output);
         }
+
+        DECLARE_TYPES(matrix_inverse) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

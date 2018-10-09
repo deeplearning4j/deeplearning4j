@@ -32,6 +32,12 @@ namespace nd4j {
 
             return Status::OK();
         }
+
+        DECLARE_TYPES(ones_as) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

@@ -57,6 +57,12 @@ namespace nd4j {
             }
             return SHAPELIST(determinantShape);
         }
+
+        DECLARE_TYPES(matrix_determinant) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

@@ -40,6 +40,12 @@ namespace ops {
 
         return Status::OK();
     }
+
+    DECLARE_TYPES(weighted_cross_entropy_with_logits) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 }
 }
 

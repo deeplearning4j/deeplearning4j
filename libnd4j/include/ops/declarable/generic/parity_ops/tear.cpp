@@ -72,6 +72,12 @@ namespace nd4j {
 
             return result;
         }
+
+        DECLARE_TYPES(tear) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

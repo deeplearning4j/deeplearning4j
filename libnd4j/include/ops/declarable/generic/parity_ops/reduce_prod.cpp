@@ -39,6 +39,12 @@ namespace ops {
         return Status::OK();
     }
 
+    DECLARE_TYPES(reduce_prod) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
     DECLARE_SHAPE_FN(reduce_prod) {    
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
@@ -59,6 +65,12 @@ namespace ops {
         COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
         return SHAPELIST(outShapeInfo);
+    }
+
+    DECLARE_TYPES(reduce_prod_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
     CUSTOM_OP_IMPL(reduce_prod_bp, 2, 1, false, 0, 0) {

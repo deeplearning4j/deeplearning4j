@@ -51,6 +51,11 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
 DECLARE_SYN(polyGamma, polygamma);
 DECLARE_SYN(PolyGamma, polygamma);
 
+    DECLARE_TYPES(polygamma) {
+        getOpDescriptor()
+                ->setAllowedInputTypes({ALL_FLOATS})
+                ->setSameMode(true);
+    }
 }
 }
 

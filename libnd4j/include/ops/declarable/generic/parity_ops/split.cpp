@@ -83,6 +83,12 @@ namespace ops {
         return Status::OK();
     }
 
+    DECLARE_TYPES(split) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
     DECLARE_SHAPE_FN(split) {
         int num_splits = INT_ARG(0);
         Nd4jLong *input = nullptr;

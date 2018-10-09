@@ -76,6 +76,12 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(ScatterDiv, scatter_div);
+
+        DECLARE_TYPES(scatter_div) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

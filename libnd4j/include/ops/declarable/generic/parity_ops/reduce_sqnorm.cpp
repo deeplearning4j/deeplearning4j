@@ -49,6 +49,12 @@ namespace ops {
 
         return SHAPELIST(outShapeInfo);
     }
+
+        DECLARE_TYPES(reduce_sqnorm) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 #endif 
 #if NOT_EXCLUDED(OP_reduce_sqnorm_bp)
 
@@ -61,6 +67,12 @@ namespace ops {
 
         return SHAPELIST(outShapeInfo);
     }
+
+        DECLARE_TYPES(reduce_sqnorm_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
     CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
 

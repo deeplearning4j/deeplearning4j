@@ -62,6 +62,12 @@ namespace nd4j {
 
             return SHAPELIST(outputShape);
         }
+
+        DECLARE_TYPES(segment_max) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 
 }

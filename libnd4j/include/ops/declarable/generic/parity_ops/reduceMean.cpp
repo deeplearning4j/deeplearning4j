@@ -45,6 +45,12 @@ CUSTOM_OP_IMPL(reduce_mean, 1, 1, false, 0, 0) {
 }
 
 
+        DECLARE_TYPES(reduce_mean) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 DECLARE_SHAPE_FN(reduce_mean) {    
     const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
@@ -60,6 +66,12 @@ DECLARE_SHAPE_FN(reduce_mean) {
     return SHAPELIST(outShapeInfo);
 }
 
+
+        DECLARE_TYPES(reduce_mean_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 
 //////////////////////////////////////////////////////////////////////////

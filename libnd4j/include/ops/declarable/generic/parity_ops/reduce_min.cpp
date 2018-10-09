@@ -39,6 +39,12 @@ namespace ops {
         return Status::OK();
     }
 
+        DECLARE_TYPES(reduce_min) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
     DECLARE_SHAPE_FN(reduce_min) {    
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
@@ -60,6 +66,12 @@ namespace ops {
 
         return SHAPELIST(outShapeInfo);
     }
+
+        DECLARE_TYPES(reduce_min_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
     CUSTOM_OP_IMPL(reduce_min_bp, 2, 1, false, 0, 0) {
       //       dL/dIn  = dL/dOut                   if in_i == out (== min(in))

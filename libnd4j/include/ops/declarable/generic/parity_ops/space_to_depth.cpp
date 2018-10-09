@@ -27,6 +27,13 @@
 
 namespace nd4j {
 namespace ops {
+
+    DECLARE_TYPES(space_to_depth) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
     CUSTOM_OP_IMPL(space_to_depth, 1, 1, false, 0, 2) {
         int block_size = INT_ARG(0);
         bool isNHWC = INT_ARG(1) == 1;

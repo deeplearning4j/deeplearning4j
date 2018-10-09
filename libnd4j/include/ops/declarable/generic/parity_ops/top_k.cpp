@@ -75,6 +75,12 @@ namespace nd4j {
             }
             return shapeList;
         }
+
+        DECLARE_TYPES(top_k) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

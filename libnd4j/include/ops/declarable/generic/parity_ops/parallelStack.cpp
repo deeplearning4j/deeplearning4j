@@ -46,6 +46,11 @@ CUSTOM_OP_IMPL(parallel_stack, -1, 1, false, 0, 0) {
   	return Status::OK();
 }
 
+	DECLARE_TYPES(parallel_stack) {
+		getOpDescriptor()
+				->setAllowedInputTypes(nd4j::DataType::ANY)
+				->setAllowedOutputTypes({ALL_FLOATS});
+	}
 
 DECLARE_SHAPE_FN(parallel_stack) {
 	

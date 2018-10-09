@@ -69,6 +69,11 @@ namespace ops {
         return Status::OK();
     }
 
+    DECLARE_TYPES(split_v) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
 
     DECLARE_SHAPE_FN(split_v) {
         auto input = inputShape->at(0);

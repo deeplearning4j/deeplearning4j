@@ -84,6 +84,12 @@ namespace nd4j {
 
             return SHAPELIST(outShapeInfo);
     }
+
+        DECLARE_TYPES(sequence_mask) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
 }
 }
 

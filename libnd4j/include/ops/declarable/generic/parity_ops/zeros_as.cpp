@@ -34,6 +34,12 @@ namespace nd4j {
         }
         DECLARE_SYN(zeroslike, zeros_as);
         DECLARE_SYN(zeros_like, zeros_as);
+
+        DECLARE_TYPES(zeros_as) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

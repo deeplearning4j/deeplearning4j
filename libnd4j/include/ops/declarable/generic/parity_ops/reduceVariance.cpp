@@ -45,6 +45,12 @@ CUSTOM_OP_IMPL(reduce_variance, 1, 1, false, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(reduce_variance) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 
 DECLARE_SHAPE_FN(reduce_variance) {    
     const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
@@ -63,6 +69,11 @@ DECLARE_SHAPE_FN(reduce_variance) {
 }
 
 
+        DECLARE_TYPES(reduce_variance_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_variance_bp, 2, 1, false, 0, 0) {

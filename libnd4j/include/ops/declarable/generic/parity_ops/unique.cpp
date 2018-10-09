@@ -83,6 +83,20 @@ namespace nd4j {
             return SHAPELIST(valuesShape, indicesShape, countsShape);
         }
 
+        DECLARE_TYPES(unique) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
+        DECLARE_TYPES(unique_with_counts) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT)
+                    ->setAllowedOutputTypes(1, DataType::INT64)
+                    ->setAllowedOutputTypes(2, DataType::INT64);
+        }
+
     }
 }
 

@@ -76,6 +76,12 @@ OP_IMPL(scatter_max, 3, 1, true) {
 }
 DECLARE_SYN(ScatterMax, scatter_max);
 
+    DECLARE_TYPES(scatter_max) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
 }
 }
 

@@ -59,6 +59,12 @@ namespace ops {
 
             return Status::OK();
     }
+
+        DECLARE_TYPES(reduce_dot_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 #endif
 
 }
