@@ -36,6 +36,7 @@
 
 #include <chrono>
 #include <ctime>
+#include <mutex>
 
 using namespace nd4j::graph;
 
@@ -63,8 +64,15 @@ namespace nd4j {
          *
          */
         class ND4J_EXPORT DeclarableOp {
+        private:
+            std::mutex _registrator;
+            bool _registered = false;
+
         protected:
             OpDescriptor *_descriptor;
+
+
+            Nd4jStatus validateDataTypes(Context& block);
 
             virtual void registerTypes();
 
