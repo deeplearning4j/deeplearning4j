@@ -31,12 +31,14 @@ public:
 
 };
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, DataTypeUtils_Test_1) {
     auto dtype = DataTypeUtils::pickPairwiseResultType(nd4j::INT32, nd4j::FLOAT32);
 
     ASSERT_EQ(nd4j::FLOAT32, dtype);
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, DataTypeUtils_Test_2) {
     auto dtype = DataTypeUtils::pickPairwiseResultType(nd4j::INT32, nd4j::DOUBLE);
     ASSERT_EQ(nd4j::DOUBLE, dtype);
@@ -44,12 +46,13 @@ TEST_F(MultiDataTypeTests, DataTypeUtils_Test_2) {
     ASSERT_EQ(nd4j::DOUBLE, DataTypeUtils::pickPairwiseResultType(nd4j::DOUBLE, nd4j::INT32));
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, DataTypeUtils_Test_3) {
     auto dtype = DataTypeUtils::pickPairwiseResultType(nd4j::FLOAT32, nd4j::DOUBLE);
     ASSERT_EQ(nd4j::FLOAT32, dtype);
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, Basic_Test_1) {
     auto x = NDArrayFactory::create<float>('c', {2, 3}, {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
     auto y = NDArrayFactory::create<double>('c', {2, 3}, {0.0, 1.0, 2.0, 3.0, 4.0, 5.0});
@@ -60,6 +63,7 @@ TEST_F(MultiDataTypeTests, Basic_Test_1) {
     ASSERT_EQ(e, z);
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, Basic_Test_2) {
     auto x = NDArrayFactory::create<float>('c', {2, 3}, {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
     auto y = NDArrayFactory::create<double>(2.0);
@@ -70,7 +74,7 @@ TEST_F(MultiDataTypeTests, Basic_Test_2) {
     ASSERT_EQ(e, z);
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, Basic_Test_3) {
     auto x = NDArrayFactory::create<int>('c', {2, 3}, {0, 1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<double>(2.0);
@@ -81,6 +85,7 @@ TEST_F(MultiDataTypeTests, Basic_Test_3) {
     ASSERT_EQ(e, z);
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, Basic_Test_4) {
     auto x = NDArrayFactory::create<double>('c', {2, 3}, {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
     auto y = NDArrayFactory::create<float>(2.0);
@@ -91,6 +96,7 @@ TEST_F(MultiDataTypeTests, Basic_Test_4) {
     ASSERT_EQ(e, z);
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, Basic_Test_5) {
     auto x = NDArrayFactory::create<int>('c', {2, 3}, {0, 1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<Nd4jLong>(2);
@@ -101,6 +107,7 @@ TEST_F(MultiDataTypeTests, Basic_Test_5) {
     ASSERT_EQ(e, z);
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, Basic_Test_6) {
     auto x = NDArrayFactory::create<Nd4jLong>('c', {2, 3}, {0, 1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<int>(2);
@@ -111,6 +118,7 @@ TEST_F(MultiDataTypeTests, Basic_Test_6) {
     ASSERT_EQ(e, z);
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_assign_number_test1) {
     NDArray x('c', {2, 3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::UINT8);
     NDArray exp('c', {2, 3}, {10, 10, 10, 10, 10, 10}, nd4j::DataType::UINT8);
@@ -121,6 +129,7 @@ TEST_F(MultiDataTypeTests, ndarray_assign_number_test1) {
     ASSERT_EQ(x,exp);
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_assign_number_test2) {
     NDArray x('c', {2, 3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::INT64);
     NDArray exp('c', {2, 3}, {1, 1, 1, 1, 1, 1}, nd4j::DataType::INT64);
@@ -131,6 +140,7 @@ TEST_F(MultiDataTypeTests, ndarray_assign_number_test2) {
     ASSERT_EQ(x,exp);
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_assign_number_test3) {
     NDArray x('c', {2, 3}, {0, 1, 0, 1, 0, 1}, nd4j::DataType::BOOL);
     NDArray exp('c', {2, 3}, {1, 1, 1, 1, 1, 1}, nd4j::DataType::BOOL);
@@ -141,7 +151,7 @@ TEST_F(MultiDataTypeTests, ndarray_assign_number_test3) {
     ASSERT_EQ(x,exp);
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_repeat_test1) {
     NDArray x('c', {2, 2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);
     NDArray y('c', {2, 4}, nd4j::DataType::UINT8);
@@ -150,5 +160,55 @@ TEST_F(MultiDataTypeTests, ndarray_repeat_test1) {
     x.repeat(1, y);
     
     ASSERT_EQ(y, exp);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_bufferAsT_test1) {
+    NDArray x('f', {2}, {1.5, 3.5}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {0}, {1.5}, nd4j::DataType::FLOAT32);
+    
+    const int* buffX = x.bufferAsT<int>();
+    const int* buffY = y.bufferAsT<int>();
+
+    ASSERT_EQ(*buffX, *buffY);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_assign_test1) {
+    NDArray x('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::UINT8);
+    NDArray exp('c', {2,2}, {10, 10, 20, 20}, nd4j::DataType::UINT8);
+    
+    NDArray scalar1('c', {0}, {10.5}, nd4j::DataType::FLOAT32);
+    NDArray scalar2('c', {0}, {20.8}, nd4j::DataType::DOUBLE);    
+    
+    x(0,{0}).assign(scalar1);
+    x(1,{0}).assign(scalar2);
+
+    ASSERT_EQ(x, exp);
+
+    x.assign(exp);
+
+    ASSERT_EQ(x, exp);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test1) {
+    NDArray x('f', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);
+    NDArray exp1('c', {0}, {3}, nd4j::DataType::INT64);
+    NDArray exp2('c', {1,1}, {1}, nd4j::DataType::INT64);
+    NDArray exp3('c', {2}, {1,2}, nd4j::DataType::INT64);
+
+    auto* scalar1 = x.reduceAlongDimension(nd4j::reduce::CountNonZero, {}/*whole range*/);
+    ASSERT_EQ(*scalar1, exp1);
+
+    auto* scalar2 = x.reduceAlongDimension(nd4j::reduce::CountZero, {}/*whole range*/, true);
+    ASSERT_EQ(*scalar2, exp2);
+
+    auto* scalar3 = x.reduceAlongDimension(nd4j::reduce::CountNonZero, {1});
+    ASSERT_EQ(*scalar3, exp3);
+
+    delete scalar1;
+    delete scalar2;
+    delete scalar3;
 }
 

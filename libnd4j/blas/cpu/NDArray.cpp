@@ -2504,10 +2504,7 @@ NDArray NDArray::transp() const {
         // evaluate shapeInfo for output (permuted) array ret
         auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _workspace);
         // create array to be returned
-        auto ret = new NDArray(_buffer, shapeInfoNew, _workspace);
-        // don't forget to indicate that memory for new array was allocated
-        ret->_isBuffAlloc = false;
-        ret->_isShapeAlloc = true;
+        auto ret = new NDArray(_buffer, shapeInfoNew, _workspace, false, true);
 	    ret->_isView = true;
 
         return ret;

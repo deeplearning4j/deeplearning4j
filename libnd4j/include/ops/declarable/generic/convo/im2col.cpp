@@ -99,8 +99,7 @@ namespace nd4j {
             zShape[shape::shapeInfoLength(zShape) - 2] = 1;
             zShape[shape::shapeInfoLength(zShape) - 1] = 99;
 
-            shape::updateStrides(zShape, 'c');
-            ArrayOptions::setDataType(zShape, ArrayOptions::dataType(inShape));
+            ShapeUtils::updateStridesAndType(zShape, inShape, 'c');            
 
             return SHAPELIST(zShape);
         }

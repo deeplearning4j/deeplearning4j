@@ -164,7 +164,7 @@ namespace nd4j {
         unsetPropertyBit(shapeInfo, ARRAY_UNSIGNED);
     }
 
-    void ArrayOptions::setDataType(Nd4jLong *shapeInfo, nd4j::DataType dataType) {
+    void ArrayOptions::setDataType(Nd4jLong *shapeInfo, const nd4j::DataType dataType) {
         resetDataType(shapeInfo);
         if (dataType == nd4j::DataType::UINT8 ||
                 dataType == nd4j::DataType::UINT16 ||
