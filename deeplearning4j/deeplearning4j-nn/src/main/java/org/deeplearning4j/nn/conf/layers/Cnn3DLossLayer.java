@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -61,10 +58,12 @@ import java.util.Map;
 public class Cnn3DLossLayer extends FeedForwardLayer {
 
     protected ILossFunction lossFn;
+    protected Convolution3D.DataFormat dataFormat;
 
     private Cnn3DLossLayer(Builder builder) {
         super(builder);
         this.lossFn = builder.lossFn;
+        this.dataFormat = builder.dataFormat;
     }
 
     @Override
@@ -117,28 +116,23 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
 
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
-        public Builder() {
+        protected Convolution3D.DataFormat dataFormat;
+
+        public Builder(@NonNull Convolution3D.DataFormat format) {
+            this.dataFormat = format;
             this.activationFn = Activation.IDENTITY.getActivationFunction();
-        }
-
-        public Builder(LossFunction lossFunction) {
-            lossFunction(lossFunction);
-        }
-
-        public Builder(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public Builder nIn(int nIn) {
-            throw new UnsupportedOperationException("Ths layer has no parameters, thus nIn will always equal nOut.");
+            throw new UnsupportedOperationException("Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public Builder nOut(int nOut) {
-            throw new UnsupportedOperationException("Ths layer has no parameters, thus nIn will always equal nOut.");
+            throw new UnsupportedOperationException("Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override

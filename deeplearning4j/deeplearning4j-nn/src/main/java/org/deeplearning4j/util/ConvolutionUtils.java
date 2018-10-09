@@ -17,12 +17,16 @@
 package org.deeplearning4j.util;
 
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import lombok.NonNull;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -447,18 +451,51 @@ public class ConvolutionUtils {
         return out.reshape('c', shape[0] * shape[2] * shape[3], shape[1]);
     }
 
-    public static INDArray reshape5dTo2d(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType type){
-        if (in.rank() != 5)
-            throw new IllegalArgumentException("Invalid input: expect NDArray with rank 5, got rank " + in.rank()
-                    + " with shape " + Arrays.toString(in.shape()));
-        val shape = in.shape();
+    public static INDArray reshape5dTo2d(@NonNull Convolution3D.DataFormat format, INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+        Preconditions.checkState(in.rank() == 5, "Invalid input: expect NDArray with rank 5, got rank %ndRank with shape %ndShape", in, in);
+        //Reshape: from either [n,c,d,h,w] to [n*d*h*w,c] (NCDHW format)
+        // or reshape from [n,d,h,w,c] to [n*d*h*w,c] (NDHWC format)
+        if(format != Convolution3D.DataFormat.NDHWC){
+            in = in.permute(0, 2, 3, 4, 1);
+        }
 
-        //Reshape: from [n,c,h,w] to [n*h*w,c]
+        if(in.ordering() != 'c' || !Shape.hasDefaultStridesForShape(in))
+            in = workspaceMgr.dup(type, in, 'c');
+        return workspaceMgr.leverageTo(type, in.reshape('c', in.size(0)*in.size(1)*in.size(2)*in.size(3), in.size(4)));
+    }
 
-        INDArray out = in.permute(0, 2, 3, 4, 1);
-        if (out.ordering() != 'c' || !Shape.strideDescendingCAscendingF(out))
-            out = out.dup('c');
-        return out.reshape('c', shape[0] * shape[2] * shape[3] * shape[4], shape[1]);
+    public static INDArray reshapeCnn3dMask(@NonNull Convolution3D.DataFormat format, INDArray mask, INDArray label, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+        if(mask == null)
+            return null;
+        Preconditions.checkState(mask.rank() == 5, "Expected rank 5 mask for Cnn3DLossLayer in a shape broadcastable to labels shape:" +
+                " got mask shape %ndShape with label shape %ndShape", mask, label);
+
+        if(mask.equalShapes(label) ||
+                (format == Convolution3D.DataFormat.NDHWC && mask.size(0) == label.size(0) && mask.size(1) == label.size(1) && mask.size(2) == label.size(2) && mask.size(3) == label.size(3)) ||
+                (format == Convolution3D.DataFormat.NDHWC && mask.size(0) == label.size(0) && mask.size(2) == label.size(2) && mask.size(3) == label.size(3) && mask.size(4) == label.size(4))) {
+            //Already OK shape for reshaping
+            return reshape5dTo2d(format, mask, workspaceMgr, type);
+        } else {
+            //Need to broadcast first
+            IntArrayList broadcastDims = new IntArrayList();
+            for(int i=0; i<mask.rank(); i++ ){
+                if(mask.size(i) == label.size(i)){
+                    if((format == Convolution3D.DataFormat.NCDHW && i == 1) || (format == Convolution3D.DataFormat.NDHWC && i == 4)){
+                        //Skip channels dimension
+                        continue;
+                    }
+                    broadcastDims.add(i);
+                }
+            }
+            long[] lShape = label.shape().clone();
+            int channelIdx = format == Convolution3D.DataFormat.NCDHW ? 1 : 4;
+            lShape[channelIdx] = mask.size(channelIdx);     //Keep existing channel size
+
+            INDArray bMask = workspaceMgr.createUninitialized(type, lShape, 'c');
+            int[] bcDims = broadcastDims.toIntArray();
+            Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, bcDims));
+            return reshape5dTo2d(format, bMask, workspaceMgr, type);
+        }
     }
 
     public static INDArray reshape2dTo4d(INDArray in2d, int[] toShape, LayerWorkspaceMgr workspaceMgr, ArrayType type){
@@ -475,7 +512,7 @@ public class ConvolutionUtils {
         return workspaceMgr.leverageTo(type, out.permute(0, 3, 1, 2));
     }
 
-    public static INDArray reshape2dTo5d(INDArray in2d, int[] toShape, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+    public static INDArray reshape2dTo5d(Convolution3D.DataFormat format, INDArray in2d, int[] toShape, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if(in2d.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         if (toShape.length != 5)
@@ -525,7 +562,6 @@ public class ConvolutionUtils {
     }
 
     public static INDArray reshape4dMask(INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
-
         return reshape4dTo2d(mask, workspaceMgr, arrayType);
     }
 

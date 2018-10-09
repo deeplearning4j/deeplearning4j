@@ -257,7 +257,8 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
         int[] heights = {4, 4, 5};
         int[] widths = {4, 5, 6};
 
-        for(String dataFormat : new String[]{"NCDHW", "NDHWC"}) {
+//        for(String dataFormat : new String[]{"NCDHW", "NDHWC"}) {
+        for(Convolution3D.DataFormat dataFormat : Convolution3D.DataFormat.values()){
             for (int i = 0; i < heights.length; i++) {
                 int h = heights[i];
                 int w = widths[i];
@@ -267,7 +268,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
 
                     Random r = new Random(12345L);
                     INDArray input;
-                    if(dataFormat.equalsIgnoreCase("NCDHW")) {
+                    if(dataFormat == Convolution3D.DataFormat.NCDHW) {
                         input = Nd4j.rand(new int[]{miniBatchSize, chIn, d, h, w});
                     } else {
                         input = Nd4j.rand(new int[]{miniBatchSize, d, h, w, chIn});
@@ -289,7 +290,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                             break;
                         case 2:
                             //Per channel masking (5d mask, shape [minibatch, d, 1, 1, 1] or [minibatch, 1, 1, 1, d])
-                            if(dataFormat.equalsIgnoreCase("NCDHW")) {
+                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
                                 labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, chOut, 1, 1, 1});
                             } else {
                                 labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, 1, 1, 1, chOut});
@@ -299,10 +300,10 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                             break;
                         case 3:
                             //Per output masking (5d mask, same shape as output [minibatch, c, h, w])
-                            if(dataFormat.equalsIgnoreCase("NCDHW")) {
-                                labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, chIn, d, h, w});
+                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                                labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, chOut, d, h, w});
                             } else {
-                                labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, d, h, w, chIn});
+                                labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, d, h, w, chOut});
                             }
                             Nd4j.getExecutioner().exec(new BernoulliDistribution(labelMask, 0.5));
                             mt = "PerOutput";
@@ -313,11 +314,20 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
 
                     for (ILossFunction lf : lfs) {
 
+                        if((mt.equals("PerOutput") || mt.equals("PerChannel")) && lf instanceof LossMCXENT){
+                            //Per-output masking + MCXENT: not supported
+                            continue;
+                        }
+
                         INDArray labels;
                         if (lf instanceof LossMSE) {
-                            labels = Nd4j.rand(new int[]{miniBatchSize, chOut, d, h, w});
+                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                                labels = Nd4j.rand(new int[]{miniBatchSize, chOut, d, h, w});
+                            } else {
+                                labels = Nd4j.rand(new int[]{miniBatchSize, d, h, w, chOut});
+                            }
                         } else {
-                            if(dataFormat.equalsIgnoreCase("NCDHW")) {
+                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
                                 labels = Nd4j.zeros(miniBatchSize, chOut, d, h, w);
                                 for (int mb = 0; mb < miniBatchSize; mb++) {
                                     for( int ch=0; ch<d; ch++) {
@@ -353,9 +363,10 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                                         .list()
                                         .layer(new Convolution3D.Builder().nIn(chIn).nOut(chOut).activation(Activation.TANH)
                                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
-                                                .dataFormat(dataFormat.equalsIgnoreCase("NCDHW") ? Convolution3D.DataFormat.NCDHW : Convolution3D.DataFormat.NDHWC)
+                                                .dataFormat(dataFormat)
                                                 .updater(new NoOp()).build())
-                                        .layer(new Cnn3DLossLayer.Builder(lf)
+                                        .layer(new Cnn3DLossLayer.Builder(dataFormat)
+                                                .lossFunction(lf)
                                                 .activation(oa)
                                                 .build())
                                         .validateOutputLayerConfig(false).build();
@@ -363,7 +374,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
 
-                        String testName = "testCnn3dLossLayer(lf=" + lf + ", maskType=" + mt + ", outputActivation = " + oa + ")";
+                        String testName = "testCnn3dLossLayer(dataFormat=" + dataFormat + ",lf=" + lf + ", maskType=" + mt + ", outputActivation = " + oa + ")";
                         if (PRINT_RESULTS) {
                             System.out.println(testName);
                             for (int j = 0; j < mln.getnLayers(); j++)
