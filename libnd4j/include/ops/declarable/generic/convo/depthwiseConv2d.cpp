@@ -67,6 +67,11 @@ CUSTOM_OP_IMPL(depthwise_conv2d, 2, 1, false, 0, 9) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(depthwise_conv2d) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 DECLARE_SHAPE_FN(depthwise_conv2d) {
 
@@ -133,7 +138,11 @@ DECLARE_SHAPE_FN(depthwise_conv2d) {
     return SHAPELIST(outputShapeInfo);
 }
 
-
+    DECLARE_TYPES(depthwise_conv2d_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 ////////////////////////////////////////////////////////////////////////// 
 CUSTOM_OP_IMPL(depthwise_conv2d_bp, 3, 2, false, 0, 9) {

@@ -145,6 +145,13 @@ namespace nd4j {
 
             return Status::OK();
         }
+
+        DECLARE_TYPES(fullconv3d) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
         DECLARE_SHAPE_FN(fullconv3d) {
             // auto input = inputShape->at(0);
             // auto weights = inputShape->at(1);
@@ -201,6 +208,11 @@ namespace nd4j {
             return SHAPELIST();
         }
 
+        DECLARE_TYPES(fullconv3d_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(fullconv3d_bp, 5, 1, false, 0, 13) {
             // auto input = INPUT_VARIABLE(0);
@@ -302,6 +314,12 @@ namespace nd4j {
 
             // return SHAPELIST(newShape);
             return SHAPELIST();
+        }
+
+        DECLARE_TYPES(fullconv3d_grad) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
 //////////////////////////////////////////////////////////////////////////

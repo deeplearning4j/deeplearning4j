@@ -53,6 +53,11 @@ namespace nd4j {
             return SHAPELIST(outputShape);
         }
 
+        DECLARE_TYPES(xw_plus_b) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

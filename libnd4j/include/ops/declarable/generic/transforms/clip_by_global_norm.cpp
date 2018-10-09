@@ -59,6 +59,12 @@ DECLARE_SHAPE_FN(clip_by_global_norm) {
     return shapeList;
 }
 
+    DECLARE_TYPES(clip_by_global_norm) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
 
 }
 }

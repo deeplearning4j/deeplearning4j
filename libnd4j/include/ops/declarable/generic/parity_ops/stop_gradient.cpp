@@ -34,6 +34,12 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(StopGradient, stop_gradient);
+
+        DECLARE_TYPES(stop_gradient) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

@@ -36,19 +36,15 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(get_seed) {
-            Nd4jLong *newshape;
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-
-            newshape[0] = 2;
-            newshape[1] = 1;
-            newshape[2] = 1;
-            newshape[3] = 1;
-            newshape[4] = 1;
-            newshape[5] = 0;
-            newshape[6] = 1;
-            newshape[7] = 99;
+            auto newshape = ShapeBuilders::createScalarShapeInfo(DataType::INT64, block.workspace());
 
             return SHAPELIST(newshape);
+        }
+
+        DECLARE_TYPES(get_seed) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(DataType::INT64);
         }
     }
 }

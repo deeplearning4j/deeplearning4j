@@ -76,6 +76,12 @@ OP_IMPL(scatter_min, 3, 1, true) {
 }
 DECLARE_SYN(ScatterMin, scatter_min);
 
+    DECLARE_TYPES(scatter_min) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
 }
 }
 

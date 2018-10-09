@@ -247,6 +247,11 @@ DECLARE_SHAPE_FN(range) {
 }
 
 
+    DECLARE_TYPES(range) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+    }
 }
 }
 

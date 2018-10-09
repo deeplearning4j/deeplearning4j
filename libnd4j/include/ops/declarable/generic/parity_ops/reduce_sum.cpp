@@ -46,6 +46,12 @@ namespace ops {
         //ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
         return SHAPELIST(outShapeInfo);
     }
+
+        DECLARE_TYPES(reduce_sum) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
 #endif 
 #if NOT_EXCLUDED(OP_reduce_sum_bp)
 
@@ -57,6 +63,12 @@ namespace ops {
         COPY_SHAPE(inputShape->at(0), outShapeInfo);
         return SHAPELIST(outShapeInfo);
     }
+
+        DECLARE_TYPES(reduce_sum_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
     CUSTOM_OP_IMPL(reduce_sum_bp, 2, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);

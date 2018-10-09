@@ -63,9 +63,9 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 }
 
 DECLARE_TYPES(gather) {
-	getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+	getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY);
 	getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
-	getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+	getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
 }
 
 

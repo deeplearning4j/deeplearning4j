@@ -88,6 +88,11 @@ DECLARE_SHAPE_FN(scatter_nd) {
         
     return SHAPELIST(outShapeInfo);
 }
+        DECLARE_TYPES(scatter_nd) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
 
 }
 }

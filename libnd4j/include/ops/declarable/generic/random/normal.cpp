@@ -52,6 +52,12 @@ namespace nd4j {
         }
 		
 		DECLARE_SYN(randomnormal, random_normal);
+
+        DECLARE_TYPES(random_normal) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

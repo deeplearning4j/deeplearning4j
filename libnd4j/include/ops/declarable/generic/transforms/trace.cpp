@@ -62,7 +62,6 @@ DECLARE_SHAPE_FN(trace) {
     return SHAPELIST(outShapeInfo);
 }
 
-
 }
 }
 

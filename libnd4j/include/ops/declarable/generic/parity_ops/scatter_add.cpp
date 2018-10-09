@@ -77,6 +77,12 @@ namespace nd4j {
         }
         DECLARE_SYN(ScatterAdd, scatter_add);
     }
+
+    DECLARE_TYPES(scatter_add) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
 }
 
 #endif

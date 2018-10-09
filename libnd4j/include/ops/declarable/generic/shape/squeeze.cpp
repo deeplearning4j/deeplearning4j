@@ -81,6 +81,12 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(squeeze) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
         DECLARE_SHAPE_FN(squeeze) {
             auto shapeList = SHAPELIST();
 

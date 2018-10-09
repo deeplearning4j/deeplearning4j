@@ -152,20 +152,18 @@ namespace nd4j {
 
             InputType inputType();
 
-            OpDescriptor* setInputType(const InputType type);
-            OpDescriptor* setAllowedInputTypes(const std::initializer_list<nd4j::DataType> &dtype);
-            OpDescriptor* setAllowedOutputTypes(const std::initializer_list<nd4j::DataType> &dtype);
-            OpDescriptor* setAllowedInputTypes(int index, const std::initializer_list<nd4j::DataType> &dtype);
-            OpDescriptor* setAllowedOutputTypes(int index, const std::initializer_list<nd4j::DataType> &dtype);
+            OpDescriptor* setInputType(InputType type);
+            OpDescriptor* setAllowedInputTypes(const std::vector<nd4j::DataType> &dtype);
+            OpDescriptor* setAllowedOutputTypes(const std::vector<nd4j::DataType> &dtype);
+            OpDescriptor* setAllowedInputTypes(int index, const std::vector<nd4j::DataType> &dtype);
+            OpDescriptor* setAllowedOutputTypes(int index, const std::vector<nd4j::DataType> &dtype);
             OpDescriptor* setAllowedInputTypes(int index,  nd4j::DataType dtype);
             OpDescriptor* setAllowedOutputTypes(int index, nd4j::DataType dtype);
-            OpDescriptor* setAllowedInputTypes(const nd4j::DataType dtype);
-            OpDescriptor* setAllowedOutputTypes(const nd4j::DataType dtype);
-            OpDescriptor* setSameMode(const bool reallySame);
-            OpDescriptor* setInputType(const int idx, const nd4j::DataType dtype);
-            OpDescriptor* setOutputType(const int idx, const nd4j::DataType dtype);
-            OpDescriptor* inheritOutput(int outputIndex, int inputIndex);
-
+            OpDescriptor* setAllowedInputTypes(nd4j::DataType dtype);
+            OpDescriptor* setAllowedOutputTypes(nd4j::DataType dtype);
+            OpDescriptor* setSameMode(bool reallySame);
+            OpDescriptor* setInputType(int idx, nd4j::DataType dtype);
+            OpDescriptor* setOutputType(int idx, nd4j::DataType dtype);
         };
     }
 }

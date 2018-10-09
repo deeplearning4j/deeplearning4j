@@ -37,7 +37,7 @@ namespace nd4j {
         DECLARE_SYN(NotEquals, neq_scalar);
         DECLARE_SYN(notequals, neq_scalar);
 
-        DECLARE_TYPES(lte_scalar) {
+        DECLARE_TYPES(neq_scalar) {
             getOpDescriptor()
                     ->setAllowedInputTypes(0, DataType::ANY)
                     ->setAllowedInputTypes(1, DataType::ANY)

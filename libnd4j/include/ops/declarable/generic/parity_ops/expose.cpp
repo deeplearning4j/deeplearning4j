@@ -46,6 +46,13 @@ namespace nd4j {
         DECLARE_SYN(Enter, expose);
         DECLARE_SYN(enter, expose);
 
+
+        DECLARE_TYPES(expose) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
         DECLARE_SHAPE_FN(expose) {
             auto shapeList = SHAPELIST();
 

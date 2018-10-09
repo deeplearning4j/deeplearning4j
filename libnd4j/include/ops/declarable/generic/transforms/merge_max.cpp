@@ -45,7 +45,11 @@ OP_IMPL(mergemax, -1, 1, false) {
 
 DECLARE_SYN(MergeMax, mergemax);
 
-
+    DECLARE_TYPES(mergemax) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
 
 }
 }

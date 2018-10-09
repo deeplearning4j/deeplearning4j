@@ -59,6 +59,13 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(log_softmax_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(0, DataType::ANY)
+                ->setAllowedInputTypes(1, {ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
 
 CONFIGURABLE_OP_IMPL(log_softmax_bp, 2, 1, true, 0, 0) {
     auto input = INPUT_VARIABLE(0);

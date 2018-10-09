@@ -80,6 +80,11 @@ CUSTOM_OP_IMPL(maxpool3dnew, 1, 1, false, 0, 14) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(maxpool3dnew) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 DECLARE_SHAPE_FN(maxpool3dnew) {
 
@@ -138,6 +143,12 @@ DECLARE_SHAPE_FN(maxpool3dnew) {
 
     return SHAPELIST(outputShapeInfo);
 }
+
+        DECLARE_TYPES(maxpool3dnew_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(maxpool3dnew_bp, 2, 1, false, 0, 14) {

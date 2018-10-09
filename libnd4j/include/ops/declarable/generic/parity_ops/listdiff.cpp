@@ -56,6 +56,13 @@ namespace nd4j {
 
             return SHAPELIST(shapeX, shapeY);
         }
+
+        DECLARE_TYPES(listdiff) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT)
+                    ->setAllowedOutputTypes(1, DataType::INT64);
+        }
     }
 }
 

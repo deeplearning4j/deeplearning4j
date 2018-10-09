@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
 }
 
 
-    DECLARE_TYPES(axpy) {
+    DECLARE_TYPES(svd) {
         getOpDescriptor()
                 ->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
                 ->setSameMode(true);

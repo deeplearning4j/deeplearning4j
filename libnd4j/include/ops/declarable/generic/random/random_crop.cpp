@@ -70,6 +70,10 @@ DECLARE_SHAPE_FN(random_crop) {
     return SHAPELIST(newShape);
 }
 
-
+        DECLARE_TYPES(random_crop) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 }
 }

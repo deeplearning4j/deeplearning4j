@@ -120,6 +120,11 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(static_bidirectional_rnn) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 
 DECLARE_SHAPE_FN(static_bidirectional_rnn) {    

@@ -529,6 +529,18 @@ namespace nd4j {
 
             return SHAPELIST(newShape);
         }
+
+        DECLARE_TYPES(strided_slice) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
+        DECLARE_TYPES(strided_slice_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

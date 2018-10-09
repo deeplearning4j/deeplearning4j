@@ -82,6 +82,12 @@ namespace nd4j {
             ArrayOptions::setDataType(varianceShape, input->dataType());
             return SHAPELIST(meanShape, varianceShape); 
         }
+
+        DECLARE_TYPES(moments) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 
 }

@@ -94,6 +94,12 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         };
+
+        DECLARE_TYPES(norm) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

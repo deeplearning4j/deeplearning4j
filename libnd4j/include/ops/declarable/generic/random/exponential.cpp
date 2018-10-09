@@ -62,6 +62,12 @@ namespace nd4j {
 
             return SHAPELIST(newShape);
         }
+
+        DECLARE_TYPES(random_exponential) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

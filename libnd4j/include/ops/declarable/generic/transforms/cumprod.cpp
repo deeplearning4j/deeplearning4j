@@ -59,7 +59,15 @@ namespace nd4j {
         }
 
         DECLARE_TYPES(cumprod) {
-            getOpDescriptor()->setSameMode(true);
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
+        DECLARE_TYPES(cumprod_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
         CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
@@ -117,11 +125,6 @@ namespace nd4j {
             return Status::OK();
         }
 
-        DECLARE_TYPES(cumprod_bp) {
-            getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
-            getOpDescriptor()->setAllowedInputTypes(1, {ALL_FLOATS});
-            getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
-        }
 
         DECLARE_SHAPE_FN(cumprod_bp) {
             auto inp = inputShape->at(0);

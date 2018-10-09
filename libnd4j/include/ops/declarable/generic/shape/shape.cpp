@@ -44,6 +44,12 @@ namespace nd4j {
             // always LONG
             return SHAPELIST(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, shape::rank(inShape), block.workspace()));
         };
+
+        DECLARE_TYPES(shape_of) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(DataType::INT64);
+        }
     }
 }
 

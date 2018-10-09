@@ -44,6 +44,11 @@ namespace ops  {
 		}
 		DECLARE_SYN(DiagPart, diag_part);
 
+		DECLARE_TYPES(diag_part) {
+			getOpDescriptor()
+				->setAllowedInputTypes(nd4j::DataType::ANY)
+				->setSameMode(true);
+		}
 
 		DECLARE_SHAPE_FN(diag_part) {
     		auto inputShapeInfo = inputShape->at(0);

@@ -75,6 +75,12 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(deconv2d_tf) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 DECLARE_SHAPE_FN(deconv2d_tf) {
 
     auto gradOShapeInfo   = inputShape->at(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next

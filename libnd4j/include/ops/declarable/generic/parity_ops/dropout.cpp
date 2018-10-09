@@ -56,6 +56,12 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
     return helpers::dropOutFunctor(rng, input, output, reduceShape, seed, probValue);
 }
 
+        DECLARE_TYPES(dropout) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
 }
 }
 

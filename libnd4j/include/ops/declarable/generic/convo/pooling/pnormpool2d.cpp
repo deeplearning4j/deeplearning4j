@@ -81,6 +81,12 @@ namespace nd4j {
         DECLARE_SYN(PnormPool, pnormpool2d);
         DECLARE_SYN(pnormpool, pnormpool2d);
 
+        DECLARE_TYPES(pnormpool2d) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 
         DECLARE_SHAPE_FN(pnormpool2d) {
             auto inShape = inputShape->at(0);
@@ -128,6 +134,13 @@ namespace nd4j {
             ShapeUtils::updateStridesAndType(newShapeInfo, inShape, order); // as TF says
 
             return SHAPELIST(newShapeInfo);
+        }
+
+
+        DECLARE_TYPES(pnormpool2d_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
 //////////////////////////////////////////////////////////////////////////

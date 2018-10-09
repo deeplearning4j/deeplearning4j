@@ -88,6 +88,12 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
 }
 
 
+    DECLARE_TYPES(conv3dnew) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
 DECLARE_SHAPE_FN(conv3dnew) {    
 
     auto inputShapeInfo   = inputShape->at(0);                                  // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
@@ -158,6 +164,12 @@ DECLARE_SHAPE_FN(conv3dnew) {
     return SHAPELIST(outputShapeInfo);
 }
 
+
+    DECLARE_TYPES(conv3dnew_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 ////////////////////////////////////////////////////////////////////////// 
 CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {

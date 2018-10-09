@@ -72,6 +72,12 @@ namespace nd4j {
 
             return shapeList;
         }
+
+        DECLARE_TYPES(normalize_moments) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 
 }

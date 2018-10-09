@@ -59,7 +59,13 @@ namespace ops {
             helpers::rollFunctorFull(input, output, shift, axes, block.isInplace());
         }
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
+    }
+
+    DECLARE_TYPES(roll) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
     }
 }
 }

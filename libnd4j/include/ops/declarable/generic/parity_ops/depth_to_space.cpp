@@ -50,6 +50,12 @@ namespace ops {
 
         return ND4J_STATUS_OK;
     }
+
+    DECLARE_TYPES(depth_to_space) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
     
 
     DECLARE_SHAPE_FN(depth_to_space) {

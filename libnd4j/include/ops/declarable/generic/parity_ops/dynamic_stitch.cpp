@@ -47,6 +47,12 @@ namespace ops {
         return helpers::dynamicStitchFunctor(inputs, indices, output);
     }
 
+    DECLARE_TYPES(dynamic_stitch) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
     DECLARE_SHAPE_FN(dynamic_stitch) {
         Nd4jLong maxValue = 0;
         auto numOfData = block.width();

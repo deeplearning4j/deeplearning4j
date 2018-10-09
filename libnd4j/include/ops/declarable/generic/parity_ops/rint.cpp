@@ -34,6 +34,12 @@ namespace nd4j {
             return Status::OK();
         }
     }
+
+    DECLARE_TYPES(rint) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 }
 
 #endif

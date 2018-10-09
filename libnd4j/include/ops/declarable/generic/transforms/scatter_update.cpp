@@ -48,6 +48,12 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(scatterupdate, scatter_update);
+
+        DECLARE_TYPES(scatter_update) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

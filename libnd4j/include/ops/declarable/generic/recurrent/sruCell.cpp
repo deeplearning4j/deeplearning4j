@@ -62,6 +62,11 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(sruCell) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 DECLARE_SHAPE_FN(sruCell) {
 

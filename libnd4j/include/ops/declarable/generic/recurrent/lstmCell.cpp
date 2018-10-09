@@ -88,6 +88,11 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(lstmCell) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 
 DECLARE_SHAPE_FN(lstmCell) {    

@@ -84,6 +84,12 @@ DECLARE_SYN(MaxPool2D, maxpool2d);
 DECLARE_SYN(MaxPool, maxpool2d);
 DECLARE_SYN(maxpool, maxpool2d);
 
+        DECLARE_TYPES(maxpool2d) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 DECLARE_SHAPE_FN(maxpool2d) {
             
     //NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -133,6 +139,12 @@ DECLARE_SHAPE_FN(maxpool2d) {
 
     return SHAPELIST(newShapeInfo);
 }
+
+        DECLARE_TYPES(maxpool2d_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {

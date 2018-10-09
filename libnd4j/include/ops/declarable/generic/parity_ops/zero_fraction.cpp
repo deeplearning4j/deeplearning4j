@@ -44,6 +44,12 @@ namespace nd4j {
         DECLARE_SHAPE_FN(zero_fraction) {
             return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::DOUBLE, block.workspace()));
         }
+
+        DECLARE_TYPES(zero_fraction) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

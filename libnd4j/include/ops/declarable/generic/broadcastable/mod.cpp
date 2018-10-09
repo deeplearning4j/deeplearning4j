@@ -48,6 +48,12 @@ namespace nd4j {
                     ->setAllowedOutputTypes(0, DataType::INHERIT);
         }
 
+        DECLARE_TYPES(mod_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
         CUSTOM_OP_IMPL(mod_bp, 3, 2, false, 0, 0) {
             // PLEASE NOTE: we're just passing eps down the line here
             auto x = INPUT_VARIABLE(0);

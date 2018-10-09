@@ -77,6 +77,12 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(slice) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
         DECLARE_SHAPE_FN(slice) {
             auto inShape = inputShape->at(0);
             auto x_rank = shape::rank(inShape);
@@ -115,6 +121,11 @@ namespace nd4j {
             return SHAPELIST(newShape);
         }
 
+        DECLARE_TYPES(slice_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 
         CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -1) {

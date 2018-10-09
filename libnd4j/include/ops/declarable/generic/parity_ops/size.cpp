@@ -38,6 +38,12 @@ namespace nd4j {
         DECLARE_SHAPE_FN(size) {
             return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.workspace()));
         }
+
+        DECLARE_TYPES(size) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_INTS});
+        }
     }
 }
 

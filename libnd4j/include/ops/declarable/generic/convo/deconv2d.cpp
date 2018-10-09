@@ -88,6 +88,11 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
     
     return Status::OK();
 }
+    DECLARE_TYPES(deconv2d) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 DECLARE_SHAPE_FN(deconv2d) {
 
@@ -153,6 +158,11 @@ DECLARE_SHAPE_FN(deconv2d) {
     return SHAPELIST(outputShapeInfo);
 }
 
+    DECLARE_TYPES(deconv2d_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {

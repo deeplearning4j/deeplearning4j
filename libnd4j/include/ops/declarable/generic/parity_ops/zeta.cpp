@@ -47,6 +47,12 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(Zeta, zeta);
+
+        DECLARE_TYPES(zeta) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes({ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

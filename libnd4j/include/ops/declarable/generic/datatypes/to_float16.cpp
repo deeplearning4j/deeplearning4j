@@ -37,7 +37,7 @@ namespace nd4j {
             return Status::OK();
         }
 
-        DECLARE_TYPES(to_double) {
+        DECLARE_TYPES(to_float16) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
                     ->setAllowedOutputTypes(nd4j::DataType::HALF);

@@ -52,9 +52,9 @@ CUSTOM_OP_IMPL(reverse_sequence, 2, 1, false, 0, 2) {
 }
 
     DECLARE_TYPES(reverse_sequence) {
-        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS});
         getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
-        getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+        getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
     }
 
 DECLARE_SHAPE_FN(reverse_sequence) {

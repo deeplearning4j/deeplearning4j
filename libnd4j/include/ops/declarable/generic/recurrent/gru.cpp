@@ -65,6 +65,12 @@ CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
 }
 
 
+        DECLARE_TYPES(gru) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 
 DECLARE_SHAPE_FN(gru) {    
     const auto xShapeInfo  = inputShape->at(0);                     // input [time x bS x inSize]

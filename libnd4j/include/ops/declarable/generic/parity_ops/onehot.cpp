@@ -130,6 +130,12 @@ namespace nd4j {
 
             return SHAPELIST(newShape);
         }
+
+        DECLARE_TYPES(onehot) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+        }
     }
 }
 

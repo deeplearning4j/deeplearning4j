@@ -48,6 +48,12 @@ CONFIGURABLE_OP_IMPL(matrix_set_diag, 2, 1, false, 0, 0) {
 
 DECLARE_SYN(MatrixSetDiag, matrix_set_diag);
 
+    DECLARE_TYPES(matrix_set_diag) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
 }
 }
 

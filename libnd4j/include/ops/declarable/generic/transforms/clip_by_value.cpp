@@ -42,6 +42,12 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(ClipByValue, clipbyvalue);
+
+        DECLARE_TYPES(clipbyvalue) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

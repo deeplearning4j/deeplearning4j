@@ -53,6 +53,12 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(embedding_lookup) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
 DECLARE_SHAPE_FN(embedding_lookup) {
 
     auto inShapeInfo = inputShape->at(0);
