@@ -34,7 +34,7 @@ namespace nd4j {
             return Status::OK();
         }
 
-        DECLARE_TYPES(reshape) {
+        DECLARE_TYPES(order) {
             getOpDescriptor()
                     ->setAllowedInputTypes(0, nd4j::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_INTS});
