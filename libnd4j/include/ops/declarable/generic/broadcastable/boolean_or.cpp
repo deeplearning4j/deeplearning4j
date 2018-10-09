@@ -38,6 +38,13 @@ namespace nd4j {
 
             return Status::OK();
         }
+
+        DECLARE_TYPES(boolean_or) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT);
+        }
     }
 }
 
