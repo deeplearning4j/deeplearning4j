@@ -48,7 +48,10 @@ TEST_F(DataTypesValidationTests, Basic_Test_1) {
 
     nd4j::ops::conv2d op;
     auto result = op.execute({&input, &weights}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
+
     ASSERT_EQ(ND4J_STATUS_BAD_ARGUMENTS, result->status());
+
+    delete result;
 }
 
 TEST_F(DataTypesValidationTests, Basic_Test_2) {

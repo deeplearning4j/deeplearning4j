@@ -276,6 +276,20 @@ namespace nd4j {
             return true;
         }
 
+        Nd4jStatus nd4j::ops::DeclarableOp::validateDataTypes(Context& block) {
+            _registrator.lock();
+            if (!_registered) {
+                _registered = true;
+                this->registerTypes();
+            }
+            _registrator.unlock();
+
+
+
+
+            return ND4J_STATUS_OK;
+        }
+
         Nd4jStatus nd4j::ops::DeclarableOp::execute(Context* block) {
             nd4j_debug("Executing op: [%s]\n", this->getOpName()->c_str());
 
@@ -285,6 +299,8 @@ namespace nd4j {
             Nd4jLong memoryBefore = block->workspace() == nullptr ? 0L : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
             if (Environment::getInstance()->isProfiling())
                 timeEnter = std::chrono::system_clock::now();
+
+            REQUIRE_OK(this->validateDataTypes(*block));
 
             // basic validation: ensure inputs are set
             REQUIRE_OK(this->validateNonEmptyInput(*block));
