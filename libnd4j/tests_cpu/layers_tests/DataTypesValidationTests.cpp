@@ -65,8 +65,6 @@ TEST_F(DataTypesValidationTests, Basic_Test_2) {
 
     auto z = result->at(0);
 
-    exp.printIndexedBuffer("e");
-    z->printIndexedBuffer("z");
     ASSERT_EQ(exp, *z);
 
     delete result;
