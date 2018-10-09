@@ -110,3 +110,45 @@ TEST_F(MultiDataTypeTests, Basic_Test_6) {
 
     ASSERT_EQ(e, z);
 }
+
+TEST_F(MultiDataTypeTests, ndarray_assign_number_test1) {
+    NDArray x('c', {2, 3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::UINT8);
+    NDArray exp('c', {2, 3}, {10, 10, 10, 10, 10, 10}, nd4j::DataType::UINT8);
+    
+    const double number = 10.8;
+    x = number;
+    
+    ASSERT_EQ(x,exp);
+}
+
+TEST_F(MultiDataTypeTests, ndarray_assign_number_test2) {
+    NDArray x('c', {2, 3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::INT64);
+    NDArray exp('c', {2, 3}, {1, 1, 1, 1, 1, 1}, nd4j::DataType::INT64);
+    
+    const bool number = 1000;
+    x = number;
+    
+    ASSERT_EQ(x,exp);
+}
+
+TEST_F(MultiDataTypeTests, ndarray_assign_number_test3) {
+    NDArray x('c', {2, 3}, {0, 1, 0, 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray exp('c', {2, 3}, {1, 1, 1, 1, 1, 1}, nd4j::DataType::BOOL);
+    
+    const int number = 1000;
+    x = number;
+    
+    ASSERT_EQ(x,exp);
+}
+
+
+TEST_F(MultiDataTypeTests, ndarray_repeat_test1) {
+    NDArray x('c', {2, 2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);
+    NDArray y('c', {2, 4}, nd4j::DataType::UINT8);
+    NDArray exp('c', {2, 4}, {0, 0, 1, 1, 2, 2, 3, 3}, nd4j::DataType::UINT8);
+    
+    x.repeat(1, y);
+    
+    ASSERT_EQ(y, exp);
+}
+

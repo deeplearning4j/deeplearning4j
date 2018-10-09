@@ -18,8 +18,8 @@
 // @author raver119@gmail.com
 //
 
-#ifndef LIBND4J_BLOCK_H
-#define LIBND4J_BLOCK_H
+#ifndef LIBND4J_CONTEXT_H
+#define LIBND4J_CONTEXT_H
 
 #include <vector>
 #include <graph/Variable.h>
@@ -57,6 +57,7 @@ namespace nd4j {
             // branch for divergent_op
             int _branch = 0;
 
+            std::vector<nd4j::DataType> _dataTypes;
 #ifdef HAVE_MKLDNN
             MKLDNNStream<T>* _mkldnnStream = nullptr;
 #endif

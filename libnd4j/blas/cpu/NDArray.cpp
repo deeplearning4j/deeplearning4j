@@ -1755,7 +1755,7 @@ NDArray NDArray::transp() const {
 
     void * NDArray::getBufferAsPointer(nd4j::DataType dtype) {
         int8_t *ptr = nullptr;
-        ALLOCATE(ptr, _workspace, this->lengthOf() * DataTypeUtils::sizeOfElement(dtype), int8_t);
+        ALLOCATE(ptr, _workspace, _length * sizeOfT(), int8_t); 
 
         // FIXME: if we're going to merge this - move loop into selector
         for (int e = 0; e < this->lengthOf(); e++) {
@@ -2361,7 +2361,7 @@ NDArray NDArray::transp() const {
         for (int i = 0; i < rank; i++)
             newShape[i] = outShape[i];
 
-        auto ret = new NDArray('c', outShape, this->dataType(),  _workspace);
+        auto ret = new NDArray('c', outShape, _dataType,  _workspace);
 
         auto repeatDelta = shape::prodLong(newShape, rank) / this->lengthOf();
         auto numTads = this->tensorsAlongDimension({dimension});
@@ -2398,30 +2398,40 @@ NDArray NDArray::transp() const {
     // fill array by repeating it the number of times given by reps
     void NDArray::repeat(int dimension, NDArray& target) const {
     
-        Nd4jLong repeatDelta = shape::prodLong(target.shapeOf(), rankOf()) / this->lengthOf();
-        Nd4jLong numTads = this->tensorsAlongDimension({dimension});
+        if(dimension < 0) 
+            dimension += rankOf();
+
+        if(rankOf() != target.rankOf())
+            throw std::invalid_argument("NDArray::repeat(int dimension, NDArray& target) method: wrong rank of target array it must be equal to this array rank!");
+
+        Nd4jLong repeatDelta = target.sizeAt(dimension) / sizeAt(dimension);
+
+        if(repeatDelta == 0)
+            throw std::invalid_argument("NDArray::repeat(int dimension, NDArray& target) method: wrong shape of target array!");
+
+
+        std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rankOf(), {dimension});
+        const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
+        
         for (int i = 0; i < numTads; i++) {
-            auto thisTensor = this->tensorAlongDimension(i, {dimension});
-            auto retTensor = target.tensorAlongDimension(i, {dimension});
+            auto thisTensor = (*this)(i, dimsToExclude);
+            auto retTensor = target(i, dimsToExclude);
             int retIdx = 0;
             if (isR()) {
-                for (int k = 0; k < thisTensor->lengthOf(); k++) {
-                    auto s = thisTensor->e<double>(k);
+                for (int k = 0; k < thisTensor.lengthOf(); k++) {
+                    auto s = thisTensor.e<double>(k);
                     for (int j = 0; j < repeatDelta; j++) {
-                        retTensor->p<double>(retIdx++, s);
+                        retTensor.p<double>(retIdx++, s);
                     }
                 }
             } else {
-                for (int k = 0; k < thisTensor->lengthOf(); k++) {
-                    auto s = thisTensor->e<Nd4jLong>(k);
+                for (int k = 0; k < thisTensor.lengthOf(); k++) {
+                    auto s = thisTensor.e<Nd4jLong>(k);
                     for (int j = 0; j < repeatDelta; j++) {
-                        retTensor->p<Nd4jLong>(retIdx++, s);
+                        retTensor.p<Nd4jLong>(retIdx++, s);
                     }
                 }
             }
-
-            delete thisTensor;
-            delete retTensor;
         }
     }
 

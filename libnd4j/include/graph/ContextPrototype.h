@@ -46,6 +46,8 @@ namespace nd4j {
 
             bool _useMKLDNN = true;
 
+            std::vector<nd4j::DataType> _dataTypes;
+
         public:
             explicit ContextPrototype(int nodeId = 1, bool inPlace = false);
             ~ContextPrototype() = default;
