@@ -35,6 +35,12 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(elu) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
+        }
+
         CONFIGURABLE_OP_IMPL(elu_bp, 2, 1, true, 0, 0) {
             auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);

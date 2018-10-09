@@ -38,6 +38,12 @@ namespace nd4j {
         }
         DECLARE_SYN(linear, identity);
 
+        DECLARE_TYPES(identity) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setSameMode(true);
+        }
+
 
         OP_IMPL(identity_bp, 2, 1, true) {
             auto first = INPUT_VARIABLE(0);

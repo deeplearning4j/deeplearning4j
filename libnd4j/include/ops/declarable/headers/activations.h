@@ -166,10 +166,6 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(relu6_bp, 2, 1, true, 0, 0);
         #endif
 
-        /**
-         * relu_layer = relu(x*w + b)
-         */
-        DECLARE_CUSTOM_OP(relu_layer, 3, 1, false, 0, 0);
 
         /**
          * Parametric Rectified Linear Unit

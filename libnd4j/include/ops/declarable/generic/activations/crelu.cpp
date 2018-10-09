@@ -50,6 +50,12 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(crelu) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setSameMode(true);
+        }
+
         DECLARE_SHAPE_FN(crelu) {
             auto inShape = inputShape->at(0);
             std::vector<Nd4jLong> shape;
@@ -65,10 +71,6 @@ namespace nd4j {
                 shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
 
             return SHAPELIST(newShape);
-        }
-
-        DECLARE_TYPES(crelu) {
-            getOpDescriptor()->setSameMode(true);
         }
 
         CUSTOM_OP_IMPL(crelu_bp, 2, 1, false, 0, 0) {

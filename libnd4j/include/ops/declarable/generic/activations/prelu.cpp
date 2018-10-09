@@ -75,6 +75,14 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
 }
 
 
+        DECLARE_TYPES(prelu) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
+        }
+
+
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
     auto input = INPUT_VARIABLE(0);

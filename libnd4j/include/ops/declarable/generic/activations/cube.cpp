@@ -37,6 +37,11 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(cube) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setSameMode(true);
+        }
 
         CONFIGURABLE_OP_IMPL(cube_bp, 2, 1, true, 0, 0) {
             auto input = INPUT_VARIABLE(0);

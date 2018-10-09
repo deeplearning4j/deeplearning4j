@@ -36,6 +36,12 @@ namespace nd4j {
             
             return Status::OK();
         }
+
+        DECLARE_TYPES(lrelu) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
+        }
         
         CONFIGURABLE_OP_IMPL(lrelu_bp, 2, 1, true, 0, 0) {
             auto input = INPUT_VARIABLE(0);
