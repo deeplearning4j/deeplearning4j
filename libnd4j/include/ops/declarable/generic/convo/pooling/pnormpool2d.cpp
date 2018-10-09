@@ -131,7 +131,7 @@ namespace nd4j {
                 newShapeInfo[3] = oW;
                 newShapeInfo[4] = iC;
             }
-            ShapeUtils::updateStridesAndType(newShapeInfo, inShape, order); // as TF says
+            ShapeUtils::updateStridesAndType(newShapeInfo, block.dataType(), order); // as TF says
 
             return SHAPELIST(newShapeInfo);
         }
@@ -232,8 +232,7 @@ DECLARE_SHAPE_FN(pnormpool2d_bp) {
     REQUIRE_TRUE(inputShape->at(0)[0] == 4, 0, "PNORMPOOL2D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
     REQUIRE_TRUE(inputShape->at(1)[0] == 4, 0, "PNORMPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!", inputShape->at(1)[0]);
     
-    Nd4jLong* gradIShapeInfo(nullptr);
-    COPY_SHAPE(inputShape->at(0), gradIShapeInfo);
+    Nd4jLong* gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());    
     
     return SHAPELIST(gradIShapeInfo);
 }

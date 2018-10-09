@@ -87,8 +87,9 @@ DECLARE_SYN(maxpool, maxpool2d);
         DECLARE_TYPES(maxpool2d) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setSameMode(true);
         }
+
 
 DECLARE_SHAPE_FN(maxpool2d) {
             
@@ -219,9 +220,7 @@ DECLARE_SHAPE_FN(maxpool2d_bp) {
     REQUIRE_TRUE(inputShape->at(0)[0] == 4, 0, "MAXPOOL2D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
     REQUIRE_TRUE(inputShape->at(1)[0] == 4, 0, "MAXPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!", inputShape->at(1)[0]);
     
-    Nd4jLong* gradIShapeInfo(nullptr);
-    COPY_SHAPE(inputShape->at(0), gradIShapeInfo);
-
+    Nd4jLong* gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());    
     return SHAPELIST(gradIShapeInfo);
 }
 
