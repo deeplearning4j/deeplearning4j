@@ -1285,7 +1285,6 @@
                                                             public:\
                                                                 NAME(); \
                                                             protected: \
-                                                                void registerTypes(); \
                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context& block); \
                                                             };\
                                                             REGISTER_H(NAME)
@@ -1298,7 +1297,6 @@
                                     public:\
                                         NAME(); \
                                     protected: \
-                                        void registerTypes(); \
                                         Nd4jStatus validateAndExecute(nd4j::graph::Context& block); \
                                     };\
                                     REGISTER_H(NAME)

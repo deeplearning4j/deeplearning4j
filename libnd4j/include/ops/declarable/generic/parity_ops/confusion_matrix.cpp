@@ -30,7 +30,7 @@
 
 namespace nd4j {
     namespace ops {
-        DECLARE_TYPES(log_softmax) {
+        DECLARE_TYPES(confusion_matrix) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});

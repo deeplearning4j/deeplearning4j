@@ -47,7 +47,7 @@ namespace ops {
         return SHAPELIST(outShapeInfo);
     }
 
-        DECLARE_TYPES(fill_as) {
+        DECLARE_TYPES(reduce_sum) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
                     ->setSameMode(true);

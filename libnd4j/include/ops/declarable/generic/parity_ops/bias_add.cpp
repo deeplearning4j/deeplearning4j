@@ -60,6 +60,11 @@ namespace nd4j {
         }
         DECLARE_SYN(bias_add, biasadd);
 
+        DECLARE_TYPES(biasadd_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
         CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);

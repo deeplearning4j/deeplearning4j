@@ -53,7 +53,7 @@ namespace nd4j {
             return SHAPELIST(newshape);
         }
 
-        DECLARE_TYPES(random_crop) {
+        DECLARE_TYPES(set_seed) {
             getOpDescriptor()
                     ->setAllowedInputTypes({ALL_INTS})
                     ->setAllowedOutputTypes({ALL_FLOATS});
