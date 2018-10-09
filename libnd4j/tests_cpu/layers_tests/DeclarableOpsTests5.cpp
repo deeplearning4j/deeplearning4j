@@ -405,7 +405,7 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_3_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, eye_test1) {
     
-    auto expected = NDArrayFactory::create<double>('c', {3, 3}, {1, 0, 0, 0, 1, 0, 0, 0, 1});
+    auto expected = NDArrayFactory::create<float>('c', {3, 3}, {1, 0, 0, 0, 1, 0, 0, 0, 1});
 
     nd4j::ops::eye op;
     auto results = op.execute({}, {}, {-99, 3});
@@ -422,7 +422,7 @@ TEST_F(DeclarableOpsTests5, eye_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, eye_test2) {
     
-    auto expected = NDArrayFactory::create<double>('c', {3, 4}, {1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0.});
+    auto expected = NDArrayFactory::create<float>('c', {3, 4}, {1,  0,  0,  0, 0,  1,  0,  0, 0,  0,  1,  0});
 
     nd4j::ops::eye op;
     auto results = op.execute({}, {}, {-99, 3, 4});
@@ -438,12 +438,12 @@ TEST_F(DeclarableOpsTests5, eye_test2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, eye_test3) {
     
-    auto expected = NDArrayFactory::create<double>('c', {2, 3, 4}, {1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0., 1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0.});
+    auto expected = NDArrayFactory::create<float>('c', {2, 3, 4}, {1,  0,  0,  0, 0,  1,  0,  0, 0,  0,  1,  0, 1,  0,  0,  0, 0,  1,  0,  0, 0,  0,  1,  0});
 
     nd4j::ops::eye op;
     auto results = op.execute({}, {}, {-99, 3, 4, 2});
     auto output = results->at(0);
-    // output->printIndexedBuffer();
+     output->printIndexedBuffer("Output eye");
     
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -455,7 +455,7 @@ TEST_F(DeclarableOpsTests5, eye_test3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, eye_test4) {
     
-    auto expected = NDArrayFactory::create<double>('c', {2, 2, 3, 4}, {1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0., 1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0., 1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0., 1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0.});
+    auto expected = NDArrayFactory::create<float>('c', {2, 2, 3, 4}, {1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0., 1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0., 1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0., 1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0.});
 
     nd4j::ops::eye op;
     auto results = op.execute({}, {}, {-99, 3, 4, 2, 2});
