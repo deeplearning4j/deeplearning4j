@@ -44,16 +44,12 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
 
     REQUIRE_TRUE(probValue > 0.f && probValue <= 1.f, 0, "dropout: Probability should be with range 0 to 1.");
 
-    if (probValue == 1.0f) {
+    if (probValue == 1.0) {
         *output = *input;
         return Status::OK();
     }
-    nd4j::random::RandomBuffer* rng = block.getRNG();
-    
-    if (rng == nullptr)
-        return ND4J_STATUS_BAD_RNG;
 
-    return helpers::dropOutFunctor(rng, input, output, reduceShape, seed, probValue);
+    return helpers::dropOutFunctor(block, input, output, reduceShape, seed, probValue);
 }
 
         DECLARE_TYPES(dropout) {

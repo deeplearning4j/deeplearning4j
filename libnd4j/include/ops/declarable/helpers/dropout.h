@@ -21,12 +21,13 @@
 #define __DROP_OUT_HELPERS__
 #include <op_boilerplate.h>
 #include <NDArray.h>
+#include <graph/Context.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue);
+    int dropOutFunctor(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue);
 
 }
 }
