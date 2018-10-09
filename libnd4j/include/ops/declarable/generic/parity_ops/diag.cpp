@@ -42,6 +42,13 @@ CUSTOM_OP_IMPL(diag, 1, 1, false, 0, 0) {
 
 DECLARE_SYN(MatrixDiag, diag);
 
+
+        DECLARE_TYPES(diag) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
 ////////////////////////////////////////////////////////////////////////// 
 DECLARE_SHAPE_FN(diag) {
     const Nd4jLong* inputShapeInfo = inputShape->at(0);

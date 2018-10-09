@@ -43,6 +43,13 @@ namespace nd4j {
         }
         DECLARE_SYN(filllike, fill_as);
         DECLARE_SYN(fill_like, fill_as);
+
+
+        DECLARE_TYPES(fill_as) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

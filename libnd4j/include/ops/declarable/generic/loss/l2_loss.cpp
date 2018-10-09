@@ -40,6 +40,12 @@ namespace nd4j {
         DECLARE_SHAPE_FN(l2_loss) {
             return SHAPELIST(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace()));
         }
+
+        DECLARE_TYPES(l2_loss) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

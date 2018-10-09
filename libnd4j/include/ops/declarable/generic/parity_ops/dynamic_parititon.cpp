@@ -84,6 +84,18 @@ namespace ops {
         return shapes;
     }
 
+    DECLARE_TYPES(dynamic_partition) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
+    DECLARE_TYPES(dynamic_partition_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
     CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 2, false, 0, 1) {
         auto input = INPUT_VARIABLE(0);
         auto indices = INPUT_VARIABLE(1);

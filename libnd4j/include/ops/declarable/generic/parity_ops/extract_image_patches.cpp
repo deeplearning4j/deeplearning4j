@@ -44,6 +44,12 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(extract_image_patches) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
         DECLARE_SHAPE_FN(extract_image_patches) {
 
             auto in = inputShape->at(0);

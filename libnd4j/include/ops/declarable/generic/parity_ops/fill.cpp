@@ -50,6 +50,11 @@ namespace nd4j {
             return Status::OK();
         };
 
+        DECLARE_TYPES(fill) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
         
         DECLARE_SHAPE_FN(fill) {
 

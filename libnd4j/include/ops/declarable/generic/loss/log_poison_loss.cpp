@@ -21,8 +21,7 @@
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_log_poison_loss)
 
-#include <ops/declarable/headers/parity_ops.h>
-#include <ops/declarable/helpers/cross.h>
+#include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
 namespace ops {
@@ -43,7 +42,13 @@ namespace ops {
         else
             targets->applyPairwiseTransform(pairwise::LogPoisonLossFull, input, output, nullptr);
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
+    }
+
+    DECLARE_TYPES(log_poison_loss) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes(DataType::BOOL);
     }
 }
 }

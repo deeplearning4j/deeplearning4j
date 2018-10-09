@@ -113,7 +113,29 @@ namespace ops {
         #if NOT_EXCLUDED(OP_log_loss)
         DECLARE_CUSTOM_OP(log_loss, 3, 1, false, 1, 1);
         #endif
-    
+
+        /**
+         * l2_loss op.
+         * compute a l2 norm for given array.
+         *
+         * input param - an array (tensor)
+         * output value - a real number with given type (e.g. float or double)
+         */
+        #if NOT_EXCLUDED(OP_l2_loss)
+        DECLARE_CUSTOM_OP(l2_loss, 1, 1, false, 0, 0);
+        #endif
+
+
+        /**
+         * This op calculates logarithmic loss of poison distributed input
+         * Input arguments
+         *  0 - target
+         *  1 - input
+         *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
+         */
+        #if NOT_EXCLUDED(OP_log_poison_loss)
+        DECLARE_CONFIGURABLE_OP(log_poison_loss, 2, 1, true, 0, 0);
+        #endif
 
     //////////////////////////////////////////////////////////////////////////
     /**

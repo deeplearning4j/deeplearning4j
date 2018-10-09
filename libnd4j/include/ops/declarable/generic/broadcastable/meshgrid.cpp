@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
     return Status::OK();
 }
 
-    DECLARE_TYPES(add) {
+    DECLARE_TYPES(meshgrid) {
         getOpDescriptor()
                 ->setAllowedInputTypes(DataType::ANY)
                 ->setAllowedOutputTypes(DataType::INHERIT)
