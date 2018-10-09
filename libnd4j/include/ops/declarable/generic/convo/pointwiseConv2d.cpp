@@ -63,6 +63,12 @@ CUSTOM_OP_IMPL(pointwise_conv2d, 2, 1, false, 0, 0) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(pointwise_conv2d) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
 
 DECLARE_SHAPE_FN(pointwise_conv2d) {
     

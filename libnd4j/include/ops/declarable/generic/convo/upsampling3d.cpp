@@ -46,6 +46,11 @@ CUSTOM_OP_IMPL(upsampling3d, 1, 1, false, 0, 3) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(upsampling3d) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
         
 DECLARE_SHAPE_FN(upsampling3d) {
     
@@ -81,6 +86,12 @@ DECLARE_SHAPE_FN(upsampling3d) {
 
     return SHAPELIST(outputShapeInfo);
 }
+
+        DECLARE_TYPES(upsampling3d_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 //////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(upsampling3d_bp, 2, 1, false, 0, 0) {

@@ -84,6 +84,12 @@ DECLARE_SYN(AvgPool2D, avgpool2d);
 DECLARE_SYN(AvgPool, avgpool2d);
 DECLARE_SYN(avgpool, avgpool2d);
 
+    DECLARE_TYPES(avgpool2d) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
 DECLARE_SHAPE_FN(avgpool2d) {
     
     auto inShape = inputShape->at(0);
@@ -137,6 +143,11 @@ DECLARE_SHAPE_FN(avgpool2d) {
     return SHAPELIST(newShapeInfo);
 }
 
+    DECLARE_TYPES(avgpool2d_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {

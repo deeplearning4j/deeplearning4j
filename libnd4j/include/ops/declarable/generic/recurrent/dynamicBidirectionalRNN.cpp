@@ -122,6 +122,11 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(dynamic_bidirectional_rnn) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 
 DECLARE_SHAPE_FN(dynamic_bidirectional_rnn) {    

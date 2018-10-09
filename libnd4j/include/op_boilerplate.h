@@ -1345,7 +1345,6 @@
                                                                 NAME(); \
                                                                 nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block); \
                                                             protected: \
-                                                                void registerTypes(); \
                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context& block); \
                                                             };\
                                                             REGISTER_H(NAME)

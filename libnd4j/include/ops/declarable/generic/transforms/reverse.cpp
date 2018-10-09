@@ -70,7 +70,7 @@ namespace ops  {
 
     DECLARE_SYN(reverse_v2, reverse);
 
-    DECLARE_TYPES(pad) {
+    DECLARE_TYPES(reverse) {
         getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY);
         getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
         getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
@@ -98,6 +98,12 @@ namespace ops  {
         helpers::reverse(eps, output, &axis, false);
 
         return Status::OK();
+    }
+
+    DECLARE_TYPES(reverse_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
     DECLARE_SHAPE_FN(reverse_bp) {

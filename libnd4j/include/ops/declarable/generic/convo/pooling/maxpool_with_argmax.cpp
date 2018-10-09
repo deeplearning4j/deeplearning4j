@@ -41,7 +41,15 @@ namespace nd4j {
 
             return Status::OK();
         }
-        
+
+        DECLARE_TYPES(max_pool_with_argmax) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT)
+                    ->setAllowedOutputTypes(1, DataType::INT64);
+
+        }
+
         DECLARE_SHAPE_FN(max_pool_with_argmax) {
             auto in = inputShape->at(0);
             Nd4jLong* valuesShape = nullptr;

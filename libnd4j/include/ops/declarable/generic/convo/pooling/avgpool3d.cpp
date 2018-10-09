@@ -79,6 +79,12 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(avgpool3dnew) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 DECLARE_SHAPE_FN(avgpool3dnew) {
 
     int kD = INT_ARG(0);                                                        // filter(kernel) depth
@@ -136,6 +142,11 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
     return SHAPELIST(outputShapeInfo);
 }
 
+        DECLARE_TYPES(avgpool3dnew_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {

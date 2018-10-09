@@ -81,6 +81,12 @@ namespace ops {
         return Status::OK();
     }
 
+    DECLARE_TYPES(dilation2d) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
     DECLARE_SHAPE_FN(dilation2d) {
         auto input = inputShape->at(0);
         auto weights = inputShape->at(1);

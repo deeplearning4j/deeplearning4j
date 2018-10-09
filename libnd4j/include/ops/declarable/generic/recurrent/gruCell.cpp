@@ -64,6 +64,11 @@ CUSTOM_OP_IMPL(gruCell, 5, 1, false, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(gruCell) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 
 DECLARE_SHAPE_FN(gruCell) {    

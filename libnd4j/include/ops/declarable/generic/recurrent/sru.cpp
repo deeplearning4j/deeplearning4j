@@ -108,6 +108,12 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(sru_logic) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 DECLARE_SHAPE_FN(sru_logic) {
     auto inShape = inputShape->at(0);   // [bS x K x N]
     int rank = inShape[0];              // = 3
@@ -208,6 +214,12 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(sru_old) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 DECLARE_SHAPE_FN(sru_old) {
     auto inShape = inputShape->at(0);   // [bS x inSize x time]
     int rank = inShape[0];              // = 3
@@ -287,6 +299,12 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
 
     return Status::OK();
 }
+
+        DECLARE_TYPES(sru) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 DECLARE_SHAPE_FN(sru) {
 
@@ -498,6 +516,12 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(sru_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 DECLARE_SHAPE_FN(sru_bp) {
 
     auto inShape = inputShape->at(0);   // [bS x inSize x time]
@@ -673,6 +697,12 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(sru_bp_logic) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 DECLARE_SHAPE_FN(sru_bp_logic) {
     auto inShape = inputShape->at(0);   // [bS x inSize x time]
     auto bS   = inShape[1];
@@ -755,6 +785,12 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(sru_bi) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 DECLARE_SHAPE_FN(sru_bi) {
 
     auto xShapeInfo    = inputShape->at(0);         // [time x bS x 2K ]
@@ -810,6 +846,12 @@ DECLARE_SHAPE_FN(sru_bi) {
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }
 
+
+        DECLARE_TYPES(sru_bi_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {

@@ -83,6 +83,12 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
 }
 
 
+        DECLARE_TYPES(dynamic_rnn) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 
 DECLARE_SHAPE_FN(dynamic_rnn) {    
 

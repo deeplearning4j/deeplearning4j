@@ -150,6 +150,17 @@ DECLARE_SHAPE_FN(conv2d) {
     return SHAPELIST(outputShapeInfo);
 }
 
+    DECLARE_TYPES(conv2d) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
+    DECLARE_TYPES(conv2d_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 
 ////////////////////////////////////////////////////////////////////////// 
@@ -310,6 +321,12 @@ CUSTOM_OP_IMPL(conv2d_input_bp, 3, 1, false, 0, 9) {
     
     return Status::OK();
 }
+
+        DECLARE_TYPES(conv2d_input_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 
 

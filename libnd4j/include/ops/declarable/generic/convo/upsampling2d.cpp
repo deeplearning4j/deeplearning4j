@@ -47,7 +47,11 @@ CUSTOM_OP_IMPL(upsampling2d, 1, 1, false, 0, 2) {
 }
 DECLARE_SYN(upsampling, upsampling2d);
 
-
+        DECLARE_TYPES(upsampling2d) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 DECLARE_SHAPE_FN(upsampling2d) {
 
@@ -80,6 +84,12 @@ DECLARE_SHAPE_FN(upsampling2d) {
 
     return SHAPELIST(outputShapeInfo);
 }
+
+        DECLARE_TYPES(upsampling2d_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 
 //////////////////////////////////////////////////////////////////////
