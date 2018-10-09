@@ -59,7 +59,7 @@ namespace nd4j {
             ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong); 
             newShapeInfo[0] = rank;
             std::copy(outShape.begin(), outShape.end(), newShapeInfo+1);
-            shape::updateStrides(newShapeInfo, x->ordering());
+            ShapeUtils::updateStridesAndType(newShapeInfo, x->getShapeInfo(), x->ordering());
 
             return SHAPELIST(newShapeInfo);
         }

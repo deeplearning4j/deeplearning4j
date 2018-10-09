@@ -1380,7 +1380,7 @@ namespace nd4j {
 
         NDArray* detach();
 
-        FORCEINLINE bool operator == (const NDArray &other) const;
+        FORCEINLINE bool operator==(const NDArray &other) const;
 
     };
 
@@ -1811,7 +1811,7 @@ bool NDArray::isEmpty() const {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::operator ==(const NDArray &other) const {
+bool NDArray::operator==(const NDArray &other) const {
     if (!this->isSameShape(&other))
         return false;
 
