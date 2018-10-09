@@ -52,6 +52,10 @@ namespace nd4j {
                     this->_workspace = variableSpace->workspace();
         }
 
+        nd4j::DataType Context::dataType() {
+            return dataType(0);
+        }
+
         Context::Context(int nodeId, VariableSpace *variableSpace) {
             this->_nodeId = nodeId;
             this->_variableSpace = variableSpace;
@@ -68,7 +72,7 @@ namespace nd4j {
                 this->_workspace = variableSpace->workspace();
         }
 
-        nd4j::DataType Context::dataType() {
+        nd4j::DataType Context::dataType(int index) {
             return _dataType;
         }
 

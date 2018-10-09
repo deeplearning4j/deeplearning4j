@@ -41,6 +41,8 @@ namespace nd4j {
             // opNum for legacy XYZ ops
             int _opNum = -1;
 
+            std::vector<nd4j::DataType> _dataTypes;
+
         public:
             explicit ContextPrototype(int nodeId = 1, bool inPlace = false);
             ~ContextPrototype() = default;
@@ -52,6 +54,7 @@ namespace nd4j {
             bool hasVariablesFilled();
 
             virtual nd4j::DataType dataType();
+            virtual nd4j::DataType dataType(int index);
 
             bool isInplace();
             void markInplace(bool reallyInplace);

@@ -53,6 +53,8 @@ namespace nd4j {
             nd4j::DataType _dataType = nd4j::DataType::FLOAT32;
             // branch for divergent_op
             int _branch = 0;
+
+            std::vector<nd4j::DataType> _dataTypes;
         public:
             // TODO: maybe override new here as well?
 
@@ -76,6 +78,8 @@ namespace nd4j {
             Nd4jLong getInnerTime();
 
             nd4j::DataType dataType() override;
+
+            nd4j::DataType dataType(int index) override;
 
             // these methods are related to Workspace abstraction
             bool hasWorkspaceProvided();
