@@ -22,6 +22,7 @@
 #define LIBND4J_TRANSFORMS_H
 
 #include <ops/declarable/helpers/helpers.h>
+#include <helpers/helper_random.h>
 
 namespace nd4j    {
 namespace ops     {

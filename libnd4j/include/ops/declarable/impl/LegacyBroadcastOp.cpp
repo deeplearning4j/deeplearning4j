@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/LegacyBroadcastOp.h>
+#include <helpers/TAD.h>
 
 
 namespace nd4j {

@@ -20,6 +20,7 @@
 //
 
 
+#include <helpers/TAD.h>
 #include<ops/declarable/helpers/ismax.h>
 
 namespace nd4j 	  {

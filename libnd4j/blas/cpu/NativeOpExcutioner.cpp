@@ -34,6 +34,17 @@
 #include <loops/reduce_bool.h>
 #include <loops/reduce_long.h>
 
+#include <loops/broadcasting.h>
+#include <loops/indexreduce.h>
+#include <loops/pairwise_transform.h>
+#include <loops/reduce_float.h>
+#include <loops/reduce3.h>
+#include <loops/summarystatsreduce.h>
+#include <loops/transform_same.h>
+#include <loops/scalar.h>
+#include <loops/random.h>
+#include <pointercast.h>
+
 
 
 

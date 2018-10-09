@@ -24,6 +24,7 @@
 #include <helpers/ShapeUtils.h>
 #include <numeric>
 #include <NDArrayFactory.h>
+#include <helpers/TAD.h>
 
 namespace nd4j 	  {
 namespace ops 	  {

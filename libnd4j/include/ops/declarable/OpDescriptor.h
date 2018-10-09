@@ -153,8 +153,8 @@ namespace nd4j {
             InputType inputType();
 
             OpDescriptor* setInputType(InputType type);
-            OpDescriptor* setAllowedInputTypes(const std::vector<nd4j::DataType> &dtype);
-            OpDescriptor* setAllowedOutputTypes(const std::vector<nd4j::DataType> &dtype);
+            OpDescriptor* setAllowedInputTypes(const std::initializer_list<nd4j::DataType> &dtype);
+            OpDescriptor* setAllowedOutputTypes(const std::initializer_list<nd4j::DataType> &dtype);
             OpDescriptor* setAllowedInputTypes(int index, const std::vector<nd4j::DataType> &dtype);
             OpDescriptor* setAllowedOutputTypes(int index, const std::vector<nd4j::DataType> &dtype);
             OpDescriptor* setAllowedInputTypes(int index,  nd4j::DataType dtype);
@@ -164,6 +164,9 @@ namespace nd4j {
             OpDescriptor* setSameMode(bool reallySame);
             OpDescriptor* setInputType(int idx, nd4j::DataType dtype);
             OpDescriptor* setOutputType(int idx, nd4j::DataType dtype);
+
+            bool checkInputMatch(int index, nd4j::DataType dataType);
+            bool checkOutputMatch(int index, nd4j::DataType dataType);
         };
     }
 }

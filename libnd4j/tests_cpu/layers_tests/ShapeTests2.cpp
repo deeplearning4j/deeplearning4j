@@ -19,6 +19,7 @@
 //
 #include <helpers/data_gen.h>
 #include "testinclude.h"
+#include <helpers/TAD.h>
 
 class OnesTest : public testing::Test {
 public:

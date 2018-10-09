@@ -23,6 +23,7 @@
 
 #include "testlayers.h"
 #include <NDArray.h>
+#include <helpers/TAD.h>
 
 using namespace nd4j;
 

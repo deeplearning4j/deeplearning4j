@@ -21,6 +21,7 @@
 #define __DROP_OUT_HELPERS__
 #include <op_boilerplate.h>
 #include <NDArray.h>
+#include <helpers/helper_random.h>
 
 namespace nd4j {
 namespace ops {

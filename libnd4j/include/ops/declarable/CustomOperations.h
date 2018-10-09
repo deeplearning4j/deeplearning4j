@@ -39,6 +39,8 @@
 #include <ops/declarable/headers/third_party.h>
 #include <ops/declarable/headers/tests.h>
 #include <dll.h>
+#include <helpers/shape.h>
+#include <helpers/TAD.h>
 #include <Status.h>
 #include <helpers/ArrayUtils.h>
 #include <helpers/ShapeBuilders.h>

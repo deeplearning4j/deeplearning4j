@@ -50,12 +50,12 @@ namespace nd4j {
             _scalar = isScalar;
         }
 
-        OpDescriptor* OpDescriptor::setAllowedInputTypes(const std::vector<nd4j::DataType> &dtypes) {
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
             _allowedIns = dtypes;
             return this;
         }
 
-        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const std::vector<nd4j::DataType> &dtypes) {
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
             _allowedOuts = dtypes;
             return this;
         }
@@ -193,19 +193,28 @@ namespace nd4j {
         }
 
         OpDescriptor* OpDescriptor::setAllowedInputTypes(int index, const std::vector<nd4j::DataType> &dtype) {
-
+            return this;
         }
 
         OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, const std::vector<nd4j::DataType> &dtype) {
-
+            return this;
         }
 
         OpDescriptor* OpDescriptor::setAllowedInputTypes(int index,  nd4j::DataType dtype) {
-
+            return this;
         }
 
         OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, nd4j::DataType dtype) {
-
+            return this;
         }
+
+        bool OpDescriptor::checkInputMatch(int index, nd4j::DataType dataType) {
+            return true;
+        }
+
+        bool OpDescriptor::checkOutputMatch(int index, nd4j::DataType dataType) {
+            return true;
+        }
+
     }
 }

@@ -19,6 +19,8 @@
 //
 #include <helpers/ShapeUtils.h>
 #include "testinclude.h"
+#include <loops/reduce3.h>
+#include <loops/reduce_float.h>
 
 class ReduceTest : public testing::Test {
 public:

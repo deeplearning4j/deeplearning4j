@@ -24,6 +24,7 @@
 #include <NDArray.h>
 #include <ops/ops.h>
 #include <GradCheck.h>
+#include <loops/random.h>
 
 
 using namespace nd4j;

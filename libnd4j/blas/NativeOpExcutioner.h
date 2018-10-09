@@ -21,21 +21,12 @@
 #ifndef NATIVEOPERATIONS_NATIVEOPEXCUTIONER_H
 #define NATIVEOPERATIONS_NATIVEOPEXCUTIONER_H
 
-#include <loops/broadcasting.h>
-#include <loops/indexreduce.h>
-#include <loops/pairwise_transform.h>
-#include <loops/reduce_float.h>
-#include <loops/reduce3.h>
-#include <loops/summarystatsreduce.h>
-#include <loops/transform_same.h>
-#include <loops/scalar.h>
-#include <loops/aggregates.h>
-#include <loops/random.h>
-#include <pointercast.h>
-#include <ops/specials.h>
-#include <ops/specials_sparse.h>
+
 #include <types/types.h>
 #include <dll.h>
+#include <loops/aggregates.h>
+#include <ops/specials.h>
+#include <ops/specials_sparse.h>
 
 /**
  * Native op executioner:

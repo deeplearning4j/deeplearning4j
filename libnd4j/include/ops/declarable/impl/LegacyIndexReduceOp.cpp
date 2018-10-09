@@ -20,6 +20,7 @@
 
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/TAD.h>
 #include <Status.h>
 
 

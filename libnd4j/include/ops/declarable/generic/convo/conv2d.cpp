@@ -152,7 +152,9 @@ DECLARE_SHAPE_FN(conv2d) {
 
     DECLARE_TYPES(conv2d) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(1, {ALL_FLOATS})
+                ->setAllowedInputTypes(2, {ALL_FLOATS})
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 

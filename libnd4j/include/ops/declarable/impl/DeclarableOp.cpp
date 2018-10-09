@@ -284,7 +284,26 @@ namespace nd4j {
             }
             _registrator.unlock();
 
+            // rolling over inputs first
+            int cnt = 0;
+            for (auto &p: *(block.inputs())) {
+                auto var = block.variable(p);
 
+                // we're not checking validity, if ANY types were explicitly allowed
+                //if (block.dataType(cnt) == nd4j::DataType::ANY)
+                //    continue;
+
+                // only validating non-null variables
+                if (var != nullptr && var->hasNDArray()) {
+                    auto array = var->getNDArray();
+
+                    if (!_descriptor->checkInputMatch(cnt, array->dataType())) {
+                        return ND4J_STATUS_BAD_ARGUMENTS;
+                    }
+                }
+
+                cnt++;
+            }
 
 
             return ND4J_STATUS_OK;
@@ -300,13 +319,15 @@ namespace nd4j {
             if (Environment::getInstance()->isProfiling())
                 timeEnter = std::chrono::system_clock::now();
 
-            REQUIRE_OK(this->validateDataTypes(*block));
-
             // basic validation: ensure inputs are set
             REQUIRE_OK(this->validateNonEmptyInput(*block));
 
             // ensure number of IArgs, TArgs match our expectations
             REQUIRE_OK(this->validateArguments(*block));
+
+            // validating data types for inputs and (optionally) outputs
+            REQUIRE_OK(this->validateDataTypes(*block));
+
 
             // this method will allocate output NDArrays for this op
             auto numOutputs = this->prepareOutputs(*block);
