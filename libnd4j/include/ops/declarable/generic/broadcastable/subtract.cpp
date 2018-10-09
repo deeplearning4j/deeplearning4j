@@ -91,6 +91,13 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(subtract_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
+
         DECLARE_SHAPE_FN(subtract_bp) {
             auto x = inputShape->at(0);
             auto y = inputShape->at(1);

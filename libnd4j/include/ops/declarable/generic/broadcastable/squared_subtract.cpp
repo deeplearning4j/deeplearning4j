@@ -150,6 +150,13 @@ namespace nd4j {
 
             return shapeList;
         }
+
+        DECLARE_TYPES(squaredsubtract_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
     }
 }
 

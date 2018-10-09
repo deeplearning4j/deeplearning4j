@@ -49,6 +49,12 @@ namespace nd4j {
                     ->setAllowedOutputTypes(0, DataType::INHERIT);
         }
 
+        DECLARE_TYPES(minimum_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
         CUSTOM_OP_IMPL(minimum_bp, 3, 2, false, 0, 0) {
             // FIXME: lambdas
             /*

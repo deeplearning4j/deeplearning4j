@@ -52,6 +52,12 @@ namespace ops {
                 ->setAllowedOutputTypes(0, DataType::INHERIT);
     }
 
+    DECLARE_TYPES(multiply_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
 ///////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     auto x    = INPUT_VARIABLE(0);

@@ -109,6 +109,12 @@ namespace nd4j {
 
             return shapeList;
         }
+
+        DECLARE_TYPES(reversesubtract_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 
