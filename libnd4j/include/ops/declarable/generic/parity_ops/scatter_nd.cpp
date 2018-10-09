@@ -64,6 +64,13 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(scatter_nd) {
+        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+        getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
+        getOpDescriptor()->setAllowedInputTypes(2, {DataType::INT32, DataType::INT64});
+        getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+    }
+
 ////////////////////////////////////////////////////////////////////////7
 DECLARE_SHAPE_FN(scatter_nd) {
 
