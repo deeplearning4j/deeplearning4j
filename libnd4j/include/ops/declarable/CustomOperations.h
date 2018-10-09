@@ -45,6 +45,8 @@
 #include <helpers/ArrayUtils.h>
 #include <helpers/ShapeBuilders.h>
 #include <NDArrayFactory.h>
+#include <helpers/OpTracker.h>
+
 
 
 namespace nd4j {

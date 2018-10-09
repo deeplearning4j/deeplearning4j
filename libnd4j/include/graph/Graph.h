@@ -34,6 +34,7 @@
 #include <graph/generated/graph_generated.h>
 #include <graph/generated/config_generated.h>
 #include <graph/ExecutorConfiguration.h>
+#include <ops/declarable/OpDescriptor.h>
 
 namespace nd4j {
     namespace graph {
@@ -160,7 +161,7 @@ namespace nd4j {
             /**
              * This method collect all ops from the graph into ops vector
              */
-            std::vector<OpDescriptor> getOperations();
+            std::vector<nd4j::ops::OpDescriptor> getOperations();
 
             /**
              * This method returns Scope ptr specified with id

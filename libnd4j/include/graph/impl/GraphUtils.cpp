@@ -37,9 +37,9 @@ namespace graph {
 bool GraphUtils::filterOperations(GraphUtils::OpList& ops) {
     bool modified = false;
 
-    std::vector<OpDescriptor> filtered(ops);
+    std::vector<ops::OpDescriptor> filtered(ops);
 
-    std::sort(filtered.begin(), filtered.end(), [](OpDescriptor a, OpDescriptor b) {
+    std::sort(filtered.begin(), filtered.end(), [](ops::OpDescriptor a, ops::OpDescriptor b) {
         return a.getOpName()->compare(*(b.getOpName())) < 0;
     });
     std::string name = *(filtered[0].getOpName());
@@ -49,7 +49,7 @@ bool GraphUtils::filterOperations(GraphUtils::OpList& ops) {
         if (0 == filtered[e].getOpName()->compare(name)) {
             // there is a match
             auto fi = std::find_if(ops.begin(), ops.end(), 
-                [name](OpDescriptor a) { 
+                [name](ops::OpDescriptor a) {
                     return a.getOpName()->compare(name) == 0; 
             });
             if (fi != ops.end())

@@ -18,8 +18,12 @@
 // Created by remote on 2018-09-20.
 //
 
+#include <ops/ops.h>
 #include <loops/pairwise_transform.h>
 #include <types/types.h>
+#include <templatemath.h>
+#include <helpers/shape.h>
+#include <op_boilerplate.h>
 
 using namespace simdOps;
 

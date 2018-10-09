@@ -22,6 +22,7 @@
 #define LIBND4J_CONVOLUTIONS_H
 
 #include <NDArray.h>
+#include <LaunchContext.h>
 
 namespace nd4j {
     namespace ops {

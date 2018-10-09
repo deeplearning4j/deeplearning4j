@@ -23,7 +23,6 @@
 
 #include <atomic>
 #include <dll.h>
-#include <helpers/StringUtils.h>
 #include <stdexcept>
 #include <array/DataType.h>
 

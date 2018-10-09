@@ -1072,10 +1072,10 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        std::vector<OpDescriptor> Graph::getOperations() {
+        std::vector<nd4j::ops::OpDescriptor> Graph::getOperations() {
             buildGraph();
             // nd4j_printf("\nRetrieving ops from the Graph and collect them...\n", "");
-            std::vector<OpDescriptor> res;
+            std::vector<nd4j::ops::OpDescriptor> res;
 
             int opCnt = 0;
             for (int l = 0; l < _onion->size(); l++) {
@@ -1084,7 +1084,7 @@ namespace nd4j {
                 for (int n = 0; n < layerSize; n++) {
                     Node* node = _onion->at(l)->at(n);
                     if (node->name() == nullptr) continue;
-                    OpDescriptor* pOpDescriptor = nullptr;
+                    nd4j::ops::OpDescriptor* pOpDescriptor = nullptr;
                     std::string opNameStr; //node->name();
                     int numInputs = 0;
                     int numOutputs = 0;
@@ -1099,7 +1099,7 @@ namespace nd4j {
                         }
                         break;
                         default: {
-                            opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType()))+"{" + OpRegistrator::getInstance()->local_to_string<int>((int) node->opNum()) + "}";
+                            opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType()))+"{" + ops::OpRegistrator::getInstance()->local_to_string<int>((int) node->opNum()) + "}";
                         }
                     }
 
@@ -1118,7 +1118,7 @@ namespace nd4j {
                     if (pOpDescriptor)
                         res.emplace_back(*pOpDescriptor);
                     else
-                        res.emplace_back(OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
+                        res.emplace_back(nd4j::ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
                 }
             }
 
@@ -1133,7 +1133,7 @@ namespace nd4j {
                     //printOutNode(node);
                     if (node->name() == nullptr) continue;
                     std::string opNameStr; //node->name();
-                    OpDescriptor* pOpDescriptor = nullptr;
+                    nd4j::ops::OpDescriptor* pOpDescriptor = nullptr;
                     int numInputs = 0;
                     int numOutputs = 0;
 
@@ -1147,7 +1147,7 @@ namespace nd4j {
                         }
                         break;
                         default: {
-                            opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType()))+"{" + OpRegistrator::getInstance()->local_to_string<int>((int) node->opNum()) + "}";
+                            opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType()))+"{" + ops::OpRegistrator::getInstance()->local_to_string<int>((int) node->opNum()) + "}";
                         }
                     }
 
@@ -1161,7 +1161,7 @@ namespace nd4j {
                     if (pOpDescriptor != nullptr)
                         res.emplace_back(*pOpDescriptor);
                     else
-                        res.emplace_back(OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
+                        res.emplace_back(nd4j::ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
                 }
             }
 
@@ -1344,7 +1344,7 @@ namespace nd4j {
             }
 
 
-            hash = HashHelper::getInstance()->getLongHash(localStamp);        
+            hash = ops::HashHelper::getInstance()->getLongHash(localStamp);
 
             nd4j_debug("Graph hash: %lld\n", hash);
 

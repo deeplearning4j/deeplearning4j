@@ -62,7 +62,7 @@ namespace graph {
     };
 
 #ifndef __JAVACPP_HACK__
-    Nd4jStatus GraphState::attachOpToScope(int scopeId, int nodeId, DeclarableOp *op, ArgumentsList inputs) {
+    Nd4jStatus GraphState::attachOpToScope(int scopeId, int nodeId, ops::DeclarableOp *op, ArgumentsList inputs) {
         if (_scopes.count(scopeId) == 0)
             return Status::THROW("GraphState: can't attach op to unknown scope");
         

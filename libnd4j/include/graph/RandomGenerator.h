@@ -24,6 +24,7 @@
 #include <types/u64.h>
 #include <pointercast.h>
 #include <op_boilerplate.h>
+#include <dll.h>
 
 namespace nd4j {
     namespace graph {

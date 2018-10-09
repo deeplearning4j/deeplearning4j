@@ -152,6 +152,8 @@ namespace nd4j {
 
             InputType inputType();
 
+
+
             OpDescriptor* setInputType(InputType type);
             OpDescriptor* setAllowedInputTypes(const std::initializer_list<nd4j::DataType> &dtype);
             OpDescriptor* setAllowedOutputTypes(const std::initializer_list<nd4j::DataType> &dtype);

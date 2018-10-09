@@ -93,7 +93,7 @@ namespace graph {
          * @param op
          * @return
          */
-        Nd4jStatus attachOpToScope(int scopeId, int nodeId, DeclarableOp *op, ArgumentsList inputs);
+        Nd4jStatus attachOpToScope(int scopeId, int nodeId, nd4j::ops::DeclarableOp *op, ArgumentsList inputs);
 
         /**
          * This method returns pointer to the scope with given id

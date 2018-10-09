@@ -30,7 +30,7 @@ namespace graph {
 
 class ND4J_EXPORT GraphUtils {
 public:
-    typedef std::vector<OpDescriptor> OpList;
+    typedef std::vector<nd4j::ops::OpDescriptor> OpList;
 
 public:
     static bool filterOperations(OpList& ops);

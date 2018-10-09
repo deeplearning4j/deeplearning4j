@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <string>
 #include "Environment.h"
+#include <helpers/StringUtils.h>
 
 namespace nd4j {
 
