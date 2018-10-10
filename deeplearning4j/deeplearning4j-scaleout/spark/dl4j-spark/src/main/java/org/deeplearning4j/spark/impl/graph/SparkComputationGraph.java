@@ -65,7 +65,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Main class for training ComputationGraph networks using Spark
+ * Main class for training ComputationGraph networks using Spark.
+ * Also used for performing distributed evaluation and inference on these networks
  *
  * @author Alex Black
  */
@@ -83,10 +84,12 @@ public class SparkComputationGraph extends SparkListenable {
     private transient AtomicInteger iterationsCount = new AtomicInteger(0);
 
     /**
-     * Instantiate a ComputationGraph instance with the given context and network.
+     * Instantiate a ComputationGraph instance with the given context, network and training master.
      *
-     * @param sparkContext the spark context to use
-     * @param network      the network to use
+     * @param sparkContext   the spark context to use
+     * @param network        the network to use
+     * @param trainingMaster Required for training. May be null if the SparkComputationGraph is only to be used
+     *                       for evaluation or inference
      */
     public SparkComputationGraph(SparkContext sparkContext, ComputationGraph network, TrainingMaster trainingMaster) {
         this(new JavaSparkContext(sparkContext), network, trainingMaster);
@@ -148,6 +151,9 @@ public class SparkComputationGraph extends SparkListenable {
         return trainingMaster;
     }
 
+    /**
+     * @param network The network to be used for any subsequent training, inference and evaluation steps
+     */
     public void setNetwork(ComputationGraph network) {
         this.network = network;
     }
