@@ -36,6 +36,7 @@ namespace nd4j {
         DECLARE_TYPES(ones_as) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY)
                     ->setSameMode(true);
         }
     }
