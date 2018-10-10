@@ -794,8 +794,10 @@ namespace nd4j {
         DECLARE_OP(weighted_cross_entropy_with_logits, 3, 1, true);
         #endif
 
+
+
         /**
-         * This op calculates weighted logarithmic loss of input
+         * This op calculates dropout of input
          * Input arguments
          *  0 - input tensor
          *  1 - noise_shape - (vector with shape to reduce) - optional
@@ -806,6 +808,20 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_dropout)
         DECLARE_CONFIGURABLE_OP(dropout, 1, 1, true, 1, 1);
+        #endif
+        #if NOT_EXCLUDED(OP_dropout_bp)
+        DECLARE_CONFIGURABLE_OP(dropout_bp, 2, 1, false, 1, 1);
+        #endif
+
+        /*  Calculates alpha weighted dropout
+            T params:
+                0 - drop probability
+                1 - alpha value
+                2 - alpha' value
+                3 - beta value
+         */
+        #if NOT_EXCLUDED(OP_alpha_dropout_bp)
+        DECLARE_CONFIGURABLE_OP(alpha_dropout_bp, 2, 1, false, 4, 1);
         #endif
 
 

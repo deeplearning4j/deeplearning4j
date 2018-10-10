@@ -54,10 +54,71 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
 
         DECLARE_TYPES(dropout) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes({ALL_FLOATS})
                     ->setSameMode(true);
         }
 
+//////////////////////////////////////////////////////////////////////////
+CONFIGURABLE_OP_IMPL(dropout_bp, 2, 1, false, 1, 1) {
+    NDArray* input   = INPUT_VARIABLE(0); // lookup param
+    NDArray* gradOut   = INPUT_VARIABLE(1); // lookup param
+
+    NDArray* reduceShape = nullptr; // this param is optional
+    NDArray* output  = OUTPUT_VARIABLE(0); // 
+    
+    int seed = INT_ARG(0);
+    
+    double probValue = T_ARG(0); 
+    if (block.width() > 2)
+        reduceShape = INPUT_VARIABLE(2);
+
+    REQUIRE_TRUE((probValue > 0. && probValue <= 1.), 0, "dropout_bp: Probability should be with range 0 to 1.");
+    if (probValue == 1.0) {
+        output->assign(0.f); // fill up output with 0
+        return ND4J_STATUS_OK;
+    }
+
+    REQUIRE_TRUE(helpers::dropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue) == ND4J_STATUS_OK, 0, "dropout_bp: Cannot backprop dropout." );
+
+    return ND4J_STATUS_OK;
+}
+        DECLARE_TYPES(dropout_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes({ALL_FLOATS})
+                    ->setSameMode(true);
+        }
+
+//////////////////////////////////////////////////////////////////////////
+CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {
+    NDArray* input   = INPUT_VARIABLE(0); // lookup param
+    NDArray* gradOut   = INPUT_VARIABLE(1); // lookup param
+
+    NDArray* reduceShape = nullptr; // this param is optional
+    NDArray* output  = OUTPUT_VARIABLE(0); //
+
+    if (block.width() > 2)
+        reduceShape = INPUT_VARIABLE(2);
+
+    int seed = INT_ARG(0);
+    
+    double probValue   = T_ARG(0);
+    double alphaValue  = T_ARG(0);
+    double alpha1Value = T_ARG(2);
+    double betaValue   = T_ARG(3);
+
+    REQUIRE_TRUE(probValue > 0. && probValue <= 1., 0, "dropout_bp: Probability should be with range 0 to 1.");
+    if (probValue == 1.0) {
+        output->assign(0.); // fill up output with 0
+        return ND4J_STATUS_OK;
+    }
+
+    return helpers::alphaDropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue, alphaValue, alpha1Value, betaValue);
+}
+        DECLARE_TYPES(alpha_dropout_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes({ALL_FLOATS})
+                    ->setSameMode(true);
+        }
 }
 }
 
