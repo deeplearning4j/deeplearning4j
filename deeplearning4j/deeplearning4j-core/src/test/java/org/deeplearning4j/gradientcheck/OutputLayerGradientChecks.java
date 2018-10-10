@@ -257,7 +257,6 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
         int[] heights = {4, 4, 5};
         int[] widths = {4, 5, 6};
 
-//        for(String dataFormat : new String[]{"NCDHW", "NDHWC"}) {
         for(Convolution3D.DataFormat dataFormat : Convolution3D.DataFormat.values()){
             for (int i = 0; i < heights.length; i++) {
                 int h = heights[i];
@@ -330,11 +329,11 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                             if(dataFormat == Convolution3D.DataFormat.NCDHW) {
                                 labels = Nd4j.zeros(miniBatchSize, chOut, d, h, w);
                                 for (int mb = 0; mb < miniBatchSize; mb++) {
-                                    for( int ch=0; ch<d; ch++) {
+                                    for( int d2=0; d2<d; d2++) {
                                         for (int x = 0; x < w; x++) {
                                             for (int y = 0; y < h; y++) {
                                                 int idx = r.nextInt(chOut);
-                                                labels.putScalar(new int[]{mb, idx, ch, y, x}, 1.0);
+                                                labels.putScalar(new int[]{mb, idx, d2, y, x}, 1.0);
                                             }
                                         }
                                     }
@@ -342,11 +341,11 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                             } else {
                                 labels = Nd4j.zeros(miniBatchSize, d, h, w, chOut);
                                 for (int mb = 0; mb < miniBatchSize; mb++) {
-                                    for( int ch=0; ch<d; ch++) {
+                                    for( int d2=0; d2<d; d2++) {
                                         for (int x = 0; x < w; x++) {
                                             for (int y = 0; y < h; y++) {
                                                 int idx = r.nextInt(chOut);
-                                                labels.putScalar(new int[]{mb, ch, y, x, idx}, 1.0);
+                                                labels.putScalar(new int[]{mb, d2, y, x, idx}, 1.0);
                                             }
                                         }
                                     }
@@ -354,7 +353,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                             }
                         }
 
-                        Activation oa = maskType == 3 ? Activation.SIGMOID : Activation.SOFTMAX;
+                        Activation oa = maskType == 1 ? Activation.SOFTMAX : Activation.SIGMOID;
 
                         MultiLayerConfiguration conf =
                                 new NeuralNetConfiguration.Builder().seed(12345L)

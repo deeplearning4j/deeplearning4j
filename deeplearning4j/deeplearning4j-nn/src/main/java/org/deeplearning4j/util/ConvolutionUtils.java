@@ -512,18 +512,21 @@ public class ConvolutionUtils {
         return workspaceMgr.leverageTo(type, out.permute(0, 3, 1, 2));
     }
 
-    public static INDArray reshape2dTo5d(Convolution3D.DataFormat format, INDArray in2d, int[] toShape, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+    public static INDArray reshape2dTo5d(Convolution3D.DataFormat format, INDArray in2d, int n, int d, int h, int w, int ch, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if(in2d.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
-        if (toShape.length != 5)
-            throw new IllegalArgumentException("Invalid input: expect toShape with 5 elements: got " + Arrays.toString(toShape));
 
-        //Reshape: from [n*d*h*w,c] to [n,d,h,w,c] to [n,c,d,h,w]
+        //Reshape: from [n*d*h*w,c] to [n,d,h,w,c]; if NCDHW format permute to [n,c,d,h,w]
         if(in2d.ordering() != 'c' || !Shape.hasDefaultStridesForShape(in2d))
             in2d = workspaceMgr.dup(type, in2d, 'c');
 
-        INDArray out = in2d.reshape('c', toShape[0], toShape[2], toShape[3], toShape[4], toShape[1]);
-        return workspaceMgr.leverageTo(type, out.permute(0, 4, 1, 2, 3));
+//        INDArray ndhwc = in2d.reshape('c', toShape[0], toShape[2], toShape[3], toShape[4], toShape[1]);
+        INDArray ndhwc = in2d.reshape('c', n, d, h, w, ch);
+        if(format == Convolution3D.DataFormat.NDHWC){
+            return workspaceMgr.leverageTo(type, ndhwc);
+        } else {
+            return workspaceMgr.leverageTo(type, ndhwc.permute(0, 4, 1, 2, 3));
+        }
     }
 
     public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output, LayerWorkspaceMgr workspaceMgr, ArrayType type){
