@@ -29,16 +29,14 @@ We have separate repository with various examples available: https://github.com/
 
 In the examples repo, you'll also find a tutorial series in Zeppelin: https://github.com/deeplearning4j/dl4j-examples/tree/master/tutorials
 
+## Detailed Instructions to build DL4J
+### Environment Setup (This instructions has been tested on Ubuntu 16.04)
 
+### Get and install Ubuntu
 
-# Detailed Instructions to build DL4J
-## Environment Setup (This instructions has been tested on Ubuntu 16.04)
+You can get ubuntu from here: http://releases.ubuntu.com/
 
-## Get and install Ubuntu
-
-You can get ubuntu from here: [[http://releases.ubuntu.com/]]
-
-## Install Nvidia driver (if you have Nvidia cuda-capable graphic card)
+### Install Nvidia driver (if you have Nvidia cuda-capable graphic card)
 
 The easy option is this:
 ```
@@ -47,21 +45,21 @@ sudo apt-get update
 sudo apt-get install nvidia-_YourPrefferedVersion_
 ```
 
-## Install Java Development Kit (8)
+### Install Java Development Kit (8)
 
 You can install oracle or openjdk. Oracle has been tested.
 
-## Install Cuda Sdk
+### Install Cuda Sdk
 
-You can obtain its docs here: [[http://docs.nvidia.com/cuda/]]
+You can obtain its docs here: http://docs.nvidia.com/cuda/
 
-## Install Nexus Repository Manager (preferred to speedup your build phase)
+### Install Nexus Repository Manager (preferred to speedup your build phase)
 
-You can view its documentation here. [[https://help.sonatype.com/repomanager3/installation]]
+You can view its documentation here. https://help.sonatype.com/repomanager3/installation
 
-## Now your environment is good and ready. Let's head to the Building Steps.
+### Now your environment is good and ready, Let's head to the Building Steps
 
-## Requirements:
+### Requirements
 
  * git
  * cmake (3.6 or higher)
@@ -89,7 +87,7 @@ sudo make install
 
 check the version again.
 
-## Install other Requirements
+### Install other Requirements
 
 ```
 sudo apt-get purge maven maven2 maven3
@@ -98,9 +96,9 @@ sudo apt-get update
 sudo apt-get install maven build-essential libgomp1 git
 ```
 
-## Install Prerequisite Architecture
+### Install Prerequisite Architecture
 
-### OpenBLAS
+#### OpenBLAS
 
 ```
 sudo apt-get install libopenblas-dev
@@ -116,15 +114,15 @@ sudo cp libopenblas.so liblapack.so.3
 sudo cp libopenblas.so libblas.so.3
 ```
 
-### ATLAS
+#### ATLAS
 
 ```
 sudo apt-get install libatlas-base-dev libatlas-dev
 ```
 
-# Installing the DL4J Stack
+## Installing the DL4J Stack
 
-## Get the source code:
+### Get the source code
 
 ```
 git clone https://github.com/deeplearning4j/deeplearning4j.git
@@ -152,8 +150,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIBND4J_HOME/include
 ```
 You can add those lines at the end of your `bashrc` file.
 
-
-## Build Commands
+### Build Commands
 
 When you are in the base folder run these commands. assume that:
 
@@ -182,10 +179,10 @@ Checkout your device compute capability here: https://en.wikipedia.org/wiki/CUDA
 mvn clean install -Dlibnd4j.cuda=x.x -Dlibnd4j.compute=xx -Dmaven.test.skip -DskipTests -Dmaven.javadoc.skip=true -pl '!./nd4j/nd4j-backends/nd4j-tests'
 ```
 
-Sometimes I had to use -U for maven to force update the packages through Nexus. 
-And I had to add this maven repository(proxy) to the Nexus: [[http://maven.restlet.org]] 
-You can search to find how to do this. It's really simple forward.
+Sometimes you have to use -U for maven to force update the packages through Nexus. 
 
-## You can check DL4J tutorials and docs pages for more.
+It's better to add this maven repository(proxy) to the Nexus: http://maven.restlet.org 
 
-here: [[https://deeplearning4j.org/docs/latest/]] and here: [[https://deeplearning4j.org/tutorials/]]
+### You can check DL4J tutorials and docs pages for more
+
+here: https://deeplearning4j.org/docs/latest/ and here: https://deeplearning4j.org/tutorials/
