@@ -84,8 +84,8 @@ namespace nd4j {
             std::vector<nd4j::DataType> _allowedOuts;
 
             // optional per-input configuration
-            std::map<int, nd4j::DataType> _outputTypes;
-            std::map<int, nd4j::DataType> _inputTypes;
+            std::map<int, std::vector<nd4j::DataType>> _outputTypes;
+            std::map<int, std::vector<nd4j::DataType>> _inputTypes;
 
         public:
             // default constructor

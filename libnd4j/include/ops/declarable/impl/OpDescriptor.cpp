@@ -193,18 +193,30 @@ namespace nd4j {
         }
 
         OpDescriptor* OpDescriptor::setAllowedInputTypes(int index, const std::vector<nd4j::DataType> &dtype) {
+            _inputTypes[index] = dtype;
             return this;
         }
 
         OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, const std::vector<nd4j::DataType> &dtype) {
+            _outputTypes[index] = dtype;
             return this;
         }
 
         OpDescriptor* OpDescriptor::setAllowedInputTypes(int index,  nd4j::DataType dtype) {
+            if (_inputTypes.count(index) == 0)
+                _inputTypes[index] = {dtype};
+            else
+                _inputTypes[index].emplace_back(dtype);
+
             return this;
         }
 
         OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, nd4j::DataType dtype) {
+            if (_outputTypes.count(index) == 0)
+                _outputTypes[index] = {dtype};
+            else
+                _outputTypes[index].emplace_back(dtype);
+
             return this;
         }
 
