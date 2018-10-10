@@ -87,6 +87,7 @@ namespace nd4j {
             std::map<int, std::vector<nd4j::DataType>> _outputTypes;
             std::map<int, std::vector<nd4j::DataType>> _inputTypes;
 
+            bool checkDataTypesMatch(nd4j::DataType needle, std::vector<nd4j::DataType> &haystack) const;
         public:
             // default constructor
             OpDescriptor(int numInputs, int numOutputs, std::string opName, bool allowsInplace);

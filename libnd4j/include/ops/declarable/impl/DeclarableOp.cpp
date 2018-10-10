@@ -305,6 +305,24 @@ namespace nd4j {
                 cnt++;
             }
 
+            // checking optionally available outputs
+            auto varSpace = block.getVariableSpace();
+            for (int index = 0; index < 65536; index++) {
+                if (varSpace->hasVariable(block.nodeId(), index)) {
+                    auto var = block.variable(block.nodeId(), index);
+
+                    // only validating non-null variables
+                    if (var != nullptr && var->hasNDArray()) {
+                        auto array = var->getNDArray();
+
+                        if (!_descriptor->checkOutputMatch(index, array->dataType())) {
+                            return ND4J_STATUS_BAD_ARGUMENTS;
+                        }
+                    }
+                } else
+                    break;
+            }
+
 
             return ND4J_STATUS_OK;
         }

@@ -221,16 +221,44 @@ namespace nd4j {
             return this;
         }
 
-        bool OpDescriptor::checkInputMatch(int index, nd4j::DataType dataType) {
-            if (_inputTypes.empty() || _inputTypes.count(index) == 0) {
-                //if
-            } else {
+        bool OpDescriptor::checkDataTypesMatch(nd4j::DataType needle, std::vector<nd4j::DataType> &haystack) const {
+            // first we're checking for direct input type match
+            if (std::find(haystack.begin(), haystack.end(), needle) == haystack.end()) {
 
+                // if direct input match failed - we're checking for ANY as allowed input
+                if (std::find(haystack.begin(), haystack.end(), nd4j::DataType::ANY) == haystack.end())
+                    return false;
+                else
+                    return true;
+            } else {
+                return true;
+            }
+        }
+
+        bool OpDescriptor::checkInputMatch(int index, nd4j::DataType dataType) {
+            // we check for per-input types first
+            if (_inputTypes.empty() || _inputTypes.count(index) == 0) {
+                // checking global input types
+                return checkDataTypesMatch(dataType, _allowedIns);
+            } else {
+                // checking data type for specified input
+                auto allowed = _inputTypes[index];
+                return checkDataTypesMatch(dataType, allowed);
             }
             return true;
         }
 
         bool OpDescriptor::checkOutputMatch(int index, nd4j::DataType dataType) {
+            // we check for per-output types first
+            if (_outputTypes.empty() || _outputTypes.count(index) == 0) {
+
+                // checking global output types
+                return checkDataTypesMatch(dataType, _allowedOuts);
+            } else {
+                // checking data type for specified output
+                auto allowed = _outputTypes[index];
+                return checkDataTypesMatch(dataType, allowed);
+            }
             return true;
         }
 

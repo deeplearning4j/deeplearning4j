@@ -72,3 +72,34 @@ TEST_F(DataTypesValidationTests, Basic_Test_2) {
 
     delete result;
 }
+
+
+TEST_F(DataTypesValidationTests, Basic_Test_3) {
+    auto input = NDArrayFactory::create<int8_t>('c', {1, 1, 1, 4});
+    auto weights = NDArrayFactory::create<float16>('c', {1, 1, 1, 4});
+    auto exp = NDArrayFactory::create<float>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
+    auto out = NDArrayFactory::create<float>('c', {1, 4, 1, 4});
+
+    weights.assign(2.0);
+    input.linspace(1);
+
+    nd4j::ops::conv2d op;
+    auto result = op.execute({&input, &weights}, {&out}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
+    ASSERT_EQ(Status::OK(), result);
+
+    ASSERT_EQ(exp, out);
+}
+
+TEST_F(DataTypesValidationTests, Basic_Test_4) {
+    auto input = NDArrayFactory::create<int8_t>('c', {1, 1, 1, 4});
+    auto weights = NDArrayFactory::create<float16>('c', {1, 1, 1, 4});
+    auto exp = NDArrayFactory::create<float>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
+    auto out = NDArrayFactory::create<int8_t>('c', {1, 4, 1, 4});
+
+    weights.assign(2.0);
+    input.linspace(1);
+
+    nd4j::ops::conv2d op;
+    auto result = op.execute({&input, &weights}, {&out}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
+    ASSERT_EQ(ND4J_STATUS_VALIDATION, result);
+}
