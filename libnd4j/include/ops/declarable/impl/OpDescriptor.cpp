@@ -50,42 +50,6 @@ namespace nd4j {
             _scalar = isScalar;
         }
 
-        OpDescriptor* OpDescriptor::setAllowedInputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
-            _allowedIns = dtypes;
-            return this;
-        }
-
-        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
-            _allowedOuts = dtypes;
-            return this;
-        }
-
-        OpDescriptor* OpDescriptor::setAllowedInputTypes(const nd4j::DataType dtype) {
-            _allowedIns.clear();
-            _allowedIns.emplace_back(dtype);
-            return this;
-        }
-
-        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const nd4j::DataType dtype) {
-            _allowedOuts.clear();
-            _allowedOuts.emplace_back(dtype);
-            return this;
-        }
-
-        OpDescriptor* OpDescriptor::setInputType(const int idx, const nd4j::DataType dtype) {
-            _inputTypes[idx] = dtype;
-            return this;
-        }
-
-        OpDescriptor* OpDescriptor::setOutputType(const int idx, const nd4j::DataType dtype) {
-            _outputTypes[idx] = dtype;
-            return this;
-        }
-
-        OpDescriptor* OpDescriptor::setSameMode(const bool reallySame) {
-            _sameMode = reallySame;
-            return this;
-        }
 
         bool OpDescriptor::operator==(const OpDescriptor& other) const {
             if (_hash == -1 && other._hash == -1)
@@ -192,6 +156,43 @@ namespace nd4j {
             return _inputType;
         }
 
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
+            _allowedIns = dtypes;
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
+            _allowedOuts = dtypes;
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(const nd4j::DataType dtype) {
+            _allowedIns.clear();
+            _allowedIns.emplace_back(dtype);
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const nd4j::DataType dtype) {
+            _allowedOuts.clear();
+            _allowedOuts.emplace_back(dtype);
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setInputType(const int idx, const nd4j::DataType dtype) {
+            _inputTypes[idx] = { dtype };
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setOutputType(const int idx, const nd4j::DataType dtype) {
+            _outputTypes[idx] = { dtype };
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setSameMode(const bool reallySame) {
+            _sameMode = reallySame;
+            return this;
+        }
+
         OpDescriptor* OpDescriptor::setAllowedInputTypes(int index, const std::vector<nd4j::DataType> &dtype) {
             _inputTypes[index] = dtype;
             return this;
@@ -221,6 +222,11 @@ namespace nd4j {
         }
 
         bool OpDescriptor::checkInputMatch(int index, nd4j::DataType dataType) {
+            if (_inputTypes.empty() || _inputTypes.count(index) == 0) {
+                if
+            } else {
+
+            }
             return true;
         }
 
