@@ -131,7 +131,7 @@ namespace nd4j {
                 newShapeInfo[3] = oW;
                 newShapeInfo[4] = iC;
             }
-            ShapeUtils::updateStridesAndType(newShapeInfo, block.dataType(), order); // as TF says
+            ShapeUtils::updateStridesAndType(newShapeInfo, inShape, order); // as TF says
 
             return SHAPELIST(newShapeInfo);
         }
