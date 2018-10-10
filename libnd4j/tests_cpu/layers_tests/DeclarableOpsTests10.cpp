@@ -138,7 +138,7 @@ TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 
     auto in = NDArrayFactory::create<double>({1., 1., 1., 1., 1.});
 //    auto pad = NDArrayFactory::create<double>('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new long[]{1, 2});
-    auto pad = NDArrayFactory::create<double>('c', {1, 2}, {1., 1.});
+    auto pad = NDArrayFactory::create<int>('c', {1, 2}, {1, 1});
 //    auto value(10.0);
 
     auto exp = NDArrayFactory::create<double>({10., 1., 1., 1., 1., 1., 10.});
@@ -175,7 +175,7 @@ TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Where_SGO_Test_1) {
-    auto input = NDArrayFactory::create<double>('c', {3, 3}, {1., 0., 0., 1., 1., 0., 1., 1., 1.});
+    auto input = NDArrayFactory::create<bool>('c', {3, 3}, {true, false, false, true, true, false, true, true, true});
     //auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
     auto exp = NDArrayFactory::create<Nd4jLong>('c', {6, 2}, {0LL, 0LL, 1LL, 0LL, 1LL, 1LL, 2LL, 0LL, 2LL, 1LL, 2LL, 2LL});
 
