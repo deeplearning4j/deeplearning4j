@@ -223,7 +223,7 @@ namespace nd4j {
 
         bool OpDescriptor::checkInputMatch(int index, nd4j::DataType dataType) {
             if (_inputTypes.empty() || _inputTypes.count(index) == 0) {
-                if
+                //if
             } else {
 
             }
