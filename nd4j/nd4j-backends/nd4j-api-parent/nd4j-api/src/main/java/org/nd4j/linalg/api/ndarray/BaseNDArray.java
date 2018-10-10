@@ -1400,8 +1400,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(final INDArray arr) {
-        Preconditions.checkState((this.isScalar() && arr.isScalar()) || (this.isVector() && arr.isVector()) || this.equalShapes(arr),
-                "Cannot assign arrays: arrays must both be scalars, both vectors, or shapes must be equal. Attempting to do x.assign(y)" +
+        Preconditions.checkState((this.isScalar() && arr.isScalar()) || (this.isVector() && arr.isVector()) || Shape.shapeEqualWithSqueeze(this.shape(), arr.shape()),
+                "Cannot assign arrays: arrays must both be scalars, both vectors, or shapes must be equal other than size 1 dimensions. Attempting to do x.assign(y)" +
                         " with x.shape=%ndShape and y.shape=%ndShape", this, arr );
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this, arr, this, length()));
         return this;
@@ -4565,12 +4565,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        INDArray ret = Nd4j.createUninitialized(shape, order);
         if (order != ordering()) {
+            INDArray ret = Nd4j.createUninitialized(shape, order);
             ret.setData(dup(order).data());
-        } else
-            ret.assign(this);
-        return ret;
+            return ret;
+        } else {
+            INDArray ret = this.dup(order);
+            return ret.reshape(order, shape);
+        }
     }
 
     @Override
