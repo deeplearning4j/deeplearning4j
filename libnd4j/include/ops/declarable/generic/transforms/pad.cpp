@@ -72,7 +72,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 
 DECLARE_TYPES(pad) {
     getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
-    getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
+    getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64}); // INT32 with TF, but used also INT64 due long shapes
     getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
@@ -94,9 +94,8 @@ DECLARE_SHAPE_FN(pad) {
     for(int i=1; i <= rank; ++i)
     	outShapeInfo[i] = inputShapeInfo[i] + paddings->e<Nd4jLong>(i-1,0) + paddings->e<Nd4jLong>(i-1,1);
 	
-    shape::updateStrides(outShapeInfo, shape::order(inputShapeInfo));
-    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShapeInfo));
-//    ArrayOptions::setDataType(outShapeInfo, block.dataType());
+    ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
+
     return SHAPELIST(outShapeInfo);
     
 }

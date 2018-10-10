@@ -1482,7 +1482,7 @@ TEST_F(DeclarableOpsTests1, TestLegacyExecution1) {
     auto z = NDArrayFactory::create_<float>('c', {10, 10});
 
     auto exp = NDArrayFactory::create_<float>('c', {10, 10});
-    exp->assign(3.0);
+    exp->assign(3.0f);
 
     std::string opName("add");
 
@@ -4220,7 +4220,7 @@ TEST_F(DeclarableOpsTests1, Reverse_9 ) {
 
 TEST_F(DeclarableOpsTests1, Reverse_10 ) {
     auto x = NDArrayFactory::create<double>('c', {4, 3}, {1.5375735, 0.1592365, 0.09966054, 0.677872, 1.144433, -1.0355669, 0.48456487, -0.67863184, 0.85020787, 0.13950661, 0.20998026, -1.1660044});
-    auto i = NDArrayFactory::create<double>('c', {1}, {-1.0});
+    auto i = NDArrayFactory::create<int>('c', {1}, {-1});
     auto e = NDArrayFactory::create<double>('c', {4, 3}, {0.09966054, 0.1592365, 1.5375735,  -1.0355669, 1.144433, 0.677872,   0.85020787, -0.67863184, 0.48456487,  -1.1660044, 0.20998026, 0.13950661});
 
     nd4j::ops::reverse op;
@@ -4324,11 +4324,11 @@ TEST_F(DeclarableOpsTests1, Reverse_14 ) {
 TEST_F(DeclarableOpsTests1, Pad_1) {
 
     float inBuff[]  = {1,2,3,4,5,6};
-    float padBuff[] = {1,1,2,2};
+    int padBuff[] = {1,1,2,2};
     float expBuff[] = {0,0,0,0,0,0,0, 0,0,1,2,3,0,0, 0,0,4,5,6,0,0, 0,0,0,0,0,0,0};    
 
     auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3});
-    auto paddings = NDArrayFactory::create<float>(padBuff, 'c', {2,2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {2,2});
     auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7});
 
     nd4j::ops::pad op;
@@ -4351,11 +4351,11 @@ TEST_F(DeclarableOpsTests1, Pad_1) {
 TEST_F(DeclarableOpsTests1, Pad_2) {
 
     float inBuff[]  = {1,2,3,4,5,6};
-    float padBuff[] = {1,1,2,2};
+    int padBuff[] = {1,1,2,2};
     float expBuff[] = {6,5,4,5,6,5,4, 3,2,1,2,3,2,1, 6,5,4,5,6,5,4, 3,2,1,2,3,2,1};    
 
     auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3});
-    auto paddings = NDArrayFactory::create<float>(padBuff, 'c', {2,2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {2,2});
     auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7});
 
     nd4j::ops::pad op;
@@ -4378,11 +4378,11 @@ TEST_F(DeclarableOpsTests1, Pad_2) {
 TEST_F(DeclarableOpsTests1, Pad_3) {
 
     float inBuff[]  = {1,2,3,4,5,6};
-    float padBuff[] = {1,1,2,2};
+    int padBuff[] = {1,1,2,2};
     float expBuff[] = {2,1,1,2,3,3,2, 2,1,1,2,3,3,2, 5,4,4,5,6,6,5, 5,4,4,5,6,6,5};    
 
     auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3});
-    auto paddings = NDArrayFactory::create<float>(padBuff, 'c', {2,2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {2,2});
     auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7});
 
     nd4j::ops::pad op;
@@ -4405,11 +4405,11 @@ TEST_F(DeclarableOpsTests1, Pad_3) {
 TEST_F(DeclarableOpsTests1, Pad_4) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
-    float padBuff[] = {1,1,2,2,2,2};
+    int padBuff[] = {1,1,2,2,2,2};
     float expBuff[] = {0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 1, 2, 3,0,0,0,0, 4, 5, 6,0,0,0,0, 7, 8, 9,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0,10,11,12,0,0,0,0,13,14,15,0,0,0,0,16,17,18,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0};
 
     auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3,3});
-    auto paddings = NDArrayFactory::create<float>(padBuff, 'c', {3,2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {3,2});
     auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7,7});
 
     nd4j::ops::pad op;
@@ -4433,10 +4433,10 @@ TEST_F(DeclarableOpsTests1, Pad_4) {
 TEST_F(DeclarableOpsTests1, Pad_5) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
-    float padBuff[] = {1,1,2,2,2,2};
+    int padBuff[] = {1,1,2,2,2,2};
     float expBuff[] = {18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 15,14,13,14,15,14,13, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 6, 5, 4, 5, 6, 5, 4, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 15,14,13,14,15,14,13, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 6, 5, 4, 5, 6, 5, 4, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1};                      
     auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3,3});
-    auto paddings = NDArrayFactory::create<float>(padBuff, 'c', {3,2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {3,2});
     auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7,7});
 
     nd4j::ops::pad op;
@@ -4459,11 +4459,11 @@ TEST_F(DeclarableOpsTests1, Pad_5) {
 TEST_F(DeclarableOpsTests1, Pad_6) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
-    float padBuff[] = {1,1,2,2,2,2};
+    int padBuff[] = {1,1,2,2,2,2};
     float expBuff[] = {5, 4, 4, 5, 6, 6, 5, 2, 1, 1, 2, 3, 3, 2, 2, 1, 1, 2, 3, 3, 2, 5, 4, 4, 5, 6, 6, 5, 8, 7, 7, 8, 9, 9, 8, 8, 7, 7, 8, 9, 9, 8, 5, 4, 4, 5, 6, 6, 5, 5, 4, 4, 5, 6, 6, 5, 2, 1, 1, 2, 3, 3, 2, 2, 1, 1, 2, 3, 3, 2, 5, 4, 4, 5, 6, 6, 5, 8, 7, 7, 8, 9, 9, 8, 8, 7, 7, 8, 9, 9, 8, 5, 4, 4, 5, 6, 6, 5, 14,13,13,14,15,15,14, 11,10,10,11,12,12,11, 11,10,10,11,12,12,11, 14,13,13,14,15,15,14, 17,16,16,17,18,18,17, 17,16,16,17,18,18,17, 14,13,13,14,15,15,14, 14,13,13,14,15,15,14, 11,10,10,11,12,12,11, 11,10,10,11,12,12,11, 14,13,13,14,15,15,14, 17,16,16,17,18,18,17, 17,16,16,17,18,18,17, 14,13,13,14,15,15,14};
 
     auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3,3});
-    auto paddings = NDArrayFactory::create<float>(padBuff, 'c', {3,2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {3,2});
     auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7,7});
 
     nd4j::ops::pad op;
@@ -4486,10 +4486,10 @@ TEST_F(DeclarableOpsTests1, Pad_7)
 {
 
     float inBuff[] =  {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-    float padBuff[] = {1, 1, 1, 1, 1, 1, 1, 1};
+    int padBuff[] = {1, 1, 1, 1, 1, 1, 1, 1};
     float expBuff[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 6, 0, 0, 7, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 0, 0, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 14, 0, 0, 15, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     auto input = NDArrayFactory::create<float>(inBuff, 'c', {2, 2, 2, 2});
-    auto paddings = NDArrayFactory::create<float>(padBuff, 'c', {4, 2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {4, 2});
     auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4, 4, 4, 4});
 
     nd4j::ops::pad op;
@@ -4512,10 +4512,10 @@ TEST_F(DeclarableOpsTests1, Pad_8)
 {
 
     float inBuff[] =  {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-    float padBuff[] = {1, 1, 1, 1, 1, 1, 1, 1};
+    int padBuff[] = {1, 1, 1, 1, 1, 1, 1, 1};
     float expBuff[] = {16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1};    
     auto input = NDArrayFactory::create<float>(inBuff, 'c', {2, 2, 2, 2});
-    auto paddings = NDArrayFactory::create<float>(padBuff, 'c', {4, 2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {4, 2});
     auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4, 4, 4, 4});
 
     nd4j::ops::pad op;
@@ -4538,10 +4538,10 @@ TEST_F(DeclarableOpsTests1, Pad_9)
 {
 
     float inBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-    float padBuff[] = {1, 1, 1, 1, 1, 1, 1, 1};
+    int padBuff[] = {1, 1, 1, 1, 1, 1, 1, 1};
     float expBuff[] = {1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4, 1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4, 5, 5, 6, 6, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 8, 8, 5, 5, 6, 6, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 8, 8, 1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4, 1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4, 5, 5, 6, 6, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 8, 8, 5, 5, 6, 6, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 8, 8, 9, 9, 10, 10, 9, 9, 10, 10, 11, 11, 12, 12, 11, 11, 12, 12, 9, 9, 10, 10, 9, 9, 10, 10, 11, 11, 12, 12, 11, 11, 12, 12, 13, 13, 14, 14, 13, 13, 14, 14, 15, 15, 16, 16, 15, 15, 16, 16, 13, 13, 14, 14, 13, 13, 14, 14, 15, 15, 16, 16, 15, 15, 16, 16, 9, 9, 10, 10, 9, 9, 10, 10, 11, 11, 12, 12, 11, 11, 12, 12, 9, 9, 10, 10, 9, 9, 10, 10, 11, 11, 12, 12, 11, 11, 12, 12, 13, 13, 14, 14, 13, 13, 14, 14, 15, 15, 16, 16, 15, 15, 16, 16, 13, 13, 14, 14, 13, 13, 14, 14, 15, 15, 16, 16, 15, 15, 16, 16};
     auto input = NDArrayFactory::create<float>(inBuff, 'c', {2, 2, 2, 2});
-    auto paddings = NDArrayFactory::create<float>(padBuff, 'c', {4, 2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {4, 2});
     auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4, 4, 4, 4});
 
     nd4j::ops::pad op;
