@@ -46,7 +46,7 @@ OP_IMPL(mergeavg, -1, 1, false) {
     DECLARE_TYPES(mergeavg) {
         getOpDescriptor()
                 ->setAllowedInputTypes({ALL_FLOATS})
-                ->setSameMode(true);
+                ->setAllowedOutputTypes({ALL_FLOATS});
     }
 }
 }

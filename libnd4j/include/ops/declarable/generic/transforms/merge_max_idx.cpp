@@ -47,7 +47,7 @@ DECLARE_SYN(MergeMaxIndex, mergemaxindex);
     DECLARE_TYPES(mergemaxindex) {
         getOpDescriptor()
                 ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setSameMode(true);
+                ->setAllowedInputTypes({ALL_INTS});
     }
 }
 }
