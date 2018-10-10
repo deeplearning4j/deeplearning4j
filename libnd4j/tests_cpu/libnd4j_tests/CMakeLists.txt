@@ -128,4 +128,3 @@ add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas
 
 target_link_libraries(runtests gtest gtest_main)
 
-

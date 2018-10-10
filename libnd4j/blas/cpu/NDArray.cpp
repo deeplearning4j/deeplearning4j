@@ -1089,7 +1089,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<in
     NDArray result(newShape, true, _workspace);
     RELEASE(newShape, _workspace);
 
-    reduceAlongDimension(op, &result, dimensions, keepDims, supportOldShapes, false);
+    reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
     return result;
 }
@@ -1104,7 +1104,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int
     NDArray result(newShape, true, _workspace);
     RELEASE(newShape, _workspace);
 
-    reduceAlongDimension(op, &result, dimensions, keepDims, supportOldShapes, false);
+    reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
     return result;
 }
@@ -1121,7 +1121,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int
     NDArray result(newShape, true, _workspace);
     RELEASE(newShape, _workspace);
 
-    reduceAlongDimension(op, &result, dimensions, keepDims, supportOldShapes, false);
+    reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
     return result;
 }
@@ -1138,7 +1138,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int
     NDArray result(newShape, true, _workspace);
     RELEASE(newShape, _workspace);
 
-    reduceAlongDimension(op, &result, dimensions, keepDims, supportOldShapes, false);
+    reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
     return result;
 }
