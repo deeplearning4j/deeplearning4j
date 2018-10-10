@@ -19,12 +19,18 @@ package org.deeplearning4j.convolution;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.CuDNNTestUtils;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -39,8 +45,10 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
@@ -236,5 +244,120 @@ public class TestConvolution extends BaseDL4JTest {
                 }
             }
         }
+    }
+
+
+    @Test
+    public void testGradientNorm() throws Exception {
+
+        int height = 100;
+        int width = 100;
+        int channels = 1;
+        int numLabels = 10;
+
+        for( int batchSize : new int[]{1, 32}) {
+
+            long seed = 12345;
+            double nonZeroBias = 1;
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(seed)
+                    .weightInit(WeightInit.DISTRIBUTION)
+                    .dist(new NormalDistribution(0.0, 0.01))
+                    .activation(Activation.RELU)
+                    .updater(new Adam(5e-3))
+                    //.biasUpdater(new Nesterovs(new StepSchedule(ScheduleType.ITERATION, 2e-2, 0.1, 20000), 0.9))
+                    .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+                    .l2(5 * 1e-4)
+                    .list()
+                    .layer(convInit("cnn1", channels, 96, new int[]{11, 11}, new int[]{4, 4},
+                            new int[]{3, 3}, 0))
+                    .layer(maxPool("maxpool1", new int[]{3, 3}))
+                    .layer(conv5x5("cnn2", 256, new int[]{1, 1}, new int[]{2, 2}, nonZeroBias))
+                    .layer(maxPool("maxpool2", new int[]{3, 3}))
+                    .layer(conv3x3("cnn3", 384, 0))
+                    .layer(conv3x3("cnn4", 384, nonZeroBias))
+                    .layer(conv3x3("cnn5", 256, nonZeroBias))
+                    .layer(maxPool("maxpool3", new int[]{3, 3}))
+                    .layer(fullyConnected("ffn1", 4096, nonZeroBias, new GaussianDistribution(0, 0.005)))
+                    .layer(fullyConnected("ffn2", 4096, nonZeroBias, new GaussianDistribution(0, 0.005)))
+                    .layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                            .name("output")
+                            .nOut(numLabels)
+                            .activation(Activation.SOFTMAX)
+                            .build())
+                    .backprop(true)
+                    .pretrain(false)
+                    .setInputType(InputType.convolutional(height, width, channels))
+                    .build();
+
+
+            MultiLayerNetwork netNoCudnn = new MultiLayerNetwork(conf.clone());
+            netNoCudnn.init();
+            MultiLayerNetwork netWithCudnn = new MultiLayerNetwork(conf.clone());
+            netWithCudnn.init();
+
+            CuDNNTestUtils.removeHelpers(netNoCudnn.getLayers());
+
+
+
+            Nd4j.getRandom().setSeed(12345);
+            for( int j=0; j<3; j++ ) {
+//                System.out.println("j=" + j);
+                INDArray f = Nd4j.rand(new int[]{batchSize, channels, height, width});
+                INDArray l = TestUtils.randomOneHot(batchSize, numLabels);
+
+                netNoCudnn.fit(f, l);
+                netWithCudnn.fit(f, l);
+
+                assertEquals(netNoCudnn.score(), netWithCudnn.score(), 1e-5);
+
+                for (Map.Entry<String, INDArray> e : netNoCudnn.paramTable().entrySet()) {
+                    boolean pEq = e.getValue().equalsWithEps(netWithCudnn.paramTable().get(e.getKey()), 1e-4);
+//                    int idx = e.getKey().indexOf("_");
+//                    int layerNum = Integer.parseInt(e.getKey().substring(0, idx));
+                    //System.out.println(e.getKey() + " - " + pEq + " - " + netNoCudnn.getLayer(layerNum).getClass().getSimpleName());
+                    assertTrue(pEq);
+                }
+
+                boolean eq = netNoCudnn.params().equalsWithEps(netWithCudnn.params(), 1e-4);
+                assertTrue(eq);
+            }
+        }
+    }
+
+
+    private static ConvolutionLayer convInit(String name, int in, int out, int[] kernel, int[] stride,
+                                             int[] pad, double bias) {
+        return new ConvolutionLayer.Builder(kernel, stride, pad).name(name)
+                .nIn(in)
+                .nOut(out)
+                .biasInit(bias)
+                .build();
+    }
+
+    private static ConvolutionLayer conv3x3(String name, int out, double bias) {
+        return new ConvolutionLayer.Builder(new int[] { 3, 3 }, new int[] { 1, 1 },
+                new int[] { 1, 1 }).name(name).nOut(out).biasInit(bias).build();
+    }
+
+    private static ConvolutionLayer conv5x5(String name, int out, int[] stride, int[] pad,
+                                            double bias) {
+        return new ConvolutionLayer.Builder(new int[] { 5, 5 }, stride, pad).name(name)
+                .nOut(out)
+                .biasInit(bias)
+                .build();
+    }
+
+    private static SubsamplingLayer maxPool(String name, int[] kernel) {
+        return new SubsamplingLayer.Builder(kernel, new int[] { 2, 2 }).name(name).build();
+    }
+
+    private static DenseLayer fullyConnected(String name, int out, double bias, Distribution dist) {
+        return new DenseLayer.Builder().name(name)
+                .nOut(out)
+                .biasInit(bias)
+                .dist(dist)
+                .build();
     }
 }

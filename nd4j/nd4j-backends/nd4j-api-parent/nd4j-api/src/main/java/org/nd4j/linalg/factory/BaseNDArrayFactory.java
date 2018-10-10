@@ -242,7 +242,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray ret = Nd4j.create(1, length);
         int linearIndex = 0;
         for (INDArray d : matrices) {
-            ret.put(new INDArrayIndex[] {NDArrayIndex.interval(linearIndex, linearIndex + d.length())}, d);
+            INDArray vector = d.reshape(d.length());
+            ret.put(new INDArrayIndex[] {NDArrayIndex.interval(linearIndex, linearIndex + d.length())}, vector);
             linearIndex += d.length();
         }
 
@@ -289,17 +290,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray toFlattened(INDArray... matrices) {
-        int length = 0;
-        for (INDArray m : matrices)
-            length += m.length();
-        INDArray ret = Nd4j.create(1, length);
-        int linearIndex = 0;
-        for (INDArray d : matrices) {
-            ret.put(new INDArrayIndex[] {NDArrayIndex.interval(linearIndex, linearIndex + d.length())}, d);
-            linearIndex += d.length();
-        }
-
-        return ret;
+        return toFlattened(Nd4j.order(), Arrays.asList(matrices));
     }
 
 

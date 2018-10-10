@@ -20,6 +20,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.normalization.BatchNormalization;
+import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization;
 import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.nd4j.base.Preconditions;
 
@@ -45,7 +46,7 @@ public class CuDNNTestUtils {
                 Field f2 = SubsamplingLayer.class.getDeclaredField("helper");
                 f2.setAccessible(true);
                 f2.set(l, null);
-            } else if(l instanceof BatchNormalization){
+            } else if(l instanceof BatchNormalization) {
                 Field f3 = BatchNormalization.class.getDeclaredField("helper");
                 f3.setAccessible(true);
                 f3.set(l, null);
@@ -53,11 +54,15 @@ public class CuDNNTestUtils {
                 Field f4 = LSTM.class.getDeclaredField("helper");
                 f4.setAccessible(true);
                 f4.set(l, null);
+            } else if(l instanceof LocalResponseNormalization){
+                Field f5 = LocalResponseNormalization.class.getDeclaredField("helper");
+                f5.setAccessible(true);
+                f5.set(l, null);
             }
 
 
             if(l.getHelper() != null){
-                throw new IllegalStateException("Did not remove helper");
+                throw new IllegalStateException("Did not remove helper for layer: " + l.getClass().getSimpleName());
             }
         }
     }
