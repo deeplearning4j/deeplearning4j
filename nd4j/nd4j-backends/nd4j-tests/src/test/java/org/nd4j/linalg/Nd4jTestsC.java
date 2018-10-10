@@ -1139,9 +1139,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
                     INDArray a = la.get(i).getFirst();
                     INDArray b = lb.get(i).getFirst();
 
-                    INDArray result1 = Nd4j.createUninitialized(5, 4);
-                    INDArray result2 = Nd4j.createUninitialized(5, 4);
-                    INDArray result3 = Nd4j.createUninitialized(5, 4);
+                    INDArray result1 = Nd4j.createUninitialized(new long[]{5, 4}, 'f');
+                    INDArray result2 = Nd4j.createUninitialized(new long[]{5, 4}, 'f');
+                    INDArray result3 = Nd4j.createUninitialized(new long[]{5, 4}, 'f');
 
                     Nd4j.gemm(a.dup('c'), b.dup('c'), result1, false, false, 1.0, 0.0);
                     Nd4j.gemm(a.dup('f'), b.dup('f'), result2, false, false, 1.0, 0.0);
@@ -3225,35 +3225,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray fSum = arrf.sum(0);
         assertEquals(arrc, arrf);
         assertEquals(cSum, fSum); //Expect: 4,6. Getting [4, 4] for f order
-    }
-
-    @Test
-    public void testAssignMixedC() {
-        int[] shape1 = {3, 2, 2, 2, 2, 2};
-        int[] shape2 = {12, 8};
-        int length = ArrayUtil.prod(shape1);
-
-        assertEquals(ArrayUtil.prod(shape1), ArrayUtil.prod(shape2));
-
-        INDArray arr = Nd4j.linspace(1, length, length).reshape('c', shape1);
-        INDArray arr2c = Nd4j.create(shape2, 'c');
-        INDArray arr2f = Nd4j.create(shape2, 'f');
-
-        log.info("2f data: {}", Arrays.toString(arr2f.data().asFloat()));
-
-        arr2c.assign(arr);
-        System.out.println("--------------");
-        arr2f.assign(arr);
-
-        INDArray exp = Nd4j.linspace(1, length, length).reshape('c', shape2);
-
-        log.info("arr data: {}", Arrays.toString(arr.data().asFloat()));
-        log.info("2c data: {}", Arrays.toString(arr2c.data().asFloat()));
-        log.info("2f data: {}", Arrays.toString(arr2f.data().asFloat()));
-        log.info("2c shape: {}", Arrays.toString(arr2c.shapeInfoDataBuffer().asInt()));
-        log.info("2f shape: {}", Arrays.toString(arr2f.shapeInfoDataBuffer().asInt()));
-        assertEquals(exp, arr2c);
-        assertEquals(exp, arr2f);
     }
 
     @Test
