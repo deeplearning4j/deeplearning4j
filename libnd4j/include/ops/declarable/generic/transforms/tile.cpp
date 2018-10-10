@@ -101,7 +101,7 @@ DECLARE_SHAPE_FN(tile) {
 
 
 ////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(tile_bp, 1, 1, false, 0, -2) {
+CUSTOM_OP_IMPL(tile_bp, 2, 1, false, 0, -2) {
     
     auto input = INPUT_VARIABLE(0);
     auto gradO = INPUT_VARIABLE(1);
@@ -117,12 +117,13 @@ CUSTOM_OP_IMPL(tile_bp, 1, 1, false, 0, -2) {
 
         reps = ArrayUtils::toLongVector(*(block.getIArguments()));        
     } 
-    else if (block.width() > 1)  {
+    else if (block.width() > 2)  {
         
         auto reps_vector = INPUT_VARIABLE(1);
         REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0, "TILE_BP op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !", reps_vector->lengthOf(), inRank);
 
         reps = reps_vector->template asVectorT<Nd4jLong>();
+        gradO = INPUT_VARIABLE(2);
     }
     else {
         REQUIRE_TRUE(false, 0, "TILE_BP op: this op requires repeats vector, either as IArgs or second array with length equal to rank of input array to be tiled !");
@@ -137,8 +138,11 @@ CUSTOM_OP_IMPL(tile_bp, 1, 1, false, 0, -2) {
 }
 
         DECLARE_TYPES(tile_bp) {
-            getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
-                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
+            getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+            getOpDescriptor()->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS});
+            getOpDescriptor()->setAllowedInputTypes(2, {ALL_FLOATS});
+
+            getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
         }
 
 DECLARE_SHAPE_FN(tile_bp) {
