@@ -78,9 +78,8 @@ namespace nd4j {
     FORCEINLINE nd4j::DataType DataTypeUtils::pickFloatingType(nd4j::DataType typeX) {
         // if proposed dataType is already floating point - return it
         if (isR(typeX))
-            return typeX;
-        else // return default float type otherwise
-            return Environment::getInstance()->defaultFloatDataType();
+            return typeX;        
+        return Environment::getInstance()->defaultFloatDataType();
     }
 
     FORCEINLINE bool DataTypeUtils::isR(nd4j::DataType dataType) {

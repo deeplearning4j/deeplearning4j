@@ -212,3 +212,46 @@ TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test1) {
     delete scalar3;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test2) {
+    NDArray x('c', {2, 2}, {0, 1, 2, 3}, nd4j::DataType::INT32);
+    NDArray exp1('c', {0}, {1.5}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {2}, {0.5,2.5}, nd4j::DataType::FLOAT32);
+    
+    auto* scalar1 = x.reduceAlongDimension(nd4j::reduce::Mean, {}/*whole range*/);
+    // scalar1->printShapeInfo();
+    // scalar1->printIndexedBuffer();
+    ASSERT_EQ(*scalar1, exp1);
+
+    auto* scalar2 = x.reduceAlongDimension(nd4j::reduce::Mean, {1});
+    ASSERT_EQ(*scalar2, exp2);
+
+    delete scalar1;
+    delete scalar2;    
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test3) {
+    NDArray x('c', {2, 2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);
+    NDArray exp1('c', {0}, {8.}, nd4j::DataType::HALF);
+    NDArray exp2('c', {2}, {2.,6.}, nd4j::DataType::HALF);
+    
+    auto scalar1 = x.reduceAlongDims(nd4j::reduce::Sum, {}/*whole range*/);
+    ASSERT_EQ(scalar1, exp1);
+
+    auto scalar2 = x.reduceAlongDims(nd4j::reduce::Sum, {1});
+    ASSERT_EQ(scalar2, exp2);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test4) {
+    NDArray x('c', {2, 2}, {10.5, 1.5, -2.5, -3.5}, nd4j::DataType::HALF);
+    NDArray exp1('c', {0}, {1}, nd4j::DataType::BOOL);
+    NDArray exp2('c', {2}, {1,0}, nd4j::DataType::BOOL);
+    
+    auto scalar1 = x.reduceAlongDims(nd4j::reduce::IsPositive, {}/*whole range*/);
+    ASSERT_EQ(scalar1, exp1);
+
+    auto scalar2 = x.reduceAlongDims(nd4j::reduce::IsPositive, {1});
+    ASSERT_EQ(scalar2, exp2);
+}

@@ -84,7 +84,7 @@ namespace nd4j {
                     REQUIRE_TRUE(block.getIArguments()->size() > 1, 0, "P-Norm reductions requires 2 TArguments, but only 1 was provided");
                     // FIXME: p is required here
                     //T p = T_ARG(1);
-                    input->reduceAlongDimension(reduce::NormP, output, dims, false, output->rankOf() == 2, nullptr);
+                    input->reduceAlongDimension(reduce::NormP, output, dims, false, output->rankOf() == 2);
                 }
             }
 

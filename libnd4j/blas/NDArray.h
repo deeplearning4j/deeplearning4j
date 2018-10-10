@@ -456,19 +456,19 @@ namespace nd4j {
 
         NDArray* reduceAlongDimension(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
         NDArray* reduceAlongDimension(nd4j::reduce::FloatOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
-        NDArray reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray  reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
 
         NDArray* reduceAlongDimension(nd4j::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
         NDArray* reduceAlongDimension(nd4j::reduce::SameOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
-        NDArray reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray  reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
 
         NDArray* reduceAlongDimension(nd4j::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
         NDArray* reduceAlongDimension(nd4j::reduce::BoolOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
-        NDArray reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray  reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
 
         NDArray* reduceAlongDimension(nd4j::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
         NDArray* reduceAlongDimension(nd4j::reduce::LongOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
-        NDArray reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray  reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
 
         /**
         *  method reduces array by excluding its shapes along dimensions present in given dimensions vector
@@ -477,10 +477,10 @@ namespace nd4j {
         *  keepDims - if true then put unities in place of reduced dimensions
         *  extras - extra parameters
         */ 
-        void reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, void *extras = nullptr) const;
-        void reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, void *extras = nullptr) const;
-        void reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, void *extras = nullptr) const;
-        void reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, void *extras = nullptr) const;
+        void reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, const bool checkTargetShape = true) const;
+        void reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target,  const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, const bool checkTargetShape = true) const;
+        void reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target,  const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, const bool checkTargetShape = true) const;
+        void reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target,  const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, const bool checkTargetShape = true) const;
 
         /**
         *  return variance of array elements set
@@ -1179,6 +1179,7 @@ namespace nd4j {
         FORCEINLINE bool isSameShape(NDArray &other) const;
         FORCEINLINE bool isSameShape(const std::initializer_list<Nd4jLong>& shape) const;
         FORCEINLINE bool isSameShape(const std::vector<Nd4jLong>& shape) const;
+        FORCEINLINE bool areSameShapeAndType(const NDArray& other) const;
 
         /**
         *  returns true if these two NDArrays have same rank, dimensions, strides, ews and order
@@ -1797,6 +1798,19 @@ bool NDArray::isSameShape(NDArray &other) const {
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isSameShape(const std::initializer_list<Nd4jLong>& other) const {
     return isSameShape(std::vector<Nd4jLong>(other));
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool NDArray::areSameShapeAndType(const NDArray& other) const {
+    
+    if(rankOf() != other.rankOf() || _dataType != other._dataType)
+        return false;
+
+    for(int i = 0; i < rankOf(); ++i)
+        if(sizeAt(i) != other.sizeAt(i))
+            return false;
+
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
