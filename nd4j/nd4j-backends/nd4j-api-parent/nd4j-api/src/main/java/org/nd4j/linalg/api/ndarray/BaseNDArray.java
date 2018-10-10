@@ -3685,10 +3685,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mmuli(INDArray other, INDArray result) {
         LinAlgExceptions.assertMultiplies(this, other);
-        Preconditions.checkState(result.rank() == 2 && result.size(0) == this.size(0) && result.size(1) == other.size(1),
-                "Invalid result array shape: expected shape [%s,%s], got shape %ndShape result array for %ndShape x %ndShape", this.size(0), other.size(1), result,
-                this, other);
-
+        if(other.rank() == 1){
+            //GEMV edge case
+            Preconditions.checkState(result.length() == this.size(0) && this.size(1) == other.size(0),
+                    "Invalid matrix multiplication: %ndShape x %ndShape with result shape %ndShape", this, other, result);
+        } else {
+            //Standard case
+            Preconditions.checkState(
+                    result.rank() == 2 && result.size(0) == this.size(0) && result.size(1) == other.size(1),
+                    "Invalid result array shape: expected shape [%s,%s], got shape %ndShape result array for %ndShape x %ndShape", this.size(0), other.size(1), result,
+                    this, other);
+        }
 
         if (other.isScalar()) {
             return muli(other.getDouble(0), result);
