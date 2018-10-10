@@ -64,7 +64,11 @@ DECLARE_SYN(pack, stack);
 DECLARE_SYN(Pack, stack);
 
 	DECLARE_TYPES(stack) {
-		getOpDescriptor()->setSameMode(true);
+		//getOpDescriptor()->setSameMode(true);
+		getOpDescriptor()
+		    ->setAllowedInputTypes(DataType::ANY)
+		    ->setAllowedOutputTypes(DataType::ANY);
+
 	}
 
 DECLARE_SHAPE_FN(stack) {
