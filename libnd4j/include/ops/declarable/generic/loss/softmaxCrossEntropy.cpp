@@ -140,7 +140,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
 		DECLARE_TYPES(softmax_cross_entropy_loss) {
 			getOpDescriptor()
-					->setAllowedInputTypes(nd4j::DataType::ANY)
+					->setAllowedInputTypes(0, {ALL_FLOATS})
+					->setAllowedInputTypes(1, {ALL_FLOATS})
+					->setAllowedInputTypes(2, {DataType::INT32, DataType::INT64})
 					->setAllowedOutputTypes({ALL_FLOATS});
 		}
 
@@ -155,18 +157,21 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
     REQUIRE_TRUE(shape::shapeEquals(logitsShapeInfo, labelsShapeInfo), 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly!", ShapeUtils::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils::shapeAsString(logitsShapeInfo).c_str());
 
 	std::vector<int> dimensions = {-1};
-    auto reducedShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(labelsShapeInfo), dimensions, labelsShapeInfo, false, true, block.getWorkspace());
+    auto reducedShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(logitsShapeInfo), dimensions, logitsShapeInfo, false, true, block.getWorkspace());
    
     // if scalar is required
     const int rank = 2;
-    if(INT_ARG(0) != 0) {
+    if(INT_ARG(0) != 0) { // reduced shape of scalar!!!
     	RELEASE(reducedShapeInfo, block.workspace());
+    	reducedShapeInfo = shape::createScalarShapeInfo();// (block.workspace()); //ShapeUtils:: ::createScalarShapeInfo
+    	/*
     	ALLOCATE(reducedShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
     	reducedShapeInfo[0] = rank;
     	reducedShapeInfo[1] = reducedShapeInfo[2] = reducedShapeInfo[3] = reducedShapeInfo[4] = 1;
     	reducedShapeInfo[5] = 0;
     	reducedShapeInfo[6] = 1;
-    	reducedShapeInfo[7] = 99;    	
+    	reducedShapeInfo[7] = 99;
+    	 */
     }    
 	ArrayOptions::setDataType(reducedShapeInfo, ArrayOptions::dataType(logitsShapeInfo)); // As TF doc says
     return SHAPELIST(reducedShapeInfo);    

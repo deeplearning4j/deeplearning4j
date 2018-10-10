@@ -41,7 +41,7 @@ OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false) {
     // input validation    		       
     REQUIRE_TRUE(labelsRank == logitsRank - 1, 0, "SPARSE_SOFTMAX_CROSS_ENTROPY_LOSS_WITH_LOGITS OP: input arrays should satisfy relation (labels_rank = logits_rank - 1), but got labels_rank = %i and logits_rank = %i instead !", labelsRank, logitsRank);
 
-    std::vector<Nd4jLong> labelsShape = labels->getShapeAsVector();
+    std::vector<Nd4jLong> labelsShape = labels->getShapeAsVector(); // this is correct
     std::vector<Nd4jLong> logitsShape = logits->getShapeAsVector();
     bool equalSoft = true;
     for (size_t i = 1; i < labelsShape.size(); ++i)
@@ -60,8 +60,9 @@ OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false) {
 
         DECLARE_TYPES(sparse_softmax_cross_entropy_loss_with_logits) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes(0, {nd4j::DataType::INT32, nd4j::DataType::INT64})
+                    ->setAllowedInputTypes(1, {nd4j::DataType::FLOAT32, nd4j::DataType::DOUBLE})
+                    ->setAllowedOutputTypes({nd4j::DataType::FLOAT32, nd4j::DataType::DOUBLE});
         }
 
 

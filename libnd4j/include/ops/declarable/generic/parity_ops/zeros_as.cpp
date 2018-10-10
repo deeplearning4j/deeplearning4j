@@ -28,7 +28,7 @@ namespace nd4j {
         OP_IMPL(zeros_as, 1, 1, false) {
             auto out = OUTPUT_VARIABLE(0);
 
-            *out = 0.f;
+            out->assign(0); // output is filled by zero by default
 
             return Status::OK();
         }
@@ -38,6 +38,7 @@ namespace nd4j {
         DECLARE_TYPES(zeros_as) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY)
                     ->setSameMode(true);
         }
     }
