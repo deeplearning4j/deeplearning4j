@@ -76,7 +76,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         this.cacheMode = mode;
     }
 
-    protected LayerConfT layerConf() {
+    public LayerConfT layerConf() {
         return (LayerConfT) this.conf.getLayer();
     }
 
