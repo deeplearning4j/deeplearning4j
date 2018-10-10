@@ -79,7 +79,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int inH = (int) (isNCDHW ? input.size(3) : input.size(2));
         int inW = (int) (isNCDHW ? input.size(4) : input.size(3));
 
-        int outEpsChannels = (int) (isNCDHW ? weights.size(1) : weights.size(3));
+        int outEpsChannels = (int) layerConf().getNIn();
 
         int[] dilation = layerConfig.getDilation();
         int[] kernel = layerConfig.getKernelSize();
@@ -197,19 +197,26 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int inH = (int) (isNCDHW ? input.size(3) : input.size(2));
         int inW = (int) (isNCDHW ? input.size(4) : input.size(3));
 
-        int outWeightChannels = (int) (isNCDHW ? weights.size(0) : weights.size(4));
-        int inWeightChannels = (int) (isNCDHW ? weights.size(1) : weights.size(3));
+        int outWeightChannels = (int)layerConf().getNOut();
+        int inWeightChannels = (int)layerConf().getNIn();
 
         if (inputChannels != inWeightChannels) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
+            long dataInCh = isNCDHW ? input.size(1) : input.size(4);
+            String df;
+            if(isNCDHW){
+                df = ", dataFormat=NCDHW, [minibatch, inputChannels, depth, height, width]=";
+            } else {
+                df = ", dataFormat=NDHWC, [minibatch, depth, height, width, inputChannels]=";
+            }
             throw new DL4JInvalidInputException("Cannot do forward pass in Convolution3D layer (layer name = "
                     + layerName
                     + ", layer index = " + index + "): number of input array channels does not match " +
                     "CNN layer configuration"
-                    + " (data input channels = " + input.size(1)
-                    + ", [minibatch, inputChannels, depth, height, width]="
+                    + " (data input channels = " + dataInCh
+                    + df
                     + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inWeightChannels + ") "
                     + layerId());
         }

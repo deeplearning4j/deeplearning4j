@@ -134,7 +134,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                             MultiLayerNetwork net = new MultiLayerNetwork(conf);
                                             net.init();
 
-                                            String msg = "Minibatch size = " + miniBatchSize + ", activationFn=" + afn
+                                            String msg = "DataFormat = " + df + ", minibatch size = " + miniBatchSize + ", activationFn=" + afn
                                                     + ", kernel = " + Arrays.toString(kernel) + ", stride = "
                                                     + Arrays.toString(stride) + ", mode = " + mode.toString()
                                                     + ", input depth " + depth + ", input height " + height
