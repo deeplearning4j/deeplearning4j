@@ -97,7 +97,7 @@ namespace functions {
                                            extraParams);
                 }
 
-                return (Z) OpType::getValue(biasCorrected, startingIndex);
+                return OpType::getValue(biasCorrected, startingIndex);
             }
             else {
                 Nd4jLong xCoords[MAX_RANK];
@@ -116,7 +116,7 @@ namespace functions {
                     startingIndex = update(startingIndex, curr, extraParams);
                 }
 
-                return (Z)OpType::getValue(biasCorrected, startingIndex);
+                return OpType::getValue(biasCorrected, startingIndex);
             }
         }
 

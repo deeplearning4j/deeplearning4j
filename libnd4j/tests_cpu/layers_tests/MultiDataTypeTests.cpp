@@ -255,3 +255,16 @@ TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test4) {
     auto scalar2 = x.reduceAlongDims(nd4j::reduce::IsPositive, {1});
     ASSERT_EQ(scalar2, exp2);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_varianceNumber_test1) {
+    NDArray x('f', {2, 2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray exp1('c', {0}, {1.666666667}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {0}, {1.118033989}, nd4j::DataType::FLOAT32);
+    
+    auto scalar1 = x.varianceNumber(variance::SummaryStatsVariance);
+    ASSERT_EQ(scalar1, exp1);
+
+    auto scalar2 = x.varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    ASSERT_EQ(scalar2, exp2);
+}

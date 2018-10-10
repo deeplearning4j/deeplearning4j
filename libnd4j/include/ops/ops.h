@@ -3870,7 +3870,7 @@ namespace simdOps {
 	class SummaryStatsVariance {
 	public:
 
-        static _CUDA_HD inline X getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
+        static _CUDA_HD inline Z getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
 			if (biasCorrected) {
 				Z ret = static_cast<Z>(val.varianceBiasCorrected());
 				if (ret < static_cast<X>(0.0f))
@@ -3889,7 +3889,7 @@ namespace simdOps {
 	class SummaryStatsStandardDeviation {
 	public:
 
-        static _CUDA_HD inline X getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
+        static _CUDA_HD inline Z getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
 			if (biasCorrected) {
 				auto ret = val.varianceBiasCorrected();
 				if (ret < static_cast<X>(0.0f))
@@ -3897,7 +3897,7 @@ namespace simdOps {
 				else
 					return nd4j::math::nd4j_sqrt<double, Z>(ret);
 			}
-			return  nd4j::math::nd4j_sqrt<double, X>(val.variance());
+			return  nd4j::math::nd4j_sqrt<double, Z>(val.variance());
 		}
 
         static _CUDA_HD inline functions::summarystats::SummaryStatsData<X> op(functions::summarystats::SummaryStatsData<X> d1, Z *extraParams) {
