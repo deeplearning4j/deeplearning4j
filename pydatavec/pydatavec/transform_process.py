@@ -18,6 +18,7 @@
 from collections import OrderedDict
 from .conditions import *
 from .schema import Schema
+import warnings
 
 
 def _dq(x):
@@ -75,19 +76,28 @@ class TransformProcess(object):
             columns = columns[0]
             if type(columns) in (list, tuple):
                 self.add_step("removeAllColumnsExceptFor", *columns)
+                todel = []
                 for c in self.final_schema.columns:
                     if c not in columns:
-                        del self.final_schema.columns[c]
+                        todel.append(c)
+                for c in todel:
+                    del self.final_schema.columns[c]
             else:
                 self.add_step("removeAllColumnsExceptFor", columns)
+                todel = []
                 for c in self.final_schema.columns:
                     if c != columns:
-                        del self.final_schema.columns[columns]
+                        todel.append(c)
+                for c in todel:
+                    del self.final_schema.columns[c]
         else:
             self.add_step("removeAllColumnsExceptFor", *columns)
+            todel = []
             for c in self.final_schema.columns:
                 if c not in columns:
-                    del self.final_schema.columns[c]
+                    todel.append(c)
+            for c in todel:
+                del self.final_schema.columns[c]
 
     def filter(self, condition):
         col_name = condition.column
@@ -282,7 +292,7 @@ class TransformProcess(object):
         for k, v in col_2_reduction.items():
             assert v in reductions, "Invalid redcution {} specified for column {}. Valid reductions are {}.".format(
                 v, k, reductions)
-        reduction_to_function = {'std': 'stddevColumns', 'uncorrected_std': 'uncorrectedStdevColumns', 'var': 'variance',
+        reduction_to_function = {'std': 'stdevColumns', 'uncorrected_std': 'uncorrectedStdevColumns', 'var': 'variance',
                                  'pop_var': 'populationVariance', 'first': 'takeFirstColumns', 'last': 'takeLastColumns', 'max': 'maxColumn'}
         if default is None:
             default = col_2_reduction[col_2_reduction.keys()[0]]

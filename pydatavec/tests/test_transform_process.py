@@ -37,7 +37,7 @@ def test_remove_except():
     tp = TransformProcess(schema)
     tp.remove_columns_except('str2')
 
-    assert set(tp.final_schema.columns.keys()) == set(['str1', 'str3'])
+    assert tp.final_schema.columns.keys() == ['str2']
 
     tp.to_java()
 
