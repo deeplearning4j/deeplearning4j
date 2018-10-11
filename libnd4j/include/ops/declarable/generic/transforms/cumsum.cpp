@@ -61,7 +61,12 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
     return Status::OK();
 }
     DECLARE_TYPES(cumsum) {
-        getOpDescriptor()->setSameMode(true);
+
+        getOpDescriptor()
+            ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+            ->setAllowedInputTypes(1, {ALL_INTS})
+            ->setAllowedOutputTypes({ALL_FLOATS})
+            ->setSameMode(false);
     }
 
 CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
@@ -113,8 +118,9 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
     return Status::OK();
 }
     DECLARE_TYPES(cumsum_bp) {
-        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
-        getOpDescriptor()->setAllowedInputTypes(1, {ALL_FLOATS});
+        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS});
+        getOpDescriptor()->setAllowedInputTypes(1, {ALL_FLOATS, ALL_INTS}); // axes can be set as the second param
+        getOpDescriptor()->setAllowedInputTypes(2, {ALL_FLOATS});
         getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
     }
 

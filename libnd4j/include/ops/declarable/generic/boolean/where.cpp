@@ -126,7 +126,7 @@ namespace nd4j {
                     ->setAllowedInputTypes(0, DataType::BOOL)
                     ->setAllowedInputTypes(1, DataType::ANY)
                     ->setAllowedInputTypes(2, DataType::ANY)
-                    ->setAllowedOutputTypes(1, DataType::INHERIT);
+                    ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS});
         }
     }
 }

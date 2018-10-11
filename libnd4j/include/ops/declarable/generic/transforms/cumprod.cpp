@@ -60,7 +60,9 @@ namespace nd4j {
 
         DECLARE_TYPES(cumprod) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(1, {ALL_INTS})
+                    ->setAllowedOutputTypes({ALL_FLOATS})
                     ->setSameMode(true);
         }
 
