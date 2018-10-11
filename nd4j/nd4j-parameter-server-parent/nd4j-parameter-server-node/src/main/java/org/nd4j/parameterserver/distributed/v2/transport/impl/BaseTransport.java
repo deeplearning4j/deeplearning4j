@@ -377,7 +377,7 @@ public abstract  class BaseTransport  implements Transport {
             // do nothing
         }  else if (message instanceof VoidChunk) {
             val chunk = (VoidChunk) message;
-            log.info("Got chunk [{}/{}] for [{}]...", chunk.getChunkId(), chunk.getNumberOfChunks(), chunk.getOriginalId());
+            //log.info("Got chunk [{}/{}] for [{}]...", chunk.getChunkId(), chunk.getNumberOfChunks(), chunk.getOriginalId());
 
             // we merge chunks to get full INDArrayMessage
             Optional<INDArrayMessage> opt = splitter.merge(chunk, voidConfiguration.getChunksBufferSize());
@@ -387,7 +387,7 @@ public abstract  class BaseTransport  implements Transport {
                 log.info("Processing message [{}] : [{}]", chunk.getOriginalId(), opt.get().getClass().getSimpleName());
                 this.internalProcessMessage(opt.get());
             } else {
-                log.info("Bad luck for [{}]", chunk.getOriginalId());
+                //log.info("Bad luck for [{}]", chunk.getOriginalId());
             }
         } else if (message instanceof INDArrayMessage) {
             // just forward message, but ONLY if it's not a Response message, since it's probably processed separately
