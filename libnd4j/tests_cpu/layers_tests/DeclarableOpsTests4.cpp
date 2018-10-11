@@ -849,7 +849,7 @@ TEST_F(DeclarableOpsTests4, Test_Add_119) {
 
 TEST_F(DeclarableOpsTests4, Test_Reshape_Negative_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    auto shape = NDArrayFactory::create<double>('c', {2}, {-1, 2});
+    auto shape = NDArrayFactory::create<Nd4jLong>('c', {2}, {-1, 2});
     auto exp = NDArrayFactory::create<double>('c', {4, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
 
     nd4j::ops::reshape op;

@@ -28,6 +28,8 @@ namespace nd4j {
 namespace ops {
     DECLARE_TYPES(cross) {
         getOpDescriptor()
+                ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
                 ->setSameMode(true);
     }
 
