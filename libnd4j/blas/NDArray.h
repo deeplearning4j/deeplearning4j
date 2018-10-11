@@ -40,25 +40,25 @@
 namespace nd4j {
 
 
-    ND4J_EXPORT NDArray operator-(const float, const NDArray&);
-    ND4J_EXPORT NDArray operator-(const float16, const NDArray&);
-    ND4J_EXPORT NDArray operator-(const double, const NDArray&);
-    ND4J_EXPORT NDArray operator-(const int, const NDArray&);
+    ND4J_EXPORT NDArray operator-(const float&, const NDArray&);
+    ND4J_EXPORT NDArray operator-(const float16&, const NDArray&);
+    ND4J_EXPORT NDArray operator-(const double&, const NDArray&);
+    ND4J_EXPORT NDArray operator-(const int&, const NDArray&);
 
-    ND4J_EXPORT NDArray operator+(const float, const NDArray&);
-    ND4J_EXPORT NDArray operator+(const float16, const NDArray&);
-    ND4J_EXPORT NDArray operator+(const double, const NDArray&);
-    ND4J_EXPORT NDArray operator+(const int, const NDArray&);
+    ND4J_EXPORT NDArray operator+(const float&, const NDArray&);
+    ND4J_EXPORT NDArray operator+(const float16&, const NDArray&);
+    ND4J_EXPORT NDArray operator+(const double&, const NDArray&);
+    ND4J_EXPORT NDArray operator+(const int&, const NDArray&);
 
-    ND4J_EXPORT NDArray operator*(const float, const NDArray&);
-    ND4J_EXPORT NDArray operator*(const float16, const NDArray&);
-    ND4J_EXPORT NDArray operator*(const double, const NDArray&);
-    ND4J_EXPORT NDArray operator*(const int, const NDArray&);
+    ND4J_EXPORT NDArray operator*(const float&, const NDArray&);
+    ND4J_EXPORT NDArray operator*(const float16&, const NDArray&);
+    ND4J_EXPORT NDArray operator*(const double&, const NDArray&);
+    ND4J_EXPORT NDArray operator*(const int&, const NDArray&);
 
-    ND4J_EXPORT NDArray operator/(const float, const NDArray&);
-    ND4J_EXPORT NDArray operator/(const float16, const NDArray&);
-    ND4J_EXPORT NDArray operator/(const double, const NDArray&);
-    ND4J_EXPORT NDArray operator/(const int, const NDArray&);
+    ND4J_EXPORT NDArray operator/(const float&, const NDArray&);
+    ND4J_EXPORT NDArray operator/(const float16&, const NDArray&);
+    ND4J_EXPORT NDArray operator/(const double&, const NDArray&);
+    ND4J_EXPORT NDArray operator/(const int&, const NDArray&);
 
     ND4J_EXPORT NDArray mmul(const NDArray&, const NDArray&);
 
@@ -906,7 +906,7 @@ namespace nd4j {
         *  scalar - input scalar to add
         */
         template <typename T>
-        NDArray operator+(const T scalar) const;
+        NDArray operator+(const T& scalar) const;
 
         /**
         *  friend functions which implement addition operator: scalar + array
@@ -969,7 +969,7 @@ namespace nd4j {
         *  scalar - input scalar to multiply on
         */
         template <typename T>
-        NDArray operator*(const T scalar) const;
+        NDArray operator*(const T& scalar) const;
         
         /**
         *  pairwise multiplication unary operator array *= other
@@ -995,7 +995,7 @@ namespace nd4j {
         *  scalar - input scalar to divide each array element on
         */
         template <typename T>
-        NDArray operator/(const T scalar) const;
+        NDArray operator/(const T& scalar) const;
 
         /**
         *  pairwise division unary operator: array /= other

@@ -268,3 +268,152 @@ TEST_F(MultiDataTypeTests, ndarray_varianceNumber_test1) {
     auto scalar2 = x.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     ASSERT_EQ(scalar2, exp2);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_operatorPlus_test1) {
+    NDArray x1('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::INT64);
+    NDArray x2('c', {2, 2}, {-1, -2, -1, -2}, nd4j::DataType::FLOAT32);
+    NDArray x3('c', {2}, {-1, -2},            nd4j::DataType::FLOAT32);
+
+    NDArray exp('c', {2, 2}, {-1, -1, 1, 1},  nd4j::DataType::FLOAT32);
+        
+    ASSERT_EQ(x1+x2, exp);
+    ASSERT_EQ(x1+x3, exp);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_operatorPlus_test2) {
+    
+    NDArray x1('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::INT64);
+    NDArray x2('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::FLOAT32);
+    NDArray x3('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::HALF);
+    const double val1 = -2;
+    const int val2 = -2;
+    NDArray exp1('c', {2,2}, {-2, -1, 0, 1},  nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {2,2}, {-2, -1, 0, 1},  nd4j::DataType::FLOAT32);
+    NDArray exp3('c', {2,2}, {-2, -1, 0, 1},  nd4j::DataType::HALF);
+    
+    ASSERT_EQ(x1+val1, exp1);
+    ASSERT_EQ(val1+x1, exp1);
+
+    ASSERT_EQ(x2+val2, exp2);
+    ASSERT_EQ(val2+x2, exp2);    
+
+    ASSERT_EQ(x3+val1, exp3);
+    ASSERT_EQ(val1+x3, exp3);    
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_operatorMinus_test1) {
+    NDArray x1('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::INT64);
+    NDArray x2('c', {2, 2}, {-1, -2, -1, -2}, nd4j::DataType::HALF);
+    NDArray x3('c', {2}, {-1, -2},            nd4j::DataType::HALF);
+
+    NDArray exp('c', {2, 2}, {1, 3, 3, 5},  nd4j::DataType::HALF);
+        
+    ASSERT_EQ(x1-x2, exp);
+    ASSERT_EQ(x1-x3, exp);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_operatorMinus_test2) {
+    
+    NDArray x1('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::INT64);
+    NDArray x2('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::FLOAT32);
+    NDArray x3('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::HALF);
+    const double val1 = 2;
+    const int val2 = 2;
+    NDArray exp1('c', {2,2}, {-2, -1, 0, 1},  nd4j::DataType::DOUBLE);    
+    NDArray exp2('c', {2,2}, {2, 1, 0, -1},   nd4j::DataType::DOUBLE);
+    NDArray exp3('c', {2,2}, {-2, -1, 0, 1},  nd4j::DataType::FLOAT32);
+    NDArray exp4('c', {2,2}, {-2, -1, 0, 1},  nd4j::DataType::HALF);
+    NDArray exp5('c', {2,2}, {2, 1, 0, -1},   nd4j::DataType::FLOAT32);
+    NDArray exp6('c', {2,2}, {2, 1, 0, -1},   nd4j::DataType::HALF);
+    
+    ASSERT_EQ(x1-val1, exp1);
+    ASSERT_EQ(val1-x1, exp2);
+
+    ASSERT_EQ(x2-val2, exp3);
+    ASSERT_EQ(val2-x2, exp5);
+
+    ASSERT_EQ(x3-val1, exp4);
+    ASSERT_EQ(val1-x3, exp6);
+}
+
+//////////////////////////////////////////////////////////////////////////////// multiply 
+TEST_F(MultiDataTypeTests, ndarray_operatorMultiply_test1) {
+    NDArray x1('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::INT64);
+    NDArray x2('c', {2, 2}, {-1, -2, -1, -2}, nd4j::DataType::DOUBLE);
+    NDArray x3('c', {2}, {-1, -2},            nd4j::DataType::DOUBLE);
+
+    NDArray exp('c', {2, 2}, {0, -2, -2, -6},  nd4j::DataType::DOUBLE);
+        
+    ASSERT_EQ(x1*x2, exp);
+    ASSERT_EQ(x1*x3, exp);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_operatorMultiply_test2) {
+    
+    NDArray x1('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::INT64);
+    NDArray x2('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::FLOAT32);
+    NDArray x3('c', {2, 2}, {0, 1, 2, 3},     nd4j::DataType::HALF);
+    const double val1 = -2;
+    const int val2 = -2;
+    NDArray exp1('c', {2,2}, {0, -2, -4, -6},  nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {2,2}, {0, -2, -4, -6},  nd4j::DataType::FLOAT32);
+    NDArray exp3('c', {2,2}, {0, -2, -4, -6},  nd4j::DataType::HALF);
+    
+    ASSERT_EQ(x1*val1, exp1);
+    ASSERT_EQ(val1*x1, exp1);
+
+    ASSERT_EQ(x2*val2, exp2);
+    ASSERT_EQ(val2*x2, exp2);    
+
+    ASSERT_EQ(x3*val1, exp3);
+    ASSERT_EQ(val1*x3, exp3);    
+}
+
+
+//////////////////////////////////////////////////////////////////////////////// multiply 
+TEST_F(MultiDataTypeTests, ndarray_operatorDivide_test1) {
+    NDArray x1('c', {2, 2}, {4, 1, 2, 3},     nd4j::DataType::HALF);
+    NDArray x2('c', {2, 2}, {-1, -2, -1, -9}, nd4j::DataType::DOUBLE);
+    NDArray x3('c', {2}, {-1, -2},            nd4j::DataType::FLOAT32);
+
+    NDArray exp1('c', {2, 2}, {-4, -0.5, -2, -0.3333333},  nd4j::DataType::HALF);
+    NDArray exp2('c', {2, 2}, {-0.25, -2, -0.5, -0.666667},  nd4j::DataType::HALF);
+        
+    ASSERT_EQ(x1/x2, exp1);    
+    ASSERT_EQ(x3/x1, exp2);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_operatorDivide_test2) {
+    
+    NDArray x1('c', {2, 2}, {1, 2, 3, 4},     nd4j::DataType::INT64);    
+    NDArray x2('c', {2, 2}, {1, 2, 3, 4},     nd4j::DataType::FLOAT32);
+    NDArray x3('c', {2, 2}, {1, 2, 3, 4},     nd4j::DataType::HALF);
+    const double val1 = 2;
+    const int val2 = -2;
+    NDArray exp1('c', {2,2}, {0.5, 1, 1.5, 2},  nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {2,2}, {2, 1, 0.666667, 0.5},   nd4j::DataType::DOUBLE);
+    NDArray exp3('c', {2,2}, {0, -1, -1, -2},  nd4j::DataType::INT64);
+    NDArray exp4('c', {2,2}, {-2, -1, 0., 0.},   nd4j::DataType::INT64);    
+    NDArray exp5('c', {2,2}, {-0.5, -1, -1.5, -2},  nd4j::DataType::FLOAT32);
+    NDArray exp6('c', {2,2}, {-2, -1, -0.666667, -0.5},  nd4j::DataType::FLOAT32);    
+    NDArray exp7('c', {2,2}, {0.5, 1, 1.5, 2},  nd4j::DataType::HALF);
+    NDArray exp8('c', {2,2}, {2, 1, 0.666667, 0.5},   nd4j::DataType::HALF);
+    
+    ASSERT_EQ(x1/val1, exp1);
+    ASSERT_EQ(val1/x1, exp2);
+
+    ASSERT_EQ(x1/val2, exp3);
+    ASSERT_EQ(val2/x1, exp4);
+
+    ASSERT_EQ(x2/val2, exp5);
+    ASSERT_EQ(val2/x2, exp6);
+
+    ASSERT_EQ(x3/val1, exp7);
+    ASSERT_EQ(val1/x3, exp8);
+}
