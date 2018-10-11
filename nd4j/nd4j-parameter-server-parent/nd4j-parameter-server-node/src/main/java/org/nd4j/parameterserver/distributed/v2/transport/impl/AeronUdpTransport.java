@@ -74,7 +74,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected Map<String, RemoteConnection> remoteConnections = new ConcurrentHashMap<>();
 
     protected final int SENDER_THREADS = 2;
-    protected final int MESSAGE_THREADS = 2;
+    protected final int MESSAGE_THREADS = 4;
     protected final int SUBSCRIPTION_THREADS = 1;
 
     protected Aeron aeron;
