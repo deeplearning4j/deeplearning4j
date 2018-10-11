@@ -36,7 +36,7 @@ public:
 
 TEST_F(DeclarableOpsTests3, Test_Tile_1) {
     auto x= NDArrayFactory::create<float>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
-    auto rep_vector= NDArrayFactory::create<float>('c', {1, 2}, {2, 2});
+    auto rep_vector= NDArrayFactory::create<int>('c', {1, 2}, {2, 2});
     std::vector<Nd4jLong> reps({2, 2});
 
     auto exp = x.tile(reps);
@@ -72,7 +72,7 @@ TEST_F(DeclarableOpsTests3, Test_Tile_2) {
 
 TEST_F(DeclarableOpsTests3, Test_Permute_1) {
     auto x= NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto permute= NDArrayFactory::create<float>('c', {1, 3}, {0, 2, 1});
+    auto permute= NDArrayFactory::create<Nd4jLong>('c', {1, 3}, {0, 2, 1});
     auto exp= NDArrayFactory::create<float>('c', {2, 4, 3});
 
     nd4j::ops::permute op;

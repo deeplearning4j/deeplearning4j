@@ -58,7 +58,8 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
 
     DECLARE_TYPES(tile) {
         getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
-                ->setAllowedOutputTypes(0, {ALL_FLOATS});
+                ->setAllowedInputTypes(1, {ALL_INTS})
+                ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
 
