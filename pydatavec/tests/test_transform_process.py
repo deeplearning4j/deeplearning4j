@@ -144,3 +144,7 @@ def test_replace_empty():
     tp.replace_empty_string('str1', 'xx')
 
     tp.to_java()
+
+
+if __name__ == '__main__':
+    pytest.main(__file__)
