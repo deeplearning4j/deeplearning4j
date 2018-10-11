@@ -310,6 +310,7 @@ namespace randomOps {
 
                 step = (blockDim.x * gridDim.x);
             }
+            __syncthreads();
 
             // using this loop instead of memcpy
             for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
@@ -340,7 +341,7 @@ namespace randomOps {
                 __syncthreads();
             }
 
-            __syncthreads();
+            //__syncthreads();
             devBuffer->rewind(zLength);
         }
 #endif
