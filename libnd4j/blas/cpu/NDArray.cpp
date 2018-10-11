@@ -808,11 +808,11 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
     _isShapeAlloc = other._isShapeAlloc;
     _isBuffAlloc  = other._isBuffAlloc;
     _dataType     = other._dataType;
+    _length       = other._length;
 
     other._buffer = other._bufferD = nullptr;
     other._shapeInfo = other._shapeInfoD = nullptr;
-    _length = other._length;
-
+    
     return *this;
 }
 
@@ -2591,7 +2591,7 @@ NDArray NDArray::transp() const {
             Nd4jLong* newShapeInfo = nullptr;
             if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _workspace))          // the rank of target array must be equal to max->rankOf)()
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-            if(!shape::equalsTypesShapesSoft(target->getShapeInfo(), newShapeInfo))
+            if(!shape::equalsTypesAndShapesSoft(target->getShapeInfo(), newShapeInfo))
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
 
             // if workspace is not null - do not call delete.
@@ -2680,7 +2680,7 @@ NDArray NDArray::transp() const {
             Nd4jLong* newShapeInfo = nullptr;
             if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _workspace))          // the rank of target array must be equal to max->rankOf)()
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-            if(!shape::equalsTypesShapesSoft(target->getShapeInfo(), newShapeInfo))
+            if(!shape::equalsTypesAndShapesSoft(target->getShapeInfo(), newShapeInfo))
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
 
             // if workspace is not null - do not call delete.
@@ -3770,38 +3770,102 @@ ND4J_EXPORT NDArray operator/(const int& scalar, const NDArray & arr) {
     return result;
 }
 
-    ////////////////////////////////////////////////////////////////////////
-    void NDArray::operator+=(const NDArray& other) {
-        if (!this->isScalar() && other.isScalar()) {
-            NativeOpExcutioner::execScalar(nd4j::scalar::Add, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
-        } else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf())
-            NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Add, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
-        else{
-            Nd4jLong *bShape = nullptr;
-            auto p = ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, this->_workspace);
-            if (shape::shapeEquals(this->shapeInfo(), bShape))
-                this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &other, this, true);
-            else
-                *this = this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), other);
-
-            RELEASE(bShape, this->_workspace);
+////////////////////////////////////////////////////////////////////////
+void NDArray::operator+=(const NDArray& other) {
+    if (!this->isScalar() && other.isScalar()) {
+        NativeOpExcutioner::execScalar(nd4j::scalar::Add, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
+    } 
+    else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
+        NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Add, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
+    }        
+    else{            
+        Nd4jLong *bShape = nullptr;
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, this->_workspace))
+            throw std::invalid_argument("NDArray::operator+=: the shapes of this and other arrays are not suitable for broadcast operation !");            
+            
+        if(shape::equalsTypesAndShapesSoft(_shapeInfo, bShape)) {
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &other, this, false);
         }
-    }
-
-    void NDArray::operator-=(const NDArray& other) {
-        if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf())
-            NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Subtract, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
         else {
-            Nd4jLong *bShape = nullptr;
-            auto p = ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, this->_workspace);
-            if (shape::shapeEquals(this->shapeInfo(), bShape))
-                this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &other, this, true);
-            else
-                *this = this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), other);
-
-            RELEASE(bShape, this->_workspace);
+            NDArray result(bShape, true, _workspace);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &other, &result, false);
+            *this = std::move(result);      // move assignment operator, zero cost copy
         }
+        RELEASE(bShape, this->_workspace);
     }
+}
+
+void NDArray::operator-=(const NDArray& other) {
+    if (!this->isScalar() && other.isScalar()) {
+        NativeOpExcutioner::execScalar(nd4j::scalar::Subtract, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
+    } 
+    else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
+        NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Subtract, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
+    }
+    else{            
+        Nd4jLong *bShape = nullptr;
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, this->_workspace))
+            throw std::invalid_argument("NDArray::operator-=: the shapes of this and other arrays are not suitable for broadcast operation !");            
+            
+        if(shape::equalsTypesAndShapesSoft(_shapeInfo, bShape)) {
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &other, this, false);
+        }
+        else {
+            NDArray result(bShape, true, _workspace);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &other, &result, false);
+            *this = std::move(result);      // move assignment operator, zero cost copy
+        }
+        RELEASE(bShape, this->_workspace);
+    }
+}
+    
+void NDArray::operator*=(const NDArray& other) {
+    if (!this->isScalar() && other.isScalar()) {
+        NativeOpExcutioner::execScalar(nd4j::scalar::Multiply, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
+    } 
+    else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
+        NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Multiply, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
+    }
+    else{            
+        Nd4jLong *bShape = nullptr;
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, this->_workspace))
+            throw std::invalid_argument("NDArray::operator*=: the shapes of this and other arrays are not suitable for broadcast operation !");            
+            
+        if(shape::equalsTypesAndShapesSoft(_shapeInfo, bShape)) {
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), &other, this, false);
+        }
+        else {
+            NDArray result(bShape, true, _workspace);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), &other, &result, false);
+            *this = std::move(result);      // move assignment operator, zero cost copy
+        }
+        RELEASE(bShape, this->_workspace);
+    }
+}
+
+void NDArray::operator/=(const NDArray& other) {
+    if (!this->isScalar() && other.isScalar()) {
+        NativeOpExcutioner::execScalar(nd4j::scalar::Divide, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
+    } 
+    else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
+        NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Divide, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
+    }
+    else{            
+        Nd4jLong *bShape = nullptr;
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, this->_workspace))
+            throw std::invalid_argument("NDArray::operator/=: the shapes of this and other arrays are not suitable for broadcast operation !");            
+            
+        if(shape::equalsTypesAndShapesSoft(_shapeInfo, bShape)) {
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &other, this, false);
+        }
+        else {
+            NDArray result(bShape, true, _workspace);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &other, &result, false);
+            *this = std::move(result);      // move assignment operator, zero cost copy
+        }
+        RELEASE(bShape, this->_workspace);
+    }
+}
 
     template <typename T>
     void NDArray::operator+=(const T value) {
@@ -3863,29 +3927,7 @@ ND4J_EXPORT NDArray operator/(const int& scalar, const NDArray & arr) {
 
         return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), other);
     }
-
-
     
-
-    ////////////////////////////////////////////////////////////////////////
-    // multiplication operator array1 *= array2
-    void NDArray::operator*=(const NDArray& other) {
-
-        if (!this->isScalar() && other.isScalar()) {
-            NativeOpExcutioner::execScalar(nd4j::scalar::Multiply, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other.getBuffer(), other.getShapeInfo(), nullptr);
-        } else if (other.lengthOf() == lengthOf())
-            NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Multiply, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
-        else {
-            Nd4jLong *bShape = nullptr;
-            auto p = ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, this->_workspace);
-            if (shape::shapeEquals(this->shapeInfo(), bShape))
-                this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), &other, this, true);
-            else
-                *this = this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), other);
-
-            RELEASE(bShape, this->_workspace);
-        }
-    }
 
     ////////////////////////////////////////////////////////////////////////
     // multiplication operator array*scalar
@@ -3916,25 +3958,6 @@ ND4J_EXPORT NDArray operator/(const int& scalar, const NDArray & arr) {
         }
 
         return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), other);
-    }
-
-    ////////////////////////////////////////////////////////////////////////
-    // division operator array1 /= array2
-    void NDArray::operator/=(const NDArray& other) {
-        if (!this->isScalar() && other.isScalar()) {
-            NativeOpExcutioner::execScalar(nd4j::scalar::Divide, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
-        } else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf())
-            NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Divide, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
-        else {
-            Nd4jLong *bShape = nullptr;
-            auto p = ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, this->_workspace);
-            if (shape::shapeEquals(this->shapeInfo(), bShape))
-                this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &other, this, true);
-            else
-                *this = this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), other);
-
-            RELEASE(bShape, this->_workspace);
-        }
     }
 
     ////////////////////////////////////////////////////////////////////////
