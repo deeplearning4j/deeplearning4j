@@ -310,7 +310,6 @@ namespace randomOps {
 
                 step = (blockDim.x * gridDim.x);
             }
-            __syncthreads();
 
             // using this loop instead of memcpy
             for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
@@ -318,11 +317,10 @@ namespace randomOps {
             }
             __syncthreads();
 
-            Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
+            int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-            for (Nd4jLong e = tid; e < zLength; e += step) {
+            for (int e = tid; e < zLength; e += step) {
                 // we need to get random values
-
                 tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
 
                 // fix for "next rng value"
