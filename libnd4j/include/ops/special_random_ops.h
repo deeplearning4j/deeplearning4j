@@ -322,7 +322,7 @@ namespace randomOps {
 
             int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
 
-            for (int e = tid; e < zLength; e += step) {
+            for (int e = tid; e < middle; e += step) {
                 auto epm = e + middle;
 
                 // we need to get random values
