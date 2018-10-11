@@ -236,6 +236,26 @@ NDArray::NDArray(const Nd4jLong* shapeInfo, const bool copyStrides, nd4j::memory
 }
 
 ////////////////////////////////////////////////////////////////////////
+// creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros, set dtype as array type
+NDArray::NDArray(const Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::memory::Workspace* workspace) {
+   
+    if (shapeInfo == nullptr || (int) shapeInfo[0] > MAX_RANK)
+        throw std::invalid_argument("NDArray constructor: input shapeInfo is nullptr or its rank exceeds 32");
+        
+    _shapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, workspace);
+    _dataType = dtype;
+    _length = shape::length(_shapeInfo);
+    _workspace = workspace;
+    ArrayOptions::setDataType(_shapeInfo, _dataType);
+
+    ALLOCATE(_buffer, _workspace, _length * sizeOfT() , int8_t);
+
+    memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(_dataType));
+
+    triggerAllocationFlag(true, true);            
+}
+
+////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
 
     setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, workspace));
@@ -2721,33 +2741,26 @@ NDArray NDArray::transp() const {
     }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray* NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, void *extraArgs) const {
+    NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, void *extraArgs) const {
         Nd4jLong* newShapeInfo = nullptr;
-        if(!ShapeUtils::evalBroadcastShapeInfo(*this, *other, true, newShapeInfo, _workspace))          // the rank of new array = max->rankOf)()
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, &other, true, newShapeInfo, _workspace))          // the rank of new array = max->rankOf)()
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-        auto result = new NDArray(newShapeInfo, true, this->_workspace);
+        NDArray result(newShapeInfo, true, this->_workspace);
 
         // if workspace is not null - do not call delete.
         if (_workspace == nullptr)
             delete[] newShapeInfo;
 
-        this->applyTrueBroadcast(op, other, result, false, extraArgs);
+        this->applyTrueBroadcast(op, &other, &result, false, extraArgs);
   
         return result;
     }
 
 
     //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, void *extraArgs) const {
-        auto pResult = this->applyTrueBroadcast(op, &other, extraArgs);
-        pResult->_isShapeAlloc = false;
-        pResult->_isBuffAlloc  = false;
-
-        NDArray result(pResult->_buffer, pResult->_shapeInfo, _workspace, true, true);
+    NDArray* NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, void *extraArgs) const {
         
-        delete pResult;
-
-        return result;
+        return new NDArray(this->applyTrueBroadcast(op, *other, extraArgs));        
     }
 
 
@@ -3556,6 +3569,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     NDArray NDArray::operator+(const NDArray& other) const {
         if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray result(this->_shapeInfo, false, this->_workspace);
+            ArrayOptions::setDataType(result._shapeInfo, DataTypeUtils::pickPairwiseResultType(_shapeInfo, other._shapeInfo));
             NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Add, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
             return result;
         }
