@@ -320,28 +320,26 @@ namespace randomOps {
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
+            int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
+
             for (int e = tid; e < zLength; e += step) {
+                auto epm = e + middle;
+
                 // we need to get random values
-                tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+                T r0 = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+                T r1 = buffer->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-                // fix for "next rng value"
-                if (e + 1 >= zLength && e % 2 == 0) {
-                    tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, static_cast<T>(1.0f));
+                T realMean0 = y == z ? mean : y[e * yEWS];
+
+                z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_cos<T>(two_pi * r1)) * stddev + realMean0;
+
+                if (epm < zLength) {
+                    T realMean1 = y == z ? mean : y[epm * yEWS];
+                    z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r1)) * nd4j::math::nd4j_sin<T>(two_pi * r0)) * stddev + realMean1;
                 }
-
-                T realMean = y == z ? mean : y[e * yEWS];
-
-                __syncthreads();
-
-                if (e % 2 == 0)
-                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean;
-                else
-                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T>(two_pi * tZ[threadIdx.x])) * stddev + realMean;
-
-                __syncthreads();
             }
 
-            //__syncthreads();
+            __syncthreads();
             devBuffer->rewind(zLength);
         }
 #endif
