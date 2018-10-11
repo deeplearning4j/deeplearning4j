@@ -36,7 +36,7 @@ public:
 TEST_F(DeclarableOpsTests2, Gather_test_1) {
     
     auto input    = NDArrayFactory::create<float>('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
-    auto indices  = NDArrayFactory::create<float>('c', {1,6},   {0,1, 2,2, 1,2});
+    auto indices  = NDArrayFactory::create<int>('c', {1,6},   {0,1, 2,2, 1,2});
     auto expected = NDArrayFactory::create<float>('c', {2,6,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
 
     nd4j::ops::gather op;
@@ -79,7 +79,7 @@ TEST_F(DeclarableOpsTests2, Gather_test_1_I) {
 TEST_F(DeclarableOpsTests2, Gather_test_2) {
     
     auto input    = NDArrayFactory::create<float>('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
-    auto indices  = NDArrayFactory::create<float>('c', {1,1},   {2});
+    auto indices  = NDArrayFactory::create<int>('c', {1,1},   {2});
     auto expected = NDArrayFactory::create<float>('c', {2,4}, {9,10,11,12,21,22,23,24});
 
     nd4j::ops::gather op;
@@ -120,7 +120,7 @@ TEST_F(DeclarableOpsTests2, Gather_test_2_I) {
 TEST_F(DeclarableOpsTests2, Gather_test_3) {
     
     auto input    = NDArrayFactory::create<float>('c', {2,3,4},   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
-    auto indices  = NDArrayFactory::create<float>('c', {2,3},     {0, 1, 2, 2, 1,2} );
+    auto indices  = NDArrayFactory::create<Nd4jLong>('c', {2,3},     {0, 1, 2, 2, 1,2} );
     auto expected = NDArrayFactory::create<float>('c', {2,2,3,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,  9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16,17,18,19,20,21,22,23,24, 21,22,23,24,17,18,19,20,21,22,23,24});
 
     nd4j::ops::gather op;
@@ -142,7 +142,7 @@ TEST_F(DeclarableOpsTests2, Gather_test_3) {
 TEST_F(DeclarableOpsTests2, Gather_test_4) {
     
     auto input    = NDArrayFactory::create<float>('c', {3,3,4},   {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16,17,18,19,20,21,22,23,24, 25,26,27,28,29,30,31,32,33,34,35,36});
-    auto indices  = NDArrayFactory::create<float>('c', {2,3},     {0, 1, 2, 2, 1,2} );
+    auto indices  = NDArrayFactory::create<Nd4jLong>('c', {2,3},     {0, 1, 2, 2, 1,2} );
     auto expected = NDArrayFactory::create<float>('c', {2,3,3,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16,17,18,19,20,21,22,23,24, 25,26,27,28,29,30,31,32,33,34,35,36, 25,26,27,28,29,30,31,32,33,34,35,36, 13,14,15,16,17,18,19,20,21,22,23,24, 25,26,27,28,29,30,31,32,33,34,35,36});
 
     nd4j::ops::gather op;
@@ -164,7 +164,7 @@ TEST_F(DeclarableOpsTests2, Gather_test_4) {
 TEST_F(DeclarableOpsTests2, Gather_test_5) {
     
     auto input    = NDArrayFactory::create<float>('c', {2,3,4},   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
-    auto indices  = NDArrayFactory::create<float>('c', {2,3},     {0, 1, 2, 2, 1,2} );
+    auto indices  = NDArrayFactory::create<Nd4jLong>('c', {2,3},     {0, 1, 2, 2, 1,2} );
     auto expected = NDArrayFactory::create<float>('c', {2,3,2,3}, {1, 2, 3, 3, 2, 3, 5, 6, 7, 7, 6, 7, 9,10,11,11,10,11, 13,14,15,15,14,15, 17,18,19,19,18,19, 21,22,23,23,22,23});
 
     nd4j::ops::gather op;
@@ -3396,7 +3396,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test17) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test1) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto weights = NDArrayFactory::create<double>('c', {2,3});
     auto expected = NDArrayFactory::create<double>('c', {2,3}, {1.39253557,1.44253552,1.44253552,1.44253552,1.39253557,1.44253552});
