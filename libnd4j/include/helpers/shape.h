@@ -105,7 +105,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool equalsSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
 
-    ND4J_EXPORT _CUDA_HD bool equalsTypesShapesSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
+    ND4J_EXPORT _CUDA_HD bool equalsTypesAndShapesSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
 
     ND4J_EXPORT _CUDA_HD bool equalsStrict(Nd4jLong *shapeA, Nd4jLong *shapeB);
 
@@ -3022,7 +3022,7 @@ template <typename T>
         return true;
     }
 
-    INLINEDEF _CUDA_HD bool equalsTypesShapesSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB) {
+    INLINEDEF _CUDA_HD bool equalsTypesAndShapesSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB) {
 
         return equalsSoft(shapeA, shapeB) && shapeA[shapeInfoLength(shapeA) - 3] == shapeB[shapeInfoLength(shapeB) - 3];
     }
