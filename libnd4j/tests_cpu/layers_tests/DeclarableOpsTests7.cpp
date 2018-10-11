@@ -2224,7 +2224,7 @@ TEST_F(DeclarableOpsTests7, cumsum_test1) {
 TEST_F(DeclarableOpsTests7, cumprod_test1) {
     
     auto inputC = NDArrayFactory::create<double>('c', {3, 5},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});    
-    auto axis = NDArrayFactory::create<double>(1.);
+    auto axis = NDArrayFactory::create<Nd4jLong>(1);
 
     auto expFF = NDArrayFactory::create<double>('c', {3, 5}, {1.,   2.,   6.,    24.,   120., 6.,  42., 336.,  3024., 30240.,11., 132.,1716., 24024.,360360.});
     auto expTF = NDArrayFactory::create<double>('c', {3, 5}, {1, 1, 2, 6, 24,1, 6, 42, 336, 3024,1, 11, 132, 1716, 24024});
