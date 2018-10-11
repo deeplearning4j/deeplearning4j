@@ -23,7 +23,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-parallel-wrapper_2.11</artifactId>
+    <artifactId>deeplearning4j-parallel-wrapper</artifactId>
     <packaging>jar</packaging>
 
     <name>deeplearning4j-parallel-wrapper</name>
@@ -94,6 +94,7 @@
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-play_2.11</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
