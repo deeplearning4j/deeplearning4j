@@ -65,6 +65,7 @@ namespace ops {
     DECLARE_TYPES(roll) {
         getOpDescriptor()
                 ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes(nd4j::DataType::ANY)
                 ->setSameMode(true);
     }
 }

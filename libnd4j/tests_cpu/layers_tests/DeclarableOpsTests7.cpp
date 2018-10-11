@@ -1375,7 +1375,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 2, 4, 2}, {
 //    21.41, 21.42, 22.11, 22.12
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
-    NDArray* y;
+    NDArray* y = nullptr;
     auto result = op.execute({&x}, {y}, {}, {38}, true);
     ASSERT_EQ(result, Status::OK());
     //x.printIndexedBuffer("Output 4 inplace");
