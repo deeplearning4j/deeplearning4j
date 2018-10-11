@@ -976,7 +976,8 @@ public class Nd4j {
                                 boolean transposeB,
                                 double alpha,
                                 double beta) {
-        Preconditions.checkState(c.length() == 1 || (c.ordering() == 'f' && Shape.hasDefaultStridesForShape(c)),    //Note: some views
+        //Note: some views have non-zero offset but 'default' strides (these are OK). And a 'c' order vector such as [10,1] is OK - same buffer as an 'f' order vector with same shape
+        Preconditions.checkState(c.length() == 1 || || ((c.ordering() == 'f' || c.isVectorOrScalar()) && Shape.hasDefaultStridesForShape(c)),
                 "C (result) array is not F order or is a view. Nd4j.gemm requires the result array to be F order " +
                         "and not a view. C (result) array: [%ndSInfo]", c);
         getBlasWrapper().level3().gemm(a, b, c, transposeA, transposeB, alpha, beta);
