@@ -2171,7 +2171,7 @@ TEST_F(DeclarableOpsTests7, clipbynorm_test3) {
 TEST_F(DeclarableOpsTests7, cumsum_test1) {
     
     auto inputC = NDArrayFactory::create<double>('c', {3, 5},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});    
-    auto axis = NDArrayFactory::create<double>(1.);
+    auto axis = NDArrayFactory::create<Nd4jLong>(1);
 
     auto expFF = NDArrayFactory::create<double>('c', {3, 5}, {1.,  3.,  6., 10., 15., 6., 13., 21., 30., 40., 11., 23., 36., 50., 65.});
     auto expTF = NDArrayFactory::create<double>('c', {3, 5}, {0., 1., 3.,  6., 10., 0.,  6., 13., 21., 30., 0., 11., 23., 36., 50.});
@@ -2277,7 +2277,7 @@ TEST_F(DeclarableOpsTests7, cumprod_test1) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test1) {
 
     auto input = NDArrayFactory::create<double>('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {1, 1, 2, 2});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {1, 1, 2, 2});
 
     auto exp = NDArrayFactory::create<double>('c', {4, 7}, {2, 1, 1, 2, 3, 3, 2, 2, 1, 1, 2, 3, 3, 2, 5, 4, 4, 5, 6, 6, 5, 5, 4, 4, 5, 6, 6, 5});
 
@@ -2295,7 +2295,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test1) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test2) {
 
     auto input = NDArrayFactory::create<double>('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {1, 1, 2, 2});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {1, 1, 2, 2});
 
     auto exp = NDArrayFactory::create<double>('c', {4, 7}, {6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1});
 
@@ -2313,7 +2313,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test2) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test3) {
 
     auto input = NDArrayFactory::create<double>('c', {3},  {1., 2., 3.});
-    auto paddings = NDArrayFactory::create<double>('c', {1,2}, {2, 2});
+    auto paddings = NDArrayFactory::create<int>('c', {1,2}, {2, 2});
 
     auto exp = NDArrayFactory::create<double>('c', {7}, {2, 1, 1, 2, 3, 3, 2});
 
@@ -2331,7 +2331,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test3) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test4) {
 
     auto input = NDArrayFactory::create<double>('c', {3},  {1., 2., 3.});
-    auto paddings = NDArrayFactory::create<double>('c', {2}, {2, 3});
+    auto paddings = NDArrayFactory::create<int>('c', {2}, {2, 3});
 
     auto exp = NDArrayFactory::create<double>('c', {8}, {2, 1, 1, 2, 3, 3, 2, 1});
 
@@ -2349,7 +2349,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test4) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test5) {
 
     auto input = NDArrayFactory::create<double>('c', {3},  {1., 2., 3.});
-    auto paddings = NDArrayFactory::create<double>('c', {2}, {2, 2});
+    auto paddings = NDArrayFactory::create<int>('c', {2}, {2, 2});
 
     auto exp = NDArrayFactory::create<double>('c', {7}, {3, 2, 1, 2, 3, 2, 1});
 
@@ -2367,7 +2367,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test5) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test6) {
 
     auto input = NDArrayFactory::create<double>(1.);
-    auto paddings = NDArrayFactory::create<double>('c', {1,2,1,1}, {1, 1});
+    auto paddings = NDArrayFactory::create<int>('c', {1,2,1,1}, {1, 1});
 
     auto exp = NDArrayFactory::create<double>('c', {3}, {1,1,1});
 
@@ -2385,7 +2385,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test6) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test7) {
 
     auto input = NDArrayFactory::create<double>(1.);
-    auto paddings = NDArrayFactory::create<double>('c', {2}, {1, 1});
+    auto paddings = NDArrayFactory::create<int>('c', {2}, {1, 1});
 
     auto exp = NDArrayFactory::create<double>('c', {3}, {1,1,1});
 
@@ -2403,7 +2403,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test7) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test8) {
 
     auto input = NDArrayFactory::create<double>('c', {1,3},  {1., 2., 3.});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {1, 1, 3, 3});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {1, 1, 3, 3});
 
     auto exp = NDArrayFactory::create<double>('c', {3,9}, {3, 2, 1, 1, 2, 3, 3, 2, 1, 3, 2, 1, 1, 2, 3, 3, 2, 1, 3, 2, 1, 1, 2, 3, 3, 2, 1});
 
@@ -2421,7 +2421,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test8) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test9) {
 
     auto input = NDArrayFactory::create<double>('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {2, 2, 3, 3});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {2, 2, 3, 3});
 
     auto exp = NDArrayFactory::create<double>('c', {6, 9}, {6, 5, 4, 4, 5, 6, 6, 5, 4, 3, 2, 1, 1, 2, 3, 3, 2, 1, 3, 2, 1, 1, 2, 3, 3, 2, 1, 6, 5, 4, 4, 5, 6, 6, 5, 4, 6, 5, 4, 4, 5, 6, 6, 5, 4, 3, 2, 1, 1, 2, 3, 3, 2, 1});
 
@@ -2439,7 +2439,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test9) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test10) {
 
     auto input = NDArrayFactory::create<double>('c', {1,3},  {1., 2., 3.});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {0, 0, 0, 0});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
 
     auto exp = NDArrayFactory::create<double>('c', {1,3}, {1., 2., 3.});
 
@@ -2457,7 +2457,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test10) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test11) {
 
     auto input = NDArrayFactory::create<double>('c', {1,3},  {1., 2., 3.});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {0, 0, 0, 0});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
 
     auto exp = NDArrayFactory::create<double>('c', {1,3}, {1., 2., 3.});
 
@@ -2475,7 +2475,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test11) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test12) {
 
     auto input = NDArrayFactory::create<double>('c', {3},  {1., 2., 3.});
-    auto paddings = NDArrayFactory::create<double>('c', {2,1}, {0, 0});
+    auto paddings = NDArrayFactory::create<int>('c', {2,1}, {0, 0});
 
     auto exp = NDArrayFactory::create<double>('c', {3}, {1., 2., 3.});
 
@@ -2493,7 +2493,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test12) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test13) {
 
     auto input = NDArrayFactory::create<double>('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {0, 0, 0, 0});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
 
     auto exp = NDArrayFactory::create<double>('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
 
@@ -2511,7 +2511,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test13) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test14) {
 
     auto input = NDArrayFactory::create<double>('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {1, 0, 0, 1});
+    auto paddings = NDArrayFactory::create<Nd4jLong>('c', {2, 2}, {1, 0, 0, 1});
 
     auto exp = NDArrayFactory::create<double>('c', {3, 4},    {4, 5, 6, 5, 1, 2, 3, 2, 4, 5, 6, 5});
 
@@ -2529,7 +2529,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test14) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test15) {
 
     auto input = NDArrayFactory::create<double>('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {1, 1, 0, 0});
+    auto paddings = NDArrayFactory::create<Nd4jLong>('c', {2, 2}, {1, 1, 0, 0});
 
     auto exp = NDArrayFactory::create<double>('c', {4, 3},  {1, 2, 3, 1, 2, 3, 4, 5, 6, 4, 5, 6});
 
@@ -2547,7 +2547,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test15) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test16) {
 
     auto input = NDArrayFactory::create<double>('c', {4,3,2});
-    auto paddings = NDArrayFactory::create<double>('c', {3,2}, {3,3,2,2,1,1});
+    auto paddings = NDArrayFactory::create<int>('c', {3,2}, {3,3,2,2,1,1});
 
     auto exp = NDArrayFactory::create<double>('c', {10,7,4},  {24., 23., 24., 23.,22., 21., 22., 21.,20., 19., 20., 19.,22., 21., 22., 21.,24., 23., 24., 23.,22., 21., 22., 21.,20., 19., 20., 19.,18., 17., 18., 17.,16., 15., 16., 15.,14., 13., 14., 13.,16., 15., 16., 15.,18., 17., 18., 17.,16., 15., 16., 15.,14., 13., 14., 13.,
             12., 11., 12., 11.,10.,  9., 10.,  9., 8.,  7.,  8.,  7.,10.,  9., 10.,  9.,12., 11., 12., 11.,10.,  9., 10.,  9., 8.,  7.,  8.,  7., 6.,  5.,  6.,  5., 4.,  3.,  4.,  3., 2.,  1.,  2.,  1., 4.,  3.,  4.,  3., 6.,  5.,  6.,  5., 4.,  3.,  4.,  3., 2.,  1.,  2.,  1.,
