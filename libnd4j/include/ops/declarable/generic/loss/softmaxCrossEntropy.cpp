@@ -50,11 +50,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 	auto newLabels = labels;
 	if(labelsSmoothing != 0.) {
 		auto numClasses = labels->sizeAt(1);
-		auto ts = NDArrayFactory::create(1.f - labelsSmoothing, block.getWorkspace());
+		auto ts = NDArrayFactory::create<float>(1.f - labelsSmoothing, block.getWorkspace());
 		//auto smooth = LAMBDA_T(value, labelsSmoothing, numClasses) { return value * ((T)1. - labelsSmoothing) + labelsSmoothing/numClasses; };
     	newLabels = new NDArray(*labels);
     	//newLabels->applyLambda(smooth);
-    	*newLabels = *newLabels * ts + (labelsSmoothing / numClasses);
+    	*newLabels = ts * *newLabels + (labelsSmoothing / numClasses);
 	}	
 		
 	std::vector<int> dimensions = {-1};
@@ -70,7 +70,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 	auto logSumExp = sumExp.transform(transform::Log);
 	// sum(-labels *((logits - max_logits) - log(sum(exp(logits - max_logits))))) along classes
 	// The subtraction broadcasts along the batch dimension
-	NDArray weightedLosses = ((-*newLabels)*(shiftedLogits - logSumExp)).reduceAlongDims(reduce::Sum, dimensions);
+	NDArray weightedLossesStage = (shiftedLogits - logSumExp);
+	weightedLossesStage *= (-*newLabels);
+	auto weightedLosses = weightedLossesStage.reduceAlongDims(reduce::Sum, dimensions);
 	
 	// perform weights broadcasting/tile to weightedLosses if it is necessary
 	auto weightsBroad = weights;
@@ -104,9 +106,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 				sum = weightsBroad->reduceNumber(reduce::Sum).e<double>(0);
 			
 			if (sum == 0.)
-				(*output) = 0.;
+				output->assign(0.);
 			else 
-				(*output) = weightedLosses.reduceNumber(reduce::Sum) / sum;
+				output->assign(weightedLosses.reduceNumber(reduce::Sum) / sum);
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
@@ -120,9 +122,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 			}
 
 			if (numOfNonZeroWeights == 0)
-				(*output) = 0.;
+				output->assign(0.);
 			else 
-				(*output) = weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
+				output->assign(weightedLosses.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
 			break;
 		}
 	}
@@ -142,7 +144,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 			getOpDescriptor()
 					->setAllowedInputTypes(0, {ALL_FLOATS})
 					->setAllowedInputTypes(1, {ALL_FLOATS})
-					->setAllowedInputTypes(2, {DataType::INT32, DataType::INT64})
+					->setAllowedInputTypes(2, {ALL_INTS})
 					->setAllowedOutputTypes({ALL_FLOATS});
 		}
 

@@ -3410,7 +3410,8 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *result = results->at(0);                
-
+    result->printIndexedBuffer("SCEL Output");
+    expected.printIndexedBuffer("SCEL Expect");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -3420,7 +3421,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test2) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto weights = NDArrayFactory::create<double>('c', {2,3});
     auto expected = NDArrayFactory::create<double>('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
@@ -3444,7 +3445,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test3) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto weights = NDArrayFactory::create<double>('c', {2,1});
     auto expected = NDArrayFactory::create<double>('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
@@ -3468,7 +3469,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test4) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto weights = NDArrayFactory::create<double>('c', {1,3});
     auto expected = NDArrayFactory::create<double>('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
@@ -3492,7 +3493,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test4) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test5) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto weights = NDArrayFactory::create<double>('c', {1,1});
     auto expected = NDArrayFactory::create<double>('c', {2,3}, {-0.92835701,-1.12835705,-1.12835705,-1.12835705,-0.92835701,-1.12835705});
@@ -3516,7 +3517,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test5) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test6) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto weights = NDArrayFactory::create<double>('c', {2,3});
                                             
@@ -3539,7 +3540,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test6) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test7) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto weights = NDArrayFactory::create<double>('c', {2,3});
                                             
@@ -3562,7 +3563,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test7) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test8) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto weights = NDArrayFactory::create<double>('c', {1,1});
                                             
@@ -3585,7 +3586,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test8) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test9) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto weights = NDArrayFactory::create<double>('c', {1,3});
                                             
@@ -3608,7 +3609,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test9) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test10) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto weights = NDArrayFactory::create<double>('c', {1,3});
                                             
@@ -3631,7 +3632,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test10) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test11) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto weights = NDArrayFactory::create<double>('c', {1,3});
                                             
@@ -3654,7 +3655,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test11) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test12) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,4},{0,1,1,0,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,4},{0,1,1,0,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,4});
     auto weights = NDArrayFactory::create<double>('c', {2,1});
                                             
@@ -3677,7 +3678,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test12) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test13) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,4},{0,1,1,0,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,4},{0,1,1,0,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,4});
     auto weights = NDArrayFactory::create<double>('c', {2,1});
     auto expected = NDArrayFactory::create<double>('c', {2,1}, {1.39253557,1.44253552});
@@ -3703,7 +3704,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test13) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test14) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,4},{0,1,1,0,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,4},{0,1,1,0,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,4});
     auto weights = NDArrayFactory::create<double>('c', {2,1});
     auto expected = NDArrayFactory::create<double>('c', {2,1}, {-2.08880329, -2.28880334});
@@ -3727,7 +3728,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test14) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test15) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,4},{0,1,1,0,1,0,1,0});
+    auto labels = NDArrayFactory::create<int>('c', {2,4},{0,1,1,0,1,0,1,0});
     auto logits = NDArrayFactory::create<double>('c', {2,4});
     auto weights = NDArrayFactory::create<double>('c', {1,1});
     auto expected = NDArrayFactory::create<double>('c', {2,1}, {-2.08880329, -2.28880334});
