@@ -68,8 +68,11 @@ namespace nd4j {
 
         DECLARE_TYPES(cumprod_bp) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS}) // there is a case when axes given as IArgs
+                    ->setAllowedInputTypes(2, {ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_FLOATS})
+                    ->setSameMode(true);
         }
 
         CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
