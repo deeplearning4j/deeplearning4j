@@ -101,7 +101,7 @@ TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
 
 TEST_F(DeclarableOpsTests6, Test_gather_Edge_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 4, 3, 2});
-    auto indices = NDArrayFactory::create<double>('c', {2}, {1.f, 0.f});
+    auto indices = NDArrayFactory::create<int>('c', {2}, {1, 0});
 
     nd4j::ops::gather op;
     auto result = op.execute({&x, &indices}, {}, {-2});
@@ -114,7 +114,7 @@ TEST_F(DeclarableOpsTests6, Test_gather_Edge_1) {
 
 TEST_F(DeclarableOpsTests6, Test_gatherNd_Edge_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 4, 2, 2});
-    auto indices = NDArrayFactory::create<double>('c', {3, 3}, {0,2,1, 0,1,0, 1,3,1});
+    auto indices = NDArrayFactory::create<int>('c', {3, 3}, {0,2,1, 0,1,0, 1,3,1});
     auto exp = NDArrayFactory::create<double>('c', {3,2}, {11.f, 12.f, 5.f, 6.f, 31.f, 32.f});
     x.linspace(1);
 
@@ -267,7 +267,7 @@ TEST_F(DeclarableOpsTests6, Test_CumSum_Exclusive_Reverse_2) {
 
 TEST_F(DeclarableOpsTests6, Test_CumSum_Exclusive_Reverse_2_1) {
     auto x = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
-    auto axis = NDArrayFactory::create<double>('c', {1}, {1});
+    auto axis = NDArrayFactory::create<Nd4jLong>('c', {1}, {1});
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {5.f, 3.f, 0.f, 11.f, 6.f, 0.f, 17.f, 9.f, 0.f});
 
     nd4j::ops::cumsum op;
@@ -336,7 +336,7 @@ TEST_F(DeclarableOpsTests6, MaxPoolWithArgmax_1) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {5.5, 0.,   0.3,  5.5,1.5, 0.,   1.3,  6.5,8.6, 0.,    0.,  0.4,2.5, 1.,   0.3,  4.5,
                                                                 1.5, 1.,   1.3,  1.5, 3.5, 0.,   1.3,  2.5, 2.6, 2.,    3.,  1.4, 4.5, 1.,   0.3,  0.5});       
-    auto expI = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {0,  1,  2,  3,4,  5,  6,  7,8,  9, 10, 11,12, 13, 14, 15,
+    auto expI = NDArrayFactory::create<Nd4jLong>('c', {2, 2, 2, 4}, {0,  1,  2,  3,4,  5,  6,  7,8,  9, 10, 11,12, 13, 14, 15,
                                                                 0,  1,  2,  3,4,  5,  6,  7,8,  9, 10, 11,12, 13, 14, 15});
 
     nd4j::ops::max_pool_with_argmax op;
@@ -1002,7 +1002,7 @@ TEST_F(DeclarableOpsTests6, ReluLayer_1) {
 
 TEST_F(DeclarableOpsTests6, Test_Gather_Discrepancy_119) {
     auto x = NDArrayFactory::create<double>('c', {2, 2}, {1, 2, 3, 4});
-    auto indices = NDArrayFactory::create<double>('c', {2}, {1, 0});
+    auto indices = NDArrayFactory::create<int>('c', {2}, {1, 0});
     auto e = NDArrayFactory::create<double>('c', {2, 2}, {3, 4, 1, 2});
 
     nd4j::ops::gather op;
