@@ -2568,9 +2568,9 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test5) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, zeros_as_test1) {
 
-    auto x = NDArrayFactory::create<double>(10.);
-    auto y = NDArrayFactory::create<double>(100.);
-    auto exp = NDArrayFactory::create<double>(0.);
+    auto x = NDArrayFactory::create<double>(10.f);
+    auto y = NDArrayFactory::create<double>(100.f);
+    auto exp = NDArrayFactory::create<double>(0.f);
                                                                           
     nd4j::ops::zeros_as op;
 
@@ -2580,6 +2580,24 @@ TEST_F(DeclarableOpsTests8, zeros_as_test1) {
     ASSERT_TRUE(y.isSameShape(exp));
     ASSERT_TRUE(y.equalsTo(exp));
 
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, zeros_as_test2) {
+
+    auto x = NDArrayFactory::create<float>(10.f);
+    //auto y = NDArrayFactory::create<float>(100.f);
+    auto exp = NDArrayFactory::create<float>(0.f);
+
+    nd4j::ops::zeros_as op;
+
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto y = result->at(0);
+
+    ASSERT_TRUE(y->isSameShape(exp));
+    ASSERT_TRUE(y->equalsTo(exp));
+    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2597,6 +2615,23 @@ TEST_F(DeclarableOpsTests8, ones_as_test1) {
     ASSERT_TRUE(y.isSameShape(exp));
     ASSERT_TRUE(y.equalsTo(exp));
         
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, ones_as_test2) {
+
+    auto x = NDArrayFactory::create<double>(10.);
+    //auto y = NDArrayFactory::create<double>(100.);
+    auto exp = NDArrayFactory::create<double>(1.);
+
+    nd4j::ops::ones_as op;
+
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto y = result->at(0);
+    ASSERT_TRUE(y->isSameShape(exp));
+    ASSERT_TRUE(y->equalsTo(exp));
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
