@@ -2591,8 +2591,8 @@ NDArray NDArray::transp() const {
             Nd4jLong* newShapeInfo = nullptr;
             if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _workspace))          // the rank of target array must be equal to max->rankOf)()
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-            if(!shape::equalsTypesAndShapesSoft(target->getShapeInfo(), newShapeInfo))
-                throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
+            if(!shape::equalsSoft(target->_shapeInfo, newShapeInfo) || target->_dataType != DataType::BOOL)
+                throw std::runtime_error("NDArray::applyTrueBroadcast bool method: the shape or type of target array is wrong !");
 
             // if workspace is not null - do not call delete.
             if (_workspace == nullptr)
