@@ -417,3 +417,155 @@ TEST_F(MultiDataTypeTests, ndarray_operatorDivide_test2) {
     ASSERT_EQ(x3/val1, exp7);
     ASSERT_EQ(val1/x3, exp8);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_operatorPlusEqual_test1) {
+    
+    NDArray scalar1('c', {0}, {4}, nd4j::DataType::INT32);
+    NDArray scalar2('c', {0}, {1.5}, nd4j::DataType::HALF);
+    
+    NDArray x1('c', {2,3}, {1.5, 2.5, 3.5, 4.5, 5.5, 6.5},  nd4j::DataType::FLOAT32);
+    NDArray x2('c', {3,2}, {10, 20, 30, 40, 50, 60},  nd4j::DataType::INT64);
+    NDArray x3('c', {2,2}, {0, 1, 2, 3},  nd4j::DataType::INT64);
+    NDArray x4('c', {2},   {0.4, 0.5},  nd4j::DataType::HALF);
+    NDArray x5('c', {2,2}, {0, 1, 2, 3},  nd4j::DataType::HALF);
+    NDArray x6('c', {2},   {0.4, 0.5},  nd4j::DataType::FLOAT32);
+
+    NDArray exp1('c', {0}, {5},  nd4j::DataType::INT32);
+    NDArray exp2('c', {0}, {6.5},  nd4j::DataType::HALF);
+    NDArray exp3('c', {3,2}, {11, 22, 33, 44, 55, 66},  nd4j::DataType::INT64);
+    NDArray exp4('c', {2,3}, {12.5, 24.5, 36.5, 48.5, 60.5, 72.5},  nd4j::DataType::FLOAT32);
+    NDArray exp5('c', {2,2}, {0.4, 1.5, 2.4, 3.5},  nd4j::DataType::HALF);
+    
+    scalar1 += scalar2;
+    ASSERT_EQ(scalar1, exp1);
+
+    scalar2 += scalar1;
+    ASSERT_EQ(scalar2, exp2);
+
+    x2 += x1;
+    ASSERT_EQ(x2, exp3);
+
+    x1 += x2;
+    ASSERT_EQ(x1, exp4);
+
+    x4 += x3;
+    ASSERT_EQ(x4, exp5);
+
+    x6 += x5;
+    ASSERT_EQ(x6, exp5);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_operatorMinusEqual_test1) {
+    
+    NDArray scalar1('c', {0}, {4}, nd4j::DataType::INT32);
+    NDArray scalar2('c', {0}, {1.5}, nd4j::DataType::HALF);
+    
+    NDArray x1('c', {2,3}, {1.5, 2.5, 3.5, 4.5, 5.5, 6.5},  nd4j::DataType::FLOAT32);
+    NDArray x2('c', {3,2}, {10, 20, 30, 40, 50, 60},  nd4j::DataType::INT64);
+    NDArray x3('c', {2,2}, {0, 1, 2, 3},  nd4j::DataType::INT64);
+    NDArray x4('c', {2},   {0.4, 0.5},  nd4j::DataType::HALF);
+    NDArray x5('c', {2,2}, {0, 1, 2, 3},  nd4j::DataType::HALF);
+    NDArray x6('c', {2},   {0.4, 0.5},  nd4j::DataType::FLOAT32);
+
+    NDArray exp1('c', {0}, {2},  nd4j::DataType::INT32);
+    NDArray exp2('c', {0}, {-0.5},  nd4j::DataType::HALF);
+    NDArray exp3('c', {3,2}, {8, 17, 26, 35, 44, 53},  nd4j::DataType::INT64);
+    NDArray exp4('c', {2,3}, {-6.5, -14.5, -22.5, -30.5, -38.5, -46.5},  nd4j::DataType::FLOAT32);
+    NDArray exp5('c', {2,2}, {0.4, -0.5, -1.6, -2.5},  nd4j::DataType::HALF);
+        
+    scalar1 -= scalar2;
+    ASSERT_EQ(scalar1, exp1);
+
+    scalar2 -= scalar1;
+    ASSERT_EQ(scalar2, exp2);
+
+    x2 -= x1;
+    ASSERT_EQ(x2, exp3);
+
+    x1 -= x2;
+    ASSERT_EQ(x1, exp4);
+
+    x4 -= x3;
+    ASSERT_EQ(x4, exp5);
+
+    x6 -= x5;
+    ASSERT_EQ(x6, exp5);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_operatorMultiplyEqual_test1) {
+    
+    NDArray scalar1('c', {0}, {3}, nd4j::DataType::INT32);
+    NDArray scalar2('c', {0}, {2.5}, nd4j::DataType::HALF);
+    
+    NDArray x1('c', {2,3}, {1.5, 2.5, 3.5, 4.5, 5.5, 6.5},  nd4j::DataType::FLOAT32);
+    NDArray x2('c', {3,2}, {1, 2, 3, 4, 5, 6},  nd4j::DataType::INT64);
+    NDArray x3('c', {2,2}, {0, 1, 2, 3},  nd4j::DataType::INT64);
+    NDArray x4('c', {2},   {0.4, 0.5},  nd4j::DataType::HALF);
+    NDArray x5('c', {2,2}, {0, 1, 2, 3},  nd4j::DataType::HALF);
+    NDArray x6('c', {2},   {0.4, 0.5},  nd4j::DataType::FLOAT32);
+
+    NDArray exp1('c', {0}, {7},  nd4j::DataType::INT32);
+    NDArray exp2('c', {0}, {17.5},  nd4j::DataType::HALF);
+    NDArray exp3('c', {3,2}, {1, 5, 10, 18, 27, 39},  nd4j::DataType::INT64);
+    NDArray exp4('c', {2,3}, {1.5, 12.5, 35, 81, 148.5, 253.5},  nd4j::DataType::FLOAT32);
+    NDArray exp5('c', {2,2}, {0., 0.5, 0.8, 1.5},  nd4j::DataType::HALF);
+    
+    scalar1 *= scalar2;
+    ASSERT_EQ(scalar1, exp1);
+
+    scalar2 *= scalar1;    
+    ASSERT_EQ(scalar2, exp2);
+
+    x2 *= x1;
+    ASSERT_EQ(x2, exp3);
+
+    x1 *= x2;    
+    ASSERT_EQ(x1, exp4);
+
+    x4 *= x3;
+    ASSERT_EQ(x4, exp5);
+
+    x6 *= x5;
+    ASSERT_EQ(x6, exp5);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_operatorDivideEqual_test1) {
+    
+    NDArray scalar1('c', {0}, {3}, nd4j::DataType::INT32);
+    NDArray scalar2('c', {0}, {2.5}, nd4j::DataType::HALF);
+    
+    NDArray x1('c', {2,3}, {1.5, 2.5, 3.5, 4.5, 5.5, 6.5},  nd4j::DataType::FLOAT32);
+    NDArray x2('c', {3,2}, {10, 20, 30, 40, 50, 60},  nd4j::DataType::INT64);
+    NDArray x3('c', {2,2}, {1, 2, 3, 4},  nd4j::DataType::INT64);
+    NDArray x4('c', {2},   {0.4, 0.5},  nd4j::DataType::HALF);
+    NDArray x5('c', {2,2}, {1, 2, 3, 4},  nd4j::DataType::HALF);
+    NDArray x6('c', {2},   {0.4, 0.5},  nd4j::DataType::FLOAT32);
+
+    NDArray exp1('c', {0}, {1},  nd4j::DataType::INT32);
+    NDArray exp2('c', {0}, {2.5},  nd4j::DataType::HALF);
+    NDArray exp3('c', {3,2}, {6, 8, 8, 8, 9, 9},  nd4j::DataType::INT64);
+    NDArray exp4('c', {2,3}, {0.25, 0.3125, 0.4375, 0.5625, 0.611111111, 0.722222222}, nd4j::DataType::FLOAT32);
+    NDArray exp5('c', {2,2}, {0.4, 0.25, 0.1333333, 0.125},  nd4j::DataType::HALF);
+    
+    scalar1 /= scalar2;
+    ASSERT_EQ(scalar1, exp1);
+
+    scalar2 /= scalar1;    
+    ASSERT_EQ(scalar2, exp2);
+
+    x2 /= x1;
+    ASSERT_EQ(x2, exp3);
+
+    x1 /= x2;    
+    ASSERT_EQ(x1, exp4);
+
+    x4 /= x3;
+    ASSERT_EQ(x4, exp5);
+
+    x6 /= x5;
+    ASSERT_EQ(x6, exp5);
+}
