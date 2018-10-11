@@ -82,7 +82,7 @@ namespace nd4j {
             newShapeInfo[0] = rank;
             std::copy(outShape.begin(), outShape.end(), newShapeInfo+1);
             
-            shape::updateStrides(newShapeInfo, 'c');
+            ShapeUtils::updateStridesAndType(newShapeInfo, block.dataType(), 'c');
 
             return SHAPELIST(newShapeInfo);
         }
