@@ -384,28 +384,17 @@ namespace randomOps {
 
                 for (Nd4jLong e = start; e < end; e++) {
                     auto epm = e + middle;
-                    if (!generated) {
-                        /*
-                         * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
-                         */
-                        u0 = buffer->relativeT<T>(e, static_cast<T>(1e-5f), static_cast<T>(1.0f));
-                        u1 = buffer->relativeT<T>(epm, static_cast<T>(1e-5f), static_cast<T>(1.0f));
-                        lnU0 = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0));
-                        z0 = lnU0 * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = lnU0 * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                    // we need to get random values
+                    T r0 = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+                    T r1 = buffer->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-                        generated = true;
+                    T realMean0 = y == z ? mean : y[e * yEWS];
 
-                        T realMean = y == z ? mean : y[e * yEWS];
+                    z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_cos<T>(two_pi * r1)) * stddev + realMean0;
 
-                        z[e * zEWS] = z0 * stddev + realMean;
-                    } else {
-                        if (epm < zLength) {
-                            T realMean = y == z ? mean : y[epm * yEWS];
-                            z[epm * zEWS] = z1 * stddev + realMean;
-                        }
-
-                        generated = false;
+                    if (epm < zLength) {
+                        T realMean1 = y == z ? mean : y[epm * yEWS];
+                        z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_sin<T>(two_pi * r1)) * stddev + realMean1;
                     }
                 }
             }
