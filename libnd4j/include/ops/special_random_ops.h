@@ -902,7 +902,7 @@ namespace randomOps {
 
                 if (epm < zLength) {
                     realMean = y == z ? mean : y[epm * yEWS];
-                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_sin<T>(two_pi * r1)) * stddev + realMean);
+                    z[epm *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_sin<T>(two_pi * r1)) * stddev + realMean);
                 }
             }
 
