@@ -355,7 +355,7 @@ namespace randomOps {
 
             auto middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
 
-            int elementsPerThread = zLength / TAD_THRESHOLD;
+            int elementsPerThread = middle / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
