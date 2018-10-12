@@ -37,6 +37,7 @@ import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.base.Preconditions;
+import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
@@ -1588,6 +1589,8 @@ public class SameDiff {
             }
 
             long viewSoFar = 0;
+            updaterViews = new HashMap<>();
+            updaterMap = new HashMap<>();
             for(String s : trainingConfig.getTrainableParams()){
                 long thisSize = variableMap.get(s).getArr().length();
                 INDArray view = (updaterStateSize == 0 || thisSize == 0 ? null :
@@ -1601,6 +1604,9 @@ public class SameDiff {
         }
     }
 
+    public void evaluate(MultiDataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals){
+
+    }
 
 
 
@@ -1622,7 +1628,7 @@ public class SameDiff {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable one(String name, long[] shape) {
+    public SDVariable one(String name, long... shape) {
         return var(name, shape, new ConstantInitScheme('f', 1.0));
     }
 
@@ -1658,7 +1664,7 @@ public class SameDiff {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable zero(String name, long[] shape) {
+    public SDVariable zero(String name, long... shape) {
         return var(name, shape, new ZeroInitScheme());
     }
 
@@ -1825,6 +1831,14 @@ public class SameDiff {
     }
 
     /**
+     * @deprecated Use {@link #var(String, WeightInitScheme, long...)}
+     */
+    @Deprecated
+    public SDVariable var(String name, long[] shape, WeightInitScheme weightInitScheme) {
+        return var(name, weightInitScheme, shape);
+    }
+
+    /**
      * Variable initialization with a specified {@link WeightInitScheme}
      *
      * @param name             the name of the variable
@@ -1832,7 +1846,7 @@ public class SameDiff {
      * @param weightInitScheme the weight initialization scheme
      * @return the created variable
      */
-    public SDVariable var(String name, long[] shape, WeightInitScheme weightInitScheme) {
+    public SDVariable var(String name, WeightInitScheme weightInitScheme, long... shape) {
         if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name +
                     " already exists.");

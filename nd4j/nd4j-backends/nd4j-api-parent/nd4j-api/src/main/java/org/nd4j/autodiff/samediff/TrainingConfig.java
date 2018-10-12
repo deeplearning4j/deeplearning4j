@@ -24,6 +24,7 @@ public class TrainingConfig {
 
     public TrainingConfig(IUpdater updater, double l1, double l2, boolean minimize, List<String> dataSetFeatureMapping, List<String> dataSetLabelMapping,
                           List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> trainableParams) {
+        this.updater = updater;
         this.l1 = l1;
         this.l2 = l2;
         this.minimize = minimize;
@@ -39,6 +40,10 @@ public class TrainingConfig {
 
     public void incrementEpochCount(){
         epochCount++;
+    }
+
+    public static Builder builder(){
+        return new Builder();
     }
 
     public static class Builder {
