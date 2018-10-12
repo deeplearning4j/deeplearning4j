@@ -507,6 +507,10 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         NDArray res;
 
         res.setShapeInfo(ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, workspace));
+
+        if (res.lengthOf() != string.size())
+            throw std::invalid_argument("Number of strings should match length of array");
+
         int8_t *buffer = nullptr;
         ALLOCATE(buffer, workspace, sizeof(utf8string*) * res.lengthOf(), int8_t);
 
@@ -526,6 +530,10 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         auto res = new NDArray();
 
         res->setShapeInfo(ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, workspace));
+
+        if (res->lengthOf() != string.size())
+            throw std::invalid_argument("Number of strings should match length of array");
+
         int8_t *buffer = nullptr;
         ALLOCATE(buffer, workspace, sizeof(utf8string*) * res->lengthOf(), int8_t);
 
