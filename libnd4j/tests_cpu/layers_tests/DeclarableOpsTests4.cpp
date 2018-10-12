@@ -295,7 +295,7 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_NHWC_1) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 3, 2}, {1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f, 1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f});
 
     nd4j::ops::biasadd op;
-    auto result = op.execute({&x, &bias}, {}, {});
+    auto result = op.execute({&x, &bias}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -313,7 +313,7 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_NCHW_1) {
     auto exp = NDArrayFactory::create<double>('c', {2, 2, 3, 3}, {1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f, 1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f});
 
     nd4j::ops::biasadd op;
-    auto result = op.execute({&x, &bias}, {}, {});
+    auto result = op.execute({&x, &bias}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -747,7 +747,7 @@ TEST_F(DeclarableOpsTests4, Test_Cross_2) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3}, {-5, 10, -5, -5, 10, -5});
 
     nd4j::ops::cross op;
-    auto result = op.execute({&a, &b}, {}, {});
+    auto result = op.execute({&a, &b}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -765,7 +765,7 @@ TEST_F(DeclarableOpsTests4, Test_Cross_3) {
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, { -1,   2,  -1, -11,  22, -11, -11,  40, -27});
 
     nd4j::ops::cross op;
-    auto result = op.execute({&a, &b}, {}, {});
+    auto result = op.execute({&a, &b}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1308,7 +1308,7 @@ TEST_F(DeclarableOpsTests4, WeightedCrossEntropyWithLogits_1) {
 //Result {-159.50006,  -191.1,       -16.009075, -210., -24.001238,  -15.03887}
 
     nd4j::ops::weighted_cross_entropy_with_logits op;
-    auto results = op.execute({&targets, &input, &weight}, {}, {});
+    auto results = op.execute({&targets, &input, &weight}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto  output = results->at(0);
     
     // output->printIndexedBuffer();
@@ -1330,7 +1330,7 @@ TEST_F(DeclarableOpsTests4, WeightedCrossEntropyWithLogits_2) {
     auto expected = NDArrayFactory::create<double>('c', {2, 3}, {-159.5001f, -191.1f, -15.98185f, -210.f,  -24.001238f, -14.951412f});
     
     nd4j::ops::weighted_cross_entropy_with_logits op;
-    auto results = op.execute({&targets, &input, &weights}, {}, {});
+    auto results = op.execute({&targets, &input, &weights}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto  output = results->at(0);
     
     // output->printIndexedBuffer("Result is ");
@@ -1466,7 +1466,7 @@ TEST_F(DeclarableOpsTests4, relu6_bp_test1) {
     auto expected  = NDArrayFactory::create<double>('c', {2,4}, {0., 0., 0., 0., 5., 0., 0., 8.});
     
     nd4j::ops::relu6_bp op;
-    auto results = op.execute({&input, &gradO}, {0.}, {});    
+    auto results = op.execute({&input, &gradO}, {0.}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

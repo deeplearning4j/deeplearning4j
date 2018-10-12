@@ -2235,7 +2235,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test6) {
     auto expOutput = NDArrayFactory::create<double>('c', {3, 3}, {-3.05095,-3.04946,-7.12773, -0.05095,-7.04946,-2.12773, -6.05095,-0.04946,-0.12773});
 
     nd4j::ops::log_softmax op;
-    auto  results = op.execute({&input}, {}, {0});
+    auto  results = op.execute({&input}, {}, {0}, false, nd4j::DataType::DOUBLE);
     auto z = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2252,7 +2252,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test7) {
     auto expOutput = NDArrayFactory::create<double>('c', {1, 5}, {-4.42414, -2.42414, -5.42414, -1.42414, -0.42414});
 
     nd4j::ops::log_softmax op;
-    auto  results = op.execute({&input}, {}, {});
+    auto  results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto z = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2286,7 +2286,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test9) {
     auto expOutput = NDArrayFactory::create<double>('c', {5, 1}, {0, 0, 0, 0, 0});
 
     nd4j::ops::log_softmax op;
-    auto  results = op.execute({&input}, {}, {});
+    auto  results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto z = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2303,7 +2303,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test10) {
     auto expOutput = NDArrayFactory::create<double>('c', {5, 1}, {-4.42414, -2.42414, -5.42414, -1.42414, -0.42414});
 
     nd4j::ops::log_softmax op;
-    auto  results = op.execute({&input}, {}, {0});
+    auto  results = op.execute({&input}, {}, {0}, false, nd4j::DataType::DOUBLE);
     auto z = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2320,7 +2320,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test11) {
     auto expOutput = NDArrayFactory::create<double>('c', {5}, {-4.42414, -2.42414, -5.42414, -1.42414, -0.42414});
 
     nd4j::ops::log_softmax op;
-    auto  results = op.execute({&input}, {}, {});
+    auto  results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto z = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());

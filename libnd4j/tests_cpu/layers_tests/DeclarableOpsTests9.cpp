@@ -1710,7 +1710,7 @@ TEST_F(DeclarableOpsTests9, thresholdedrelu_test1) {
 
     nd4j::ops::thresholdedrelu op;
 
-    auto result = op.execute({&x}, {theta}, {});
+    auto result = op.execute({&x}, {theta}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1729,7 +1729,7 @@ TEST_F(DeclarableOpsTests9, thresholdedrelu_test2) {
 
     nd4j::ops::thresholdedrelu op;
 
-    auto result = op.execute({&x}, {theta}, {});
+    auto result = op.execute({&x}, {theta}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);    
 
