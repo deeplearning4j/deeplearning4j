@@ -90,6 +90,7 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.impl.*;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -1508,7 +1509,7 @@ public class SameDiff {
                 INDArray param = variableMap.get(s).getArr();
                 INDArray grad = variableMap.get(s).getGradient().getArr();
                 //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
-                // which should flow through
+                // which should flow through to here
 
                 //Apply updater
                 GradientUpdater u = updaterMap.get(s);
@@ -1516,10 +1517,16 @@ public class SameDiff {
 
                 //L1 and L2 regularization:
                 if(trainingConfig.getL1() > 0){
-
+                    //L1: loss += lambda * sum_i |param_i|
+                    //dL/dp_i: lambda * sgn(param_i)
+                    INDArray signProd = Transforms.sign(param, true).muli(trainingConfig.getL1());
+                    grad.addi(signProd);
                 }
                 if(trainingConfig.getL2() > 0){
-
+                    //L2: loss += 0.5 * lambda * sum_i param_i^2
+                    //dL/dp_i: lambda * param_i
+                    //TODO axpy optimization = safe/possible?
+                    grad.addi(param.mul(trainingConfig.getL2()));
                 }
 
                 if(trainingConfig.isMinimize()){
@@ -1537,7 +1544,7 @@ public class SameDiff {
         }
 
 
-        //Clear non-trainable params?
+        //Clear arrays that are for non-trainable params?
 
 
         trainingConfig.incrementIterationCount();
