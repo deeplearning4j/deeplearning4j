@@ -1162,7 +1162,7 @@ TEST_F(DeclarableOpsTests9, clipbynorm_test12) {
     }
     
     nd4j::ops::clipbynorm op;
-    auto result = op.execute({&y}, {clip}, {axis});
+    auto result = op.execute({&y}, {clip}, {axis}, false, nd4j::DataType::DOUBLE);
     auto outFF = result->at(0);        
     
     ASSERT_TRUE(expect.isSameShape(outFF));
