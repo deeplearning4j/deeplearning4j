@@ -74,6 +74,12 @@ import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
+import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
+import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
@@ -114,6 +120,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Builder
 @Slf4j
 public class SameDiff {
+
+    private TrainingConfig trainingConfig;
+    private boolean initializedTraining;
+    private INDArray updaterState;
+
     private Map<String, String[]> incomingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as inputs to that function
     private Map<String, String[]> outgoingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as outputs from that function
     private Map<String, int[]> permuteOrder;
@@ -1412,6 +1423,61 @@ public class SameDiff {
     public List<SDVariable> variables() {
         return new ArrayList<>(variableMap.values());
     }
+
+
+
+
+
+    public void setTrainingConfig(TrainingConfig trainingConfig){
+        this.trainingConfig = trainingConfig;
+    }
+
+    public void fit(DataSet dataSet){
+        fit(new SingletonMultiDataSetIterator(dataSet.toMultiDataSet()), 1, false);
+    }
+
+    public void fit(DataSetIterator iter, int numEpochs){
+        fit(new MultiDataSetIteratorAdapter(iter), numEpochs, true);
+    }
+
+    public void fit(MultiDataSetIterator iter, int numEpochs){
+        fit(iter, numEpochs, true);
+    }
+
+    protected void fit(MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount){
+        Preconditions.checkNotNull(iter, "Iterator must not be null");
+        Preconditions.checkState(numEpochs > 0, "Number of training epochs must be a positive number. Got: %s", numEpochs);
+        Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
+                "be set before training. Use setTrainingConfig(TrainingConfig)");
+
+        //Set inputs
+
+
+        if(!initializedTraining){
+            //First: infer the variables to be optimized if required
+            if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().size() == 0){
+                //Variable is trainable if it's not
+                List<String> trainVarList = new ArrayList<>();
+                for(SDVariable v : variableMap.values()){
+                    String n = v.getVarName();
+                    if(!functionOutputFor.containsKey(n) || functionOutputFor.get(n) == null || functionOutputFor.get(n).size() == 0){
+                        trainVarList.add(n);
+                    }
+                }
+
+                log.info("Inferred trainable variables: {}", trainVarList);
+            }
+        }
+
+
+        trainingConfig.incrementIterationCount();
+        if(incrementEpochCount)
+            trainingConfig.incrementEpochCount();
+
+    }
+
+
+
 
     /**
      * Create a new variable with the specified shape, with all values initialized to 1.0
