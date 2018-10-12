@@ -473,7 +473,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test1) {
 
     auto input = NDArrayFactory::create<double>('c', {4, 3, 2});
     input.linspace(1);
-    auto indices = NDArrayFactory::create<double>('c', {2,2,1}, {3,2,3,2});
+    auto indices = NDArrayFactory::create<int>('c', {2,2,1}, {3,2,3,2});
 
     auto expected = NDArrayFactory::create<double>('c', {2,2,3,2}, {19, 20, 21, 22, 23, 24, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 13, 14, 15, 16, 17, 18});
 
@@ -493,7 +493,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test2) {
 
     auto input = NDArrayFactory::create<double>('c', {4, 3, 2});
     input.linspace(1);
-    auto indices = NDArrayFactory::create<double>('c', {2,2,2}, {3,2,1,2, 0,1,0,1});
+    auto indices = NDArrayFactory::create<int>('c', {2,2,2}, {3,2,1,2, 0,1,0,1});
 
     auto expected = NDArrayFactory::create<double>('c', {2,2,2}, {23, 24, 11, 12, 3,  4, 3,  4});
 
@@ -513,7 +513,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test3) {
 
     auto input = NDArrayFactory::create<double>('c', {4, 3, 2});
     input.linspace(1);
-    auto indices = NDArrayFactory::create<double>('c', {3}, {3,2,1});
+    auto indices = NDArrayFactory::create<int>('c', {3}, {3,2,1});
     auto expected = NDArrayFactory::create<double>(24.);
 
     nd4j::ops::gather_nd op;
@@ -532,7 +532,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test4) {
 
     auto input = NDArrayFactory::create<double>('c', {4, 3, 2});
     input.linspace(1);
-    auto indices = NDArrayFactory::create<double>('c', {2,3}, {3,2,1,0,2,1});
+    auto indices = NDArrayFactory::create<int>('c', {2,3}, {3,2,1,0,2,1});
     auto expected = NDArrayFactory::create<double>('c',{2}, {24., 6});
 
     nd4j::ops::gather_nd op;
@@ -550,7 +550,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test4) {
 TEST_F(DeclarableOpsTests5, gatherNd_test5) {
 
     auto input = NDArrayFactory::create<double>('c', {4}, {1,2,3,4});
-    auto indices = NDArrayFactory::create<double>('c', {5,1}, {3,2,0,1,1});
+    auto indices = NDArrayFactory::create<int>('c', {5,1}, {3,2,0,1,1});
     auto expected = NDArrayFactory::create<double>('c',{5}, {4.,3,1,2,2});
 
     nd4j::ops::gather_nd op;
@@ -569,7 +569,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test6) {
 
     auto input = NDArrayFactory::create<double>('c', {4}, {1,2,3,4});
     std::vector<Nd4jLong> shape = {1};
-    auto indices = NDArrayFactory::create<double>('c', shape, {2});
+    auto indices = NDArrayFactory::create<int>('c', shape, {2});
     auto expected = NDArrayFactory::create<double>(3.);
 
     nd4j::ops::gather_nd op;
@@ -782,8 +782,8 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test11) {
     
     auto input = NDArrayFactory::create<double>('c', {1, 1, 5, 1});
     input.linspace(1);
-    std::vector<int8_t> data = {1, 0, 1, 0, 1};
-    auto seqLengths = NDArrayFactory::create<int8_t>('c', {5}, data);
+    std::vector<int> data = {1, 0, 1, 0, 1};
+    auto seqLengths = NDArrayFactory::create<int>('c', {5}, data);
     auto exp = NDArrayFactory::create<double>('c', {1, 1, 5, 1}, {1, 2, 3, 4, 5});
 
     nd4j::ops::reverse_sequence op;

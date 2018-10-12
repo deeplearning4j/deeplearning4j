@@ -169,13 +169,13 @@ namespace nd4j {
              */
             virtual Nd4jStatus execute(Context* block);
 
-            nd4j::ResultSet* execute(std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
-            Nd4jStatus execute(std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
-            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
+            nd4j::ResultSet* execute(std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false, nd4j::DataType type = nd4j::DataType::FLOAT32);
+            Nd4jStatus execute(std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false, nd4j::DataType type = nd4j::DataType::FLOAT32);
+            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false, nd4j::DataType type = nd4j::DataType::FLOAT32);
 
             nd4j::ResultSet* execute(const std::vector<NDArray*>& inputs, const std::vector<double>& tArgs, const std::vector<Nd4jLong>& iArgs, bool isInplace = false, nd4j::DataType type = nd4j::DataType::FLOAT32);
-            Nd4jStatus execute(std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs , std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
-            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs , std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
+            Nd4jStatus execute(std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs , std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false, nd4j::DataType type = nd4j::DataType::FLOAT32);
+            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs , std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false, nd4j::DataType type = nd4j::DataType::FLOAT32);
 
             nd4j::ResultSet* execute(const nd4j::OpArgsHolder& holder, bool isInplace = false);
 

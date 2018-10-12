@@ -841,7 +841,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_1) {
     });
 
     nd4j::ops::matrix_inverse op;
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.execute({&x}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -923,7 +923,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_3) {
     });
 
     nd4j::ops::matrix_inverse op;
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.execute({&x}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -957,7 +957,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_4) {
     });
 
     nd4j::ops::matrix_inverse op;
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.execute({&x}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 

@@ -70,9 +70,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 	auto logSumExp = sumExp.transform(transform::Log);
 	// sum(-labels *((logits - max_logits) - log(sum(exp(logits - max_logits))))) along classes
 	// The subtraction broadcasts along the batch dimension
-	NDArray weightedLossesStage = (shiftedLogits - logSumExp);
-	weightedLossesStage *= (-*newLabels);
-	auto weightedLosses = weightedLossesStage.reduceAlongDims(reduce::Sum, dimensions);
+	auto weightedLosses = ((-*newLabels) * (shiftedLogits - logSumExp)).reduceAlongDims(reduce::Sum, dimensions);
 	
 	// perform weights broadcasting/tile to weightedLosses if it is necessary
 	auto weightsBroad = weights;

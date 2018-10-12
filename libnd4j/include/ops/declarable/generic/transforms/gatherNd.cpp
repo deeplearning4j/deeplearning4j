@@ -48,9 +48,10 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(gather_nd) {
-    getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY);
-    getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
-    getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
+    getOpDescriptor()
+         ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+         ->setAllowedInputTypes(1, {ALL_INTS})
+         ->setAllowedOutputTypes(nd4j::DataType::ANY);
 }
 
 DECLARE_SHAPE_FN(gather_nd) {
@@ -77,8 +78,8 @@ DECLARE_SHAPE_FN(gather_nd) {
     for(int i = 0; i < rankIn-lastIndDim; ++i)
         outShapeInfo[rankInd + i] = inShapeInfoIn[lastIndDim + i + 1];
 
-	shape::updateStrides(outShapeInfo, 'c');
-    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfoIn));
+	ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfoIn, 'c');
+    //ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfoIn));
     return SHAPELIST(outShapeInfo);    
 }
 
