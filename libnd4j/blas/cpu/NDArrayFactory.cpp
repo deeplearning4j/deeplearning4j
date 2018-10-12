@@ -23,39 +23,36 @@
 namespace nd4j {
 
 
-    template <>
-    NDArray NDArrayFactory::create(const char *string, nd4j::memory::Workspace* workspace) {
-        return create(std::string(string), workspace);
+    NDArray NDArrayFactory::string(const char *str, nd4j::memory::Workspace* workspace) {
+        std::string s(str);
+        return string(s, workspace);
     }
 
-    template <>
-    NDArray* NDArrayFactory::create_(const char *string, nd4j::memory::Workspace* workspace) {
-        return create_(std::string(string), workspace);
+    NDArray* NDArrayFactory::string_(const char *str, nd4j::memory::Workspace* workspace) {
+        return string_(std::string(str), workspace);
     }
 
-    template <>
-    NDArray NDArrayFactory::create(const std::string string, nd4j::memory::Workspace* workspace) {
+    NDArray NDArrayFactory::string(const std::string &str, nd4j::memory::Workspace* workspace) {
         NDArray res;
 
         int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, string.size() * DataTypeUtils::sizeOf(DataType::UTF8), int8_t);
+        ALLOCATE(buffer, workspace, str.size() * DataTypeUtils::sizeOf(DataType::UTF8), int8_t);
 
         res.setBuffer(buffer);
-        res.setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataType::UTF8, string.size(), workspace));
+        res.setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataType::UTF8, str.size(), workspace));
         res.setWorkspace(workspace);
 
         return res;
     }
 
-    template <>
-    NDArray* NDArrayFactory::create_(const std::string string, nd4j::memory::Workspace* workspace) {
+    NDArray* NDArrayFactory::string_(const std::string &str, nd4j::memory::Workspace* workspace) {
         auto res = new NDArray();
 
         int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, string.size() * DataTypeUtils::sizeOf(DataType::UTF8), int8_t);
+        ALLOCATE(buffer, workspace, str.size() * DataTypeUtils::sizeOf(DataType::UTF8), int8_t);
 
         res->setBuffer(buffer);
-        res->setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataType::UTF8, string.size(), workspace));
+        res->setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataType::UTF8, str.size(), workspace));
         res->setWorkspace(workspace);
 
         return res;
@@ -152,7 +149,6 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template NDArray* NDArrayFactory::create_(int8_t scalar, nd4j::memory::Workspace* workspace);
     template NDArray* NDArrayFactory::create_(uint8_t scalar, nd4j::memory::Workspace* workspace);
     template NDArray* NDArrayFactory::create_(int16_t scalar, nd4j::memory::Workspace* workspace);
-
 
     template <typename T>
     NDArray NDArrayFactory::create(const T scalar, nd4j::memory::Workspace* workspace) {

@@ -72,6 +72,11 @@ namespace nd4j {
     }
 
     template <>
+    DataType DataTypeUtils::fromT<std::string>() {
+        return UTF8;
+    }
+
+    template <>
     DataType DataTypeUtils::fromT<float>() {
         return FLOAT32;
     }

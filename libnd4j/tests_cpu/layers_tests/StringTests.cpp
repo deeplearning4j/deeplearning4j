@@ -33,7 +33,7 @@ public:
 };
 
 TEST_F(StringTests, Basic_Test_1) {
-    auto array = NDArrayFactory::create("alpha");
+    auto array = NDArrayFactory::string("alpha");
     ASSERT_EQ(nd4j::DataType::UTF8, array.dataType());
 
     ASSERT_EQ(5, array.lengthOf());

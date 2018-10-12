@@ -66,19 +66,23 @@ namespace nd4j {
                 return nd4j::DataType ::UINT32;
             else if (hasPropertyBitSet(shapeInfo, ARRAY_LONG))
                 return nd4j::DataType ::UINT64;
+            else if (hasPropertyBitSet(shapeInfo, ARRAY_STRING))
+                return nd4j::DataType ::UTF8;
             else {
                 shape::printShapeInfoLinear("Bad unsigned datatype (not)stored in shape", const_cast<Nd4jLong*>(shapeInfo));
                 throw std::runtime_error("Bad datatype");
             }
         }
         else if (hasPropertyBitSet(shapeInfo, ARRAY_CHAR))
-            return nd4j::DataType ::INT8;
+            return nd4j::DataType::INT8;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_SHORT))
-            return nd4j::DataType ::INT16;
+            return nd4j::DataType::INT16;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_INT))
-            return nd4j::DataType ::INT32;
+            return nd4j::DataType::INT32;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_LONG))
-            return nd4j::DataType ::INT64;
+            return nd4j::DataType::INT64;
+        else if (hasPropertyBitSet(shapeInfo, ARRAY_STRING))
+            return nd4j::DataType::UTF8;
         else {
             shape::printShapeInfoLinear("Bad signed datatype (not)stored in shape", const_cast<Nd4jLong*>(shapeInfo));
             throw std::runtime_error("Bad datatype");
@@ -174,32 +178,49 @@ namespace nd4j {
             setPropertyBit(shapeInfo, ARRAY_UNSIGNED);
         }
 
-        if (dataType == nd4j::DataType::BOOL)
-            setPropertyBit(shapeInfo, ARRAY_BOOL);
-        else if (dataType == nd4j::DataType::HALF)
-            setPropertyBit(shapeInfo, ARRAY_HALF);
-        else if (dataType == nd4j::DataType::FLOAT32)
-            setPropertyBit(shapeInfo, ARRAY_FLOAT);
-        else if (dataType == nd4j::DataType::DOUBLE)
-            setPropertyBit(shapeInfo, ARRAY_DOUBLE);
-        else if (dataType == nd4j::DataType::INT8)
-            setPropertyBit(shapeInfo, ARRAY_CHAR);
-        else if (dataType == nd4j::DataType::INT16)
-            setPropertyBit(shapeInfo, ARRAY_SHORT);
-        else if (dataType == nd4j::DataType::INT32)
-            setPropertyBit(shapeInfo, ARRAY_INT);
-        else if (dataType == nd4j::DataType::INT64)
-            setPropertyBit(shapeInfo, ARRAY_LONG);
-        else if (dataType == nd4j::DataType::UINT8)
-            setPropertyBit(shapeInfo, ARRAY_CHAR);
-        else if (dataType == nd4j::DataType::UINT16)
-            setPropertyBit(shapeInfo, ARRAY_SHORT);
-        else if (dataType == nd4j::DataType::UINT32)
-            setPropertyBit(shapeInfo, ARRAY_INT);
-        else if (dataType == nd4j::DataType::UINT64)
-            setPropertyBit(shapeInfo, ARRAY_LONG);
-        else
-            throw std::runtime_error("Can't set unknown data type");
+        switch (dataType) {
+            case nd4j::DataType::BOOL:
+                setPropertyBit(shapeInfo, ARRAY_BOOL);
+                break;
+            case nd4j::DataType::HALF:
+                setPropertyBit(shapeInfo, ARRAY_HALF);
+                break;
+            case nd4j::DataType::FLOAT32:
+                setPropertyBit(shapeInfo, ARRAY_FLOAT);
+                break;
+            case nd4j::DataType::DOUBLE:
+                setPropertyBit(shapeInfo, ARRAY_DOUBLE);
+                break;
+            case nd4j::DataType::INT8:
+                setPropertyBit(shapeInfo, ARRAY_CHAR);
+                break;
+            case nd4j::DataType::INT16:
+                setPropertyBit(shapeInfo, ARRAY_SHORT);
+                break;
+            case nd4j::DataType::INT32:
+                setPropertyBit(shapeInfo, ARRAY_INT);
+                break;
+            case nd4j::DataType::INT64:
+                setPropertyBit(shapeInfo, ARRAY_LONG);
+                break;
+            case nd4j::DataType::UINT8:
+                setPropertyBit(shapeInfo, ARRAY_CHAR);
+                break;
+            case nd4j::DataType::UINT16:
+                setPropertyBit(shapeInfo, ARRAY_SHORT);
+                break;
+            case nd4j::DataType::UINT32:
+                setPropertyBit(shapeInfo, ARRAY_INT);
+                break;
+            case nd4j::DataType::UINT64:
+                setPropertyBit(shapeInfo, ARRAY_LONG);
+                break;
+            case nd4j::DataType::UTF8:
+                setPropertyBit(shapeInfo, ARRAY_STRING);
+                break;
+            default:
+                throw std::runtime_error("Can't set unknown data type");
+        }
     }
 
 ////////////////////////////////////////////////////////////////////////////////

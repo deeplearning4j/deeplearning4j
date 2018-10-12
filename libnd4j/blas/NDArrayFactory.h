@@ -94,6 +94,14 @@ namespace nd4j {
 
         template <typename T>
         static NDArray create(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<T>& data, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray string(const char *string, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray* string_(const char *string, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray string(const std::string &string, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray* string_(const std::string &string, nd4j::memory::Workspace* workspace = nullptr);
 #endif
     };
 }

@@ -280,6 +280,10 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
         return false;
     }
 
+    bool NDArray::isS() const {
+        return _dataType == DataType::UTF8;
+    }
+
     bool NDArray::isR() const {
         auto xType = ArrayOptions::dataType(this->_shapeInfo);
         return xType == FLOAT32 || xType == HALF || xType == DOUBLE || xType == FLOAT8;
@@ -287,7 +291,7 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
 
     bool NDArray::isZ() const {
         // TODO: decide if we really want to exclude Bool here
-        return !isC() && !isR() && !isB();
+        return !isC() && !isR() && !isB() && !isS();
     }
 
     bool NDArray::isB() const {
@@ -3024,9 +3028,16 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template void NDArray::p(const Nd4jLong i, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const bool value);
 
+    template <>
+    std::string* NDArray::bufferAsT() const {
+        throw std::runtime_error("This method is NOT supposed to be used");
+    }
 
     template <typename T>
     T * NDArray::bufferAsT() const {
+        if (isS())
+            throw std::runtime_error("You can't use this method on String array");
+
         return reinterpret_cast<T*>(_buffer);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template, * NDArray::bufferAsT() const, LIBND4J_TYPES);
