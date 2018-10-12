@@ -689,7 +689,7 @@ namespace nd4j {
         }
 
         nd4j::ResultSet* nd4j::ops::DeclarableOp::execute(const nd4j::OpArgsHolder& holder, bool isInplace) {
-            return execute(holder.getInArrs(), holder.getTArgs(), holder.getIArgs(), isInplace);
+            return execute(holder.getInArrs(), holder.getTArgs(), holder.getIArgs(), isInplace, nd4j::DataType::DOUBLE);
         }
 
         Nd4jStatus nd4j::ops::DeclarableOp::validateInputDimensionsMatch(Context& block) {
