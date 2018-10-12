@@ -18,42 +18,27 @@
 // @author raver119@gmail.com
 //
 
+#ifndef DEV_TESTS_UTF8STRING_H
+#define DEV_TESTS_UTF8STRING_H
 
-#include <NDArray.h>
-#include <NDArrayFactory.h>
-#include "testlayers.h"
-#include <graph/Stash.h>
+#include <string>
 
-using namespace nd4j;
-using namespace nd4j;
+namespace nd4j {
+    struct utf8string {
+    private:
+        bool _allocated = false;
+    public:
+        char *_buffer = nullptr;
+        unsigned int _length = 0;
 
-class StringTests : public testing::Test {
-public:
+        utf8string();
+        ~utf8string();
 
-};
-
-TEST_F(StringTests, Basic_Test_1) {
-    std::string f("alpha");
-    auto array = NDArrayFactory::string(f);
-    ASSERT_EQ(nd4j::DataType::UTF8, array.dataType());
-
-    ASSERT_EQ(1, array.lengthOf());
-    ASSERT_EQ(0, array.rankOf());
-
-    auto z = array.e<std::string>(0);
-
-    ASSERT_EQ(f, z);
+        explicit utf8string(std::string* string);
+        utf8string(const utf8string &other);
+        utf8string& operator=(const utf8string &other);
+    };
 }
 
-TEST_F(StringTests, Basic_Test_2) {
-    std::string f("alpha");
-    auto array = NDArrayFactory::string(f.c_str());
-    ASSERT_EQ(nd4j::DataType::UTF8, array.dataType());
 
-    ASSERT_EQ(1, array.lengthOf());
-    ASSERT_EQ(0, array.rankOf());
-
-    auto z = array.e<std::string>(0);
-
-    ASSERT_EQ(f, z);
-}
+#endif //DEV_TESTS_UTF8STRING_H

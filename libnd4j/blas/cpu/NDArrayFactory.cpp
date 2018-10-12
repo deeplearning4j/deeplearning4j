@@ -35,14 +35,17 @@ namespace nd4j {
     NDArray NDArrayFactory::string(const std::string &str, nd4j::memory::Workspace* workspace) {
         NDArray res;
 
+        utf8string **us = nullptr;
         int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, str.size() * DataTypeUtils::sizeOf(DataType::UTF8), int8_t);
-        memset(buffer, 0, str.size() * DataTypeUtils::sizeOf(DataType::UTF8));
-        memcpy(buffer, str.data(), str.length());
+        ALLOCATE(buffer, workspace, sizeof(utf8string*), int8_t);
+        us = reinterpret_cast<utf8string**>(buffer);
+        us[0] = new nd4j::utf8string(const_cast<std::string *>(&str));
 
         res.setBuffer(buffer);
-        res.setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataType::UTF8, str.size(), workspace));
+        res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, workspace));
         res.setWorkspace(workspace);
+
+        res.triggerAllocationFlag(true, true);
 
         return res;
     }
@@ -50,14 +53,17 @@ namespace nd4j {
     NDArray* NDArrayFactory::string_(const std::string &str, nd4j::memory::Workspace* workspace) {
         auto res = new NDArray();
 
+        utf8string **us = nullptr;
         int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, str.size() * DataTypeUtils::sizeOf(DataType::UTF8), int8_t);
-        memset(buffer, 0, str.size() * DataTypeUtils::sizeOf(DataType::UTF8));
-        memcpy(buffer, str.data(), str.length());
+        ALLOCATE(buffer, workspace, sizeof(utf8string*), int8_t);
+        us = reinterpret_cast<utf8string**>(buffer);
+        us[0] = new nd4j::utf8string(const_cast<std::string *>(&str));
 
         res->setBuffer(buffer);
-        res->setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataType::UTF8, str.size(), workspace));
+        res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, workspace));
         res->setWorkspace(workspace);
+
+        res->triggerAllocationFlag(true, true);
 
         return res;
     }

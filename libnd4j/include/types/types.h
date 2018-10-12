@@ -28,6 +28,7 @@
 #include <types/int16.h>
 #include <types/uint8.h>
 #include <types/uint16.h>
+#include <types/utf8string.h>
 
 #include <type_boilerplate.h>
 
