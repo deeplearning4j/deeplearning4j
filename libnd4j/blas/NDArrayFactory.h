@@ -25,6 +25,7 @@
 #include <initializer_list>
 #include <NDArray.h>
 #include <memory/Workspace.h>
+#include <string>
 
 
 namespace nd4j {

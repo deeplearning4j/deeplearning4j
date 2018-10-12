@@ -22,6 +22,45 @@
 
 namespace nd4j {
 
+
+    template <>
+    NDArray NDArrayFactory::create(const char *string, nd4j::memory::Workspace* workspace) {
+        return create(std::string(string), workspace);
+    }
+
+    template <>
+    NDArray* NDArrayFactory::create_(const char *string, nd4j::memory::Workspace* workspace) {
+        return create_(std::string(string), workspace);
+    }
+
+    template <>
+    NDArray NDArrayFactory::create(const std::string string, nd4j::memory::Workspace* workspace) {
+        NDArray res;
+
+        int8_t *buffer = nullptr;
+        ALLOCATE(buffer, workspace, string.size() * DataTypeUtils::sizeOf(DataType::UTF8), int8_t);
+
+        res.setBuffer(buffer);
+        res.setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataType::UTF8, string.size(), workspace));
+        res.setWorkspace(workspace);
+
+        return res;
+    }
+
+    template <>
+    NDArray* NDArrayFactory::create_(const std::string string, nd4j::memory::Workspace* workspace) {
+        auto res = new NDArray();
+
+        int8_t *buffer = nullptr;
+        ALLOCATE(buffer, workspace, string.size() * DataTypeUtils::sizeOf(DataType::UTF8), int8_t);
+
+        res->setBuffer(buffer);
+        res->setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataType::UTF8, string.size(), workspace));
+        res->setWorkspace(workspace);
+
+        return res;
+    }
+
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace) {

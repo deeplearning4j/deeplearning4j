@@ -69,6 +69,9 @@
 // boolean values
 #define ARRAY_BOOL 524288
 
+// utf-8 values
+#define ARRAY_STRING 1048576
+
 // flag for extras 
 #define ARRAY_EXTRAS 2097152
 

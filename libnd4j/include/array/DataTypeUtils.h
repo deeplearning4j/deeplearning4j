@@ -63,6 +63,8 @@ namespace nd4j {
 
         FORCEINLINE static bool isU(nd4j::DataType dataType);
 
+        FORCEINLINE static bool isS(nd4j::DataType dataType);
+
         FORCEINLINE static nd4j::DataType pickPairwiseResultType(nd4j::DataType typeX, nd4j::DataType typeY);
 
         FORCEINLINE static nd4j::DataType pickPairwiseResultType(const Nd4jLong* shapeInfo1, const Nd4jLong* shapeInfo2);
@@ -90,8 +92,12 @@ namespace nd4j {
         return dataType == nd4j::DataType::BOOL;
     }
 
+    FORCEINLINE bool DataTypeUtils::isS(nd4j::DataType dataType) {
+        return dataType == nd4j::DataType::UTF8;
+    }
+
     FORCEINLINE bool DataTypeUtils::isZ(nd4j::DataType dataType) {
-        return !isR(dataType) && !isB(dataType);
+        return !isR(dataType) && !isB(dataType) && !isS(dataType);
     }
 
     FORCEINLINE bool DataTypeUtils::isU(nd4j::DataType dataType) {

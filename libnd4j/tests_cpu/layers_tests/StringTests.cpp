@@ -18,32 +18,24 @@
 // @author raver119@gmail.com
 //
 
-#ifndef ND4J_DATATYPE_H
-#define ND4J_DATATYPE_H
 
-namespace nd4j {
-    enum DataType {
-        INHERIT = 0,
-        BOOL = 1,
-        FLOAT8 = 2,
-        HALF = 3,
-        HALF2 = 4,
-        FLOAT32 = 5,
-        DOUBLE = 6,
-        INT8 = 7,
-        INT16 = 8,
-        INT32 = 9,
-        INT64 = 10,
-        UINT8 = 11,
-        UINT16 = 12,
-        UINT32 = 13,
-        UINT64 = 14,
-        QINT8 = 15,
-        QINT16 = 16,
-        UTF8 = 50,
-        ANY = 100,
-        AUTO = 200,
-    };
+#include <NDArray.h>
+#include <NDArrayFactory.h>
+#include "testlayers.h"
+#include <graph/Stash.h>
+
+using namespace nd4j;
+using namespace nd4j;
+
+class StringTests : public testing::Test {
+public:
+
+};
+
+TEST_F(StringTests, Basic_Test_1) {
+    auto array = NDArrayFactory::create("alpha");
+    ASSERT_EQ(nd4j::DataType::UTF8, array.dataType());
+
+    ASSERT_EQ(5, array.lengthOf());
+    ASSERT_EQ(1, array.rankOf());
 }
-
-#endif
