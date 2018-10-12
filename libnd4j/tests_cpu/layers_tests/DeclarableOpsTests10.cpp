@@ -436,19 +436,20 @@ TEST_F(DeclarableOpsTests10, range_test12) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test1) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2,3},{3.,2.,1.,0.,1.,2.});
+    auto labels = NDArrayFactory::create<int>('c', {2,3},{3, 2, 1, 0, 1, 2});
     auto logits = NDArrayFactory::create<double>('c', {2,3,4});
     auto expected = NDArrayFactory::create<double>('c', {2,3}, {1.24254, 1.34254, 1.44254, 1.54254, 1.44254, 1.34254});
                                             
     logits.linspace(0.1, 0.1);
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits op;
-    auto results = op.execute({&labels, &logits}, {}, {});
+    auto results = op.execute({&labels, &logits}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto output = results->at(0);    
-
+    output->printIndexedBuffer("Output SSCELwL");
+    expected.printIndexedBuffer("Expect SSCELwL");
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
@@ -458,14 +459,14 @@ TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test1
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test2) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2},{1.,0.});
+    auto labels = NDArrayFactory::create<int>('c', {2},{1, 0});
     auto logits = NDArrayFactory::create<double>('c', {2,3});
     auto expected = NDArrayFactory::create<double>('c', {2}, {1.10194, 1.20194});
                                             
     logits.linspace(0.1, 0.1);
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits op;
-    auto results = op.execute({&labels, &logits}, {}, {});
+    auto results = op.execute({&labels, &logits}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -480,14 +481,14 @@ TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test2
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test3) {
     
-    auto labels = NDArrayFactory::create<double>('c', {1},{0.});
+    NDArray labels('c', {1}, {0}, nd4j::DataType::INT32);
     auto logits = NDArrayFactory::create<double>('c', {1,3});
     auto expected = NDArrayFactory::create<double>('c', {1}, {1.20194});
                                             
     logits.linspace(0.1, 0.1);
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits op;
-    auto results = op.execute({&labels, &logits}, {}, {});
+    auto results = op.execute({&labels, &logits}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -502,14 +503,14 @@ TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test3
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test4) {
     
-    auto labels = NDArrayFactory::create<double>('c', {2},{0.,0.});
+    auto labels = NDArrayFactory::create<int>('c', {2},{0, 0});
     auto logits = NDArrayFactory::create<double>('c', {2,1});
     auto expected = NDArrayFactory::create<double>('c', {2}, {0., 0.});
                                             
     logits.linspace(0.1, 0.1);
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits op;
-    auto results = op.execute({&labels, &logits}, {}, {});
+    auto results = op.execute({&labels, &logits}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

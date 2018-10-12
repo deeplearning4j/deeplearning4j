@@ -60,6 +60,7 @@ namespace nd4j {
 
             virtual nd4j::DataType dataType();
             virtual nd4j::DataType dataType(int index);
+            virtual void setDataType(int index, nd4j::DataType type);
 
             bool isInplace();
             void markInplace(bool reallyInplace);

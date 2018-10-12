@@ -31,6 +31,7 @@ namespace ops {
     DECLARE_TYPES(softmax) {
         getOpDescriptor()
                 ->setAllowedInputTypes({ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_FLOATS})
                 ->setSameMode(true);
     }
 

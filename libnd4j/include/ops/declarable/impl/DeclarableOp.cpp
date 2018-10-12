@@ -629,7 +629,7 @@ namespace nd4j {
             return result;
         }
 
-        nd4j::ResultSet* nd4j::ops::DeclarableOp::execute(const std::vector<NDArray*>& inputs, const std::vector<double>& tArgs, const std::vector<Nd4jLong>& iArgs, bool isInplace) {
+        nd4j::ResultSet* nd4j::ops::DeclarableOp::execute(const std::vector<NDArray*>& inputs, const std::vector<double>& tArgs, const std::vector<Nd4jLong>& iArgs, bool isInplace, nd4j::DataType type) {
             VariableSpace variableSpace;
             auto arrayList = new ResultSet();
             //ResultSet arrayList;
@@ -652,6 +652,7 @@ namespace nd4j {
             }
             
             Context block(1, &variableSpace, false);
+            block.setDataType(0, type);
             block.fillInputs(in);
             block.markInplace(isInplace);
             block.setRNG(ProviderRNG::getInstance().getRNG());

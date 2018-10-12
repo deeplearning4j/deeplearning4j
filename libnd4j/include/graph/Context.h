@@ -86,7 +86,7 @@ namespace nd4j {
             nd4j::DataType dataType() override;
 
             nd4j::DataType dataType(int index) override;
-
+            void setDataType(int index, nd4j::DataType type) override;
             // these methods are related to Workspace abstraction
             bool hasWorkspaceProvided();
             void attachWorkspace(nd4j::memory::Workspace* workspace);

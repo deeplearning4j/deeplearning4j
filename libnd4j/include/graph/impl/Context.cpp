@@ -59,6 +59,12 @@ namespace nd4j {
             return dataType(0);
         }
 
+        void Context::setDataType(int index, nd4j::DataType type) {
+            if (this->_dataTypes.size() > (size_t)index)
+                _dataTypes[index] = type;
+            _dataType = type;
+        }
+
         Context::Context(int nodeId, VariableSpace *variableSpace) {
             this->_nodeId = nodeId;
             this->_variableSpace = variableSpace;

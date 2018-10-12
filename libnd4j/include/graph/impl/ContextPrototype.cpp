@@ -101,6 +101,11 @@ namespace nd4j {
             return _dataType;
         }
 
+        void ContextPrototype::setDataType(int index, nd4j::DataType type) {
+            // if (_outputs->size() == 0)
+            _dataType = type;
+        }
+
         int ContextPrototype::numT() {
             return (int) _tArgs.size();
         }
