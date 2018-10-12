@@ -45,3 +45,17 @@ TEST_F(StringTests, Basic_Test_1) {
 
     ASSERT_EQ(f, z);
 }
+
+TEST_F(StringTests, Basic_Test_2) {
+    std::string f("alpha");
+    auto array = NDArrayFactory::string(f.c_str());
+    ASSERT_EQ(nd4j::DataType::UTF8, array.dataType());
+
+    ASSERT_EQ(5, array.lengthOf());
+    ASSERT_EQ(1, array.rankOf());
+
+    auto ptr = reinterpret_cast<char *>(array.buffer());
+    std::string z(ptr);
+
+    ASSERT_EQ(f, z);
+}
