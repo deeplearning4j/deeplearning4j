@@ -713,3 +713,106 @@ TEST_F(MultiDataTypeTests, ndarray_operatorDivideEqual_test2) {
     x2 /= val3;    
     ASSERT_EQ(x2, exp6);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_reduceNumberFloat_test1) {
+    
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray x2('c', {2,2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);
+    NDArray x3('c', {2,2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
+    
+    NDArray exp1('c', {0}, {1.5}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {0}, {2},   nd4j::DataType::HALF);
+    NDArray exp3('c', {0}, {2},   nd4j::DataType::DOUBLE);
+    NDArray exp4('c', {0}, {0.25},nd4j::DataType::FLOAT32);
+    
+    
+    NDArray scalar = x1.reduceNumber(reduce::Mean);
+    ASSERT_EQ(scalar, exp1);
+
+    scalar = x2.reduceNumber(reduce::Mean);
+    ASSERT_EQ(scalar, exp2);
+    
+    scalar = x3.reduceNumber(reduce::Mean);
+    ASSERT_EQ(scalar, exp3);
+
+    scalar = x4.reduceNumber(reduce::Mean);
+    ASSERT_EQ(scalar, exp4);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_reduceNumberSame_test1) {
+    
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray x2('c', {2,2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);
+    NDArray x3('c', {2,2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
+    
+    NDArray exp1('c', {0}, {6}, nd4j::DataType::INT64);
+    NDArray exp2('c', {0}, {8}, nd4j::DataType::HALF);
+    NDArray exp3('c', {0}, {8}, nd4j::DataType::DOUBLE);
+    NDArray exp4('c', {0}, {1}, nd4j::DataType::BOOL);
+    
+    
+    NDArray scalar = x1.reduceNumber(reduce::Sum);
+    ASSERT_EQ(scalar, exp1);
+
+    scalar = x2.reduceNumber(reduce::Sum);
+    ASSERT_EQ(scalar, exp2);
+    
+    scalar = x3.reduceNumber(reduce::Sum);
+    ASSERT_EQ(scalar, exp3);
+
+    scalar = x4.reduceNumber(reduce::Sum);
+    ASSERT_EQ(scalar, exp4);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_reduceNumberBool_test1) {
+    
+    NDArray x1('c', {2,2}, {0, -1, 2, -3}, nd4j::DataType::INT64);
+    NDArray x2('c', {2,2}, {0.5, -1.5, 2.5, -3.5}, nd4j::DataType::HALF);
+    NDArray x3('c', {2,2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {2,2}, {-2, -1, 0, 1}, nd4j::DataType::BOOL);
+    
+    NDArray exp1('c', {0}, {1}, nd4j::DataType::BOOL);
+     
+    NDArray scalar = x1.reduceNumber(reduce::IsFinite);
+    ASSERT_EQ(scalar, exp1);
+
+    scalar = x2.reduceNumber(reduce::IsFinite);
+    ASSERT_EQ(scalar, exp1);
+    
+    scalar = x3.reduceNumber(reduce::IsFinite);
+    ASSERT_EQ(scalar, exp1);
+
+    scalar = x4.reduceNumber(reduce::IsFinite);
+    ASSERT_EQ(scalar, exp1);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_reduceNumberLong_test1) {
+    
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray x2('c', {2,2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);
+    NDArray x3('c', {2,2}, {0.5, -1.5, 0, 3.5}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
+    
+    NDArray exp1('c', {0}, {3}, nd4j::DataType::INT64);
+    NDArray exp2('c', {0}, {4}, nd4j::DataType::INT64);
+    NDArray exp3('c', {0}, {3}, nd4j::DataType::INT64);
+    NDArray exp4('c', {0}, {2}, nd4j::DataType::INT64);
+        
+    NDArray scalar = x1.reduceNumber(reduce::CountNonZero);
+    ASSERT_EQ(scalar, exp1);
+
+    scalar = x2.reduceNumber(reduce::CountNonZero);
+    ASSERT_EQ(scalar, exp2);
+    
+    scalar = x3.reduceNumber(reduce::CountNonZero);
+    ASSERT_EQ(scalar, exp3);
+
+    scalar = x4.reduceNumber(reduce::CountNonZero);    
+    ASSERT_EQ(scalar, exp4);
+}
