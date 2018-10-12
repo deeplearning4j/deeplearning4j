@@ -75,6 +75,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
@@ -84,7 +85,10 @@ import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
@@ -124,6 +128,8 @@ public class SameDiff {
     private TrainingConfig trainingConfig;
     private boolean initializedTraining;
     private INDArray updaterState;
+    private Map<String,INDArray> updaterViews;
+    private Map<String,GradientUpdater> updaterMap;
 
     private Map<String, String[]> incomingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as inputs to that function
     private Map<String, String[]> outgoingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as outputs from that function
@@ -1450,13 +1456,102 @@ public class SameDiff {
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
                 "be set before training. Use setTrainingConfig(TrainingConfig)");
 
-        //Set inputs
+        while(iter.hasNext()){
+            org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
+            //TODO: validate number of arrays + masks vs. config number of features/labels mappings
+
+            //Create placeholder variable map
+            Map<String,INDArray> placeholders = new HashMap<>();
+            int count = 0;
+            for(String s : trainingConfig.getDataSetFeatureMapping()){
+                placeholders.put(s, ds.getFeatures(count++));
+            }
+            count = 0;
+            for(String s : trainingConfig.getDataSetLabelMapping()){
+                placeholders.put(s, ds.getLabels(count++));
+            }
+            if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().size() > 0){
+                count = 0;
+                for(String s : trainingConfig.getDataSetFeatureMaskMapping()){
+                    if(s == null) {
+                        count++;
+                        continue;
+                    }
+                    placeholders.put(s, ds.getFeaturesMaskArray(count++));
+                }
+            }
+            if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().size() > 0){
+                count = 0;
+                for(String s : trainingConfig.getDataSetLabelMaskMapping()){
+                    if(s == null) {
+                        count++;
+                        continue;
+                    }
+                    placeholders.put(s, ds.getLabelsMaskArray(count++));
+                }
+            }
+
+            Preconditions.checkState(placeholders.size() > 0, "No placeholder variables were set for training");
+            resolveVariablesWith(placeholders);
+
+            //Calculate gradients:
+            execBackwards();
 
 
+            //Apply updater:
+            if(!initializedTraining)
+                initializeTraining();
+
+            int i = trainingConfig.getIterationCount();
+            int e = trainingConfig.getEpochCount();
+            for(String s : trainingConfig.getTrainableParams()){
+                INDArray param = variableMap.get(s).getArr();
+                INDArray grad = variableMap.get(s).getGradient().getArr();
+                //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
+                // which should flow through
+
+                //Apply updater
+                GradientUpdater u = updaterMap.get(s);
+                u.applyUpdater(grad, i, e);
+
+                //L1 and L2 regularization:
+                if(trainingConfig.getL1() > 0){
+
+                }
+                if(trainingConfig.getL2() > 0){
+
+                }
+
+                if(trainingConfig.isMinimize()){
+                    param.subi(grad);
+                } else {
+                    param.addi(grad);
+                }
+            }
+        }
+
+
+        //Clear placeholder arrays
+        for(String s : placeHolderVarNames){
+            variableNameToArr.remove(s);
+        }
+
+
+        //Clear non-trainable params?
+
+
+        trainingConfig.incrementIterationCount();
+        if(incrementEpochCount)
+            trainingConfig.incrementEpochCount();
+
+    }
+
+    protected void initializeTraining(){
         if(!initializedTraining){
             //First: infer the variables to be optimized if required
             if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().size() == 0){
-                //Variable is trainable if it's not
+                //Variable is trainable if it's not the output of some function
+                //TODO also - should be floating point type
                 List<String> trainVarList = new ArrayList<>();
                 for(SDVariable v : variableMap.values()){
                     String n = v.getVarName();
@@ -1465,15 +1560,38 @@ public class SameDiff {
                     }
                 }
 
+                trainingConfig.setTrainableParams(trainVarList);
                 log.info("Inferred trainable variables: {}", trainVarList);
             }
+
+            //Allocate updater state
+            long numTrainableParams = 0;
+            for(String s : trainingConfig.getTrainableParams()){
+                SDVariable v = variableMap.get(s);
+                Preconditions.checkState(v != null, "No variable found for trainable parameter name \"%s\"", s);
+
+                INDArray arr = v.getArr();
+                Preconditions.checkState(arr != null, "No array found for trainable parameter \"%s\"", s);
+                numTrainableParams += arr.length();
+            }
+            long updaterStateSize = trainingConfig.getUpdater().stateSize(numTrainableParams);
+
+            if(updaterStateSize > 0){
+                updaterState = Nd4j.createUninitialized(new long[]{updaterStateSize});
+            }
+
+            long viewSoFar = 0;
+            for(String s : trainingConfig.getTrainableParams()){
+                long thisSize = variableMap.get(s).getArr().length();
+                INDArray view = (updaterStateSize == 0 || thisSize == 0 ? null :
+                        updaterState.get(NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
+
+                updaterViews.put(s, view);
+                updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, true));
+            }
+
+            initializedTraining = true;
         }
-
-
-        trainingConfig.incrementIterationCount();
-        if(incrementEpochCount)
-            trainingConfig.incrementEpochCount();
-
     }
 
 
