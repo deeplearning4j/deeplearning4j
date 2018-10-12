@@ -37,6 +37,8 @@ namespace nd4j {
 
         int8_t *buffer = nullptr;
         ALLOCATE(buffer, workspace, str.size() * DataTypeUtils::sizeOf(DataType::UTF8), int8_t);
+        memset(buffer, 0, str.size() * DataTypeUtils::sizeOf(DataType::UTF8));
+        memcpy(buffer, str.data(), str.length());
 
         res.setBuffer(buffer);
         res.setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataType::UTF8, str.size(), workspace));
@@ -50,6 +52,8 @@ namespace nd4j {
 
         int8_t *buffer = nullptr;
         ALLOCATE(buffer, workspace, str.size() * DataTypeUtils::sizeOf(DataType::UTF8), int8_t);
+        memset(buffer, 0, str.size() * DataTypeUtils::sizeOf(DataType::UTF8));
+        memcpy(buffer, str.data(), str.length());
 
         res->setBuffer(buffer);
         res->setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataType::UTF8, str.size(), workspace));

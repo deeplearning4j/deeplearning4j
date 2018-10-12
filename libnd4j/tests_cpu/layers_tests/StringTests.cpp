@@ -33,9 +33,15 @@ public:
 };
 
 TEST_F(StringTests, Basic_Test_1) {
-    auto array = NDArrayFactory::string("alpha");
+    std::string f("alpha");
+    auto array = NDArrayFactory::string(f);
     ASSERT_EQ(nd4j::DataType::UTF8, array.dataType());
 
     ASSERT_EQ(5, array.lengthOf());
     ASSERT_EQ(1, array.rankOf());
+
+    auto ptr = reinterpret_cast<char *>(array.buffer());
+    std::string z(ptr);
+
+    ASSERT_EQ(f, z);
 }
