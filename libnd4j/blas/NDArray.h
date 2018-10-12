@@ -1328,6 +1328,12 @@ namespace nd4j {
         bool isC() const;
 
         /**
+         * This method returns true if array contains String
+         * @return
+         */
+        bool isS() const;
+
+        /**
         *  inline accessing operator for matrix, i - absolute index        
         */
         //FORCEINLINE NDArray operator()(const Nd4jLong i) const;

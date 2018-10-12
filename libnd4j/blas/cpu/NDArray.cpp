@@ -62,6 +62,40 @@ namespace nd4j {
         }
     }
 
+    //////////////////////////////////////////////////////////////////////////
+    template <>
+    utf8string NDArray::e(const Nd4jLong i) const {
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+
+        if (!isS())
+            throw std::runtime_error("This method is available for String arrays only");
+
+        auto rp = getOffset(i);
+        return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
+    }
+
+    template <>
+    std::string NDArray::e(const Nd4jLong i) const {
+        auto u = e<utf8string>(i);
+        std::string r(u._buffer);
+        return r;
+    }
+
+    template <typename T>
+    T NDArray::e(const Nd4jLong i) const {
+
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+
+        auto rp = getOffset(i);
+
+        BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
+//        return static_cast<T>(119);
+    }
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
+
+
     NDArray* NDArray::getView() {
         auto view = new NDArray();
         view->_isView = true;
@@ -280,6 +314,10 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
         return false;
     }
 
+    bool NDArray::isS() const {
+        return _dataType == DataType::UTF8;
+    }
+
     bool NDArray::isR() const {
         auto xType = ArrayOptions::dataType(this->_shapeInfo);
         return xType == FLOAT32 || xType == HALF || xType == DOUBLE || xType == FLOAT8;
@@ -287,7 +325,7 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
 
     bool NDArray::isZ() const {
         // TODO: decide if we really want to exclude Bool here
-        return !isC() && !isR() && !isB();
+        return !isC() && !isR() && !isB() && !isS();
     }
 
     bool NDArray::isB() const {
@@ -1560,6 +1598,14 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
                     printf("true");
                 else
                     printf("false");
+
+                if (e < limit - 1)
+                    printf(", ");
+            }
+        } else if (this->isS()) {
+            for (Nd4jLong e = 0; e < limit; e++) {
+                auto s = this->e<std::string>(e);
+                printf("\"%s\"", s.c_str());
 
                 if (e < limit - 1)
                     printf(", ");
@@ -2931,19 +2977,6 @@ NDArray NDArray::transp() const {
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::r(const Nd4jLong) const, LIBND4J_TYPES);
 
-//////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    T NDArray::e(const Nd4jLong i) const {        
-
-        if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
-
-        auto rp = getOffset(i);
-
-        BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
-        return static_cast<T>(119);
-    }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes
@@ -3024,9 +3057,16 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template void NDArray::p(const Nd4jLong i, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const bool value);
 
+    template <>
+    std::string* NDArray::bufferAsT() const {
+        throw std::runtime_error("This method is NOT supposed to be used");
+    }
 
     template <typename T>
     T * NDArray::bufferAsT() const {
+        if (isS())
+            throw std::runtime_error("You can't use this method on String array");
+
         return reinterpret_cast<T*>(_buffer);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template, * NDArray::bufferAsT() const, LIBND4J_TYPES);
@@ -4142,8 +4182,18 @@ template void NDArray::operator/=(const bool scalar);
     ////////////////////////////////////////////////////////////////////////
     // default destructor
     NDArray::~NDArray() noexcept {
-        if (_isBuffAlloc && _workspace == nullptr && _buffer != nullptr)
-            delete[] _buffer;
+        if (_isBuffAlloc && _workspace == nullptr && _buffer != nullptr) {
+            if (!isS()) {
+                delete[] _buffer;
+            } else {
+                for (int e = 0; e < lengthOf(); e++) {
+                    auto t = reinterpret_cast<utf8string**>(_buffer);
+                    delete t[e];
+                };
+
+                delete[] _buffer;
+            }
+        }
 
         if (_isShapeAlloc  && _workspace == nullptr && _shapeInfo != nullptr)
             delete[] _shapeInfo;

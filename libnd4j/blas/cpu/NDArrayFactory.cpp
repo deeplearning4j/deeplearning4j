@@ -22,6 +22,52 @@
 
 namespace nd4j {
 
+
+    NDArray NDArrayFactory::string(const char *str, nd4j::memory::Workspace* workspace) {
+        std::string s(str);
+        return string(s, workspace);
+    }
+
+    NDArray* NDArrayFactory::string_(const char *str, nd4j::memory::Workspace* workspace) {
+        return string_(std::string(str), workspace);
+    }
+
+    NDArray NDArrayFactory::string(const std::string &str, nd4j::memory::Workspace* workspace) {
+        NDArray res;
+
+        utf8string **us = nullptr;
+        int8_t *buffer = nullptr;
+        ALLOCATE(buffer, workspace, sizeof(utf8string*), int8_t);
+        us = reinterpret_cast<utf8string**>(buffer);
+        us[0] = new nd4j::utf8string(const_cast<std::string *>(&str));
+
+        res.setBuffer(buffer);
+        res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, workspace));
+        res.setWorkspace(workspace);
+
+        res.triggerAllocationFlag(true, true);
+
+        return res;
+    }
+
+    NDArray* NDArrayFactory::string_(const std::string &str, nd4j::memory::Workspace* workspace) {
+        auto res = new NDArray();
+
+        utf8string **us = nullptr;
+        int8_t *buffer = nullptr;
+        ALLOCATE(buffer, workspace, sizeof(utf8string*), int8_t);
+        us = reinterpret_cast<utf8string**>(buffer);
+        us[0] = new nd4j::utf8string(const_cast<std::string *>(&str));
+
+        res->setBuffer(buffer);
+        res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, workspace));
+        res->setWorkspace(workspace);
+
+        res->triggerAllocationFlag(true, true);
+
+        return res;
+    }
+
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, nd4j::memory::Workspace* workspace) {
@@ -113,7 +159,6 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template NDArray* NDArrayFactory::create_(int8_t scalar, nd4j::memory::Workspace* workspace);
     template NDArray* NDArrayFactory::create_(uint8_t scalar, nd4j::memory::Workspace* workspace);
     template NDArray* NDArrayFactory::create_(int16_t scalar, nd4j::memory::Workspace* workspace);
-
 
     template <typename T>
     NDArray NDArrayFactory::create(const T scalar, nd4j::memory::Workspace* workspace) {
@@ -416,5 +461,92 @@ template NDArray NDArrayFactory::create(bool* buffer, const char order, const st
 template NDArray NDArrayFactory::create(uint8_t * buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::memory::Workspace* workspace);
 template NDArray NDArrayFactory::create(int8_t* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::memory::Workspace* workspace);
 template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::memory::Workspace* workspace);
+
+
+    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::memory::Workspace* workspace) {
+        std::vector<const char*> vec(strings);
+        return NDArrayFactory::string(order, shape, vec, workspace);
+    }
+
+    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::memory::Workspace* workspace) {
+        std::vector<std::string> vec(strings.size());
+        int cnt = 0;
+        for (auto s:strings)
+            vec[cnt++] = std::string(s);
+
+        return NDArrayFactory::string(order, shape, vec, workspace);
+    }
+
+
+    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::memory::Workspace* workspace) {
+        std::vector<std::string> vec(string);
+        return NDArrayFactory::string(order, shape, vec, workspace);
+    }
+
+    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::memory::Workspace* workspace) {
+        std::vector<const char*> vec(strings);
+        return NDArrayFactory::string_(order, shape, vec, workspace);
+    }
+
+    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::memory::Workspace* workspace) {
+        std::vector<std::string> vec(strings.size());
+        int cnt = 0;
+        for (auto s:strings)
+            vec[cnt++] = std::string(s);
+
+        return NDArrayFactory::string_(order, shape, vec, workspace);
+    }
+
+
+    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::memory::Workspace* workspace) {
+        std::vector<std::string> vec(string);
+        return NDArrayFactory::string_(order, shape, vec, workspace);
+    }
+
+    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::memory::Workspace* workspace) {
+        NDArray res;
+
+        res.setShapeInfo(ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, workspace));
+
+        if (res.lengthOf() != string.size())
+            throw std::invalid_argument("Number of strings should match length of array");
+
+        int8_t *buffer = nullptr;
+        ALLOCATE(buffer, workspace, sizeof(utf8string*) * res.lengthOf(), int8_t);
+
+        auto us = reinterpret_cast<utf8string**>(buffer);
+        for (int e = 0; e < res.lengthOf(); e++)
+            us[e] = new nd4j::utf8string(const_cast<std::string *>(&(string[e])));
+
+        res.setBuffer(buffer);
+        res.setWorkspace(workspace);
+
+        res.triggerAllocationFlag(true, true);
+
+        return res;
+    }
+
+    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::memory::Workspace* workspace) {
+        auto res = new NDArray();
+
+        res->setShapeInfo(ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, workspace));
+
+        if (res->lengthOf() != string.size())
+            throw std::invalid_argument("Number of strings should match length of array");
+
+        int8_t *buffer = nullptr;
+        ALLOCATE(buffer, workspace, sizeof(utf8string*) * res->lengthOf(), int8_t);
+
+        auto us = reinterpret_cast<utf8string**>(buffer);
+        for (int e = 0; e < res->lengthOf(); e++)
+            us[e] = new nd4j::utf8string(const_cast<std::string *>(&(string[e])));
+
+        res->setBuffer(buffer);
+        res->setWorkspace(workspace);
+
+        res->triggerAllocationFlag(true, true);
+
+        return res;
+    }
 
 }

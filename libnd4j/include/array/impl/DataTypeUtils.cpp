@@ -19,6 +19,7 @@
 //
 
 #include <helpers/logger.h>
+#include <array/DataType.h>
 #include <array/DataTypeUtils.h>
 #include <types/float16.h>
 
@@ -35,7 +36,7 @@ namespace nd4j {
         return (int) type;
     }
 
-    size_t DataTypeUtils::sizeOfElement(DataType type) {
+    size_t DataTypeUtils::sizeOfElement(nd4j::DataType type) {
         switch (type) {
             case UINT8:
             case INT8:
@@ -48,6 +49,7 @@ namespace nd4j {
             case QINT16:
             case UINT16: return (size_t) 2;
 
+            case UTF8:
             case INT32:
             case UINT32:
             case HALF2:
@@ -67,6 +69,11 @@ namespace nd4j {
     template <>
     DataType DataTypeUtils::fromT<bool>() {
         return BOOL;
+    }
+
+    template <>
+    DataType DataTypeUtils::fromT<std::string>() {
+        return UTF8;
     }
 
     template <>

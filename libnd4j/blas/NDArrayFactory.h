@@ -25,6 +25,7 @@
 #include <initializer_list>
 #include <NDArray.h>
 #include <memory/Workspace.h>
+#include <string>
 
 
 namespace nd4j {
@@ -93,6 +94,27 @@ namespace nd4j {
 
         template <typename T>
         static NDArray create(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<T>& data, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray string(const char *string, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray* string_(const char *string, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray string(const std::string &string, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray* string_(const std::string &string, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::memory::Workspace* workspace = nullptr);
+
 #endif
     };
 }

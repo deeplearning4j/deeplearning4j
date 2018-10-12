@@ -18,32 +18,27 @@
 // @author raver119@gmail.com
 //
 
-#ifndef ND4J_DATATYPE_H
-#define ND4J_DATATYPE_H
+#ifndef DEV_TESTS_UTF8STRING_H
+#define DEV_TESTS_UTF8STRING_H
+
+#include <string>
 
 namespace nd4j {
-    enum DataType {
-        INHERIT = 0,
-        BOOL = 1,
-        FLOAT8 = 2,
-        HALF = 3,
-        HALF2 = 4,
-        FLOAT32 = 5,
-        DOUBLE = 6,
-        INT8 = 7,
-        INT16 = 8,
-        INT32 = 9,
-        INT64 = 10,
-        UINT8 = 11,
-        UINT16 = 12,
-        UINT32 = 13,
-        UINT64 = 14,
-        QINT8 = 15,
-        QINT16 = 16,
-        UTF8 = 50,
-        ANY = 100,
-        AUTO = 200,
+    struct utf8string {
+    private:
+        bool _allocated = false;
+    public:
+        char *_buffer = nullptr;
+        unsigned int _length = 0;
+
+        utf8string();
+        ~utf8string();
+
+        explicit utf8string(std::string* string);
+        utf8string(const utf8string &other);
+        utf8string& operator=(const utf8string &other);
     };
 }
 
-#endif
+
+#endif //DEV_TESTS_UTF8STRING_H
