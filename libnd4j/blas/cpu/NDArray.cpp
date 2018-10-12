@@ -3866,31 +3866,60 @@ void NDArray::operator/=(const NDArray& other) {
         RELEASE(bShape, this->_workspace);
     }
 }
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+void NDArray::operator+=(const T value) {
+    auto tmp = NDArrayFactory::create(value, _workspace);
+    NativeOpExcutioner::execScalar(nd4j::scalar::Add, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.buffer(), tmp.shapeInfo(), nullptr);
+}
+template void NDArray::operator+=(const double value);
+template void NDArray::operator+=(const float value);
+template void NDArray::operator+=(const float16 value);
+template void NDArray::operator+=(const Nd4jLong value);
+template void NDArray::operator+=(const int value);
+template void NDArray::operator+=(const bool value);
 
-    template <typename T>
-    void NDArray::operator+=(const T value) {
-        auto tmp = NDArrayFactory::create(value, _workspace);
-        NativeOpExcutioner::execScalar(nd4j::scalar::Add, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.buffer(), tmp.shapeInfo(), nullptr);
-    }
-    template void NDArray::operator+=(const double value);
-    template void NDArray::operator+=(const float value);
-    template void NDArray::operator+=(const float16 value);
-    template void NDArray::operator+=(const Nd4jLong value);
-    template void NDArray::operator+=(const int value);
-    template void NDArray::operator+=(const bool value);
-    
-    template<typename T>
-    void NDArray::operator-=(const T value) {
-        auto tmp = NDArrayFactory::create(value, _workspace);
-        NativeOpExcutioner::execScalar(nd4j::scalar::Subtract, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.buffer(), tmp.shapeInfo(), nullptr);
-    }
-    template void NDArray::operator-=(const double value);
-    template void NDArray::operator-=(const float value);
-    template void NDArray::operator-=(const float16 value);
-    template void NDArray::operator-=(const Nd4jLong value);
-    template void NDArray::operator-=(const int value);
-    template void NDArray::operator-=(const bool value);
+template<typename T>
+void NDArray::operator-=(const T value) {
+    auto tmp = NDArrayFactory::create(value, _workspace);
+    NativeOpExcutioner::execScalar(nd4j::scalar::Subtract, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.buffer(), tmp.shapeInfo(), nullptr);
+}
+template void NDArray::operator-=(const double value);
+template void NDArray::operator-=(const float value);
+template void NDArray::operator-=(const float16 value);
+template void NDArray::operator-=(const Nd4jLong value);
+template void NDArray::operator-=(const int value);
+template void NDArray::operator-=(const bool value);
 
+template<typename T>
+void NDArray::operator*=(const T scalar) {
+    auto tmp = NDArrayFactory::create(scalar, _workspace);
+    NativeOpExcutioner::execScalar(nd4j::scalar::Multiply, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
+}
+template void NDArray::operator*=(const double scalar);
+template void NDArray::operator*=(const float scalar);
+template void NDArray::operator*=(const float16 scalar);
+template void NDArray::operator*=(const Nd4jLong scalar);
+template void NDArray::operator*=(const int scalar);
+template void NDArray::operator*=(const int16_t scalar);
+template void NDArray::operator*=(const int8_t scalar);
+template void NDArray::operator*=(const uint8_t scalar);
+template void NDArray::operator*=(const bool scalar);
+
+template<typename T>
+void NDArray::operator/=(const T scalar) {
+    auto tmp = NDArrayFactory::create(scalar, _workspace);
+    NativeOpExcutioner::execScalar(nd4j::scalar::Divide, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
+}
+template void NDArray::operator/=(const double scalar);
+template void NDArray::operator/=(const float scalar);
+template void NDArray::operator/=(const float16 scalar);
+template void NDArray::operator/=(const Nd4jLong scalar);
+template void NDArray::operator/=(const int scalar);
+template void NDArray::operator/=(const int16_t scalar);
+template void NDArray::operator/=(const int8_t scalar);
+template void NDArray::operator/=(const uint8_t scalar);
+template void NDArray::operator/=(const bool scalar);
 
     ////////////////////////////////////////////////////////////////////////
     // subtraction operator array - array
@@ -3902,11 +3931,9 @@ void NDArray::operator/=(const NDArray& other) {
         }
 
         return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), other);
-    }
+    }    
 
-
-    
-
+    ////////////////////////////////////////////////////////////////////////
     // negative operator, it makes all array elements = -elements
     NDArray NDArray::operator-() const {
         NDArray result(this->_shapeInfo, false, this->_workspace);
@@ -3926,27 +3953,7 @@ void NDArray::operator/=(const NDArray& other) {
         }
 
         return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), other);
-    }
-    
-
-    ////////////////////////////////////////////////////////////////////////
-    // multiplication operator array*scalar
-    template<typename T>
-    void NDArray::operator*=(const T scalar) {
-        auto tmp = NDArrayFactory::create(scalar, _workspace);
-
-        NativeOpExcutioner::execScalar(nd4j::scalar::Multiply, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
-    }
-    template void NDArray::operator*=(const double scalar);
-    template void NDArray::operator*=(const float scalar);
-    template void NDArray::operator*=(const float16 scalar);
-    template void NDArray::operator*=(const Nd4jLong scalar);
-    template void NDArray::operator*=(const int scalar);
-    template void NDArray::operator*=(const int16_t scalar);
-    template void NDArray::operator*=(const int8_t scalar);
-    template void NDArray::operator*=(const uint8_t scalar);
-    template void NDArray::operator*=(const bool scalar);
-
+    }        
 
     ////////////////////////////////////////////////////////////////////////
     // division operator array/array
@@ -3959,23 +3966,6 @@ void NDArray::operator/=(const NDArray& other) {
 
         return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), other);
     }
-
-    ////////////////////////////////////////////////////////////////////////
-    // division operator array /= scalar
-    template<typename T>
-    void NDArray::operator/=(const T scalar) {
-        auto tmp = NDArrayFactory::create(scalar, _workspace);
-        NativeOpExcutioner::execScalar(nd4j::scalar::Divide, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
-    }
-    template void NDArray::operator/=(const double scalar);
-    template void NDArray::operator/=(const float scalar);
-    template void NDArray::operator/=(const float16 scalar);
-    template void NDArray::operator/=(const Nd4jLong scalar);
-    template void NDArray::operator/=(const int scalar);
-    template void NDArray::operator/=(const int16_t scalar);
-    template void NDArray::operator/=(const int8_t scalar);
-    template void NDArray::operator/=(const uint8_t scalar);
-    template void NDArray::operator/=(const bool scalar);
 
     ////////////////////////////////////////////////////////////////////////
     // mathematical multiplication of two arrays
