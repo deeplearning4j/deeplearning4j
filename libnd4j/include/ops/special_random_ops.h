@@ -894,7 +894,7 @@ namespace randomOps {
 
                 // we need to get random values
                 T r0 = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
-                T r1 = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+                T r1 = buffer->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
                 T realMean = y == z ? mean : y[e * yEWS];
 
