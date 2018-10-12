@@ -377,9 +377,7 @@ namespace randomOps {
                 if (end > middle)
                     end = middle;
 
-                T z0, z1;
-                T u0, u1;
-                T lnU0;
+                T epsilon = static_cast<T>(1e-5);
                 bool generated = false;
 
                 for (Nd4jLong e = start; e < end; e++) {
