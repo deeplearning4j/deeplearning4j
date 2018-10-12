@@ -816,3 +816,179 @@ TEST_F(MultiDataTypeTests, ndarray_reduceNumberLong_test1) {
     scalar = x4.reduceNumber(reduce::CountNonZero);    
     ASSERT_EQ(scalar, exp4);
 }
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_indexReduceNumber_test1) {
+    
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT32);
+    NDArray x2('c', {2,2}, {0.5, 1.5, -4.5, 3.5}, nd4j::DataType::HALF);    
+    NDArray x3('c', {2,2}, {0, -1, 0, 1}, nd4j::DataType::BOOL);
+    
+    NDArray exp1('c', {0}, {3}, nd4j::DataType::INT64);
+    NDArray exp2('c', {0}, {2}, nd4j::DataType::INT64);
+    NDArray exp3('c', {0}, {1}, nd4j::DataType::INT64);
+        
+    NDArray scalar = x1.indexReduceNumber(nd4j::indexreduce::IndexAbsoluteMax);
+    ASSERT_EQ(scalar, exp1);
+
+    scalar = x2.indexReduceNumber(nd4j::indexreduce::IndexAbsoluteMax);
+    ASSERT_EQ(scalar, exp2);
+    
+    scalar = x3.indexReduceNumber(nd4j::indexreduce::IndexAbsoluteMax);
+    ASSERT_EQ(scalar, exp3);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyTransformFloat_test1) {
+        
+    NDArray x1('c', {2,2}, {0, 4, 9, 16}, nd4j::DataType::INT64);
+    NDArray x2('c', {2,2}, {0, 2.25, 6.25, 12.25}, nd4j::DataType::HALF);    
+    NDArray x3('c', {2,2}, {0, 2.25, 6.25, 12.25}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
+        
+    NDArray exp1('c', {2,2}, {0, 2, 3, 4}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::DOUBLE);
+    NDArray exp3('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);
+    NDArray exp4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::HALF);
+
+    NDArray result1('c', {2,2}, nd4j::DataType::FLOAT32);
+    NDArray result2('c', {2,2}, nd4j::DataType::DOUBLE);
+    NDArray result3('c', {2,2}, nd4j::DataType::HALF);
+            
+    x1.applyTransform(nd4j::transform::Sqrt, &result1);
+    ASSERT_EQ(result1, exp1);
+
+    x2.applyTransform(nd4j::transform::Sqrt, &result2);
+    ASSERT_EQ(result2, exp2);
+    
+    x3.applyTransform(nd4j::transform::Sqrt, &result3);
+    ASSERT_EQ(result3, exp3);
+
+    x4.applyTransform(nd4j::transform::Sqrt, &result3);
+    ASSERT_EQ(result3, exp4);
+
+    x2.applyTransform(nd4j::transform::Sqrt, (void*)nullptr);
+    ASSERT_EQ(x2, exp3);
+
+    x3.applyTransform(nd4j::transform::Sqrt, (void*)nullptr);
+    ASSERT_EQ(x3, exp2);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyTransformSame_test1) {
+        
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray x2('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);    
+    NDArray x3('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray x5('c', {2,3}, {0, 1.5, 2.5, 3.5, 4.5, 5.5}, nd4j::DataType::DOUBLE);
+
+    NDArray exp1('c', {2,2}, {0, 1, 4, 9}, nd4j::DataType::INT64);
+    NDArray exp2('c', {2,2}, {0, 2.25, 6.25, 12.25}, nd4j::DataType::HALF);
+    NDArray exp3('c', {2,2}, {0, 2.25, 6.25, 12.25}, nd4j::DataType::DOUBLE);
+    NDArray exp4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray exp5('c', {3,2}, {0, 2.25, 6.25, 12.25, 20.25, 30.25}, nd4j::DataType::DOUBLE);
+
+    NDArray result1('c', {2,2}, nd4j::DataType::INT64);
+    NDArray result2('c', {2,2}, nd4j::DataType::HALF);
+    NDArray result3('c', {2,2}, nd4j::DataType::DOUBLE);
+    NDArray result4('c', {2,2}, nd4j::DataType::BOOL);
+    NDArray result5('c', {3,2}, nd4j::DataType::DOUBLE);
+
+    x1.applyTransform(nd4j::transform::Square, &result1);
+    ASSERT_EQ(result1, exp1);
+
+    x2.applyTransform(nd4j::transform::Square, &result2);
+    ASSERT_EQ(result2, exp2);
+    
+    x3.applyTransform(nd4j::transform::Square, &result3);
+    ASSERT_EQ(result3, exp3);
+
+    x4.applyTransform(nd4j::transform::Square, &result4);
+    ASSERT_EQ(result4, exp4);
+
+    x2.applyTransform(nd4j::transform::Square, (void*)nullptr);
+    ASSERT_EQ(x2, exp2);
+
+    x3.applyTransform(nd4j::transform::Square, (void*)nullptr);
+    ASSERT_EQ(x3, exp3);
+
+    x5.applyTransform(nd4j::transform::Square, &result5);    
+    ASSERT_EQ(result5, exp5);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyTransformBool_test1) {
+        
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray x2('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);    
+    NDArray x3('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray x5('c', {2,3}, {0, 1.5, 2.5, 3.5, 4.5, 5.5}, nd4j::DataType::DOUBLE);
+
+    NDArray exp1('c', {2,2}, {0, 0, 0, 1}, nd4j::DataType::BOOL);
+    NDArray exp2('c', {2,2}, {0, 1, 0, 0}, nd4j::DataType::BOOL);
+    NDArray exp3('c', {3,2}, {0, 0, 0, 0, 0, 1}, nd4j::DataType::BOOL);
+    
+    NDArray result1('c', {2,2}, nd4j::DataType::BOOL);
+    NDArray result2('c', {3,2}, nd4j::DataType::BOOL);
+
+    x1.applyTransform(nd4j::transform::IsMax, &result1);
+    ASSERT_EQ(result1, exp1);
+
+    x2.applyTransform(nd4j::transform::IsMax, &result1);
+    ASSERT_EQ(result1, exp1);
+    
+    x3.applyTransform(nd4j::transform::IsMax, &result1);
+    ASSERT_EQ(result1, exp1);
+
+    x4.applyTransform(nd4j::transform::IsMax, &result1);
+    ASSERT_EQ(result1, exp2);
+
+    x5.applyTransform(nd4j::transform::IsMax, &result2);
+    ASSERT_EQ(result2, exp3);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyTransformStrict_test1) {
+        
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::HALF);  
+    NDArray x2('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::FLOAT32);
+    NDArray x3('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {2,3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::DOUBLE);
+
+    NDArray exp1('c', {2,2}, {0, 3, 12, 27}, nd4j::DataType::HALF);
+    NDArray exp2('c', {2,2}, {0, 3, 12, 27}, nd4j::DataType::FLOAT32);
+    NDArray exp3('c', {2,2}, {0, 3, 12, 27}, nd4j::DataType::DOUBLE);
+    NDArray exp4('c', {3,2}, {0, 3, 12, 27, 48, 75}, nd4j::DataType::DOUBLE);
+    NDArray exp5('c', {2,3}, {0, 3, 12, 27, 48, 75}, nd4j::DataType::DOUBLE);
+    
+    NDArray result1('c', {2,2}, nd4j::DataType::HALF);
+    NDArray result2('c', {2,2}, nd4j::DataType::FLOAT32);
+    NDArray result3('c', {2,2}, nd4j::DataType::DOUBLE);
+    NDArray result4('c', {3,2}, nd4j::DataType::DOUBLE);
+
+    x1.applyTransform(nd4j::transform::CubeDerivative, &result1);
+    ASSERT_EQ(result1, exp1);
+
+    x2.applyTransform(nd4j::transform::CubeDerivative, &result2);
+    ASSERT_EQ(result2, exp2);
+
+    x3.applyTransform(nd4j::transform::CubeDerivative, &result3);
+    ASSERT_EQ(result3, exp3);
+
+    x4.applyTransform(nd4j::transform::CubeDerivative, &result4);
+    ASSERT_EQ(result4, exp4);
+
+    x1.applyTransform(nd4j::transform::CubeDerivative, (void*)nullptr);
+    ASSERT_EQ(x1, exp1);
+
+    x2.applyTransform(nd4j::transform::CubeDerivative, (void*)nullptr);
+    ASSERT_EQ(x2, exp2);
+
+    x3.applyTransform(nd4j::transform::CubeDerivative, (void*)nullptr);
+    ASSERT_EQ(x3, exp3);
+
+    x4.applyTransform(nd4j::transform::CubeDerivative, (void*)nullptr);
+    ASSERT_EQ(x4, exp5);
+}
