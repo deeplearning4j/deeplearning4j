@@ -5,10 +5,18 @@ import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.XavierInitScheme;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class DebugTraining {
 
@@ -32,7 +40,7 @@ public class DebugTraining {
 
         SDVariable z0 = in.mmul(w0).add(b0);
         SDVariable a0 = sd.tanh(z0);
-        SDVariable z1 = a0.mmul(w1).add(b1);
+        SDVariable z1 = a0.mmul(w1).add("preduction", b1);
         SDVariable a1 = sd.softmax(z1);
 
         SDVariable diff = sd.f().squaredDifference(a1, label);
@@ -50,6 +58,15 @@ public class DebugTraining {
         sd.setTrainingConfig(conf);
 
         sd.fit(iter, 1);
+
+        Evaluation e = new Evaluation();
+        Map<String,List<IEvaluation>> evalMap = new HashMap<>();
+        evalMap.put("prediction", Collections.singletonList(e));
+
+        Map<String,Integer> labelMap = Collections.singletonMap("preductions", 0);
+
+        DataSetIterator test = new MnistDataSetIterator(32, false, 12345);
+        sd.evaluate(new MultiDataSetIteratorAdapter(test), evalMap, labelMap);
 
         System.out.println("DONE");
     }

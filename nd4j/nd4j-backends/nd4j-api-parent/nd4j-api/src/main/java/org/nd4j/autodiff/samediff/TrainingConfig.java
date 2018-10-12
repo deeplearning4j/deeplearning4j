@@ -46,6 +46,10 @@ public class TrainingConfig {
         return new Builder();
     }
 
+    public int labelIdx(String s){
+        return dataSetLabelMapping.indexOf(s);
+    }
+
     public static class Builder {
 
         private IUpdater updater;

@@ -76,10 +76,9 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
-import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
@@ -89,8 +88,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.GradientUpdater;
-import org.nd4j.linalg.learning.config.IUpdater;
-import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
@@ -1463,35 +1460,7 @@ public class SameDiff {
             //TODO: validate number of arrays + masks vs. config number of features/labels mappings
 
             //Create placeholder variable map
-            Map<String,INDArray> placeholders = new HashMap<>();
-            int count = 0;
-            for(String s : trainingConfig.getDataSetFeatureMapping()){
-                placeholders.put(s, ds.getFeatures(count++));
-            }
-            count = 0;
-            for(String s : trainingConfig.getDataSetLabelMapping()){
-                placeholders.put(s, ds.getLabels(count++));
-            }
-            if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().size() > 0){
-                count = 0;
-                for(String s : trainingConfig.getDataSetFeatureMaskMapping()){
-                    if(s == null) {
-                        count++;
-                        continue;
-                    }
-                    placeholders.put(s, ds.getFeaturesMaskArray(count++));
-                }
-            }
-            if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().size() > 0){
-                count = 0;
-                for(String s : trainingConfig.getDataSetLabelMaskMapping()){
-                    if(s == null) {
-                        count++;
-                        continue;
-                    }
-                    placeholders.put(s, ds.getLabelsMaskArray(count++));
-                }
-            }
+            Map<String,INDArray> placeholders = toPlaceholderMap(ds);
 
             Preconditions.checkState(placeholders.size() > 0, "No placeholder variables were set for training");
             resolveVariablesWith(placeholders);
@@ -1604,7 +1573,60 @@ public class SameDiff {
         }
     }
 
-    public void evaluate(MultiDataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals){
+    private Map<String,INDArray> toPlaceholderMap(org.nd4j.linalg.dataset.api.MultiDataSet ds){
+        Map<String,INDArray> placeholders = new HashMap<>();
+        int count = 0;
+        for(String s : trainingConfig.getDataSetFeatureMapping()){
+            placeholders.put(s, ds.getFeatures(count++));
+        }
+        count = 0;
+        for(String s : trainingConfig.getDataSetLabelMapping()){
+            placeholders.put(s, ds.getLabels(count++));
+        }
+        if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().size() > 0){
+            count = 0;
+            for(String s : trainingConfig.getDataSetFeatureMaskMapping()){
+                if(s == null) {
+                    count++;
+                    continue;
+                }
+                placeholders.put(s, ds.getFeaturesMaskArray(count++));
+            }
+        }
+        if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().size() > 0){
+            count = 0;
+            for(String s : trainingConfig.getDataSetLabelMaskMapping()){
+                if(s == null) {
+                    count++;
+                    continue;
+                }
+                placeholders.put(s, ds.getLabelsMaskArray(count++));
+            }
+        }
+        return placeholders;
+    }
+
+    public void evaluate(MultiDataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals, Map<String,Integer> predictionLabelMapping){
+        Preconditions.checkState(trainingConfig != null, "Training config has not been set");
+
+        //TODO check vars
+
+        while(iterator.hasNext()){
+            MultiDataSet ds = iterator.next();
+            Map<String,INDArray> placeholderMap = toPlaceholderMap(ds);
+            resolveVariablesWith(placeholderMap);
+
+            exec(); //TODO partial exec
+            for(Map.Entry<String,List<IEvaluation>> e : variableEvals.entrySet()){
+                INDArray prediction = variableNameToArr.get(e.getKey());
+                for(IEvaluation eval : e.getValue()){
+                    //TODO masking, time series, etc
+
+                    INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
+                    eval.eval(label, prediction);
+                }
+            }
+        }
 
     }
 
