@@ -62,6 +62,40 @@ namespace nd4j {
         }
     }
 
+    //////////////////////////////////////////////////////////////////////////
+    template <>
+    utf8string NDArray::e(const Nd4jLong i) const {
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+
+        if (!isS())
+            throw std::runtime_error("This method is available for String arrays only");
+
+        auto rp = getOffset(i);
+        return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
+    }
+
+    template <>
+    std::string NDArray::e(const Nd4jLong i) const {
+        auto u = e<utf8string>(i);
+        std::string r(u._buffer);
+        return r;
+    }
+
+    template <typename T>
+    T NDArray::e(const Nd4jLong i) const {
+
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+
+        auto rp = getOffset(i);
+
+        BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
+//        return static_cast<T>(119);
+    }
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
+
+
     NDArray* NDArray::getView() {
         auto view = new NDArray();
         view->_isView = true;
@@ -1568,6 +1602,14 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
                 if (e < limit - 1)
                     printf(", ");
             }
+        } else if (this->isS()) {
+            for (Nd4jLong e = 0; e < limit; e++) {
+                auto s = this->e<std::string>(e);
+                printf("\"%s\"", s.c_str());
+
+                if (e < limit - 1)
+                    printf(", ");
+            }
         }
 
         printf("]\n");
@@ -2935,38 +2977,6 @@ NDArray NDArray::transp() const {
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::r(const Nd4jLong) const, LIBND4J_TYPES);
 
-//////////////////////////////////////////////////////////////////////////
-    template <>
-    utf8string NDArray::e(const Nd4jLong i) const {
-        if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
-
-        if (!isS())
-            throw std::runtime_error("This method is available for String arrays only");
-
-        auto rp = getOffset(i);
-        return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
-    }
-
-    template <>
-    std::string NDArray::e(const Nd4jLong i) const {
-        auto u = e<utf8string>(i);
-        std::string r(u._buffer);
-        return r;
-    }
-
-    template <typename T>
-    T NDArray::e(const Nd4jLong i) const {        
-
-        if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
-
-        auto rp = getOffset(i);
-
-        BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
-//        return static_cast<T>(119);
-    }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes

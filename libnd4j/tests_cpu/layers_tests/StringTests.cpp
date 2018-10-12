@@ -57,3 +57,12 @@ TEST_F(StringTests, Basic_Test_2) {
 
     ASSERT_EQ(f, z);
 }
+
+TEST_F(StringTests, Basic_Test_3) {
+    auto array = NDArrayFactory::string('c', {3, 2}, {"alpha", "beta", "gamma", "phi", "theta", "omega"});
+
+    ASSERT_EQ(6, array.lengthOf());
+    ASSERT_EQ(2, array.rankOf());
+
+    array.printIndexedBuffer("String array");
+}
