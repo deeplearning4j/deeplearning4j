@@ -366,8 +366,10 @@ namespace randomOps {
 
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
-            T mean = extraArguments[0];
-            T stddev = extraArguments[1];
+            const T mean = extraArguments[0];
+            const T stddev = extraArguments[1];
+
+            const T epsilon = static_cast<T>(1e-5);
 
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
@@ -376,9 +378,6 @@ namespace randomOps {
                 Nd4jLong end = span * (tid + 1);
                 if (end > middle)
                     end = middle;
-
-                T epsilon = static_cast<T>(1e-5);
-                bool generated = false;
 
                 for (Nd4jLong e = start; e < end; e++) {
                     auto epm = e + middle;
@@ -933,8 +932,9 @@ namespace randomOps {
 
             auto buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
-            T mean = extraArguments[0];
-            T stddev = extraArguments[1];
+            const T mean = extraArguments[0];
+            const T stddev = extraArguments[1];
+            const T epsilon = static_cast<T>(1e-5);
 
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
