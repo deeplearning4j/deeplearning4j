@@ -26,16 +26,16 @@ Then, when training the network you can call ```SparkDl4jMultiLayer.fit(String p
 
 
 Spark Data Prepration: How-To Guides
-* [How to prepare a RDD<DataSet> from CSV data for classification or regression](#csv)
-* [How to save a RDD<DataSet> or RDD<MultiDataSet> to network storage and use it for training](#saveloadrdd)
+* [How to prepare a RDD[DataSet] from CSV data for classification or regression](#csv)
+* [How to save a RDD[DataSet] or RDD[MultiDataSet] to network storage and use it for training](#saveloadrdd)
 * [How to prepare data on a single machine for use on a cluster: saving DataSets](#singletocluster)
 * [How to prepare data on a single machine for use on a cluster: map/sequence files](#singletocluster2)
 * [How to load multiple CSVs (one sequence per file) for RNN data pipelines](#csvseq)
-* [How to create an RDD<DataSet> for images](#images)
+* [How to create an RDD[DataSet] for images](#images)
 * [How to load prepared minibatches in custom format](#customformat)
 
 
-## <a name="csv">How to prepare a RDD<DataSet> from CSV data for classification or regression</a>
+## <a name="csv">How to prepare a RDD[DataSet] from CSV data for classification or regression</a>
 
 This guide shows how to load data contained in one or more CSV files and produce a ```JavaRDD<DataSet>``` for export, training or evaluation on Spark.
 
@@ -70,7 +70,7 @@ int lastLabelColumn = 5;    //Last column index for label
 JavaRDD<DataSet> rddDataSetRegression = rddWritables.map(new DataVecDataSetFunction(firstColumnLabel, lastColumnLabel, true, null, null));
 ```
 
-## <a name="saveloadrdd">How to save a RDD<DataSet> or RDD<MultiDataSet> to network storage and use it for training</a>
+## <a name="saveloadrdd">How to save a RDD[DataSet] or RDD[MultiDataSet] to network storage and use it for training</a>
 
 As noted at the start of this page, it is considered a best practice to preprocess and export your data once (i.e., save to network storage such as HDFS and reuse), rather than fitting from an ```RDD<DataSet>``` or ```RDD<MultiDataSet>``` directly in each training job.
 
@@ -258,7 +258,7 @@ Note also that ```MapFileRecordWriter``` and ```MapFileSequenceRecordWriter``` b
 
 The exact process is beyond the scope of this guide. However, it should be sufficient to simply copy the directory ("/map/file/root/dir" in the example above) to a location on HDFS.
 
-**Step 3: Read and Convert to RDD<DataSet> for Training**
+**Step 3: Read and Convert to ```RDD<DataSet>``` for Training**
 
 We can load the data for training using the following:
 ```
@@ -301,7 +301,7 @@ JavaRDD<DataSet> dataSetRdd = sequencesRdd.map(new DataVecSequenceDataSetFunctio
 ```
 
 
-## <a name="images">How to create an RDD<DataSet> for images</a>
+## <a name="images">How to create an RDD[DataSet] for images</a>
 
 This guide shows how to create an ```RDD<DataSet>``` for image classification, starting from images stored on a network file system such as HDFS.
 

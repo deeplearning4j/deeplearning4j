@@ -22,7 +22,7 @@ DL4J has two implementations of distributed training.
   * Parameter averaging: A synchronous SGD implementation with a single parameter server implemented entirely in Spark.
 
 
-Users are directed towards the gradient sharing implementation which superseded the parameter averaging implementation. The gradient sharing implementation results in faster training times and is implemented to be scalable and fault-tolerant(as of 1.0.0-beta2). For the sake of completeness documentation will also cover the parameter averaging approach. The [technical reference section](deeplearning4j-scaleout-tecnicalref) covers details on the implementation.
+Users are directed towards the gradient sharing implementation which superseded the parameter averaging implementation. The gradient sharing implementation results in faster training times and is implemented to be scalable and fault-tolerant(as of 1.0.0-beta2). For the sake of completeness documentation will also cover the parameter averaging approach. The [technical reference section](deeplearning4j-scaleout-technicalref) covers details on the implementation.
 
 In addition to distributed training DL4J also enables users to do distributed evaluation (including multiple evaluations simultaneously) and distributed inference. Refer to the [Deeplearning4j on Spark: How To Guides](deeplearning4j-scaleout-howto) for more details.
 
