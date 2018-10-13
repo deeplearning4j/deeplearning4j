@@ -59,6 +59,7 @@ As is evident from the description an implementation of ASGD requires updates to
 Below is an image describing how plain mode is organized:
 ![Plain Mode](/images/guide/plainmode.png)
 
+
 In plain mode, quantized encoded updates are relayed by each node to the master and the master then relays them to the remaining nodes. This ensures that the master always has an up to date version of the model. The master node however is a bottleneck in this implementation. To scale to larger sized cluster (>  32) use mesh mode as described below.
 
 Below is an image describing how mesh mode is organized:
@@ -115,7 +116,9 @@ Requesting a copy of the model after the node has started receiving updates make
 The only additional step in mesh node when a node fails is to remap the descendants of the failed node. In this case a descendant of the failed node is mapped to master and all the remaining descendants are mapped to the one mapped to master.
 
 Concretely with the tree structure below if node 2 fails, node 5 is mapped to the master and node 6 and 7 are mapped to node 5.
+
 ![Node Failure](/images/guide/nodefailure.png)
+
 
 The decision to remap to master instead of the neighboring nodes was made since the master is assumed to be the most reliable option. Requesting a copy of the model etc are also made to the master for this very same reason. It is to be noted that similar to a Spark job distributed neural network training with DL4J cannot withstand the master node failing. For this reason, the user is advised to persist the state of the model frequently. In this case if the master were to fail training can be restarted from the latest saved state. 
 
