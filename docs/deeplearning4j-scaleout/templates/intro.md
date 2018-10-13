@@ -21,7 +21,7 @@ DL4J has two implementations of distributed training.
   * Gradient sharing, available as of 1.0.0-beta: Based on [this](http://nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf) paper by Nikko Strom, is an asynchronous SGD implementation with quantized and compressed updates implemented in Spark+Aeron
   * Parameter averaging: A synchronous SGD implementation with a single parameter server implemented entirely in Spark.
 
-Users are directed towards the gradient sharing implementation which superseded the parameter averaging implementation. The gradient sharing implementation results in faster training times and is implemented to be scalable and fault-tolerant(as of 1.0.0-beta2). For the sake of completeness documentation will also cover the parameter averaging approach. The [technical reference section](deeplearning4j-scaleout-techinalref) covers details on the implementation.
+Users are directed towards the gradient sharing implementation which superseded the parameter averaging implementation. The gradient sharing implementation results in faster training times and is implemented to be scalable and fault-tolerant(as of 1.0.0-beta2). For the sake of completeness documentation will also cover the parameter averaging approach. The [technical reference section](deeplearning4j-scaleout-techincalref) covers details on the implementation.
 
 In addition to distributed training DL4J also enables users to do distributed evaluation (including multiple evaluations simultaneously) and distributed inference. Refer to the [Deeplearning4j on Spark: How To Guides](deeplearning4j-scaleout-howto) for more details.
 
@@ -41,11 +41,13 @@ To use the gradient sharing implementation include the following dependency:
 
 If using the parameter averaging implementation (**not** recommended) include:
 
+```
 <dependency>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>dl4j-spark_${scala.binary.version}</artifactId>
         <version>${dl4j.spark.version}</version>
 </dependency>
+```
 
 Note that ${scala.binary.version} is a Maven property with the value 2.10 or 2.11 and should match the version of Spark you are using.
 
@@ -127,7 +129,7 @@ The [Deeplearning4j examples repo](https://github.com/deeplearning4j/dl4j-exampl
 
 ## Further Reading
 
-[Deeplearning4j on Spark: Technical Explanation](deeplearning4j-scaleout-techinalref))
+[Deeplearning4j on Spark: Technical Explanation](deeplearning4j-scaleout-techincalref)
 [Deeplearning4j on Spark: How To Guides](deeplearning4j-scaleout-howto)
 [Deeplearning4j on Spark: How To Build Data Pipelines](deeplearning4j-scaleout-data-howto)
 [Deeplearning4j on Spark: API Reference](deeplearning4j-scaleout-apiref)

@@ -21,7 +21,7 @@ The next section will review the key features of the Strom paper followed by ano
 ### Niko Strom’s Approach
 The key feature of this approach is that opposed to relaying all parameters/updates across the network only updates that are above a user specified threshold are communicated. Updates below this threshold are not discarded but accumulated in a “residual” to be applied later. Also of note is the absence of a centralized parameter server which is replaced by peer to peer communication as indicated in the image below.
 
-![Strom's ASGD implementation](images/guide/Strom_ASGD.svg)
+![Strom's ASGD implementation](/images/guide/Strom_ASGD.svg)
 
 The update vectors, δi,j in the image above, are:
 1. Sparse: only some of the gradients are communicated in each vector δi,j (the remainder are assumed to be 0) - sparse entries are encoded using an integer index
@@ -57,12 +57,12 @@ As is evident from the description an implementation of ASGD requires updates to
 #### <a name="modes">Plain Mode vs Mesh Mode
 
 Below is an image describing how plain mode is organized:
-![Plain Mode](images/guide/plainmode.png)
+![Plain Mode](/images/guide/plainmode.png)
 
 In plain mode, quantized encoded updates are relayed by each node to the master and the master then relays them to the remaining nodes. This ensures that the master always has an up to date version of the model. The master node however is a bottleneck in this implementation. To scale to larger sized cluster (>  32) use mesh mode as described below.
 
 Below is an image describing how mesh mode is organized:
-![Mesh Mode](images/guide/meshmode.png)
+![Mesh Mode](/images/guide/meshmode.png)
 
 Mesh mode is a non-binary tree with Spark master at its root. By default each node can have a maximum of eight nodes and the tree can be a maximum of five levels deep. In mesh mode each node node relays encoded updates to all nodes connected to it and each node aggregates updates received from all other nodes connected to it. The master is no longer a bottleneck. As the writing of this document, the implementation has been tested with unicast as well as multicast. Future support is planned for RDMA.
 
@@ -91,7 +91,7 @@ Parameter averaging is the conceptually simplest approach to data parallelism. I
 
 Steps 3a through 3c are demonstrated in the image below. In this diagram, W represents the parameters (weights, biases) in the neural network. Subscripts are used to index the version of the parameters over time, and where necessary for each worker machine.
 
-![Parameter Averaging](images/guide/parameteraveraging.svg)
+![Parameter Averaging](/images/guide/parameteraveraging.svg)
 
 The implementation uses Spark’s treeAggregate under the hood. There are a large number of enhancements that can be made to this implementation that will result in faster training times. Even with these enhancements in place the asynchronous SGD approach with quantized compressed updates will be much faster. Therefore the user is strongly recommended to switch from the parameter averaging implementation to the asynchronous SGD gradient sharing approach.
 
@@ -115,7 +115,7 @@ Requesting a copy of the model after the node has started receiving updates make
 The only additional step in mesh node when a node fails is to remap the descendants of the failed node. In this case a descendant of the failed node is mapped to master and all the remaining descendants are mapped to the one mapped to master.
 
 Concretely with the tree structure below if node 2 fails, node 5 is mapped to the master and node 6 and 7 are mapped to node 5.
-![Node Failure](images/guide/nodefailure.png)
+![Node Failure](/images/guide/nodefailure.png)
 
 The decision to remap to master instead of the neighboring nodes was made since the master is assumed to be the most reliable option. Requesting a copy of the model etc are also made to the master for this very same reason. It is to be noted that similar to a Spark job distributed neural network training with DL4J cannot withstand the master node failing. For this reason, the user is advised to persist the state of the model frequently. In this case if the master were to fail training can be restarted from the latest saved state. 
 
