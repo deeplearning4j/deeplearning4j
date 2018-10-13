@@ -6,7 +6,7 @@ category: Distributed Deep Learning
 weight: 4
 ---
 
-#API Reference
+# API Reference
 
 This page provides the API reference for key classes required to do distributed training with DL4J on Spark. Before going through these, make sure you have read the introduction guide for deeplearning4j Spark training [here](deeplearning4j-scaleout-intro).
 
