@@ -1,9 +1,9 @@
 ---
-title: Deeplearning4j on Spark: How To Guides
+title: "Deeplearning4j on Spark: How To Guides"
 short_title: How To Guide
-description: Deeplearning4j on Spark: How To Guides
+description: "Deeplearning4j on Spark: How To Guides"
 category: Distributed Deep Learning
-weight: 10
+weight: 2
 ---
 
 # Deeplearning4j on Spark: How To Guides

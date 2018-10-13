@@ -1,9 +1,9 @@
 ---
-title: Deeplearning4j on Spark: How To Build Data Pipelines
+title: "Deeplearning4j on Spark: How To Build Data Pipelines"
 short_title: Spark Data Pipelines Guide
-description: Deeplearning4j on Spark: How To Build Data Pipelines
+description: "Deeplearning4j on Spark: How To Build Data Pipelines"
 category: Distributed Deep Learning
-weight: 2
+weight: 3
 ---
 
 
