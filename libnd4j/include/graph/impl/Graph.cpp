@@ -91,6 +91,7 @@ namespace nd4j {
                         }
 
                         Context ctx(block, _variableSpace);
+                        ctx.setDataType(0, node->dataType());
 
                         ShapeList inSha(inputShapes);
                         auto outSha = op->calculateOutputShape(&inSha, ctx);

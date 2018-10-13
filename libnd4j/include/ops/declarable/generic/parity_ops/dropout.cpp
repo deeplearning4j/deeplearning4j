@@ -55,6 +55,7 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
         DECLARE_TYPES(dropout) {
             getOpDescriptor()
                     ->setAllowedInputTypes({ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_FLOATS})
                     ->setSameMode(true);
         }
 
@@ -85,6 +86,7 @@ CONFIGURABLE_OP_IMPL(dropout_bp, 2, 1, false, 1, 1) {
         DECLARE_TYPES(dropout_bp) {
             getOpDescriptor()
                     ->setAllowedInputTypes({ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_FLOATS})
                     ->setSameMode(true);
         }
 

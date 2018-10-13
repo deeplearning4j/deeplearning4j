@@ -240,10 +240,11 @@ TEST_F(DeclarableOpsTests7,TEST_WHERE_MASK) {
 
     ArrayOptions::setDataType(threeHundredShapePointer, nd4j::DataType::BOOL);
     NDArray maskArr(mask,threeHundredShapePointer);
+    ArrayOptions::setDataType(threeHundredShapePointer, nd4j::DataType::DOUBLE);
 
     resultArr.assign(0.0);
-    NDArray assertArr(assertion,threeHundredShapePointer);
-    Nd4jStatus result = op.execute({&maskArr,&xArr,&putArr},{&resultArr},{},{},false);
+    NDArray assertArr(assertion, threeHundredShapePointer);
+    Nd4jStatus result = op.execute({&maskArr,&xArr, &putArr},{&resultArr},{},{}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(),result);
     ASSERT_TRUE (assertArr.equalsTo(resultArr));
 }

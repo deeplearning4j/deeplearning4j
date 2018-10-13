@@ -556,35 +556,35 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        nd4j::ResultSet*  nd4j::ops::DeclarableOp::execute(std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace) {
+        nd4j::ResultSet*  nd4j::ops::DeclarableOp::execute(std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace, nd4j::DataType type) {
             std::vector<NDArray*> ins(inputs);
             std::vector<double> tas(tArgs);
             std::vector<Nd4jLong> ias(iArgs);
-            return this->execute(ins, tas, ias, isInplace);
+            return this->execute(ins, tas, ias, isInplace, type);
         }
 
-        Nd4jStatus nd4j::ops::DeclarableOp::execute(std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace) {
-            std::vector<NDArray*> ins(inputs);
-            std::vector<NDArray*> ous(outputs);
-            std::vector<double> tas(tArgs);
-            std::vector<Nd4jLong> ias(iArgs);
-            return this->execute(ins, ous, tas, ias, isInplace);
-        }
-
-        Nd4jStatus nd4j::ops::DeclarableOp::execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace) {
+        Nd4jStatus nd4j::ops::DeclarableOp::execute(std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace, nd4j::DataType type) {
             std::vector<NDArray*> ins(inputs);
             std::vector<NDArray*> ous(outputs);
             std::vector<double> tas(tArgs);
             std::vector<Nd4jLong> ias(iArgs);
-            return this->execute(rng, ins, ous, tas, ias, isInplace);
+            return this->execute(ins, ous, tas, ias, isInplace, type);
         }
 
-        Nd4jStatus nd4j::ops::DeclarableOp::execute(std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs, std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace) {
+        Nd4jStatus nd4j::ops::DeclarableOp::execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace, nd4j::DataType type) {
+            std::vector<NDArray*> ins(inputs);
+            std::vector<NDArray*> ous(outputs);
+            std::vector<double> tas(tArgs);
+            std::vector<Nd4jLong> ias(iArgs);
+            return this->execute(rng, ins, ous, tas, ias, isInplace, type);
+        }
+
+        Nd4jStatus nd4j::ops::DeclarableOp::execute(std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs, std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace, nd4j::DataType type) {
             // TODO: nullptr here might be replaced
-            return execute(ProviderRNG::getInstance().getRNG(), inputs, outputs, tArgs, iArgs, isInplace);
+            return execute(ProviderRNG::getInstance().getRNG(), inputs, outputs, tArgs, iArgs, isInplace, type);
         }
 
-        Nd4jStatus nd4j::ops::DeclarableOp::execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs, std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace) {
+        Nd4jStatus nd4j::ops::DeclarableOp::execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs, std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace, nd4j::DataType type) {
             VariableSpace variableSpace;
             FlowPath fp;
             variableSpace.setFlowPath(&fp);
@@ -612,6 +612,7 @@ namespace nd4j {
             Context block(1, &variableSpace, false);
             block.fillInputs(in);
             block.markInplace(isInplace);
+            block.setDataType(0, type);
 
             // we need this line for tests basically
             if (rng != nullptr)
