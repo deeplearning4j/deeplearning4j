@@ -1,7 +1,7 @@
 ---
-title: Deeplearning4j on Spark: Technical Explanation
+title: "Deeplearning4j on Spark: Technical Explanation"
 short_title: Technical Explanation
-description: Deeplearning4j on Spark: Technical Explanation
+description: "Deeplearning4j on Spark: Technical Explanation"
 category: Distributed Deep Learning
 weight: 1
 ---

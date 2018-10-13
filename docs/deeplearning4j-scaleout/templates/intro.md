@@ -1,7 +1,7 @@
 ---
-title: Deeplearning4j on Spark: Introduction/Getting Started
+title: "Deeplearning4j on Spark: Introduction/Getting Started"
 short_title: Introduction/Getting Started
-description: Deeplearning4j on Spark: Introduction
+description: "Deeplearning4j on Spark: Introduction"
 category: Distributed Deep Learning
 weight: 0
 ---
