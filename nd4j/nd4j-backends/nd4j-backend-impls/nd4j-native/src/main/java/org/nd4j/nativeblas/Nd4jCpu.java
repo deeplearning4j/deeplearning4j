@@ -237,7 +237,10 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         UINT32 = 13,
         UINT64 = 14,
         QINT8 = 15,
-        QINT16 = 16;
+        QINT16 = 16,
+        UTF8 = 50,
+        ANY = 100,
+        AUTO = 200;
 
 
 // #endif
@@ -3000,6 +3003,23 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		private native void allocate(@Cast("const Nd4jLong*") long[] shapeInfo);
 
         /**
+        *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
+        *  set dtype as array type
+        */
+        public NDArray(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace); }
+        private native void allocate(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+        public NDArray(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        private native void allocate(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype);
+        public NDArray(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace); }
+        private native void allocate(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+        public NDArray(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        private native void allocate(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype);
+        public NDArray(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace); }
+        private native void allocate(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+        public NDArray(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        private native void allocate(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype);
+
+        /**
         *  this constructor creates new array using shape information contained in vector argument
         */
         public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
@@ -3150,7 +3170,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  cast array elements to given dtype
         */
+        
         public native NDArray cast(@Cast("nd4j::DataType") int dtype);
+        
         public native void cast(NDArray target, @Cast("nd4j::DataType") int dtype);
 
         /**
@@ -3815,6 +3837,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jLong*") @StdVector LongPointer shape);
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jLong*") @StdVector LongBuffer shape);
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jLong*") @StdVector long[] shape);
+        public native @Cast("bool") boolean areSameShapeAndType(@Const @ByRef NDArray other);
 
         /**
         *  returns true if these two NDArrays have same rank, dimensions, strides, ews and order
@@ -3931,6 +3954,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
          * @return
          */
         public native @Cast("bool") boolean isC();
+
+        /**
+         * This method returns true if array contains String
+         * @return
+         */
+        public native @Cast("bool") boolean isS();
 
         /**
         *  inline accessing operator for matrix, i - absolute index        
@@ -4286,6 +4315,9 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 
 //////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
 // returns true if these two NDArrays have same _shapeInfo
 // still the definition of inline function must be in header file
 
@@ -4444,6 +4476,76 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 // #endif //LIBND4J_RESULTSET_H
 
+
+// Parsed from graph/RandomGenerator.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+//  @author raver119@protonmail.com
+//
+
+// #ifndef LIBND4J_GRAPH_RNG_H
+// #define LIBND4J_GRAPH_RNG_H
+
+// #include <types/u64.h>
+// #include <pointercast.h>
+// #include <op_boilerplate.h>
+// #include <dll.h>
+        @Namespace("nd4j::graph") @NoOffset public static class RandomGenerator extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public RandomGenerator(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public RandomGenerator(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public RandomGenerator position(long position) {
+                return (RandomGenerator)super.position(position);
+            }
+        
+            public RandomGenerator(@Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/) { super((Pointer)null); allocate(rootSeed, nodeSeed); }
+            private native void allocate(@Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/);
+            public RandomGenerator() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            /**
+             * This method allows to change graph-level state in runtime.
+             * PLEASE NOTE: this method will change state of node as well.
+             */
+            public native void setStates(@Cast("Nd4jLong") long rootSeed, @Cast("Nd4jLong") long nodeState/*=0*/);
+            public native void setStates(@Cast("Nd4jLong") long rootSeed);
+
+            
+
+            /**
+             * This method returns T value between from and to
+             */
+
+            /**
+             * This method returns T value between 0 and MAX_T
+             */
+
+
+            public native void rewindH(@Cast("Nd4jLong") long steps);
+        }
+    
+
+
+// #endif
 
 // Parsed from graph/Variable.h
 
@@ -5552,8 +5654,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // @author raver119@gmail.com
 //
 
-// #ifndef LIBND4J_BLOCK_H
-// #define LIBND4J_BLOCK_H
+// #ifndef LIBND4J_CONTEXT_H
+// #define LIBND4J_CONTEXT_H
 
 // #include <vector>
 // #include <graph/Variable.h>
@@ -5561,6 +5663,9 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <graph/ContextPrototype.h>
 // #include <memory/Workspace.h>
 
+// #ifdef HAVE_MKLDNN
+// #include <MKLDNNStream.h>
+// #endif
 
 // CUDA-specific includes
 // #ifdef __CUDACC__
@@ -5600,6 +5705,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             public native @Cast("nd4j::DataType") int dataType();
 
+            public native @Cast("nd4j::DataType") int dataType(int index);
+            public native void setDataType(int index, @Cast("nd4j::DataType") int type);
             // these methods are related to Workspace abstraction
             public native @Cast("bool") boolean hasWorkspaceProvided();
             public native void attachWorkspace(Workspace workspace);
@@ -5631,6 +5738,10 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native int getBranch();
             public native void setBranch(int branch);
 
+// #ifdef HAVE_MKLDNN
+// #ifndef __JAVACPP_HACK__
+// #endif
+// #endif
             /**
              *
              * @return
@@ -5712,6 +5823,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <vector>
 // #include <array/DataType.h>
 // #include <dll.h>
+// #include <RandomGenerator.h>
 
         @Namespace("nd4j::graph") @NoOffset public static class ContextPrototype extends Pointer {
             static { Loader.load(); }
@@ -5736,6 +5848,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native @Cast("bool") boolean hasVariablesFilled();
 
             public native @Cast("nd4j::DataType") int dataType();
+            public native @Cast("nd4j::DataType") int dataType(int index);
+            public native void setDataType(int index, @Cast("nd4j::DataType") int type);
 
             public native @Cast("bool") boolean isInplace();
             public native void markInplace(@Cast("bool") boolean reallyInplace);
@@ -5759,6 +5873,9 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native int opNum();
             public native void setOpNum(int opNum);
 
+            public native @Cast("bool") boolean isUseMKLDNN();
+            public native void setUseMKLDNN(@Cast("bool") boolean useMKLDNN);
+
             /**
              * This method returns number of inputs available in this block
              * @return
@@ -5767,11 +5884,17 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             // just a clone
             public native ContextPrototype clone();
+
+            public native @ByRef RandomGenerator randomGenerator();
+            public native @Const @ByRef RandomGenerator getRng();
+            public native @Cast("uint64_t") long randomSeed();
+            public native void setRandomSeed(@Cast("uint64_t") long seed);
         }
     
 
 
 // #endif //ND4J_CONTEXT_PROTOTYPE_H
+
 
 // Parsed from graph/ResultWrapper.h
 
@@ -5963,9 +6086,13 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("Nd4jLong*") LongBuffer stride1,int rank1,@Cast("Nd4jLong*") LongBuffer stride2,int rank2);
     @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("Nd4jLong*") long[] stride1,int rank1,@Cast("Nd4jLong*") long[] stride2,int rank2);
 
-    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(@Cast("Nd4jLong*") LongPointer shapeA, @Cast("Nd4jLong*") LongPointer shapeB);
-    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(@Cast("Nd4jLong*") LongBuffer shapeA, @Cast("Nd4jLong*") LongBuffer shapeB);
-    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(@Cast("Nd4jLong*") long[] shapeA, @Cast("Nd4jLong*") long[] shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(@Cast("const Nd4jLong*") LongPointer shapeA, @Cast("const Nd4jLong*") LongPointer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(@Cast("const Nd4jLong*") long[] shapeA, @Cast("const Nd4jLong*") long[] shapeB);
+
+    @Namespace("shape") public static native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const Nd4jLong*") LongPointer shapeA, @Cast("const Nd4jLong*") LongPointer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const Nd4jLong*") long[] shapeA, @Cast("const Nd4jLong*") long[] shapeB);
 
     @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("Nd4jLong*") LongPointer shapeA, @Cast("Nd4jLong*") LongPointer shapeB);
     @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("Nd4jLong*") LongBuffer shapeA, @Cast("Nd4jLong*") LongBuffer shapeB);
@@ -8599,6 +8726,10 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define BROADCAST(NAME) nd4j::BroadcastOpsTuple::custom(nd4j::scalar::NAME, nd4j::pairwise::NAME, nd4j::broadcast::NAME)
 // #define BROADCAST_BOOL(NAME) nd4j::BroadcastBoolOpsTuple::custom(nd4j::scalar::NAME, nd4j::pairwise::NAME, nd4j::broadcast::NAME)
 
+
+public static final int ALL_INTS =INT64;
+public static final int ALL_FLOATS =DOUBLE;
+
 // #endif //TESTS_CPU_TYPE_BOILERPLATE_H
 
 // Parsed from op_boilerplate.h
@@ -8671,7 +8802,6 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define OP_BOILERPLATE_HH
 
 // #include <type_boilerplate.h>
-// #include <helpers/OpTracker.h>
 
 // #ifdef __CUDACC__
 
@@ -9844,6 +9974,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                     NAME();
 //                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block);
 //                                                 protected:
+//                                                     void registerTypes();
 //                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context& block);
 //                                                 };
 //                                                 REGISTER_H(NAME)
@@ -9852,6 +9983,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 public:
 //                                                     NAME();
 //                                                 protected:
+//                                                     void registerTypes();
 //                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context& block);
 //                                                 };
 //                                                 REGISTER_H(NAME)
@@ -9894,9 +10026,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                         Nd4jLong* newshape;
 //                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), Nd4jLong);
 //                                                         if (shape::order(inputShape->at(e)) == 'c')
-//                                                             shape::shapeBuffer(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
+//                                                             shape::shapeBuffer(shape::rank(inputShape->at(e)), block.dataType(e), shape::shapeOf(inputShape->at(e)), newshape);
 //                                                         else
-//                                                             shape::shapeBufferFortran(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
+//                                                             shape::shapeBufferFortran(shape::rank(inputShape->at(e)), block.dataType(e), shape::shapeOf(inputShape->at(e)), newshape);
 //                                                         shapeList->push_back(newshape);
 //                                                     }
 //                                                     return shapeList;
@@ -9946,6 +10078,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                     NAME();
 //                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block);
 //                                                                                 protected:
+//                                                                                     void registerTypes();
 //                                                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context& block);
 //                                                                                 };
 //                                                                                 REGISTER_H(NAME)
@@ -9958,9 +10091,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                         Nd4jLong* newshape;
 //                                                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), Nd4jLong);
 //                                                                                         if (shape::order(inputShape->at(e)) == 'c')
-//                                                                                             shape::shapeBuffer(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
+//                                                                                             shape::shapeBuffer(shape::rank(inputShape->at(e)), block.dataType(e), shape::shapeOf(inputShape->at(e)), newshape);
 //                                                                                         else
-//                                                                                             shape::shapeBufferFortran(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)),  shape::shapeOf(inputShape->at(e)), newshape);
+//                                                                                             shape::shapeBufferFortran(shape::rank(inputShape->at(e)), block.dataType(e),  shape::shapeOf(inputShape->at(e)), newshape);
 //                                                                                         shapeList->push_back(newshape);
 //                                                                                     }
 //                                                                                     return shapeList;
@@ -9971,6 +10104,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 public:
 //                                                                                     NAME();
 //                                                                                 protected:
+//                                                                                     void registerTypes();
 //                                                                                     Nd4jStatus validateAndExecute(Context& block);
 //                                                                                 };
 //                                                                                 REGISTER_H(NAME)
@@ -9982,6 +10116,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           class ND4J_EXPORT NAME: public nd4j::ops::DeclarableCustomOp {
 //                                                                                 protected:
+//                                                                                     void registerTypes();
 //                                                                                     Nd4jStatus validateAndExecute(Context& block);
 //                                                                                 public:
 //                                                                                     NAME();
@@ -9996,8 +10131,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // this declaration MUST follow DECLARE_CUSTOM_OP
 // #define DECLARE_SHAPE_FN(NAME)                                                  nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block)
 
+
+// #define DECLARE_SAME_TYPE(NAME)                                                 void nd4j::ops::NAME::registerTypes() {this->getOpDescriptor()->setSameMode(true);}
+
+// #define DECLARE_TYPES(NAME)                                                     void nd4j::ops::NAME::registerTypes()
+
 // #define DECLARE_BROADCASTABLE_OP(NAME,TARGS, IARGS)                             class ND4J_EXPORT NAME: public nd4j::ops::BroadcastableOp {
 //                                                                                 protected:
+//                                                                                     void registerTypes();
 //                                                                                     Nd4jStatus validateAndExecute(Context& block);
 //                                                                                 public:
 //                                                                                     NAME();
@@ -10048,6 +10189,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    ALLOCATE(TGT, WORKSPACE, shape::shapeInfoLength(SRC), Nd4jLong);
 //                                 REPLICATE_SHAPE(SRC, TGT);
+
 
 // define macros for compiler enforcement to make function inline  
 // #ifdef __clang__
@@ -10259,13 +10401,25 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
             public native @Cast("nd4j::ops::InputType") int inputType();
 
-            public native OpDescriptor setInputType(@Cast("const nd4j::ops::InputType") int type);
-            public native OpDescriptor setAllowedInputTypes(@Cast("const nd4j::DataType") int dtype);
-            public native OpDescriptor setAllowedOutputTypes(@Cast("const nd4j::DataType") int dtype);
-            public native OpDescriptor setSameMode(@Cast("const bool") boolean reallySame);
-            public native OpDescriptor setInputType(int idx, @Cast("const nd4j::DataType") int dtype);
-            public native OpDescriptor setOutputType(int idx, @Cast("const nd4j::DataType") int dtype);
 
+
+            public native OpDescriptor setInputType(@Cast("nd4j::ops::InputType") int type);
+            public native OpDescriptor setAllowedInputTypes(int index, @Cast("nd4j::DataType*") @StdVector IntPointer dtype);
+            public native OpDescriptor setAllowedInputTypes(int index, @Cast("nd4j::DataType*") @StdVector IntBuffer dtype);
+            public native OpDescriptor setAllowedInputTypes(int index, @Cast("nd4j::DataType*") @StdVector int[] dtype);
+            public native OpDescriptor setAllowedOutputTypes(int index, @Cast("nd4j::DataType*") @StdVector IntPointer dtype);
+            public native OpDescriptor setAllowedOutputTypes(int index, @Cast("nd4j::DataType*") @StdVector IntBuffer dtype);
+            public native OpDescriptor setAllowedOutputTypes(int index, @Cast("nd4j::DataType*") @StdVector int[] dtype);
+            public native OpDescriptor setAllowedInputTypes(int index,  @Cast("nd4j::DataType") int dtype);
+            public native OpDescriptor setAllowedOutputTypes(int index, @Cast("nd4j::DataType") int dtype);
+            public native OpDescriptor setAllowedInputTypes(@Cast("nd4j::DataType") int dtype);
+            public native OpDescriptor setAllowedOutputTypes(@Cast("nd4j::DataType") int dtype);
+            public native OpDescriptor setSameMode(@Cast("bool") boolean reallySame);
+            public native OpDescriptor setInputType(int idx, @Cast("nd4j::DataType") int dtype);
+            public native OpDescriptor setOutputType(int idx, @Cast("nd4j::DataType") int dtype);
+
+            public native @Cast("bool") boolean checkInputMatch(int index, @Cast("nd4j::DataType") int dataType);
+            public native @Cast("bool") boolean checkOutputMatch(int index, @Cast("nd4j::DataType") int dataType);
         }
     
 
@@ -10357,6 +10511,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #include <chrono>
 // #include <ctime>
+// #include <mutex>
 
         @Namespace("nd4j::ops") public static native @Cast("Nd4jStatus") int conditionHelper(@Cast("char*") String file, int line, int condition, int argNumber, @Cast("char*") String format);
         @Namespace("nd4j::ops") public static native @Cast("Nd4jStatus") int conditionHelper(@Cast("char*") BytePointer file, int line, int condition, int argNumber, @Cast("char*") BytePointer format);
@@ -10416,11 +10571,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              */
             public native @Cast("Nd4jStatus") int execute(Context block);
 
-            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
             public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
-            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
             public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
-            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
             public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
@@ -10826,10 +10981,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <ops/declarable/headers/third_party.h>
 // #include <ops/declarable/headers/tests.h>
 // #include <dll.h>
+// #include <helpers/shape.h>
+// #include <helpers/TAD.h>
 // #include <Status.h>
 // #include <helpers/ArrayUtils.h>
 // #include <helpers/ShapeBuilders.h>
 // #include <NDArrayFactory.h>
+// #include <helpers/OpTracker.h>
     @Namespace("nd4j") public static class _loader extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -11561,24 +11719,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-        /**
-         * relu_layer = relu(x*w + b)
-         */
-        @Namespace("nd4j::ops") public static class relu_layer extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public relu_layer(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public relu_layer(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public relu_layer position(long position) {
-                return (relu_layer)super.position(position);
-            }
-        
-                                                                                    public relu_layer() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
 
         /**
          * Parametric Rectified Linear Unit
@@ -16970,31 +17110,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                 }
 //         #endif
 
-        /**
-         * l2_loss op.
-         * compute a l2 norm for given array.
-         *
-         * input param - an array (tensor)
-         * output value - a real number with given type (e.g. float or double)
-         */
-//         #if NOT_EXCLUDED(OP_l2_loss)
-        @Namespace("nd4j::ops") public static class l2_loss extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public l2_loss(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public l2_loss(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public l2_loss position(long position) {
-                return (l2_loss)super.position(position);
-            }
-        
-                                                                                    public l2_loss() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
 //         #if NOT_EXCLUDED(OP_parallel_stack)
         @Namespace("nd4j::ops") public static class parallel_stack extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -17008,31 +17123,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public parallel_stack() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
-	/**
-         * This op calculates logarithmic loss of poison distributed input
-         * Input arguments
-         *  0 - target
-         *  1 - input
-         *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
-         */
-//         #if NOT_EXCLUDED(OP_log_poison_loss)
-        @Namespace("nd4j::ops") public static class log_poison_loss extends DeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public log_poison_loss(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public log_poison_loss(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public log_poison_loss position(long position) {
-                return (log_poison_loss)super.position(position);
-            }
-        
-                                                                                    public log_poison_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
@@ -17131,8 +17221,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                 }
 //         #endif
 
+
+
         /**
-         * This op calculates weighted logarithmic loss of input
+         * This op calculates dropout of input
          * Input arguments
          *  0 - input tensor
          *  1 - noise_shape - (vector with shape to reduce) - optional
@@ -17154,6 +17246,48 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public dropout() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+//         #if NOT_EXCLUDED(OP_dropout_bp)
+        @Namespace("nd4j::ops") public static class dropout_bp extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public dropout_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public dropout_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public dropout_bp position(long position) {
+                return (dropout_bp)super.position(position);
+            }
+        
+                                                                                    public dropout_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /*  Calculates alpha weighted dropout
+            T params:
+                0 - drop probability
+                1 - alpha value
+                2 - alpha' value
+                3 - beta value
+         */
+//         #if NOT_EXCLUDED(OP_alpha_dropout_bp)
+        @Namespace("nd4j::ops") public static class alpha_dropout_bp extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public alpha_dropout_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public alpha_dropout_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public alpha_dropout_bp position(long position) {
+                return (alpha_dropout_bp)super.position(position);
+            }
+        
+                                                                                    public alpha_dropout_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
@@ -18840,6 +18974,26 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+
+        /**
+         * relu_layer = relu(x*w + b)
+         */
+        @Namespace("nd4j::ops") public static class relu_layer extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public relu_layer(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public relu_layer(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public relu_layer position(long position) {
+                return (relu_layer)super.position(position);
+            }
+        
+                                                                                    public relu_layer() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+
     
 
 
@@ -19369,7 +19523,57 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
-    
+
+        /**
+         * l2_loss op.
+         * compute a l2 norm for given array.
+         *
+         * input param - an array (tensor)
+         * output value - a real number with given type (e.g. float or double)
+         */
+//         #if NOT_EXCLUDED(OP_l2_loss)
+        @Namespace("nd4j::ops") public static class l2_loss extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public l2_loss(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public l2_loss(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public l2_loss position(long position) {
+                return (l2_loss)super.position(position);
+            }
+        
+                                                                                    public l2_loss() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+
+        /**
+         * This op calculates logarithmic loss of poison distributed input
+         * Input arguments
+         *  0 - target
+         *  1 - input
+         *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
+         */
+//         #if NOT_EXCLUDED(OP_log_poison_loss)
+        @Namespace("nd4j::ops") public static class log_poison_loss extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public log_poison_loss(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public log_poison_loss(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public log_poison_loss position(long position) {
+                return (log_poison_loss)super.position(position);
+            }
+        
+                                                                                    public log_poison_loss() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
 
     //////////////////////////////////////////////////////////////////////////
     /**

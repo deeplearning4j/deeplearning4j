@@ -45,6 +45,7 @@ import java.util.Scanner;
                                               "array/NDArrayList.h",
                                               "array/ResultSet.h",
                                               "types/pair.h",
+                                              "graph/RandomGenerator.h",
                                               "graph/Variable.h",
                                               "graph/VariablesSet.h",
                                               "graph/FlowPath.h",

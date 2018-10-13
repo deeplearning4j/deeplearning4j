@@ -119,8 +119,10 @@ namespace nd4j {
             void setBranch(int branch);
 
 #ifdef HAVE_MKLDNN
+#ifndef __JAVACPP_HACK__
             MKLDNNStream<T> *getMKLDNNStream() { return _mkldnnStream; }
             void setMKLDNNStream(MKLDNNStream<T> *mkldnnStream) { _mkldnnStream = mkldnnStream; }
+#endif
 #endif
             /**
              *
