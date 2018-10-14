@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ Copyright (c) 2015-2018 Skymind, Inc.
   ~
@@ -15,24 +14,34 @@
   ~ SPDX-License-Identifier: Apache-2.0
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>nd4j</artifactId>
-        <groupId>org.nd4j</groupId>
-        <version>1.0.0-SNAPSHOT</version>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
+<configuration>
 
-    <artifactId>nd4j-shade</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>jackson</module>
-        <module>flatbuffers</module>
-    </modules>
+	
 
-    <properties>
-        <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
-    </properties>
-</project>
+	<appender name="FILE" class="ch.qos.logback.core.FileAppender">
+		<file>logs/application.log</file>
+		<encoder>
+			<pattern>%date - [%level] - from %logger in %thread
+				%n%message%n%xException%n</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern> %logger{15} - %message%n%xException{5}
+			</pattern>
+		</encoder>
+	</appender>
+
+    <logger name="org.apache.catalina.core" level="DEBUG" />
+	<logger name="org.springframework" level="DEBUG" />
+	<logger name="org.nd4j" level="DEBUG" />
+	<logger name="org.deeplearning4j" level="INFO" />
+
+
+	<root level="ERROR">
+		<appender-ref ref="STDOUT" />
+		<appender-ref ref="FILE" />
+	</root>
+
+</configuration>

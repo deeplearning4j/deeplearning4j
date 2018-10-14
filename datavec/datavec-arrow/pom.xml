@@ -85,10 +85,19 @@
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
         </dependency>
+
+        <!-- Arrow dependencies - minus FlatBuffers. See https://github.com/deeplearning4j/deeplearning4j/issues/6372 -->
+        <!-- TODO Arrow 0.11 should replace com.vlkan:flatbuffers with official flatbuffers dependency, at which point this exclusion can be removed -->
         <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-vector</artifactId>
             <version>${arrow.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.vlkan</groupId>
+                    <artifactId>flatbuffers</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.arrow</groupId>
@@ -99,6 +108,12 @@
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-format</artifactId>
             <version>${arrow.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.vlkan</groupId>
+                    <artifactId>flatbuffers</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

@@ -45,6 +45,14 @@
             <groupId>com.google.flatbuffers</groupId>
             <artifactId>flatbuffers-java-grpc</artifactId>
             <version>${flatbuffers.version}</version>
+            <!-- Exclude in favor of partial shaded Flatbuffers for Arrow 0.10.0 compatibility - see https://github.com/deeplearning4j/deeplearning4j/issues/6372 -->
+            <!-- This should be removed once Arrow 0.11.0 is used -->
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.flatbuffers</groupId>
+                    <artifactId>flatbuffers-java</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
