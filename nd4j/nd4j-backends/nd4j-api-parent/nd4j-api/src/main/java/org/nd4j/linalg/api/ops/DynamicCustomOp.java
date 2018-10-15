@@ -267,8 +267,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     private INDArray attemptToGetOrCreateArrForVar(SDVariable var, long[] currShape) {
         INDArray arr = null;
-        if (Shape.isPlaceholderShape(var.getShape())) {
-            if (var.getShape() == null) {
+        long[] initialVarShape = var.getShape();
+        if (Shape.isPlaceholderShape(initialVarShape)) {
+            if (initialVarShape == null) {
                 val shape = calculateOutputShape();
 
                 if (!shape.isEmpty()) {

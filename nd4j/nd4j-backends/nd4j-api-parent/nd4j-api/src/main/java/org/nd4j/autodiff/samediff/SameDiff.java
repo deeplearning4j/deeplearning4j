@@ -10261,6 +10261,9 @@ public class SameDiff {
      * If this is not done, arrays and shapes could be fetched from the incorrect SameDiff instance for some methods
      */
     protected void associateSameDiffWithOpsAndVariables(){
+        for(SDVariable var : variableMap.values()){
+            var.setSameDiff(this);
+        }
         for(DifferentialFunction df : functionInstancesById.values()){
             df.setSameDiff(this);
 
@@ -10282,9 +10285,6 @@ public class SameDiff {
                     out.setSameDiff(this);
                 }
             }
-        }
-        for(SDVariable var : variableMap.values()){
-            var.setSameDiff(this);
         }
     }
 
