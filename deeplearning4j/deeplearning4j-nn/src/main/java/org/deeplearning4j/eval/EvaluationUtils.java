@@ -27,11 +27,10 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import java.util.Arrays;
 
 /**
- * Utility methods for performing evaluation
- *
- * @author Alex Black
+ * @deprecated Use {@link org.nd4j.evaluation.EvaluationUtils}
  */
-public class EvaluationUtils {
+@Deprecated
+public class EvaluationUtils extends org.nd4j.evaluation.EvaluationUtils {
 
     /**
      * Calculate the precision from true positive and false positive counts

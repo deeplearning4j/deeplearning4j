@@ -40,11 +40,9 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * BaseEvaluation implement common evaluation functionality (for time series, etc) for {@link Evaluation},
- * {@link RegressionEvaluation}, {@link ROC}, {@link ROCMultiClass} etc.
- *
- * @author Alex Black
+ * @deprecated Use {@link org.nd4j.evaluation.BaseEvaluation}
  */
+@Deprecated
 @EqualsAndHashCode
 public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvaluation<T> {
 

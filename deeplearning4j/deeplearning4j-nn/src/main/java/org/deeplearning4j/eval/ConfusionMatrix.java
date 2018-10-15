@@ -22,11 +22,14 @@ import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * @deprecated Use {@link org.nd4j.evaluation.classification.ConfusionMatrix}
+ */
+@Deprecated
 public class ConfusionMatrix<T extends Comparable<? super T>> implements Serializable {
     @Getter
     private volatile Map<T, Multiset<T>> matrix;
