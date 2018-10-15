@@ -32,10 +32,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils.importWeights;
 
@@ -98,8 +95,20 @@ public class KerasSequentialModel extends KerasModel {
         if (!modelConfig.containsKey(config.getModelFieldConfig()))
             throw new InvalidKerasConfigurationException(
                     "Could not find layer configurations (no " + config.getModelFieldConfig() + " field found)");
+
+        // Prior to Keras 2.2.3 the "config" of a Sequential model was a list of layer configurations. For consistency
+        // "config" is now an object containing a "name" and "layers", the latter contain the same data as before.
+        // This change only affects Sequential models.
+        List<Object> layerList;
+        try {
+            layerList = (List<Object>) modelConfig.get(config.getModelFieldConfig());
+        } catch (Exception e) {
+            HashMap layerMap = (HashMap<String, Object>) modelConfig.get(config.getModelFieldConfig());
+            layerList =  (List<Object>) layerMap.get("layers");
+        }
+
         Pair<Map<String, KerasLayer>, List<KerasLayer>> layerPair =
-                prepareLayers((List<Object>) modelConfig.get(config.getModelFieldConfig()));
+                prepareLayers(layerList);
         this.layers = layerPair.getFirst();
         this.layersOrdered = layerPair.getSecond();
 
