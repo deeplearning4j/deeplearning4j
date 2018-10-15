@@ -1172,4 +1172,12 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     public INDArray sortCooIndices(INDArray x) {
         throw new UnsupportedOperationException("Not an COO ndarray");
     }
+
+
+    @Override
+    public INDArray create(Collection<String> strings, long[] shape, char order) {
+        val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
+        val array = Nd4j.createArrayFromShapeBuffer(null, pairShape);
+        return array;
+    }
 }

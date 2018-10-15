@@ -6410,6 +6410,6 @@ public class Nd4j {
     }
 
     public static INDArray create(@NonNull Collection<String> strings, long[] shape, char order) {
-        return null;
+        return INSTANCE.create(strings, shape, order);
     }
 }

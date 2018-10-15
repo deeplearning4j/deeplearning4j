@@ -1416,6 +1416,10 @@ public interface NDArrayFactory {
     INDArray create(float[] data, long[] shape, char ordering);
     INDArray create(double[] data, long[] shape, char ordering);
 
+    // =========== String methods ============
+
+    INDArray create(Collection<String> strings, long[] shape, char order);
+
     // =========== Sparse methods ===========
 
     INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape);

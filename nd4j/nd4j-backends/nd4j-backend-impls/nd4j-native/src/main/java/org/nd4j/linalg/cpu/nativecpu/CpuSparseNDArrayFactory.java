@@ -549,4 +549,9 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     public INDArray empty(DataType type) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public INDArray create(Collection<String> strings, long[] shape, char order) {
+        throw new UnsupportedOperationException();
+    }
 }
