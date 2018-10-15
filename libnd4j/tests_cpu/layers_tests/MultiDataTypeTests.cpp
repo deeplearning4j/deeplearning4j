@@ -1052,3 +1052,132 @@ TEST_F(MultiDataTypeTests, ndarray_applyPairwiseTransform_test2) {
     ASSERT_EQ(x8, exp3);
 }
 
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyBroadcast_test1) {
+            
+    NDArray x1('c', {2,3}, {10, 20, 30, 40, 50, 60}, nd4j::DataType::INT32);
+    NDArray x2('c', {2},   {1, 2}, nd4j::DataType::INT64);
+    NDArray x3('c', {2,3}, nd4j::DataType::INT32);
+    NDArray x4('c', {2},   {1, 2}, nd4j::DataType::FLOAT32);
+    NDArray x5('c', {2,3}, nd4j::DataType::FLOAT32);
+    NDArray x6('c', {2},   {1, 1}, nd4j::DataType::BOOL);    
+    
+    NDArray exp1('c', {2,3}, {11, 21, 31, 42, 52, 62}, nd4j::DataType::INT32);
+    NDArray exp2('c', {2,3}, {11, 21, 31, 42, 52, 62}, nd4j::DataType::FLOAT32);
+    NDArray exp3('c', {2,3}, {11, 21, 31, 41, 51, 61}, nd4j::DataType::INT32);
+
+    x1.applyBroadcast(nd4j::broadcast::Add, {0}, &x2, &x3);
+    ASSERT_EQ(x3, exp1);
+
+    x1.applyBroadcast(nd4j::broadcast::Add, {0}, &x4, &x5);
+    ASSERT_EQ(x5, exp2);
+
+    x1.applyBroadcast(nd4j::broadcast::Add, {0}, &x6, &x3);
+    ASSERT_EQ(x3, exp3);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyBroadcast_test2) {
+            
+    NDArray x1('c', {2,3}, {10, 20, 30, 40, 50, 60}, nd4j::DataType::INT32);
+    NDArray x2('c', {2},   {10, 60}, nd4j::DataType::INT32);
+    NDArray x3('c', {2,3}, nd4j::DataType::BOOL);
+
+    NDArray x4('c', {2,3}, {0, 0, 0, 0, 0, 1}, nd4j::DataType::BOOL);
+    NDArray x5('c', {2},   {0, 1}, nd4j::DataType::BOOL);
+    
+    NDArray exp1('c', {2,3}, {1, 0, 0, 0, 0, 1}, nd4j::DataType::BOOL);
+    NDArray exp2('c', {2,3}, {1, 1, 1, 0, 0, 1}, nd4j::DataType::BOOL);
+    
+    x1.applyBroadcast(nd4j::broadcast::EqualTo, {0}, &x2, &x3);
+    ASSERT_EQ(x3, exp1);    
+
+    x4.applyBroadcast(nd4j::broadcast::EqualTo, {0}, &x5, &x3);
+    ASSERT_EQ(x3, exp2);    
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyTrueBroadcast_test1) {
+            
+    NDArray x1('c', {2,2}, {10, 20, 30, 40}, nd4j::DataType::INT32);
+    NDArray x2('c', {2},   {1, 2}, nd4j::DataType::HALF);
+    NDArray x3('c', {2,2}, nd4j::DataType::HALF);
+
+    NDArray x4('c', {2},   {1, 2}, nd4j::DataType::INT64);
+    NDArray x5('c', {2,2}, nd4j::DataType::INT32);    
+
+    NDArray x6('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray x7('c', {2}, {1, 2}, nd4j::DataType::INT64); 
+    NDArray x8('c', {2,2}, nd4j::DataType::BOOL); 
+
+    NDArray x13('c', {0}, {3}, nd4j::DataType::INT64);
+    NDArray x14('c', {0}, {1.5}, nd4j::DataType::DOUBLE);
+    NDArray x15(nd4j::DataType::DOUBLE);
+    NDArray x16('c', {2,2}, nd4j::DataType::DOUBLE);
+
+    NDArray exp1('c', {2,2}, {11, 22, 31, 42}, nd4j::DataType::HALF);
+    NDArray exp2('c', {2,2}, {11, 22, 31, 42}, nd4j::DataType::INT32);
+    NDArray exp3('c', {2,2}, {1, 1, 1, 1}, nd4j::DataType::BOOL);
+    NDArray exp4('c', {0}, {4.5}, nd4j::DataType::DOUBLE);
+    NDArray exp5('c', {2,2}, {11.5, 21.5, 31.5, 41.5}, nd4j::DataType::DOUBLE);
+
+    x1.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &x2, &x3, true);
+    ASSERT_EQ(x3, exp1);
+    
+    x1.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &x4, &x5, true);
+    ASSERT_EQ(x5, exp2);
+
+    x6.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &x7, &x8, true);
+    ASSERT_EQ(x8, exp3);
+
+    auto x9 = x1.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), x2);
+    ASSERT_EQ(x9, exp1);
+
+    auto x10 = x1.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), x4);
+    ASSERT_EQ(x10, exp2);
+
+    auto x11 = x6.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), x7);
+    ASSERT_EQ(x11, exp3);
+
+    auto x12 = x1.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &x2);
+    ASSERT_EQ(*x12, exp1);    
+    delete x12;
+
+    x13.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &x14, &x15, true);
+    ASSERT_EQ(x15, exp4);
+
+    x1.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &x14, &x16, true);
+    ASSERT_EQ(x16, exp5);
+
+    x14.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &x1, &x16, true);
+    ASSERT_EQ(x16, exp5);
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyTrueBroadcast_test2) {
+            
+    NDArray x1('c', {2,2}, {10, 20, 30, 40}, nd4j::DataType::HALF);
+    NDArray x2('c', {2},   {10, 40}, nd4j::DataType::HALF);
+    NDArray x3('c', {2,2}, nd4j::DataType::BOOL);
+    NDArray x4('c', {0}, {10}, nd4j::DataType::HALF);
+    NDArray x5('c', {0}, {20}, nd4j::DataType::HALF);
+    NDArray x6(nd4j::DataType::BOOL);
+
+    NDArray exp1('c', {2,2}, {1, 0, 0, 1}, nd4j::DataType::BOOL);
+    NDArray exp2('c', {2,2}, {1, 0, 0, 0}, nd4j::DataType::BOOL);
+    NDArray exp3('c', {0}, {0}, nd4j::DataType::BOOL);
+
+    x1.applyTrueBroadcast(BroadcastBoolOpsTuple(nd4j::scalar::EqualTo, nd4j::pairwise::EqualTo, nd4j::broadcast::EqualTo), &x2, &x3, true);
+    ASSERT_EQ(x3, exp1);
+
+    x1.applyTrueBroadcast(BroadcastBoolOpsTuple(nd4j::scalar::EqualTo, nd4j::pairwise::EqualTo, nd4j::broadcast::EqualTo), &x4, &x3, true);
+    ASSERT_EQ(x3, exp2);
+
+    x4.applyTrueBroadcast(BroadcastBoolOpsTuple(nd4j::scalar::EqualTo, nd4j::pairwise::EqualTo, nd4j::broadcast::EqualTo), &x1, &x3, true);
+    ASSERT_EQ(x3, exp2);
+
+    x5.applyTrueBroadcast(BroadcastBoolOpsTuple(nd4j::scalar::EqualTo, nd4j::pairwise::EqualTo, nd4j::broadcast::EqualTo), &x4, &x6, true);
+    ASSERT_EQ(x6, exp3);
+}
+

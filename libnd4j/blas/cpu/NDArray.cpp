@@ -2568,15 +2568,20 @@ NDArray NDArray::transp() const {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyBroadcast(nd4j::broadcast::Ops op, std::initializer_list<int> dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
+    void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::initializer_list<int> dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
         std::vector<int> vec(dimensions);
         applyBroadcast(op, vec, tadArray, target, extraArgs);
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyBroadcast(nd4j::broadcast::Ops op, std::vector<int>& dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
+    void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int>& dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
         if (dimensions.size() == 0)
             return;
+
+        if(target->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, tadArray->_shapeInfo))
+            throw std::invalid_argument("NDArray::applyBroadcast method: wrong type of target array !");
+        if(!target->isSameShape(this))
+            throw std::invalid_argument("NDArray::applyBroadcast method: this and other arrays must have the same shape !");
 
         std::vector<int> copy(dimensions);
 
@@ -2585,7 +2590,7 @@ NDArray NDArray::transp() const {
 
         Nd4jLong tadLength = shape::tadLength(this->_shapeInfo, copy.data(), (int) copy.size());
         if (tadLength != tadArray->lengthOf())
-            throw std::runtime_error("Tad length mismatch");
+            throw std::runtime_error("NDArray::applyBroadcast method: tad length mismatch !");
 
         shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
@@ -2598,9 +2603,16 @@ NDArray NDArray::transp() const {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, std::vector<int>& dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
+    void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int>& dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
         if (dimensions.size() == 0)
             return;
+
+        if(target->_dataType != DataType::BOOL)
+            throw std::invalid_argument("NDArray::applyBroadcast bool method: type of target array must be BOOL!");
+        if(!target->isSameShape(this))
+            throw std::invalid_argument("NDArray::applyBroadcast bool method: this and other arrays must have the same shape !");    
+        if(_dataType != tadArray->_dataType)
+            throw std::invalid_argument("NDArray::applyBroadcast bool method: this and tad arrays must have the same type !");    
 
         std::vector<int> copy(dimensions);
 
@@ -2626,9 +2638,10 @@ NDArray NDArray::transp() const {
         if(target == nullptr || other == nullptr)
             throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
 
-        if (isScalar()) {
-            target->assign(this);
-            const_cast<NDArray*>(this)->applyPairwiseTransform(op.p, const_cast<NDArray*>(other), target,  extraArgs);
+        if (isScalar()) {            
+            NDArray temp(target->_shapeInfo, _dataType, false, _workspace);            
+            temp.assign(this);
+            temp.applyPairwiseTransform(op.p, other, target,  extraArgs);
             return;
         }
         if (other->isScalar()) {
@@ -2652,6 +2665,8 @@ NDArray NDArray::transp() const {
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
             if(!shape::equalsSoft(target->_shapeInfo, newShapeInfo) || target->_dataType != DataType::BOOL)
                 throw std::runtime_error("NDArray::applyTrueBroadcast bool method: the shape or type of target array is wrong !");
+            if(_dataType != other->_dataType)
+                throw std::invalid_argument("NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !");    
 
             // if workspace is not null - do not call delete.
             if (_workspace == nullptr)
