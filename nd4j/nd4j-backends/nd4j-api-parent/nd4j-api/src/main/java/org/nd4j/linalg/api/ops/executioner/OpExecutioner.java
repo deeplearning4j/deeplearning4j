@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.cache.TADManager;
 
 import java.util.List;
@@ -383,7 +384,7 @@ public interface OpExecutioner {
      */
     void exec(CustomOp op);
 
-    List<long[]> calculateOutputShape(CustomOp op);
+    List<LongShapeDescriptor> calculateOutputShape(CustomOp op);
 
     /**
      * Equivalent to calli

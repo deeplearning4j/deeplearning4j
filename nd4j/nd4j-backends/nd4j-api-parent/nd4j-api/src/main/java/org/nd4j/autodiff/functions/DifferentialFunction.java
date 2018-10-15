@@ -31,6 +31,7 @@ import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.tensorflow.framework.AttrValue;
@@ -725,7 +726,7 @@ public abstract class DifferentialFunction {
      * the output shape for this op
      * @return
      */
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         throw new UnsupportedOperationException();
     }
 

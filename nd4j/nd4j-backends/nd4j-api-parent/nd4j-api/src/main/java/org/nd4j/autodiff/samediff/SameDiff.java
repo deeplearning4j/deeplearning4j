@@ -66,6 +66,7 @@ import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
@@ -1657,6 +1658,10 @@ public class SameDiff {
 
     }
 
+    public SDVariable var(String name, LongShapeDescriptor shape, WeightInitScheme weightInitScheme) {
+
+    }
+
 
     /**
      * Creates a {@link SDVariable} with the given shape and name<br>
@@ -1669,6 +1674,11 @@ public class SameDiff {
     public SDVariable var(String name, long... shape) {
         Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
         return var(name, shape, new ZeroInitScheme());
+    }
+
+    public SDVariable var(String name, LongShapeDescriptor shapeDesc) {
+        Preconditions.checkNotNull(shapeDesc != null, "Invalid shape: shape may not be null");
+        return var(name, shapeDesc, new ZeroInitScheme());
     }
 
     /**

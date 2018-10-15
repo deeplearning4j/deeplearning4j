@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 import java.util.List;
 
@@ -99,7 +100,7 @@ public interface CustomOp {
      * Calculate the output shape for this op
      * @return
      */
-    List<long[]> calculateOutputShape();
+    List<LongShapeDescriptor> calculateOutputShape();
 
     /**
      * Get the custom op descriptor if one is available.

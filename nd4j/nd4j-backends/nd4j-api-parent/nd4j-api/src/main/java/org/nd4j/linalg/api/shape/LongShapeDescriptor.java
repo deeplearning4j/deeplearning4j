@@ -16,6 +16,8 @@
 
 package org.nd4j.linalg.api.shape;
 
+import lombok.Data;
+import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -32,7 +34,9 @@ public class LongShapeDescriptor {
     private long hashShape = 0;
     private long hashStride = 0;
 
+    @Getter
     private long[] shape;
+
     private long[] stride;
 
     private long extras;
