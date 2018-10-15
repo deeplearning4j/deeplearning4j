@@ -20,9 +20,11 @@ package org.nd4j.linalg.api.buffer;
 import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -31,6 +33,8 @@ import java.util.Collection;
  * @author Adam Gibson
  */
 public class Utf8Buffer extends BaseDataBuffer {
+
+    protected Collection<Pointer> references = new ArrayList<>();
 
     /**
      * Meant for creating another view of a buffer
@@ -134,6 +138,13 @@ public class Utf8Buffer extends BaseDataBuffer {
     public DataBuffer create(int[] data) {
         throw new UnsupportedOperationException();
     }
+
+
+    public void put(long index, Pointer pointer) {
+        references.add(pointer);
+        ((LongIndexer) indexer).put(index, pointer.address());
+    }
+
 
 
     /**

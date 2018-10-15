@@ -23,10 +23,12 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -1883,6 +1885,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
         return retShape;
+    }
+
+    public String getString(Utf8Buffer buffer, long index) {
+        val addr = ((LongIndexer) buffer.indexer()).get(index);
+        val ptr = new PagedPointer(addr);
+        val str = new Nd4jCpu.utf8string(ptr);
+        return str._buffer();
     }
 
     @Override

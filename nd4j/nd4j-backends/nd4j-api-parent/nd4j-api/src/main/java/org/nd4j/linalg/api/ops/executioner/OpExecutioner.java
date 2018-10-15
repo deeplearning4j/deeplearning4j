@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.executioner;
 
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
@@ -421,4 +422,11 @@ public interface OpExecutioner {
      */
     void setTadThreshold(int threshold);
 
+    /**
+     * This method extracts String from Utf8Buffer
+     * @param buffer
+     * @param index
+     * @return
+     */
+    String getString(Utf8Buffer buffer, long index);;
 }

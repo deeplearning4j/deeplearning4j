@@ -6405,6 +6405,10 @@ public class Nd4j {
         return create(Collections.singletonList(string), new long[0]);
     }
 
+    public static INDArray create(@NonNull String... strings) {
+        return create(Arrays.asList(strings), new long[]{strings.length});
+    }
+
     public static INDArray create(@NonNull Collection<String> strings, long... shape) {
         return create(strings, shape, Nd4j.order());
     }

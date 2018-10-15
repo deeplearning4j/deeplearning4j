@@ -59,6 +59,11 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     }
 
     @Override
+    public String getStringUnsafe(long index) {
+        return null;
+    }
+
+    @Override
     public INDArray repeat(int dimension, long... repeats) {
         return null;
     }
@@ -153,6 +158,11 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
 
     @Override
     public boolean all() {
+        return false;
+    }
+
+    @Override
+    public boolean isS() {
         return false;
     }
 }

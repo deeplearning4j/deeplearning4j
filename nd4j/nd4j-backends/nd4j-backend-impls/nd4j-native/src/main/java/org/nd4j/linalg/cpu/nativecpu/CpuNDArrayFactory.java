@@ -47,6 +47,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.BaseNativeNDArrayFactory;
 import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.util.*;
 
@@ -1175,7 +1176,13 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     public INDArray create(Collection<String> strings, long[] shape, char order) {
         val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
         val buffer = new Utf8Buffer(strings);
+        val list = new ArrayList<String>(strings);
 
+        for (int e = 0; e < list.size(); e++) {
+            val cstr = list.get(e);
+            val str = new Nd4jCpu.utf8string(cstr, cstr.length());
+            buffer.put(e, str);
+        }
 
         return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
     }

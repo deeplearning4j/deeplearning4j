@@ -36,5 +36,21 @@ public class StringArrayTests {
         assertEquals(1, array.length());
         assertEquals(0, array.rank());
         assertEquals(DataType.UTF8, array.dataType());
+
+        assertEquals("alpha", array.getStringUnsafe(0));
+    }
+
+    @Test
+    public void testBasicStrings_2() throws Exception {
+        val array = Nd4j.create("alpha","beta", "gamma");
+
+        assertNotNull(array);
+        assertEquals(3, array.length());
+        assertEquals(1, array.rank());
+        assertEquals(DataType.UTF8, array.dataType());
+
+        assertEquals("alpha", array.getStringUnsafe(0));
+        assertEquals("beta", array.getStringUnsafe(1));
+        assertEquals("gamma", array.getStringUnsafe(2));
     }
 }

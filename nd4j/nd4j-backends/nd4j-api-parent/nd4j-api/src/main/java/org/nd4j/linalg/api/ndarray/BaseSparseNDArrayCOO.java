@@ -1188,6 +1188,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return Shape.offset(shapeInformation) > 0 || data().originalDataBuffer() != null; // TODO or if sparseOffset/flags != [0, ..,0]
     }
 
+    @Override
+    public String getStringUnsafe(long index) {
+        return null;
+    }
+
 
     public int getNumHiddenDimension() {
         if (hiddenDimensions() == null || hiddenDimensions().length == 0) {
@@ -1298,6 +1303,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public boolean all() {
+        return false;
+    }
+
+    @Override
+    public boolean isS() {
         return false;
     }
 }

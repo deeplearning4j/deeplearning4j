@@ -21,6 +21,7 @@ import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -800,6 +801,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public ExecutionerType type() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getString(Utf8Buffer buffer, long index) {
         throw new UnsupportedOperationException();
     }
 }

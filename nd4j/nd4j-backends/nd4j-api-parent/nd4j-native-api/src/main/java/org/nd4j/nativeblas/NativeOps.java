@@ -16,8 +16,11 @@
 
 package org.nd4j.nativeblas;
 
+import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.annotation.Cast;
+import org.bytedeco.javacpp.indexer.LongIndexer;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 
 
 /**
@@ -739,7 +742,7 @@ public abstract class NativeOps extends Pointer {
     public abstract int execCustomOpWithScope(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);
 
 
-    public abstract void fillUtf8String(PointerPointer extraPointers, String[] string, int numStrings, Pointer buffer);
-    public abstract Pointer createUtf8String(PointerPointer extraPointers, String string);
+    //public abstract void fillUtf8String(PointerPointer extraPointers, String[] string, int numStrings, Pointer buffer);
+    public abstract Pointer createUtf8String(PointerPointer extraPointers, String string, int length);
     public abstract void deleteUtf8String(PointerPointer extraPointers, Pointer ptr);
 }

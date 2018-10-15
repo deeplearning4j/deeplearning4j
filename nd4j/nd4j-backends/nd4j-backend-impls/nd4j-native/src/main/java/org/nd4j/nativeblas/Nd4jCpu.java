@@ -271,6 +271,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
 // #define DEV_TESTS_UTF8STRING_H
 
 // #include <string>
+// #include <dll.h>
     @Namespace("nd4j") @NoOffset public static class utf8string extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -288,6 +289,10 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         public utf8string() { super((Pointer)null); allocate(); }
         private native void allocate();
 
+        public utf8string(@Cast("char*") String string, int length) { super((Pointer)null); allocate(string, length); }
+        private native void allocate(@Cast("char*") String string, int length);
+        public utf8string(@Cast("char*") BytePointer string, int length) { super((Pointer)null); allocate(string, length); }
+        private native void allocate(@Cast("char*") BytePointer string, int length);
         public utf8string(@StdString @Cast({"char*", "std::string*"}) BytePointer string) { super((Pointer)null); allocate(string); }
         private native void allocate(@StdString @Cast({"char*", "std::string*"}) BytePointer string);
         public utf8string(@Const @ByRef utf8string other) { super((Pointer)null); allocate(other); }
@@ -2495,11 +2500,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jStatus") int execCustomOpWithScope(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongBuffer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
     public native @Cast("Nd4jStatus") int execCustomOpWithScope(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") long[] scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
 
-    public native void fillUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("const char**") PointerPointer string, int numStrings, @Cast("Nd4jPointer") Pointer buffer);
-    public native void fillUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @ByPtrPtr @Cast("char*") String string, int numStrings, @Cast("Nd4jPointer") Pointer buffer);
-    public native void fillUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @ByPtrPtr @Cast("char*") BytePointer string, int numStrings, @Cast("Nd4jPointer") Pointer buffer);
-    public native @Cast("Nd4jPointer") Pointer createUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") String string);
-    public native @Cast("Nd4jPointer") Pointer createUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") BytePointer string);
+    //void fillUtf8String(Nd4jPointer *extraPointers, const char **string, int numStrings, Nd4jPointer buffer);
+    public native @Cast("Nd4jPointer") Pointer createUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") String string, int length);
+    public native @Cast("Nd4jPointer") Pointer createUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") BytePointer string, int length);
     public native void deleteUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer ptr);
 }
 

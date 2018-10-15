@@ -19,6 +19,7 @@ package org.nd4j.autodiff.samediff;
 import lombok.Getter;
 import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
@@ -589,5 +590,10 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     @Override
     public boolean isDebug() {
         return backendExecutioner.isDebug();
+    }
+
+    @Override
+    public String getString(Utf8Buffer buffer, long index) {
+        return backendExecutioner.getString(buffer, index);
     }
 }

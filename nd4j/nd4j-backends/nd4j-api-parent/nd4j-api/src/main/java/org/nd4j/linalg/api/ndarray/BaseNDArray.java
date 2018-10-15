@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -6429,12 +6430,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean isZ() {
-        return !isR() && !isB();
+        return !isR() && !isB() && !isS();
     }
 
     @Override
     public boolean isB() {
         return dataType() == DataType.BOOL;
+    }
+
+    @Override
+    public boolean isS() {
+        return dataType() == DataType.UTF8;
     }
 
     @Override
@@ -6448,5 +6454,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public boolean all() {
         val r = Nd4j.getExecutioner().exec(new All(this)).z();
         return r.getDouble(0) != 0.0;
+    }
+
+    @Override
+    public String getStringUnsafe(long index) {
+        if (!isS())
+            throw new UnsupportedOperationException("This method is usable only on String dataType, but got [" + this.dataType() + "]");
+
+        return Nd4j.getExecutioner().getString(((Utf8Buffer) this.data()), index);
     }
 }

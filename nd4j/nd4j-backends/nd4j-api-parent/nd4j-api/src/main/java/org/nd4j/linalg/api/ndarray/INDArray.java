@@ -167,6 +167,8 @@ public interface INDArray extends Serializable {
      */
     double getDoubleUnsafe(long offset);
 
+    String getStringUnsafe(long index);
+
     /**
      * Insert a scalar
      * at the given linear offset
@@ -2845,6 +2847,12 @@ public interface INDArray extends Serializable {
      * @return
      */
     boolean isB();
+
+    /**
+     * This method checks if this INDArray instance has String type
+     * @return
+     */
+    boolean isS();
 
     /**
      * This method cast elements of this INDArray to new data type

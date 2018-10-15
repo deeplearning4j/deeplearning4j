@@ -465,6 +465,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == DataType.UBYTE) {
             pointer = new BytePointer(length);
             setIndexer(UByteIndexer.create((BytePointer) pointer));
+        } else if (dataType() == DataType.UTF8) {
+            pointer = new LongPointer(length);
+            setIndexer(LongIndexer.create((LongPointer) pointer));
         }
 
         // log.info("Creating new buffer of size: {}; dtype: {}; C", length, dataType());
@@ -657,6 +660,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             if (initialize)
                 fillPointerWithZero();
+        } else if (dataType() == DataType.UTF8) {
+            pointer = new LongPointer(length());
+            setIndexer(LongIndexer.create((LongPointer) pointer));
+
+            if (initialize)
+                fillPointerWithZero();
         }
 
         //// log.info("Creating new buffer of size: {}; dtype: {}; A", length, dataType());
@@ -720,6 +729,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer(); //new LongPointer(length());
             setIndexer(ShortIndexer.create((ShortPointer) pointer));
+        } else if (dataType() == DataType.UTF8) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asLongPointer(); //new LongPointer(length());
+            setIndexer(LongIndexer.create((LongPointer) pointer));
         }
 
         workspaceGenerationId = workspace.getGenerationId();
