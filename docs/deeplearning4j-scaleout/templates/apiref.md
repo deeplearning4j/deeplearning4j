@@ -1,7 +1,7 @@
 ---
-title: Deeplearning4j on Spark: API Reference
+title: "Deeplearning4j on Spark: API Reference"
 short_title: API Reference
-description: Deeplearning4j on Spark: API Reference
+description: "Deeplearning4j on Spark: API Reference"
 category: Distributed Deep Learning
 weight: 4
 ---
