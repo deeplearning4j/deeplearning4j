@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
@@ -515,7 +516,7 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     }
 
     @Override
-    public List<long[]> calculateOutputShape(CustomOp op) {
+    public List<LongShapeDescriptor> calculateOutputShape(CustomOp op) {
         return backendExecutioner.calculateOutputShape(op);
     }
 

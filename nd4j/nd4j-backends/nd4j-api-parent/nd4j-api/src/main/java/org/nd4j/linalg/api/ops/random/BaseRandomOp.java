@@ -23,7 +23,9 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.RandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -61,14 +63,14 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         if(shape != null){
-            return Collections.singletonList(shape);
+            return Collections.singletonList(LongShapeDescriptor.fromShape(shape, Nd4j.defaultFloatintPointType()));
         } else {
-            List<long[]> ret = new ArrayList<>(1);
+            List<LongShapeDescriptor> ret = new ArrayList<>(1);
             val shape = sameDiff.getShapeForVarName(args()[0].getVarName());
             if (shape != null)
-                ret.add(shape);
+                ret.add(LongShapeDescriptor.fromShape(shape, Shape.pickPairwiseDataType(args()[0].dataType(), Nd4j.dataType())));
             return ret;
         }
     }

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -75,8 +76,8 @@ public class TensorMmul extends DynamicCustomOp {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        List<long[]> ret = new ArrayList<>(1);
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        List<LongShapeDescriptor> ret = new ArrayList<>(1);
         long[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(larg().getShape()) : larg().getShape();
         long[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getShape()) : rarg().getShape();
         if(Shape.isPlaceholderShape(aShape) || Shape.isPlaceholderShape(bShape))
@@ -84,11 +85,11 @@ public class TensorMmul extends DynamicCustomOp {
 
         if(aShape != null && bShape != null) {
             val shape =  getTensorMmulShape(aShape,bShape, axes);
-            ret.add(shape);
+            ret.add(LongShapeDescriptor.fromShape(shape, Shape.pickPairwiseDataType(larg().dataType(), rarg().dataType())));
         }
         if(!ret.isEmpty()) {
-            for(int i = 0; i < ret.get(0).length; i++) {
-                if(ret.get(0)[i] < 1)
+            for(int i = 0; i < ret.get(0).getShape().length; i++) {
+                if(ret.get(0).getShape()[i] < 1)
                     throw new ND4JIllegalStateException("Invalid shape computed at index " +  i);
             }
         }

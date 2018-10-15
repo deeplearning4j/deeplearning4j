@@ -23,6 +23,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -113,7 +114,7 @@ public class Tile extends DynamicCustomOp {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         /**
          * This op is special case: we can't infer its shape before both inputs are available.
          * So if reps argument is full of 0.0s - we skip shape inference

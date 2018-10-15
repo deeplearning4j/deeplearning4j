@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -721,13 +722,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public List<long[]> calculateOutputShape(CustomOp op) {
+    public List<LongShapeDescriptor> calculateOutputShape(CustomOp op) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray[] allocateOutputArrays(CustomOp op){
-        List<long[]> shapes = calculateOutputShape(op);
+        List<LongShapeDescriptor> shapes = calculateOutputShape(op);
         INDArray[] out = new INDArray[shapes.size()];
         for(int i=0; i<shapes.size(); i++ ){
             out[i] = Nd4j.create(shapes.get(i));

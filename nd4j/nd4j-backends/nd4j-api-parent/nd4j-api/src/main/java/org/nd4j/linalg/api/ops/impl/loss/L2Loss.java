@@ -20,6 +20,8 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -35,8 +37,8 @@ public class L2Loss extends DynamicCustomOp {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        return Collections.singletonList(new long[0]);
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], Nd4j.defaultFloatintPointType()));
     }
 
     @Override

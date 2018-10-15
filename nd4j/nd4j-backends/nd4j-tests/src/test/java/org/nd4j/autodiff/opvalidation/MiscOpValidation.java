@@ -778,8 +778,8 @@ public class MiscOpValidation extends BaseOpValidation {
                 .transposeResult(true)
         .build());
 
-        List<long[]> outShapes = Nd4j.getExecutioner().calculateOutputShape(m);
-        assertArrayEquals(new long[]{4,3}, outShapes.get(0));
+        val outShapes = Nd4j.getExecutioner().calculateOutputShape(m);
+        assertArrayEquals(new long[]{4,3}, outShapes.get(0).getShape());
         Nd4j.getExecutioner().exec(m);
 
         //Another case: ([3,4]*[2,4]T)T = [2,3]     -   tA=false, tB=true, tR=true
@@ -792,8 +792,8 @@ public class MiscOpValidation extends BaseOpValidation {
                 .transposeResult(true)
                 .build());
 
-        outShapes = Nd4j.getExecutioner().calculateOutputShape(m);
-        assertArrayEquals(new long[]{2,3}, outShapes.get(0));
+        val outShapes2 = Nd4j.getExecutioner().calculateOutputShape(m);
+        assertArrayEquals(new long[]{2,3}, outShapes2.get(0).getShape());
         Nd4j.getExecutioner().exec(m);
 
     }
@@ -1189,13 +1189,13 @@ public class MiscOpValidation extends BaseOpValidation {
 
         INDArray in = Nd4j.create(new long[]{1, 2});
 
-        List<long[]> shapes = Nd4j.getExecutioner().calculateOutputShape(DynamicCustomOp.builder("shape")
+        val shapes = Nd4j.getExecutioner().calculateOutputShape(DynamicCustomOp.builder("shape")
                 .addInputs(in)
                 .build());
 
         assertEquals(1, shapes.size());
 
-        assertArrayEquals(new long[]{2}, shapes.get(0));
+        assertArrayEquals(new long[]{2}, shapes.get(0).getShape());
     }
 
     @Test
@@ -1249,10 +1249,10 @@ public class MiscOpValidation extends BaseOpValidation {
 
         CustomOp op = new DiagPart(i, null);
 
-        List<long[]> outShape = Nd4j.getExecutioner().calculateOutputShape(op);
+        val outShape = Nd4j.getExecutioner().calculateOutputShape(op);
 
         assertEquals(1, outShape.size());
-        assertArrayEquals(new long[]{5}, outShape.get(0));
+        assertArrayEquals(new long[]{5}, outShape.get(0).getShape());
     }
 
 

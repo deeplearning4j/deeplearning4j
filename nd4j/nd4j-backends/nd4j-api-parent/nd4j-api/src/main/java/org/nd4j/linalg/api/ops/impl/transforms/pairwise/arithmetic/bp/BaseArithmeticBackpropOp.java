@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
@@ -42,7 +43,7 @@ public abstract class BaseArithmeticBackpropOp extends BaseDynamicTransformOp {
     }
 
     @Override
-    public List<long[]> calculateOutputShape(){
+    public List<LongShapeDescriptor> calculateOutputShape(){
         return Nd4j.getExecutioner().calculateOutputShape(this);
     }
 

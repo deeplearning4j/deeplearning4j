@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 import java.util.Arrays;
 import java.util.List;
@@ -41,8 +42,8 @@ public class Broadcast extends DynamicCustomOp {
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        return Arrays.asList(shape);
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        return Arrays.asList(LongShapeDescriptor.fromShape(shape, larg().dataType()));
     }
 
     @Override

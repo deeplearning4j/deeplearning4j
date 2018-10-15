@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.*;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 
 /**
@@ -103,6 +104,11 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
 
     @Override
     public INDArray reshape(int[] shape) {
+        return null;
+    }
+
+    @Override
+    public LongShapeDescriptor shapeDescriptor() {
         return null;
     }
 

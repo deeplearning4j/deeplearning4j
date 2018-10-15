@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
@@ -804,6 +805,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public INDArray reshape(int[] shape) {
         return null;
+    }
+
+    @Override
+    public LongShapeDescriptor shapeDescriptor() {
+        throw new UnsupportedOperationException();
     }
 
     public SparseFormat getFormat() {

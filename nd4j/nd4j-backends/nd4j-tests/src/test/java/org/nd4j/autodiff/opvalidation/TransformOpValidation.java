@@ -528,9 +528,9 @@ public class TransformOpValidation extends BaseOpValidation {
                 //.addIntegerArguments(-99,3,3) //Also fails
                 .build();
 
-        List<long[]> list = Nd4j.getExecutioner().calculateOutputShape(dco);
+        val list = Nd4j.getExecutioner().calculateOutputShape(dco);
         assertEquals(1, list.size());   //Fails here - empty list
-        assertArrayEquals(new long[]{3,3}, list.get(0));
+        assertArrayEquals(new long[]{3,3}, list.get(0).getShape());
     }
 
     @Test
@@ -1417,10 +1417,10 @@ public class TransformOpValidation extends BaseOpValidation {
                 .addInputs(arr1, arr2)
                 .build();
 
-        List<long[]> outShapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        val outShapes = Nd4j.getExecutioner().calculateOutputShape(op);
         assertEquals(1, outShapes.size());
 
-        assertArrayEquals(Arrays.toString(outShapes.get(0)), new long[]{3,2,4}, outShapes.get(0));
+        assertArrayEquals(Arrays.toString(outShapes.get(0).getShape()), new long[]{3,2,4}, outShapes.get(0).getShape());
     }
 
     @Test

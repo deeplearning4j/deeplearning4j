@@ -42,7 +42,9 @@ import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.IsMax;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.compression.CompressionDescriptor;
@@ -1667,21 +1669,26 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         profilingHookOut(op, st);
     }
 
-    protected long[] getShapeFromPointer(LongPointer ptr) {
+    protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {
         val rank = (int) ptr.get(0);
-        long[] array = new long[rank];
+
+        long[] shape = new long[rank];
         for (int i = 0; i < rank; i++) {
-            array[i] = ptr.get(i+1);
+            shape[i] = ptr.get(i+1);
         }
-        return array;
+
+        val extras = ptr.get(Shape.shapeInfoLength(rank) - 3);
+        val dtype = ArrayOptionsHelper.dataType(extras);
+
+        return LongShapeDescriptor.fromShape(shape, dtype);
     }
 
     @Override
-    public List<long[]> calculateOutputShape(@NonNull CustomOp op) {
+    public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op) {
         val lc = op.opName().toLowerCase();
         val hash = op.opHash();
 
-        val result = new ArrayList<long[]>();
+        val result = new ArrayList<LongShapeDescriptor>();
         if(op.numInputArguments() < 1 && op.getDescriptor().getNumInputs() != -2) {
             if(log.isTraceEnabled()){
                 log.trace("Could not calculate output shape for op {}: number of input args was 0",
@@ -1732,7 +1739,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if(log.isTraceEnabled()){
             String[] arr = new String[result.size()];
             for( int i=0; i<result.size(); i++ ){
-                arr[i] = Arrays.toString(result.get(i));
+                arr[i] = result.get(i).toString();
             }
             log.trace("Calculated output shapes for op {} - {}", op.getClass().getName(), Arrays.toString(arr));
         }

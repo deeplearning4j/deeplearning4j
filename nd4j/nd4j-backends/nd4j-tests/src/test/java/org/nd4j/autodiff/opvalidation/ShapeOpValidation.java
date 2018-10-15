@@ -1038,11 +1038,11 @@ public class ShapeOpValidation extends BaseOpValidation {
 
             INDArray arr = Nd4j.rand(new long[]{1, 1, 1});
 
-            List<long[]> shapes = Nd4j.getExecutioner().calculateOutputShape(
+            val shapes = Nd4j.getExecutioner().calculateOutputShape(
                     new Unstack(arr, null, i));
 
             assertEquals(1, shapes.size());
-            assertArrayEquals(new long[]{1, 1}, shapes.get(0));
+            assertArrayEquals(new long[]{1, 1}, shapes.get(0).getShape());
         }
     }
 

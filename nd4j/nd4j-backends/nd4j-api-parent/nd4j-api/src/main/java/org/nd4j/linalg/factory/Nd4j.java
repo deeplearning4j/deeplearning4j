@@ -68,6 +68,7 @@ import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.BasicConstantHandler;
 import org.nd4j.linalg.cache.ConstantHandler;
@@ -622,6 +623,14 @@ public class Nd4j {
         for (int i = 0; i < ret.slices(); i++)
             ret.putSlice(i, Nd4j.create(arrays[i]).reshape(ArrayUtil.toLongArray(sliceShape)));
         return ret;
+    }
+
+    public static INDArray create(LongShapeDescriptor descriptor) {
+        return create(descriptor, true);
+    }
+
+    public static INDArray create(LongShapeDescriptor descriptor, boolean initialize) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -6165,7 +6174,7 @@ public class Nd4j {
                 "null, or neither must be null");
         INDArray out;
         DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("where_np");
-        List<long[]> outShapes;
+        List<LongShapeDescriptor> outShapes;
         if(x == null){
             //First case: condition only...
             op.addInputs(condition);
@@ -6179,7 +6188,7 @@ public class Nd4j {
         outShapes = Nd4j.getExecutioner().calculateOutputShape(o);
         INDArray[] outputs = new INDArray[outShapes.size()];
         for(int i=0; i<outputs.length; i++){
-            outputs[i] = Nd4j.createUninitialized(outShapes.get(i));
+            outputs[i] = Nd4j.create(outShapes.get(i), false);
         }
         op.addOutputs(outputs);
 

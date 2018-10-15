@@ -61,9 +61,9 @@ public class FailingSameDiffTests {
                 //.addIntegerArguments(-99,3,3) //Also fails
                 .build();
 
-        List<long[]> list = Nd4j.getExecutioner().calculateOutputShape(dco);
+        val list = Nd4j.getExecutioner().calculateOutputShape(dco);
         assertEquals(1, list.size());   //Fails here - empty list
-        assertArrayEquals(new long[]{3,3}, list.get(0));
+        assertArrayEquals(new long[]{3,3}, list.get(0).getShape());
     }
 
     @Test(timeout = 10000L)

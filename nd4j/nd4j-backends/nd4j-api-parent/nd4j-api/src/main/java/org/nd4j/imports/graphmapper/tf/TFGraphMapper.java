@@ -32,6 +32,7 @@ import org.nd4j.imports.graphmapper.ImportState;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.IfImportState;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -520,7 +521,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     val name = getNodeName(tfNode.getInput(i));
                     args[i] = diff.getVariable(name);
                     if(args[i] == null) {
-                        args[i] = diff.var(name,null,new ZeroInitScheme('f'));
+                        args[i] = diff.var(name, (LongShapeDescriptor) null,new ZeroInitScheme('f'));
                         diff.addAsPlaceHolder(args[i].getVarName());
                     }
 

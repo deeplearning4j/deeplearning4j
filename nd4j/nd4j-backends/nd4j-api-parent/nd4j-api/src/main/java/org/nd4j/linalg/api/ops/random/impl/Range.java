@@ -21,8 +21,10 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -151,7 +153,7 @@ public class Range extends DynamicCustomOp {
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         val iArgs = iArgs();
         val tArgs = tArgs();
         val inputArgs = inputArguments();
@@ -175,7 +177,7 @@ public class Range extends DynamicCustomOp {
                 }
             }
 
-            return Arrays.asList(new long[]{cnt});
+            return Arrays.asList(LongShapeDescriptor.fromShape(new long[]{cnt}, DataType.LONG));
         }
 
         else if (tArgs.length > 0) {
@@ -196,7 +198,7 @@ public class Range extends DynamicCustomOp {
                 }
             }
 
-            return Arrays.asList(new long[]{cnt});
+            return Arrays.asList(LongShapeDescriptor.fromShape(new long[]{cnt}, Nd4j.defaultFloatintPointType()));
         }
 
         else if(inputArgs.length > 0) {
@@ -217,7 +219,7 @@ public class Range extends DynamicCustomOp {
                 }
             }
 
-            return Arrays.asList(new long[]{cnt});
+            return Arrays.asList(LongShapeDescriptor.fromShape(new long[]{cnt}, inputArgs[1].dataType()));
         }
 
 

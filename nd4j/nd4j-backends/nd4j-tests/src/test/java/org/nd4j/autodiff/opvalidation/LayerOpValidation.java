@@ -382,7 +382,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
+        val outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
 
         assertEquals(1, outSizes.size());
 
@@ -392,7 +392,7 @@ public class LayerOpValidation extends BaseOpValidation {
         long[] exp = new long[]{1, outH, outW, 3};    //NHWC
 
         assertEquals(1, outSizes.size());
-        assertArrayEquals(exp, outSizes.get(0));
+        assertArrayEquals(exp, outSizes.get(0).getShape());
 
         INDArray grad = Nd4j.create(exp);
 
@@ -403,10 +403,10 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
+        val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
 
-        assertArrayEquals(inSize, outSizesBP.get(0));
+        assertArrayEquals(inSize, outSizesBP.get(0).getShape());
     }
 
 
@@ -428,7 +428,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
+        val outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
         assertEquals(1, outSizes.size());
 
         //NO SAME: out = (in - k + 2*p)/s + 1;
@@ -437,7 +437,7 @@ public class LayerOpValidation extends BaseOpValidation {
         long[] exp = new long[]{1, outH, outW, 3};    //NHWC
 
         assertEquals(1, outSizes.size());
-        assertArrayEquals(exp, outSizes.get(0));
+        assertArrayEquals(exp, outSizes.get(0).getShape());
 
         INDArray grad = Nd4j.create(exp);
 
@@ -448,9 +448,9 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
+        val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
-        assertArrayEquals(inSize, outSizesBP.get(0));
+        assertArrayEquals(inSize, outSizesBP.get(0).getShape());
 
         Nd4j.getExecutioner().exec(avg2dDeriv);
     }

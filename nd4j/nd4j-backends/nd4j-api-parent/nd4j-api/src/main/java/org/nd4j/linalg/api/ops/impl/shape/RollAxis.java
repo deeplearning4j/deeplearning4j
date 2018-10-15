@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ShapeOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 import java.util.*;
 
@@ -96,8 +97,8 @@ public class RollAxis extends ShapeOp {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        List<long[]> ret = new ArrayList<>();
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        List<LongShapeDescriptor> ret = new ArrayList<>();
         long[] inputShape = arg().getShape();
         long[] outputShape = new long[inputShape.length];
         outputShape[0] = inputShape[axis];
@@ -107,7 +108,7 @@ public class RollAxis extends ShapeOp {
         for(int i = axis + 1; i < inputShape.length; ++i) {
             outputShape[i] = inputShape[i];
         }
-        ret.add(outputShape);
+        ret.add(LongShapeDescriptor.fromShape(outputShape, arg().dataType()));
         return ret;
     }
 

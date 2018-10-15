@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.JvmShapeInfo;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
@@ -466,5 +467,11 @@ public class NDArray extends BaseNDArray {
     @Override
     public INDArray unsafeDuplication(boolean blocking) {
         return unsafeDuplication();
+    }
+
+
+    @Override
+    public LongShapeDescriptor shapeDescriptor() {
+        return LongShapeDescriptor.fromShape(shape(), dataType());
     }
 }

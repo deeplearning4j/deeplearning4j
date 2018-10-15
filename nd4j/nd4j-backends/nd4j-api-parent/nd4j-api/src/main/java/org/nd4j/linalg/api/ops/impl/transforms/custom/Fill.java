@@ -24,6 +24,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -108,7 +109,7 @@ public class Fill extends DynamicCustomOp {
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
 
         int numArgs = args().length;
         if(numArgs < 1)
@@ -120,9 +121,9 @@ public class Fill extends DynamicCustomOp {
         else {
             if(shape.isEmpty()){
                 //Edge case, mainly for TF import
-                return Collections.singletonList(new long[0]);   //TODO is this OK?
+                return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], args()[0].dataType()));   //TODO is this OK?
             } else {
-                return Arrays.asList(shape.data().asLong());
+                return Arrays.asList(LongShapeDescriptor.fromShape(shape.data().asLong(), shape.dataType()));
             }
         }
     }

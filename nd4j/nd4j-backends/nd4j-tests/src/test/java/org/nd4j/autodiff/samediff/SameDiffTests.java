@@ -2578,12 +2578,12 @@ public class SameDiffTests {
         assertEquals(exp, out);
 
         //Shape function:
-        List<long[]> shapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        val shapes = Nd4j.getExecutioner().calculateOutputShape(op);
         long[] expShape = new long[]{3,10};
 
         assertEquals(1, shapes.size());
 
-        assertArrayEquals(expShape, shapes.get(0));
+        assertArrayEquals(expShape, shapes.get(0).getShape());
     }
 
 

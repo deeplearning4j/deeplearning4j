@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
@@ -92,8 +93,9 @@ public class Linspace extends BaseRandomOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-    public List<long[]> calculateOutputShape() {
-        return Collections.singletonList(new long[]{length});
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        throw new UnsupportedOperationException();
+        //return Collections.singletonList(new long[]{length});
     }
 
 

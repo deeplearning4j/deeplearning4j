@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -49,9 +50,9 @@ public class MergeSum extends DynamicCustomOp {
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        List<long[]> ret = new ArrayList<>(1);
-        ret.add(arg().getShape());
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        List<LongShapeDescriptor> ret = new ArrayList<>(1);
+        ret.add(arg().getShapeDescriptor());
         return ret;
     }
 

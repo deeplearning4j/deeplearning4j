@@ -5920,7 +5920,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .build();
 
         val shape = Nd4j.getExecutioner().calculateOutputShape(op).get(0);
-        assertArrayEquals(new long[]{}, shape);
+        assertArrayEquals(new long[]{}, shape.getShape());
 
         Nd4j.getExecutioner().exec(op);
 
@@ -5941,7 +5941,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .build();
 
         val shape = Nd4j.getExecutioner().calculateOutputShape(op).get(0);
-        assertArrayEquals(new long[]{}, shape);
+        assertArrayEquals(new long[]{}, shape.getShape());
 
         Nd4j.getExecutioner().exec(op);
 
@@ -5960,7 +5960,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .build();
 
         val shape = Nd4j.getExecutioner().calculateOutputShape(op).get(0);
-        assertArrayEquals(new long[]{6}, shape);
+        assertArrayEquals(new long[]{6}, shape.getShape());
 
         Nd4j.getExecutioner().exec(op);
 
@@ -6012,7 +6012,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .build();
 
         val shape = Nd4j.getExecutioner().calculateOutputShape(op).get(0);
-        assertArrayEquals(exp.shape(), shape);
+        assertArrayEquals(exp.shape(), shape.getShape());
 
         Nd4j.getExecutioner().exec(op);
 

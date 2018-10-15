@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseModule;
 import org.nd4j.linalg.api.ops.Module;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
@@ -104,13 +105,13 @@ public class Linear extends BaseModule {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        List<long[]> ret = new ArrayList<>();
-        ret.add(Shape.getMatrixMultiplyShape(inputArguments()[0].shape(),new long[]{nOut,nIn}));
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        List<LongShapeDescriptor> ret = new ArrayList<>();
+        ret.add(LongShapeDescriptor.fromShape(Shape.getMatrixMultiplyShape(inputArguments()[0].shape(),new long[]{nOut,nIn}), inputArguments()[1].dataType()));
 
-        ret.add(Shape.getMatrixMultiplyShape(inputArguments()[0].shape(),inputArguments()[1].transpose().shape()));
+        ret.add(LongShapeDescriptor.fromShape(Shape.getMatrixMultiplyShape(inputArguments()[0].shape(),inputArguments()[1].transpose().shape()), inputArguments()[1].dataType()));
         if(biasWeightInitScheme != null) {
-            ret.add(new long[]{nOut,1});
+            ret.add(LongShapeDescriptor.fromShape(new long[]{nOut,1}, inputArguments()[1].dataType()));
         }
         return ret;
     }
