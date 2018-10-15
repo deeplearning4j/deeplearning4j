@@ -21,6 +21,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -185,8 +186,9 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         super(x);
     }
 
+    /*
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         List<long[]> ret = new ArrayList<>(1);
         if(arg() == null)
             throw new ND4JIllegalStateException("No arg found for op!");
@@ -198,6 +200,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         this.n = arr.length();
         return ret;
     }
+    */
 
 
     @Override

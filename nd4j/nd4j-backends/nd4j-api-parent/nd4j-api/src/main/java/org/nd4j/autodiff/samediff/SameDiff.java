@@ -631,6 +631,14 @@ public class SameDiff {
         return variableNameToShape.get(varName);
     }
 
+    public LongShapeDescriptor getShapeDescriptorForVarName(String varName) {
+        if (variableNameToArr.containsKey(varName)) {
+            return variableNameToArr.get(varName).shapeDescriptor();
+        }
+        // FIXME: do we really want this Nd4j.dataType() here?
+        return LongShapeDescriptor.fromShape(variableNameToShape.get(varName), Nd4j.dataType());
+    }
+
 
     /**
      * Update a vertex id with the given shape.<br>

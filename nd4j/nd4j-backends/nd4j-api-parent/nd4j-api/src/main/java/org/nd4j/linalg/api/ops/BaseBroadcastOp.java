@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -165,12 +166,12 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
      *
      * @return
      */
-    public List<long[]> calculateOutputShape() {
-        List<long[]> ret = new ArrayList<>();
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        List<LongShapeDescriptor> ret = new ArrayList<>();
         if (larg().getShape() != null && rarg().getShape() != null)
-            ret.add(Shape.broadcastOutputShape(larg().getShape(), rarg().getShape()));
+            ret.add(LongShapeDescriptor.fromShape(Shape.broadcastOutputShape(larg().getShape(), rarg().getShape()), Shape.pickPairwiseDataType(larg().dataType(), rarg().dataType())));
         else if(larg().getShape() != null)
-            ret.add(larg().getShape());
+            ret.add(LongShapeDescriptor.fromShape(larg().getShape(), larg().dataType()));
 
         return ret;
     }

@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -42,14 +43,14 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         val args = args();
         if(args.length < 2) {
             if(args[0] == null || args[0].getShape() == null) {
                 return Collections.emptyList();
             }
 
-            return Arrays.asList(args[0].getShape());
+            return Arrays.asList(LongShapeDescriptor.fromShape(args[0].getShape(), args[0].dataType()));
         }
 
         val firstArgShape = args[0].getShape();
@@ -63,12 +64,12 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
         }
 
         if(Arrays.equals(firstArgShape, secondArgShape)){
-            return Collections.singletonList(firstArgShape);
+            return Collections.singletonList(LongShapeDescriptor.fromShape(firstArgShape, args[0].dataType()));
         }
         //Handle broadcast shape: [1,4]+[3,1] = [3,4]
         Shape.assertBroadcastable(firstArgShape, secondArgShape, this.getClass());
         val outShape = Shape.broadcastOutputShape(firstArgShape, secondArgShape);
 
-        return Collections.singletonList(outShape);
+        return Collections.singletonList(LongShapeDescriptor.fromShape(outShape, Shape.pickPairwiseDataType(args[0].dataType(), args[1].dataType())));
     }
 }

@@ -193,6 +193,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         return keepDims;
     }
 
+    /*
     @Override
     public List<long[]> calculateOutputShape() {
         if(args().length < 1) {
@@ -210,6 +211,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         ret.add(reducedShape);
         return ret;
     }
+    */
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {

@@ -22,6 +22,7 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
@@ -272,6 +273,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
 
 
+    public DataType dataType() {
+        throw new UnsupportedOperationException();
+    }
 
 
     /**
