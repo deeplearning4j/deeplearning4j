@@ -20,6 +20,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
@@ -2440,6 +2441,11 @@ public interface INDArray extends Serializable {
      */
     long[] shape();
 
+    /**
+     * Returns shape descriptor of this ndarray
+     * @return
+     */
+    LongShapeDescriptor shapeDescriptor();
 
     /**
      * Returns the stride of this ndarray

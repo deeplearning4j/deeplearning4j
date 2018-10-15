@@ -702,6 +702,7 @@ public class SameDiff {
      * @see #putShapeForVarName(String, long[])
      * @see #putOrUpdateShapeForVarName(String, long[], boolean)
      */
+    @Deprecated
     public void putShapeForVarName(String varName, long[] shape) {
         if (shape == null) {
             throw new ND4JIllegalStateException("Shape must not be null!");
@@ -722,6 +723,11 @@ public class SameDiff {
         variableNameToShape.put(varName, shape);
     }
 
+
+    public void putShapeForVarName(String varName, LongShapeDescriptor shape) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Put or update the shape for the given variable name. Optionally supports clearing the specified variable's
      * INDArray if it's shape does not match the new shape
@@ -731,12 +737,17 @@ public class SameDiff {
      *                                  variable name, it will be removed from the graph (to be later re-generated) if
      *                                  its shape does not match the specified shape
      */
+    @Deprecated
     public void putOrUpdateShapeForVarName(String varName, @NonNull long[] shape, boolean clearArrayOnShapeMismatch){
         if(variableNameToShape.containsKey(varName)){
             updateShapeForVarName(varName, shape, clearArrayOnShapeMismatch);
         } else {
             putShapeForVarName(varName, shape);
         }
+    }
+
+    public void putOrUpdateShapeForVarName(String varName, @NonNull LongShapeDescriptor shape, boolean clearArrayOnShapeMismatch){
+        throw new UnsupportedOperationException();
     }
 
 
@@ -1659,7 +1670,7 @@ public class SameDiff {
     }
 
     public SDVariable var(String name, LongShapeDescriptor shape, WeightInitScheme weightInitScheme) {
-
+        throw new UnsupportedOperationException();
     }
 
 
@@ -8995,7 +9006,7 @@ public class SameDiff {
                     SDVariable var = (i == 0 ? getVariable(baseName) : getVariable(baseName + ":" + i));
                     if (var == null) {
                         //Generate new variable name if one with the specified name doesn't exist
-                        var = var(generateNewVarName(baseName, i), null, new ZeroInitScheme(ordering));
+                        var = var(generateNewVarName(baseName, i), (LongShapeDescriptor) null, new ZeroInitScheme(ordering));
                     }
                     var.setOutputIndex(i);
                     var.setCreator(function);
@@ -9019,16 +9030,16 @@ public class SameDiff {
                     ordering = function.args()[0].getArr().ordering();
                 }
                 if (checkGet == null) {
-                    checkGet = var(baseName, null, new ZeroInitScheme(ordering));
+                    checkGet = var(baseName, (LongShapeDescriptor) null, new ZeroInitScheme(ordering));
                 } else if (!importedVarName.contains(baseName)) {
                     //need to find a new name
                     String newName = generateNewVarName(baseName, 0);
-                    checkGet = var(newName, null, new ZeroInitScheme(ordering));
+                    checkGet = var(newName, (LongShapeDescriptor)  null, new ZeroInitScheme(ordering));
                 }
 
 
                 if (checkGet == null) {
-                    checkGet = var(baseName, null, new ZeroInitScheme(ordering));
+                    checkGet = var(baseName, (LongShapeDescriptor)  null, new ZeroInitScheme(ordering));
                 }
 
                 checkGet.setOutputIndex(0);
@@ -10543,16 +10554,16 @@ public class SameDiff {
 
                 //Check output shape; allocate a new Z if required
                 //For example, if minibatch size has changed since last op execution
-                List<long[]> outputShape = ((BaseOp)op).calculateOutputShape();
+                List<LongShapeDescriptor> outputShape = ((BaseOp)op).calculateOutputShape();
                 Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
                 //Update shape. DynamicCustomOp does this in populateInputsAndOutputsFromSameDiff(); for legacy ops, we'll do it here
                 putOrUpdateShapeForVarName(outVarName, outputShape.get(0), true);
                 INDArray z = op.z();
                 Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
-                if(!Arrays.equals(outputShape.get(0), z.shape())){
+                if(outputShape.get(0).equals(z.shapeDescriptor())){
                     if(log.isTraceEnabled()){
                         log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
-                                op.getClass().getSimpleName(), Arrays.toString(z.shape()), Arrays.toString(outputShape.get(0)));
+                                op.getClass().getSimpleName(), Arrays.toString(z.shape()), outputShape.get(0).toString());
                     }
                     //Get output variable:
                     String fnName = funcNames.get(i);

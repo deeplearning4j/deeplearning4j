@@ -51,8 +51,7 @@ public class ArrayOptionsHelper {
             return ArrayType.DENSE;
     }
 
-    public static DataType dataType(long[] shapeInfo) {
-        val opt = Shape.options(shapeInfo);
+    public static DataType dataType(long opt) {
         if (hasBitSet(opt, 4))
             return DataType.COMPRESSED;
         else if (hasBitSet(opt, 4096))
@@ -71,8 +70,15 @@ public class ArrayOptionsHelper {
             return DataType.BYTE;
         else if (hasBitSet(opt, 65536))
             return DataType.SHORT;
+        else if (hasBitSet(opt, 1048576))
+            return DataType.UTF8;
         else
-            return DataType.UNKNOWN;
+            throw new ND4JIllegalStateException("Unknown extras set: [" + opt + "]");
+    }
+
+    public static DataType dataType(long[] shapeInfo) {
+        val opt = Shape.options(shapeInfo);
+        return dataType(opt);
     }
 
     public static long setOptionBit(long storage, DataType type) {
@@ -101,6 +107,9 @@ public class ArrayOptionsHelper {
                 break;
             case SHORT:
                 bit = 65536;
+                break;
+            case UTF8:
+                bit = 1048576;
                 break;
             case COMPRESSED:
                 bit = 4;

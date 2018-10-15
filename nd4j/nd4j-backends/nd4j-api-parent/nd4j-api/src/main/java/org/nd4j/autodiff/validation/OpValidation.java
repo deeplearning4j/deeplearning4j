@@ -19,6 +19,7 @@ package org.nd4j.autodiff.validation;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -65,6 +66,7 @@ import org.nd4j.linalg.api.ops.persistence.SaveV2;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.impl.*;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.primitives.Pair;
@@ -194,7 +196,7 @@ public class OpValidation {
         collectCoverageInformation(testCase);
 
         //Check shape function:
-        List<long[]> outShapes;
+        List<LongShapeDescriptor> outShapes;
         try {
             outShapes = Nd4j.getExecutioner().calculateOutputShape(testCase.op());
         } catch (Throwable t) {
@@ -207,11 +209,10 @@ public class OpValidation {
         }
 
         for (int i = 0; i < outShapes.size(); i++) {
-            long[] act = outShapes.get(i);
-            long[] exp = testCase.expShapes().get(i);
-            if (!Arrays.equals(exp, act)) {
-                return "Shape function check failed for output " + i + ": expected shape " + Arrays.toString(exp) +
-                        ", actual shape " + Arrays.toString(act);
+            val act = outShapes.get(i);
+            val exp = testCase.expShapes().get(i);
+            if (!Objects.equals(exp, act)) {
+                return "Shape function check failed for output " + i + ": expected shape " + exp + ", actual shape " + act;
             }
         }
 

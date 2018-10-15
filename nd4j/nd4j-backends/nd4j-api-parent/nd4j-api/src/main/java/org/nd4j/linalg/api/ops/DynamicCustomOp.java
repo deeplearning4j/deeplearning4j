@@ -970,12 +970,19 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
          * @param shape
          * @return
          */
+        /*
         public DynamicCustomOpsBuilder addOutputShape(int[] shape) {
             this.outputShapes.add(ArrayUtil.toLongArray(shape));
             return this;
         }
 
         public DynamicCustomOpsBuilder addOutputShape(long[] shape) {
+            this.outputShapes.add(shape);
+            return this;
+        }
+*/
+
+        public DynamicCustomOpsBuilder addOutputShape(LongShapeDescriptor shape) {
             this.outputShapes.add(shape);
             return this;
         }

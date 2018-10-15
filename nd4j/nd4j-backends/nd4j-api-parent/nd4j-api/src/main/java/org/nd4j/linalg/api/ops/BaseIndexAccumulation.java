@@ -25,6 +25,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -157,13 +158,13 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         if(arg().getShape() == null)
             return Collections.emptyList();
 
-        List<long[]> ret = new ArrayList<>(1);
-        val reducedShape = Shape.getReducedShape(arg().getShape(),dimensions, keepDims, newFormat);
-        ret.add(reducedShape);
+        List<LongShapeDescriptor> ret = new ArrayList<>(1);
+        val reducedShape = Shape.getReducedShape(arg().getShape(), dimensions, keepDims, newFormat);
+        ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
         return ret;
     }
 
