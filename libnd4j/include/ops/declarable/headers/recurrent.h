@@ -252,7 +252,7 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_gruCell)
-        DECLARE_CUSTOM_OP(gruCell_bp, 9, 5, false, 0, 0);
+        DECLARE_CUSTOM_OP(gruCell_bp, 6, 5, false, 0, 0);
         #endif
 
 
