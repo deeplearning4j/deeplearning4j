@@ -208,7 +208,62 @@ void gruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray
 
 }
 
+// //////////////////////////////////////////////////////////////////////////
+// FIXME - gruTimeLoopBP is not correct
+// template <typename T>
+// void gruTimeLoopBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs) {
 
+//     NDArray<T>* x      = inArrs[0];                   // input [time, bS, iS]
+//     NDArray<T>* hi     = inArrs[1];                   // previous/initial cell output [bS, nU],  that is at previous time step t-1
+//     NDArray<T>* Wx     = inArrs[2];                   // input-to-hidden  weights, [iS, 3*nU] 
+//     NDArray<T>* Wh     = inArrs[3];                   // hidden-to-hidden weights, [nU, 3*nU]     
+//     NDArray<T>* b      = inArrs[4];                   // biases, [3*nU]
+//     NDArray<T>* dLdh   = inArrs[5];                   // gradient wrt output, [time, bS, nU], that is epsilon_next  
+
+//     NDArray<T>* dLdx   = outArrs[0];                  // gradient wrt x,  [time, bS, iS], that is epsilon
+//     NDArray<T>* dLdhi  = outArrs[1];                  // gradient wrt hi, [bS, nU]
+//     NDArray<T>* dLdWx  = outArrs[2];                  // gradient wrt Wx, [iS, 3*nU]
+//     NDArray<T>* dLdWh  = outArrs[3];                  // gradient wrt Wh, [nU, 3*nU]
+//     NDArray<T>* dLdb   = outArrs[4];                  // gradient wrt b,  [3*nU]
+    
+//     const Nd4jLong time = x->sizeAt(0);
+//     const Nd4jLong bS   = x->sizeAt(1);
+//     const Nd4jLong iS   = x->sizeAt(2);
+//     const Nd4jLong nU   = hi->sizeAt(1);    
+    
+//     NDArray<T> h(hi->ordering(), {time, bS, nU});      // feed forward output
+
+//     // first step, time = 0, feed forward    
+//     NDArray<T> x0 = (*x)({{0,1}, {}, {}});
+//     NDArray<T> h0 = h({{0,1}, {}, {}});
+//     helpers::gruCell<T>({&x0, hi, Wx, Wh, b}, &h0);
+
+//     // first step, time = 0, back prop
+//     NDArray<T> dLdx0 = (*dLdx)({{0,1}, {}, {}});    
+//     NDArray<T> dLdh0 = (*dLdh)({{0,1}, {}, {}});    
+//     helpers::gruCellBP<T>({&x0, hi, Wx, Wh, b, &dLdh0, nullptr, nullptr, nullptr}, {&dLdx0, dLdhi, dLdWx, dLdWh, dLdb});
+
+//     // loop through the rest time steps 
+//     for (Nd4jLong t = time-1; t > 0; --t) {        
+//     for (Nd4jLong t = 1; t < time; ++t) {        
+
+//         NDArray<T> xt    =    (*x)({{t,t+1}, {}, {}});
+//         NDArray<T> ht    =       h({{t,t+1}, {}, {}});
+//         NDArray<T> ht_1  =       h({{t-1,t}, {}, {}});
+//         NDArray<T> dLdxt = (*dLdx)({{t,t+1}, {}, {}});    
+//         NDArray<T> dLdht = (*dLdh)({{t,t+1}, {}, {}});    
+
+//         NDArray<T> dLdWxt_1 = dLdWx;
+//         NDArray<T> dLdWht_1 = dLdWh;
+//         NDArray<T> dLdbt_1  = dLdb;
+
+//         // feed forward, calculation of ht
+//         helpers::gruCell<T>({&xt, &ht_1, Wx, Wh, b}, &ht);
+
+//         // back prop
+//         helpers::gruCellBP<T>({&xt, &ht_1, Wx, Wh, b, &dLdht, &dLdWxt_1, &dLdWht_1, &dLdbt_1}, {&dLdxt, nullptr, dLdWx, dLdWh, dLdb});            
+//     }
+// }
 
 template void gruCell<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>* h);
 template void gruCell<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>* h);
