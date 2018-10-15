@@ -38,16 +38,21 @@ import java.util.Map;
  * 3D Convolutional Neural Network Loss Layer.<br>
  * Handles calculation of gradients etc for various loss (objective) functions.<br>
  * NOTE: Cnn3DLossLayer does not have any parameters. Consequently, the output activations size is equal to the input size.<br>
- * Input and output activations are same as 3D CNN layers: 5 dimensions with shape [miniBatchSize,channels,depth,height,width]<br>
+ * Input and output activations are same as 3D CNN layers: 5 dimensions with one of two possible shape, depending
+ * on the data format:<br>
+ * NCDHW ("channels first") format: data has shape [miniBatchSize,channels,depth,height,width]<br>
+ * NDHWC ("channels last") format: data has shape [miniBatchSize,channels,depth,height,width]<br>
  * Cnn3DLossLayer has support for a built-in activation function (tanh, softmax etc) - if this is not required, set
  * activation function to Activation.IDENTITY. For activations such as softmax, note that this is applied channel-wise:
- * that is, softmax is applied along dimension 1 (channel) for each minibatch, and x/y/z location separately.<br>
+ * that is, softmax is applied along dimension 1 for NCDHW, or dimension 4 for NDHWC for each minibatch, and x/y/z location separately.<br>
  * <br>
- * Note that 3 types of masking are supported, where (n=minibatchSize, c=channels, d=depth, h=height, w=width):<br>
- * - Per example masking: Where an example is present or not (and all outputs are masked by it). Mask shape [n,1]<br>
+ * Note that multiple types of masking are supported. Mask arrays (when present) must be 5d in a 'broadcastable' format:
+ * that is, for (n=minibatchSize, c=channels, d=depth, h=height, w=width):<br>
+ * - Per example masking: Where an example is present or not (and all outputs are masked by it). Mask shape [n,1,1,1,1] for both NCDHW and NDHWC<br>
  * - Per x/y/z location masking: where each spatial X/Y/Z location is present or not (all channels at a given x/y/z are masked by it).
- * Mask shape: [n,d,h,w].<br>
- * - Per output masking: Where each output activation value is present or not - mask shape [n,c,d,h,w] (same as output)<br>
+ * Mask shape: [n,1,d,h,w] (NCDHW format) or [n,d,h,w,1] (NDHWC format).<br>
+ * - Per output masking: Where each output activation value is present or not - mask shape [n,c,d,h,w] (NCDHW format) or
+ * [n,d,h,w,c] (NDHWC format) - same same as input/output in both cases<br>
  *
  * @author Alex Black
  */
@@ -118,6 +123,9 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
 
         protected Convolution3D.DataFormat dataFormat;
 
+        /**
+         * @param format Format of the input/output data. See {@link Convolution3D.DataFormat} for details
+         */
         public Builder(@NonNull Convolution3D.DataFormat format) {
             this.dataFormat = format;
             this.activationFn = Activation.IDENTITY.getActivationFunction();
