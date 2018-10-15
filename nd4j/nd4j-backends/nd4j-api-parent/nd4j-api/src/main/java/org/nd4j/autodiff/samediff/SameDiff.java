@@ -1481,9 +1481,16 @@ public class SameDiff {
                 //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
                 // which should flow through to here
 
-                //Apply updater
+                //Apply updater. Note that we need to reshape to [1,length] for updater
+                INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
+                Preconditions.checkState(reshapedView != null,"Error reshaping array for parameter \"%s\": array is a view?", s);
                 GradientUpdater u = updaterMap.get(s);
-                u.applyUpdater(grad, i, e);
+                try {
+                    u.applyUpdater(reshapedView, i, e);
+                } catch (Throwable t){
+                    throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + s
+                            + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
+                }
 
                 //L1 and L2 regularization:
                 if(trainingConfig.getL1() > 0){
@@ -1532,7 +1539,12 @@ public class SameDiff {
                 List<String> trainVarList = new ArrayList<>();
                 for(SDVariable v : variableMap.values()){
                     String n = v.getVarName();
-                    if(!functionOutputFor.containsKey(n) || functionOutputFor.get(n) == null || functionOutputFor.get(n).size() == 0){
+                    if((!functionOutputFor.containsKey(n) || functionOutputFor.get(n) == null || functionOutputFor.get(n).size() == 0) &&       //Is a leaf (not the output of a function)
+                            !placeHolderVarNames.contains(n) &&                                                                                 //and not a placeholder
+                            (trainingConfig.getDataSetFeatureMapping() == null || !trainingConfig.getDataSetFeatureMapping().contains(n))   &&  //and not an input (this really should be a placeholder, but we can't guarantee that...)
+                            (trainingConfig.getDataSetLabelMapping() == null || !trainingConfig.getDataSetLabelMapping().contains(n))   &&      //and not a label (this really should be a placeholder, but we can't guarantee that...)
+                            (trainingConfig.getDataSetFeatureMaskMapping() == null || !trainingConfig.getDataSetFeatureMaskMapping().contains(n))   &&  //and not a feature mask (this really should be a placeholder, but we can't guarantee that...)
+                            (trainingConfig.getDataSetLabelMaskMapping() == null || !trainingConfig.getDataSetLabelMaskMapping().contains(n))){  //and not a label input (this really should be a placeholder, but we can't guarantee that...)
                         trainVarList.add(n);
                     }
                 }
@@ -1554,19 +1566,20 @@ public class SameDiff {
             long updaterStateSize = trainingConfig.getUpdater().stateSize(numTrainableParams);
 
             if(updaterStateSize > 0){
-                updaterState = Nd4j.createUninitialized(new long[]{updaterStateSize});
+                updaterState = Nd4j.createUninitialized(new long[]{1, updaterStateSize});
             }
 
             long viewSoFar = 0;
             updaterViews = new HashMap<>();
             updaterMap = new HashMap<>();
             for(String s : trainingConfig.getTrainableParams()){
-                long thisSize = variableMap.get(s).getArr().length();
+                long thisSize = trainingConfig.getUpdater().stateSize(variableMap.get(s).getArr().length());
                 INDArray view = (updaterStateSize == 0 || thisSize == 0 ? null :
-                        updaterState.get(NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
+                        updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
 
                 updaterViews.put(s, view);
                 updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, true));
+                viewSoFar += thisSize;
             }
 
             initializedTraining = true;
@@ -1609,12 +1622,13 @@ public class SameDiff {
     public void evaluate(MultiDataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals, Map<String,Integer> predictionLabelMapping){
         Preconditions.checkState(trainingConfig != null, "Training config has not been set");
 
-        //TODO check vars
+        Preconditions.checkState(variableEvals.keySet().equals(predictionLabelMapping.keySet()), "Keysets for variable evaluations" +
+                " and for the prediction label mapping must be equal. Keys for variables to evaluate: %s vs. keys for label mapping: %s", variableEvals.keySet(), predictionLabelMapping.keySet());
 
         while(iterator.hasNext()){
             MultiDataSet ds = iterator.next();
             Map<String,INDArray> placeholderMap = toPlaceholderMap(ds);
-            resolveVariablesWith(placeholderMap);
+            resolveVariablesWith(placeholderMap, false);
 
             exec(); //TODO partial exec
             for(Map.Entry<String,List<IEvaluation>> e : variableEvals.entrySet()){
@@ -10048,6 +10062,10 @@ public class SameDiff {
      * @param arrays the arrays to resolve.
      */
     public void resolveVariablesWith(Map<String, INDArray> arrays) {
+        resolveVariablesWith(arrays, true);
+    }
+
+    public void resolveVariablesWith(Map<String, INDArray> arrays, boolean resolveProperties) {
         for (val arrayEntry : arrays.entrySet()) {
             val varForName = getVariable(arrayEntry.getKey());
             if (varForName == null) {
@@ -10081,21 +10099,22 @@ public class SameDiff {
             }
 
 
-            updateShapeForVarName(entry.getKey(), entry.getValue().shape());
+            updateShapeForVarName(entry.getKey(), entry.getValue().shape(), true);
             associateArrayWithVariable(entry.getValue(), getVariable(entry.getKey()));
             updateArrayForVarName(entry.getKey(), entry.getValue());
         }
 
+        if(resolveProperties) {
+            for (val funcName : propertiesToResolve.keySet()) {
+                val func = functionInstancesById.get(funcName);
+                if (!functionInstancesById.containsKey(funcName)) {
+                    throw new ND4JIllegalStateException("Unable to resolve function name " + funcName);
+                }
 
-        for (val funcName : propertiesToResolve.keySet()) {
-            val func = functionInstancesById.get(funcName);
-            if (!functionInstancesById.containsKey(funcName)) {
-                throw new ND4JIllegalStateException("Unable to resolve function name " + funcName);
-            }
-
-            if (func instanceof CustomOp) {
-                CustomOp customOp = (CustomOp) func;
-                customOp.populateInputsAndOutputsFromSameDiff();
+                if (func instanceof CustomOp) {
+                    CustomOp customOp = (CustomOp) func;
+                    customOp.populateInputsAndOutputsFromSameDiff();
+                }
             }
         }
 
