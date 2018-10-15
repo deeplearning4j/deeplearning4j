@@ -77,6 +77,11 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
+    public INDArray create(DataType dataType, long[] shape, long[] strides, char ordering) {
+        return null;
+    }
+
+    @Override
     public INDArray createUninitialized(DataType dataType, long[] shape, char ordering) {
         return null;
     }

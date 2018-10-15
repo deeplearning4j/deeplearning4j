@@ -189,6 +189,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
+    public INDArray create(DataType dataType, long[] shape, long[] strides,  char ordering) {
+        return new NDArray(dataType, shape, strides, 0, ordering);
+    }
+
+    @Override
     public INDArray createUninitialized(DataType dataType, long[] shape, char ordering) {
         return new NDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
     }

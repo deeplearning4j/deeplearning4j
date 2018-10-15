@@ -32,15 +32,20 @@ import java.util.Arrays;
  */
 public class LongShapeDescriptor {
 
+    @Getter
     private char order;
+
     private long offset;
+
     private long ews;
+
     private long hashShape = 0;
     private long hashStride = 0;
 
     @Getter
     private long[] shape;
 
+    @Getter
     private long[] stride;
 
     private long extras;
@@ -114,7 +119,7 @@ public class LongShapeDescriptor {
         StringBuilder builder = new StringBuilder();
 
         builder.append(shape.length).append(",").append(Arrays.toString(shape)).append(",")
-                        .append(Arrays.toString(stride)).append(",").append(offset).append(",").append(ews).append(",")
+                        .append(Arrays.toString(stride)).append(",").append(extras).append(",").append(ews).append(",")
                         .append(order);
 
         String result = builder.toString().replaceAll("\\]", "").replaceAll("\\[", "");

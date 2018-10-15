@@ -1074,6 +1074,8 @@ public interface NDArrayFactory {
 
     INDArray create(DataType dataType, long[] shape, char ordering);
 
+    INDArray create(DataType dataType, long[] shape, long[] strides, char ordering);
+
     INDArray createUninitialized(int[] shape, char ordering);
 
     INDArray createUninitialized(long[] shape, char ordering);

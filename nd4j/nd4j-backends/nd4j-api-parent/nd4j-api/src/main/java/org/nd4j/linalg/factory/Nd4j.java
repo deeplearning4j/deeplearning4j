@@ -630,7 +630,10 @@ public class Nd4j {
     }
 
     public static INDArray create(LongShapeDescriptor descriptor, boolean initialize) {
-        throw new UnsupportedOperationException();
+        if (initialize)
+            return create(descriptor.dataType(), descriptor.getShape(), descriptor.getStride(), descriptor.getOrder());
+        else
+            return createUninitialized(descriptor.dataType(), descriptor.getShape(), descriptor.getOrder());
     }
 
     /**
@@ -4487,6 +4490,17 @@ public class Nd4j {
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(DataType dataType, @NonNull long[] shape, long[] strides, char ordering) {
+        if(shape.length == 0)
+            return Nd4j.trueScalar(0.0);
+
+        checkShapeValues(shape);
+
+        INDArray ret = INSTANCE.create(dataType, shape, strides, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }

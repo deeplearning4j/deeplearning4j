@@ -6355,16 +6355,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray[] exp = new INDArray[]{expX, expY};
 
         INDArray[] out1 = Nd4j.meshgrid(x1, y1);
-        assertArrayEquals(out1, exp);
+        assertArrayEquals(exp, out1);
 
         INDArray[] out2 = Nd4j.meshgrid(x1.transpose(), y1.transpose());
-        assertArrayEquals(out2, exp);
+        assertArrayEquals(exp, out2);
 
         INDArray[] out3 = Nd4j.meshgrid(x1, y1.transpose());
-        assertArrayEquals(out3, exp);
+        assertArrayEquals(exp, out3);
 
         INDArray[] out4 = Nd4j.meshgrid(x1.transpose(), y1);
-        assertArrayEquals(out4, exp);
+        assertArrayEquals(exp, out4);
 
         //Test views:
         INDArray x2 = Nd4j.create(1,9).get(NDArrayIndex.all(), NDArrayIndex.interval(1,2,7, true))
@@ -6373,7 +6373,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .assign(y1);
 
         INDArray[] out5 = Nd4j.meshgrid(x2, y2);
-        assertArrayEquals(out5, exp);
+        assertArrayEquals(exp, out5);
     }
 
     @Test
