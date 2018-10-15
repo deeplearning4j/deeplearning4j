@@ -57,6 +57,7 @@ public class ModelTupleStreamTest {
 
   @Test
   public void test() throws Exception {
+    int testsCount = 0;
     for (int numInputs = 1; numInputs <= 5; ++numInputs) {
       for (int numOutputs = 1; numOutputs <= 5; ++numOutputs) {
 
@@ -66,10 +67,12 @@ public class ModelTupleStreamTest {
           }) {
 
           doTest(model, numInputs, numOutputs);
+          ++testsCount;
 
         }
       }
     }
+    assertEquals(50, testsCount);
   }
 
   private void doTest(Model originalModel, int numInputs, int numOutputs) throws Exception {

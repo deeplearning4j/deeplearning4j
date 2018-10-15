@@ -159,6 +159,8 @@ public class ModelTupleStreamIntegrationTest extends SolrCloudTestCase {
   @Test
   public void searchTest() throws Exception {
 
+    int testsCount = 0;
+
     final String searchExpr =
       "search("+MY_COLLECTION_NAME+"," +
       "zkHost=\""+cluster.getZkClient().getZkServerAddress() + "\"," +
@@ -179,13 +181,17 @@ public class ModelTupleStreamIntegrationTest extends SolrCloudTestCase {
       final String[] expectedLefts = null;
       final String[] expectedRights = null;
       doTest(searchExpr, expectedIds, expectedLefts, expectedRights);
+      ++testsCount;
     }
 
     {
       final String[] expectedLefts = new String[]{ "0.0", "255.0", "510.0" };
       final String[] expectedRights = new String[]{ "0.0", "-255.0", "-510.0" };
       doTest(modelTupleExpr, expectedIds, expectedLefts, expectedRights);
+      ++testsCount;
     }
+
+    assertEquals(2, testsCount);
   }
 
 }
