@@ -33,6 +33,13 @@ namespace nd4j {
         _buffer = nullptr;
     }
 
+    utf8string::utf8string(const char *string, int length) {
+        _length = length;
+        _buffer = new char[_length];
+        _allocated = true;
+        std::memcpy(_buffer, string, _length);
+    }
+
     utf8string::utf8string(std::string *str) {
         _length = str->length();
         _buffer = new char[_length + 1];

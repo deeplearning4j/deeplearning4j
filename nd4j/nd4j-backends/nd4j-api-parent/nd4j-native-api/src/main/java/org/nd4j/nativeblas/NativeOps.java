@@ -737,4 +737,9 @@ public abstract class NativeOps extends Pointer {
 
     // this method executes op that requires scope to be present: if/while/cond/whatever
     public abstract int execCustomOpWithScope(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);
+
+
+    public abstract void fillUtf8String(PointerPointer extraPointers, String[] string, int numStrings, Pointer buffer);
+    public abstract Pointer createUtf8String(PointerPointer extraPointers, String string);
+    public abstract void deleteUtf8String(PointerPointer extraPointers, Pointer ptr);
 }

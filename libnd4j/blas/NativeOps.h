@@ -1491,6 +1491,10 @@ public:
 
     // this method executes op that requires scope to be present: if/while/cond/whatever
     Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs);
+
+    //void fillUtf8String(Nd4jPointer *extraPointers, const char **string, int numStrings, Nd4jPointer buffer);
+    Nd4jPointer createUtf8String(Nd4jPointer *extraPointers, const char *string, int length);
+    void deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr);
 };
 
 

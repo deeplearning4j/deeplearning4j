@@ -21,9 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.DataTypeEx;
-import org.nd4j.linalg.api.buffer.LongBuffer;
+import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
@@ -31,7 +29,6 @@ import org.nd4j.linalg.compression.CompressionUtils;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -1177,7 +1174,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray create(Collection<String> strings, long[] shape, char order) {
         val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
-        val array = Nd4j.createArrayFromShapeBuffer(null, pairShape);
-        return array;
+        val buffer = new Utf8Buffer(strings);
+
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
     }
 }

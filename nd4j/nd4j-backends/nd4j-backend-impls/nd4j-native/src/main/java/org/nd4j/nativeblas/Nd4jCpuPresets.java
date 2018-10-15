@@ -33,6 +33,7 @@ import java.util.Scanner;
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCpu",
                 value = {@Platform(include = {"array/DataType.h",
+                                              "types/utf8string.h",
                                               "NativeOps.h",
                                               "memory/ExternalWorkspace.h",
                                               "memory/Workspace.h",

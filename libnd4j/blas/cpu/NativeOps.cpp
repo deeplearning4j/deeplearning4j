@@ -2380,6 +2380,24 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
     }
 }
 
+/*
+void NativeOps::fillUtf8String(Nd4jPointer *extraPointers, const char **strings, int numStrings, Nd4jPointer buffer) {
+    auto z = reinterpret_cast<nd4j::utf8string**>(buffer);
+    for (int e = 0; e < numStrings; e++) {
+        z[e] = reinterpret_cast<nd4j::utf8string*>(createUtf8String(extraPointers, strings[e]));
+    }
+}
+ */
+
+Nd4jPointer NativeOps::createUtf8String(Nd4jPointer *extraPointers, const char *string, int length) {
+    auto u = new nd4j::utf8string(string, length);
+    return reinterpret_cast<Nd4jPointer>(u);
+}
+
+void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
+    delete(reinterpret_cast<nd4j::utf8string*>(ptr));
+}
+
 
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric, (void *, Nd4jLong*, void*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);
