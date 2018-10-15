@@ -28,7 +28,7 @@ DL4J relies on ND4J for hardware-specific implementations and tensor operations.
 <dependencies>
   <dependency>
       <groupId>org.nd4j</groupId>
-      <artifactId>nd4j-native-plaform</artifactId>
+      <artifactId>nd4j-native-platform</artifactId>
       <version>{{ page.version }}</version>
   </dependency>
 </dependencies>
