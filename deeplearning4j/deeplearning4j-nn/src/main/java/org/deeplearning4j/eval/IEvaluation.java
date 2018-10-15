@@ -23,6 +23,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
  */
 @Deprecated
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
-public interface IEvaluation<T extends IEvaluation> extends org.nd4j.evaluation.IEvaluation<T> {
+public interface IEvaluation<T extends org.nd4j.evaluation.IEvaluation> extends org.nd4j.evaluation.IEvaluation<T> {
 
 }

@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 @Deprecated
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class ROC extends org.nd4j.evaluation.classification.ROC {
+public class ROC extends org.nd4j.evaluation.classification.ROC implements IEvaluation<org.nd4j.evaluation.classification.ROC> {
 
     /**
      * @deprecated Use {@link org.nd4j.evaluation.classification.ROC}

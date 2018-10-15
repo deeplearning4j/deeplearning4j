@@ -23,14 +23,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
-import org.deeplearning4j.eval.*;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -57,6 +55,10 @@ import org.deeplearning4j.util.CrashReportingUtil;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.base.Preconditions;
+import org.nd4j.evaluation.EvaluationUtils;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -3763,7 +3765,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param iterator Iterator to evaluate on
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
-    public Evaluation evaluate(DataSetIterator iterator) {
+    public <T extends Evaluation> T evaluate(DataSetIterator iterator) {
         return evaluate(iterator, (List<String>)null);
     }
 
@@ -3920,7 +3922,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param iterator          Data to evaluate on
      * @return Multi-class ROC evaluation on the given dataset
      */
-    public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator) {
+    public <T extends ROCMultiClass> T evaluateROCMultiClass(DataSetIterator iterator) {
         return evaluateROCMultiClass(iterator, 0);
     }
 
@@ -3931,8 +3933,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param rocThresholdSteps Number of threshold steps to use with {@link ROCMultiClass}
      * @return Multi-class ROC evaluation on the given dataset
      */
-    public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
+    public <T extends ROCMultiClass> T evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
+        ROCMultiClass r = doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
+        return (T)org.deeplearning4j.eval.EvaluationUtils.copyToLegacy(r, org.deeplearning4j.eval.ROCMultiClass.class);
     }
 
     /**
@@ -3942,8 +3945,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param rocThresholdSteps Number of threshold steps to use with {@link ROCMultiClass}
      * @return Multi-class ROC evaluation on the given dataset
      */
-    public ROCMultiClass evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
+    public <T extends ROCMultiClass> T evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
+        ROCMultiClass r = doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
+        return (T)org.deeplearning4j.eval.EvaluationUtils.copyToLegacy(r, org.deeplearning4j.eval.ROCMultiClass.class);
     }
 
     /**
