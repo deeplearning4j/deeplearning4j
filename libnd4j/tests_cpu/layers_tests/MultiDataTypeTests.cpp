@@ -22,6 +22,7 @@
 #include <array/ArrayOptions.h>
 #include <NDArray.h>
 #include <NDArrayFactory.h>
+#include <ops/declarable/headers/broadcastable.h>
 
 
 using namespace nd4j;
@@ -105,6 +106,22 @@ TEST_F(MultiDataTypeTests, Basic_Test_5) {
     auto z = x * y;
 
     ASSERT_EQ(e, z);
+}
+
+TEST_F(MultiDataTypeTests, Basic_Test_7) {
+    auto x = NDArrayFactory::create<int>('c', {2, 3}, {0, 1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<float>('c', {2, 3}, {0.f, 1.f, 2.f, 3.f, 4.f, 5.f});
+    auto e = NDArrayFactory::create<float>('c', {2, 3}, {0.f, 2.f, 4.f, 6.f, 8.f, 10.f});
+
+    nd4j::ops::add op;
+    auto result = op.execute({&x, &y},{}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

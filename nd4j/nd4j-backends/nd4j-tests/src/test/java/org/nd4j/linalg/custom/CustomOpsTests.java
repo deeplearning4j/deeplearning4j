@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
@@ -167,6 +168,49 @@ public class CustomOpsTests {
         assertEquals(exp, op.getOutputArgument(0));
     }
 
+    @Test
+    public void testNoneInplaceOp4() throws Exception {
+        val arrayX = Nd4j.create(DataType.INT, 10, 10);
+        val arrayY = Nd4j.create(DataType.INT, 10, 10);
+
+        arrayX.assign(4);
+        arrayY.assign(2);
+
+        val exp = Nd4j.create(DataType.INT,10, 10).assign(6);
+
+        CustomOp op = DynamicCustomOp.builder("add")
+                .addInputs(arrayX, arrayY)
+                .callInplace(false)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        val res = op.getOutputArgument(0);
+        assertEquals(DataType.INT, res.dataType());
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testNoneInplaceOp5() throws Exception {
+        val arrayX = Nd4j.create(DataType.INT, 10, 10);
+        val arrayY = Nd4j.create(DataType.FLOAT, 10, 10);
+
+        arrayX.assign(4);
+        arrayY.assign(2.0);
+
+        val exp = Nd4j.create(DataType.FLOAT,10, 10).assign(6);
+
+        CustomOp op = DynamicCustomOp.builder("add")
+                .addInputs(arrayX, arrayY)
+                .callInplace(false)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        val res = op.getOutputArgument(0);
+        assertEquals(DataType.FLOAT, res.dataType());
+        assertEquals(exp, res);
+    }
 
     @Test
     public void testMergeMax1() throws Exception {
