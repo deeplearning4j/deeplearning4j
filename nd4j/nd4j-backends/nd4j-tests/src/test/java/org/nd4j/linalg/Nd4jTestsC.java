@@ -6984,6 +6984,19 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testInvalidTransformsSoftmax(){
+        INDArray arr = Nd4j.zeros(2,3,4);
+        try{
+            Transforms.softmax(arr);
+            fail("Expected exception");
+        } catch (IllegalArgumentException e){
+            //OK
+            assertTrue(e.getMessage().contains("rank 2"));
+        }
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
