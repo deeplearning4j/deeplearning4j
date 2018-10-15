@@ -829,12 +829,24 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 if (networkOutputs.contains(vertexName)) {
                     networkOutputs.remove(vertexName);
                 }
+                Map<String,List<String>> newVertexInputs = new LinkedHashMap<>();
                 for (Map.Entry<String, List<String>> entry : this.vertexInputs.entrySet()) {
-                    List inputs = entry.getValue();
+                    List<String> inputs = entry.getValue();
                     if (inputs.contains(vertexName)) {
-                        inputs.remove(vertexName);
+                        //Some lists are not modifiable. So we'll make a new copy, minus the one to be removed
+                        List<String> newList = new ArrayList<>(inputs.size()-1);
+                        for(String s : inputs){
+                            if(!vertexName.equals(s)){
+                                newList.add(s);
+                            }
+                        }
+                        newVertexInputs.put(entry.getKey(), newList);
+                    } else {
+                        newVertexInputs.put(entry.getKey(), entry.getValue());
                     }
                 }
+                this.vertexInputs = newVertexInputs;
+
                 if (inputPreProcessors.containsKey(vertexName)) {
                     inputPreProcessors.remove(vertexName);
                 }
