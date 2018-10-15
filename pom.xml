@@ -252,6 +252,7 @@
         <leveldb.version>1.8</leveldb.version>
         <lz4.version>1.3.0</lz4.version>
         <metrics.version>3.1.2</metrics.version>
+        <alt.metrics.version>3.2.6</alt.metrics.version>
         <netty.version>3.10.4.Final</netty.version>
         <objenesis.version>2.6</objenesis.version>
         <paranamer.version>2.6</paranamer.version>
