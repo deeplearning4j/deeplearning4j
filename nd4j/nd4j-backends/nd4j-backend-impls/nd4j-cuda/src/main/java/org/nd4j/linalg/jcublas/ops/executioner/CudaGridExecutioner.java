@@ -57,7 +57,6 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * mGRID implementation for CUDA
  *
- * PLEASE NOTE: WORK IN PROGRESS, DO NOT EVER USE THIS EXECUTIONER IN PRODUCTION
  * @author raver119@gmail.com
  */
 public class CudaGridExecutioner extends CudaExecutioner implements GridExecutioner {
@@ -318,45 +317,56 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         if (last != null) {
             MetaType type = getMetaOpType(op, dimension);
             lastOp.remove();
-            switch (type) {
-                case NOT_APPLICABLE: {
+            try {
+                switch (type) {
+                    case NOT_APPLICABLE: {
                     /*
                         If we can't form MetaOp with new Op here, we should move lastOp to GridOp queue, and update lastOp with current Op
                     */
-                    dequeueOp(last);
-                    pushToGrid(last, false);
+                        dequeueOp(last);
+                        pushToGrid(last, false);
 
-                    //|| op instanceof ScalarOp
-                    if ((op instanceof TransformOp && op.y() != null) && onCurrentDeviceXYZ(op)) {
-                        enqueueOp(new OpDescriptor(op, dimension));
-                    } else {
-                        pushToGrid(new OpDescriptor(op, dimension), false);
+                        //|| op instanceof ScalarOp
+                        if ((op instanceof TransformOp && op.y() != null) && onCurrentDeviceXYZ(op)) {
+                            enqueueOp(new OpDescriptor(op, dimension));
+                        } else {
+                            pushToGrid(new OpDescriptor(op, dimension), false);
+                        }
                     }
-                }
-                break;
-                case PREDICATE: {
-                    MetaOp metaOp = new PredicateMetaOp(last, new OpDescriptor(op, dimension));
-                    pushToGrid(new OpDescriptor(metaOp), false);
-                }
-                break;
-                case INVERTED_PREDICATE: {
-                    OpDescriptor currentOp = new OpDescriptor(op, dimension);
+                    break;
+                    case PREDICATE: {
+                        MetaOp metaOp = new PredicateMetaOp(last, new OpDescriptor(op, dimension));
+                        pushToGrid(new OpDescriptor(metaOp), false);
+                    }
+                    break;
+                    case INVERTED_PREDICATE: {
+                        OpDescriptor currentOp = new OpDescriptor(op, dimension);
 
-                    //          logger.info("Calling for Meta: {}+{}", last.getOp().getClass().getSimpleName(), currentOp.getOp().getClass().getSimpleName());
-                    dequeueOp(last);
-                    dequeueOp(currentOp);
+                        //          logger.info("Calling for Meta: {}+{}", last.getOp().getClass().getSimpleName(), currentOp.getOp().getClass().getSimpleName());
+                        dequeueOp(last);
+                        dequeueOp(currentOp);
 
-                    MetaOp metaOp = new InvertedPredicateMetaOp(last, currentOp);
-                    pushToGrid(new OpDescriptor(metaOp), false);
+                        MetaOp metaOp = new InvertedPredicateMetaOp(last, currentOp);
+                        pushToGrid(new OpDescriptor(metaOp), false);
+                    }
+                    break;
+                    case POSTULATE: {
+                        MetaOp metaOp = new PostulateMetaOp(last, new OpDescriptor(op, dimension));
+                        pushToGrid(new OpDescriptor(metaOp), false);
+                    }
+                    break;
+                    default:
+                        throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
                 }
-                break;
-                case POSTULATE: {
-                    MetaOp metaOp = new PostulateMetaOp(last, new OpDescriptor(op, dimension));
-                    pushToGrid(new OpDescriptor(metaOp), false);
-                }
-                break;
-                default:
-                    throw new UnsupportedOperationException("Not supported MetaType: [" + type + "]");
+            } catch (Throwable t){
+                //Try to provide a more useful exception. Because of the async nature of grid execution, sometimes the
+                // exception doesn't make sense - i.e., the exception stack trace points to Nd4j.create() but the exception
+                // was actually caused by some problem at an earlier line.
+                //In practice, we should be catching these sorts of problems earlier with input validation checks
+                throw new RuntimeException("Error executing previous op: " + last.getOp().getClass().getName() + " - note that in some cases the error/" +
+                        "stack trace may be delayed by 1 operation due to the asynchronous nature of ND4J's CUDA grid executioner.\n" +
+                        "For debugging purposes, using nd4j-native backend, or setting the following system property can be used:" +
+                        "set \"opexec\" to org.nd4j.linalg.jcublas.ops.executioner.CudaExecutioner");
             }
         } else {
             //&& Nd4j.dataType() != DataBuffer.Type.HALF
