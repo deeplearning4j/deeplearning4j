@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class ModelTupleStreamIntegrationTest extends SolrCloudTestCase {
 
@@ -88,7 +89,12 @@ public class ModelTupleStreamIntegrationTest extends SolrCloudTestCase {
 
     final MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
         .list(
-            new OutputLayer.Builder().nIn(numInputs).nOut(numOutputs).activation(Activation.IDENTITY).build()
+            new OutputLayer.Builder()
+                           .nIn(numInputs)
+                           .nOut(numOutputs)
+                           .activation(Activation.IDENTITY)
+                           .lossFunction(LossFunctions.LossFunction.MSE)
+                           .build()
             )
         .build();
 

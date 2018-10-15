@@ -38,6 +38,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class ModelTupleStreamTest {
 
@@ -204,7 +205,12 @@ public class ModelTupleStreamTest {
 
     final MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
         .list(
-            new OutputLayer.Builder().nIn(numInputs).nOut(numOutputs).activation(Activation.IDENTITY).build()
+            new OutputLayer.Builder()
+                           .nIn(numInputs)
+                           .nOut(numOutputs)
+                           .activation(Activation.IDENTITY)
+                           .lossFunction(LossFunctions.LossFunction.MSE)
+                           .build()
             )
         .build();
 
@@ -233,8 +239,13 @@ public class ModelTupleStreamTest {
         .graphBuilder()
         .addInputs("inputLayer")
         .addLayer("outputLayer",
-          new OutputLayer.Builder().nIn(numInputs).nOut(numOutputs).activation(Activation.IDENTITY).build(),
-          "inputLayer")
+            new OutputLayer.Builder()
+                           .nIn(numInputs)
+                           .nOut(numOutputs)
+                           .activation(Activation.IDENTITY)
+                           .lossFunction(LossFunctions.LossFunction.MSE)
+                           .build(),
+            "inputLayer")
         .setOutputs("outputLayer")
         .build();
 
