@@ -42,7 +42,6 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
 
     exp.applyBroadcast(broadcast::Add, {1}, &y);
 
-
     nd4j::ops::add op;
     auto result = op.execute({&x, &y}, {}, {});
 
@@ -66,7 +65,6 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_1) {
     exp.linspace(1);
 
     exp.applyBroadcast(broadcast::Multiply, {1}, &y);
-
 
     nd4j::ops::multiply op;
     auto result = op.execute({&x, &y}, {}, {});
