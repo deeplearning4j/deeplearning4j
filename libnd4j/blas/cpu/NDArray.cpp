@@ -1310,25 +1310,26 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-    NDArray *NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-        return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
-	}
+NDArray *NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+    return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
+}
 
-    NDArray *NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-        return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
-    }
+NDArray *NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+    return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
+}
 
-    NDArray *NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-        return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
-    }
+NDArray *NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+    return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
+}
 
-    NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-        return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
-    }
+NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+    return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
+}
 
 
-//
+//////////////////////////////////////////////////////////////////////////
     NDArray NDArray::reduceNumber(nd4j::reduce::FloatOps op, void *extraParams) const {
         auto shape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(dataType()), this->_workspace);
         NDArray result(shape, true, this->_workspace);
@@ -1370,6 +1371,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         return res;
     }
 
+//////////////////////////////////////////////////////////////////////////
 // perform array transformation
     void NDArray::applyTransform(nd4j::transform::FloatOps op, NDArray *target, void *extraParams) {
         if (target == nullptr)
@@ -1419,6 +1421,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         NativeOpExcutioner::execTransformStrict(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
     }
 
+//////////////////////////////////////////////////////////////////////////
 // perform array transformation
     void NDArray::applyTransform(nd4j::transform::FloatOps op, void *extraParams) {
         applyTransform(op, this, extraParams);
@@ -1464,29 +1467,31 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         return result;
     }
 
-
+//////////////////////////////////////////////////////////////////////////
 // perform pairwise transformation
-    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray& other, void *extraParams) {
-        applyPairwiseTransform(op, &other, this, extraParams);
-    }
+void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray& other, void *extraParams) {
+    applyPairwiseTransform(op, &other, this, extraParams);
+}
 
-// perform pairwise transformation
-    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, void *extraParams) const{
-        if (other->lengthOf() != target->lengthOf())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
+void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, void *extraParams) const{
+    if (other->lengthOf() != target->lengthOf())
+        throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
+    if (target->_dataType != this->_dataType && target->_dataType != other->_dataType)
+        throw std::invalid_argument("NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array !");
 
-        NativeOpExcutioner::execPairwiseTransform(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
-    }
+    NativeOpExcutioner::execPairwiseTransform(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
+}
 
-    void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, void *extraParams) const{
-        if (other->lengthOf() != target->lengthOf())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
+void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, void *extraParams) const{
+    if (other->lengthOf() != target->lengthOf())
+        throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
+    if (!target->isB())
+        throw std::invalid_argument("NDArray::applyPairwiseTransform method - result must have bool type");
+    if (_dataType != other->_dataType)
+        throw std::invalid_argument("NDArray::applyPairwiseTransform method - this and other arrays must have the same type !");
 
-        if (!target->isB())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform method - result must have bool type");
-
-        NativeOpExcutioner::execPairwiseBoolTransform(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
-    }
+    NativeOpExcutioner::execPairwiseBoolTransform(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
+}
 
 /*
     template<typename T>

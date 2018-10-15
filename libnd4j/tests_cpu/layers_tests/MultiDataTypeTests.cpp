@@ -992,3 +992,63 @@ TEST_F(MultiDataTypeTests, ndarray_applyTransformStrict_test1) {
     x4.applyTransform(nd4j::transform::CubeDerivative, (void*)nullptr);
     ASSERT_EQ(x4, exp5);
 }
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyPairwiseTransform_test1) {
+            
+    NDArray x1('c', {2,3}, {0,     1,   2,   3,   4,   5}, nd4j::DataType::INT32);
+    NDArray x2('c', {2,3}, {0,     1,   2,   3,   4,   5}, nd4j::DataType::FLOAT32);
+    NDArray x3('c', {2,3}, {0,     1,   0,   1,   0,   0}, nd4j::DataType::BOOL);
+    NDArray x4('c', {3,2}, {0.5, 1.5, 2.5, 3.5, 4.5,   0}, nd4j::DataType::DOUBLE);
+    NDArray x5('c', {3,2}, nd4j::DataType::INT32);
+    NDArray x6('c', {2,3}, nd4j::DataType::DOUBLE);
+    
+    NDArray exp1('c', {2,3}, {0, 2, 4, 6, 8, 5}, nd4j::DataType::INT32);
+    NDArray exp2('c', {2,3}, {0.5, 2.5, 4.5, 6.5, 8.5, 5.}, nd4j::DataType::FLOAT32);
+    NDArray exp3('c', {2,3}, {1, 1, 1, 1, 1, 0}, nd4j::DataType::BOOL);
+    NDArray exp4('c', {2,3}, {0.5, 2.5, 4.5, 6.5, 8.5, 5.}, nd4j::DataType::DOUBLE);
+    NDArray exp5('c', {3,2}, {0, 2, 4, 6, 8, 5}, nd4j::DataType::INT32);
+    
+    x1.applyPairwiseTransform(nd4j::pairwise::Add, &x4, &x5, nullptr);
+    ASSERT_EQ(x5, exp5);
+
+    x1.applyPairwiseTransform(nd4j::pairwise::Add, &x4, &x6, nullptr);    
+    ASSERT_EQ(x6, exp4);
+
+    x1.applyPairwiseTransform(nd4j::pairwise::Add, x4, nullptr);
+    ASSERT_EQ(x1, exp1);
+
+    x2.applyPairwiseTransform(nd4j::pairwise::Add, x4, nullptr);
+    ASSERT_EQ(x2, exp2);
+
+    x3.applyPairwiseTransform(nd4j::pairwise::Add, x4, nullptr);
+    ASSERT_EQ(x3, exp3);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyPairwiseTransform_test2) {
+            
+    NDArray x1('c', {2,3}, {1,     1,   2,   3,   4,   5}, nd4j::DataType::INT32);
+    NDArray x2('c', {3,2}, {1,     0,   2,   0,   4,   0}, nd4j::DataType::INT32);
+    NDArray x3('c', {3,2}, {0.5, 1.5, 2.5,   3, 4.5,   0}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {2,3}, {0.5, 1.,  2.5,   3, 4.,    0}, nd4j::DataType::DOUBLE);  
+    NDArray x5('c', {3,2}, {0, 1, 0, 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray x6('c', {2,3}, {1, 1, 1, 0, 1, 0}, nd4j::DataType::BOOL);  
+    
+    NDArray x7('c', {3,2}, nd4j::DataType::BOOL);
+    NDArray x8('c', {2,3}, nd4j::DataType::BOOL);
+    
+    NDArray exp1('c', {3,2}, {1, 0, 1, 0, 1, 0}, nd4j::DataType::BOOL);    
+    NDArray exp2('c', {2,3}, {1, 0, 1, 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray exp3('c', {2,3}, {0, 1, 0, 0, 0, 0}, nd4j::DataType::BOOL);
+        
+    x1.applyPairwiseTransform(nd4j::pairwise::EqualTo, &x2, &x7, nullptr);
+    ASSERT_EQ(x7, exp1);
+
+    x3.applyPairwiseTransform(nd4j::pairwise::EqualTo, &x4, &x8, nullptr);
+    ASSERT_EQ(x8, exp2);
+
+    x5.applyPairwiseTransform(nd4j::pairwise::EqualTo, &x6, &x8, nullptr);
+    ASSERT_EQ(x8, exp3);
+}
+
