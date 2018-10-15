@@ -2577,10 +2577,11 @@ NDArray NDArray::transp() const {
     void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int>& dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
         if (dimensions.size() == 0)
             return;
+        auto result = target == nullptr ? this : target;
 
-        if(target->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, tadArray->_shapeInfo))
+        if(result->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, tadArray->_shapeInfo))
             throw std::invalid_argument("NDArray::applyBroadcast method: wrong type of target array !");
-        if(!target->isSameShape(this))
+        if(!result->isSameShape(this))
             throw std::invalid_argument("NDArray::applyBroadcast method: this and other arrays must have the same shape !");
 
         std::vector<int> copy(dimensions);
@@ -2594,9 +2595,7 @@ NDArray NDArray::transp() const {
 
         shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
-
-        auto result = target == nullptr ? this : target;
+        tad.createOffsets();        
 
         // TODO: eventually we want separate tads here
         NativeOpExcutioner::execBroadcast(op, this->_buffer, this->_shapeInfo, tadArray->_buffer, tadArray->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
@@ -2607,9 +2606,11 @@ NDArray NDArray::transp() const {
         if (dimensions.size() == 0)
             return;
 
-        if(target->_dataType != DataType::BOOL)
+        auto result = target == nullptr ? this : target;
+
+        if(result->_dataType != DataType::BOOL)
             throw std::invalid_argument("NDArray::applyBroadcast bool method: type of target array must be BOOL!");
-        if(!target->isSameShape(this))
+        if(!result->isSameShape(this))
             throw std::invalid_argument("NDArray::applyBroadcast bool method: this and other arrays must have the same shape !");    
         if(_dataType != tadArray->_dataType)
             throw std::invalid_argument("NDArray::applyBroadcast bool method: this and tad arrays must have the same type !");    
@@ -2625,9 +2626,7 @@ NDArray NDArray::transp() const {
 
         shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
-
-        auto result = target == nullptr ? this : target;
+        tad.createOffsets();        
 
         // TODO: eventually we want separate tads here
         NativeOpExcutioner::execBroadcastBool(op, this->_buffer, this->_shapeInfo, tadArray->_buffer, tadArray->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
