@@ -159,33 +159,37 @@ public class ModelTupleStreamTest {
       }
       modelTupleStream.close();
 
-      // toExpression test
-      {
-        final StreamExpressionParameter streamExpressionParameter = modelTupleStream.toExpression(streamFactory);
-        assertTrue(streamExpressionParameter instanceof StreamExpression);
-        // tuple(input1=1,input2=2) and tuple(input2=2,input1=1) are equivalent
-        // but StreamExpression equals does not consider them equal.
-        if (inputKeys.length == 1) {
-          assertEquals(streamExpression, (StreamExpression)streamExpressionParameter);
-        }
-      }
+      doToExpressionTest(streamExpression,
+        modelTupleStream.toExpression(streamFactory),
+        inputKeys.length);
 
-      // toExplanation test
-      {
-        final Explanation explanation = modelTupleStream.toExplanation(streamFactory);
-        final Map<String,Object> explanationMap = new TreeMap<String,Object>();
-        explanation.toMap(explanationMap);
-        assertTrue(explanation instanceof StreamExplanation);
-        assertNotNull(explanationMap.remove("children"));
-        assertNotNull(explanationMap.remove("expression"));
-        assertNotNull(explanationMap.remove("expressionNodeId"));
-        assertEquals(ExpressionType.STREAM_DECORATOR, explanationMap.remove("expressionType"));
-        assertEquals("model", explanationMap.remove("functionName"));
-        assertEquals(ModelTupleStream.class.getName(), explanationMap.remove("implementingClass"));
-        assertTrue(explanationMap.toString(), explanationMap.isEmpty());
-      }
+      doToExplanationTest(modelTupleStream.toExplanation(streamFactory));
     }
 
+  }
+
+  private static void doToExpressionTest(StreamExpression streamExpression,
+    StreamExpressionParameter streamExpressionParameter,
+    int inputKeysLength) {
+    assertTrue(streamExpressionParameter instanceof StreamExpression);
+    // tuple(input1=1,input2=2) and tuple(input2=2,input1=1) are equivalent
+    // but StreamExpression equals does not consider them equal.
+    if (inputKeysLength == 1) {
+      assertEquals(streamExpression, (StreamExpression)streamExpressionParameter);
+    }
+  }
+
+  private static void doToExplanationTest(Explanation explanation) {
+    final Map<String,Object> explanationMap = new TreeMap<String,Object>();
+    explanation.toMap(explanationMap);
+    assertTrue(explanation instanceof StreamExplanation);
+    assertNotNull(explanationMap.remove("children"));
+    assertNotNull(explanationMap.remove("expression"));
+    assertNotNull(explanationMap.remove("expressionNodeId"));
+    assertEquals(ExpressionType.STREAM_DECORATOR, explanationMap.remove("expressionType"));
+    assertEquals("model", explanationMap.remove("functionName"));
+    assertEquals(ModelTupleStream.class.getName(), explanationMap.remove("implementingClass"));
+    assertTrue(explanationMap.toString(), explanationMap.isEmpty());
   }
 
   /**
