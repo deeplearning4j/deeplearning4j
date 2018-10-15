@@ -6399,4 +6399,17 @@ public class Nd4j {
     public static boolean isPrecisionBoostAllowed() {
         return false;
     }
+
+
+    public static INDArray scalar(@NonNull String string) {
+        return create(Collections.singletonList(string), new long[0]);
+    }
+
+    public static INDArray create(@NonNull Collection<String> strings, long... shape) {
+        return create(strings, shape, Nd4j.order());
+    }
+
+    public static INDArray create(@NonNull Collection<String> strings, long[] shape, char order) {
+        return null;
+    }
 }

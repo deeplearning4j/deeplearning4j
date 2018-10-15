@@ -14,19 +14,27 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.buffer;
+package org.nd4j.linalg.mixed;
 
-public enum DataType {
-    DOUBLE,
-    FLOAT,
-    HALF,
-    LONG,
-    INT,
-    SHORT,
-    UBYTE,
-    BYTE,
-    BOOL,
-    UTF8,
-    COMPRESSED,
-    UNKNOWN
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.factory.Nd4j;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+@Slf4j
+public class StringArrayTests {
+
+    @Test
+    public void testBasicStrings_1() throws Exception {
+        val array = Nd4j.scalar("alpha");
+
+        assertNotNull(array);
+        assertEquals(1, array.length());
+        assertEquals(0, array.rank());
+        assertEquals(DataType.UTF8, array.dataType());
+    }
 }
