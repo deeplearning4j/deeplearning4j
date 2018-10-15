@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertTrue;
+
 @Slf4j
 public class DebugTraining {
 
@@ -30,7 +32,7 @@ public class DebugTraining {
     public void testBasic() throws Exception {
 
 //        for(String u : new String[]{"sgd", "adam", "nesterov"}) {
-        for(String u : new String[]{"adam"}) {
+        for(String u : new String[]{"nesterov"}) {
             log.info("Starting: " + u);
             SameDiff sd = SameDiff.create();
 
@@ -57,17 +59,16 @@ public class DebugTraining {
 
             DataSetIterator iter = new MnistDataSetIterator(32, true, 12345);
 
-            double lr = 1e-2;
             IUpdater updater;
             switch (u){
                 case "sgd":
-                    updater = new Sgd(lr);
+                    updater = new Sgd(1e-2);
                     break;
                 case "adam":
-                    updater = new Adam(lr);
+                    updater = new Adam(1e-2);
                     break;
                 case "nesterov":
-                    updater = new Nesterovs(lr);
+                    updater = new Nesterovs(1e-3);
                     break;
                 default:
                     throw new RuntimeException();
@@ -96,7 +97,8 @@ public class DebugTraining {
 
             System.out.println(e.stats());
 
-            System.out.println("DONE");
+            double acc = e.accuracy();
+            assertTrue(String.valueOf(acc), acc > 0.8);
         }
     }
 

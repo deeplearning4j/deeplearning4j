@@ -22,91 +22,35 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * ROC curve: a set of (false positive, true positive) tuples at different thresholds
- *
- * @author Alex Black
+ * @deprecated Use {@link org.nd4j.evaluation.curves.RocCurve}
  */
+@Deprecated
 @Data
 @EqualsAndHashCode(exclude = {"auc"}, callSuper = false)
-public class RocCurve extends BaseCurve {
+public class RocCurve extends org.nd4j.evaluation.curves.RocCurve {
 
-    private double[] threshold;
-    private double[] fpr;
-    private double[] tpr;
-
-    private Double auc;
-
+    /**
+     * @deprecated Use {@link org.nd4j.evaluation.curves.RocCurve}
+     */
+    @Deprecated
     public RocCurve(@JsonProperty("threshold") double[] threshold, @JsonProperty("fpr") double[] fpr,
                     @JsonProperty("tpr") double[] tpr) {
-        this.threshold = threshold;
-        this.fpr = fpr;
-        this.tpr = tpr;
+        super(threshold, fpr, tpr);
     }
 
-
-    @Override
-    public int numPoints() {
-        return threshold.length;
-    }
-
-    @Override
-    public double[] getX() {
-        return fpr;
-    }
-
-    @Override
-    public double[] getY() {
-        return tpr;
-    }
-
-    @Override
-    public String getTitle() {
-        return "ROC (Area=" + format(calculateAUC(), DEFAULT_FORMAT_PREC) + ")";
-    }
 
     /**
-     * @param i Point number, 0 to numPoints()-1 inclusive
-     * @return Threshold of a given point
+     * @deprecated Use {@link org.nd4j.evaluation.curves.RocCurve}
      */
-    public double getThreshold(int i) {
-        Preconditions.checkArgument(i >= 0 && i < threshold.length, "Invalid index: " + i);
-        return threshold[i];
-    }
-
-    /**
-     * @param i Point number, 0 to numPoints()-1 inclusive
-     * @return True positive rate of a given point
-     */
-    public double getTruePositiveRate(int i) {
-        Preconditions.checkArgument(i >= 0 && i < tpr.length, "Invalid index: " + i);
-        return tpr[i];
-    }
-
-    /**
-     * @param i Point number, 0 to numPoints()-1 inclusive
-     * @return False positive rate of a given point
-     */
-    public double getFalsePositiveRate(int i) {
-        Preconditions.checkArgument(i >= 0 && i < fpr.length, "Invalid index: " + i);
-        return fpr[i];
-    }
-
-    /**
-     * Calculate and return the area under ROC curve
-     */
-    public double calculateAUC() {
-        if (auc != null) {
-            return auc;
-        }
-
-        auc = calculateArea();
-        return auc;
-    }
-
+    @Deprecated
     public static RocCurve fromJson(String json) {
         return fromJson(json, RocCurve.class);
     }
 
+    /**
+     * @deprecated Use {@link org.nd4j.evaluation.curves.RocCurve}
+     */
+    @Deprecated
     public static RocCurve fromYaml(String yaml) {
         return fromYaml(yaml, RocCurve.class);
     }

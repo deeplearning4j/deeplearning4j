@@ -19,6 +19,8 @@ package org.nd4j.evaluation.classification;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.nd4j.evaluation.BaseEvaluation;
+import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastGreaterThan;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
