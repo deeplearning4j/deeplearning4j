@@ -568,7 +568,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         PointerPointer shapeInfoPointers = extrazA.get();
         PointerPointer dataPointers = extrazB.get();
-
         int sumAlongDim = 0;
 
         long[] outputShape = ArrayUtil.copy(toConcat[0].shape());
@@ -595,7 +594,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         //PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
-        INDArray ret = Nd4j.createUninitialized(outputShape, Nd4j.order());
+        INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
 
         nativeOps.concat(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     ret.data().addressPointer(),

@@ -438,7 +438,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray oneThroughFour = Nd4j.linspace(1, 4, 4).reshape('c', 2, 2);
         INDArray row1 = oneThroughFour.getRow(1);
         oneThroughFour.subiRowVector(row1);
-        INDArray result = Nd4j.create(new float[] {-2, -2, 0, 0}, new long[] {2, 2});
+        INDArray result = Nd4j.create(new double[] {-2, -2, 0, 0}, new long[] {2, 2});
         assertEquals(getFailureMessage(), result, oneThroughFour);
 
     }
@@ -1405,7 +1405,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(), 1, false);
         INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, false);
         assertEquals(sorted[1], sorted2);
-        INDArray shouldIndex = Nd4j.create(new float[] {1, 0, 1, 0}, new long[] {2, 2});
+        INDArray shouldIndex = Nd4j.create(new double[] {1, 0, 1, 0}, new long[] {2, 2});
         assertEquals(shouldIndex, sorted[0]);
 
 
@@ -2432,7 +2432,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray toPermute = Nd4j.create(Nd4j.linspace(0, 7, 8).data(), new long[] {2, 2, 2});
         INDArray permuted = toPermute.permute(2, 1, 0);
-        INDArray assertion = Nd4j.create(new float[] {0, 4, 2, 6, 1, 5, 3, 7}, new long[] {2, 2, 2});
+        INDArray assertion = Nd4j.create(new double[] {0, 4, 2, 6, 1, 5, 3, 7}, new long[] {2, 2, 2});
         assertEquals(permuted, assertion);
     }
 
@@ -2974,11 +2974,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testSquareMatrix() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new long[] {2, 2, 2});
         INDArray eightFirstTest = n.vectorAlongDimension(0, 2);
-        INDArray eightFirstAssertion = Nd4j.create(new float[] {1, 2}, new long[] {1, 2});
+        INDArray eightFirstAssertion = Nd4j.create(new double[] {1, 2}, new long[] {1, 2});
         assertEquals(eightFirstAssertion, eightFirstTest);
 
         INDArray eightFirstTestSecond = n.vectorAlongDimension(1, 2);
-        INDArray eightFirstTestSecondAssertion = Nd4j.create(new float[] {3, 4});
+        INDArray eightFirstTestSecondAssertion = Nd4j.create(new double[] {3, 4});
         assertEquals(eightFirstTestSecondAssertion, eightFirstTestSecond);
 
     }
@@ -4260,7 +4260,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testSpecialConcat2() throws Exception {
         List<INDArray> arrays = new ArrayList<>();
         for (int x = 0; x < 10; x++) {
-            arrays.add(Nd4j.create(new double[] {x, x, x, x, x, x}));
+            arrays.add(Nd4j.create(new double[] {x, x, x, x, x, x}).reshape(1, 6));
         }
 
         INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
@@ -6027,7 +6027,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testValueArrayOf_1() {
-        val vector = Nd4j.valueArrayOf(new long[] {5}, 2f);
+        val vector = Nd4j.valueArrayOf(new long[] {5}, 2f, DataType.FLOAT);
         val exp = Nd4j.trueVector(new float[]{2, 2, 2, 2, 2});
 
         assertArrayEquals(exp.shape(), vector.shape());
@@ -6156,8 +6156,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testConcat_1() throws Exception{
         for(char order : new char[]{'c', 'f'}) {
 
-            INDArray arr1 = Nd4j.create(new double[]{1, 2}, order);
-            INDArray arr2 = Nd4j.create(new double[]{3, 4}, order);
+            INDArray arr1 = Nd4j.create(new double[]{1, 2}, new long[]{1, 2}, order);
+            INDArray arr2 = Nd4j.create(new double[]{3, 4}, new long[]{1, 2}, order);
 
             INDArray out = Nd4j.concat(0, arr1, arr2);
             Nd4j.getExecutioner().commit();
