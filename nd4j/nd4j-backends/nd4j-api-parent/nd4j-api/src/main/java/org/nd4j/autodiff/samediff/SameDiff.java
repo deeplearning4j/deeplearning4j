@@ -1455,6 +1455,9 @@ public class SameDiff {
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
                 "be set before training. Use setTrainingConfig(TrainingConfig)");
 
+        if(!iter.hasNext() && iter.resetSupported())
+            iter.reset();
+
         while(iter.hasNext()){
             org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
             //TODO: validate number of arrays + masks vs. config number of features/labels mappings
@@ -1619,11 +1622,46 @@ public class SameDiff {
         return placeholders;
     }
 
+    /**
+     * See {@link #evaluate(MultiDataSetIterator, Map, Map)}
+     */
+    public void evaluate(DataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals){
+        Map<String,Integer> map = new HashMap<>();
+        for(String s : variableEvals.keySet()){
+            map.put(s, 0);  //Only 1 possible output here with DataSetIterator
+        }
+        evaluate(new MultiDataSetIteratorAdapter(iterator), variableEvals, map);
+    }
+
+    /**
+     * Perform evaluation using classes such as {@link org.nd4j.evaluation.classification.Evaluation} for classifier outputs
+     * and {@link org.nd4j.evaluation.regression.RegressionEvaluation} for regression outputs.<br>
+     * <br>
+     * <b>Example: classifier evaluation</b><br>
+     * Predictions variable name: "softmaxOutput"<br>
+     * Evaluations to perform: {@link org.nd4j.evaluation.classification.Evaluation}<br>
+     * Data: single input, single output MultiDataSets<br>
+     * Code:<br>
+     * <pre>
+     * {@code
+     * MultiDataSetIterator data = ...
+     * Map<String,List<IEvaluation>> evals = Collections.singletonMap("softmaxOutput",Collections.singletonList(new Evaluation()));
+     * Map<String,Integer> labelMapping = Collections.singletonMap("softmaxOutput",0);  //Compare: "softmaxOutput" vs. MultiDataSet.getLabels(0)
+     * }
+     * </pre>
+     *
+     * @param iterator               The iterator - the source of the data for evaluation
+     * @param variableEvals          The evaluations to perform. Key: the name of the variable. Value: the evaluations to perform
+     * @param predictionLabelMapping The output/label mapping. Key: the name of the variable.
+     */
     public void evaluate(MultiDataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals, Map<String,Integer> predictionLabelMapping){
         Preconditions.checkState(trainingConfig != null, "Training config has not been set");
 
         Preconditions.checkState(variableEvals.keySet().equals(predictionLabelMapping.keySet()), "Keysets for variable evaluations" +
                 " and for the prediction label mapping must be equal. Keys for variables to evaluate: %s vs. keys for label mapping: %s", variableEvals.keySet(), predictionLabelMapping.keySet());
+
+        if(!iterator.hasNext() && iterator.resetSupported())
+            iterator.reset();
 
         while(iterator.hasNext()){
             MultiDataSet ds = iterator.next();
