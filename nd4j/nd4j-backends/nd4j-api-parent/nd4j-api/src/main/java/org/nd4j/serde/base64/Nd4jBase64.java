@@ -26,9 +26,7 @@ import java.io.*;
  * NDArray as base 64
  *
  * @author Adam Gibson
- * @deprecated Use Nd4jBase64 class in nd4j-api
  */
-@Deprecated
 public class Nd4jBase64 {
 
     private Nd4jBase64() {}

@@ -14,24 +14,20 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.shade.serde.jackson.ndarray;
+package org.nd4j.serde.jackson.shaded;
 
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.base64.Nd4jBase64;
+import org.nd4j.shade.jackson.core.JsonGenerator;
+import org.nd4j.shade.jackson.databind.JsonSerializer;
+import org.nd4j.shade.jackson.databind.SerializerProvider;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 /**
  * @author Adam Gibson
- * @deprecated Use {@link org.nd4j.serde.jackson.ndarray.NDArraySerializer}
  */
-@Deprecated
 public class NDArraySerializer extends JsonSerializer<INDArray> {
     @Override
     public void serialize(INDArray indArray, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
@@ -40,6 +36,5 @@ public class NDArraySerializer extends JsonSerializer<INDArray> {
         jsonGenerator.writeStartObject();
         jsonGenerator.writeStringField("array", toBase64);
         jsonGenerator.writeEndObject();
-
     }
 }

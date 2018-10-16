@@ -14,31 +14,50 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.shade.serde.jackson.shaded;
+package org.nd4j.serde.jackson;
 
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.serde.base64.Nd4jBase64;
 import org.nd4j.shade.jackson.core.JsonGenerator;
 import org.nd4j.shade.jackson.databind.JsonSerializer;
 import org.nd4j.shade.jackson.databind.SerializerProvider;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 /**
  * @author Adam Gibson
- * @deprecated Use {@link org.nd4j.serde.jackson.shaded.NDArraySerializer}
  */
-@Deprecated
-public class NDArraySerializer extends JsonSerializer<INDArray> {
+public class VectorSerializer extends JsonSerializer<INDArray> {
     @Override
     public void serialize(INDArray indArray, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
                     throws IOException {
-        String toBase64 = Nd4jBase64.base64String(indArray);
+        if (indArray.isView())
+            indArray = indArray.dup(indArray.ordering());
         jsonGenerator.writeStartObject();
-        jsonGenerator.writeStringField("array", toBase64);
+        DataBuffer view = indArray.data();
+        jsonGenerator.writeArrayFieldStart("dataBuffer");
+        for (int i = 0; i < view.length(); i++) {
+            jsonGenerator.writeNumber(view.getDouble(i));
+        }
+
+        jsonGenerator.writeEndArray();
+
+        jsonGenerator.writeArrayFieldStart("shapeField");
+        for (int i = 0; i < indArray.rank(); i++) {
+            jsonGenerator.writeNumber(indArray.size(i));
+        }
+        jsonGenerator.writeEndArray();
+
+        jsonGenerator.writeArrayFieldStart("strideField");
+        for (int i = 0; i < indArray.rank(); i++)
+            jsonGenerator.writeNumber(indArray.stride(i));
+        jsonGenerator.writeEndArray();
+
+        jsonGenerator.writeNumberField("offsetField", indArray.offset());
+        jsonGenerator.writeNumberField("rankField", indArray.rank());
+        jsonGenerator.writeNumberField("numElements", view.length());
+        jsonGenerator.writeStringField("orderingField", String.valueOf(indArray.ordering()));
         jsonGenerator.writeEndObject();
     }
 }

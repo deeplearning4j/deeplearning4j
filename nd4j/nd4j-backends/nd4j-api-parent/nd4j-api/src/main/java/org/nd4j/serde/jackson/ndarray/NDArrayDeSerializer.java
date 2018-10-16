@@ -14,32 +14,27 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.shade.serde.jackson.ndarray;
+package org.nd4j.serde.jackson.ndarray;
 
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.base64.Nd4jBase64;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 /**
  * @author Adam Gibson
- * @deprecated Use {@link org.nd4j.serde.jackson.ndarray.NDArraySerializer}
  */
-@Deprecated
-public class NDArraySerializer extends JsonSerializer<INDArray> {
-    @Override
-    public void serialize(INDArray indArray, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-                    throws IOException {
-        String toBase64 = Nd4jBase64.base64String(indArray);
-        jsonGenerator.writeStartObject();
-        jsonGenerator.writeStringField("array", toBase64);
-        jsonGenerator.writeEndObject();
 
+public class NDArrayDeSerializer extends JsonDeserializer<INDArray> {
+    @Override
+    public INDArray deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException {
+        JsonNode node = jp.getCodec().readTree(jp);
+        String field = node.get("array").asText();
+        INDArray ret = Nd4jBase64.fromBase64(field);
+        return ret;
     }
 }
