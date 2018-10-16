@@ -386,13 +386,6 @@ public interface INDArray extends Serializable {
      */
     INDArray lt(Number other);
 
-    /**
-     * Returns the binary ndarray for "Less" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray lti(Number other);
 
     /**
      * Put the specified float value at the specified indices in this array
@@ -421,14 +414,6 @@ public interface INDArray extends Serializable {
     INDArray eps(Number other);
 
 
-    /**
-     * Returns the binary ndarray for "Epsilon equals" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray epsi(Number other);
-
 
     /**
      * Returns the binary ndarray for "Equals" comparison.
@@ -437,14 +422,6 @@ public interface INDArray extends Serializable {
      * @return the binary ndarray for "Equals" comparison.
      */
     INDArray eq(Number other);
-
-    /**
-     * Returns the binary ndarray for "Equals" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray eqi(Number other);
 
     /**
      * Returns the binary ndarray for "Greater" comparison.
@@ -471,30 +448,6 @@ public interface INDArray extends Serializable {
     INDArray lte(Number other);
 
     /**
-     * Returns the binary ndarray for "Greter or equals" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray gtei(Number other);
-
-    /**
-     * Returns the binary ndarray for "Less or equals" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray ltei(Number other);
-
-    /**
-     * Returns the binary ndarray for "Greter" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray gti(Number other);
-
-    /**
      * Returns the binary ndarray for "Less" comparison.
      *
      * @param other the ndarray to compare.
@@ -502,14 +455,6 @@ public interface INDArray extends Serializable {
      */
 
     INDArray lt(INDArray other);
-
-    /**
-     * Returns the binary ndarray for "Less" comparison. In-place method.
-     *
-     * @param other the ndarray to compare.
-     * @return this object.
-     */
-    INDArray lti(INDArray other);
 
 
     /**
@@ -521,28 +466,12 @@ public interface INDArray extends Serializable {
     INDArray eps(INDArray other);
 
     /**
-     * Returns the binary ndarray for "Epsilon equals" comparison. In-place method.
-     *
-     * @param other the ndarray to compare.
-     * @return this object.
-     */
-    INDArray epsi(INDArray other);
-
-    /**
      * Returns the binary ndarray for "Not equals" comparison.
      *
      * @param other the number to compare.
      * @return the binary ndarray for "Not equals" comparison.
      */
     INDArray neq(Number other);
-
-    /**
-     * Returns the binary ndarray for "Not equals" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray neqi(Number other);
 
     /**
      * Returns the binary ndarray for "Not equals" comparison.
@@ -553,14 +482,6 @@ public interface INDArray extends Serializable {
     INDArray neq(INDArray other);
 
     /**
-     * Returns the binary ndarray for "Not equals" comparison. In-place method.
-     *
-     * @param other the ndarray to compare.
-     * @return this object.
-     */
-    INDArray neqi(INDArray other);
-
-    /**
      * Returns the binary ndarray for "Equals" comparison.
      *
      * @param other the ndarray to compare.
@@ -568,13 +489,6 @@ public interface INDArray extends Serializable {
      */
     INDArray eq(INDArray other);
 
-    /**
-     * Returns the binary ndarray for "Equals" comparison. In-place method.
-     *
-     * @param other the ndarray to compare.
-     * @return this object.
-     */
-    INDArray eqi(INDArray other);
 
     /**
      * Returns the binary ndarray for "Greter" comparison.
@@ -583,14 +497,6 @@ public interface INDArray extends Serializable {
      * @return the binary ndarray for "Greter" comparison.
      */
     INDArray gt(INDArray other);
-
-    /**
-     * Returns the binary ndarray for "Greter" comparison. In-place method.
-     *
-     * @param other the ndarray to compare.
-     * @return this object.
-     */
-    INDArray gti(INDArray other);
 
     /**
      * Returns the ndarray negative (cloned)

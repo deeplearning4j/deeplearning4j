@@ -57,6 +57,7 @@ import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
@@ -1585,20 +1586,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray eps(Number other) {
-        return dup().epsi(other);
-    }
-
-    /**
-     * Returns an ndarray with 1 if the element is epsilon equals
-     *
-     * @param other the number to compare
-     * @return a ndarray with the given
-     * binary conditions
-     */
-    @Override
-    public INDArray epsi(Number other) {
-        INDArray otherArr = Nd4j.valueArrayOf(shape(), other.doubleValue());
-        return epsi(otherArr);
+        return Nd4j.getExecutioner().exec(new ScalarEps(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     /**
@@ -1611,134 +1599,58 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray eps(INDArray other) {
-        return dup().epsi(other);
-    }
-
-    /**
-     * In place epsilon equals than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
-     *
-     * @param other the number to compare
-     * @return
-     */
-    @Override
-    public INDArray epsi(INDArray other) {
-        Nd4j.getExecutioner().exec(new Eps(this, other, this, length()));
-        return this;
+        return Nd4j.getExecutioner().exec(new Eps(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
     }
 
     @Override
     public INDArray lt(Number other) {
-        return dup().lti(other);
+        return Nd4j.getExecutioner().exec(new ScalarLessThan(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     @Override
     public INDArray lte(Number other) {
-        return dup().ltei(other);
-    }
-
-    @Override
-    public INDArray lti(Number other) {
-
-        Nd4j.getExecutioner().exec(new ScalarLessThan(this, other));
-        return this;
-    }
-
-    @Override
-    public INDArray ltei(Number other) {
-
-        Nd4j.getExecutioner().exec(new ScalarLessThanOrEqual(this, other));
-        return this;
+        return Nd4j.getExecutioner().exec(new ScalarLessThanOrEqual(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     @Override
     public INDArray eq(Number other) {
-        return dup().eqi(other);
-    }
-
-    @Override
-    public INDArray eqi(Number other) {
-
-        Nd4j.getExecutioner().exec(new ScalarEquals(this, other));
-        return this;
+        return Nd4j.getExecutioner().exec(new ScalarEquals(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     @Override
     public INDArray gt(Number other) {
-        return dup().gti(other);
+        return Nd4j.getExecutioner().exec(new ScalarGreaterThan(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     @Override
     public INDArray gte(Number other) {
-        return dup().gtei(other);
+        return Nd4j.getExecutioner().exec(new ScalarGreaterThanOrEqual(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
-    @Override
-    public INDArray gtei(Number other) {
-        Nd4j.getExecutioner().exec(new ScalarGreaterThanOrEqual(this, other));
-        return this;
-    }
-
-    @Override
-    public INDArray gti(Number other) {
-        Nd4j.getExecutioner().exec(new ScalarGreaterThan(this, other));
-        return this;
-    }
 
     @Override
     public INDArray lt(INDArray other) {
-        return dup().lti(other);
-    }
-
-    @Override
-    public INDArray lti(INDArray other) {
-        Nd4j.getExecutioner().exec(new OldLessThan(this, other, this, length()));
-        return this;
+        return Nd4j.getExecutioner().exec(new OldLessThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
     }
 
     @Override
     public INDArray neq(Number other) {
-        return dup().neqi(other);
-    }
-
-    @Override
-    public INDArray neqi(Number other) {
-        Nd4j.getExecutioner().exec(new ScalarNotEquals(this, other));
-        return this;
+        return Nd4j.getExecutioner().exec(new ScalarNotEquals(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     @Override
     public INDArray neq(INDArray other) {
-        return dup().neqi(other);
-    }
-
-    @Override
-    public INDArray neqi(INDArray other) {
-        Nd4j.getExecutioner().exec(new OldNotEqualTo(this, other, this, length()));
-        return this;
+        return Nd4j.getExecutioner().exec(new OldNotEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
     }
 
     @Override
     public INDArray eq(INDArray other) {
-        return dup().eqi(other);
-    }
-
-    @Override
-    public INDArray eqi(INDArray other) {
-        Nd4j.getExecutioner().exec(new OldEqualTo(this, other, this, length()));
-        return this;
+        return Nd4j.getExecutioner().exec(new OldEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
     }
 
     @Override
     public INDArray gt(INDArray other) {
-        return dup().gti(other);
-    }
-
-    @Override
-    public INDArray gti(INDArray other) {
-        Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, this, length()));
-        return this;
+        return Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
     }
 
     /**
