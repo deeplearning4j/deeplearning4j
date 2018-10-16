@@ -3622,7 +3622,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, Nd4j.order()), DataType.DOUBLE);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3644,7 +3644,8 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape);
+        val lshape = ArrayUtil.toLongArray(shape);
+        INDArray ret = INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, Nd4j.order()), DataType.DOUBLE);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3670,7 +3671,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, stride, offset);
+        INDArray ret = INSTANCE.create(data, ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), DataType.DOUBLE);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3681,7 +3682,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, stride, offset, order);
+        INDArray ret = INSTANCE.create(data, shape, stride, order, DataType.DOUBLE);
         logCreationIfNecessary(ret);
         return ret;
     }

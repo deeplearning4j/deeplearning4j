@@ -849,6 +849,14 @@ public interface NDArrayFactory {
     INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType);
 
 
+    INDArray create(double[] data, long[] shape, long[] stride, char order, DataType dataType);
+    INDArray create(long[] data, long[] shape, long[] stride, char order, DataType dataType);
+    INDArray create(int[] data, long[] shape, long[] stride, char order, DataType dataType);
+    INDArray create(short[] data, long[] shape, long[] stride, char order, DataType dataType);
+    INDArray create(byte[] data, long[] shape, long[] stride, char order, DataType dataType);
+    INDArray create(boolean[] data, long[] shape, long[] stride, char order, DataType dataType);
+
+
     /**
      * Create an ndrray with the specified shape
      *

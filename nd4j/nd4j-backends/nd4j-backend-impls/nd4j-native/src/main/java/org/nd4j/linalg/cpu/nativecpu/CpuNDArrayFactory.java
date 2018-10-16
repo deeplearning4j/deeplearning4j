@@ -311,6 +311,36 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
+    public INDArray create(double[] data, long[] shape, long[] stride, char order, DataType dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+    }
+
+    @Override
+    public INDArray create(long[] data, long[] shape, long[] stride, char order, DataType dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+    }
+
+    @Override
+    public INDArray create(int[] data, long[] shape, long[] stride, char order, DataType dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+    }
+
+    @Override
+    public INDArray create(short[] data, long[] shape, long[] stride, char order, DataType dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+    }
+
+    @Override
+    public INDArray create(byte[] data, long[] shape, long[] stride, char order, DataType dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+    }
+
+    @Override
+    public INDArray create(boolean[] data, long[] shape, long[] stride, char order, DataType dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+    }
+
+    @Override
     public INDArray create(float[] data, long[] shape, long[] stride, DataType dataType) {
         return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
@@ -657,7 +687,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             shape = new long[] {source.shape()[sourceDimension], indexes.length};
         else
             throw new UnsupportedOperationException("2D input is expected");
-        return pullRows(source, Nd4j.createUninitialized(shape, order), sourceDimension, indexes);
+        return pullRows(source, Nd4j.createUninitialized(source.dataType(), shape, order), sourceDimension, indexes);
     }
 
     @Override
@@ -684,7 +714,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         INDArray ret = destination;
         if(ret == null){
-            ret = Nd4j.createUninitialized(shape, order);
+            ret = Nd4j.createUninitialized(source.dataType(), shape, order);
         } else {
             if(!Arrays.equals(shape, destination.shape())){
                 throw new IllegalStateException("Cannot pull rows into destination array: expected destination array of" +
@@ -694,26 +724,26 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         Nd4j.getCompressor().autoDecompress(source);
 
-        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+        val dummy = new PointerPointer(new Pointer[] {null});
 
-        TADManager tadManager = Nd4j.getExecutioner().getTADManager();
+        val tadManager = Nd4j.getExecutioner().getTADManager();
 
-        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(source, new int[] {sourceDimension});
+        val tadBuffers = tadManager.getTADOnlyShapeInfo(source, new int[] {sourceDimension});
 
-        Pair<DataBuffer, DataBuffer> zTadBuffers = tadManager.getTADOnlyShapeInfo(ret, new int[] {sourceDimension});
+        val zTadBuffers = tadManager.getTADOnlyShapeInfo(ret, new int[] {sourceDimension});
 
-        Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
+        val hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
 
-        Pointer zTadShapeInfo = zTadBuffers.getFirst().addressPointer();
+        val zTadShapeInfo = zTadBuffers.getFirst().addressPointer();
 
-        LongPointer pIndex = new LongPointer(indexes);
+        val pIndex = new LongPointer(indexes);
 
-        DataBuffer offsets = tadBuffers.getSecond();
-        Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
+        val offsets = tadBuffers.getSecond();
+        val hostTadOffsets = offsets == null ? null : offsets.addressPointer();
 
-        DataBuffer zOffsets = zTadBuffers.getSecond();
+        val zOffsets = zTadBuffers.getSecond();
 
-        Pointer zTadOffsets = zOffsets == null ? null : zOffsets.addressPointer();
+        val zTadOffsets = zOffsets == null ? null : zOffsets.addressPointer();
 
 
         nativeOps.pullRows(dummy, source.data().addressPointer(),

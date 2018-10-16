@@ -1144,10 +1144,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testRowVectorGemm() {
-        INDArray linspace = Nd4j.linspace(1, 4, 4);
+        INDArray linspace = Nd4j.linspace(1, 4, 4).reshape(1, 4);
         INDArray other = Nd4j.linspace(1, 16, 16).reshape(4, 4);
         INDArray result = linspace.mmul(other);
-        INDArray assertion = Nd4j.create(new double[] {90, 100, 110, 120});
+        INDArray assertion = Nd4j.create(new double[] {90, 100, 110, 120}).reshape(4, 1);
         assertEquals(assertion, result);
     }
 
@@ -2994,7 +2994,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testBroadCast() {
-        INDArray n = Nd4j.linspace(1, 4, 4);
+        INDArray n = Nd4j.linspace(1, 4, 4).reshape(1, 4);
         INDArray broadCasted = n.broadcast(5, 4);
         for (int i = 0; i < broadCasted.rows(); i++) {
             INDArray row = broadCasted.getRow(i);
@@ -4227,7 +4227,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testReductionAgreement1() throws Exception {
-        INDArray row = Nd4j.linspace(1, 3, 3);
+        INDArray row = Nd4j.linspace(1, 3, 3).reshape(1, 3);
         INDArray mean0 = row.mean(0);
         assertFalse(mean0 == row); //True: same object (should be a copy)
 
@@ -5288,7 +5288,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNativeSort3() throws Exception {
-        INDArray array = Nd4j.linspace(1, 1048576, 1048576);
+        INDArray array = Nd4j.linspace(1, 1048576, 1048576).reshape(1, -1);
         INDArray exp = array.dup();
         Nd4j.shuffle(array, 0);
 
@@ -5302,7 +5302,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNativeSort3_1() throws Exception {
-        INDArray array = Nd4j.linspace(1, 2017152, 2017152);
+        INDArray array = Nd4j.linspace(1, 2017152, 2017152).reshape(1, -1);
         INDArray exp = array.dup();
         Transforms.reverse(array, false);
 
@@ -5318,7 +5318,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testNativeSortAlongDimension1() throws Exception {
         INDArray array = Nd4j.create(1000, 1000);
-        INDArray exp1 = Nd4j.linspace(1, 1000, 1000);
+        INDArray exp1 = Nd4j.linspace(1, 1000, 1000).reshape(1, -1);
         INDArray dps = exp1.dup();
         Nd4j.shuffle(dps, 0);
 
@@ -5343,7 +5343,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testNativeSortAlongDimension3() throws Exception {
         INDArray array = Nd4j.create(2000, 2000);
-        INDArray exp1 = Nd4j.linspace(1, 2000, 2000);
+        INDArray exp1 = Nd4j.linspace(1, 2000, 2000).reshape(1, -1);
         INDArray dps = exp1.dup();
 
         Nd4j.getExecutioner().commit();

@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -157,7 +158,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testVectorIndexing() {
-        INDArray x = Nd4j.linspace(0, 10, 11);
+        INDArray x = Nd4j.linspace(0, 10, 11).reshape(1, 11).castTo(DataType.DOUBLE);
         int[] index = new int[] {5, 8, 9};
         INDArray columnsTest = x.getColumns(index);
         assertEquals(Nd4j.create(new double[] {5, 8, 9}), columnsTest);
