@@ -15,10 +15,10 @@ This section will cover the technical details of Deeplearning4j's Apache Spark g
 * [Fault Tolerance](#faulttol)
 
 ## <a name="asgd">Asynchronous SGD Implementation</a>
-DL4J’s asynchronous SGD implementation is based on the [Strom 2015 neural network training paper](http://nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf) by Nikko Strom, with some modifications.
+DL4J's asynchronous SGD implementation is based on the [Strom 2015 neural network training paper](http://nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf) by Nikko Strom, with some modifications.
 The next section will review the key features of the Strom paper followed by another section that describes the DL4J implementation and how it differs from the paper.
 
-### Strom’s Approach
+### Strom's Approach
 When training a neural network on a cluster, the worker machines need to communicate changes to their parameters - either by communicating the new parameter values directly (such as in parameter averaging) or by communicating gradient/update information (as in gradient sharing).
 
 The key feature of this approach is that opposed to relaying all parameters/updates across the network only updates that are above a user specified threshold are communicated. Put another way: we start out with an update vector (1 entry per parameter) that needs to be communicated. Instead of communicating the vector as-is, we communicate only the large elements in a quantized way (which is a sparse binary vector) instead of all elements.
@@ -33,7 +33,7 @@ The update vectors, δi,j in the image above, are:
 2. Quantized to a single bit: each element of the sparse update vector takes value +τ or −τ. This value of τ is the same for all elements of the vector, hence only a single bit is required to differentiate between the two options
 3. Integer indexes (used to identify the entries in the sparse array) are optionally compressed using entropy coding to further reduce update sizes (the author quotes a further 3x reduction at the cost of additional computation, though the benefit may not be worth the additional cost)
 
-One of the main concerns of asynchronous SGD is the issue of stale gradients. Stale gradients need not be explicitly handled in Strom’s approach - in most cases, the updates are applied very quickly on each node. The paper reports a reduction in network transfers by several orders of magnitude. Given a suitably computation intensive model (like an RNN or a CNN) this drastic reduction in network communication ensures that model equivalency is maintained across all nodes and stale gradients are not an issue.
+One of the main concerns of asynchronous SGD is the issue of stale gradients. Stale gradients need not be explicitly handled in Strom's approach - in most cases, the updates are applied very quickly on each node. The paper reports a reduction in network transfers by several orders of magnitude. Given a suitably computation intensive model (like an RNN or a CNN) this drastic reduction in network communication ensures that model equivalency is maintained across all nodes and stale gradients are not an issue.
 
 However the approach is not without its downsides as described below:
 1. Strom reports that convergence can suffer in the early stages of training (using fewer compute nodes for a fraction of an epoch seems to help)
@@ -41,9 +41,9 @@ However the approach is not without its downsides as described below:
 3. The process introduces two additional hyperparameters to consider: the value for the threshold, τ and whether to use entropy coding for the updates or not (though notably both parameter averaging and async SGD also introduce additional hyperparameters)
 
 
-### DL4J’s ASGD implementation
+### DL4J's ASGD implementation
 
-The DL4J implementation differs from Strom’s approach in the following ways:
+The DL4J implementation differs from Strom's approach in the following ways:
 
 1. Not point-to-point: 
 The implementation allows the user to choose between two modes of network organization - plain mode and mesh mode. Plain mode is to be used when the number of nodes in the cluster are < 32 nodes and mesh mode is to be used for larger clusters. Refer to the section on [different modes](#modes) for more details.
@@ -81,14 +81,14 @@ Updates are send using one of two schemes as described below.
   * Threshold encoding: Sends an array of integers each referring to the index of the parameter. A positive integer is send for a positive threshold and a negative integer is send for a negative threshold.
   * Bitmap encoding: Each parameter update is encoded with two bits. The four states are used to indicate no change, a +ve threshold change, a -ve threshold change and a half threshold change that cycles between +ve and -ve.
 
-Using these two kinds of encoding schemes accommodates cases when the updates are dense. Since each node has its own threshold it’s value is also communicated with each transfer. Encoding updates are pushed down to optimized native code (c++) for the sake of performance and GPU parallelization.
+Using these two kinds of encoding schemes accommodates cases when the updates are dense. Since each node has its own threshold it's value is also communicated with each transfer. Encoding updates are pushed down to optimized native code (c++) for the sake of performance and GPU parallelization.
 The sparse threshold (integer index) encoding can result in very high compression rates, whereas the bitmap encoding results in a fixed size 16x compression ratio (i.e., 2 bits per parameter vs. 32 bits for the original update vector).
 
 
 ## <a name="parameteravg">Parameter Averaging Implementation</a>
 The parameter averaging implementation was the first distributed training implementation in DL4J. It has since been superseded by the gradient sharing implementation described in the previous section. Details on the parameter averaging implementation are included here for the sake of completeness.
 
-The parameter averaging implementation is a synchronous SGD approach implemented entirely in Spark. DL4J’s parameter averaging implementation uses a single parameter server, a role served by the Spark master node. 
+The parameter averaging implementation is a synchronous SGD approach implemented entirely in Spark. DL4J's parameter averaging implementation uses a single parameter server, a role served by the Spark master node. 
 
 Parameter averaging is the conceptually simplest approach to data parallelism. It requires the user to specify the frequency at which the workers synchronize with each other and the master. With parameter averaging, training proceeds as follows:
 
@@ -104,7 +104,7 @@ Steps 3a through 3c are demonstrated in the image below. In this diagram, W repr
 
 ![Parameter Averaging](/images/guide/parameteraveraging.svg)
 
-The implementation uses Spark’s treeAggregate under the hood. There are a number of enhancements that can be made to this implementation that will result in faster training times. Even with these enhancements in place the asynchronous SGD approach with quantized compressed updates is expected to continue to be much faster. Therefore the user is strongly recommended to switch from the parameter averaging implementation to the asynchronous SGD gradient sharing approach.
+The implementation uses Spark's treeAggregate under the hood. There are a number of enhancements that can be made to this implementation that will result in faster training times. Even with these enhancements in place the asynchronous SGD approach with quantized compressed updates is expected to continue to be much faster. Therefore the user is strongly recommended to switch from the parameter averaging implementation to the asynchronous SGD gradient sharing approach.
 
 
 ## <a name="faulttol">Fault Tolerance</a>

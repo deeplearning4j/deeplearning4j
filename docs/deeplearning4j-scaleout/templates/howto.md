@@ -252,7 +252,7 @@ Then, at the start of your training job, add the following code:
     conf.set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
 ```
 
-Note that when using Deeplearning4j’s SparkDl4jMultiLayer or SparkComputationGraph classes, a warning will be logged if the Kryo configuration is incorrect.
+Note that when using Deeplearning4j's SparkDl4jMultiLayer or SparkComputationGraph classes, a warning will be logged if the Kryo configuration is incorrect.
 
 ## <a name="yarngpus">How to use YARN and GPUs</a>
 
@@ -527,7 +527,7 @@ It is possible to get errors like ```NTPTimeSource: Error querying NTP server, a
 
 Two solutions are available:
 
-1. Don’t use ```sparkNet.setCollectTrainingStats(true)``` - this functionality is optional (not required for training), and is disabled by default
+1. Don't use ```sparkNet.setCollectTrainingStats(true)``` - this functionality is optional (not required for training), and is disabled by default
 2. Set the system to use the local machine clock instead of the NTP server, as the time source (note however that the timeline information may be very inaccurate as a result)
 To use the system clock time source, add the following to Spark submit:
 ```

@@ -30,7 +30,7 @@ You should use Spark when:
 2. You need more than single machine to train the network
 3. Your network is large to justify a distributed implementation
 
-For a single machine with multiple GPUs or multiple physical processors, users should consider using DL4J’s Parallel-Wrapper implementation as shown in [this example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/MultiGpuLenetMnistExample.java). ParallelWrapper allows for easy data parallel training of networks on a single machine with multiple cores. Spark has higher overheads compared to ParallelWrapper for single machine training.
+For a single machine with multiple GPUs or multiple physical processors, users should consider using DL4J's Parallel-Wrapper implementation as shown in [this example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/MultiGpuLenetMnistExample.java). ParallelWrapper allows for easy data parallel training of networks on a single machine with multiple cores. Spark has higher overheads compared to ParallelWrapper for single machine training.
 
 Similarly, if you don't need Spark (smaller networks and/or datasets) - it is recommended to use single machine training, which is usually simpler to set up.
 
@@ -68,7 +68,7 @@ The following are key classes the user should be familiar with to get started wi
 
   * **TrainingMaster**: Specifies how distributed training will be conducted in practice. Implementations include Gradient Sharing (SharedTrainingMaster) or Parameter Averaging (ParameterAveragingTrainingMaster)
   * **SparkDl4jMultiLayer and SparkComputationGraph**: These are wrappers around the MultiLayerNetwork and ComputationGraph classes in DL4J that enable the functionality related to distributed training. For training, they are configured with a TrainingMaster.
-  * **```RDD<DataSet>``` and ```RDD<MultiDataSet>```**: A Spark RDD with DL4J’s DataSet or MultiDataSet classes define the source of the training data (or evaluation data). Note that the recommended best practice is to preprocess your data once, and save it to network storage such as HDFS. Refer to the [Deeplearning4j on Spark: How To Build Data Pipelines](deeplearning4j-scaleout-data-howto) section for more details.
+  * **```RDD<DataSet>``` and ```RDD<MultiDataSet>```**: A Spark RDD with DL4J's DataSet or MultiDataSet classes define the source of the training data (or evaluation data). Note that the recommended best practice is to preprocess your data once, and save it to network storage such as HDFS. Refer to the [Deeplearning4j on Spark: How To Build Data Pipelines](deeplearning4j-scaleout-data-howto) section for more details.
 
 
 The training workflow usually proceeds as follows:
