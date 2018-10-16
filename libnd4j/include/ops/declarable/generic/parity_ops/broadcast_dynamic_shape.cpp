@@ -29,6 +29,8 @@ namespace nd4j {
     namespace ops {
         DECLARE_TYPES(broadcast_dynamic_shape) {
             getOpDescriptor()
+                    ->setAllowedOutputTypes({ALL_INTS})
+                    ->setAllowedInputTypes({ALL_INTS})
                     ->setSameMode(true);
         }
 
