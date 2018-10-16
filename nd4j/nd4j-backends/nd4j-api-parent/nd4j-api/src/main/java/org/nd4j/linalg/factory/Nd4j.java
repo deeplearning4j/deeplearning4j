@@ -3411,8 +3411,7 @@ public class Nd4j {
         if (columns < 1)
             throw new ND4JIllegalStateException("Number of columns should be positive for new INDArray");
 
-        INDArray ret = INSTANCE.create(new int[] {1, columns}, Nd4j.getStrides(new int[] {1, columns}, order), 0,
-                order);
+        INDArray ret = INSTANCE.create(new long[] {columns}, Nd4j.getStrides(new long[] {columns}, order), 0, order);
         logCreationIfNecessary(ret);
         return ret;
     }
