@@ -90,8 +90,8 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
                     ->setAllowedInputTypes(1, {ALL_FLOATS})
                     ->setAllowedInputTypes(2, {ALL_FLOATS})
                     ->setAllowedInputTypes(3, {ALL_FLOATS})
-                    ->setAllowedInputTypes(4, {ALL_FLOATS})
-                    ->setAllowedInputTypes(5, {ALL_FLOATS})
+                    ->setAllowedInputTypes(4, {ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(5, {ALL_FLOATS, ALL_INTS})
                     ->setAllowedOutputTypes(0, {ALL_FLOATS})
                     ->setAllowedOutputTypes(1, {ALL_FLOATS});
         }
