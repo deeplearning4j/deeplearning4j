@@ -156,9 +156,9 @@ namespace nd4j {
 
         DECLARE_TYPES(where_np) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::BOOL)
-                    ->setAllowedInputTypes(1, DataType::ANY)
-                    ->setAllowedInputTypes(2, DataType::ANY)
+                    ->setAllowedInputTypes(0, nd4j::DataType::BOOL)
+                    ->setAllowedInputTypes(1, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(2, nd4j::DataType::ANY)
                     ->setAllowedOutputTypes( {ALL_FLOATS, ALL_INTS});
         }
     }
