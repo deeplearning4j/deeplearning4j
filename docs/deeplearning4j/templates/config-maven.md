@@ -19,11 +19,12 @@ You can use Deeplearning4j with Maven by adding the following to your `pom.xml`:
 </dependencies>
 ```
 
-The instructions below apply to all DL4J and ND4J submodules, such as deeplearning4j-api, deeplearning4j-scaleout, and ND4J backends.
+The instructions below apply to all DL4J and ND4J submodules, such as `deeplearning4j-api`, `deeplearning4j-scaleout`, and ND4J backends.
 
 ## Add a backend
 
-DL4J relies on ND4J for hardware-specific implementations and tensor operations. Add a backend by adding the following to your `pom.xml`:
+DL4J relies on ND4J for hardware-specific implementations and tensor operations. Add a backend by pasting the following snippet into your `pom.xml`:
+
 ```xml
 <dependencies>
   <dependency>
