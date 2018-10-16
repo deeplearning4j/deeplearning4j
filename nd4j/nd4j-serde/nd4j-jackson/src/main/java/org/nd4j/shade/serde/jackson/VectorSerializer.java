@@ -27,7 +27,9 @@ import java.io.IOException;
 
 /**
  * @author Adam Gibson
+ * @deprecated Use {@link org.nd4j.serde.jackson.VectorSerializer}
  */
+@Deprecated
 public class VectorSerializer extends JsonSerializer<INDArray> {
     @Override
     public void serialize(INDArray indArray, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)

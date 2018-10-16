@@ -658,7 +658,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
     public <T extends Evaluation> T evaluate(JavaRDD<DataSet> data, List<String> labelsList, int evalBatchSize) {
-        Evaluation e = new Evaluation();
+        Evaluation e = new org.deeplearning4j.eval.Evaluation();
         e = doEvaluation(data, e, evalBatchSize);
         if (labelsList != null) {
             e.setLabelsList(labelsList);
