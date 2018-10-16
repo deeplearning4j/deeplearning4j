@@ -577,4 +577,72 @@ Downgrade to Ubuntu 14.04
 
 **Option 4**
 
+## <a href="caching">How to Cache RDD[INDArray] and RDD[DataSet] Safely</a>
+
+Spark has some issues regarding how it handles Java objects with large off-heap components, such as the DataSet and INDArray objects used in Deeplearning4j. This section explains the issues related to caching/persisting these objects.
+
+The key points to know about are:
+
+* MEMORY_ONLY and MEMORY_AND_DISK persistence can be problematic with off-heap memory, due to Spark not properly estimating the size of objects in the RDD. This can lead to out of (off-heap) memory issues.
+* When persisting a ```RDD<DataSet>``` or ```RDD<INDArray>``` for re-use, use MEMORY_ONLY_SER or MEMORY_AND_DISK_SER
+
+**Why MEMORY_ONLY_SER or MEMORY_AND_DISK_SER Are Recommended**
+
+One of the way that Apache Spark improves performance is by allowing users to cache data in memory. This can be done using the ```RDD.cache()``` or ```RDD.persist(StorageLevel.MEMORY_ONLY())``` to store the contents in-memory, in deserialized (i.e., standard Java object) form.
+The basic idea is simple: if you persist a RDD, you can re-use it from memory (or disk, depending on configuration) without having to recalculate it. However, large RDDs may not entirely fit into memory. In this case, some parts of the RDD have to be recomputed or loaded from disk, depending on the storage level used. Furthermore, to avoid using too much memory, Spark will drop parts (blocks) of an RDD when required.
+
+The main storage levels available in Spark are listed below. For an explanation of  these, see the [Spark Programming Guide](https://spark.apache.org/docs/1.6.2/programming-guide.html#rdd-persistence).
+
+* MEMORY_ONLY
+* MEMORY_AND_DISK
+* MEMORY_ONLY_SER
+* MEMORY_AND_DISK_SER
+* DISK_ONLY
+
+The problem with Spark is how it handles memory. In particular, Spark will drop part of an RDD (a block) based on the estimated size of that block. The way Spark estimates the size of a block depends on the persistence level. For ```MEMORY_ONLY``` and ```MEMORY_AND_DISK``` persistence, this is done by walking the Java object graph - i.e., look at the fields in an object and recursively estimate the size of those objects. This process does not however take into account the off-heap memory used by Deeplearning4j or ND4J. For objects like DataSets and INDArrays (which are stored almost entirely off-heap), Spark significantly under-estimates the true size of the objects using this process. Furthermore, Spark considers only the amount of on-heap memory use when deciding whether to keep or drop blocks. Because DataSet and INDArray objects have a very small on-heap size, Spark will keep too many of them around with ```MEMORY_ONLY``` and ```MEMORY_AND_DISK``` persistence, resulting in off-heap memory being exhausted, causing out of memory issues.
+
+However, for ```MEMORY_ONLY_SER``` and ```MEMORY_AND_DISK_SER``` Spark stores blocks in *serialized* form, on the Java heap. The size of objects stored in serialized form can be estimated accurately by Spark (there is no off-heap memory component for the serialized objects) and consequently Spark will drop blocks when required - avoiding any out of memory issues.
+
+## <a href="ntperror">How to fix "Error querying NTP server" errors</a>
+
+DL4J's parameter averaging implementation has the option to collect training stats, by using ```SparkDl4jMultiLayer.setCollectTrainingStats(true)```.
+When this is enabled, internet access is required to connect to the NTP (network time protocal) server.
+
+It is possible to get errors like ```NTPTimeSource: Error querying NTP server, attempt 1 of 10```. Sometimes these failures are transient (later retries will work) and can be ignored. However, if the Spark cluster is configured such that one or more of the workers cannot access the internet (or specifically, the NTP server), all retries can fail.
+
+Two solutions are available:
+
+1. Don't use ```sparkNet.setCollectTrainingStats(true)``` - this functionality is optional (not required for training), and is disabled by default
+2. Set the system to use the local machine clock instead of the NTP server, as the time source (note however that the timeline information may be very inaccurate as a result)
+To use the system clock time source, add the following to Spark submit:
+```
+--conf spark.driver.extraJavaOptions=-Dorg.deeplearning4j.spark.time.TimeSource=org.deeplearning4j.spark.time.SystemClockTimeSource
+--conf spark.executor.extraJavaOptions=-Dorg.deeplearning4j.spark.time.TimeSource=org.deeplearning4j.spark.time.SystemClockTimeSource
+```
+
+## <a href="ubuntu16">Failed training on Ubuntu 16.04 (Ubuntu bug that may affect DL4J users)</a>
+
+When running a Spark on YARN cluster on Ubuntu 16.04 machines, chances are that after finishing a job, all processes owned by the user running Hadoop/YARN are killed. This is related to a bug in Ubuntu, which is documented at https://bugs.launchpad.net/ubuntu/+source/procps/+bug/1610499. There's also a Stackoverflow discussion about it at http://stackoverflow.com/questions/38419078/logouts-while-running-hadoop-under-ubuntu-16-04.
+
+Some workarounds are suggested. 
+
+**Option 1**
+
+Add
+```
+[login]
+KillUserProcesses=no
+```
+to /etc/systemd/logind.conf, and reboot.
+
+**Option 2**
+
+Copy the /bin/kill binary from Ubuntu 14.04 and use that one instead. 
+
+**Option 3**
+
+Downgrade to Ubuntu 14.04 
+
+**Option 4**
+
 run ```sudo loginctl enable-linger hadoop_user_name``` on cluster nodes
