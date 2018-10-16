@@ -1963,6 +1963,7 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
     //auto result = op->execute(inputs, ttArgs, iiArgs, isInplace);
 
 
+
     if (!isInplace)
         for (int e = 0; e < numOutputs; e++) {
             //shape::printShapeInfoLinear("JVM output shape", (int *) outputShapes[e]);
@@ -2008,7 +2009,7 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
     for (auto v: outputs)
         delete v;
 
-    return Status::OK();
+    return result;
 }
 
 

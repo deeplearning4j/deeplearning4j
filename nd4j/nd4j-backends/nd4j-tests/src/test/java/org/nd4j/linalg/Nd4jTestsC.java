@@ -6000,7 +6000,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testVectorScalarConcat() {
         val vector = Nd4j.trueVector(new float[] {1, 2});
-        val scalar = Nd4j.trueScalar(3.0f);
+        val scalar = Nd4j.scalar(DataType.FLOAT, 3.0f);
 
         val output = Nd4j.trueVector(new float[]{0, 0, 0});
         val exp = Nd4j.trueVector(new float[]{1, 2, 3});

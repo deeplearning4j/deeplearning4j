@@ -10485,6 +10485,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
             public native @Cast("bool") boolean checkInputMatch(int index, @Cast("nd4j::DataType") int dataType);
             public native @Cast("bool") boolean checkOutputMatch(int index, @Cast("nd4j::DataType") int dataType);
+            public native @Cast("bool") boolean isSameMode();
         }
     
 
