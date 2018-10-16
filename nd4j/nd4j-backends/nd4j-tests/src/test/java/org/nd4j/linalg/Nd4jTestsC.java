@@ -1998,12 +1998,12 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testTranspose() {
-        INDArray n = Nd4j.create(Nd4j.ones(100).data(), new long[] {5, 5, 4});
+        INDArray n = Nd4j.create(Nd4j.ones(100).data(), new long[] {5, 5, 4}).castTo(DataType.DOUBLE);
         INDArray transpose = n.transpose();
         assertEquals(n.length(), transpose.length());
         assertEquals(true, Arrays.equals(new long[] {4, 5, 5}, transpose.shape()));
 
-        INDArray rowVector = Nd4j.linspace(1, 10, 10);
+        INDArray rowVector = Nd4j.linspace(1, 10, 10).reshape(1, -1);
         assertTrue(rowVector.isRowVector());
         INDArray columnVector = rowVector.transpose();
         assertTrue(columnVector.isColumnVector());
@@ -4231,7 +4231,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray mean0 = row.mean(0);
         assertFalse(mean0 == row); //True: same object (should be a copy)
 
-        INDArray col = Nd4j.linspace(1, 3, 3).transpose();
+        INDArray col = Nd4j.linspace(1, 3, 3).reshape(1, -1).transpose();
         INDArray mean1 = col.mean(1);
         assertFalse(mean1 == col);
     }
