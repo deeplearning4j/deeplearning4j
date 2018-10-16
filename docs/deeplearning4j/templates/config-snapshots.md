@@ -50,8 +50,8 @@ For more details on the repositories section of the pom.xml file, see [Maven doc
 If using properties like the DL4J examples, change:
 From version:
 ```
-<!--<dl4j.version>1.0.0-beta2</dl4j.version>-->
-<!--<nd4j.version>1.0.0-beta2</nd4j.version>-->
+<dl4j.version>1.0.0-beta2</dl4j.version>
+<nd4j.version>1.0.0-beta2</nd4j.version>
 ```
 To version:
 ```
