@@ -53,11 +53,12 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
     return Status::OK();
 }
 
-        DECLARE_TYPES(embedding_lookup) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
-        }
+DECLARE_TYPES(embedding_lookup) {
+    getOpDescriptor()
+            ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+            ->setAllowedInputTypes(1, {ALL_INTS})
+            ->setAllowedOutputTypes(nd4j::DataType::ANY);
+}
 
 DECLARE_SHAPE_FN(embedding_lookup) {
 
