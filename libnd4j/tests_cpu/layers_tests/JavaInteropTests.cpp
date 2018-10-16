@@ -133,6 +133,28 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
     nativeOps.deleteShapeList((Nd4jPointer) shapeList);
 }
 
+TEST_F(JavaInteropTests, Test_Squeeze_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 6}, {1, 2, 3, 4, 5, 6});
+    auto z = NDArrayFactory::create<float>('c', {6});
+    auto e = NDArrayFactory::create<float>('c', {6}, {1, 2, 3, 4, 5, 6});
+
+    nd4j::ops::squeeze op;
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+
+
+    NativeOps nativeOps;
+
+    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}
 
 TEST_F(JavaInteropTests, TestSconv2d_1) {
     auto input = NDArrayFactory::create<float>('c', {3, 3, 8, 8});

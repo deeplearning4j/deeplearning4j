@@ -262,5 +262,8 @@ namespace nd4j {
             return true;
         }
 
+        bool OpDescriptor::isSameMode() {
+            return _sameMode;
+        }
     }
 }

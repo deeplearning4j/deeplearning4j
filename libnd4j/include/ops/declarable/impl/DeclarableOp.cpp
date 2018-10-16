@@ -315,7 +315,13 @@ namespace nd4j {
                     if (var != nullptr && var->hasNDArray()) {
                         auto array = var->getNDArray();
 
-                        if (!_descriptor->checkOutputMatch(index, array->dataType())) {
+                        if (_descriptor->isSameMode()) {
+                            auto iv = block.variable(index);
+
+                            if (iv->getNDArray()->dataType() != array->dataType()) {
+                                return ND4J_STATUS_BAD_ARGUMENTS;
+                            }
+                        } else if (!_descriptor->checkOutputMatch(index, array->dataType())) {
                             return ND4J_STATUS_BAD_ARGUMENTS;
                         }
                     }
