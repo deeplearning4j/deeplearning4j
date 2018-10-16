@@ -14,24 +14,31 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.eval;
+package org.nd4j.evaluation;
 
-import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.eval.curves.Histogram;
-import org.deeplearning4j.eval.curves.ReliabilityDiagram;
 import org.junit.Test;
+import org.nd4j.evaluation.classification.EvaluationCalibration;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-
 /**
  * Created by Alex on 05/07/2017.
  */
-public class EvaluationCalibrationTest extends BaseDL4JTest {
+public class EvaluationCalibrationTest extends BaseNd4jTest {
+
+    public EvaluationCalibrationTest(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Test
     public void testReliabilityDiagram() {
