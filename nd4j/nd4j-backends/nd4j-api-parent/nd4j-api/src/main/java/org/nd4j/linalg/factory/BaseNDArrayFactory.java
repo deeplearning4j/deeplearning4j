@@ -1414,6 +1414,26 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
                 throw new UnsupportedOperationException("Unsupported data type: [" + value.getClass().getSimpleName() + "]");
     }
 
+    public INDArray trueVector(boolean[] data) {
+        return create(data, new long[] {data.length}, new long[]{1}, DataType.BOOL);
+    }
+
+    public INDArray trueVector(byte[] data) {
+        return create(data, new long[] {data.length}, new long[]{1}, DataType.BYTE);
+    }
+
+    public INDArray trueVector(short[] data) {
+        return create(data, new long[] {data.length}, new long[]{1}, DataType.SHORT);
+    }
+
+    public INDArray trueVector(int[] data) {
+        return create(data, new long[] {data.length}, new long[]{1}, DataType.INT);
+    }
+
+    public INDArray trueVector(long[] data) {
+        return create(data, new long[] {data.length}, new long[]{1}, DataType.LONG);
+    }
+
     public INDArray trueVector(float[] data) {
         return create(data, new long[] {data.length}, new long[]{1}, DataType.FLOAT);
     }

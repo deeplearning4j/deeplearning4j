@@ -6825,10 +6825,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testWhere1(){
 
-        INDArray arr = Nd4j.create(new double[][]{{0,1,0},{0,0,1},{0,0,1}});
+        INDArray arr = Nd4j.create(new boolean[][]{{false,true,false},{false,false,true},{false,false,true}});
         INDArray[] exp = new INDArray[]{
-                Nd4j.trueVector(new double[]{0,1,2}),
-                Nd4j.trueVector(new double[]{1,2,2})};
+                Nd4j.trueVector(new long[]{0,1,2}),
+                Nd4j.trueVector(new long[]{1,2,2})};
 
         INDArray[] act = Nd4j.where(arr, null, null);
 
@@ -6838,14 +6838,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testWhere2(){
 
-        INDArray arr = Nd4j.create(3,3,3);
+        INDArray arr = Nd4j.create(DataType.BOOL, 3,3,3);
         arr.putScalar(0,1,0,1.0);
         arr.putScalar(1,2,1,1.0);
         arr.putScalar(2,2,1,1.0);
         INDArray[] exp = new INDArray[]{
-                Nd4j.trueVector(new double[]{0,1,2}),
-                Nd4j.trueVector(new double[]{1,2,2}),
-                Nd4j.trueVector(new double[]{0,1,1})
+                Nd4j.trueVector(new long[]{0,1,2}),
+                Nd4j.trueVector(new long[]{1,2,2}),
+                Nd4j.trueVector(new long[]{0,1,1})
         };
 
         INDArray[] act = Nd4j.where(arr, null, null);
@@ -6855,7 +6855,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testWhere3(){
-        INDArray arr = Nd4j.create(new double[][]{{0,1,0},{0,0,1},{0,0,1}});
+        INDArray arr = Nd4j.create(new boolean[][]{{false,true,false},{false,false,true},{false,false,true}});
         INDArray x = Nd4j.valueArrayOf(3, 3, 1.0);
         INDArray y = Nd4j.valueArrayOf(3, 3, 2.0);
         INDArray exp = Nd4j.create(new double[][]{

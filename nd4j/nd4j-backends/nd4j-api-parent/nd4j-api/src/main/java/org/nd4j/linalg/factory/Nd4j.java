@@ -3318,6 +3318,11 @@ public class Nd4j {
         return INSTANCE.create(data);
     }
 
+    public static INDArray create(long[][] data) {
+        val shape = new long[]{data.length, data[0].length};
+        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.LONG);
+    }
+
     public static INDArray create(boolean[][] data) {
         val shape = new long[]{data.length, data[0].length};
         return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL);
@@ -3468,6 +3473,24 @@ public class Nd4j {
      */
     public static INDArray trueScalar(Number scalar) {
         val ret = INSTANCE.trueScalar(scalar);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray trueVector(boolean[] data) {
+        val ret = INSTANCE.trueVector(data);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray trueVector(long[] data) {
+        val ret = INSTANCE.trueVector(data);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray trueVector(int[] data) {
+        val ret = INSTANCE.trueVector(data);
         logCreationIfNecessary(ret);
         return ret;
     }
