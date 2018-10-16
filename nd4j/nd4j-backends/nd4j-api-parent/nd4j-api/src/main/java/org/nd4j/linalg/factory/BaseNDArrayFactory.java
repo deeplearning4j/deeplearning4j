@@ -216,7 +216,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return the linearly spaced vector
      */
     @Override
-    public INDArray linspace(int lower, int upper, int num) {
+    public INDArray linspace(int lower, int upper, int num, DataType dtype) {
         double[] data = new double[num];
         for (int i = 0; i < num; i++) {
             double t = (double) i / (num - 1);
@@ -225,7 +225,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         }
 
         //edge case for scalars
-        INDArray ret = Nd4j.create(data.length);
+        INDArray ret = Nd4j.createUninitialized(dtype, new long[]{data.length});
         if (ret.isScalar())
             return ret;
 

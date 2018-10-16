@@ -1934,7 +1934,7 @@ public class Nd4j {
      * @param num   the step size
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(long lower, long upper, long num) {
+    public static INDArray linspace(long lower, long upper, long num, @NonNull DataType dtype) {
         // for now we'll temporarily keep original impl
         if(lower == upper && num == 1) {
             return Nd4j.scalar(lower);
@@ -1944,9 +1944,9 @@ public class Nd4j {
         double approx = (double) num / ((double) (upper - lower) + 1);
         if (approx % 1 <= EPS_THRESHOLD) {
             // FIXME: int cast
-            return INSTANCE.linspace((int) lower, (int) upper, (int) num);
+            return INSTANCE.linspace((int) lower, (int) upper, (int) num, dtype);
         } else {
-            return linspace((double) lower, (double) upper, (int) num);
+            return linspace((double) lower, (double) upper, (int) num, dtype);
         }
     }
 
@@ -1959,7 +1959,7 @@ public class Nd4j {
      * @param num   the step size
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(double lower, double upper, long num) {
+    public static INDArray linspace(double lower, double upper, long num, DataType dataType) {
         // FIXME: int cast
         return Nd4j.getExecutioner().exec(new Linspace(lower, upper, (int) num));
     }
@@ -1972,8 +1972,8 @@ public class Nd4j {
      * @param num   the step size
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(float lower, float upper, long num) {
-        return linspace((double) lower, (double) upper, num);
+    public static INDArray linspace(float lower, float upper, long num, DataType dataType) {
+        return linspace((double) lower, (double) upper, num, dataType);
     }
 
     /**

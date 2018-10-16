@@ -138,7 +138,7 @@ public interface NDArrayFactory {
      * @param num   the step size
      * @return the linearly spaced vector
      */
-    INDArray linspace(int lower, int upper, int num);
+    INDArray linspace(int lower, int upper, int num, DataType dataType);
 
     /**
      * /**

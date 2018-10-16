@@ -37,6 +37,7 @@ import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
@@ -498,7 +499,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     @Test
     @Ignore
     public void testIntermediateTensorArrayLoop1() throws Exception {
-        val input = Nd4j.linspace(1, 10, 10).reshape(5, 2);
+        val input = Nd4j.linspace(1, 10, 10, DataType.FLOAT).reshape(5, 2);
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array_loop.pb.txt").getInputStream());
         tg.updateVariable("input_matrix",input);
         assertNotNull(tg);
@@ -709,8 +710,8 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         SameDiff graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/bias_add/frozen_model.pb").getInputStream());
         assertNotNull(graph);
 
-        INDArray input = Nd4j.linspace(1,40,40).reshape(10,4);
-        INDArray expectedOutput = Nd4j.linspace(1,40,40).reshape(10,4).addRowVector(Nd4j.linspace(1,4,4));
+        INDArray input = Nd4j.linspace(1,40,40, DataType.FLOAT).reshape(10,4);
+        INDArray expectedOutput = Nd4j.linspace(1,40,40, DataType.FLOAT).reshape(10,4).addRowVector(Nd4j.linspace(1,4,4, DataType.FLOAT));
         INDArray actual =  graph.execWithPlaceHolderAndEndResult(Collections.singletonMap("input",input));
         assertEquals(input,graph.getVariable("input").getArr());
         assertArrayEquals(input.shape(),graph.getShapeForVarName(graph.getVariable("input").getVarName()));
@@ -1078,7 +1079,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertNotNull(tg);
 
 
-        val input_matrix = Nd4j.linspace(1, 10, 10).reshape(5, 2);
+        val input_matrix = Nd4j.linspace(1, 10, 10, DataType.FLOAT).reshape(5, 2);
         tg.associateArrayWithVariable(input_matrix, "input_matrix");
 
 

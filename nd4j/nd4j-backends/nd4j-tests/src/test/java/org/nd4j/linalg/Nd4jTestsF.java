@@ -82,7 +82,7 @@ public class Nd4jTestsF extends BaseNd4jTest {
 
     @Test
     public void testSlice_1() {
-        val arr = Nd4j.linspace(1,4, 4).reshape(2, 2, 1).castTo(DataType.DOUBLE);
+        val arr = Nd4j.linspace(1,4, 4, DataType.DOUBLE).reshape(2, 2, 1);
         val exp0 = Nd4j.create(new double[]{1, 3}, new int[] {2, 1});
         val exp1 = Nd4j.create(new double[]{2, 4}, new int[] {2, 1});
 
