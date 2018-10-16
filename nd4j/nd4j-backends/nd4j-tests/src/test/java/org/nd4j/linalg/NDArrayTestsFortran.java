@@ -19,6 +19,7 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -713,10 +714,9 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testLogDouble() {
-        INDArray linspace = Nd4j.linspace(1, 6, 6);
+        INDArray linspace = Nd4j.linspace(1, 6, 6).castTo(DataType.DOUBLE);
         INDArray log = Transforms.log(linspace);
-        INDArray assertion = Nd4j.create(new double[] {0, 0.6931471805599453, 1.0986122886681098, 1.3862943611198906,
-                        1.6094379124341005, 1.791759469228055});
+        INDArray assertion = Nd4j.create(new double[] {0, 0.6931471805599453, 1.0986122886681098, 1.3862943611198906, 1.6094379124341005, 1.791759469228055});
         assertEquals(assertion, log);
     }
 

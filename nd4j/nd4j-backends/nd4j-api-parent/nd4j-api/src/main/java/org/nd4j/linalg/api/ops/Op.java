@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.nio.Buffer;
@@ -90,7 +91,7 @@ public interface Op {
      * Returns the extra args as a data buffer
      * @return
      */
-    DataBuffer extraArgsDataBuff();
+    DataBuffer extraArgsDataBuff(DataType bufferType);
 
     /**
      * Returns a buffer of either float

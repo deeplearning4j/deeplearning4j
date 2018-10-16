@@ -121,12 +121,11 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
 
     @Override
-    public DataBuffer extraArgsDataBuff() {
+    public DataBuffer extraArgsDataBuff(DataType dtype) {
         if (extraArgz != null)
             return extraArgz;
 
         if (extraArgs != null) {
-            DataType dtype = x != null ? x.data().dataType() : Nd4j.dataType();
             if (dtype == DataType.FLOAT || dtype == DataType.HALF) {
                 float extraz[] = new float[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
