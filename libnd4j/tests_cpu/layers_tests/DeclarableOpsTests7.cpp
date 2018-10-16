@@ -1469,7 +1469,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 3, 2}, {
 });
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
-    NDArray* y;
+    NDArray* y = nullptr;
     auto result = op.execute({&x}, {y}, {}, {1, 2, 1, 0}, true, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result, Status::OK());
 
@@ -1492,7 +1492,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 3, 3}, {
 });
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
-    NDArray* y;
+    NDArray* y = nullptr;
     auto result = op.execute({&x}, {y}, {}, {1, 1}, true, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result, Status::OK());
 
