@@ -26,9 +26,9 @@ import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.datasets.iterator.loader.DataSetLoaderIterator;
 import org.deeplearning4j.datasets.iterator.loader.MultiDataSetLoaderIterator;
-import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.spark.data.loader.RemoteFileSourceFactory;
 import org.deeplearning4j.spark.impl.evaluation.EvaluationRunner;
+import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 

@@ -18,7 +18,7 @@ package org.deeplearning4j.spark.impl.multilayer.evaluation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.Function2;
-import org.deeplearning4j.eval.IEvaluation;
+import org.nd4j.evaluation.IEvaluation;
 
 /**
  *
