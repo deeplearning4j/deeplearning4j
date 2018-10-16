@@ -61,9 +61,9 @@ namespace nd4j {
 
         DECLARE_TYPES(relu_layer) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+//                  ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
 }
