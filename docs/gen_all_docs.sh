@@ -37,7 +37,7 @@ python generate_docs.py \
     --out_language en
 
 python generate_docs.py \
-    --project deeplearning4j-spark \
+    --project deeplearning4j-scaleout \
     --language java \
     --code ../deeplearning4j \
     --out_language en

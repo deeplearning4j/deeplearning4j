@@ -6,7 +6,6 @@ category: Distributed Deep Learning
 weight: 3
 ---
 
-
 # Deeplearning4j on Spark: How To Build Data Pipelines
 
 This page provides some guides on how to create data pipelines for both training and evaluation when using Deeplearning4j on Spark.
