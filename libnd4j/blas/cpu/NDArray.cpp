@@ -2727,7 +2727,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             return;
         }
         if (other->isScalar()) {
-            const_cast<NDArray*>(this)->applyScalar(op.s, other, target, extraArgs);
+            const_cast<NDArray*>(this)->applyScalarArr(op.s, other, target, extraArgs);
             return;
         }
 
