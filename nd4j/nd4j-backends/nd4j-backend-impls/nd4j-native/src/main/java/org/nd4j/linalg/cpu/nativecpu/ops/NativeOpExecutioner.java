@@ -191,7 +191,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         op.validateDataTypes();
 
-        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension).addressPointer();
+        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension, DataType.INT).addressPointer();
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
@@ -374,7 +374,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * for immutable buffers for the dimensions.
          * This gives us a pointer which is passed around in libnd4j.
          */
-        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension).addressPointer();
+        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension, DataType.INT).addressPointer();
 
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
@@ -567,7 +567,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     op.y().data().addressPointer(),
                     (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
                     getPointerForExtraArgs(op, op.z().dataType()),
-                    (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(),
+                    (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.INT).addressPointer(),
                     dimension.length);
     }
 
@@ -842,7 +842,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, devTadShapeInfoZ, devTadOffsetsZ);
 
-        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension).addressPointer();
+        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension, DataType.INT).addressPointer();
 
 
         switch (op.getOpType()) {
@@ -939,10 +939,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                            true);
                 } else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
+                    val p = getPointerForExtraArgs(op, op.z().dataType());
                     loop.execReduce3Scalar(null, op.opNum(),
                             op.x().data().addressPointer(),
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            getPointerForExtraArgs(op, op.x().dataType()),
+                            p,
                             op.y().data().addressPointer(),
                             (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(), op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer());
                 } else {

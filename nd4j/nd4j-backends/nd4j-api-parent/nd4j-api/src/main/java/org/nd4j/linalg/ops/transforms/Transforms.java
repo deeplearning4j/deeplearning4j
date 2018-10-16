@@ -826,10 +826,11 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray first, INDArray second, boolean dup) {
+        INDArray result = first;
         if (dup) {
-            first = first.dup();
+            result = Nd4j.createUninitialized(first.dataType(), first.shape(), first.ordering());
         }
-        return exec(new OldMax(second, first, first, first.length()));
+        return exec(new OldMax(first, second, result, first.length()));
     }
 
     /**
@@ -852,7 +853,7 @@ public class Transforms {
      * @return
      */
     public static INDArray min(INDArray ndArray, double k, boolean dup) {
-        return exec(dup ? new ScalarMin(ndArray.dup(), k) : new ScalarMin(ndArray, k));
+        return exec(dup ? new ScalarMin(ndArray, null, Nd4j.createUninitialized(ndArray.dataType(), ndArray.shape(), ndArray.ordering()), ndArray.length(), k) : new ScalarMin(ndArray, k));
     }
 
     /**

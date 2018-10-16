@@ -1630,6 +1630,47 @@ public class Nd4j {
         return buffer;
     }
 
+    public static DataBuffer createTypedBufferDetached(double[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(float[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(int[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(long[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(short[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(byte[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(boolean[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
 
     public static void setFactory(NDArrayFactory factory) {
         INSTANCE = factory;

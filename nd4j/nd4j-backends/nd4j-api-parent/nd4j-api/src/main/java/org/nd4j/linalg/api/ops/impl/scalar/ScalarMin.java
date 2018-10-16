@@ -49,7 +49,7 @@ public class ScalarMin extends BaseScalarOp {
 
     @Override
     public int opNum() {
-        return 12;
+        return 13;
     }
 
     @Override

@@ -102,10 +102,10 @@ public class TransformsTest extends BaseNd4jTest {
 
         INDArray exp3 = Nd4j.create(new double[] {10, 10, 10, 10});
         Transforms.max(x, 10, false);
-        assertEquals(x, exp3);
+        assertEquals(exp3, x);
 
         Transforms.min(x, Nd4j.EPS_THRESHOLD, false);
-        assertEquals(x, exp2);
+        assertEquals(exp2, x);
     }
 
     @Test
@@ -185,8 +185,8 @@ public class TransformsTest extends BaseNd4jTest {
     @Test
     public void testSlice_1() {
         val arr = Nd4j.linspace(1,4, 4).reshape(2, 2, 1);
-        val exp0 = Nd4j.create(new double[]{1, 2}, new int[] {2, 1});
-        val exp1 = Nd4j.create(new double[]{3, 4}, new int[] {2, 1});
+        val exp0 = Nd4j.create(new float[]{1, 2}, new int[] {2, 1});
+        val exp1 = Nd4j.create(new float[]{3, 4}, new int[] {2, 1});
 
         val slice0 = arr.slice(0).dup('c');
         assertEquals(exp0, slice0);

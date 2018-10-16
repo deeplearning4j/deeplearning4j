@@ -1165,7 +1165,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         NativeOpsHolder.getInstance().getDeviceNativeOps().sortTad(null,
                     x.data().addressPointer(),
                     (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
-                    (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(),
+                    (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.INT).addressPointer(),
                     dimension.length,
                     (LongPointer) tadBuffers.getFirst().addressPointer(),
                     new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
