@@ -1521,7 +1521,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test3) {
     auto h0 = NDArrayFactory::create<double>('c', {bS, numUnits});
 
     x.linspace(0.01, 0.01);
-    h0.linspace(0); //assign(0.2);
+    h0 = 0.2;
     Wx = 0.3;
     Wh = 0.4;
     b  = 0.25;
@@ -1533,7 +1533,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test3) {
     auto expHFinal = NDArrayFactory::create<double>('c', {bS, numUnits},       {0.97491207, 0.97491207, 0.97491207, 0.97491207, 0.98120782, 0.98120782, 0.98120782, 0.98120782});
 
     nd4j::ops::dynamic_rnn op;
-    auto results = op.execute({&x, &Wx, &Wh, &b, &h0}, {}, {}, nd4j::DataType::DOUBLE);
+    auto results = op.execute({&x, &Wx, &Wh, &b, &h0}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

@@ -26,7 +26,8 @@ namespace ops  {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
+CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {    
+
     auto x  = INPUT_VARIABLE(0);               // input [time x bS x inSize] or [bS x time x inSize], depends on timeMajor parameter
 	auto Wx = INPUT_VARIABLE(1);               // input-to-hidden  weights, [inSize  x numUnits]
     auto Wh = INPUT_VARIABLE(2);               // hidden-to-hidden weights, [numUnits x numUnits]
@@ -85,8 +86,14 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
 
         DECLARE_TYPES(dynamic_rnn) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedInputTypes(2, {ALL_FLOATS})
+                    ->setAllowedInputTypes(3, {ALL_FLOATS})
+                    ->setAllowedInputTypes(4, {ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(5, {ALL_FLOATS, ALL_INTS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(1, {ALL_FLOATS});
         }
 
 
@@ -140,8 +147,8 @@ DECLARE_SHAPE_FN(dynamic_rnn) {
     hPrevShapeInfo[1] = bS;
     hShapeInfo[3]     = hPrevShapeInfo[2] = numUnits;
 
-    ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(xShapeInfo));
-    ShapeUtils::updateStridesAndType(hPrevShapeInfo, xShapeInfo, shape::order(xShapeInfo));
+    ShapeUtils::updateStridesAndType(hShapeInfo, WhShapeInfo, shape::order(xShapeInfo));
+    ShapeUtils::updateStridesAndType(hPrevShapeInfo, WhShapeInfo, shape::order(xShapeInfo));
          
     return SHAPELIST(hShapeInfo, hPrevShapeInfo);
 }   
