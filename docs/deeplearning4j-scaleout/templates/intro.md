@@ -146,9 +146,8 @@ for (int i = 0; i < numEpochs; i++) {
 
 ## Further Reading
 
-[Deeplearning4j on Spark: Technical Explanation](deeplearning4j-scaleout-technicalref)
-[Deeplearning4j on Spark: How To Guides](deeplearning4j-scaleout-howto)
-[Deeplearning4j on Spark: How To Build Data Pipelines](deeplearning4j-scaleout-data-howto)
-[Deeplearning4j on Spark: API Reference](deeplearning4j-scaleout-apiref)
-
-The [Deeplearning4j examples repo](https://github.com/deeplearning4j/dl4j-examples) contains a number of Spark examples that can be used by the user as reference.
+* [Deeplearning4j on Spark: Technical Explanation](deeplearning4j-scaleout-technicalref)
+* [Deeplearning4j on Spark: How To Guides](deeplearning4j-scaleout-howto)
+* [Deeplearning4j on Spark: How To Build Data Pipelines](deeplearning4j-scaleout-data-howto)
+* [Deeplearning4j on Spark: API Reference](deeplearning4j-scaleout-apiref)
+* The [Deeplearning4j examples repo](https://github.com/deeplearning4j/dl4j-examples) contains a number of Spark examples that can be used by the user as reference.

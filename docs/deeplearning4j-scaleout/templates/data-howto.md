@@ -34,6 +34,7 @@ Spark Data Prepration: How-To Guides
 * [How to create an RDD[DataSet] for images](#images)
 * [How to load prepared minibatches in custom format](#customformat)
 
+<br><br>
 
 ## <a name="csv">How to prepare a RDD[DataSet] from CSV data for classification or regression</a>
 
@@ -69,6 +70,8 @@ int firstLabelColumn = 3;   //First column index for label
 int lastLabelColumn = 5;    //Last column index for label
 JavaRDD<DataSet> rddDataSetRegression = rddWritables.map(new DataVecDataSetFunction(firstColumnLabel, lastColumnLabel, true, null, null));
 ```
+
+<br><br>
 
 ## <a name="saveloadrdd">How to save a RDD[DataSet] or RDD[MultiDataSet] to network storage and use it for training</a>
 
@@ -143,7 +146,7 @@ JavaRDD<String> loadedPaths = SparkUtils.listPaths(sc, exportPath);   //List pat
 Then we can execute training on these paths by using methods such as ```SparkDl4jMultiLayer.fitPaths(JavaRDD<String>)```
 
 
-
+<br><br>
 
 ## <a name="singletocluster">How to prepare data on a single machine for use on a cluster: saving DataSets</a>
 
@@ -202,7 +205,7 @@ String dir = "hdfs:///data/copied/here";
 JavaRDD<String> paths = SparkUtils.listPaths(sc, dir);   //List paths using org.deeplearning4j.spark.util.SparkUtils
 ```
 
-
+<br><br>
 
 ## <a name="singletocluster2">How to prepare data on a single machine for use on a cluster: map/sequence files</a>
 
@@ -272,6 +275,7 @@ int numLabelClasses = 10;   //10 classes for the label
 JavaRDD<DataSet> rddDataSetClassification = rdd.map(new DataVecDataSetFunction(labelIndex, numLabelClasses, false));
 ```
 
+<br><br>
 
 ## <a name="csvseq">How to load multiple CSVs (one sequence per file) for RNN data pipelines</a>
 
@@ -300,6 +304,7 @@ int numClasses = 10;            //Number of classes for classification
 JavaRDD<DataSet> dataSetRdd = sequencesRdd.map(new DataVecSequenceDataSetFunction(labelIndex, numClasses, false));
 ```
 
+<br><br>
 
 ## <a name="images">How to create an RDD[DataSet] for images</a>
 
@@ -353,6 +358,7 @@ ImageRecordReader imageRecordReader = new ImageRecordReader(imageHW, imageHW, im
 
 Note that PathLabelGenerator returns a Writable object, so for tasks like image segmentation, you can return an INDArray using the NDArrayWritable class in a custom PathLabelGenerator.
 
+<br><br>
 
 ## <a name="customformat">How to load prepared minibatches in custom format</a>
 

@@ -34,7 +34,7 @@ Problems and Troubleshooting Guides
 * [Fixing libgomp issues on Amazon Elastic MapReduce](#libgomp)
 * [Failed training on Ubuntu 16.04 (Ubuntu bug that may affect DL4J Spark users)](#ubuntu16)
 
-
+<br><br>
 
 # Before Training - How-To Guides
 
@@ -77,7 +77,8 @@ Note that if you add a Spark dependency such as spark-core_2.11, this can be set
 
 
 When training on CUDA GPUs, there are a couple of possible cases when adding CUDA dependencies:
-*Case 1: Cluster nodes have CUDA toolkit installed on the master and worker nodes*
+
+**Case 1: Cluster nodes have CUDA toolkit installed on the master and worker nodes**
 
 When the CUDA toolkit and CuDNN are available on the cluster nodes, we can use a smaller dependency:
 * If the OS building the uber-jar is the same OS as the cluster: include nd4j-cuda-x.x
@@ -85,7 +86,7 @@ When the CUDA toolkit and CuDNN are available on the cluster nodes, we can use a
 * In both cases, include 
 where x.x is the CUDA version - for example, x.x=9.2 for CUDA 9.2.
 
-*Case 2: Cluster nodes do NOT have the CUDA toolkit installed on the master and worker nodes*
+**Case 2: Cluster nodes do NOT have the CUDA toolkit installed on the master and worker nodes**
 
 When CUDA/CuDNN are NOT installed on the cluster nodes, we can do the following:
 * First, include the dependencies as per 'Case 1' above
@@ -159,7 +160,7 @@ Be sure to use the large ```...-bin.jar``` file as this is the shaded jar with a
 That's is - you should now have an uber-jar that is suitable for submitting to spark-submit for training networks on Spark with CPUs or NVIDA (CUDA) GPUs.
 
 
-
+<br><br>
 
 ## <a name="gpus">How to use GPUs for training on Spark</a>
 
@@ -179,6 +180,7 @@ Both (a) and (b) must be available for ND4J/DL4J to run using an available CUDA 
 For configuring dependencies for Spark jobs, see the [uber-jar section](#uberjar) above.
 For configuring cuDNN on a single node, see [Using Deeplearning4j with CuDNN](./deeplearning4j-config-cudnn)
 
+<br><br>
 
 ## <a name="cpusgpus">How to use CPUs on master, GPUs on the workers</a>
 
@@ -190,7 +192,7 @@ Assuming the master/driver is executing on a CPU machine, and the workers are ex
 When multiple backends are present on the classpath, by default the CUDA backend will be tried first. If this cannot be loaded, the CPU (nd4j-native) backend will be loaded second. Thus, if the driver does not have a GPU, it should fall back to using a CPU. However, this default behaviour can be changed by setting the ```BACKEND_PRIORITY_CPU``` or ```BACKEND_PRIORITY_GPU``` environment variables on the master/driver, as described [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/nd4j/nd4j-common/src/main/java/org/nd4j/config/ND4JEnvironmentVars.java).
 The exact process for setting environment variables may depend on the cluster manager - Spark standalone vs. YARN vs. Mesos. Please consult the documentation for each on how to set the environment variables for Spark jobs for the driver/master.
 
-
+<br><br>
 
 ## <a name="memory">How to configure memory settings for Spark</a>
 
@@ -230,6 +232,8 @@ All up, this might look like (for YARN, with 4GB on-heap, 5GB off-heap, 6GB YARN
 --class my.class.name.here --num-executors 4 --executor-cores 8 --executor-memory 4G --driver-memory 4G --conf "spark.executor.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5G" --conf "spark.driver.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5G" --conf spark.yarn.executor.memoryOverhead=6144
 ```
 
+<br><br>
+
 ## <a name="kryo">How to use Kryo Serialization with DL4J and ND4J</a>
 
 Deeplearning4j and ND4J can utilize Kryo serialization, with appropriate configuration.
@@ -254,6 +258,8 @@ Then, at the start of your training job, add the following code:
 
 Note that when using Deeplearning4j's SparkDl4jMultiLayer or SparkComputationGraph classes, a warning will be logged if the Kryo configuration is incorrect.
 
+<br><br>
+
 ## <a name="yarngpus">How to use YARN and GPUs</a>
 
 For DL4J, the only requirement for CUDA GPUs is to use the appropriate backend, with the appropriate NVIDIA libraries either installed on each node, or provided in the uber-JAR (see [Spark how-to guide](deeplearning4j-scaleout-howto) for more details).
@@ -264,6 +270,8 @@ For these versions, it is possible to utilize node labels to ensure that jobs ar
 
 Note that YARN-specific memory configuration (see [memory how-to](deeplearning4j-scaleout-howto#memory)) is also required.
 
+<br><br>
+
 ## <a name="locality">How to configure Spark Locality Configuration</a>
 
 Configuring Spark locality settings is an optional configuration option that can improve training performance.
@@ -271,6 +279,8 @@ Configuring Spark locality settings is an optional configuration option that can
 The summary: adding ```--conf spark.locality.wait=0``` to your Spark submit configuration may marginally reduce training times, by scheduling the network fit operations to be started sooner.
 
 For more details, see [link 1](https://spark.apache.org/docs/latest/tuning.html#data-locality) and [link 2](https://spark.apache.org/docs/latest/configuration.html#scheduling).
+
+<br><br>
 
 # During and After Training Guides
 
@@ -350,6 +360,7 @@ String json = SparkUtils.readStringFromFile(writeTo, sc);
 Evaluation eval = Evaluation.fromJson(json);
 ```
 
+<br><br>
 
 ## <a name="saveload">How to save (and load) neural networks trained on Spark</a>
 
@@ -382,6 +393,7 @@ try(BufferedInputStream is = new BufferedInputStream(fileSystem.open(new Path(ou
 }
 ```
 
+<br><br>
 
 
 ## <a name="inference">How to perform distributed inference</a>
@@ -401,7 +413,7 @@ There are also overloads that accept an input mask array, when required
 Note the parameter ```K``` - this is a generic type to signify the unique 'key' used to identify each example. The key values are not used as part of the inference process. This key is required as Spark's RDDs are unordered - without this, we would have no way to know which element in the predictions RDD corresponds to which element in the input RDD.
 The batch size parameter is used to specify the minibatch size when performing inference. It does not impact the values returned, but instead is used to balance memory use vs. computational efficiency: large batches might compute a little quicker overall, but require more memory. In many cases, a batch size of 64 is a good starting point to try if you are unsure of what to use.
 
-
+<br><br><br>
 
 # Problems and Troubleshooting Guides
 
@@ -491,6 +503,79 @@ This means that for dependencies that are added by Spark, you can't simply exclu
 
 One additional setting that is worth knowing about is the (experimental) Spark configuration options, ```spark.driver.userClassPathFirst``` and ```spark.executor.userClassPathFirst``` (See the [Spark configuartion docs](https://spark.apache.org/docs/latest/configuration.html) for more details). In some cases, these options may be a fix for dependency issues.
 
+<br><br>
+
+## <a name="caching">How to Cache RDD[INDArray] and RDD[DataSet] Safely</a>
+
+Spark has some issues regarding how it handles Java objects with large off-heap components, such as the DataSet and INDArray objects used in Deeplearning4j. This section explains the issues related to caching/persisting these objects.
+
+The key points to know about are:
+
+* MEMORY_ONLY and MEMORY_AND_DISK persistence can be problematic with off-heap memory, due to Spark not properly estimating the size of objects in the RDD. This can lead to out of (off-heap) memory issues.
+* When persisting a ```RDD<DataSet>``` or ```RDD<INDArray>``` for re-use, use MEMORY_ONLY_SER or MEMORY_AND_DISK_SER
+
+**Why MEMORY_ONLY_SER or MEMORY_AND_DISK_SER Are Recommended**
+
+One of the way that Apache Spark improves performance is by allowing users to cache data in memory. This can be done using the ```RDD.cache()``` or ```RDD.persist(StorageLevel.MEMORY_ONLY())``` to store the contents in-memory, in deserialized (i.e., standard Java object) form.
+The basic idea is simple: if you persist a RDD, you can re-use it from memory (or disk, depending on configuration) without having to recalculate it. However, large RDDs may not entirely fit into memory. In this case, some parts of the RDD have to be recomputed or loaded from disk, depending on the storage level used. Furthermore, to avoid using too much memory, Spark will drop parts (blocks) of an RDD when required.
+
+The main storage levels available in Spark are listed below. For an explanation of  these, see the [Spark Programming Guide](https://spark.apache.org/docs/1.6.2/programming-guide.html#rdd-persistence).
+
+* MEMORY_ONLY
+* MEMORY_AND_DISK
+* MEMORY_ONLY_SER
+* MEMORY_AND_DISK_SER
+* DISK_ONLY
+
+The problem with Spark is how it handles memory. In particular, Spark will drop part of an RDD (a block) based on the estimated size of that block. The way Spark estimates the size of a block depends on the persistence level. For ```MEMORY_ONLY``` and ```MEMORY_AND_DISK``` persistence, this is done by walking the Java object graph - i.e., look at the fields in an object and recursively estimate the size of those objects. This process does not however take into account the off-heap memory used by Deeplearning4j or ND4J. For objects like DataSets and INDArrays (which are stored almost entirely off-heap), Spark significantly under-estimates the true size of the objects using this process. Furthermore, Spark considers only the amount of on-heap memory use when deciding whether to keep or drop blocks. Because DataSet and INDArray objects have a very small on-heap size, Spark will keep too many of them around with ```MEMORY_ONLY``` and ```MEMORY_AND_DISK``` persistence, resulting in off-heap memory being exhausted, causing out of memory issues.
+
+However, for ```MEMORY_ONLY_SER``` and ```MEMORY_AND_DISK_SER``` Spark stores blocks in *serialized* form, on the Java heap. The size of objects stored in serialized form can be estimated accurately by Spark (there is no off-heap memory component for the serialized objects) and consequently Spark will drop blocks when required - avoiding any out of memory issues.
+
+<br><br>
+
+## <a name="ntperror">How to fix "Error querying NTP server" errors</a>
+
+DL4J's parameter averaging implementation has the option to collect training stats, by using ```SparkDl4jMultiLayer.setCollectTrainingStats(true)```.
+When this is enabled, internet access is required to connect to the NTP (network time protocal) server.
+
+It is possible to get errors like ```NTPTimeSource: Error querying NTP server, attempt 1 of 10```. Sometimes these failures are transient (later retries will work) and can be ignored. However, if the Spark cluster is configured such that one or more of the workers cannot access the internet (or specifically, the NTP server), all retries can fail.
+
+Two solutions are available:
+
+1. Don't use ```sparkNet.setCollectTrainingStats(true)``` - this functionality is optional (not required for training), and is disabled by default
+2. Set the system to use the local machine clock instead of the NTP server, as the time source (note however that the timeline information may be very inaccurate as a result)
+To use the system clock time source, add the following to Spark submit:
+```
+--conf spark.driver.extraJavaOptions=-Dorg.deeplearning4j.spark.time.TimeSource=org.deeplearning4j.spark.time.SystemClockTimeSource
+--conf spark.executor.extraJavaOptions=-Dorg.deeplearning4j.spark.time.TimeSource=org.deeplearning4j.spark.time.SystemClockTimeSource
+```
+
+<br><br>
+
+## <a name="ubuntu16">Failed training on Ubuntu 16.04 (Ubuntu bug that may affect DL4J users)</a>
+
+When running a Spark on YARN cluster on Ubuntu 16.04 machines, chances are that after finishing a job, all processes owned by the user running Hadoop/YARN are killed. This is related to a bug in Ubuntu, which is documented at https://bugs.launchpad.net/ubuntu/+source/procps/+bug/1610499. There's also a Stackoverflow discussion about it at http://stackoverflow.com/questions/38419078/logouts-while-running-hadoop-under-ubuntu-16-04.
+
+Some workarounds are suggested. 
+
+**Option 1**
+
+Add
+```
+[login]
+KillUserProcesses=no
+```
+to /etc/systemd/logind.conf, and reboot.
+
+**Option 2**
+
+Copy the /bin/kill binary from Ubuntu 14.04 and use that one instead. 
+
+**Option 3**
+
+Downgrade to Ubuntu 14.04 
+
+**Option 4**
 
 ## <a href="caching">How to Cache RDD[INDArray] and RDD[DataSet] Safely</a>
 
