@@ -72,7 +72,7 @@ public class IntDataBufferTests extends BaseNd4jTest {
         assertArrayEquals(intArray.data().asInt(), loaded.data().asInt());
     }
 
-
+/*
     @Test(expected = ND4JIllegalStateException.class)
     public void testOpDiscarded() throws Exception {
         DataBuffer dataBuffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4, 5});
@@ -81,6 +81,7 @@ public class IntDataBufferTests extends BaseNd4jTest {
 
         intArray.add(10f);
     }
+    */
 
     @Test
     public void testReallocation() {

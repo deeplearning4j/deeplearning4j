@@ -48,7 +48,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testINDArrayIndexingEqualToRank() {
-        INDArray x = Nd4j.linspace(1,6,6).reshape('c',3,2);
+        INDArray x = Nd4j.linspace(1,6,6).reshape('c',3,2).castTo(DataType.DOUBLE);
         INDArray indexes = Nd4j.create(new double[][]{
                 {0,1,2},
                 {0,1,0}
@@ -63,7 +63,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testINDArrayIndexingLessThanRankSimple() {
-        INDArray x = Nd4j.linspace(1,6,6).reshape('c',3,2);
+        INDArray x = Nd4j.linspace(1,6,6).reshape('c',3,2).castTo(DataType.DOUBLE);
         INDArray indexes = Nd4j.create(new double[][]{
                 {0},
         });
@@ -77,7 +77,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testINDArrayIndexingLessThanRankFourDimension() {
-        INDArray x = Nd4j.linspace(1,16,16).reshape('c',2,2,2,2);
+        INDArray x = Nd4j.linspace(1,16,16).reshape('c',2,2,2,2).castTo(DataType.DOUBLE);
         INDArray indexes = Nd4j.create(new double[][]{
                 {0},{1}
         });
@@ -132,9 +132,9 @@ public class IndexingTests extends BaseNd4jTest {
     public void testIndexGetDuplicate() {
         List<List<Integer>> indices = new ArrayList<>();
         indices.add(Arrays.asList(0,0));
-        INDArray linspace = Nd4j.linspace(1,16,16).reshape('c',2,2,2,2);
+        INDArray linspace = Nd4j.linspace(1,16,16).reshape('c',2,2,2,2).castTo(DataType.DOUBLE);
         INDArray get = linspace.get(indices);
-        INDArray assertion = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}).reshape('c',2,2,2,2);
+        INDArray assertion = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}).reshape('c',2,2,2,2).castTo(DataType.DOUBLE);
         assertEquals(assertion,get);
     }
 
@@ -142,7 +142,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testGetScalar() {
-        INDArray arr = Nd4j.linspace(1, 5, 5);
+        INDArray arr = Nd4j.linspace(1, 5, 5).reshape(1, -1);
         INDArray d = arr.get(NDArrayIndex.point(1));
         assertTrue(d.isScalar());
         assertEquals(2.0, d.getDouble(0), 1e-1);
@@ -170,7 +170,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testGetRowsColumnsMatrix() {
-        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 6);
+        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 6).castTo(DataType.DOUBLE);
         INDArray firstAndSecondColumnsAssertion = Nd4j.create(new double[][] {{1, 5}, {2, 6}, {3, 7}, {4, 8}});
 
         System.out.println(arr);
@@ -208,7 +208,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testGetIndicesVector() {
-        INDArray line = Nd4j.linspace(1, 4, 4);
+        INDArray line = Nd4j.linspace(1, 4, 4).reshape(1, -1);
         INDArray test = Nd4j.create(new float[] {2, 3});
         INDArray result = line.get(NDArrayIndex.point(0), NDArrayIndex.interval(1, 3));
         assertEquals(test, result);

@@ -3581,6 +3581,24 @@ public class Shape {
         return DataType.values()[Math.max(typeX.ordinal(), typeY.ordinal())];
     }
 
+    public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull Number number) {
+        if (number instanceof Double) {
+            return pickPairwiseDataType(typeX, DataType.DOUBLE);
+        } else if (number instanceof Float) {
+            return pickPairwiseDataType(typeX, DataType.FLOAT);
+        } else if (number instanceof Long) {
+            return pickPairwiseDataType(typeX, DataType.LONG);
+        } else if (number instanceof Integer) {
+            return pickPairwiseDataType(typeX, DataType.INT);
+        } else if (number instanceof Short) {
+            return pickPairwiseDataType(typeX, DataType.SHORT);
+        } else if (number instanceof Byte) {
+            return pickPairwiseDataType(typeX, DataType.BYTE);
+        } else {
+            throw new UnsupportedOperationException("Unknown Number used: [" + number.getClass().getCanonicalName() + "]");
+        }
+    }
+
     public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull DataType typeY) {
         if (typeX == typeY)
             return typeX;

@@ -2203,7 +2203,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         if(indices.rows() == rank()) {
-            INDArray ret = Nd4j.create(indices.columns());
+            INDArray ret = Nd4j.create(indices.dataType(), indices.columns());
 
             for(int i = 0; i < indices.columns(); i++) {
                 int[] specifiedIndex = indices.getColumn(i).dup().data().asInt();
@@ -4180,7 +4180,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray rdiv(Number n) {
         //return dup().rdivi(n);
-        return rdivi(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
+        return rdivi(n, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), n), this.shape(), this.ordering()));
     }
 
     @Override
@@ -4191,7 +4191,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray rsub(Number n) {
         //return dup().rsubi(n);
-        return rsubi(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
+        return rsubi(n, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), n),this.shape(), this.ordering()));
     }
 
     @Override
@@ -4202,7 +4202,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray div(Number n) {
         //return dup().divi(n);
-        return divi(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
+        return divi(n, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), n),this.shape(), this.ordering()));
     }
 
     @Override
@@ -4213,7 +4213,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mul(Number n) {
         // return dup().muli(n);
-        return muli(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
+        return muli(n, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), n), this.shape(), this.ordering()));
     }
 
     @Override
@@ -4235,7 +4235,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray add(Number n) {
         //return dup().addi(n);
-        return addi(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
+        return addi(n, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), n),this.shape(), this.ordering()));
     }
 
     @Override
@@ -4871,7 +4871,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isVector())
             return Nd4j.pullRows(this, 1, rindices);
         else {
-            INDArray ret = Nd4j.create(rindices.length, columns());
+            INDArray ret = Nd4j.createUninitialized(this.dataType(), new long[] {rindices.length, columns()});
             for (int i = 0; i < rindices.length; i++)
                 ret.putRow(i, getRow(rindices[i]));
             return ret;

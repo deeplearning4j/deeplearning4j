@@ -122,10 +122,11 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testToNio() {
-        DataBuffer buff = Nd4j.createBuffer(new double[] {1, 2, 3, 4});
+        DataBuffer buff = Nd4j.createTypedBuffer(new double[] {1, 2, 3, 4}, DataType.FLOAT);
         assertEquals(4, buff.length());
         if (buff.allocationMode() == DataBuffer.AllocationMode.HEAP)
             return;
+
         ByteBuffer nio = buff.asNio();
         assertEquals(16, nio.capacity());
 

@@ -53,6 +53,7 @@ public class DataTypeValidationTests extends BaseNd4jTest {
     /**
      * Testing basic assign
      */
+    /*
     @Test(expected = ND4JIllegalStateException.class)
     public void testOpValidation1() {
         INDArray x = Nd4j.create(10);
@@ -65,7 +66,7 @@ public class DataTypeValidationTests extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
     }
-
+*/
     /**
      * Testing level1 blas
      */

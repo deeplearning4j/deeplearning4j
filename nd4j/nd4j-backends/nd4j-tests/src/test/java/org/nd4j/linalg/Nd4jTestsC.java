@@ -4242,7 +4242,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         for (int i = 0; i < 10; i++) {
             List<INDArray> arrays = new ArrayList<>();
             for (int x = 0; x < 10; x++) {
-                arrays.add(Nd4j.create(100).assign(x));
+                arrays.add(Nd4j.create(1, 100).assign(x));
             }
 
             INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
