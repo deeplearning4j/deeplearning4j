@@ -1906,73 +1906,65 @@ NDArray NDArray::transp() const {
     }
 
 
-    template <>
-    void NDArray::applyScalar(nd4j::scalar::BoolOps op, const nd4j::NDArray* scalar, NDArray *target, void *extraParams) const {
-        if (target == nullptr || !target->isB())
-            throw std::invalid_argument("applyScalar: target must have bool type");
+//////////////////////////////////////////////////////////////////////////
+void NDArray::applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray *target, void *extraParams) const {
+    
+    if (target == nullptr || !target->isB())
+        throw std::invalid_argument("NDArray::applyScalarArr bool method: target is nullptr or has not bool type!");
+    if (_dataType != scalar->_dataType)
+        throw std::invalid_argument("NDArray::applyScalarArr bool method: this and scalar arrays must have the same type!");
+    NativeOpExcutioner::execScalarBool(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, scalar->_buffer, scalar->_shapeInfo, extraParams);
+}
 
-        NativeOpExcutioner::execScalarBool(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar->getBuffer(), scalar->getShapeInfo(), extraParams);
-    }
+template <typename T>
+void NDArray::applyScalar(nd4j::scalar::BoolOps op, const T scalar, NDArray *target, void *extraParams) const {
 
-    template <typename T>
-    void NDArray::applyScalar(nd4j::scalar::BoolOps op, T scalar, NDArray *target, void *extraParams) const {
-        auto temp = NDArrayFactory::create<T>(scalar, this->_workspace);
+    auto scalarArr = NDArrayFactory::create<T>(scalar, _workspace);
+    applyScalarArr(op, &scalarArr, target, extraParams);
+}
 
-        if (target == nullptr || !target->isB())
-            throw std::invalid_argument("applyScalar: target must have bool type");
+template <> void NDArray::applyScalar(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray *target, void *extraParams) const { throw std::runtime_error("NDArray::applyScalar<NDArray*> method: do not use me!");}
+template void NDArray::applyScalar<double>(nd4j::scalar::BoolOps op, const double scalar, NDArray *target, void *extraParams) const;
+template void NDArray::applyScalar<float>(nd4j::scalar::BoolOps op, const float scalar, NDArray *target, void *extraParams) const;
+template void NDArray::applyScalar<float16>(nd4j::scalar::BoolOps op, const float16 scalar, NDArray *target, void *extraParams) const;
+template void NDArray::applyScalar<Nd4jLong>(nd4j::scalar::BoolOps op, const Nd4jLong scalar, NDArray *target, void *extraParams) const;
+template void NDArray::applyScalar<int>(nd4j::scalar::BoolOps op, const int scalar, NDArray *target, void *extraParams) const;
+template void NDArray::applyScalar<int16_t>(nd4j::scalar::BoolOps op, const int16_t scalar, NDArray *target, void *extraParams) const;
+template void NDArray::applyScalar<int8_t>(nd4j::scalar::BoolOps op, const int8_t scalar, NDArray *target, void *extraParams) const;
+template void NDArray::applyScalar<uint8_t>(nd4j::scalar::BoolOps op, const uint8_t scalar, NDArray *target, void *extraParams) const;
+template void NDArray::applyScalar<bool>(nd4j::scalar::BoolOps op, const bool scalar, NDArray *target, void *extraParams) const;
 
-        NativeOpExcutioner::execScalarBool(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, temp.buffer(), temp.shapeInfo(), extraParams);
-    }
-    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, double scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, float scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, float16 scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, Nd4jLong scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, int scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, int16_t scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, int8_t scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, uint8_t scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::BoolOps op, bool scalar, NDArray *target, void *extraParams) const;
+//////////////////////////////////////////////////////////////////////////
+void NDArray::applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArray* target, void *extraParams) {
+    
+    if (!scalar->isScalar())
+        throw std::invalid_argument("NDArray::applyScalarArr method: operand is not a scalar!");
+    if(target == nullptr) 
+        target = this;
+    if(target->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, scalar->_shapeInfo))
+        throw std::invalid_argument("NDArray::applyScalarArr method: wrong type of target array!");
 
+    NativeOpExcutioner::execScalar(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, scalar->_buffer, scalar->_shapeInfo, extraParams);
+}
 
-    template <>
-    void NDArray::applyScalar(nd4j::scalar::Ops op, const nd4j::NDArray* scalar, NDArray *target, void *extraParams) const {
-        if (target == nullptr)
-            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar->getBuffer(), scalar->getShapeInfo(), extraParams);
-        else
-            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar->getBuffer(), scalar->getShapeInfo(), extraParams);
-    }
+template <typename T>
+void NDArray::applyScalar(nd4j::scalar::Ops op, const T scalar, NDArray *target, void *extraParams) {
+    
+    auto scalarArr = NDArrayFactory::create<T>(scalar, this->_workspace);
+    applyScalarArr(op, &scalarArr, target, extraParams);
+}
 
-    template <typename T>
-    void NDArray::applyScalar(nd4j::scalar::Ops op, T scalar, NDArray *target, void *extraParams) const {
-        auto temp = NDArrayFactory::create<T>(scalar, this->_workspace);
-
-        if (target == nullptr)
-            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, temp.buffer(), temp.shapeInfo(), extraParams);
-        else
-            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, temp.buffer(), temp.shapeInfo(), extraParams);
-    }
-    template void NDArray::applyScalar(nd4j::scalar::Ops op, double scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::Ops op, float scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::Ops op, float16 scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::Ops op, Nd4jLong scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::Ops op, int scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::Ops op, int16_t scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::Ops op, int8_t scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::Ops op, uint8_t scalar, NDArray *target, void *extraParams) const;
-    template void NDArray::applyScalar(nd4j::scalar::Ops op, bool scalar, NDArray *target, void *extraParams) const;
-
-
-    void NDArray::applyScalar(nd4j::scalar::Ops op, NDArray* scalar, NDArray* target, void *extraParams) const {
-        if (!scalar->isScalar()) {
-            throw std::runtime_error("Operand is not a scalar!");
-        }
-
-        if (target == nullptr)
-            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar->buffer(), scalar->shapeInfo(), extraParams);
-        else
-            NativeOpExcutioner::execScalar(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar->buffer(), scalar->shapeInfo(), extraParams);
-    }
-
+template <> void NDArray::applyScalar(nd4j::scalar::Ops op, const NDArray* scalar, NDArray *target, void *extraParams) { throw std::runtime_error("NDArray::applyScalar<NDArray*> method: do not use me!");}
+template void NDArray::applyScalar(nd4j::scalar::Ops op, const double scalar, NDArray *target, void *extraParams);
+template void NDArray::applyScalar(nd4j::scalar::Ops op, const float scalar, NDArray *target, void *extraParams);
+template void NDArray::applyScalar(nd4j::scalar::Ops op, const float16 scalar, NDArray *target, void *extraParams);
+template void NDArray::applyScalar(nd4j::scalar::Ops op, const Nd4jLong scalar, NDArray *target, void *extraParams);
+template void NDArray::applyScalar(nd4j::scalar::Ops op, const int scalar, NDArray *target, void *extraParams);
+template void NDArray::applyScalar(nd4j::scalar::Ops op, const int16_t scalar, NDArray *target, void *extraParams);
+template void NDArray::applyScalar(nd4j::scalar::Ops op, const int8_t scalar, NDArray *target, void *extraParams);
+template void NDArray::applyScalar(nd4j::scalar::Ops op, const uint8_t scalar, NDArray *target, void *extraParams);
+template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDArray *target, void *extraParams);
+ 
 
 //////////////////////////////////////////////////////////////////////////
     // calculate strides
@@ -2735,7 +2727,7 @@ NDArray NDArray::transp() const {
             return;
         }
         if (other->isScalar()) {
-            this->applyScalar(op.s, other, target, extraArgs);
+            const_cast<NDArray*>(this)->applyScalar(op.s, other, target, extraArgs);
             return;
         }
 

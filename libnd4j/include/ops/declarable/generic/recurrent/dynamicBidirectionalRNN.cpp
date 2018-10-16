@@ -84,22 +84,23 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
 
     // forward steps
     nd4j::ops::dynamic_rnn dynamicRnn;
-    auto resultsFW = dynamicRnn.execute({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, {}, {timeMajor});
+    auto resultsFW = dynamicRnn.execute({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, {}, {timeMajor}, false, x->dataType());
     hFW->assign(resultsFW->at(0));                              // [time x bS x numUnitsFW] or [bS x time x numUnitsFW]
     hFWFinal->assign(resultsFW->at(1));
 
     auto seqLen = maxTimeStep;
     if(seqLen == nullptr) {
         // FIXME: which datatype should be used here?
-    	seqLen = new NDArray(x->ordering(), {bS}, x->dataType(), block.getWorkspace());
-    	*seqLen = time;                                        // set each element of seqLen to be equal to time
+    	seqLen = new NDArray(x->ordering(), {bS}, nd4j::DataType::INT64, block.getWorkspace());
+    	seqLen->assign(time);                                        // set each element of seqLen to be equal to time
     }
 
     std::initializer_list<Nd4jLong> dimsForReverse = timeMajor ? std::initializer_list<Nd4jLong>{0,1} : std::initializer_list<Nd4jLong>{1,0};
 
     // reverse x     
     nd4j::ops::reverse_sequence reverse;
-    auto resultsIn = reverse.execute({x, seqLen}, {}, dimsForReverse);
+    auto resultsIn = reverse.execute({x, seqLen}, {}, dimsForReverse, false, x->dataType());
+    REQUIRE_TRUE (resultsIn->status() == ND4J_STATUS_OK, 0, "dynamic_bidirectional_rnn: there is a problem with reverse on the sequence.");
     auto revInput = resultsIn->at(0);
 
     // backward steps    

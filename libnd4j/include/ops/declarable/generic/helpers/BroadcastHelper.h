@@ -35,7 +35,7 @@ namespace nd4j {
                 if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
 				    x->applyPairwiseTransform(op.p, y, z, nullptr);
                 } else if (!x->isScalar() && y->isScalar()) {
-                    x->applyScalar(op.s, const_cast<const NDArray*>(y), z);
+                    x->applyScalarArr(op.s, const_cast<const NDArray*>(y), z);
                 } else if (x->isScalar() && !y->isScalar()) {
                     if (z->isSameShape(y)) {
                         z->assign(x);
@@ -48,7 +48,7 @@ namespace nd4j {
                         return tZ;
                     }
                 } else if (x->isScalar() && y->isScalar()) { // x->isScalar() && y->isScalar()
-				    x->applyScalar(op.s, const_cast<const NDArray*>(y), z, nullptr);
+				    x->applyScalarArr(op.s, const_cast<const NDArray*>(y), z, nullptr);
 			    } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
                     x->applyTrueBroadcast(op, y, z, true, extraArgs);
                     return z;
@@ -67,7 +67,7 @@ namespace nd4j {
                 if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
                     x->applyPairwiseTransform(op.p, y, z, nullptr);
                 } else if (!x->isScalar() && y->isScalar()) {
-                    x->applyScalar(op.s, const_cast<const NDArray*>(y), z);
+                    x->applyScalarArr(op.s, const_cast<const NDArray*>(y), z);
                 } else if (x->isScalar() && !y->isScalar()) {
                     if (z->isSameShape(y)) {
                         //z->assign(x);
@@ -80,7 +80,7 @@ namespace nd4j {
                         return tZ;
                     }
                 } else if (x->isScalar() && y->isScalar()) { // x->isScalar() && y->isScalar()
-                    x->applyScalar(op.s, const_cast<const NDArray*>(y), z, nullptr);
+                    x->applyScalarArr(op.s, const_cast<const NDArray*>(y), z, nullptr);
                 } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
                     x->applyTrueBroadcast(op, y, z, true, extraArgs);
                     return z;
