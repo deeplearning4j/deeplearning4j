@@ -607,9 +607,9 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */ 
-        void applyScalar(nd4j::scalar::Ops op, NDArray* scalar, NDArray* target = nullptr, void *extraParams = nullptr);
+        void applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArray* target = nullptr, void *extraParams = nullptr);
 
-        void applyScalar(nd4j::scalar::BoolOps op, NDArray* scalar, NDArray* target, void *extraParams = nullptr) const;
+        void applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray* target, void *extraParams = nullptr) const;
 
 
         /**

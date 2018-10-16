@@ -1907,12 +1907,12 @@ NDArray NDArray::transp() const {
 
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::applyScalar(nd4j::scalar::BoolOps op, NDArray* scalar, NDArray *target, void *extraParams) const {
+void NDArray::applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray *target, void *extraParams) const {
     
     if (target == nullptr || !target->isB())
-        throw std::invalid_argument("NDArray::applyScalar bool method: target is nullptr or has not bool type!");
+        throw std::invalid_argument("NDArray::applyScalarArr bool method: target is nullptr or has not bool type!");
     if (_dataType != scalar->_dataType)
-        throw std::invalid_argument("NDArray::applyScalar bool method: this and scalar arrays must have the same type!");
+        throw std::invalid_argument("NDArray::applyScalarArr bool method: this and scalar arrays must have the same type!");
     NativeOpExcutioner::execScalarBool(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, scalar->_buffer, scalar->_shapeInfo, extraParams);
 }
 
@@ -1920,7 +1920,7 @@ template <typename T>
 void NDArray::applyScalar(nd4j::scalar::BoolOps op, const T scalar, NDArray *target, void *extraParams) const {
 
     auto scalarArr = NDArrayFactory::create<T>(scalar, _workspace);
-    applyScalar(op, &scalarArr, target, extraParams);
+    applyScalarArr(op, &scalarArr, target, extraParams);
 }
 
 template <> void NDArray::applyScalar(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray *target, void *extraParams) const { throw std::runtime_error("NDArray::applyScalar<NDArray*> method: do not use me!");}
@@ -1935,14 +1935,14 @@ template void NDArray::applyScalar<uint8_t>(nd4j::scalar::BoolOps op, const uint
 template void NDArray::applyScalar<bool>(nd4j::scalar::BoolOps op, const bool scalar, NDArray *target, void *extraParams) const;
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::applyScalar(nd4j::scalar::Ops op, NDArray* scalar, NDArray* target, void *extraParams) {
+void NDArray::applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArray* target, void *extraParams) {
     
     if (!scalar->isScalar())
-        throw std::invalid_argument("NDArray::applyScalar method: operand is not a scalar!");
+        throw std::invalid_argument("NDArray::applyScalarArr method: operand is not a scalar!");
     if(target == nullptr) 
         target = this;
     if(target->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, scalar->_shapeInfo))
-        throw std::invalid_argument("NDArray::applyScalar method: wrong type of target array!");
+        throw std::invalid_argument("NDArray::applyScalarArr method: wrong type of target array!");
 
     NativeOpExcutioner::execScalar(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, scalar->_buffer, scalar->_shapeInfo, extraParams);
 }
@@ -1951,7 +1951,7 @@ template <typename T>
 void NDArray::applyScalar(nd4j::scalar::Ops op, const T scalar, NDArray *target, void *extraParams) {
     
     auto scalarArr = NDArrayFactory::create<T>(scalar, this->_workspace);
-    applyScalar(op, &scalarArr, target, extraParams);
+    applyScalarArr(op, &scalarArr, target, extraParams);
 }
 
 template <> void NDArray::applyScalar(nd4j::scalar::Ops op, const NDArray* scalar, NDArray *target, void *extraParams) { throw std::runtime_error("NDArray::applyScalar<NDArray*> method: do not use me!");}
