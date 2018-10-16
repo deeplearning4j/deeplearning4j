@@ -67,6 +67,7 @@ public class CpuMemoryManager extends BasicMemoryManager {
     @Override
     public void release(@NonNull Pointer pointer, MemoryKind kind) {
         Pointer.free(pointer);
+        pointer.setNull();
     }
 
     /**

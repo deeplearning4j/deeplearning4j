@@ -958,12 +958,13 @@ public class Nd4j {
     /** Matrix multiply: Implements c = alpha*op(a)*op(b) + beta*c where op(X) means transpose X (or not)
      * depending on setting of arguments transposeA and transposeB.<br>
      * Note that matrix c MUST be fortran order, have zero offset and have c.data().length == c.length().
-     * An exception will be thrown otherwise.<br>
+     * i.e., the result array must not be a view. An exception will be thrown otherwise.<br>
+     * (Note: some views are allowed, if and only if they have f order and are contiguous in the buffer other than an
+     * offset. Put another way, they must be f order and have strides identical to a non-view/default array of the same shape)<br>
      * Don't use this unless you know about level 3 blas and NDArray storage orders.
      * @param a First matrix
      * @param b Second matrix
-     * @param c result matrix. Used in calculation (assuming beta != 0) and result is stored in this. f order,
-     *          zero offset and length == data.length only
+     * @param c result matrix. Used in calculation (assuming beta != 0) and result is stored in this. f order, and not a view only
      * @param transposeA if true: transpose matrix a before mmul
      * @param transposeB if true: transpose matrix b before mmul
      * @return result, i.e., matrix c is returned for convenience
@@ -975,6 +976,11 @@ public class Nd4j {
                                 boolean transposeB,
                                 double alpha,
                                 double beta) {
+        //Note: some views have non-zero offset but 'default' strides (these are OK). And a 'c' order vector such as [10,1] is OK - same buffer as an 'f' order vector with same shape
+        Preconditions.checkState(c.length() == 1 || c.ordering() == 'f' && Shape.hasDefaultStridesForShape(c) ||
+                        c.isVectorOrScalar() && c.elementWiseStride() == 1,
+                "C (result) array is not F order or is a view. Nd4j.gemm requires the result array to be F order " +
+                        "and not a view. C (result) array: [%ndSInfo]", c);
         getBlasWrapper().level3().gemm(a, b, c, transposeA, transposeB, alpha, beta);
         return c;
     }

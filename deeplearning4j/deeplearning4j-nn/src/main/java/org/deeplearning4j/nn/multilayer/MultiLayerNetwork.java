@@ -1311,6 +1311,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     @Override
     public MultiLayerNetwork clone() {
+        if(!initCalled)
+            init();
         MultiLayerConfiguration conf = this.layerWiseConfigurations.clone();
         MultiLayerNetwork ret = new MultiLayerNetwork(conf);
         ret.init(this.params().dup(), false);
@@ -3750,7 +3752,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return Learning rate for the specified layer, or null
      */
     public Double getLearningRate(int layerNumber){
-        return NetworkUtils.getLearningRate(this, layerIndex);
+        return NetworkUtils.getLearningRate(this, layerNumber);
     }
 
     /**

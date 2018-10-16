@@ -43,8 +43,8 @@ import java.util.Map;
  * NOTE: CnnLossLayer does not have any parameters. Consequently, the output activations size is equal to the input size.<br>
  * Input and output activations are same as other CNN layers: 4 dimensions with shape [miniBatchSize,channels,height,width]<br>
  * CnnLossLayer has support for a built-in activation function (tanh, softmax etc) - if this is not required, set
- * activation function to Activation.IDENTITY. For activations such as softmax, note that this is applied depth-wise:
- * that is, softmax is applied along dimension 1 (depth) for each minibatch, and x/y location separately.<br>
+ * activation function to Activation.IDENTITY. For activations such as softmax, note that this is applied channel-wise:
+ * that is, softmax is applied along dimension 1 (channel) for each minibatch, and x/y location separately.<br>
  * <br>
  * Note that 3 types of masking are supported, where (n=minibatchSize, c=channels, h=height, w=width):<br>
  * - Per example masking: Where an example is present or not (and all outputs are masked by it). Mask shape [n,1]<br>
@@ -103,7 +103,7 @@ public class CnnLossLayer extends FeedForwardLayer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //During inference and training: dup the input array. But, this counts as *activations* not working memory
-        return new LayerMemoryReport.Builder(layerName, LossLayer.class, inputType, inputType).standardMemory(0, 0) //No params
+        return new LayerMemoryReport.Builder(layerName, getClass(), inputType, inputType).standardMemory(0, 0) //No params
                 .workingMemory(0, 0, 0, 0)
                 .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
                 .build();

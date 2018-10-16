@@ -211,6 +211,13 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @param viewArray The new updater state
      */
     public void setStateViewArray(INDArray viewArray) {
+        if(this.updaterStateViewArray == null){
+            if(viewArray == null)
+                return; //No op - for example, SGD and NoOp updater - i.e., no stored state
+            else {
+                throw new IllegalStateException("Attempting to set updater state view array with null value");
+            }
+        }
         if (this.updaterStateViewArray.length() != viewArray.length())
             throw new IllegalStateException("Invalid input: view arrays differ in length. " + "Expected length "
                             + this.updaterStateViewArray.length() + ", got length " + viewArray.length());
@@ -363,12 +370,16 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             case RenormalizeL2PerLayer:
                 if (layerGradientView != null) {
                     double l2 = layerGradientView.norm2Number().doubleValue();
+                    if (l2 == 0.0)
+                        l2 = 1e-5;  //Avoid 0/0 -> NaN
                     layerGradientView.divi(l2);
                 }
                 break;
             case RenormalizeL2PerParamType:
                 for (INDArray g : gradient.gradientForVariable().values()) {
                     double l2 = Nd4j.getExecutioner().execAndReturn(new Norm2(g)).getFinalResult().doubleValue();
+                    if (l2 == 0.0)
+                        l2 = 1e-5;  //Avoid 0/0 -> NaN
                     g.divi(l2);
                 }
                 break;

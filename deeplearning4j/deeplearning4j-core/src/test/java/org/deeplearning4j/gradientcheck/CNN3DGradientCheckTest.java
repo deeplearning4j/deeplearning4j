@@ -87,67 +87,74 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                             for (ConvolutionMode mode : modes) {
                                 for (int[] kernel : kernels) {
                                     for (int[] stride : strides) {
+                                        for (Convolution3D.DataFormat df : Convolution3D.DataFormat.values()) {
 
-                                        int outDepth = mode == ConvolutionMode.Same ?
-                                                depth / stride[0] : (depth - kernel[0]) / stride[0] + 1;
-                                        int outHeight = mode == ConvolutionMode.Same ?
-                                                height / stride[1] : (height - kernel[1]) / stride[1] + 1;
-                                        int outWidth = mode == ConvolutionMode.Same ?
-                                                width / stride[2] : (width - kernel[2]) / stride[2] + 1;
+                                            int outDepth = mode == ConvolutionMode.Same ?
+                                                    depth / stride[0] : (depth - kernel[0]) / stride[0] + 1;
+                                            int outHeight = mode == ConvolutionMode.Same ?
+                                                    height / stride[1] : (height - kernel[1]) / stride[1] + 1;
+                                            int outWidth = mode == ConvolutionMode.Same ?
+                                                    width / stride[2] : (width - kernel[2]) / stride[2] + 1;
 
-                                        INDArray input = Nd4j.rand(new int[]{miniBatchSize, convNIn, depth, height, width});
-                                        INDArray labels = Nd4j.zeros(miniBatchSize, finalNOut);
-                                        for (int i = 0; i < miniBatchSize; i++) {
-                                            labels.putScalar(new int[]{i, i % finalNOut}, 1.0);
-                                        }
-
-                                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                                .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
-                                                .dist(new NormalDistribution(0, 1))
-                                                .list()
-                                                .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(kernel)
-                                                        .stride(stride).nIn(convNIn).nOut(convNOut1).hasBias(false)
-                                                        .convolutionMode(mode).dataFormat(Convolution3D.DataFormat.NCDHW)
-                                                        .build())
-                                                .layer(1, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
-                                                        .nIn(convNOut1).nOut(convNOut2).hasBias(false)
-                                                        .convolutionMode(mode).dataFormat(Convolution3D.DataFormat.NCDHW)
-                                                        .build())
-                                                .layer(2, new DenseLayer.Builder().nOut(denseNOut).build())
-                                                .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                        .activation(Activation.SOFTMAX).nOut(finalNOut).build())
-                                                .inputPreProcessor(2,
-                                                        new Cnn3DToFeedForwardPreProcessor(outDepth, outHeight, outWidth,
-                                                                convNOut2, true))
-                                                .setInputType(InputType.convolutional3D(depth, height, width, convNIn)).build();
-
-                                        String json = conf.toJson();
-                                        MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
-                                        assertEquals(conf, c2);
-
-                                        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                                        net.init();
-
-                                        String msg = "Minibatch size = " + miniBatchSize + ", activationFn=" + afn
-                                                + ", kernel = " + Arrays.toString(kernel) + ", stride = "
-                                                + Arrays.toString(stride) + ", mode = " + mode.toString()
-                                                + ", input depth " + depth + ", input height " + height
-                                                + ", input width " + width;
-
-                                        if (PRINT_RESULTS) {
-                                            log.info(msg);
-                                            for (int j = 0; j < net.getnLayers(); j++) {
-                                                log.info("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                                            INDArray input;
+                                            if(df == Convolution3D.DataFormat.NDHWC){
+                                                input = Nd4j.rand(new int[]{miniBatchSize, depth, height, width, convNIn});
+                                            } else {
+                                                input = Nd4j.rand(new int[]{miniBatchSize, convNIn, depth, height, width});
                                             }
+                                            INDArray labels = Nd4j.zeros(miniBatchSize, finalNOut);
+                                            for (int i = 0; i < miniBatchSize; i++) {
+                                                labels.putScalar(new int[]{i, i % finalNOut}, 1.0);
+                                            }
+
+                                            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                                    .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
+                                                    .dist(new NormalDistribution(0, 1))
+                                                    .list()
+                                                    .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(kernel)
+                                                            .stride(stride).nIn(convNIn).nOut(convNOut1).hasBias(false)
+                                                            .convolutionMode(mode).dataFormat(df)
+                                                            .build())
+                                                    .layer(1, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
+                                                            .nIn(convNOut1).nOut(convNOut2).hasBias(false)
+                                                            .convolutionMode(mode).dataFormat(df)
+                                                            .build())
+                                                    .layer(2, new DenseLayer.Builder().nOut(denseNOut).build())
+                                                    .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                                            .activation(Activation.SOFTMAX).nOut(finalNOut).build())
+                                                    .inputPreProcessor(2,
+                                                            new Cnn3DToFeedForwardPreProcessor(outDepth, outHeight, outWidth,
+                                                                    convNOut2, df == Convolution3D.DataFormat.NCDHW))
+                                                    .setInputType(InputType.convolutional3D(df, depth, height, width, convNIn)).build();
+
+                                            String json = conf.toJson();
+                                            MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
+                                            assertEquals(conf, c2);
+
+                                            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                                            net.init();
+
+                                            String msg = "DataFormat = " + df + ", minibatch size = " + miniBatchSize + ", activationFn=" + afn
+                                                    + ", kernel = " + Arrays.toString(kernel) + ", stride = "
+                                                    + Arrays.toString(stride) + ", mode = " + mode.toString()
+                                                    + ", input depth " + depth + ", input height " + height
+                                                    + ", input width " + width;
+
+                                            if (PRINT_RESULTS) {
+                                                log.info(msg);
+                                                for (int j = 0; j < net.getnLayers(); j++) {
+                                                    log.info("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                                                }
+                                            }
+
+                                            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS,
+                                                    DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS,
+                                                    RETURN_ON_FIRST_FAILURE, input, labels);
+
+                                            assertTrue(msg, gradOK);
+
+                                            TestUtils.testModelSerialization(net);
                                         }
-
-                                        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS,
-                                                DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS,
-                                                RETURN_ON_FIRST_FAILURE, input, labels);
-
-                                        assertTrue(msg, gradOK);
-
-                                        TestUtils.testModelSerialization(net);
                                     }
                                 }
                             }

@@ -63,7 +63,8 @@ import java.io.OutputStream;
 import java.util.List;
 
 /**
- * Master class for spark
+ * Main class for training MultiLayerNetwork networks using Spark.
+ * Also used for performing distributed evaluation and inference on these networks
  *
  * @author Adam Gibson, Alex Black
  */
@@ -686,7 +687,19 @@ public class SparkDl4jMultiLayer extends SparkListenable {
     public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalBatchSize, T... emptyEvaluations) {
         return doEvaluation(data, getDefaultEvaluationWorkers(), evalBatchSize, emptyEvaluations );
     }
-
+    /**
+     * Perform distributed evaluation of any type of {@link IEvaluation} - or multiple IEvaluation instances.
+     * Distributed equivalent of {@link MultiLayerNetwork#doEvaluation(DataSetIterator, IEvaluation[])}
+     *
+     * @param data             Data to evaluate on
+     * @param emptyEvaluations Empty evaluation instances. Starting point (serialized/duplicated, then merged)
+     * @param evalNumWorkers   Number of workers (copies of the MultiLayerNetwork) model to use. Generally this should
+     *                         be smaller than the number of threads - 2 to 4 is often good enough. If using CUDA GPUs,
+     *                         this should ideally be set to the number of GPUs on each node (i.e., 1 for a single GPU node)
+     * @param evalBatchSize    Evaluation batch size
+     * @param <T>              Type of evaluation instance to return
+     * @return IEvaluation instances
+     */
     public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalNumWorkers, int evalBatchSize, T... emptyEvaluations) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(false, sc.broadcast(conf.toJson()),
                         sc.broadcast(network.params()), evalNumWorkers, evalBatchSize, emptyEvaluations);
