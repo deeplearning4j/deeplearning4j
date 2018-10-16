@@ -38,7 +38,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.EvaluativeListener;
@@ -75,7 +74,7 @@ public class EvalTest extends BaseDL4JTest {
     @Test
     public void testEval() {
         int classNum = 5;
-        Evaluation eval = new Evaluation(classNum);
+        org.nd4j.evaluation.classification.Evaluation eval = new org.nd4j.evaluation.classification.Evaluation (classNum);
 
         // Testing the edge case when some classes do not have true positive
         INDArray trueOutcome = FeatureUtil.toOutcomeVector(0, 5); //[1,0,0,0,0]
@@ -118,7 +117,7 @@ public class EvalTest extends BaseDL4JTest {
         //actual 0      20      3
         //actual 1      10      5
 
-        Evaluation evaluation = new Evaluation(Arrays.asList("class0", "class1"));
+        org.nd4j.evaluation.classification.Evaluation  evaluation = new org.nd4j.evaluation.classification.Evaluation(Arrays.asList("class0", "class1"));
         INDArray predicted0 = Nd4j.create(new double[] {1, 0});
         INDArray predicted1 = Nd4j.create(new double[] {0, 1});
         INDArray actual0 = Nd4j.create(new double[] {1, 0});
@@ -158,7 +157,7 @@ public class EvalTest extends BaseDL4JTest {
         labelsList.add("hobbs");
         labelsList.add("cal");
 
-        Evaluation eval = new Evaluation(labelsList);
+        org.nd4j.evaluation.classification.Evaluation eval = new org.nd4j.evaluation.classification.Evaluation(labelsList);
 
         eval.eval(trueOutcome, predictedOutcome);
         assertEquals(1, eval.classCount(0));
@@ -175,7 +174,7 @@ public class EvalTest extends BaseDL4JTest {
         labelsMap.put(0, "hobbs");
         labelsMap.put(1, "cal");
 
-        Evaluation eval = new Evaluation(labelsMap);
+        org.nd4j.evaluation.classification.Evaluation eval = new org.nd4j.evaluation.classification.Evaluation(labelsMap);
 
         eval.eval(trueOutcome, predictedOutcome);
         assertEquals(1, eval.classCount(0));
@@ -227,13 +226,13 @@ public class EvalTest extends BaseDL4JTest {
         INDArray testPredictedLabel = model.output(testFeature);
 
         // Eval with class number
-        Evaluation eval = new Evaluation(3); //// Specify class num here
+        org.nd4j.evaluation.classification.Evaluation eval = new org.nd4j.evaluation.classification.Evaluation(3); //// Specify class num here
         eval.eval(testLabel, testPredictedLabel);
         double eval1F1 = eval.f1();
         double eval1Acc = eval.accuracy();
 
         // Eval without class number
-        Evaluation eval2 = new Evaluation(); //// No class num
+        org.nd4j.evaluation.classification.Evaluation eval2 = new org.nd4j.evaluation.classification.Evaluation(); //// No class num
         eval2.eval(testLabel, testPredictedLabel);
         double eval2F1 = eval2.f1();
         double eval2Acc = eval2.accuracy();
@@ -241,7 +240,7 @@ public class EvalTest extends BaseDL4JTest {
         //Assert the two implementations give same f1 and accuracy (since one batch)
         assertTrue(eval1F1 == eval2F1 && eval1Acc == eval2Acc);
 
-        Evaluation evalViaMethod = model.evaluate(new ListDataSetIterator<>(Collections.singletonList(test)));
+        org.nd4j.evaluation.classification.Evaluation evalViaMethod = model.evaluate(new ListDataSetIterator<>(Collections.singletonList(test)));
         checkEvaluationEquality(eval, evalViaMethod);
 
         System.out.println(eval.getConfusionMatrix().toString());
@@ -288,10 +287,10 @@ public class EvalTest extends BaseDL4JTest {
             labelsMask.putScalar(new int[] {i, tsLength + 1}, 0.0);
         }
 
-        Evaluation evaluation = new Evaluation();
+        org.nd4j.evaluation.classification.Evaluation evaluation = new org.nd4j.evaluation.classification.Evaluation();
         evaluation.evalTimeSeries(labels, predicted);
 
-        Evaluation evaluation2 = new Evaluation();
+        org.nd4j.evaluation.classification.Evaluation evaluation2 = new org.nd4j.evaluation.classification.Evaluation();
         evaluation2.evalTimeSeries(labels2, predicted2, labelsMask);
 
         System.out.println(evaluation.stats());
@@ -342,7 +341,7 @@ public class EvalTest extends BaseDL4JTest {
         }
 
         //Explicitly specify the amount of classes
-        Evaluation eval = new Evaluation(numClasses);
+        org.nd4j.evaluation.classification.Evaluation eval = new org.nd4j.evaluation.classification.Evaluation(numClasses);
         eval.eval(labels, predicted);
 
         //For sure we shouldn't arrive at 100% recall unless we guessed everything right for every class
@@ -365,20 +364,20 @@ public class EvalTest extends BaseDL4JTest {
             predicted.putScalar(new int[] {i, x2}, 1.0);
         }
 
-        Evaluation evalExpected = new Evaluation();
+        org.nd4j.evaluation.classification.Evaluation evalExpected = new org.nd4j.evaluation.classification.Evaluation();
         evalExpected.eval(actual, predicted);
 
 
         //Now: split into 3 separate evaluation objects -> expect identical values after merging
-        Evaluation eval1 = new Evaluation();
+        org.nd4j.evaluation.classification.Evaluation eval1 = new org.nd4j.evaluation.classification.Evaluation();
         eval1.eval(actual.get(interval(0, 5), all()),
                         predicted.get(interval(0, 5), all()));
 
-        Evaluation eval2 = new Evaluation();
+        org.nd4j.evaluation.classification.Evaluation eval2 = new org.nd4j.evaluation.classification.Evaluation();
         eval2.eval(actual.get(interval(5, 10), all()),
                         predicted.get(interval(5, 10), all()));
 
-        Evaluation eval3 = new Evaluation();
+        org.nd4j.evaluation.classification.Evaluation eval3 = new org.nd4j.evaluation.classification.Evaluation();
         eval3.eval(actual.get(interval(10, nRows), all()),
                         predicted.get(interval(10, nRows), all()));
 
@@ -389,24 +388,24 @@ public class EvalTest extends BaseDL4JTest {
 
 
         //Next: check evaluation merging with empty, and empty merging with non-empty
-        eval1 = new Evaluation();
+        eval1 = new org.nd4j.evaluation.classification.Evaluation();
         eval1.eval(actual.get(interval(0, 5), all()),
                         predicted.get(interval(0, 5), all()));
 
-        Evaluation evalInitiallyEmpty = new Evaluation();
+        org.nd4j.evaluation.classification.Evaluation evalInitiallyEmpty = new org.nd4j.evaluation.classification.Evaluation();
         evalInitiallyEmpty.merge(eval1);
         evalInitiallyEmpty.merge(eval2);
         evalInitiallyEmpty.merge(eval3);
         checkEvaluationEquality(evalExpected, evalInitiallyEmpty);
 
-        eval1.merge(new Evaluation());
+        eval1.merge(new org.nd4j.evaluation.classification.Evaluation());
         eval1.merge(eval2);
-        eval1.merge(new Evaluation());
+        eval1.merge(new org.nd4j.evaluation.classification.Evaluation());
         eval1.merge(eval3);
         checkEvaluationEquality(evalExpected, eval1);
     }
 
-    private static void checkEvaluationEquality(Evaluation evalExpected, Evaluation evalActual) {
+    private static void checkEvaluationEquality(org.nd4j.evaluation.classification.Evaluation evalExpected, org.nd4j.evaluation.classification.Evaluation evalActual) {
         assertEquals(evalExpected.accuracy(), evalActual.accuracy(), 1e-3);
         assertEquals(evalExpected.f1(), evalActual.f1(), 1e-3);
         assertEquals(evalExpected.getNumRowCounter(), evalActual.getNumRowCounter(), 1e-3);
@@ -426,7 +425,7 @@ public class EvalTest extends BaseDL4JTest {
     @Test
     public void testSingleClassBinaryClassification() {
 
-        Evaluation eval = new Evaluation(1);
+        org.nd4j.evaluation.classification.Evaluation eval = new org.nd4j.evaluation.classification.Evaluation(1);
 
         for (int xe = 0; xe < 3; xe++) {
             INDArray zero = Nd4j.create(1);
@@ -453,7 +452,7 @@ public class EvalTest extends BaseDL4JTest {
 
     @Test
     public void testEvalInvalid() {
-        Evaluation e = new Evaluation(5);
+        org.nd4j.evaluation.classification.Evaluation e = new org.nd4j.evaluation.classification.Evaluation(5);
         e.eval(0, 1);
         e.eval(1, 0);
         e.eval(1, 1);
@@ -470,8 +469,8 @@ public class EvalTest extends BaseDL4JTest {
     public void testEvalMethods() {
         //Check eval(int,int) vs. eval(INDArray,INDArray)
 
-        Evaluation e1 = new Evaluation(4);
-        Evaluation e2 = new Evaluation(4);
+        org.nd4j.evaluation.classification.Evaluation e1 = new org.nd4j.evaluation.classification.Evaluation(4);
+        org.nd4j.evaluation.classification.Evaluation e2 = new org.nd4j.evaluation.classification.Evaluation(4);
 
         INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0});
         INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0});
@@ -493,7 +492,7 @@ public class EvalTest extends BaseDL4JTest {
         e1.eval(i3, i0);
         e2.eval(0, 3);
 
-        ConfusionMatrix<Integer> cm = e1.getConfusionMatrix();
+        org.nd4j.evaluation.classification.ConfusionMatrix<Integer> cm = e1.getConfusionMatrix();
         assertEquals(1, cm.getCount(0, 0)); //Order: actual, predicted
         assertEquals(2, cm.getCount(0, 2));
         assertEquals(1, cm.getCount(1, 2));
@@ -510,7 +509,7 @@ public class EvalTest extends BaseDL4JTest {
     @Test
     public void testTopNAccuracy() {
 
-        Evaluation e = new Evaluation(null, 3);
+        org.nd4j.evaluation.classification.Evaluation e = new org.nd4j.evaluation.classification.Evaluation(null, 3);
 
         INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0, 0});
         INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0, 0});
@@ -570,8 +569,8 @@ public class EvalTest extends BaseDL4JTest {
     @Test
     public void testTopNAccuracyMerging() {
 
-        Evaluation e1 = new Evaluation(null, 3);
-        Evaluation e2 = new Evaluation(null, 3);
+        org.nd4j.evaluation.classification.Evaluation e1 = new org.nd4j.evaluation.classification.Evaluation(null, 3);
+        org.nd4j.evaluation.classification.Evaluation e2 = new org.nd4j.evaluation.classification.Evaluation(null, 3);
 
         INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0, 0});
         INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0, 0});
@@ -649,7 +648,7 @@ public class EvalTest extends BaseDL4JTest {
             rrdsi.reset();
         }
 
-        Evaluation e = new Evaluation();
+        org.nd4j.evaluation.classification.Evaluation e = new org.nd4j.evaluation.classification.Evaluation();
         rrdsi.setCollectMetaData(true); //*** New: Enable collection of metadata (stored in the DataSets) ***
 
         while (rrdsi.hasNext()) {
@@ -664,16 +663,16 @@ public class EvalTest extends BaseDL4JTest {
 
         System.out.println("\n\n*** Prediction Errors: ***");
 
-        List<Prediction> errors = e.getPredictionErrors(); //*** New - get list of prediction errors from evaluation ***
+        List<org.nd4j.evaluation.meta.Prediction> errors = e.getPredictionErrors(); //*** New - get list of prediction errors from evaluation ***
         List<RecordMetaData> metaForErrors = new ArrayList<>();
-        for (Prediction p : errors) {
+        for (org.nd4j.evaluation.meta.Prediction p : errors) {
             metaForErrors.add((RecordMetaData) p.getRecordMetaData());
         }
         DataSet ds = rrdsi.loadFromMetaData(metaForErrors); //*** New - dynamically load a subset of the data, just for prediction errors ***
         INDArray output = net.output(ds.getFeatures());
 
         int count = 0;
-        for (Prediction t : errors) {
+        for (org.nd4j.evaluation.meta.Prediction t : errors) {
             System.out.println(t + "\t\tRaw Data: "
                             + csv.loadFromMetaData((RecordMetaData) t.getRecordMetaData()).getRecord() //*** New - load subset of data from MetaData object (usually batched for efficiency) ***
                             + "\tNormalized: " + ds.getFeatures().getRow(count) + "\tLabels: "
@@ -685,13 +684,13 @@ public class EvalTest extends BaseDL4JTest {
         double expAcc = 1.0 - errorCount / 150.0;
         assertEquals(expAcc, e.accuracy(), 1e-5);
 
-        ConfusionMatrix<Integer> confusion = e.getConfusionMatrix();
+        org.nd4j.evaluation.classification.ConfusionMatrix<Integer> confusion = e.getConfusionMatrix();
         int[] actualCounts = new int[3];
         int[] predictedCounts = new int[3];
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 int entry = confusion.getCount(i, j); //(actual,predicted)
-                List<Prediction> list = e.getPredictions(i, j);
+                List<org.nd4j.evaluation.meta.Prediction> list = e.getPredictions(i, j);
                 assertEquals(entry, list.size());
 
                 actualCounts[i] += entry;
@@ -700,8 +699,8 @@ public class EvalTest extends BaseDL4JTest {
         }
 
         for (int i = 0; i < 3; i++) {
-            List<Prediction> actualClassI = e.getPredictionsByActualClass(i);
-            List<Prediction> predictedClassI = e.getPredictionByPredictedClass(i);
+            List<org.nd4j.evaluation.meta.Prediction> actualClassI = e.getPredictionsByActualClass(i);
+            List<org.nd4j.evaluation.meta.Prediction> predictedClassI = e.getPredictionByPredictedClass(i);
             assertEquals(actualCounts[i], actualClassI.size());
             assertEquals(predictedCounts[i], predictedClassI.size());
         }
@@ -716,7 +715,7 @@ public class EvalTest extends BaseDL4JTest {
         INDArray zeros3 = Nd4j.zeros(3, 1);
         INDArray zeros2 = Nd4j.zeros(2, 1);
 
-        Evaluation e = new Evaluation();
+        org.nd4j.evaluation.classification.Evaluation e = new org.nd4j.evaluation.classification.Evaluation();
         e.eval(ones10, ones10); //10 true positives
         e.eval(ones3, zeros3); //3 false negatives
         e.eval(zeros4, ones4); //4 false positives
@@ -747,7 +746,7 @@ public class EvalTest extends BaseDL4JTest {
         INDArray one = Nd4j.create(new double[] {0, 1, 0});
         INDArray two = Nd4j.create(new double[] {0, 0, 1});
 
-        Evaluation e = new Evaluation();
+        org.nd4j.evaluation.classification.Evaluation e = new org.nd4j.evaluation.classification.Evaluation();
         apply(e, 3, zero, zero);
         apply(e, 1, one, zero);
         apply(e, 2, zero, one);
@@ -756,15 +755,15 @@ public class EvalTest extends BaseDL4JTest {
         apply(e, 3, one, two);
         apply(e, 4, two, two);
 
-        assertEquals(3, e.confusion.getCount(0, 0));
-        assertEquals(1, e.confusion.getCount(0, 1));
-        assertEquals(0, e.confusion.getCount(0, 2));
-        assertEquals(2, e.confusion.getCount(1, 0));
-        assertEquals(2, e.confusion.getCount(1, 1));
-        assertEquals(1, e.confusion.getCount(1, 2));
-        assertEquals(0, e.confusion.getCount(2, 0));
-        assertEquals(3, e.confusion.getCount(2, 1));
-        assertEquals(4, e.confusion.getCount(2, 2));
+        assertEquals(3, e.getConfusionMatrix().getCount(0, 0));
+        assertEquals(1, e.getConfusionMatrix().getCount(0, 1));
+        assertEquals(0, e.getConfusionMatrix().getCount(0, 2));
+        assertEquals(2, e.getConfusionMatrix().getCount(1, 0));
+        assertEquals(2, e.getConfusionMatrix().getCount(1, 1));
+        assertEquals(1, e.getConfusionMatrix().getCount(1, 2));
+        assertEquals(0, e.getConfusionMatrix().getCount(2, 0));
+        assertEquals(3, e.getConfusionMatrix().getCount(2, 1));
+        assertEquals(4, e.getConfusionMatrix().getCount(2, 2));
 
         double beta = 3.5;
         double[] prec = new double[3];
@@ -854,23 +853,23 @@ public class EvalTest extends BaseDL4JTest {
         double microF1 = 2 * microPrecision * microRecall / (microPrecision + microRecall);
         double microMcc = (tp * tn - fp * fn) / Math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn));
 
-        assertEquals(microPrecision, e.precision(EvaluationAveraging.Micro), 1e-6);
-        assertEquals(microRecall, e.recall(EvaluationAveraging.Micro), 1e-6);
-        assertEquals(macroPrecision, e.precision(EvaluationAveraging.Macro), 1e-6);
-        assertEquals(macroRecall, e.recall(EvaluationAveraging.Macro), 1e-6);
+        assertEquals(microPrecision, e.precision(org.nd4j.evaluation.EvaluationAveraging.Micro), 1e-6);
+        assertEquals(microRecall, e.recall(org.nd4j.evaluation.EvaluationAveraging.Micro), 1e-6);
+        assertEquals(macroPrecision, e.precision(org.nd4j.evaluation.EvaluationAveraging.Macro), 1e-6);
+        assertEquals(macroRecall, e.recall(org.nd4j.evaluation.EvaluationAveraging.Macro), 1e-6);
 
-        assertEquals(microFBeta, e.fBeta(beta, EvaluationAveraging.Micro), 1e-6);
-        assertEquals(macroFBeta, e.fBeta(beta, EvaluationAveraging.Macro), 1e-6);
+        assertEquals(microFBeta, e.fBeta(beta, org.nd4j.evaluation.EvaluationAveraging.Micro), 1e-6);
+        assertEquals(macroFBeta, e.fBeta(beta, org.nd4j.evaluation.EvaluationAveraging.Macro), 1e-6);
 
-        assertEquals(microF1, e.f1(EvaluationAveraging.Micro), 1e-6);
-        assertEquals(macroF1, e.f1(EvaluationAveraging.Macro), 1e-6);
+        assertEquals(microF1, e.f1(org.nd4j.evaluation.EvaluationAveraging.Micro), 1e-6);
+        assertEquals(macroF1, e.f1(org.nd4j.evaluation.EvaluationAveraging.Macro), 1e-6);
 
-        assertEquals(microMcc, e.matthewsCorrelation(EvaluationAveraging.Micro), 1e-6);
-        assertEquals(macroMcc, e.matthewsCorrelation(EvaluationAveraging.Macro), 1e-6);
+        assertEquals(microMcc, e.matthewsCorrelation(org.nd4j.evaluation.EvaluationAveraging.Micro), 1e-6);
+        assertEquals(macroMcc, e.matthewsCorrelation(org.nd4j.evaluation.EvaluationAveraging.Macro), 1e-6);
 
     }
 
-    private static void apply(Evaluation e, int nTimes, INDArray predicted, INDArray actual) {
+    private static void apply(org.nd4j.evaluation.classification.Evaluation e, int nTimes, INDArray predicted, INDArray actual) {
         for (int i = 0; i < nTimes; i++) {
             e.eval(actual, predicted);
         }
@@ -880,7 +879,7 @@ public class EvalTest extends BaseDL4JTest {
     @Test
     public void testConfusionMatrixStats() {
 
-        Evaluation e = new Evaluation();
+        org.nd4j.evaluation.classification.Evaluation e = new org.nd4j.evaluation.classification.Evaluation();
 
         INDArray c0 = Nd4j.create(new double[] {1, 0, 0});
         INDArray c1 = Nd4j.create(new double[] {0, 1, 0});
@@ -962,9 +961,9 @@ public class EvalTest extends BaseDL4JTest {
                 DataSetIterator iter = new ExistingDataSetIterator(l);
 
                 System.out.println("Net 1 eval");
-                IEvaluation[] e1 = net1.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+                org.nd4j.evaluation.IEvaluation[] e1 = net1.doEvaluation(iter, new org.nd4j.evaluation.classification.Evaluation(), new org.nd4j.evaluation.classification.ROCMultiClass(), new org.nd4j.evaluation.regression.RegressionEvaluation());
                 System.out.println("Net 2 eval");
-                IEvaluation[] e2 = net2.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+                org.nd4j.evaluation.IEvaluation[] e2 = net2.doEvaluation(iter, new org.nd4j.evaluation.classification.Evaluation(), new org.nd4j.evaluation.classification.ROCMultiClass(), new org.nd4j.evaluation.regression.RegressionEvaluation());
 
                 assertEquals(e1[0], e2[0]);
                 assertEquals(e1[1], e2[1]);
@@ -1043,9 +1042,9 @@ public class EvalTest extends BaseDL4JTest {
                 DataSetIterator iter = new ExistingDataSetIterator(l);
 
                 System.out.println("Eval net 1");
-                IEvaluation[] e1 = net1.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+                org.nd4j.evaluation.IEvaluation[] e1 = net1.doEvaluation(iter, new org.nd4j.evaluation.classification.Evaluation(), new org.nd4j.evaluation.classification.ROCMultiClass(), new org.nd4j.evaluation.regression.RegressionEvaluation());
                 System.out.println("Eval net 2");
-                IEvaluation[] e2 = net2.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+                org.nd4j.evaluation.IEvaluation[] e2 = net2.doEvaluation(iter, new org.nd4j.evaluation.classification.Evaluation(), new org.nd4j.evaluation.classification.ROCMultiClass(), new org.nd4j.evaluation.regression.RegressionEvaluation());
 
                 assertEquals(e1[0], e2[0]);
                 assertEquals(e1[1], e2[1]);
@@ -1087,14 +1086,14 @@ public class EvalTest extends BaseDL4JTest {
     @Test
     public void testEvalBinaryMetrics(){
 
-        Evaluation ePosClass1_nOut2 = new Evaluation(2, 1);
-        Evaluation ePosClass0_nOut2 = new Evaluation(2, 0);
-        Evaluation ePosClass1_nOut1 = new Evaluation(2, 1);
-        Evaluation ePosClass0_nOut1 = new Evaluation(2, 0);
-        Evaluation ePosClassNull_nOut2 = new Evaluation(2, null);
-        Evaluation ePosClassNull_nOut1 = new Evaluation(2, null);
+        org.nd4j.evaluation.classification.Evaluation ePosClass1_nOut2 = new org.nd4j.evaluation.classification.Evaluation(2, 1);
+        org.nd4j.evaluation.classification.Evaluation ePosClass0_nOut2 = new org.nd4j.evaluation.classification.Evaluation(2, 0);
+        org.nd4j.evaluation.classification.Evaluation ePosClass1_nOut1 = new org.nd4j.evaluation.classification.Evaluation(2, 1);
+        org.nd4j.evaluation.classification.Evaluation ePosClass0_nOut1 = new org.nd4j.evaluation.classification.Evaluation(2, 0);
+        org.nd4j.evaluation.classification.Evaluation ePosClassNull_nOut2 = new org.nd4j.evaluation.classification.Evaluation(2, null);
+        org.nd4j.evaluation.classification.Evaluation ePosClassNull_nOut1 = new org.nd4j.evaluation.classification.Evaluation(2, null);
 
-        Evaluation[] evals = new Evaluation[]{ePosClass1_nOut2, ePosClass0_nOut2, ePosClass1_nOut1, ePosClass0_nOut1};
+        org.nd4j.evaluation.classification.Evaluation[] evals = new org.nd4j.evaluation.classification.Evaluation[]{ePosClass1_nOut2, ePosClass0_nOut2, ePosClass1_nOut1, ePosClass0_nOut1};
         int[] posClass = {1,0,1,0,-1,-1};
 
 
@@ -1194,21 +1193,21 @@ public class EvalTest extends BaseDL4JTest {
 
         //Also check macro-averaged versions (null positive class):
         assertEquals(acc, ePosClassNull_nOut2.accuracy(), 1e-6);
-        assertEquals(ePosClass1_nOut2.recall(EvaluationAveraging.Macro), ePosClassNull_nOut2.recall(), 1e-6);
-        assertEquals(ePosClass1_nOut2.precision(EvaluationAveraging.Macro), ePosClassNull_nOut2.precision(), 1e-6);
-        assertEquals(ePosClass1_nOut2.f1(EvaluationAveraging.Macro), ePosClassNull_nOut2.f1(), 1e-6);
+        assertEquals(ePosClass1_nOut2.recall(org.nd4j.evaluation.EvaluationAveraging.Macro), ePosClassNull_nOut2.recall(), 1e-6);
+        assertEquals(ePosClass1_nOut2.precision(org.nd4j.evaluation.EvaluationAveraging.Macro), ePosClassNull_nOut2.precision(), 1e-6);
+        assertEquals(ePosClass1_nOut2.f1(org.nd4j.evaluation.EvaluationAveraging.Macro), ePosClassNull_nOut2.f1(), 1e-6);
 
         assertEquals(acc, ePosClassNull_nOut1.accuracy(), 1e-6);
-        assertEquals(ePosClass1_nOut2.recall(EvaluationAveraging.Macro), ePosClassNull_nOut1.recall(), 1e-6);
-        assertEquals(ePosClass1_nOut2.precision(EvaluationAveraging.Macro), ePosClassNull_nOut1.precision(), 1e-6);
-        assertEquals(ePosClass1_nOut2.f1(EvaluationAveraging.Macro), ePosClassNull_nOut1.f1(), 1e-6);
+        assertEquals(ePosClass1_nOut2.recall(org.nd4j.evaluation.EvaluationAveraging.Macro), ePosClassNull_nOut1.recall(), 1e-6);
+        assertEquals(ePosClass1_nOut2.precision(org.nd4j.evaluation.EvaluationAveraging.Macro), ePosClassNull_nOut1.precision(), 1e-6);
+        assertEquals(ePosClass1_nOut2.f1(org.nd4j.evaluation.EvaluationAveraging.Macro), ePosClassNull_nOut1.f1(), 1e-6);
     }
 
 
     @Test
     public void testConfusionMatrixString(){
 
-        Evaluation e = new Evaluation(Arrays.asList("a","b","c"));
+        org.nd4j.evaluation.classification.Evaluation e = new org.nd4j.evaluation.classification.Evaluation(Arrays.asList("a","b","c"));
 
         INDArray class0 = Nd4j.create(new double[]{1,0,0});
         INDArray class1 = Nd4j.create(new double[]{0,1,0});
@@ -1241,7 +1240,7 @@ public class EvalTest extends BaseDL4JTest {
         System.out.println("\n\n\n\n");
 
         //Test with 21 classes (> threshold)
-        e = new Evaluation();
+        e = new org.nd4j.evaluation.classification.Evaluation();
         class0 = Nd4j.create(1, 31);
         class0.putScalar(0, 1);
 
@@ -1311,8 +1310,8 @@ public class EvalTest extends BaseDL4JTest {
         Evaluation e = new Evaluation();
         RegressionEvaluation e2 = new RegressionEvaluation();
         Map<Integer,IEvaluation[]> evals = new HashMap<>();
-        evals.put(0, new IEvaluation[]{e});
-        evals.put(1, new IEvaluation[]{e2});
+        evals.put(0, new IEvaluation[]{(IEvaluation) e});
+        evals.put(1, new IEvaluation[]{(IEvaluation) e2});
 
         cg.evaluate(new IteratorMultiDataSetIterator(list.iterator(), 30), evals);
 
@@ -1342,9 +1341,9 @@ public class EvalTest extends BaseDL4JTest {
                 new INDArray[]{Nd4j.create(10, 1, 10)},
                 new INDArray[]{Nd4j.create(10, 10, 10), Nd4j.create(10, 20, 10)});
 
-        Map<Integer,IEvaluation[]> m = new HashMap<>();
-        m.put(0, new IEvaluation[]{new Evaluation()});
-        m.put(1, new IEvaluation[]{new Evaluation()});
+        Map<Integer,org.nd4j.evaluation.IEvaluation[]> m = new HashMap<>();
+        m.put(0, new org.nd4j.evaluation.IEvaluation[]{new org.nd4j.evaluation.classification.Evaluation()});
+        m.put(1, new org.nd4j.evaluation.IEvaluation[]{new org.nd4j.evaluation.classification.Evaluation()});
 
         cg.evaluate(new SingletonMultiDataSetIterator(mds), m);
     }

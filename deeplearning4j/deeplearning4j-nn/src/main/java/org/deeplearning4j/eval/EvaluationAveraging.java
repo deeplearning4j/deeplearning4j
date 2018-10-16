@@ -21,5 +21,15 @@ package org.deeplearning4j.eval;
  */
 @Deprecated
 public enum EvaluationAveraging {
-    Macro, Micro
+    Macro, Micro;
+
+    public org.nd4j.evaluation.EvaluationAveraging toNd4j(){
+        switch (this){
+            case Macro:
+                return org.nd4j.evaluation.EvaluationAveraging.Macro;
+            case Micro:
+                return org.nd4j.evaluation.EvaluationAveraging.Micro;
+        }
+        throw new UnsupportedOperationException("Unknown: " + this);
+    }
 }

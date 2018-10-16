@@ -86,7 +86,7 @@ public class EvaluationCalibrationTest extends BaseDL4JTest {
                                 bin4Labels.getColumn(i).sumNumber().doubleValue() / bin4Labels.size(0)};
             }
 
-            ReliabilityDiagram rd = ec.getReliabilityDiagram(i);
+            org.nd4j.evaluation.curves.ReliabilityDiagram rd = ec.getReliabilityDiagram(i);
 
             double[] x = rd.getMeanPredictedValueX();
             double[] y = rd.getFractionPositivesY();
@@ -171,14 +171,14 @@ public class EvaluationCalibrationTest extends BaseDL4JTest {
         }
 
         //Check residual plot - all classes/predictions
-        Histogram rpAllClasses = ec.getResidualPlotAllClasses();
+        org.nd4j.evaluation.curves.Histogram rpAllClasses = ec.getResidualPlotAllClasses();
         int[] rpAllClassesBinCounts = rpAllClasses.getBinCounts();
         assertArrayEquals(countsAllClasses, rpAllClassesBinCounts);
 
         //Check residual plot - split by labels for each class
         // i.e., histogram of |label[x] - p(x)| only for those examples where label[x] == 1
         for (int i = 0; i < nClasses; i++) {
-            Histogram rpCurrClass = ec.getResidualPlot(i);
+            org.nd4j.evaluation.curves.Histogram rpCurrClass = ec.getResidualPlot(i);
             int[] rpCurrClassCounts = rpCurrClass.getBinCounts();
 
             //            System.out.println(Arrays.toString(countsByClass[i]));
@@ -212,14 +212,14 @@ public class EvaluationCalibrationTest extends BaseDL4JTest {
             }
         }
 
-        Histogram allProb = ec.getProbabilityHistogramAllClasses();
+        org.nd4j.evaluation.curves.Histogram allProb = ec.getProbabilityHistogramAllClasses();
         int[] actProbCountsAllClasses = allProb.getBinCounts();
 
         assertArrayEquals(probCountsAllClasses, actProbCountsAllClasses);
 
         //Check probability distribution - for each label class
         for (int i = 0; i < nClasses; i++) {
-            Histogram probCurrClass = ec.getProbabilityHistogram(i);
+            org.nd4j.evaluation.curves.Histogram probCurrClass = ec.getProbabilityHistogram(i);
             int[] actProbCurrClass = probCurrClass.getBinCounts();
 
             assertArrayEquals(probCountsByClass[i], actProbCurrClass);

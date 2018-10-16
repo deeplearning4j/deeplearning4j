@@ -31,11 +31,11 @@ import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.serde.jackson.shaded.NDArrayDeSerializer;
+import org.nd4j.serde.jackson.shaded.NDArraySerializer;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
-import org.nd4j.shade.serde.jackson.shaded.NDArrayDeSerializer;
-import org.nd4j.shade.serde.jackson.shaded.NDArraySerializer;
 
 /**
  * EvaluationCalibration is an evaluation class designed to analyze the calibration of a classifier.<br>

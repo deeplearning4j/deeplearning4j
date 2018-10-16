@@ -17,8 +17,8 @@
 package org.deeplearning4j.eval;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.junit.Test;
+import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;

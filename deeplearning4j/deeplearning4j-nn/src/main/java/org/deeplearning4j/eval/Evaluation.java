@@ -135,6 +135,40 @@ public class Evaluation extends org.nd4j.evaluation.classification.Evaluation {
         super(labels, costArray);
     }
 
+    @Deprecated
+    public double precision(org.deeplearning4j.eval.EvaluationAveraging averaging) {
+        return precision(averaging.toNd4j());
+    }
+
+    @Deprecated
+    public double recall(org.deeplearning4j.eval.EvaluationAveraging averaging) {
+        return recall(averaging.toNd4j());
+    }
+
+    public double falsePositiveRate(org.deeplearning4j.eval.EvaluationAveraging averaging) {
+        return falsePositiveRate(averaging.toNd4j());
+    }
+
+    public double falseNegativeRate(org.deeplearning4j.eval.EvaluationAveraging averaging) {
+        return falseNegativeRate(averaging.toNd4j());
+    }
+
+    public double f1(org.deeplearning4j.eval.EvaluationAveraging averaging) {
+        return f1(averaging.toNd4j());
+    }
+
+    public double fBeta(double beta, org.deeplearning4j.eval.EvaluationAveraging averaging) {
+        return fBeta(beta, averaging.toNd4j());
+    }
+
+    public double gMeasure(org.deeplearning4j.eval.EvaluationAveraging averaging) {
+        return gMeasure(averaging.toNd4j());
+    }
+
+    public double matthewsCorrelation(org.deeplearning4j.eval.EvaluationAveraging averaging) {
+        return matthewsCorrelation(averaging.toNd4j());
+    }
+
     /**
      * @deprecated Use ND4J Evaluation class, which has the same interface: {@link org.nd4j.evaluation.classification.Evaluation.Metric}
      */
