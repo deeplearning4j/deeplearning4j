@@ -94,7 +94,7 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
     @Override
     public boolean validateDataTypes() {
         if (y() != null)
-            Preconditions.checkArgument(x().dataType() == y().dataType(),"Op.X type must be the same as Op.Y ");
+            Preconditions.checkArgument(x().dataType() == y().dataType(),"Op.X [" + x().dataType() + "] type must be the same as Op.Y [" + y().dataType() + "]");
 
         if (z() != null)
             Preconditions.checkArgument(z().isR(),"Op.X must be one of floating types");
