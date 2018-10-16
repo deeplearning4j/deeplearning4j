@@ -1419,7 +1419,7 @@ TEST_F(DeclarableOpsTests5, trace_test5) {
     auto exp = NDArrayFactory::create<double>('c', {3, 4}, {75,  225,  375,  525, 675,  825,  975, 1125, 1275, 1425, 1575, 1725});
 
     nd4j::ops::trace op;
-    auto results = op.execute({&input}, {}, {});
+    auto results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);    
     
     ASSERT_EQ(Status::OK(), results->status());
@@ -1436,7 +1436,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test1) {
     input.linspace(1);
 
     nd4j::ops::random_shuffle op;
-    auto results = op.execute({&input}, {}, {});
+    auto results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);    
 
     bool haveZeros = false;
@@ -1459,7 +1459,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test2) {
     input.linspace(1);    
 
     nd4j::ops::random_shuffle op;
-    auto results = op.execute({&input}, {}, {});
+    auto results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);        
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1476,7 +1476,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test3) {
     input.linspace(1);
 
     nd4j::ops::random_shuffle op;
-    auto results = op.execute({&input}, {}, {});
+    auto results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);        
 
     bool haveZeros = false;
@@ -1498,7 +1498,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test4) {
     input.linspace(1);
 
     nd4j::ops::random_shuffle op;
-    auto results = op.execute({&input}, {}, {});
+    auto results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);            
 
     bool haveZeros = false;
@@ -1521,7 +1521,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test5) {
     input.linspace(1);
 
     nd4j::ops::random_shuffle op;
-    auto results = op.execute({&input}, {}, {});
+    auto results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);                
 
     bool haveZeros = false;
@@ -1544,7 +1544,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test6) {
     input.linspace(1);
 
     nd4j::ops::random_shuffle op;
-    auto results = op.execute({&input}, {}, {});
+    auto results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);                    
 
     bool haveZeros = false;
@@ -1568,7 +1568,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test7) {
     auto exp = NDArrayFactory::create<double>('c', {1,4}, {1, 2, 3, 4});    
 
     nd4j::ops::random_shuffle op;
-    auto results = op.execute({&input}, {}, {});
+    auto results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);                    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1586,7 +1586,7 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_1) {
                                       14, 24, 15, 25, 16, 26, 17, 27,
                                       18, 28, 19, 29, 20, 30, 21, 31});
     
-    auto y = NDArrayFactory::create<double>({1.f, 1.f, 1.f, 0.f, 0.f, 0.f, 2.f, 2.f, 2.f});
+    auto y = NDArrayFactory::create<int>({1, 1, 1, 0, 0, 0, 2, 2, 2});
     auto exp = NDArrayFactory::create<double>('c', {9, 4, 2}, {14, 24, 15, 25, 16, 26, 17, 27, 14, 24, 15, 25,
                                         16, 26, 17, 27, 14, 24, 15, 25, 16, 26, 17, 27,
                                         10, 20, 11, 21, 12, 22, 13, 23, 10, 20, 11, 21,
@@ -1620,7 +1620,7 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_2) {
                                       13, 14, 15, 16, 17, 18, 
                                       19, 20, 21, 22, 23, 24});
                     //1,   0,   1,   0,   1,   0
-    auto y = NDArrayFactory::create<double>({1.f, 0.f, 1.f, 0.f, 1.f, 0.f});
+    auto y = NDArrayFactory::create<Nd4jLong>({1, 0, 1, 0, 1, 0});
     auto exp = NDArrayFactory::create<double>('c', {6, 4, 2}, {90, 10, 11, 12, 13, 14,
                                         15, 16, 10, 20, 30, 40,
                                         50, 60, 70, 80, 90, 10,
@@ -2080,7 +2080,7 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_3) {
     
     ASSERT_EQ(Status::OK(), res->status());
     ASSERT_TRUE(res->at(0)->isScalar());
-    ASSERT_EQ(res->at(0)->e<float>(0), 0.375);
+    ASSERT_EQ(res->at(0)->e<double>(0), 0.375);
     
     delete res;
 }
@@ -2118,7 +2118,7 @@ TEST_F(DeclarableOpsTests5, StopGradient_1) {
     auto x = NDArrayFactory::create<double>('c', {2,3}, { 1.f, 11.f,  3.f, 14.f,  5.f,  6.f});
 
     nd4j::ops::stop_gradient op;
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.execute({&x}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -2141,7 +2141,7 @@ TEST_F(DeclarableOpsTests5, StopGradient_2) {
     auto x = NDArrayFactory::create<double>('f', {2,3}, { 1.f, 11.f,  3.f, 14.f,  5.f,  6.f});
 
     nd4j::ops::stop_gradient op;
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.execute({&x}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -2166,7 +2166,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test1) {
     auto expOutput = NDArrayFactory::create<double>('c', {3, 3, 3}, {-2.16985e+00,-1.69846e-01,-3.16985e+00, -1.31507e+00,-6.31507e+00,-3.15072e-01, -8.00046e+00,-4.58767e-04,-9.00046e+00, -1.31327e+00,-1.23133e+01,-3.13266e-01, -1.40000e+01,-1.13743e-06,-1.50000e+01, -1.31326e+00,-1.83133e+01,-3.13262e-01, -2.00000e+01,-2.81941e-09,-2.10000e+01, -1.31326e+00,-2.43133e+01,-3.13262e-01, -2.73133e+01,-1.31326e+00,-3.13262e-01});
 
     nd4j::ops::log_softmax op;
-    auto  results = op.execute({&input}, {}, {});
+    auto  results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto z = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2183,7 +2183,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test2) {
     auto expOutput = NDArrayFactory::create<double>('c', {3, 3, 3}, {-3.05095e+00,-3.04946e+00,-5.00705e+00, -5.09458e-02,-7.04946e+00,-7.04851e-03, -6.05095e+00,-4.94556e-02,-8.00705e+00, -3.04859e+00,-1.30000e+01,-3.04859e+00, -1.50486e+01,-2.37286e-06,-1.70486e+01, -4.85876e-02,-1.60000e+01,-4.85874e-02, -2.10000e+01,-3.04859e+00,-2.51269e+01, -7.96007e-10,-2.50486e+01,-2.12693e+00, -2.40000e+01,-4.85874e-02,-1.26928e-01});
 
     nd4j::ops::log_softmax op;
-    auto  results = op.execute({&input}, {}, {1});
+    auto  results = op.execute({&input}, {}, {1}, false, nd4j::DataType::DOUBLE);
     auto z = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2200,7 +2200,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test3) {
     auto expOutput = NDArrayFactory::create<double>('c', {3, 3, 3}, {-2.16985e+00,-1.69846e-01,-3.16985e+00, -1.31507e+00,-6.31507e+00,-3.15072e-01, -8.00046e+00,-4.58767e-04,-9.00046e+00, -1.31327e+00,-1.23133e+01,-3.13266e-01, -1.40000e+01,-1.13743e-06,-1.50000e+01, -1.31326e+00,-1.83133e+01,-3.13262e-01, -2.00000e+01,-2.81941e-09,-2.10000e+01, -1.31326e+00,-2.43133e+01,-3.13262e-01, -2.73133e+01,-1.31326e+00,-3.13262e-01});
 
     nd4j::ops::log_softmax op;
-    auto  results = op.execute({&input}, {}, {2});
+    auto  results = op.execute({&input}, {}, {2}, false, nd4j::DataType::DOUBLE);
     auto z = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2218,7 +2218,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test5) {
     auto expOutput = NDArrayFactory::create<double>('c', {3, 3}, {-2.16985, -0.16985, -3.16985, -1.31507, -6.31507, -0.31507, -9.31335, -1.31335, -0.31335});
 
     nd4j::ops::log_softmax op;
-    auto  results = op.execute({&input}, {}, {});
+    auto  results = op.execute({&input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto z = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2269,7 +2269,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test8) {
     auto expOutput = NDArrayFactory::create<double>('c', {1, 5}, {0, 0, 0, 0, 0});
 
     nd4j::ops::log_softmax op;
-    auto  results = op.execute({&input}, {}, {0});
+    auto  results = op.execute({&input}, {}, {0}, false, nd4j::DataType::DOUBLE);
     auto z = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2338,7 +2338,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_bp_test1) {
     auto exp = NDArrayFactory::create<double>('c', {2, 2}, {-0.07311,0.02689, -0.07311,0.02689});
     
     nd4j::ops::log_softmax_bp op;
-    auto  results = op.execute({&input, &epsilon}, {}, {});
+    auto  results = op.execute({&input, &epsilon}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2356,7 +2356,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_bp_test2) {
     auto exp = NDArrayFactory::create<double>('c', {2, 2}, {-0.17616, -0.17616, 0.02384,  0.02384});
     
     nd4j::ops::log_softmax_bp op;
-    auto  results = op.execute({&input, &epsilon}, {}, {0});
+    auto  results = op.execute({&input, &epsilon}, {}, {0}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2405,7 +2405,7 @@ TEST_F(DeclarableOpsTests5, LogPoisonLoss_1) {
     auto exp = NDArrayFactory::create<double>('c', {2, 2, 2}, {1.3678794, 5.389056, 2.981689, 1.6465969, 1.7182817, 5.389056, 5.389056, 1.7182817});
     
     nd4j::ops::log_poison_loss op;
-    auto results = op.execute({&targets, &input}, {}, {});
+    auto results = op.execute({&targets, &input}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2424,7 +2424,7 @@ TEST_F(DeclarableOpsTests5, LogPoisonLoss_2) {
     auto exp = NDArrayFactory::create<double>('c', {2, 2, 2}, {3.0196857, 4.0408626, 2.1334953, 3.6984034, 1.3700882, 4.0408626, 4.0408626, 1.3700882});
  
     nd4j::ops::log_poison_loss op;
-    auto results = op.execute({&targets, &input}, {}, {1});
+    auto results = op.execute({&targets, &input}, {}, {1}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
