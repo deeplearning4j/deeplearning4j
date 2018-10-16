@@ -126,18 +126,18 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             return extraArgz;
 
         if (extraArgs != null) {
-            if (dtype == DataType.FLOAT || dtype == DataType.HALF) {
-                float extraz[] = new float[extraArgs.length];
+            if (Shape.isZ(dtype)) {
+                long extraz[] = new long[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
                     if (extraArgs[i] instanceof Number) {
                         Number arg = (Number) extraArgs[i];
-                        float val = arg.floatValue();
+                        long val = arg.longValue();
                         extraz[i] = val;
                     }
                 }
-                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);
+                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
                 return extraArgz;
-            } else if (dtype == DataType.DOUBLE) {
+            } else if (Shape.isR(dtype)) {
                 double extraz[] = new double[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
                     if (!(extraArgs[i] instanceof Number))
@@ -148,7 +148,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     double val = arg.doubleValue();
                     extraz[i] = val;
                 }
-                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);
+                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
                 return extraArgz;
             }
         }

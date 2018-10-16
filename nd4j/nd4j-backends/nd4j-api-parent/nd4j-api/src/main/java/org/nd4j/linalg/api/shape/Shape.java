@@ -3561,6 +3561,18 @@ public class Shape {
         return Arrays.equals(input.stride(), defaultStrides);
     }
 
+    public static boolean isS(@NonNull DataType x) {
+        return x == DataType.UTF8;
+    }
+
+    public static boolean isB(@NonNull DataType x) {
+        return x == DataType.BOOL;
+    }
+
+    public static boolean isZ(@NonNull DataType x) {
+        return !isR(x) && !isS(x) && !isB(x);
+    }
+
     public static boolean isR(@NonNull DataType x) {
         return x == DataType.FLOAT || x == DataType.HALF || x == DataType.DOUBLE;
     }
