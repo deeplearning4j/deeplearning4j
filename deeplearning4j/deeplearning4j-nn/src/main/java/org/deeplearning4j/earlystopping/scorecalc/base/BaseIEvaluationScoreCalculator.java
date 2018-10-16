@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.earlystopping.scorecalc.base;
 
-import lombok.AllArgsConstructor;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
