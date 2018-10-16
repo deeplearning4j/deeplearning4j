@@ -1655,6 +1655,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         tArgs, op.numTArguments(),
                         iArgs, op.numIArguments(),
                         op.isInplaceCall()));
+
+                if (status != OpStatus.ND4J_STATUS_OK)
+                    throw new RuntimeException();
             }catch(Exception e) {
                 log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
                                 String.valueOf(op.numInputArguments()) + " inputs, " +

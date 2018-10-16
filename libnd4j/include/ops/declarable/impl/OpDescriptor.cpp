@@ -265,5 +265,18 @@ namespace nd4j {
         bool OpDescriptor::isSameMode() {
             return _sameMode;
         }
+
+        bool OpDescriptor::isInherit(int index) {
+            if (std::find(_allowedOuts.begin(), _allowedOuts.end(), nd4j::DataType::INHERIT) != _allowedOuts.end())
+                return true;
+            if (_outputTypes.count(index) > 0) {
+                auto vec = _outputTypes[index];
+
+                if (std::find(vec.begin(), vec.end(), nd4j::DataType::INHERIT) != vec.end())
+                    return true;
+            }
+
+            return false;
+        }
     }
 }

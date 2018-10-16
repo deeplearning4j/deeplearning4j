@@ -285,7 +285,8 @@ namespace nd4j {
             _registrator.unlock();
 
             // rolling over inputs first
-            int cnt = 0;
+            int cnt = 0, inT = 0;
+            std::vector<nd4j::DataType> inputTypes(block.width());
             for (auto &p: *(block.inputs())) {
                 auto var = block.variable(p);
 
@@ -297,6 +298,7 @@ namespace nd4j {
                 if (var != nullptr && var->hasNDArray()) {
                     auto array = var->getNDArray();
 
+                    inputTypes[inT++] = array->dataType();
                     if (!_descriptor->checkInputMatch(cnt, array->dataType())) {
                         return ND4J_STATUS_BAD_ARGUMENTS;
                     }
@@ -314,14 +316,21 @@ namespace nd4j {
                     // only validating non-null variables
                     if (var != nullptr && var->hasNDArray()) {
                         auto array = var->getNDArray();
+                        auto cType = array->dataType();
 
                         if (_descriptor->isSameMode()) {
+                            // for same mode, output type must be the same as input type
                             auto iv = block.variable(index);
 
-                            if (iv->getNDArray()->dataType() != array->dataType()) {
+                            if (iv->getNDArray()->dataType() != cType) {
                                 return ND4J_STATUS_BAD_ARGUMENTS;
                             }
-                        } else if (!_descriptor->checkOutputMatch(index, array->dataType())) {
+                        } else if (_descriptor->isInherit(index)) {
+                            // in inherit mode, output type must be the same as one of input types
+                            if (std::find(inputTypes.begin(), inputTypes.end(), cType) == inputTypes.end())
+                                return ND4J_STATUS_BAD_ARGUMENTS;
+
+                        } else if (!_descriptor->checkOutputMatch(index, cType)) {
                             return ND4J_STATUS_BAD_ARGUMENTS;
                         }
                     }

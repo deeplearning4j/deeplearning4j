@@ -5699,7 +5699,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testRDiv() throws Exception {
         val x = Nd4j.create(new double[]{2,2,2});
         val y = Nd4j.create(new double[]{4,6,8});
-        val result = Nd4j.createUninitialized(1,3);
+        val result = Nd4j.createUninitialized(DataType.DOUBLE, new long[]{3});
+
+        assertEquals(DataType.DOUBLE, x.dataType());
+        assertEquals(DataType.DOUBLE, y.dataType());
+        assertEquals(DataType.DOUBLE, result.dataType());
 
         val op = DynamicCustomOp.builder("RDiv")
                 .addInputs(x,y)
@@ -6000,7 +6004,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testVectorScalarConcat() {
         val vector = Nd4j.trueVector(new float[] {1, 2});
-        val scalar = Nd4j.scalar(DataType.FLOAT, 3.0f);
+        val scalar = Nd4j.scalar(3.0f);
 
         val output = Nd4j.trueVector(new float[]{0, 0, 0});
         val exp = Nd4j.trueVector(new float[]{1, 2, 3});

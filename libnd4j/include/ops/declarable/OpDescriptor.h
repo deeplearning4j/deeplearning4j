@@ -171,6 +171,8 @@ namespace nd4j {
             bool checkInputMatch(int index, nd4j::DataType dataType);
             bool checkOutputMatch(int index, nd4j::DataType dataType);
             bool isSameMode();
+
+            bool isInherit(int index);
         };
     }
 }

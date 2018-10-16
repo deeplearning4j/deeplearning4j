@@ -156,6 +156,30 @@ TEST_F(JavaInteropTests, Test_Squeeze_1) {
     ASSERT_EQ(e, z);
 }
 
+TEST_F(JavaInteropTests, Test_RDiv_1) {
+    auto x = NDArrayFactory::create<double>('c', {3}, {2, 2, 2});
+    auto y = NDArrayFactory::create<double>('c', {3}, {4, 6, 8});
+    auto z = NDArrayFactory::create<double>('c', {3});
+    auto e = NDArrayFactory::create<double>('c', {3}, {2, 3, 4});
+
+    nd4j::ops::reversedivide op;
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo()};
+
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+
+
+    NativeOps nativeOps;
+
+    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}
+
 TEST_F(JavaInteropTests, TestSconv2d_1) {
     auto input = NDArrayFactory::create<float>('c', {3, 3, 8, 8});
     auto weightsD = NDArrayFactory::create<float>('c', {1, 3, 1, 1});

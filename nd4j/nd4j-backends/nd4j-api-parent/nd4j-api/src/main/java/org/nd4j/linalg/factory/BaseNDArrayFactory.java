@@ -1415,11 +1415,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     public INDArray trueVector(float[] data) {
-        return create(data, new int[] {data.length}, new int[]{1}, 0);
+        return create(data, new long[] {data.length}, new long[]{1}, DataType.FLOAT);
     }
 
     public INDArray trueVector(double[] data) {
-        return create(data, new int[] {data.length}, new int[]{1}, 0);
+        return create(data, new long[] {data.length}, new long[]{1}, DataType.DOUBLE);
     }
 
 
@@ -1433,7 +1433,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(int value, long offset) {
-        return create(new int[] {value}, new int[] {1, 1}, new int[] {1, 1}, offset);
+        return create(new int[] {value}, new long[0], new long[0], DataType.INT);
     }
 
 
@@ -1503,7 +1503,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(double[] data, char order) {
-        return create(data, new int[] {1, data.length}, Nd4j.getStrides(new int[] {1, data.length}, order), order, 0);
+        return create(data, new long[] {data.length}, new long[]{1}, DataType.DOUBLE);
     }
 
     @Override
