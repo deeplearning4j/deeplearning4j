@@ -615,11 +615,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray lti(Number other) {
-        return null;
-    }
-
-    @Override
     public INDArray putScalar(int[] indexes, float value) {
         return null;
     }
@@ -635,17 +630,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray epsi(Number other) {
-        return null;
-    }
-
-    @Override
     public INDArray eq(Number other) {
-        return null;
-    }
-
-    @Override
-    public INDArray eqi(Number other) {
         return null;
     }
 
@@ -663,29 +648,8 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public INDArray lte(Number other) {
         return null;
     }
-
-    @Override
-    public INDArray gtei(Number other) {
-        return null;
-    }
-
-    @Override
-    public INDArray ltei(Number other) {
-        return null;
-    }
-
-    @Override
-    public INDArray gti(Number other) {
-        return null;
-    }
-
     @Override
     public INDArray lt(INDArray other) {
-        return null;
-    }
-
-    @Override
-    public INDArray lti(INDArray other) {
         return null;
     }
 
@@ -695,17 +659,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray epsi(INDArray other) {
-        return null;
-    }
-
-    @Override
     public INDArray neq(Number other) {
-        return null;
-    }
-
-    @Override
-    public INDArray neqi(Number other) {
         return null;
     }
 
@@ -715,27 +669,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray neqi(INDArray other) {
-        return null;
-    }
-
-    @Override
     public INDArray eq(INDArray other) {
         return null;
     }
 
     @Override
-    public INDArray eqi(INDArray other) {
-        return null;
-    }
-
-    @Override
     public INDArray gt(INDArray other) {
-        return null;
-    }
-
-    @Override
-    public INDArray gti(INDArray other) {
         return null;
     }
 

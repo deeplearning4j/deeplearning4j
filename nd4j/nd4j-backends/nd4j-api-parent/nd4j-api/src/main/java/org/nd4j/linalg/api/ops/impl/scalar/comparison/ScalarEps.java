@@ -26,48 +26,63 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Return a binary (0 or 1) when less than a number
+ * Return a binary (0 or 1) when greater than a number
  *
  * @author Adam Gibson
  */
-public class ScalarLessThan extends BaseScalarBoolOp {
-    public ScalarLessThan() {
+public class ScalarEps extends BaseScalarBoolOp {
+    public ScalarEps() {
     }
 
-    public ScalarLessThan(INDArray x, INDArray y, INDArray z, long n, Number num) {
+    public ScalarEps(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
     }
 
-    public ScalarLessThan(INDArray x, Number num) {
+    public ScalarEps(INDArray x, Number num) {
         super(x, num);
     }
 
-    public ScalarLessThan(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
+
+    public ScalarEps(INDArray x) {
+        this(x, 0);
+    }
+
+    public ScalarEps(SameDiff sameDiff, SDVariable i_v, Number scalar) {
+        super(sameDiff, i_v, scalar);
+    }
+
+    public ScalarEps(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
     }
 
+    public ScalarEps(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, scalar, inPlace, extraArgs);
+    }
+
+    public ScalarEps(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
+        super(sameDiff, i_v, scalar, extraArgs);
+    }
 
     @Override
     public int opNum() {
-        return 2;
+        return 3;
     }
 
     @Override
     public String opName() {
-        return "lessthan_scalar";
+        return "eps_scalar";
     }
 
 
     @Override
-    public String onnxName() {
-        return "Less";
+    public int[] getDimension() {
+        return null;
     }
 
     @Override
-    public String tensorflowName() {
-        return "less";
-    }
+    public void setDimension(int... dimension) {
 
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
@@ -75,4 +90,16 @@ public class ScalarLessThan extends BaseScalarBoolOp {
 
         return Arrays.asList(sameDiff.zerosLike(arg()));
     }
+
+    @Override
+    public String onnxName() {
+        return "Equal";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "equal";
+    }
+
+
 }

@@ -591,15 +591,32 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
 
 
+            switch (op.getOpType()) {
+                case SCALAR:
                     loop.execScalar(null,
+                        op.opNum(),
+                        op.x().data().addressPointer(),
+                        (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        op.z().data().addressPointer(),
+                        (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        op.scalar().data().addressPointer(),
+                        (LongPointer) op.scalar().shapeInfoDataBuffer().addressPointer(),
+                        getPointerForExtraArgs(op));
+                    break;
+                case SCALAR_BOOL:
+                    loop.execScalarBool(null,
                             op.opNum(),
                             op.x().data().addressPointer(),
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                             op.z().data().addressPointer(),
+                            op.z().data().addressPointer(),
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             op.scalar().data().addressPointer(),
                             (LongPointer) op.scalar().shapeInfoDataBuffer().addressPointer(),
                             getPointerForExtraArgs(op));
+                    break;
+                default:
+                    throw new ND4JIllegalStateException("Unknown op type: [" + op.getOpType() +"]");
+            }
 
             profilingHookOut(op, st);
         }
