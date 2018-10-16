@@ -2,8 +2,8 @@
 title: Distributed Training with Parameter Server
 short_title: Parameter Server
 description: Deeplearning4j supports fast distributed training with Spark and a parameter server.
-category: Tuning & Training
-weight: 10
+category: Distributed Deep Learning
+weight: 12
 ---
 
 ## Distributed training with gradients sharing

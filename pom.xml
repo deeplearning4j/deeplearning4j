@@ -251,7 +251,7 @@
         <jsch.version>0.1.51</jsch.version>
         <leveldb.version>1.8</leveldb.version>
         <lz4.version>1.3.0</lz4.version>
-        <metrics.version>3.1.2</metrics.version>
+        <metrics.version>3.2.6</metrics.version>
         <netty.version>3.10.4.Final</netty.version>
         <objenesis.version>2.6</objenesis.version>
         <paranamer.version>2.6</paranamer.version>
@@ -291,9 +291,9 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.4.3-SNAPSHOT</javacpp.version>
-        <javacpp-presets.version>1.4.3-SNAPSHOT</javacpp-presets.version>
-        <javacv.version>1.4.3-SNAPSHOT</javacv.version>
+        <javacpp.version>1.4.3</javacpp.version>
+        <javacpp-presets.version>1.4.3</javacpp-presets.version>
+        <javacv.version>1.4.3</javacv.version>
         <openblas.version>0.3.3</openblas.version>
         <mkl.version>2019.0</mkl.version>
         <mkl-dnn.version>0.16</mkl-dnn.version>
