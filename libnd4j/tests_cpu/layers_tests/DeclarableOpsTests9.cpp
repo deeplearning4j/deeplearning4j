@@ -1430,7 +1430,7 @@ TEST_F(DeclarableOpsTests9, prelu_test1) {
 
     nd4j::ops::prelu op;
 
-    auto result = op.execute({&x, &alpha}, {}, {});
+    auto result = op.execute({&x, &alpha}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1448,7 +1448,7 @@ TEST_F(DeclarableOpsTests9, prelu_test2) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {7.2f,  6.6f,   6.f,   5.4f, -16.f, -14.f, -12.f, -10.f, -16.f, -12.f,  -8.f,  -4.f, 0.f,   1.f,   2.f,   3.f, 4.f,   5.f,   6.f,   7.f, 8.f,   9.f,  10.f,  11.f});    
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {0});
+    auto result = op.execute({&x, &alpha}, {}, {0}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1466,7 +1466,7 @@ TEST_F(DeclarableOpsTests9, prelu_test3) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {7.2f,  6.6f,   6.f,   5.4f, -16.f, -14.f, -12.f, -10.f, -16.f, -12.f,  -8.f,  -4.f, 0.f,   1.f,   2.f,   3.f, 4.f,   5.f,   6.f,   7.f, 8.f,   9.f,  10.f,  11.f});    
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {0});
+    auto result = op.execute({&x, &alpha}, {}, {0}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1484,7 +1484,7 @@ TEST_F(DeclarableOpsTests9, prelu_test4) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {7.2f,  6.6f,   6.f,   5.4f, -16.f, -14.f, -12.f, -10.f, -16.f, -12.f,  -8.f,  -4.f, 0.f,   1.f,   2.f,   3.f, 4.f,   5.f,   6.f,   7.f, 8.f,   9.f,  10.f,  11.f});    
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {0});
+    auto result = op.execute({&x, &alpha}, {}, {0}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1502,7 +1502,7 @@ TEST_F(DeclarableOpsTests9, prelu_test5) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {7.2f, -22.f, -40.f,   9.f, 4.8f, -14.f, -24.f,   5.f, 2.4f,  -6.f,  -8.f,   1.f, 0.f,   1.f,   2.f,   3.f, 4.f,   5.f,   6.f,   7.f, 8.f,   9.f,  10.f,  11.f});    
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {1});
+    auto result = op.execute({&x, &alpha}, {}, {1}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1520,7 +1520,7 @@ TEST_F(DeclarableOpsTests9, prelu_test6) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {24.f, 22.f, 20.f, 18.f, 16.f, 14.f, 12.f, 10.f, 8.f,  6.f,  4.f,  2.f, 0.f,  1.f,  2.f,  3.f, 4.f,  5.f,  6.f,  7.f, 8.f,  9.f, 10.f, 11.f});    
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {1,0});
+    auto result = op.execute({&x, &alpha}, {}, {1,0}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1539,7 +1539,7 @@ TEST_F(DeclarableOpsTests9, prelu_test7) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {24.f, 22.f, 20.f, 18.f, 16.f, 14.f, 12.f, 10.f, 8.f,  6.f,  4.f,  2.f, 0.f,  1.f,  2.f,  3.f, 4.f,  5.f,  6.f,  7.f, 8.f,  9.f, 10.f, 11.f});    
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {1,0});
+    auto result = op.execute({&x, &alpha}, {}, {1,0}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1557,7 +1557,7 @@ TEST_F(DeclarableOpsTests9, prelu_test8) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {24.f, 22.f, 20.f, 18.f, 16.f, 14.f, 12.f, 10.f, 8.f,  6.f,  4.f,  2.f, 0.f,  1.f,  2.f,  3.f, 4.f,  5.f,  6.f,  7.f, 8.f,  9.f, 10.f, 11.f});    
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {1,0,1,0,1,0});
+    auto result = op.execute({&x, &alpha}, {}, {1,0,1,0,1,0}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1575,7 +1575,7 @@ TEST_F(DeclarableOpsTests9, prelu_test9) {
     auto exp = NDArrayFactory::create<double>('c', {2, 4}, {8.f, 6.f, 4.f, 2.f,0.f, 1.f, 2.f, 3.f});
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {0});
+    auto result = op.execute({&x, &alpha}, {}, {0}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1593,7 +1593,7 @@ TEST_F(DeclarableOpsTests9, prelu_test10) {
     auto exp = NDArrayFactory::create<double>('c', {2, 4}, {8.f, 6.f, 4.f, 2.f,0.f, 1.f, 2.f, 3.f});
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {1});
+    auto result = op.execute({&x, &alpha}, {}, {1}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1618,7 +1618,7 @@ TEST_F(DeclarableOpsTests9, prelu_test11) {
                                            62.f,  63.f,  64.f, 65.f,  66.f,  67.f,  68.f,  69.f});
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {1,3});
+    auto result = op.execute({&x, &alpha}, {}, {1,3}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1642,7 +1642,7 @@ TEST_F(DeclarableOpsTests9, prelu_test12) {
                                            53.f, 54.f, 55.f, 56.f, 57.f, 58.f, 59.f, 60.f, 61.f, 62.f, 63.f, 64.f, 65.f, 66.f, 67.f, 68.f, 69.f});
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {-1, 2});
+    auto result = op.execute({&x, &alpha}, {}, {-1, 2}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1666,7 +1666,7 @@ TEST_F(DeclarableOpsTests9, prelu_test13) {
                                            53.f, 54.f, 55.f, 56.f, 57.f, 58.f, 59.f, 60.f, 61.f, 62.f, 63.f, 64.f, 65.f, 66.f, 67.f, 68.f, 69.f});
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {-1, 2});
+    auto result = op.execute({&x, &alpha}, {}, {-1, 2}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
@@ -1691,7 +1691,7 @@ TEST_F(DeclarableOpsTests9, prelu_test14) {
                                            55.f,  56.f,  57.f,  58.f,  59.f, 60.f,  61.f,  62.f,  63.f,  64.f, 65.f,  66.f,  67.f,  68.f,  69.f});
 
     nd4j::ops::prelu op;
-    auto result = op.execute({&x, &alpha}, {}, {-2});
+    auto result = op.execute({&x, &alpha}, {}, {-2}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
