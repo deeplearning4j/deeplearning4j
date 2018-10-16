@@ -10188,7 +10188,7 @@ public class SameDiff {
 
             val args = getInputsForFunction(differentialFunction);
 
-            log.debug("Step: {}; Executing op [{}] for node [{}]", exec_counter, opName, ownName);
+            log.trace("Step: {}; Executing op [{}] for node [{}]", exec_counter, opName, ownName);
 
             // check if inputs are active nodes. skip step otherwise
             // please note: Exit node can't be skipped, because it's either rewind point or exit loop point
