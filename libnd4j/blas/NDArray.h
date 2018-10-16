@@ -596,10 +596,10 @@ namespace nd4j {
         *  extraParams - extra parameters for operation
         */
         template <typename T>
-        void applyScalar(nd4j::scalar::Ops op, T scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+        void applyScalar(nd4j::scalar::Ops op, const T scalar, NDArray* target = nullptr, void *extraParams = nullptr);
 
         template <typename T>
-        void applyScalar(nd4j::scalar::BoolOps op, T scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+        void applyScalar(nd4j::scalar::BoolOps op, const T scalar, NDArray* target, void *extraParams = nullptr) const;
 
         /** 
         *  apply a scalar operation to an array
@@ -607,9 +607,9 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */ 
-        void applyScalar(nd4j::scalar::Ops op, NDArray* scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+        void applyScalar(nd4j::scalar::Ops op, NDArray* scalar, NDArray* target = nullptr, void *extraParams = nullptr);
 
-        void applyScalar(nd4j::scalar::BoolOps op, NDArray* scalar, NDArray* target = nullptr, void *extraParams = nullptr) const;
+        void applyScalar(nd4j::scalar::BoolOps op, NDArray* scalar, NDArray* target, void *extraParams = nullptr) const;
 
 
         /**

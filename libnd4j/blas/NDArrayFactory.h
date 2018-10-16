@@ -50,10 +50,10 @@ namespace nd4j {
 
 
         template <typename T>
-        static NDArray* create_(T value, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray* create_(const T value, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
-        static NDArray create(T value, nd4j::memory::Workspace* workspace = nullptr);
+        static NDArray create(const T value, nd4j::memory::Workspace* workspace = nullptr);
         static NDArray create(nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
 
 

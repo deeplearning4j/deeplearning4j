@@ -1198,3 +1198,56 @@ TEST_F(MultiDataTypeTests, ndarray_applyTrueBroadcast_test2) {
     ASSERT_EQ(x6, exp3);
 }
 
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyScalar_test1) {
+            
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray x2('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
+    NDArray x3('c', {2,2}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
+    
+    NDArray exp1('c', {2,2}, {1, 2, 3, 4}, nd4j::DataType::INT64);
+    NDArray exp2('c', {2,2}, {1.5, 2.5, 3.5, 4.5}, nd4j::DataType::DOUBLE);
+    NDArray exp3('c', {2,2}, {0.1, 1.6, 2.6, 3.6}, nd4j::DataType::FLOAT32);
+    NDArray exp4('c', {2,2}, {1.1, 2.1, 1.1, 2.1}, nd4j::DataType::DOUBLE);
+    NDArray exp5('c', {2,2}, {1, 1, 1, 1}, nd4j::DataType::BOOL);
+    
+    x1.applyScalar<int>(nd4j::scalar::Add, 1);
+    ASSERT_EQ(x1, exp1);
+
+    x1.applyScalar<double>(nd4j::scalar::Add, 0.5, &x3);
+    ASSERT_EQ(x3, exp2);
+
+    x2.applyScalar<double>(nd4j::scalar::Add, 0.1);
+    ASSERT_EQ(x2, exp3);
+
+    x4.applyScalar<double>(nd4j::scalar::Add, 1.1, &x3);
+    ASSERT_EQ(x3, exp4);
+
+    x4.applyScalar<Nd4jLong>(nd4j::scalar::Add, 1);
+    ASSERT_EQ(x4, exp5);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyScalar_test2) {
+            
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);    
+    NDArray x2('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);    
+    NDArray x3('c', {2,2}, {0, 1, 1, 0}, nd4j::DataType::BOOL);
+    NDArray x4('c', {2,2}, nd4j::DataType::BOOL);
+    
+    
+    NDArray exp1('c', {2,2}, {0, 1, 0, 0}, nd4j::DataType::BOOL);
+    NDArray exp2('c', {2,2}, {0, 1, 1, 0}, nd4j::DataType::BOOL);
+    
+    x1.applyScalar<Nd4jLong>(nd4j::scalar::EqualTo, 1, &x4);
+    ASSERT_EQ(x4, exp1);
+
+    x2.applyScalar<float>(nd4j::scalar::EqualTo, 1.5, &x4);
+    ASSERT_EQ(x4, exp1);
+
+    x3.applyScalar<bool>(nd4j::scalar::EqualTo, true, &x4);
+    ASSERT_EQ(x4, exp2);
+
+}
+
