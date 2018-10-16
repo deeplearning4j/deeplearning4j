@@ -792,6 +792,8 @@ public interface NDArrayFactory {
 
     INDArray create(float[] data, long[] shape, long[] stride, long offset);
 
+    INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType);
+
     /**
      * Create an ndrray with the specified shape
      *

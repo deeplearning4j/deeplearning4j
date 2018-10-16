@@ -306,6 +306,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
+    public INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType) {
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+    }
+
+    @Override
     public INDArray create(float[] data, long[] shape, long[] stride, DataType dataType) {
         return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }

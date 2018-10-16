@@ -1530,36 +1530,36 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(float[] data) {
         DataBuffer ret;
-        if (dataType() == DataType.FLOAT)
+        //if (dataType() == DataType.FLOAT)
             ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (dataType() == DataType.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data): DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace()) ;
+        //else if (dataType() == DataType.HALF)
+//            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data): DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, Nd4j.getMemoryManager().getCurrentWorkspace());
+//        else
+//            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace()) ;
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static DataBuffer createBufferDetached(float[] data) {
         DataBuffer ret;
-        if (dataType() == DataType.FLOAT)
+        //if (dataType() == DataType.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
-        else if (dataType() == DataType.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
-        else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
+        //else if (dataType() == DataType.HALF)
+//            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
+//        else
+//            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static DataBuffer createBufferDetached(double[] data) {
         DataBuffer ret;
-        if (dataType() == DataType.DOUBLE)
+        //if (dataType() == DataType.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
-        else if (dataType() == DataType.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
-        else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
+        //else if (dataType() == DataType.HALF)
+//            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
+//        else
+//            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1572,13 +1572,13 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(double[] data) {
         DataBuffer ret;
-        if (dataType() == DataType.DOUBLE)
+        //if (dataType() == DataType.DOUBLE)
             ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (dataType() == DataType.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
-        else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
-        logCreationIfNecessary(ret);
+        //else if (dataType() == DataType.HALF)
+//            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
+//        else
+//            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
+//        logCreationIfNecessary(ret);
         return ret;
     }
 
@@ -3540,7 +3540,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, Nd4j.order()), DataType.FLOAT);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4221,7 +4221,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, 0, ordering);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, ordering), ordering, DataType.FLOAT);
         logCreationIfNecessary(ret);
         return ret;
     }

@@ -219,6 +219,11 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
+    public INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public INDArray specialConcat(int dimension, INDArray... toConcat) {
         return null;
     }

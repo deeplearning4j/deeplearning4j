@@ -534,7 +534,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         //rows already already sorted
         assertEquals(toSort, ascending);
 
-        INDArray columnSorted = Nd4j.create(new float[] {2, 1, 4, 3}, new long[] {2, 2});
+        INDArray columnSorted = Nd4j.create(new double[] {2, 1, 4, 3}, new long[] {2, 2});
         INDArray sorted = Nd4j.sort(toSort.dup(), 1, false);
         assertEquals(columnSorted, sorted);
     }
@@ -1755,7 +1755,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testSum() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new long[] {2, 2, 2});
-        INDArray test = Nd4j.create(new float[] {3, 7, 11, 15}, new long[] {2, 2});
+        INDArray test = Nd4j.create(new double[] {3, 7, 11, 15}, new long[] {2, 2});
         INDArray sum = n.sum(-1);
         assertEquals(test, sum);
 
@@ -1840,7 +1840,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray sum = test.sum(1);
         INDArray assertion = Nd4j.create(new float[] {3, 7});
         assertEquals(assertion, sum);
-        INDArray sum0 = Nd4j.create(new double[] {4, 6});
+        INDArray sum0 = Nd4j.create(new float[] {4, 6});
         assertEquals(sum0, test.sum(0));
     }
 
@@ -1926,7 +1926,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
         INDArray d3 = Nd4j.create(new double[] {1, 2}).reshape(2, 1);
-        INDArray d4 = Nd4j.create(new double[] {3, 4});
+        INDArray d4 = Nd4j.create(new double[] {3, 4}).reshape(1, 2);
         INDArray resultNDArray = d3.mmul(d4);
         INDArray result = Nd4j.create(new double[][] {{3, 4}, {6, 8}});
         assertEquals(result, resultNDArray);
@@ -2861,8 +2861,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testSums() {
         INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        assertEquals(getFailureMessage(), Nd4j.create(new float[] {3, 7}), a.sum(1));
-        assertEquals(getFailureMessage(), Nd4j.create(new float[] {4, 6}), a.sum(0));
+        assertEquals(getFailureMessage(), Nd4j.create(new double[] {3, 7}), a.sum(1));
+        assertEquals(getFailureMessage(), Nd4j.create(new double[] {4, 6}), a.sum(0));
         assertEquals(getFailureMessage(), 10, a.sumNumber().doubleValue(), 1e-1);
 
 
@@ -6278,7 +6278,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testBroadcast_1() {
         val array1 = Nd4j.linspace(1, 10, 10).reshape(5, 1, 2).broadcast(5, 4, 2);
         val array2 = Nd4j.linspace(1, 20, 20).reshape(5, 4, 1).broadcast(5, 4, 2);
-        val exp = Nd4j.create(new float[] {2.0f, 3.0f, 3.0f, 4.0f, 4.0f, 5.0f, 5.0f, 6.0f, 8.0f, 9.0f, 9.0f, 10.0f, 10.0f, 11.0f, 11.0f, 12.0f, 14.0f, 15.0f, 15.0f, 16.0f, 16.0f, 17.0f, 17.0f, 18.0f, 20.0f, 21.0f, 21.0f, 22.0f, 22.0f, 23.0f, 23.0f, 24.0f, 26.0f, 27.0f, 27.0f, 28.0f, 28.0f, 29.0f, 29.0f, 30.0f}).reshape(5,4,2);
+        val exp = Nd4j.create(new double[] {2.0f, 3.0f, 3.0f, 4.0f, 4.0f, 5.0f, 5.0f, 6.0f, 8.0f, 9.0f, 9.0f, 10.0f, 10.0f, 11.0f, 11.0f, 12.0f, 14.0f, 15.0f, 15.0f, 16.0f, 16.0f, 17.0f, 17.0f, 18.0f, 20.0f, 21.0f, 21.0f, 22.0f, 22.0f, 23.0f, 23.0f, 24.0f, 26.0f, 27.0f, 27.0f, 28.0f, 28.0f, 29.0f, 29.0f, 30.0f}).reshape(5,4,2);
 
         array1.addi(array2);
 

@@ -656,7 +656,7 @@ public class Shape {
         char outOrder = (anyOrder ? arr.ordering() : order);
         if (outOrder == 'a')
             outOrder = Nd4j.order();
-        INDArray z = Nd4j.createUninitialized(arr.shape(), outOrder);
+        INDArray z = Nd4j.createUninitialized(arr.dataType(), arr.shape(), outOrder);
         z.assign(arr);
         return z;
     }

@@ -261,7 +261,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             newFormat = ((BaseReduceOp) op).isNewFormat();
         } else {
             keepDims = false;
-            newFormat = false;
+            newFormat = true;
         }
 
         long[] retShape = reductionShape(op.x(), dimension, newFormat, keepDims);

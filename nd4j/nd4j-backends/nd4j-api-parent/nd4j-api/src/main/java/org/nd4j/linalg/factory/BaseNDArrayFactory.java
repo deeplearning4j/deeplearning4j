@@ -769,7 +769,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(float[] data) {
-        return create(data, new int[] {1, data.length});
+        return create(data, new long[] {data.length});
     }
 
     /**
@@ -780,7 +780,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(long columns) {
-        return create(new long[] {1, columns});
+        return create(new long[] {columns});
     }
 
     /**
@@ -1489,10 +1489,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(Nd4j.createBuffer(data), shape, offset);
     }
 
+    public abstract INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType);
+
     @Override
     public INDArray create(float[] data, char order) {
-        int[] shape = new int[] {1, data.length};
-        return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape, order), order, 0);
+        val shape = new long[] {data.length};
+        val stride = Nd4j.getStrides(shape, order);
+        return create(data, shape, stride, order, DataType.FLOAT);
     }
 
     @Override
