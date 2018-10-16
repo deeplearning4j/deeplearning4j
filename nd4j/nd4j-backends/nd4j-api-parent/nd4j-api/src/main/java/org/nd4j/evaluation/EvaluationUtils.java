@@ -18,6 +18,7 @@ package org.nd4j.evaluation;
 
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
@@ -189,9 +190,7 @@ public class EvaluationUtils {
             return new Pair<>(labels2d, predicted2d);
         }
 
-        throw new UnsupportedOperationException("Not yet reimplemented");
-        /*
-        INDArray oneDMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(outputMask, LayerWorkspaceMgr.noWorkspacesImmutable(), ArrayType.INPUT);
+        INDArray oneDMask = reshapeTimeSeriesMaskToVector(outputMask);
         float[] f = oneDMask.dup().data().asFloat();
         int[] rowsToPull = new int[f.length];
         int usedCount = 0;
@@ -210,6 +209,20 @@ public class EvaluationUtils {
         predicted2d = Nd4j.pullRows(predicted2d, 1, rowsToPull);
 
         return new Pair<>(labels2d, predicted2d);
-        */
+    }
+
+    /**
+     * Reshape time series mask arrays. This should match the assumptions (f order, etc) in RnnOutputLayer
+     * @param timeSeriesMask    Mask array to reshape to a column vector
+     * @return                  Mask array as a column vector
+     */
+    public static INDArray reshapeTimeSeriesMaskToVector(INDArray timeSeriesMask) {
+        if (timeSeriesMask.rank() != 2)
+            throw new IllegalArgumentException("Cannot reshape mask: rank is not 2");
+
+        if (timeSeriesMask.ordering() != 'f')
+            timeSeriesMask = timeSeriesMask.dup('f');
+
+        return timeSeriesMask.reshape('f', timeSeriesMask.length(), 1);
     }
 }

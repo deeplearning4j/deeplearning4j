@@ -23,6 +23,8 @@ import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.EvaluationAveraging;
 import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.evaluation.meta.Prediction;
+import org.nd4j.evaluation.serde.ConfusionMatrixDeserializer;
+import org.nd4j.evaluation.serde.ConfusionMatrixSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
@@ -95,8 +97,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     protected Counter<Integer> falsePositives = new Counter<>();
     protected Counter<Integer> trueNegatives = new Counter<>();
     protected Counter<Integer> falseNegatives = new Counter<>();
-//    @JsonSerialize(using = ConfusionMatrixSerializer.class)
-//    @JsonDeserialize(using = ConfusionMatrixDeserializer.class)
+    @JsonSerialize(using = ConfusionMatrixSerializer.class)
+    @JsonDeserialize(using = ConfusionMatrixDeserializer.class)
     protected ConfusionMatrix<Integer> confusion;
     protected int numRowCounter = 0;
     @Getter

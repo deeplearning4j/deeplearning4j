@@ -27,7 +27,7 @@ import java.util.List;
 @Deprecated
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class RegressionEvaluation extends org.nd4j.evaluation.regression.RegressionEvaluation {
+public class RegressionEvaluation extends org.nd4j.evaluation.regression.RegressionEvaluation implements org.deeplearning4j.eval.IEvaluation<org.nd4j.evaluation.regression.RegressionEvaluation> {
 
     /**
      * @deprecated Use ND4J RegressionEvaluation class, which has the same interface: {@link org.nd4j.evaluation.regression.RegressionEvaluation.Metric}

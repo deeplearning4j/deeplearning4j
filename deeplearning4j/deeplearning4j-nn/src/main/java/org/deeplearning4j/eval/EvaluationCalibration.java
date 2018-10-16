@@ -26,7 +26,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 @Deprecated
 @Getter
 @EqualsAndHashCode
-public class EvaluationCalibration extends org.nd4j.evaluation.classification.EvaluationCalibration {
+public class EvaluationCalibration extends org.nd4j.evaluation.classification.EvaluationCalibration implements org.deeplearning4j.eval.IEvaluation<org.nd4j.evaluation.classification.EvaluationCalibration> {
 
     /**
      * @deprecated Use {@link org.nd4j.evaluation.classification.EvaluationCalibration}

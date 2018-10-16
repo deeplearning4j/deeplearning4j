@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class EvaluationBinary extends org.nd4j.evaluation.classification.EvaluationBinary {
+public class EvaluationBinary extends org.nd4j.evaluation.classification.EvaluationBinary implements org.deeplearning4j.eval.IEvaluation<org.nd4j.evaluation.classification.EvaluationBinary> {
     @Deprecated
     public static final int DEFAULT_PRECISION = 4;
     @Deprecated

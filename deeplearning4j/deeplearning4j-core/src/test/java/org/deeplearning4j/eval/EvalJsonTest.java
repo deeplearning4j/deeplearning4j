@@ -47,7 +47,7 @@ public class EvalJsonTest extends BaseDL4JTest {
                 System.out.println(e.getClass() + "\n" + json + "\n\n");
             }
 
-            IEvaluation fromJson = BaseEvaluation.fromJson(json, BaseEvaluation.class);
+            IEvaluation fromJson = (IEvaluation) org.nd4j.evaluation.BaseEvaluation.fromJson(json, org.nd4j.evaluation.BaseEvaluation.class);
             assertEquals(e.toJson(), fromJson.toJson());
         }
     }
@@ -97,7 +97,7 @@ public class EvalJsonTest extends BaseDL4JTest {
                 System.out.println(e.getClass() + "\n" + json + "\n\n");
             }
 
-            IEvaluation fromJson = BaseEvaluation.fromJson(json, BaseEvaluation.class);
+            IEvaluation fromJson = (IEvaluation) BaseEvaluation.fromJson(json, org.nd4j.evaluation.BaseEvaluation.class);
             assertEquals(e.toJson(), fromJson.toJson());
         }
     }
@@ -137,7 +137,7 @@ public class EvalJsonTest extends BaseDL4JTest {
             if (print) {
                 System.out.println(json + "\n\n");
             }
-            org.nd4j.evaluation.IEvaluation fromJson = BaseEvaluation.fromJson(json, BaseEvaluation.class);
+            org.nd4j.evaluation.IEvaluation fromJson = BaseEvaluation.fromJson(json, org.nd4j.evaluation.BaseEvaluation.class);
             assertEquals(e, fromJson);
 
             if (fromJson instanceof ROC) {

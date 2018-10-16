@@ -19,6 +19,7 @@ package org.deeplearning4j.eval;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.nd4j.evaluation.EvaluationAveraging;
+import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.Map;
  */
 @EqualsAndHashCode(callSuper = true)
 @Deprecated
-public class Evaluation extends org.nd4j.evaluation.classification.Evaluation {
+public class Evaluation extends org.nd4j.evaluation.classification.Evaluation implements org.deeplearning4j.eval.IEvaluation<org.nd4j.evaluation.classification.Evaluation> {
 
     /**
      * Use {@link org.nd4j.evaluation.classification.Evaluation.Metric}
