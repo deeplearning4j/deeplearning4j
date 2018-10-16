@@ -43,7 +43,7 @@ public class All extends BaseReduceBoolOp {
 
     @Override
     public int opNum() {
-        return 21;
+        return 1;
     }
 
     @Override
