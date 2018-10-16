@@ -541,7 +541,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 SDVariable label = sd.var("label", outShape);
                 SDVariable second = in.mul(2);
 
-                double maxRelError = 1e-5;
+                double maxRelError = 1e-4;
                 double minAbsError = 1e-4;
                 INDArray inputArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(1000);
                 INDArray labelArr = Nd4j.randn(outShape).muli(1000);
