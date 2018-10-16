@@ -79,7 +79,8 @@ namespace nd4j {
         DECLARE_TYPES(top_k) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setAllowedOutputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(1, {ALL_INTS});
         }
     }
 }
