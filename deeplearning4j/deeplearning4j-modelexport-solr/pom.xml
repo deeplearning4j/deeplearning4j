@@ -84,27 +84,27 @@
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
-            <version>${alt.metrics.version}</version>
+            <version>${metrics.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-ganglia</artifactId>
-            <version>${alt.metrics.version}</version>
+            <version>${metrics.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-graphite</artifactId>
-            <version>${alt.metrics.version}</version>
+            <version>${metrics.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-jetty9</artifactId>
-            <version>${alt.metrics.version}</version>
+            <version>${metrics.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-jvm</artifactId>
-            <version>${alt.metrics.version}</version>
+            <version>${metrics.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
