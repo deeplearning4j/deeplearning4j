@@ -21,6 +21,7 @@ package org.nd4j.linalg;
  */
 
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -45,7 +46,7 @@ public class MmulBug {
         System.out.println(m2);
         System.out.println(correctResult);
         System.out.println("================");
-        INDArray newResult = Nd4j.zeros(correctResult.shape(), 'c');
+        INDArray newResult = Nd4j.create(DataType.DOUBLE, correctResult.shape(), 'c');
         m1.mmul(m2, newResult);
         assertEquals(correctResult, newResult);
 

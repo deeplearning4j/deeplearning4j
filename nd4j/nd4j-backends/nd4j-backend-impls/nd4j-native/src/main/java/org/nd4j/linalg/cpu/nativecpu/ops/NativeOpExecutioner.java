@@ -693,7 +693,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 op.validateDataTypes();
 
-                log.info("X type: {}; Y type: {}; Z type: {}; OpNum: {}", op.x().dataType(), op.y().dataType(), op.z().dataType(), op.opNum());
+                //log.info("X type: {}; Y type: {}; Z type: {}; OpNum: {}", op.x().dataType(), op.y().dataType(), op.z().dataType(), op.opNum());
 
                 int xEWS = op.x().elementWiseStride();
                 int yEWS = op.y().elementWiseStride();

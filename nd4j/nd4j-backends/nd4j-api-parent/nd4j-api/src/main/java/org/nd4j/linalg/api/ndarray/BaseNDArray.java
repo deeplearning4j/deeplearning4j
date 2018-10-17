@@ -3617,7 +3617,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             /* actually, blas cannot do multiplications in-place. Therefore, we will fake by
              * allocating a temporary object on the side and copy the result later.
              */
-            INDArray temp = Nd4j.create(result.shape(), Nd4j.getStrides(result.shape(), 'f'));
+            INDArray temp = Nd4j.create(result.dataType(), result.shape(), Nd4j.getStrides(result.shape(), 'f'), 'f');
 
             if (other.columns() == 1 || other.rank() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(BlasBufferUtil.getCharForTranspose(result),
@@ -3643,7 +3643,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             INDArray gemmResultArr;
             if (requiresTemp) {
                 //Can use createUninitialized due to beta==0.0 parameter in gemm
-                gemmResultArr = Nd4j.createUninitialized(result.shape(), 'f');
+                gemmResultArr = Nd4j.createUninitialized(result.dataType(), result.shape(), 'f');
             } else {
                 gemmResultArr = result;
             }

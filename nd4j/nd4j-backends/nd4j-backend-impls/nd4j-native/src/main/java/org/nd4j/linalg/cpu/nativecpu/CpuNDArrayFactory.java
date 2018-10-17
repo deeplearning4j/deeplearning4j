@@ -482,9 +482,12 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray toFlattened(char order, Collection<INDArray> matrices) {
         int length = 0;
-        for (INDArray m : matrices)
+        DataType t = Nd4j.dataType();
+        for (INDArray m : matrices) {
             length += m.length();
-        INDArray ret = Nd4j.create(new int[] {1, length}, order);
+            t = m.dataType();
+        }
+        INDArray ret = Nd4j.create(t, new long[] {length}, order);
         int linearIndex = 0;
         PointerPointer dummy = new PointerPointer(new Pointer[] {null});
         for (INDArray m : matrices) {

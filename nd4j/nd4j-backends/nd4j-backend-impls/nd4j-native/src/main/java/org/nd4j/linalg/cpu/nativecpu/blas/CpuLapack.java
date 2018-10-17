@@ -101,7 +101,7 @@ public class CpuLapack extends BaseLapack {
 
     @Override
     public void dgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO)  {
-        INDArray tau = Nd4j.create( N ) ;
+        INDArray tau = Nd4j.create(A.dataType(), N ) ;
 
         int status = LAPACKE_dgeqrf(getColumnOrder(A), M, N,
              (DoublePointer)A.data().addressPointer(), getLda(A),

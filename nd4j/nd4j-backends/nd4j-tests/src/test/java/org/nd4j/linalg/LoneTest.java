@@ -58,7 +58,7 @@ public class LoneTest extends BaseNd4jTest {
         INDArray input = Nd4j.create(new double[]{-0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04})
                 .transpose();
         System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
-        INDArray output = Nd4j.create(10, 1);
+        INDArray output = Nd4j.create(DataType.DOUBLE, 10, 1);
         System.out.println("Element wise stride of output " + output.elementWiseStride());
         Nd4j.getExecutioner().exec(new OldSoftMax(input, output));
     }
@@ -76,9 +76,9 @@ public class LoneTest extends BaseNd4jTest {
         int length = rows * cols;
         int length3d = rows * cols * dim2;
 
-        INDArray first = Nd4j.linspace(1, length, length).reshape('c', rows, cols);
-        INDArray second = Nd4j.create(new int[]{rows, cols}, 'f').assign(first);
-        INDArray third = Nd4j.linspace(1, length3d, length3d).reshape('c', rows, cols, dim2);
+        INDArray first = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', rows, cols);
+        INDArray second = Nd4j.create(DataType.DOUBLE, new long[]{rows, cols}, 'f').assign(first);
+        INDArray third = Nd4j.linspace(1, length3d, length3d, DataType.DOUBLE).reshape('c', rows, cols, dim2);
         first.addi(0.1);
         second.addi(0.2);
         third.addi(0.3);
