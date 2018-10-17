@@ -29,10 +29,10 @@ public class FileBatch implements Serializable {
     /**
      * Name of the file in the zip file that contains the original paths/filenames
      */
-    public static final String ORIGINAL_PATHS_FILENAME = "originalPaths.txt";
+    public static final String ORIGINAL_PATHS_FILENAME = "originalUris.txt";
 
     private final List<byte[]> fileBytes;
-    private final List<String> originalPaths;
+    private final List<String> originalUris;
 
     /**
      * Read a FileBatch from the specified input stream. This method assumes the FileBatch was previously saved to
@@ -43,7 +43,7 @@ public class FileBatch implements Serializable {
      * @throws IOException If an error occurs during reading
      */
     public static FileBatch readFromZip(InputStream is) throws IOException {
-        String originalPaths = null;
+        String originalUris = null;
         Map<Integer, byte[]> bytesMap = new HashMap<>();
         try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(is))) {
             ZipEntry ze;
@@ -51,7 +51,7 @@ public class FileBatch implements Serializable {
                 String name = ze.getName();
                 byte[] bytes = IOUtils.toByteArray(zis);
                 if (name.equals(ORIGINAL_PATHS_FILENAME)) {
-                    originalPaths = new String(bytes, 0, bytes.length, StandardCharsets.UTF_8);
+                    originalUris = new String(bytes, 0, bytes.length, StandardCharsets.UTF_8);
                 } else {
                     int idxSplit = name.indexOf("_");
                     int idxSplit2 = name.indexOf(".");
@@ -66,7 +66,7 @@ public class FileBatch implements Serializable {
             list.add(bytesMap.get(i));
         }
 
-        List<String> origPaths = Arrays.asList(originalPaths.split("\n"));
+        List<String> origPaths = Arrays.asList(originalUris.split("\n"));
         return new FileBatch(list, origPaths);
     }
 
@@ -93,7 +93,7 @@ public class FileBatch implements Serializable {
         List<byte[]> bytes = new ArrayList<>(files.size());
         for (File f : files) {
             bytes.add(FileUtils.readFileToByteArray(f));
-            origPaths.add(f.getPath());
+            origPaths.add(f.toURI().toString());
         }
         return new FileBatch(bytes, origPaths);
     }
@@ -117,12 +117,12 @@ public class FileBatch implements Serializable {
 
             //Write original paths as a text file:
             ZipEntry ze = new ZipEntry(ORIGINAL_PATHS_FILENAME);
-            String originalPathsJoined = StringUtils.join(originalPaths, "\n"); //Java String.join is Java 8
+            String originalUrisJoined = StringUtils.join(originalUris, "\n"); //Java String.join is Java 8
             zos.putNextEntry(ze);
-            zos.write(originalPathsJoined.getBytes(StandardCharsets.UTF_8));
+            zos.write(originalUrisJoined.getBytes(StandardCharsets.UTF_8));
 
             for (int i = 0; i < fileBytes.size(); i++) {
-                String ext = FilenameUtils.getExtension(originalPaths.get(i));
+                String ext = FilenameUtils.getExtension(originalUris.get(i));
                 if (ext == null || ext.isEmpty())
                     ext = "bin";
                 String name = "file_" + i + "." + ext;

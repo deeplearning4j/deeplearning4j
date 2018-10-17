@@ -35,14 +35,14 @@ public class TestFileBatch {
         FileBatch fb = FileBatch.forFiles(fileList);
 
         assertEquals(10, fb.getFileBytes().size());
-        assertEquals(10, fb.getOriginalPaths().size());
+        assertEquals(10, fb.getOriginalUris().size());
         for( int i=0; i<10; i++ ){
             byte[] expBytes = ("File contents - file " + i).getBytes(StandardCharsets.UTF_8);
             byte[] actBytes = fb.getFileBytes().get(i);
             assertArrayEquals(expBytes, actBytes);
 
-            String expPath = fileList.get(i).getPath();
-            String actPath = fb.getOriginalPaths().get(i);
+            String expPath = fileList.get(i).toURI().getPath();
+            String actPath = fb.getOriginalUris().get(i);
             assertEquals(expPath, actPath);
         }
 
@@ -56,7 +56,7 @@ public class TestFileBatch {
             fb2 = FileBatch.readFromZip(bais);
         }
 
-        assertEquals(fb.getOriginalPaths(), fb2.getOriginalPaths());
+        assertEquals(fb.getOriginalUris(), fb2.getOriginalUris());
         assertEquals(10, fb2.getFileBytes().size());
         for( int i=0; i<10; i++ ){
             assertArrayEquals(fb.getFileBytes().get(i), fb2.getFileBytes().get(i));

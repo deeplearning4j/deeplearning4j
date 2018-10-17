@@ -18,9 +18,10 @@ package org.datavec.api.records.reader.impl.filebatch;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
+import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
 import org.nd4j.api.loader.FileBatch;
@@ -29,33 +30,58 @@ import org.nd4j.base.Preconditions;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * FileBatchRecordReader reads the files contained in a {@link FileBatch} using the specified RecordReader.
- * Specifically, the {@link RecordReader#record(URI, DataInputStream)} method of the underlying iterator is used to
- * load files.
- * For example, if the FileBatch was constructed using image files, FileBatchRecordReader could be used
- * with ImageRecordReader
- *
- * @author Alex Black
- */
-public class FileBatchRecordReader implements RecordReader {
+public class FileBatchSequenceRecordReader implements SequenceRecordReader {
 
-    private final RecordReader recordReader;
+    private final SequenceRecordReader recordReader;
     private final FileBatch fileBatch;
     private int position = 0;
 
-    public FileBatchRecordReader(RecordReader rr, FileBatch fileBatch){
-        this.recordReader = rr;
+    public FileBatchSequenceRecordReader(SequenceRecordReader seqRR, FileBatch fileBatch){
+        this.recordReader = seqRR;
         this.fileBatch = fileBatch;
     }
 
+    @Override
+    public List<List<Writable>> sequenceRecord() {
+        Preconditions.checkState(hasNext(), "No next element");
+
+        byte[] fileBytes = fileBatch.getFileBytes().get(position);
+        String origPath = fileBatch.getOriginalUris().get(position);
+
+        List<List<Writable>> out;
+        try {
+            out = recordReader.sequenceRecord(URI.create(origPath), new DataInputStream(new ByteArrayInputStream(fileBytes)));
+        } catch (IOException e){
+            throw new RuntimeException("Error reading from file bytes");
+        }
+
+        position++;
+        return out;
+    }
+
+    @Override
+    public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
+        return recordReader.sequenceRecord(uri, dataInputStream);
+    }
+
+    @Override
+    public SequenceRecord nextSequence() {
+        return new org.datavec.api.records.impl.SequenceRecord(sequenceRecord(), null);
+    }
+
+    @Override
+    public SequenceRecord loadSequenceFromMetaData(RecordMetaData recordMetaData) throws IOException {
+        return recordReader.loadSequenceFromMetaData(recordMetaData);
+    }
+
+    @Override
+    public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
+        return recordReader.loadSequenceFromMetaData(recordMetaDatas);
+    }
 
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
@@ -74,29 +100,12 @@ public class FileBatchRecordReader implements RecordReader {
 
     @Override
     public List<List<Writable>> next(int num) {
-        List<List<Writable>> out = new ArrayList<>(Math.min(num, 10000));
-        for( int i=0; i<num && hasNext(); i++ ){
-            out.add(next());
-        }
-        return out;
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
     public List<Writable> next() {
-        Preconditions.checkState(hasNext(), "No next element");
-
-        byte[] fileBytes = fileBatch.getFileBytes().get(position);
-        String origPath = fileBatch.getOriginalUris().get(position);
-
-        List<Writable> out;
-        try {
-            out = recordReader.record(URI.create(origPath), new DataInputStream(new ByteArrayInputStream(fileBytes)));
-        } catch (IOException e){
-            throw new RuntimeException("Error reading from file bytes");
-        }
-
-        position++;
-        return out;
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
@@ -126,22 +135,22 @@ public class FileBatchRecordReader implements RecordReader {
 
     @Override
     public Record nextRecord() {
-        return new org.datavec.api.records.impl.Record(next(), null);
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
     public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
-        return recordReader.loadFromMetaData(recordMetaData);
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
     public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
-        return recordReader.loadFromMetaData(recordMetaDatas);
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
     public List<RecordListener> getListeners() {
-        return null;
+        return recordReader.getListeners();
     }
 
     @Override
