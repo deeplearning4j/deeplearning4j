@@ -35,6 +35,20 @@ public class FileBatch implements Serializable {
     private final List<String> originalUris;
 
     /**
+     * Read a FileBatch from the specified file. This method assumes the FileBatch was previously saved to
+     * zip format using {@link #writeAsZip(File)} or {@link #writeAsZip(OutputStream)}
+     *
+     * @param file File to read from
+     * @return The loaded FileBatch
+     * @throws IOException If an error occurs during reading
+     */
+    public static FileBatch readFromZip(File file) throws IOException {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            return readFromZip(fis);
+        }
+    }
+
+    /**
      * Read a FileBatch from the specified input stream. This method assumes the FileBatch was previously saved to
      * zip format using {@link #writeAsZip(File)} or {@link #writeAsZip(OutputStream)}
      *

@@ -96,7 +96,6 @@ public class FileBatchRecordReaderTest {
         }
 
         FileBatch fb = FileBatch.forFiles(fileList);
-
         SequenceRecordReader rr = new CSVSequenceRecordReader();
         FileBatchSequenceRecordReader fbrr = new FileBatchSequenceRecordReader(rr, fb);
 

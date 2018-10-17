@@ -29,19 +29,27 @@ import org.nd4j.base.Preconditions;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 /**
- * FileBatchRecordReader reads the files contained in a {@link FileBatch} using the specified RecordReader.
- * Specifically, the {@link RecordReader#record(URI, DataInputStream)} method of the underlying iterator is used to
- * load files.
- * For example, if the FileBatch was constructed using image files, FileBatchRecordReader could be used
- * with ImageRecordReader
+ * FileBatchRecordReader reads the files contained in a {@link FileBatch} using the specified RecordReader.<br>
+ * Specifically, the {@link RecordReader#record(URI, DataInputStream)} method of the underlying reader is used to
+ * load files.<br>
+ * For example, if the FileBatch was constructed using image files (png, jpg etc), FileBatchRecordReader could be used
+ * with ImageRecordReader. For example:<br>
+ * <pre>
+ * {@code
+ * List<File> imgFiles = ...;
+ * FileBatch fb = FileBatch.forFiles(imgFiles);
+ * PathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+ * ImageRecordReader rr = new ImageRecordReader(32, 32, 1, labelMaker);
+ * rr.setLabels(Arrays.asList("class0", "class1"));
+ * FileBatchRecordReader fbrr = new FileBatchRecordReader(rr, fb);
+ * }
+ * </pre>
  *
  * @author Alex Black
  */
@@ -51,6 +59,10 @@ public class FileBatchRecordReader implements RecordReader {
     private final FileBatch fileBatch;
     private int position = 0;
 
+    /**
+     * @param rr        Underlying record reader to read files from
+     * @param fileBatch File batch to read files from
+     */
     public FileBatchRecordReader(RecordReader rr, FileBatch fileBatch){
         this.recordReader = rr;
         this.fileBatch = fileBatch;
