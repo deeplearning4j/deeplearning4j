@@ -1586,7 +1586,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray eps(Number other) {
-        return Nd4j.getExecutioner().exec(new ScalarEps(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
+        return Nd4j.getExecutioner().exec(new ScalarEps(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     /**
@@ -1604,27 +1604,27 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray lt(Number other) {
-        return Nd4j.getExecutioner().exec(new ScalarLessThan(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
+        return Nd4j.getExecutioner().exec(new ScalarLessThan(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other)).z();
     }
 
     @Override
     public INDArray lte(Number other) {
-        return Nd4j.getExecutioner().exec(new ScalarLessThanOrEqual(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
+        return Nd4j.getExecutioner().exec(new ScalarLessThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     @Override
     public INDArray eq(Number other) {
-        return Nd4j.getExecutioner().exec(new ScalarEquals(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
+        return Nd4j.getExecutioner().exec(new ScalarEquals(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     @Override
     public INDArray gt(Number other) {
-        return Nd4j.getExecutioner().exec(new ScalarGreaterThan(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
+        return Nd4j.getExecutioner().exec(new ScalarGreaterThan(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other)).z();
     }
 
     @Override
     public INDArray gte(Number other) {
-        return Nd4j.getExecutioner().exec(new ScalarGreaterThanOrEqual(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
+        return Nd4j.getExecutioner().exec(new ScalarGreaterThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
 
@@ -1635,7 +1635,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray neq(Number other) {
-        return Nd4j.getExecutioner().exec(new ScalarNotEquals(this, null, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
+        return Nd4j.getExecutioner().exec(new ScalarNotEquals(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     @Override

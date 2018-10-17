@@ -50,8 +50,8 @@ public class ScalarGreaterThan extends BaseScalarBoolOp {
         super(sameDiff, i_v, scalar, extraArgs);
     }
 
-    public ScalarGreaterThan(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarGreaterThan(INDArray x, INDArray z, Number num) {
+        super(x, null, z, x.length(), num);
     }
 
     public ScalarGreaterThan(INDArray x, Number num) {

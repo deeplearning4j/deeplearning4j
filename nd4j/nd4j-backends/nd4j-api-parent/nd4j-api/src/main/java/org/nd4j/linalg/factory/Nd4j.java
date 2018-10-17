@@ -4278,7 +4278,8 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, ordering);
+        val lshape = ArrayUtil.toLongArray(shape);
+        INDArray ret = INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, ordering), ordering, DataType.DOUBLE);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4677,7 +4678,7 @@ public class Nd4j {
         return ret;
     }
 
-    public static INDArray createUninitialized(DataType type, long[] shape) {
+    public static INDArray createUninitialized(DataType type, long... shape) {
         return createUninitialized(type, shape, Nd4j.order());
     }
 
@@ -5039,6 +5040,10 @@ public class Nd4j {
         return INSTANCE.zeros(columns);
     }
 
+    public static INDArray zeros(DataType dataType, int columns) {
+        return INSTANCE.create(dataType, new long[]{columns}, 'c');
+    }
+
     /**
      * Creates an ndarray with the specified value
      * as the  only value in the ndarray.
@@ -5189,6 +5194,13 @@ public class Nd4j {
      */
     public static INDArray ones(int columns) {
         INDArray ret = INSTANCE.ones(columns);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray ones(DataType dataType, int columns) {
+        INDArray ret = INSTANCE.createUninitialized(dataType, new long[]{columns}, Nd4j.order());
+        ret.assign(1);
         logCreationIfNecessary(ret);
         return ret;
     }

@@ -35,8 +35,8 @@ public class ScalarNotEquals extends BaseScalarBoolOp {
     public ScalarNotEquals() {
     }
 
-    public ScalarNotEquals(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarNotEquals(INDArray x, INDArray z, long n, Number num) {
+        super(x, null, z, n, num);
     }
 
     public ScalarNotEquals(INDArray x, Number num) {

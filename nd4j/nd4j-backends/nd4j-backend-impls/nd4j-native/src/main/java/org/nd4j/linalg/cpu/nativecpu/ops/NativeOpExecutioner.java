@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -625,7 +626,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private Pointer getPointerForExtraArgs(Op op, DataType type) {
         if (op.extraArgs() != null){
             val eadb = op.extraArgsDataBuff(type);
-            return eadb.addressPointer();
+            if (eadb != null)
+                return eadb.addressPointer();
+            else
+                return null;
         }
 
         return null;
@@ -802,7 +806,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             dimension = new int[] {Integer.MAX_VALUE};
         dimension = Shape.normalizeAxis(op.x().rank(), dimension);
 
-        validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
 
         op.validateDataTypes();
 
@@ -888,7 +892,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             long st = profilingHookIn(op);
 
-            validateDataType(Nd4j.dataType(), op);
+            //validateDataType(Nd4j.dataType(), op);
+            op.validateDataTypes();
 
             loop.execIndexReduceScalar(null, op.opNum(),
                         op.x().data().addressPointer(),
@@ -1257,7 +1262,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         long st = profilingHookIn(op);
 
-        validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
+
+        Preconditions.checkArgument(op.z().isR(), "Op.Z must have one of floating point types");
 
         if (op.x() != null && op.y() != null && op.z() != null) {
             // triple arg call

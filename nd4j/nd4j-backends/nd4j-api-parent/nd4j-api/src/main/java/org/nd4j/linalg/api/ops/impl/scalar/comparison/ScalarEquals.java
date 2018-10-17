@@ -34,8 +34,8 @@ public class ScalarEquals extends BaseScalarBoolOp {
     public ScalarEquals() {
     }
 
-    public ScalarEquals(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarEquals(INDArray x, INDArray z, long n, Number num) {
+        super(x, null, z, n, num);
     }
 
     public ScalarEquals(INDArray x, Number num) {

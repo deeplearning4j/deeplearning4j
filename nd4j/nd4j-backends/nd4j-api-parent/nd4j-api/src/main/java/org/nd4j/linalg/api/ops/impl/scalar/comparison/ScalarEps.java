@@ -34,8 +34,8 @@ public class ScalarEps extends BaseScalarBoolOp {
     public ScalarEps() {
     }
 
-    public ScalarEps(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarEps(INDArray x, INDArray z, long n, Number num) {
+        super(x, null, z, n, num);
     }
 
     public ScalarEps(INDArray x, Number num) {

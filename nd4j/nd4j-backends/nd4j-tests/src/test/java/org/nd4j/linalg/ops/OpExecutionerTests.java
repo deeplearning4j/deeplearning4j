@@ -106,12 +106,12 @@ public class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testDimensionalEuclidean() {
-        INDArray distanceInputRow = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
-        INDArray distanceComp = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).add(1);
-        INDArray result = Nd4j.createUninitialized(4);
+        INDArray distanceInputRow = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, -1);
+        INDArray distanceComp = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, -1).add(1);
+        INDArray result = Nd4j.createUninitialized(DataType.DOUBLE, new long[]{4});
         Nd4j.getExecutioner().exec(
                 new EuclideanDistance(distanceInputRow, distanceComp, result, distanceInputRow.length()), 0);
-        INDArray euclideanAssertion = Nd4j.ones(4);
+        INDArray euclideanAssertion = Nd4j.ones(4).castTo(DataType.DOUBLE);
         assertEquals(euclideanAssertion, result);
         System.out.println(result);
 
@@ -141,7 +141,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     @Test
     public void testScalarMaxOp() {
         INDArray scalarMax = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).negi();
-        INDArray postMax = Nd4j.ones(6);
+        INDArray postMax = Nd4j.ones(DataType.DOUBLE, 6);
         Nd4j.getExecutioner().exec(new ScalarMax(scalarMax, 1));
         assertEquals(getFailureMessage(), scalarMax, postMax);
     }
@@ -321,7 +321,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         INDArray oneThroughSix = Nd4j.linspace(1, 6, 6, DataType.DOUBLE);
         Pow pow = new Pow(oneThroughSix, 2);
         Nd4j.getExecutioner().exec(pow);
-        INDArray answer = Nd4j.create(new float[] {1, 4, 9, 16, 25, 36});
+        INDArray answer = Nd4j.create(new double[] {1, 4, 9, 16, 25, 36});
         assertEquals(getFailureMessage(), answer, pow.z());
     }
 
@@ -329,12 +329,13 @@ public class OpExecutionerTests extends BaseNd4jTest {
     @Test
     public void testComparisonOps() {
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE);
-        INDArray ones = Nd4j.ones(6);
-        INDArray zeros = Nd4j.zeros(6);
-        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, 0)));
-        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, 7)));
-        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, 0)));
-        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, 7)));
+        INDArray ones = Nd4j.ones(DataType.BOOL, 6);
+        INDArray zeros = Nd4j.zeros(DataType.BOOL, 6);
+        INDArray res = Nd4j.createUninitialized(DataType.BOOL, 6);
+        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, res,0)));
+        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, res, 7)));
+        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, res, 0)));
+        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, res,7)));
     }
 
     @Test
@@ -368,7 +369,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         INDArray slice = arr.slice(0);
         Log log = new Log(slice);
         opExecutioner.exec(log);
-        INDArray assertion = Nd4j.create(Nd4j.createBuffer(new float[] {0.f, 1.09861229f, 1.60943791f}));
+        INDArray assertion = Nd4j.create(new double[] {0., 1.09861229, 1.60943791});
         assertEquals(getFailureMessage(), assertion, slice);
     }
 
@@ -548,12 +549,12 @@ public class OpExecutionerTests extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray slice = arr.slice(0);
         // FIXME: int cast
-        float[] expected = new float[(int) slice.length()];
+        val expected = new double[(int) slice.length()];
         for (int i = 0; i < slice.length(); i++)
             expected[i] = (float) Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
         opExecutioner.exec(exp);
-        assertEquals(getFailureMessage(), Nd4j.create(Nd4j.createBuffer(expected)), slice);
+        assertEquals(getFailureMessage(), Nd4j.create(expected), slice);
     }
 
     @Test
@@ -704,7 +705,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     @Test
     public void testDropout() {
         INDArray array = Nd4j.linspace(1, 100, 100, DataType.DOUBLE);
-        INDArray result = Nd4j.create(100);
+        INDArray result = Nd4j.create(DataType.DOUBLE, 100);
 
         DropOut dropOut = new DropOut(array, result, 0.05);
         Nd4j.getExecutioner().exec(dropOut);
@@ -718,7 +719,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     @Test
     public void testDropoutInverted() {
         INDArray array = Nd4j.linspace(1, 100, 100, DataType.DOUBLE);
-        INDArray result = Nd4j.create(100);
+        INDArray result = Nd4j.create(DataType.DOUBLE, 100);
 
         DropOutInverted dropOut = new DropOutInverted(array, result, 0.65);
         Nd4j.getExecutioner().exec(dropOut);
@@ -733,7 +734,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testVPull1() {
         int indexes[] = new int[] {0, 2, 4};
         INDArray array = Nd4j.linspace(1, 25, 25, DataType.DOUBLE).reshape(5, 5);
-        INDArray assertion = Nd4j.createUninitialized(new int[] {3, 5}, 'f');
+        INDArray assertion = Nd4j.createUninitialized(DataType.DOUBLE, new long[] {3, 5}, 'f');
         for (int i = 0; i < 3; i++) {
             assertion.putRow(i, array.getRow(indexes[i]));
         }
@@ -749,7 +750,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testVPull2() {
         int indexes[] = new int[] {0, 2, 4};
         INDArray array = Nd4j.linspace(1, 25, 25, DataType.DOUBLE).reshape(5, 5);
-        INDArray assertion = Nd4j.createUninitialized(new int[] {3, 5}, 'c');
+        INDArray assertion = Nd4j.createUninitialized(DataType.DOUBLE, new long[] {3, 5}, 'c');
         for (int i = 0; i < 3; i++) {
             assertion.putRow(i, array.getRow(indexes[i]));
         }
