@@ -781,8 +781,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         }
                     case TRANSFORM_BOOL: {
                         val xtraz = getPointerForExtraArgs(op, op.x().dataType());
+                        val opNum = op.opNum();
 
-                        loop.execTransformBool(dummy, op.opNum(),
+                        loop.execTransformBool(dummy, opNum,
                                 op.x().data().addressPointer(),
                                 (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 op.z().data().addressPointer(),

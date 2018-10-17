@@ -510,13 +510,22 @@ namespace simdOps {
 	template <typename X, typename Z>
 	class And {
 	public:
+		no_op_exec_special_bool
+
 		op_def static Z op(X d1, X d2) {
 			return d2 + d1;
 		}
 
 		op_def static Z op(X d1, X d2, X *params) {
-			auto comp = params[0];
-			return d1 != comp && d2 != comp ? static_cast<X>(1) : static_cast<X>(0);
+		    if (params != nullptr) {
+                auto comp = params[0];
+                return d1 != comp && d2 != comp ? static_cast<Z>(1) : static_cast<Z>(0);
+            } else {
+                auto b1 = static_cast<bool>(d1);
+                auto b2 = static_cast<bool>(d2);
+
+                return (b1 && b2) ? static_cast<Z>(1) : static_cast<Z>(0);
+		    }
 		}
 
 		op_def static Z op(X d1) {
@@ -532,14 +541,23 @@ namespace simdOps {
 	template <typename X, typename Z>
 	class Or {
 	public:
+		no_op_exec_special_bool
+
 		op_def static Z op(X d1, X d2) {
 			return d2 + d1;
 		}
 
 		op_def static Z op(X d1, X d2, X *params) {
-			auto comp = params[0];
+		    if (params != nullptr) {
+                auto comp = params[0];
 
-			return d1 != comp || d2 != comp ? static_cast<Z>(1) : static_cast<Z>(0);
+                return d1 != comp || d2 != comp ? static_cast<Z>(1) : static_cast<Z>(0);
+            } else {
+                auto b1 = static_cast<bool>(d1);
+                auto b2 = static_cast<bool>(d2);
+
+                return b1 || b2 ? static_cast<Z>(1) : static_cast<Z>(0);
+		    }
 		}
 
 		op_def static Z op(X d1) {
@@ -555,20 +573,30 @@ namespace simdOps {
 	template <typename X, typename Z>
 	class Xor {
 	public:
+		no_op_exec_special_bool
+
 		op_def static Z op(X d1, X d2) {
 			return d2 + d1;
 		}
 
 		op_def static Z op(X d1, X d2, X *params) {
-			auto comp = params[0];
+			if (params != nullptr) {
+                auto comp = params[0];
 
-			return ((d1 == comp && d2) != comp||(d1 != comp && d2 == comp)) ? static_cast<Z>(1) : static_cast<Z>(0);
+                return ((d1 == comp && d2 != comp) || (d1 != comp && d2 == comp)) ? static_cast<Z>(1) : static_cast<Z>(0);
+            } else {
+                auto b1 = static_cast<bool>(d1);
+                auto b2 = static_cast<bool>(d2);
+
+                return (!b1 && b2 )||(b1 && !b2) ? static_cast<Z>(1) : static_cast<Z>(0);
+			}
 		}
 
 		op_def static Z op(X d1) {
 			return d1;
 		}
 	};
+
 
 	template <typename X, typename Z>
 	class Not {
@@ -581,9 +609,10 @@ namespace simdOps {
 		}
 
 		op_def static Z op(X d1, X d2, X *params) {
-			auto comp = params[0];
+            auto b1 = static_cast<bool>(d1);
+            auto b2 = static_cast<bool>(d2);
 
-			return d1 == comp && d2 == comp ? static_cast<Z>(1) : static_cast<Z>(0);
+			return b1 != b2 ? static_cast<Z>(1) : static_cast<Z>(0);
 		}
 	};
 

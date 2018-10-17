@@ -146,27 +146,29 @@ public class TransformsTest extends BaseNd4jTest {
     public void testAnd1() {
         INDArray x = Nd4j.create(new double[] {0, 0, 1, 0, 0});
         INDArray y = Nd4j.create(new double[] {0, 0, 1, 1, 0});
+        INDArray e = Nd4j.create(new boolean[] {false, false, true, false, false});
 
         INDArray z = Transforms.and(x, y);
 
-        assertEquals(x, z);
+        assertEquals(e, z);
     }
 
     @Test
     public void testOr1() {
         INDArray x = Nd4j.create(new double[] {0, 0, 1, 0, 0});
         INDArray y = Nd4j.create(new double[] {0, 0, 1, 1, 0});
+        val e = Nd4j.create(new boolean[] {false, false, true, true, false});
 
         INDArray z = Transforms.or(x, y);
 
-        assertEquals(y, z);
+        assertEquals(e, z);
     }
 
     @Test
     public void testXor1() {
         INDArray x = Nd4j.create(new double[] {0, 0, 1, 0, 0});
         INDArray y = Nd4j.create(new double[] {0, 0, 1, 1, 0});
-        INDArray exp = Nd4j.create(new double[] {0, 0, 0, 1, 0});
+        INDArray exp = Nd4j.create(new boolean[] {false, false, false, true, false});
 
         INDArray z = Transforms.xor(x, y);
 
@@ -176,7 +178,7 @@ public class TransformsTest extends BaseNd4jTest {
     @Test
     public void testNot1() {
         INDArray x = Nd4j.create(new double[] {0, 0, 1, 0, 0});
-        INDArray exp = Nd4j.create(new double[] {1, 1, 0, 1, 1});
+        INDArray exp = Nd4j.create(new boolean[] {false, false, true, false, false});
 
         INDArray z = Transforms.not(x);
 

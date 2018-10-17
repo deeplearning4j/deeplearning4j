@@ -98,7 +98,8 @@
         (3, IsFinite), \
         (4, IsInfOrNan), \
         (5, MatchConditionBool), \
-        (7, IsPositive)
+        (6, IsPositive)
+
 
 #define TRANSFORM_STRICT_OPS \
         (0, SoftMax), \

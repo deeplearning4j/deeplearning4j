@@ -1444,7 +1444,7 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray x = Nd4j.create(new long[]{3,4});
         INDArray z = Nd4j.create(new long[]{3,4});
 
-        Op op = new Not(x, z);
+        Op op = new Not(x, z, 0.0);
         Nd4j.getExecutioner().exec(op);
     }
 

@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
@@ -32,7 +33,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class Or extends BaseTransformSameOp {
+public class Or extends BaseTransformBoolOp {
 
     protected double comparable = 0.0;
 

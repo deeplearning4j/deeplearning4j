@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNot;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
@@ -1045,26 +1046,26 @@ public class Transforms {
     }
 
     public static INDArray and(INDArray x, INDArray y) {
-        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
+        INDArray z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
         Nd4j.getExecutioner().exec(new And(x, y, z, 0.0));
         return z;
     }
 
     public static INDArray or(INDArray x, INDArray y) {
-        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
+        INDArray z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
         Nd4j.getExecutioner().exec(new Or(x, y, z, 0.0));
         return z;
     }
 
     public static INDArray xor(INDArray x, INDArray y) {
-        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
+        INDArray z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
         Nd4j.getExecutioner().exec(new Xor(x, y, z, 0.0));
         return z;
     }
 
     public static INDArray not(INDArray x) {
-        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
-        Nd4j.getExecutioner().exec(new Not(x, z, 0.0));
+        INDArray z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
+        Nd4j.getExecutioner().exec(new ScalarNot(x, z, x.length(), 0.0f));
         return z;
     }
 
