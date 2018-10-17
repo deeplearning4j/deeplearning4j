@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package timeseries.util;
+package org.datavec.api.util;
 
 import org.datavec.api.timeseries.util.TimeSeriesWritableUtils;
 import org.datavec.api.writable.DoubleWritable;

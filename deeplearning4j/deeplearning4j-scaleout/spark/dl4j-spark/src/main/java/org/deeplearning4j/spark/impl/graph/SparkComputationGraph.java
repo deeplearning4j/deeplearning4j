@@ -555,6 +555,37 @@ public class SparkComputationGraph extends SparkListenable {
                         sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
     }
 
+    /**
+     * Evaluate the single-output network on a directory containing a set of DataSet objects to be loaded with a {@link DataSetLoader}.
+     * Uses default batch size of {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}
+     * @param path Path/URI to the directory containing the datasets to load
+     * @return Evaluation
+     */
+    public Evaluation evaluate(String path, DataSetLoader loader){
+        JavaRDD<String> data;
+        try {
+            data = SparkUtils.listPaths(sc, path);
+        } catch (IOException e){
+            throw new RuntimeException("Error listing files for evaluation of files at path: " + path, e);
+        }
+        return (Evaluation) doEvaluation(data, DEFAULT_EVAL_WORKERS, DEFAULT_EVAL_SCORE_BATCH_SIZE, loader, (MultiDataSetLoader)null, new Evaluation())[0];
+    }
+
+    /**
+     * Evaluate the single-output network on a directory containing a set of MultiDataSet objects to be loaded with a {@link MultiDataSetLoader}.
+     * Uses default batch size of {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}
+     * @param path Path/URI to the directory containing the datasets to load
+     * @return Evaluation
+     */
+    public Evaluation evaluate(String path, MultiDataSetLoader loader){
+        JavaRDD<String> data;
+        try {
+            data = SparkUtils.listPaths(sc, path);
+        } catch (IOException e){
+            throw new RuntimeException("Error listing files for evaluation of files at path: " + path, e);
+        }
+        return (Evaluation) doEvaluation(data, DEFAULT_EVAL_WORKERS, DEFAULT_EVAL_SCORE_BATCH_SIZE, null, loader, new Evaluation())[0];
+    }
 
     /**
      * {@code RDD<DataSet>} overload of {@link #evaluate(JavaRDD)}
