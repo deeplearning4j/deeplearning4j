@@ -521,6 +521,11 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
             throw std::runtime_error("Other is null");
         }
 
+        if(_dataType != DataTypeUtils::fromT<T>())
+            throw std::runtime_error("NDArray::applyPairwiseLambda<T> method: wrong template parameter T, its type should be the same as type of this array!");
+        if(_dataType != other->_dataType || _dataType != target->_dataType)
+            throw std::runtime_error("NDArray::applyPairwiseLambda<T> method: all three arrays (this, other, target) must have the same type !");
+
         if (this->lengthOf() != other->lengthOf()) {
             nd4j_printf("applyPairwiseLambda requires both operands to have the same shape\n","");
             throw std::runtime_error("Shapes mismach");
@@ -636,27 +641,27 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 
         if (this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1)) {
 #pragma omp parallel for simd schedule(guided)
-            for (int e = 0; e < this->lengthOf(); e++)
-                z[e] = func((Nd4jLong) e, f[e]);
+            for (Nd4jLong e = 0; e < this->lengthOf(); e++)
+                z[e] = func(e, f[e]);
         } else {
             if (f == z) {                
 
 #pragma omp parallel for schedule(guided) 
-                for (int e = 0; e < this->lengthOf(); e++) {
+                for (Nd4jLong e = 0; e < this->lengthOf(); e++) {
                     
                     auto xOffset = this->getOffset(e);
 
-                    f[xOffset] = func((Nd4jLong) e, f[xOffset]);
+                    f[xOffset] = func(e, f[xOffset]);
                 }
             } else {                
 
 #pragma omp parallel for schedule(guided)
-                for (int e = 0; e < this->lengthOf(); e++) {                    
+                for (Nd4jLong e = 0; e < this->lengthOf(); e++) {                    
 
                     auto xOffset = this->getOffset(e);
                     auto zOffset = target->getOffset(e);
 
-                    z[zOffset] = func((Nd4jLong) e, f[xOffset]);
+                    z[zOffset] = func(e, f[xOffset]);
                 }
             }
         }
@@ -2753,7 +2758,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             return;
         }
         if (other->isScalar()) {
-            this->applyScalar(op.s, other, target, extraArgs);
+            this->applyScalarArr(op.s, other, target, extraArgs);
             return;
         }
 
