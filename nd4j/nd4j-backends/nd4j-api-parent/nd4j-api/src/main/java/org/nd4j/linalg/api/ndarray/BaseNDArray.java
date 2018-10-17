@@ -4925,7 +4925,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (shape != null && numSpecifiedIndex > 0) {
             Generator<List<List<Long>>> gen = SpecifiedIndex.iterate(indexes);
-            INDArray ret = Nd4j.create(shape, 'c');
+            INDArray ret = Nd4j.create(this.dataType(), ArrayUtil.toLongArray(shape), 'c');
             int count = 0;
             while (true) {
                 try {
