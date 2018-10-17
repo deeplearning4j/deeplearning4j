@@ -28,6 +28,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.*;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.AMean;
@@ -65,7 +66,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         List<String> errors = new ArrayList<>();
 
-        for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345)) {
+        for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345, DataType.DOUBLE)) {
             for(boolean biasCorrected : new boolean[]{false, true}){
                 SameDiff sd = SameDiff.create();
                 SDVariable var = sd.var("in", p.getFirst());
@@ -255,7 +256,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 case 16:
                     loss = sd.entropy("loss", input);
                     name = "entropy";
-                    inputArr = Nd4j.linspace(0.01, 0.99, length).reshape('c', minibatch, nOut);
+                    inputArr = Nd4j.linspace(0.01, 0.99, length, DataType.DOUBLE).reshape('c', minibatch, nOut);
                     tc.expected("loss", inputArr.mul(Transforms.log(inputArr, true)).sum(Integer.MAX_VALUE).negi());
                     break;
                 case 17:

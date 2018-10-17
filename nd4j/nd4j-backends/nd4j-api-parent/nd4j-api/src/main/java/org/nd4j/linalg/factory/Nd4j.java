@@ -1951,6 +1951,10 @@ public class Nd4j {
     }
 
 
+    public static INDArray linspace(long lower, long upper, long num) {
+        return linspace(lower, upper, num, Nd4j.dataType());
+    }
+
     /**
      * Generate a linearly spaced vector
      *

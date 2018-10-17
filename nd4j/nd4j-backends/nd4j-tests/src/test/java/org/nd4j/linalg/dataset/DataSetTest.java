@@ -24,6 +24,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -74,7 +75,7 @@ public class DataSetTest extends BaseNd4jTest {
     @Test
     public void  testViewIterator2(){
 
-        INDArray f = Nd4j.linspace(1,100,100).reshape('c', 10, 10);
+        INDArray f = Nd4j.linspace(1,100,100, DataType.DOUBLE).reshape('c', 10, 10);
         DataSet ds = new DataSet(f, f);
         DataSetIterator iter = new ViewIterator(ds, 1);
         for( int i=0; i<10; i++ ){
@@ -90,7 +91,7 @@ public class DataSetTest extends BaseNd4jTest {
     @Test
     public void  testViewIterator3(){
 
-        INDArray f = Nd4j.linspace(1,100,100).reshape('c', 10, 10);
+        INDArray f = Nd4j.linspace(1,100,100, DataType.DOUBLE).reshape('c', 10, 10);
         DataSet ds = new DataSet(f, f);
         DataSetIterator iter = new ViewIterator(ds, 6);
         DataSet d1 = iter.next();
@@ -412,11 +413,11 @@ public class DataSetTest extends BaseNd4jTest {
         int length1 = width * height * depth * nExamples1;
         int length2 = width * height * depth * nExamples2;
 
-        INDArray first = Nd4j.linspace(1, length1, length1).reshape('c', nExamples1, depth, width, height);
-        INDArray second = Nd4j.linspace(1, length2, length2).reshape('c', nExamples2, depth, width, height).addi(0.1);
+        INDArray first = Nd4j.linspace(1, length1, length1, DataType.DOUBLE).reshape('c', nExamples1, depth, width, height);
+        INDArray second = Nd4j.linspace(1, length2, length2, DataType.DOUBLE).reshape('c', nExamples2, depth, width, height).addi(0.1);
 
-        INDArray labels1 = Nd4j.linspace(1, nExamples1 * nOut, nExamples1 * nOut).reshape('c', nExamples1, nOut);
-        INDArray labels2 = Nd4j.linspace(1, nExamples2 * nOut, nExamples2 * nOut).reshape('c', nExamples2, nOut);
+        INDArray labels1 = Nd4j.linspace(1, nExamples1 * nOut, nExamples1 * nOut, DataType.DOUBLE).reshape('c', nExamples1, nOut);
+        INDArray labels2 = Nd4j.linspace(1, nExamples2 * nOut, nExamples2 * nOut, DataType.DOUBLE).reshape('c', nExamples2, nOut);
 
         DataSet ds1 = new DataSet(first, labels1);
         DataSet ds2 = new DataSet(second, labels2);
@@ -494,9 +495,9 @@ public class DataSetTest extends BaseNd4jTest {
             int length1 = width * height * depth * nExamples1;
             int length2 = width * height * depth * nExamples2;
 
-            INDArray first = Nd4j.linspace(1, length1, length1).reshape('c', nExamples1, depth, height, width);
-            INDArray second = Nd4j.linspace(1, length2, length2).reshape('c', nExamples2, depth, height, width).addi(0.1);
-            INDArray third = Nd4j.linspace(1, length2, length2).reshape('c', nExamples2, depth, height, width).addi(0.2);
+            INDArray first = Nd4j.linspace(1, length1, length1, DataType.DOUBLE).reshape('c', nExamples1, depth, height, width);
+            INDArray second = Nd4j.linspace(1, length2, length2, DataType.DOUBLE).reshape('c', nExamples2, depth, height, width).addi(0.1);
+            INDArray third = Nd4j.linspace(1, length2, length2, DataType.DOUBLE).reshape('c', nExamples2, depth, height, width).addi(0.2);
 
             INDArray fm1 = null;
             INDArray fm2;
@@ -523,9 +524,9 @@ public class DataSetTest extends BaseNd4jTest {
 
             INDArray fmExpected = Nd4j.concat(0, Nd4j.ones(2, 1, (t == 1 ? 1 : height), (t == 0 ? 1 : width)), fm2, fm3);
 
-            INDArray labels1 = Nd4j.linspace(1, nExamples1 * nOut, nExamples1 * nOut).reshape('c', nExamples1, nOut);
-            INDArray labels2 = Nd4j.linspace(1, nExamples2 * nOut, nExamples2 * nOut).reshape('c', nExamples2, nOut).addi(0.1);
-            INDArray labels3 = Nd4j.linspace(1, nExamples2 * nOut, nExamples2 * nOut).reshape('c', nExamples2, nOut).addi(0.2);
+            INDArray labels1 = Nd4j.linspace(1, nExamples1 * nOut, nExamples1 * nOut, DataType.DOUBLE).reshape('c', nExamples1, nOut);
+            INDArray labels2 = Nd4j.linspace(1, nExamples2 * nOut, nExamples2 * nOut, DataType.DOUBLE).reshape('c', nExamples2, nOut).addi(0.1);
+            INDArray labels3 = Nd4j.linspace(1, nExamples2 * nOut, nExamples2 * nOut, DataType.DOUBLE).reshape('c', nExamples2, nOut).addi(0.2);
 
             DataSet ds1 = new DataSet(first, labels1, fm1, null);
             DataSet ds2 = new DataSet(second, labels2, fm2, null);
@@ -719,8 +720,8 @@ public class DataSetTest extends BaseNd4jTest {
         int entries = nSamples * nChannels * imgRows * imgCols;
         int labels = nSamples * nLabels;
 
-        INDArray ds_data = Nd4j.linspace(1, entries, entries).reshape(nSamples, nChannels, imgRows, imgCols);
-        INDArray ds_labels = Nd4j.linspace(1, labels, labels).reshape(nSamples, nLabels);
+        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.DOUBLE).reshape(nSamples, nChannels, imgRows, imgCols);
+        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.DOUBLE).reshape(nSamples, nLabels);
         DataSet ds = new DataSet(ds_data, ds_labels);
         ds.shuffle();
 
@@ -753,8 +754,8 @@ public class DataSetTest extends BaseNd4jTest {
         }
         int labels = shape[0] * nLabels;
 
-        INDArray ds_data = Nd4j.linspace(1, entries, entries).reshape(shape);
-        INDArray ds_labels = Nd4j.linspace(1, labels, labels).reshape(shape[0], nLabels);
+        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.DOUBLE).reshape(shape);
+        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.DOUBLE).reshape(shape[0], nLabels);
 
         DataSet ds = new DataSet(ds_data, ds_labels);
         ds.shuffle();
@@ -825,7 +826,7 @@ public class DataSetTest extends BaseNd4jTest {
     public void testLabelNames() {
         List<String> names = Arrays.asList("label1", "label2", "label3", "label0");
         INDArray features = Nd4j.ones(10);
-        INDArray labels = Nd4j.linspace(0, 3, 4);
+        INDArray labels = Nd4j.linspace(0, 3, 4, DataType.DOUBLE);
         org.nd4j.linalg.dataset.api.DataSet ds = new DataSet(features, labels);
         ds.setLabelNames(names);
         assertEquals("label1", ds.getLabelName(0));
@@ -882,7 +883,7 @@ public class DataSetTest extends BaseNd4jTest {
         //The feature mask does not have to be equal to the label mask, just in this ex it should be
         assertEquals(newDs.getLabelsMaskArray(), newDs.getFeaturesMaskArray());
         //System.out.println(newDs);
-        assertEquals(Nd4j.linspace(numExamples + from, numExamples + to - 1, to - from),
+        assertEquals(Nd4j.linspace(numExamples + from, numExamples + to - 1, to - from, DataType.DOUBLE),
                         newDs.getLabelsMaskArray().sum(1));
     }
 
@@ -927,10 +928,10 @@ public class DataSetTest extends BaseNd4jTest {
 
         boolean[] b = new boolean[] {true, false};
 
-        INDArray f = Nd4j.linspace(1, 24, 24).reshape('c', 4, 3, 2);
-        INDArray l = Nd4j.linspace(24, 48, 24).reshape('c', 4, 3, 2);
-        INDArray fm = Nd4j.linspace(100, 108, 8).reshape('c', 4, 2);
-        INDArray lm = Nd4j.linspace(108, 116, 8).reshape('c', 4, 2);
+        INDArray f = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape('c', 4, 3, 2);
+        INDArray l = Nd4j.linspace(24, 48, 24, DataType.DOUBLE).reshape('c', 4, 3, 2);
+        INDArray fm = Nd4j.linspace(100, 108, 8, DataType.DOUBLE).reshape('c', 4, 2);
+        INDArray lm = Nd4j.linspace(108, 116, 8, DataType.DOUBLE).reshape('c', 4, 2);
 
         for (boolean features : b) {
             for (boolean labels : b) {
@@ -974,10 +975,10 @@ public class DataSetTest extends BaseNd4jTest {
     @Test
     public void testDataSetSaveLoadSingle() throws IOException {
 
-        INDArray f = Nd4j.linspace(1, 24, 24).reshape('c', 4, 3, 2);
-        INDArray l = Nd4j.linspace(24, 48, 24).reshape('c', 4, 3, 2);
-        INDArray fm = Nd4j.linspace(100, 108, 8).reshape('c', 4, 2);
-        INDArray lm = Nd4j.linspace(108, 116, 8).reshape('c', 4, 2);
+        INDArray f = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape('c', 4, 3, 2);
+        INDArray l = Nd4j.linspace(24, 48, 24, DataType.DOUBLE).reshape('c', 4, 3, 2);
+        INDArray fm = Nd4j.linspace(100, 108, 8, DataType.DOUBLE).reshape('c', 4, 2);
+        INDArray lm = Nd4j.linspace(108, 116, 8, DataType.DOUBLE).reshape('c', 4, 2);
 
         boolean features = true;
         boolean labels = false;
@@ -1012,11 +1013,11 @@ public class DataSetTest extends BaseNd4jTest {
     @Test
     public void testMdsShuffle(){
 
-        MultiDataSet orig = new MultiDataSet(Nd4j.linspace(1,100,100).reshape('c',10,10),
-                Nd4j.linspace(100,200,100).reshape('c',10,10));
+        MultiDataSet orig = new MultiDataSet(Nd4j.linspace(1,100,100, DataType.DOUBLE).reshape('c',10,10),
+                Nd4j.linspace(100,200,100, DataType.DOUBLE).reshape('c',10,10));
 
-        MultiDataSet mds = new MultiDataSet(Nd4j.linspace(1,100,100).reshape('c',10,10),
-                Nd4j.linspace(100,200,100).reshape('c',10,10));
+        MultiDataSet mds = new MultiDataSet(Nd4j.linspace(1,100,100, DataType.DOUBLE).reshape('c',10,10),
+                Nd4j.linspace(100,200,100, DataType.DOUBLE).reshape('c',10,10));
         mds.shuffle();
 
         assertNotEquals(orig, mds);
@@ -1076,8 +1077,8 @@ public class DataSetTest extends BaseNd4jTest {
 
         for(boolean withMeta : new boolean[]{false, true}) {
             // create simple data set with meta data object
-            INDArray f = Nd4j.linspace(1, 3, 3).reshape(3, 1);
-            INDArray l = Nd4j.linspace(10, 30, 3).reshape(3, 1);
+            INDArray f = Nd4j.linspace(1, 3, 3, DataType.DOUBLE).reshape(3, 1);
+            INDArray l = Nd4j.linspace(10, 30, 3, DataType.DOUBLE).reshape(3, 1);
             DataSet ds = new DataSet(f, l);
 
             if(withMeta) {
@@ -1106,8 +1107,8 @@ public class DataSetTest extends BaseNd4jTest {
 
         for(boolean withMeta : new boolean[]{false, true}) {
             // create simple data set with meta data object
-            INDArray f = Nd4j.linspace(1, 3, 3).reshape(3, 1);
-            INDArray l = Nd4j.linspace(10, 30, 3).reshape(3, 1);
+            INDArray f = Nd4j.linspace(1, 3, 3, DataType.DOUBLE).reshape(3, 1);
+            INDArray l = Nd4j.linspace(10, 30, 3, DataType.DOUBLE).reshape(3, 1);
             MultiDataSet ds = new MultiDataSet(f, l);
             if(withMeta) {
                 List<String> metaData = Arrays.asList("1", "2", "3");

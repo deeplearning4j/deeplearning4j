@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -47,7 +48,7 @@ public class CompressionSerDeTests extends BaseNd4jTest {
      */
     @Test
     public void testAutoDecompression1() throws Exception {
-        INDArray array = Nd4j.linspace(1, 250, 250);
+        INDArray array = Nd4j.linspace(1, 250, 250, DataType.DOUBLE);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "UINT8");
 
@@ -63,7 +64,7 @@ public class CompressionSerDeTests extends BaseNd4jTest {
 
     @Test
     public void testManualDecompression1() throws Exception {
-        INDArray array = Nd4j.linspace(1, 5, 10);
+        INDArray array = Nd4j.linspace(1, 5, 10, DataType.DOUBLE);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "FLOAT16");
 
@@ -86,7 +87,7 @@ public class CompressionSerDeTests extends BaseNd4jTest {
 
     @Test
     public void testAutoDecompression2() throws Exception {
-        INDArray array = Nd4j.linspace(1, 10, 11);
+        INDArray array = Nd4j.linspace(1, 10, 11, DataType.DOUBLE);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
 

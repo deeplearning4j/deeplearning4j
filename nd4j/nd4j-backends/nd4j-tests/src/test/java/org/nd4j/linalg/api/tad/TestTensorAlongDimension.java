@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -90,7 +91,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
         int rows = 3;
         int cols = 4;
         INDArray testValues = Nd4j.linspace(1, rows * cols, rows * cols).reshape('c', rows, cols);
-        List<Pair<INDArray, String>> list = NDArrayCreationUtil.getAllTestMatricesWithShape('c', rows, cols, 12345);
+        List<Pair<INDArray, String>> list = NDArrayCreationUtil.getAllTestMatricesWithShape('c', rows, cols, 12345, DataType.DOUBLE);
         for (Pair<INDArray, String> p : list) {
             INDArray arr = p.getFirst().assign(testValues);
 
@@ -117,7 +118,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
         int dim2 = 5;
         log.info("AF");
         testValues = Nd4j.linspace(1, rows * cols * dim2, rows * cols * dim2).reshape('c', rows, cols, dim2);
-        list = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, rows, cols, dim2);
+        list = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{rows, cols, dim2}, DataType.DOUBLE);
         for (Pair<INDArray, String> p : list) {
             INDArray arr = p.getFirst().assign(testValues);
             INDArray javaTad = arr.javaTensorAlongDimension(0, 0);
@@ -158,7 +159,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
         int cols = 4;
         int dim2 = 5;
         INDArray testValues = Nd4j.linspace(1, rows * cols * dim2, rows * cols * dim2).reshape('c', rows, cols, dim2);
-        List<Pair<INDArray, String>> list = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, rows, cols, dim2);
+        List<Pair<INDArray, String>> list = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{rows, cols, dim2}, DataType.DOUBLE);
         for (Pair<INDArray, String> p : list) {
             INDArray arr = p.getFirst().assign(testValues);
 
@@ -196,9 +197,9 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
 
         //From a 4d array:
         int dim3 = 6;
-        testValues = Nd4j.linspace(1, rows * cols * dim2 * dim3, rows * cols * dim2 * dim3).reshape('c', rows, cols,
+        testValues = Nd4j.linspace(1, rows * cols * dim2 * dim3, rows * cols * dim2 * dim3, DataType.DOUBLE).reshape('c', rows, cols,
                         dim2, dim3);
-        list = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, rows, cols, dim2, dim3);
+        list = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, new int[]{rows, cols, dim2, dim3}, DataType.DOUBLE);
         for (Pair<INDArray, String> p : list) {
             INDArray arr = p.getFirst().assign(testValues);
 

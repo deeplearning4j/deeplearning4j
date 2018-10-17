@@ -106,7 +106,7 @@ public class TransformOpValidation extends BaseOpValidation {
             for (char inOrder : new char[]{'c', 'f'}) {
                 SameDiff sd = SameDiff.create();
 
-                INDArray inArr = Nd4j.linspace(1, n, n).reshape('c', d0, d1, d2).dup(inOrder);
+                INDArray inArr = Nd4j.linspace(1, n, n, DataType.DOUBLE).reshape('c', d0, d1, d2).dup(inOrder);
                 SDVariable in = sd.var("in", inArr);
                 TestCase tc = new TestCase(sd).gradientCheck(true);
 
@@ -192,7 +192,7 @@ public class TransformOpValidation extends BaseOpValidation {
     @Test
     public void testScalarMulCF(){
 
-        INDArray in = Nd4j.linspace(1,12,12).reshape('c',3,4);
+        INDArray in = Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape('c',3,4);
         INDArray outC = Nd4j.createUninitialized(3,4);
         INDArray outF = Nd4j.createUninitialized(3, 4);
 
@@ -206,7 +206,7 @@ public class TransformOpValidation extends BaseOpValidation {
     @Test
     public void testScalarMulCF2(){
 
-        INDArray in = Nd4j.linspace(1,12,12).reshape('c',3,4);
+        INDArray in = Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape('c',3,4);
 
         INDArray outC = Nd4j.getExecutioner().execAndReturn(new ScalarMultiplication(in.dup('c'), 2.0));
         INDArray outF = Nd4j.getExecutioner().execAndReturn(new ScalarMultiplication(in.dup('f'), 2.0));
@@ -472,7 +472,7 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testDiagPart() {
         SameDiff sd = SameDiff.create();
 
-        INDArray input = Nd4j.linspace(1,16,16).reshape(4,4);
+        INDArray input = Nd4j.linspace(1,16,16, DataType.DOUBLE).reshape(4,4);
         INDArray expOut = Nd4j.create(new float[]{1, 6, 11, 16});
 
         SDVariable in = sd.var("in", input);
@@ -756,12 +756,12 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 45:
                     t = sd.eq(in, 2.0);
-                    ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut).reshape('c', minibatch, nOut);
+                    ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut, DataType.DOUBLE).reshape('c', minibatch, nOut);
                     tc.expectedOutput(t.getVarName(), ia.eq(2.0));
                     break;
                 case 46:
                     t = sd.neq(in, 2.0);
-                    ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut).reshape('c', minibatch, nOut);
+                    ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut, DataType.DOUBLE).reshape('c', minibatch, nOut);
                     tc.expectedOutput(t.getVarName(), ia.neq(2.0));
                     break;
                 case 47:
@@ -783,7 +783,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     ia = Nd4j.rand(ia.shape());
                     ia.diviRowVector(ia.norm2(0)).muli(clip);  //Norm2 is now 'clip' (i.e., exactly at threshold
                     //System.out.println(ia.norm2(0));
-                    ia.muliColumnVector(Nd4j.linspace(0.9, 1.1, ia.size(0)).transpose());
+                    ia.muliColumnVector(Nd4j.linspace(0.9, 1.1, ia.size(0), DataType.DOUBLE).transpose());
                     //System.out.println(ia.norm2(0));
 
                     INDArray expOut49 = Nd4j.create(ia.shape());
@@ -1293,7 +1293,7 @@ public class TransformOpValidation extends BaseOpValidation {
     @Test
     public void testLogGrad() {
         SameDiff sameDiff = SameDiff.create();
-        SDVariable input = sameDiff.var("x", Nd4j.linspace(1, 4, 4));
+        SDVariable input = sameDiff.var("x", Nd4j.linspace(1, 4, 4, DataType.DOUBLE));
         SDVariable log = sameDiff.log(input);
         SDVariable sum = sameDiff.sum(log, Integer.MAX_VALUE);
         INDArray result = null;
@@ -1307,7 +1307,7 @@ public class TransformOpValidation extends BaseOpValidation {
     @Test
     public void testSigmoidBackwards() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray sumInput = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
         inputs.put("x", sumInput);
         SDVariable input = sameDiff.var("x", inputs.get("x"));
@@ -1326,7 +1326,7 @@ public class TransformOpValidation extends BaseOpValidation {
     @Test
     public void testExpGradient() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray sumInput = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
         inputs.put("x", sumInput);
         sameDiff.defineFunction("expGradient", new SameDiffFunctionDefinition() {
@@ -1367,7 +1367,7 @@ public class TransformOpValidation extends BaseOpValidation {
     @Test
     public void testTanhGradient() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray sumInput = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
         inputs.put("x", sumInput);
         sameDiff.defineFunction("tanhGradient", new SameDiffFunctionDefinition() {
@@ -1453,7 +1453,7 @@ public class TransformOpValidation extends BaseOpValidation {
     @Ignore
     public void testScatterOpsScalar(){
         for(String s : new String[]{"add", "sub", "mul", "div"}) {
-            INDArray ref = Nd4j.linspace(1, 30, 30).reshape(10, 3);
+            INDArray ref = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(10, 3);
             INDArray indices = Nd4j.trueScalar(5);
             INDArray upd = Nd4j.trueVector(new double[]{10, 20, 30});
 
@@ -1518,7 +1518,7 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testMirrorPad(){
 //        OpValidationSuite.ignoreFailing();
 
-        INDArray in = Nd4j.linspace(1, 6, 6).reshape(2,3);
+        INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2,3);
         INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}});
 
         INDArray out = Nd4j.create(new long[]{4,7});
@@ -1546,7 +1546,7 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testMirrorPad2(){
 //        OpValidationSuite.ignoreFailing();
 
-        INDArray in = Nd4j.linspace(1, 6, 6).reshape(2,3);
+        INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2,3);
         INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}});
 
         INDArray out = Nd4j.create(new long[]{4,7});
@@ -1572,7 +1572,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testMirrorPadSymmetric(){
-        INDArray in = Nd4j.linspace(1, 12, 12).reshape(3,4);
+        INDArray in = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3,4);
         INDArray pad = Nd4j.create(new double[][]{{1,1},{1,1}});
 
         INDArray out = Nd4j.create(new long[]{5,6});
@@ -1655,7 +1655,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
         for( int k=4; k>= 1; k--){
             log.info("Testing: k=" + k);
-            INDArray in = Nd4j.linspace(1, 20, 20).reshape(4, 5);
+            INDArray in = Nd4j.linspace(1, 20, 20, DataType.DOUBLE).reshape(4, 5);
             INDArray idxs = Nd4j.trueVector(new double[]{1, 2, 3, 4});
 
             INDArray expOut;

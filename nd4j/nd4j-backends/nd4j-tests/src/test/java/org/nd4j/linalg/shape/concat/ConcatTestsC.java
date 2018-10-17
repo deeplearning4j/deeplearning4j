@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.shape.concat;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -230,9 +231,9 @@ public class ConcatTestsC extends BaseNd4jTest {
         exp.put(new INDArrayIndex[] {NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.all()}, second);
         exp.put(new INDArrayIndex[] {NDArrayIndex.point(3), NDArrayIndex.all(), NDArrayIndex.all()}, third);
 
-        List<Pair<INDArray, String>> firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 3, 4);
-        List<Pair<INDArray, String>> seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 1, 3, 4);
-        List<Pair<INDArray, String>> thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 1, 3, 4);
+        List<Pair<INDArray, String>> firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 3, 4}, DataType.DOUBLE);
+        List<Pair<INDArray, String>> seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{1, 3, 4}, DataType.DOUBLE);
+        List<Pair<INDArray, String>> thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{1, 3, 4}, DataType.DOUBLE);
         for (Pair<INDArray, String> f : firsts) {
             for (Pair<INDArray, String> s : seconds) {
                 for (Pair<INDArray, String> t : thirds) {
@@ -257,9 +258,9 @@ public class ConcatTestsC extends BaseNd4jTest {
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.point(3), NDArrayIndex.all()}, second);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(4, 6), NDArrayIndex.all()}, third);
 
-        firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 3, 4);
-        seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 1, 4);
-        thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 2, 4);
+        firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 3, 4}, DataType.DOUBLE);
+        seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 1, 4}, DataType.DOUBLE);
+        thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 2, 4}, DataType.DOUBLE);
         for (Pair<INDArray, String> f : firsts) {
             for (Pair<INDArray, String> s : seconds) {
                 for (Pair<INDArray, String> t : thirds) {
@@ -282,9 +283,9 @@ public class ConcatTestsC extends BaseNd4jTest {
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(4, 6)}, second);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(6)}, third);
 
-        firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 3, 4);
-        seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 3, 2);
-        thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 3, 1);
+        firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 3, 4}, DataType.DOUBLE);
+        seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 3, 2}, DataType.DOUBLE);
+        thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 3, 1}, DataType.DOUBLE);
         for (Pair<INDArray, String> f : firsts) {
             for (Pair<INDArray, String> s : seconds) {
                 for (Pair<INDArray, String> t : thirds) {

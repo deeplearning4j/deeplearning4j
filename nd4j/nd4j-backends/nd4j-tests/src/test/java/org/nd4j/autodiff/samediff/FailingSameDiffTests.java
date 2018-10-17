@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
@@ -204,7 +205,7 @@ public class FailingSameDiffTests {
     public void testExecutionDifferentShapesTransform(){
         OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(3,4));
 
         SDVariable tanh = sd.tanh(in);
         INDArray exp = Transforms.tanh(in.getArr(), true);
@@ -213,7 +214,7 @@ public class FailingSameDiffTests {
         assertEquals(exp, out);
 
         //Now, replace with minibatch 5:
-        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        in.setArray(Nd4j.linspace(1,20,20, DataType.DOUBLE).reshape(5,4));
         INDArray out2 = sd.execAndEndResult();
         assertArrayEquals(new long[]{5,4}, out2.shape());
 
@@ -239,9 +240,9 @@ public class FailingSameDiffTests {
         OpValidationSuite.ignoreFailing();
 
         SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
-        SDVariable w = sd.var("w", Nd4j.linspace(1,20,20).reshape(4,5));
-        SDVariable b = sd.var("b", Nd4j.linspace(1,5,5).reshape(1,5));
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(3,4));
+        SDVariable w = sd.var("w", Nd4j.linspace(1,20,20, DataType.DOUBLE).reshape(4,5));
+        SDVariable b = sd.var("b", Nd4j.linspace(1,5,5, DataType.DOUBLE).reshape(1,5));
 
         SDVariable mmul = sd.mmul(in,w).addi(b);
         INDArray exp = in.getArr().mmul(w.getArr()).addiRowVector(b.getArr());
@@ -250,7 +251,7 @@ public class FailingSameDiffTests {
         assertEquals(exp, out);
 
         //Now, replace with minibatch 5:
-        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        in.setArray(Nd4j.linspace(1,20,20, DataType.DOUBLE).reshape(5,4));
         INDArray out2 = sd.execAndEndResult();
         assertArrayEquals(new long[]{5,5}, out2.shape());
 
@@ -261,7 +262,7 @@ public class FailingSameDiffTests {
         SDVariable loss = mmul.std(true);
         sd.execBackwards();
 
-        in.setArray(Nd4j.linspace(1,12,12).reshape(3,4));
+        in.setArray(Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(3,4));
         sd.execAndEndResult();
         out2 = mmul.getArr();
         assertArrayEquals(new long[]{3,5}, out2.shape());

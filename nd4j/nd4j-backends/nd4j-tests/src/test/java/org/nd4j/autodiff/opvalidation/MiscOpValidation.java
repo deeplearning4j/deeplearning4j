@@ -28,6 +28,7 @@ import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -532,8 +533,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMulGradient() {
-        INDArray arr1 = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray arr2 = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray arr1 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
+        INDArray arr2 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
 
         INDArray gradAssertion = Nd4j.ones(arr1.shape());
         INDArray scalar = Nd4j.scalar(1.0);
@@ -599,7 +600,7 @@ public class MiscOpValidation extends BaseOpValidation {
         OpValidationSuite.ignoreFailing();
 
         SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray sumInput = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
         inputs.put("x", sumInput);
         inputs.put("y", sumInput.dup());
@@ -734,8 +735,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
         for (int i : new int[]{2, 1}) {
             System.out.println("i = " + i);
-            INDArray first = Nd4j.linspace(1, 3 * i, 3 * i).reshape('c', i, 3);      //To [1,3] or [2,3]
-            INDArray second = Nd4j.linspace(4, 4 + 4 * i, 4 * i).reshape('c', i, 4);  //To [1,4] or [2,4]
+            INDArray first = Nd4j.linspace(1, 3 * i, 3 * i, DataType.DOUBLE).reshape('c', i, 3);      //To [1,3] or [2,3]
+            INDArray second = Nd4j.linspace(4, 4 + 4 * i, 4 * i, DataType.DOUBLE).reshape('c', i, 4);  //To [1,4] or [2,4]
 
             System.out.println("Shapes: " + Arrays.toString(first.shape()) + "\t" + Arrays.toString(second.shape()));
 
@@ -963,7 +964,7 @@ public class MiscOpValidation extends BaseOpValidation {
         for(char order : new char[]{'c','f'}) {
 
             Nd4j.getRandom().setSeed(12345);
-            INDArray arr = Nd4j.linspace(1, 15, 15).reshape(3, 5).dup(order);
+            INDArray arr = Nd4j.linspace(1, 15, 15, DataType.DOUBLE).reshape(3, 5).dup(order);
 //            System.out.println(arr);
 
             INDArray expFF = Nd4j.create(new double[][]{
@@ -1030,7 +1031,7 @@ public class MiscOpValidation extends BaseOpValidation {
         for(char order : new char[]{'c','f'}) {
 
             Nd4j.getRandom().setSeed(12345);
-            INDArray arr = Nd4j.linspace(1, 15, 15).reshape(3, 5).dup(order);
+            INDArray arr = Nd4j.linspace(1, 15, 15, DataType.DOUBLE).reshape(3, 5).dup(order);
 
             INDArray expFF = Nd4j.create(new double[][]{
                     {1, 2, 6, 24, 120},
@@ -1178,7 +1179,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable loss = out.std(true);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(out, Nd4j.linspace(1,10,10)));
+                .expected(out, Nd4j.linspace(1,10,10, DataType.DOUBLE)));
 
         assertNull(err);
     }
@@ -1363,7 +1364,7 @@ public class MiscOpValidation extends BaseOpValidation {
                     if (shape == null) {
                         inArr = Nd4j.trueScalar(1.0);
                     } else {
-                        inArr = Nd4j.linspace(1, 12, 12).reshape(shape);
+                        inArr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(shape);
                     }
 
                     if(nonDec && !expTrue) {
