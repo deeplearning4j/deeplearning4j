@@ -206,7 +206,7 @@ public class CpuLapack extends BaseLapack {
     @Override
     public void dgesvd(byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT,
                     INDArray INFO) {
-        INDArray superb = Nd4j.create( M < N ? M : N ) ;
+        INDArray superb = Nd4j.create(A.dataType(), M < N ? M : N ) ;
         int status = LAPACKE_dgesvd(getColumnOrder(A), jobu, jobvt, M, N, 
                         (DoublePointer)A.data().addressPointer(), getLda(A),
                         (DoublePointer)S.data().addressPointer(), 
