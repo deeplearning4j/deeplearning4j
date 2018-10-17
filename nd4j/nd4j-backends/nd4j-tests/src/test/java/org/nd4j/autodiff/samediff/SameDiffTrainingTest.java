@@ -60,7 +60,7 @@ public class SameDiffTrainingTest {
             IUpdater updater;
             switch (u) {
                 case "sgd":
-                    updater = new Sgd(1e-2);
+                    updater = new Sgd(1e-1);
                     break;
                 case "adam":
                     updater = new Adam(1e-2);

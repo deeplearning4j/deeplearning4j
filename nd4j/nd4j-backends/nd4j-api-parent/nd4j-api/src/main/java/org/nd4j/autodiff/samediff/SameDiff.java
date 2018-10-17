@@ -1454,66 +1454,74 @@ public class SameDiff {
         Preconditions.checkState(numEpochs > 0, "Number of training epochs must be a positive number. Got: %s", numEpochs);
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
                 "be set before training. Use setTrainingConfig(TrainingConfig)");
+        Preconditions.checkState(numEpochs == 1 || iter.resetSupported(), "Cannot train for multiple epochs on an iterator that" +
+                " does not support resetting");
 
         if(!iter.hasNext() && iter.resetSupported())
             iter.reset();
 
-        while(iter.hasNext()){
-            org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
-            //TODO: validate number of arrays + masks vs. config number of features/labels mappings
+        for(int i=0; i<numEpochs; i++ ) {
+            while (iter.hasNext()) {
+                org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
+                //TODO: validate number of arrays + masks vs. config number of features/labels mappings
 
-            //Create placeholder variable map
-            Map<String,INDArray> placeholders = toPlaceholderMap(ds);
+                //Create placeholder variable map
+                Map<String, INDArray> placeholders = toPlaceholderMap(ds);
 
-            Preconditions.checkState(placeholders.size() > 0, "No placeholder variables were set for training");
-            resolveVariablesWith(placeholders);
+                Preconditions.checkState(placeholders.size() > 0, "No placeholder variables were set for training");
+                resolveVariablesWith(placeholders);
 
-            //Calculate gradients:
-            execBackwards();
+                //Calculate gradients:
+                execBackwards();
 
 
-            //Apply updater:
-            if(!initializedTraining)
-                initializeTraining();
+                //Apply updater:
+                if (!initializedTraining)
+                    initializeTraining();
 
-            int i = trainingConfig.getIterationCount();
-            int e = trainingConfig.getEpochCount();
-            for(String s : trainingConfig.getTrainableParams()){
-                INDArray param = variableMap.get(s).getArr();
-                INDArray grad = variableMap.get(s).getGradient().getArr();
-                //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
-                // which should flow through to here
+                int i = trainingConfig.getIterationCount();
+                int e = trainingConfig.getEpochCount();
+                for (String s : trainingConfig.getTrainableParams()) {
+                    INDArray param = variableMap.get(s).getArr();
+                    INDArray grad = variableMap.get(s).getGradient().getArr();
+                    //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
+                    // which should flow through to here
 
-                //Apply updater. Note that we need to reshape to [1,length] for updater
-                INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
-                Preconditions.checkState(reshapedView != null,"Error reshaping array for parameter \"%s\": array is a view?", s);
-                GradientUpdater u = updaterMap.get(s);
-                try {
-                    u.applyUpdater(reshapedView, i, e);
-                } catch (Throwable t){
-                    throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + s
-                            + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
+                    //Apply updater. Note that we need to reshape to [1,length] for updater
+                    INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
+                    Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", s);
+                    GradientUpdater u = updaterMap.get(s);
+                    try {
+                        u.applyUpdater(reshapedView, i, e);
+                    } catch (Throwable t) {
+                        throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + s
+                                + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
+                    }
+
+                    //L1 and L2 regularization:
+                    if (trainingConfig.getL1() > 0) {
+                        //L1: loss += lambda * sum_i |param_i|
+                        //dL/dp_i: lambda * sgn(param_i)
+                        INDArray signProd = Transforms.sign(param, true).muli(trainingConfig.getL1());
+                        grad.addi(signProd);
+                    }
+                    if (trainingConfig.getL2() > 0) {
+                        //L2: loss += 0.5 * lambda * sum_i param_i^2
+                        //dL/dp_i: lambda * param_i
+                        //TODO axpy optimization = safe/possible?
+                        grad.addi(param.mul(trainingConfig.getL2()));
+                    }
+
+                    if (trainingConfig.isMinimize()) {
+                        param.subi(grad);
+                    } else {
+                        param.addi(grad);
+                    }
                 }
+            }
 
-                //L1 and L2 regularization:
-                if(trainingConfig.getL1() > 0){
-                    //L1: loss += lambda * sum_i |param_i|
-                    //dL/dp_i: lambda * sgn(param_i)
-                    INDArray signProd = Transforms.sign(param, true).muli(trainingConfig.getL1());
-                    grad.addi(signProd);
-                }
-                if(trainingConfig.getL2() > 0){
-                    //L2: loss += 0.5 * lambda * sum_i param_i^2
-                    //dL/dp_i: lambda * param_i
-                    //TODO axpy optimization = safe/possible?
-                    grad.addi(param.mul(trainingConfig.getL2()));
-                }
-
-                if(trainingConfig.isMinimize()){
-                    param.subi(grad);
-                } else {
-                    param.addi(grad);
-                }
+            if(i < numEpochs-1){
+                iter.reset();
             }
         }
 
