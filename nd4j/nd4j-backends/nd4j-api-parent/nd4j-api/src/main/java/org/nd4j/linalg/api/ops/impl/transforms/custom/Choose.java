@@ -20,6 +20,7 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
@@ -104,7 +105,8 @@ public class Choose extends DynamicCustomOp {
         if(!tArgs.isEmpty())
             addTArgument(Doubles.toArray(tArgs));
         addIArgument(condition.condtionNum());
-        addOutputArgument(Nd4j.create(inputs[0].shape(), inputs[0].ordering()),Nd4j.trueScalar(1.0));
+
+        addOutputArgument(Nd4j.create(inputs[0].shape(), inputs[0].ordering()),Nd4j.scalar(DataType.LONG, 1.0));
     }
 
     public Choose(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
