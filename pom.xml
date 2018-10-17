@@ -259,7 +259,7 @@
         <servlet.version>3.1.0</servlet.version>
         <snakeyaml.version>1.12</snakeyaml.version>
         <snappy.version>1.1.2.6</snappy.version>
-        <spring.version>4.1.6.RELEASE</spring.version>
+        <spring.version>5.1.1.RELEASE</spring.version>
         <t-digest.version>3.2</t-digest.version>
 
         <oshi.version>3.4.2</oshi.version>
