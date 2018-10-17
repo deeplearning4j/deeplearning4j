@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 	auto logSumExp = sumExp.transform(transform::Log);
 	// sum(-labels *((logits - max_logits) - log(sum(exp(logits - max_logits))))) along classes
 	// The subtraction broadcasts along the batch dimension
-	auto weightedLosses = ((-*newLabels) * (shiftedLogits - logSumExp)).reduceAlongDims(reduce::Sum, dimensions);
+	auto weightedLosses = ((-*newLabels) * (shiftedLogits - logSumExp)).reduceAlongDims(reduce::Sum, dimensions);	
 	
 	// perform weights broadcasting/tile to weightedLosses if it is necessary
 	auto weightsBroad = weights;
@@ -83,7 +83,13 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 	}	
 
     // multiply weightedLosses on weights
-    weightedLosses *= (*weights);
+    if(weightedLosses.rankOf() == 1 && weights->isVector() && weights->rankOf() > 1) {
+    	auto tempWeights = weights->reshape(weights->ordering(), {weights->lengthOf()});
+    	weightedLosses *= (*tempWeights);
+    	delete tempWeights;
+    }
+    else
+    	weightedLosses *= (*weights);
 
  	// regard 4 possible reduction modes below
  	REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: reduction mode value is not acceptable, possible values are 0, 1, 2, 3, but got %i instead!", reductionMode);
@@ -93,7 +99,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 			break;
 		
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
-			(*output) = weightedLosses.reduceNumber(reduce::Sum);
+			*output = weightedLosses.reduceNumber(reduce::Sum);
 			break;
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
@@ -104,9 +110,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 				sum = weightsBroad->reduceNumber(reduce::Sum).e<double>(0);
 			
 			if (sum == 0.)
-				output->assign(0.);
+				*output = 0.;
 			else 
-				output->assign(weightedLosses.reduceNumber(reduce::Sum) / sum);
+				*output = weightedLosses.reduceNumber(reduce::Sum) / sum;
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
@@ -120,9 +126,10 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 			}
 
 			if (numOfNonZeroWeights == 0)
-				output->assign(0.);
+				*output = 0.;
 			else 
-				output->assign(weightedLosses.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
+				*output = weightedLosses.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights);
+
 			break;
 		}
 	}
@@ -163,7 +170,7 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
     const int rank = 2;
     if(INT_ARG(0) != 0) { // reduced shape of scalar!!!
     	RELEASE(reducedShapeInfo, block.workspace());
-    	reducedShapeInfo = shape::createScalarShapeInfo();// (block.workspace()); //ShapeUtils:: ::createScalarShapeInfo
+    	reducedShapeInfo =  ShapeBuilders::createScalarShapeInfo(block.getWorkspace());
     	/*
     	ALLOCATE(reducedShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
     	reducedShapeInfo[0] = rank;

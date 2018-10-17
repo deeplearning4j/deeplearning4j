@@ -3640,7 +3640,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test11) {
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss op;
-    auto results = op.execute({&logits, &weights, &labels}, {5.}, {3});
+    auto results = op.execute({&logits, &weights, &labels}, {5.}, {3}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3663,7 +3663,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test12) {
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss op;
-    auto results = op.execute({&logits, &weights, &labels}, {5.}, {3});
+    auto results = op.execute({&logits, &weights, &labels}, {5.}, {3}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

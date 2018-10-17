@@ -238,7 +238,6 @@ TEST_F(DeclarableOpsTests9, tile_bp_test2) {
 
     delete results;
 }
-
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, concat_test1) {
 
@@ -710,7 +709,199 @@ TEST_F(DeclarableOpsTests9, matmul_test9) {
 
     delete results;
 }
-   
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, TestDropout_BP_1) {
+
+    NDArray x('c', {2, 2, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
+    NDArray errs('c', {2, 2, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
+    NDArray shape('c', {2}, {2, 2});
+    nd4j::ops::dropout_bp op;
+
+    auto ress = op.execute({&x, &errs, &shape}, {0.2f}, {113});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+    //ress->at(0)->printIndexedBuffer("Result is ");
+    //x.printIndexedBuffer("Input is");
+    ASSERT_FALSE(ress->at(0)->equalsTo(errs));
+    delete ress;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, TestDropout_1) {
+
+    NDArray x('c', {10, 10}, nd4j::DataType::FLOAT32);
+//    NDArray<float> errs('c', {2, 2, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
+    //NDArray<float> shape({2.f, 2.f});
+    nd4j::ops::dropout op;
+    x.linspace(1);
+    auto ress = op.execute({&x}, {0.2f}, {113});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+    NDArray* res = ress->at(0); //->printIndexedBuffer("Result is ");
+    //x.printIndexedBuffer("Input is");
+    //res->printIndexedBuffer("Result for Dropout_1");
+    auto countZero = res->reduceNumber(reduce::CountZero);
+    ASSERT_NEAR(countZero.e<Nd4jLong>(0), 80, 5);
+    auto ress2 = op.execute({&x}, {0.2f}, {113});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress2->status());
+    NDArray* res2 = ress2->at(0);
+
+    countZero = res->reduceNumber(reduce::CountZero);
+    ASSERT_NEAR(countZero.e<Nd4jLong>(0), 80, 5);
+    //res2->printIndexedBuffer("Result for Dropout_2");
+    ASSERT_TRUE(res->equalsTo(res2));
+    //res->printIndexedBuffer("FF dropout");
+    //res2->printIndexedBuffer("BP dropout");
+
+    delete ress;
+    delete ress2;
+}
+
+TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
+    NDArray x0('c', {10, 10}, nd4j::DataType::FLOAT32);
+    NDArray x1('c', {10, 10}, nd4j::DataType::FLOAT32);
+
+    x0.linspace(1);
+    x1.linspace(1);
+/*
+    NativeOps nativeOps;
+
+    float prob[] = {0.5f};
+    Nd4jLong* _bufferA = new Nd4jLong[100000];
+    long _seed = 119L;
+    auto _rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
+
+    x0. applyTransform(random::DropOutInverted, &x0, prob);
+//    x1.template applyRandom<randomOps::DropOutInverted<float>>(_rngB, nullptr, &x1, prob);
+//    x0.printIndexedBuffer("01Result1");
+    int count = 0;
+    for (int e = 0; e < x0.lengthOf(); e++)
+        if (x0.e<float>(e) != 0.f)
+            count++;
+//    nd4j_printf("\nX0 count %i\n", count);
+//    ASSERT_TRUE(x0.equalsTo(&x1));
+
+    // this check is required to ensure we're calling wrong signature
+//    ASSERT_FALSE(x0.equalsTo(nexp0));
+//    ASSERT_FALSE(x0.equalsTo(nexp1));
+//    ASSERT_FALSE(x0.equalsTo(nexp2));
+    nativeOps.destroyRandom(_rngA);
+    delete [] _bufferA;
+*/
+    nd4j::ops::dropout op;
+
+    auto ress = op.execute({&x1}, {0.5f}, {119});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+    //ress->at(0)->printIndexedBuffer("01Dropout result is ");
+    auto count = ress->at(0)->reduceNumber(reduce::CountNonZero);
+//    nd4j_printf("\n01Dropout count %i\n\n", count);
+
+    nd4j::ops::dropout_bp op2;
+    //NDArray<float> exp('c', {10,10}, {4.f, 0.f, 12.f, 0.f, 20.f, 24.f, 0.f, 32.f, 0.f, 0.f, 0.f, 0.f, 52.f, 56.f, 60.f, 0.f, 0.f, 0.f, 0.f, 0.f, 84.f, 88.f, 0.f, 0.f, 0.f, 0.f, 108.f, 0.f, 0.f, 120.f, 0.f, 0.f, 132.f, 0.f, 0.f, 0.f, 0.f, 0.f, 156.f, 0.f, 164.f, 168.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 200.f, 204.f, 0.f, 0.f, 0.f, 220.f, 0.f, 0.f, 232.f, 236.f, 240.f, 0.f, 248.f, 0.f, 0.f, 260.f, 0.f, 0.f, 0.f, 276.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 316.f, 0.f, 324.f, 0.f, 0.f, 336.f, 0.f, 0.f, 0.f, 0.f, 356.f, 0.f, 0.f, 368.f, 0.f, 0.f, 0.f, 384.f, 388.f, 0.f, 0.f, 400.f});
+    //02Dropout result is  [4.000000, 0.000000, 12.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 36.000000, 0.000000, 0.000000, 0.000000, 0.000000, 56.000000, 60.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 88.000000, 0.000000, 96.000000, 0.000000, 0.000000, 108.000000, 0.000000, 0.000000, 120.000000, 0.000000, 128.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 156.000000, 0.000000, 164.000000, 0.000000, 0.000000, 0.000000, 0.000000, 184.000000, 0.000000, 0.000000, 0.000000, 200.000000, 0.000000, 0.000000, 0.000000, 216.000000, 0.000000, 0.000000, 0.000000, 232.000000, 0.000000, 240.000000, 0.000000, 248.000000, 0.000000, 0.000000, 260.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 308.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 348.000000, 0.000000, 356.000000, 0.000000, 0.000000, 0.000000, 0.000000, 376.000000, 0.000000, 384.000000, 0.000000, 0.000000, 0.000000, 400.000000]
+
+    auto ressX = op2.execute({&x1, &x1}, {0.5f}, {119}); // , false, nd4j::DataType::FLOAT32); // skipped due given by default
+    //x0.printIndexedBuffer("X0");
+    //x1.printIndexedBuffer("X1");
+    ASSERT_EQ(ND4J_STATUS_OK, ressX->status());
+    auto ressY = op2.execute({&x1, &x0}, {0.5f}, {119});
+    ASSERT_EQ(ND4J_STATUS_OK, ressY->status());
+    //ressY->at(0)->printIndexedBuffer("BP");
+    //ress->at(0)->printIndexedBuffer("FF");
+    bool ret = true;
+    for (int e = 0; e < ress->at(0)->lengthOf(); e++) {
+        if (ress->at(0)->e<float>(e) == 0.f)
+            if (ressX->at(0)->e<float>(e) != ress->at(0)->e<float>(e)) {
+                ret = false;
+                break;
+            }
+    }
+    ASSERT_TRUE(ret);
+    //    ASSERT_FALSE(ressX->at(0)->equalsTo(ressY->at(0)));
+    //ressX->at(0)->printIndexedBuffer("02Dropout result is ");
+/*    float countZero = ressX->at(0)->template reduceNumber<simdOps::CountZero<float>>();
+    ASSERT_NEAR(countZero, 50.f, 5.f);
+    countZero = ress->at(0)->template reduceNumber<simdOps::CountZero<float>>();
+    ASSERT_NEAR(countZero, 50.f, 5.f);
+    countZero = ressY->at(0)->template reduceNumber<simdOps::CountZero<float>>();
+    ASSERT_NEAR(countZero, 50.f, 5.f);
+    */
+//    ASSERT_TRUE(exp.equalsTo(ressX->at(0)));
+    delete ressX;
+    delete ressY;
+    delete ress;
+}
+
+TEST_F(DeclarableOpsTests9, Test_Dropout_BP_2) {
+    NDArray x('c', {10, 10}, nd4j::DataType::FLOAT32);
+
+    x.linspace(1);
+
+    nd4j::ops::dropout op;
+
+    auto ress = op.execute({&x}, {0.5f}, {119});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+//    ress->at(0)->printIndexedBuffer("01Dropout result is ");
+
+    nd4j::ops::dropout_bp op2;
+
+    auto ressX = op2.execute({&x, &x}, {0.5f}, {119});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ressX->status());
+    auto ressY = op2.execute({&x, &x}, {0.5f}, {119});
+    ASSERT_EQ(ND4J_STATUS_OK, ressY->status());
+
+    //ress->at(0)->printIndexedBuffer("FF Dropout result is ");
+    //ressY->at(0)->printIndexedBuffer("BP Dropout result is ");
+
+
+    auto countZero = ress->at(0)->reduceNumber(reduce::CountZero);
+    ASSERT_NEAR(countZero.e<float>(0), 50.f, 10.f);
+    countZero = ressX->at(0)->reduceNumber(reduce::CountZero);
+    //nd4j_printf("X zero count is %f\n", countZero);
+    ASSERT_NEAR(countZero.e<float>(0), 50.f, 10.f);
+    countZero = ressY->at(0)->reduceNumber(reduce::CountZero);
+    //nd4j_printf("Y zero count is %f\n", countZero);
+    ASSERT_NEAR(countZero.e<float>(0), 50.f, 10.f);
+//    ASSERT_TRUE(exp.equalsTo(ressX->at(0)));
+    ASSERT_TRUE(ressX->at(0)->equalsTo(ressY->at(0)));
+    delete ressX;
+    delete ressY;
+    delete ress;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, Test_AlphaDropout_BP_1) {
+    NDArray x('c', {10, 10}, nd4j::DataType::FLOAT32);
+    NDArray eps('c', {10, 10}, nd4j::DataType::FLOAT32);
+
+    x.linspace(1);
+    eps.linspace(1);
+
+    nd4j::ops::alpha_dropout_bp op;
+
+    auto ress = op.execute({&x, &eps}, {0.5f, 0.5f, 1.5f, 1.6f}, {119});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+    NDArray* res = ress->at(0);
+
+    auto ress2 = op.execute({&x, &eps}, {0.5f, 0.5f, 1.5f, 1.6f}, {119});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress2->status());
+    NDArray* res2 = ress2->at(0);
+    //res->printIndexedBuffer("Result1AlphaBP1");
+    //res2->printIndexedBuffer("Result1AlphaBP2");
+    ASSERT_TRUE(res2->equalsTo(res));
+
+
+    delete ress;
+    delete ress2;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, matmul_test10) {
 
