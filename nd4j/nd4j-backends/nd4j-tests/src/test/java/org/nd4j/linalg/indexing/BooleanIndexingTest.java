@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
@@ -466,8 +467,8 @@ public class BooleanIndexingTest extends BaseNd4jTest {
 
     @Test
     public void testConditionalUpdate() {
-        INDArray arr = Nd4j.linspace(-2, 2, 5);
-        INDArray ones = Nd4j.ones(5);
+        INDArray arr = Nd4j.linspace(-2, 2, 5, DataType.DOUBLE);
+        INDArray ones = Nd4j.ones(DataType.DOUBLE, 5);
         INDArray exp = Nd4j.create(new double[] {1, 1, 0, 1, 1});
 
 
@@ -505,7 +506,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     public void testFirstIndex2D() {
         INDArray arr = Nd4j.create(new double[] {1, 2, 3, 0, 1, 3, 7, 8, 9}).reshape('c', 3, 3);
         INDArray result = BooleanIndexing.firstIndex(arr, Conditions.greaterThanOrEqual(2), 1);
-        INDArray exp = Nd4j.create(new double[] {1, 2, 0});
+        INDArray exp = Nd4j.create(new long[] {1, 2, 0}, new long[]{3}, DataType.LONG);
 
         assertEquals(exp, result);
     }
@@ -514,7 +515,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     public void testLastIndex2D() {
         INDArray arr = Nd4j.create(new double[] {1, 2, 3, 0, 1, 3, 7, 8, 0}).reshape('c', 3, 3);
         INDArray result = BooleanIndexing.lastIndex(arr, Conditions.greaterThanOrEqual(2), 1);
-        INDArray exp = Nd4j.create(new double[] {2, 2, 1});
+        INDArray exp = Nd4j.create(new long[] {2, 2, 1}, new long[]{3}, DataType.LONG);
 
         assertEquals(exp, result);
     }
@@ -570,7 +571,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     @Test
     public void testWhere() {
         INDArray data = Nd4j.create(4);
-        INDArray mask = Nd4j.create(4);
+        INDArray mask = Nd4j.create(DataType.BOOL, 4);
         INDArray put = Nd4j.create(4);
         INDArray resultData = Nd4j.create(4);
         INDArray assertion = Nd4j.create(4);
@@ -581,7 +582,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
                 mask.putScalar(i, 1);
             } else {
                 assertion.putScalar(i, i);
-                mask.putScalar(i, 0.0);
+                mask.putScalar(i, 0);
             }
 
             put.putScalar(i, 5.0);

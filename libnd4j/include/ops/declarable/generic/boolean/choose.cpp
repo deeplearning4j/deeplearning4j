@@ -52,10 +52,10 @@ namespace nd4j {
 
         DECLARE_TYPES(choose) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                    ->setAllowedOutputTypes(1, {DataType::INT64, DataType::INT32, DataType::INT16, DataType::UINT8, DataType::UINT8});
+                    ->setAllowedInputTypes(0, {ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(1, {ALL_INTS});
         }
 
         DECLARE_SHAPE_FN(choose) {
@@ -82,7 +82,7 @@ namespace nd4j {
             Nd4jLong* newShape;
             COPY_SHAPE(shape, newShape);
 
-            auto shapeScalar = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shape), block.workspace());
+            auto shapeScalar = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.workspace());
 
             return SHAPELIST(newShape, shapeScalar);
         }
