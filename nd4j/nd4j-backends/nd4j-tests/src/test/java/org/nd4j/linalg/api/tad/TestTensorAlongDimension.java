@@ -74,8 +74,8 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
 
     @Test
     public void testTadShapesEdgeCases() {
-        INDArray row = Nd4j.create(1, 5);
-        INDArray col = Nd4j.create(5, 1);
+        INDArray row = Nd4j.create(DataType.DOUBLE, 1, 5);
+        INDArray col = Nd4j.create(DataType.DOUBLE, 5, 1);
 
         assertArrayEquals(new int[] {1, 5}, row.tensorAlongDimension(0, 1).shape());
         assertArrayEquals(new int[] {1, 5}, col.tensorAlongDimension(0, 0).shape());
@@ -90,7 +90,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
         //From a 2d array:
         int rows = 3;
         int cols = 4;
-        INDArray testValues = Nd4j.linspace(1, rows * cols, rows * cols).reshape('c', rows, cols);
+        INDArray testValues = Nd4j.linspace(1, rows * cols, rows * cols, DataType.DOUBLE).reshape('c', rows, cols);
         List<Pair<INDArray, String>> list = NDArrayCreationUtil.getAllTestMatricesWithShape('c', rows, cols, 12345, DataType.DOUBLE);
         for (Pair<INDArray, String> p : list) {
             INDArray arr = p.getFirst().assign(testValues);
@@ -117,7 +117,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
         //From a 3d array:
         int dim2 = 5;
         log.info("AF");
-        testValues = Nd4j.linspace(1, rows * cols * dim2, rows * cols * dim2).reshape('c', rows, cols, dim2);
+        testValues = Nd4j.linspace(1, rows * cols * dim2, rows * cols * dim2, DataType.DOUBLE).reshape('c', rows, cols, dim2);
         list = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{rows, cols, dim2}, DataType.DOUBLE);
         for (Pair<INDArray, String> p : list) {
             INDArray arr = p.getFirst().assign(testValues);
@@ -158,7 +158,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
         int rows = 3;
         int cols = 4;
         int dim2 = 5;
-        INDArray testValues = Nd4j.linspace(1, rows * cols * dim2, rows * cols * dim2).reshape('c', rows, cols, dim2);
+        INDArray testValues = Nd4j.linspace(1, rows * cols * dim2, rows * cols * dim2, DataType.DOUBLE).reshape('c', rows, cols, dim2);
         List<Pair<INDArray, String>> list = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{rows, cols, dim2}, DataType.DOUBLE);
         for (Pair<INDArray, String> p : list) {
             INDArray arr = p.getFirst().assign(testValues);
@@ -256,9 +256,9 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
 
     @Test
     public void testTadKnownValues() {
-        int[] shape = {2, 3, 4};
+        long[] shape = {2, 3, 4};
 
-        INDArray arr = Nd4j.create(shape);
+        INDArray arr = Nd4j.create(DataType.DOUBLE, shape);
         for (int i = 0; i < shape[0]; i++) {
             for (int j = 0; j < shape[1]; j++) {
                 for (int k = 0; k < shape[2]; k++) {
