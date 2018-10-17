@@ -532,7 +532,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
             throw new RuntimeException("Error listing paths in directory", e);
         }
 
-        JavaRDD<DataSet> rdd = paths.map(new LoadDataSetFunction(new SerializedDataSetLoader(), new RemoteFileSourceFactory()));
+        JavaRDD<DataSet> rdd = paths.map(new LoadDataSetFunction(loader, new RemoteFileSourceFactory()));
         return doEvaluation(rdd, batchSize, new Evaluation())[0];
     }
 

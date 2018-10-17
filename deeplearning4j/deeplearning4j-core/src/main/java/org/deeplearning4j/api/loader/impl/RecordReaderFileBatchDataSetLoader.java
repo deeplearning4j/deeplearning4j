@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.api.loader.impl;
 
-import org.datavec.api.io.converters.SelfWritableConverter;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.filebatch.FileBatchRecordReader;
 import org.deeplearning4j.api.loader.DataSetLoader;
