@@ -179,7 +179,7 @@ public class SparkDataUtils {
      * @see org.datavec.api.records.reader.impl.filebatch.FileBatchRecordReader FileBatchRecordReader for local training on these files, if required
      * @see org.datavec.api.records.reader.impl.filebatch.FileBatchSequenceRecordReader for local training on these files, if required
      */
-    public void createFileBatchesSpark(JavaRDD<String> filePaths, final String rootOutputDir, final int batchSize, JavaSparkContext sc) {
+    public static void createFileBatchesSpark(JavaRDD<String> filePaths, final String rootOutputDir, final int batchSize, JavaSparkContext sc) {
 
         final org.apache.hadoop.conf.Configuration hadoopConfig = sc.hadoopConfiguration();
         //Here: assume input is images. We can't store them as Float32 arrays - that's too inefficient
