@@ -166,6 +166,9 @@ public class Variance extends BaseReduceOp {
 
     @Override
     public DataType resultType() {
+        if (this.x() != null && this.x().isR())
+            return this.x().dataType();
+
         return Nd4j.defaultFloatintPointType();
     }
 

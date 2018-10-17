@@ -143,17 +143,17 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray data = Nd4j.create(new double[] {4., 4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8., 4.,
                         4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8, 2., 2., 2., 2., 4., 4., 4., 4., 2.,
                         2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4.},
-                new int[] {2, 2, 4, 4});
+                new long[] {2, 2, 4, 4});
 
         INDArray actualResult = data.var(false, 0);
         INDArray expectedResult = Nd4j.create(new double[] {1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4.,
-                4., 1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4., 4.}, new int[] {2, 4, 4});
+                4., 1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4., 4.}, new long[] {2, 4, 4});
         assertEquals(getFailureMessage(), expectedResult, actualResult);
     }
 
     @Test
     public void testVar2() {
-        INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray var = arr.var(false, 0);
         assertEquals(Nd4j.create(new double[] {2.25, 2.25, 2.25}), var);
     }
@@ -177,11 +177,13 @@ public class Nd4jTest extends BaseNd4jTest {
 
                 final String message = "Expanding in Dimension " + i + "; Shape before expanding: " + Arrays.toString(shape) + " "+ordering+" Order; Shape after expanding: " + Arrays.toString(expanded.shape()) +  " "+expanded.ordering()+"; Input Created via: " + recreation;
 
+                val tmR = testMatrix.ravel();
+                val expR = expanded.ravel();
                 assertEquals(message, 1, expanded.shape()[i < 0 ? i + rank : i]);
-                assertEquals(message, testMatrix.ravel(), expanded.ravel());
+                assertEquals(message, tmR, expR);
                 assertEquals(message, ordering,  expanded.ordering());
 
-                testMatrix.assign(Nd4j.rand(shape));
+                testMatrix.assign(Nd4j.rand(DataType.DOUBLE, shape));
                 assertEquals(message, testMatrix.ravel(), expanded.ravel());
             }
         }

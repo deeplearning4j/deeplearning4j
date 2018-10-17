@@ -2797,6 +2797,12 @@ public class Nd4j {
         return rand(ret);
     }
 
+    public static INDArray rand(DataType dataType, long[] shape) {
+        INDArray ret = createUninitialized(dataType, shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
+        logCreationIfNecessary(ret);
+        return rand(ret);
+    }
+
     /**
      * Create a random ndarray with the given shape and array order
      *
