@@ -16,8 +16,9 @@
 
 package org.deeplearning4j.api.loader.impl;
 
+import org.datavec.api.io.converters.SelfWritableConverter;
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.impl.FileBatchRecordReader;
+import org.datavec.api.records.reader.impl.filebatch.FileBatchRecordReader;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.nd4j.api.loader.FileBatch;
@@ -27,7 +28,11 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
 import java.io.IOException;
 
-
+/**
+ * A dataset loader for use with FileBatch objects.
+ * The API (constructor arguments) mirrors {@link RecordReaderDataSetIterator} which it uses internally.
+ * Can be used in the context of Spark - see SparkDataUtils methods for this purpose
+ */
 public class RecordReaderFileBatchDataSetLoader implements DataSetLoader {
     private final RecordReader recordReader;
     private final int batchSize;
@@ -37,10 +42,45 @@ public class RecordReaderFileBatchDataSetLoader implements DataSetLoader {
     private final boolean regression;
     private DataSetPreProcessor preProcessor;
 
-    public RecordReaderFileBatchDataSetLoader(RecordReader recordReader, int batchSize, int labelIndex, int numClasses){
+    /**
+     * Main constructor for classification. This will convert the input class index (at position labelIndex, with integer
+     * values 0 to numPossibleLabels-1 inclusive) to the appropriate one-hot output/labels representation.
+     *
+     * @param recordReader RecordReader: provides the source of the data
+     * @param batchSize    Batch size (number of examples) for the output DataSet objects
+     * @param labelIndex   Index of the label Writable (usually an IntWritable), as obtained by recordReader.next()
+     * @param numClasses   Number of classes (possible labels) for classification
+     */
+    public RecordReaderFileBatchDataSetLoader(RecordReader recordReader, int batchSize, int labelIndex, int numClasses) {
         this(recordReader, batchSize, labelIndex, labelIndex, numClasses, false, null);
     }
 
+    /**
+     * Main constructor for multi-label regression (i.e., regression with multiple outputs). Can also be used for single
+     * output regression with labelIndexFrom == labelIndexTo
+     *
+     * @param recordReader      RecordReader to get data from
+     * @param labelIndexFrom    Index of the first regression target
+     * @param labelIndexTo      Index of the last regression target, inclusive
+     * @param batchSize         Minibatch size
+     * @param regression        Require regression = true. Mainly included to avoid clashing with other constructors previously defined :/
+     */
+    public RecordReaderFileBatchDataSetLoader(RecordReader recordReader, int batchSize, int labelIndexFrom, int labelIndexTo,
+                                       boolean regression) {
+        this(recordReader, batchSize, labelIndexFrom, labelIndexTo, -1, regression, null);
+    }
+
+    /**
+     * Main constructor
+     *
+     * @param recordReader      the recordreader to use
+     * @param batchSize         Minibatch size - number of examples returned for each call of .next()
+     * @param labelIndexFrom    the index of the label (for classification), or the first index of the labels for multi-output regression
+     * @param labelIndexTo      only used if regression == true. The last index <i>inclusive</i> of the multi-output regression
+     * @param numPossibleLabels the number of possible labels for classification. Not used if regression == true
+     * @param regression        if true: regression. If false: classification (assume labelIndexFrom is the class it belongs to)
+     * @param preProcessor      Optional DataSetPreProcessor. May be null.
+     */
     public RecordReaderFileBatchDataSetLoader(RecordReader recordReader, int batchSize, int labelIndexFrom, int labelIndexTo,
                                               int numPossibleLabels, boolean regression, DataSetPreProcessor preProcessor) {
         this.recordReader = recordReader;
@@ -61,7 +101,7 @@ public class RecordReaderFileBatchDataSetLoader implements DataSetLoader {
         //Return dataset
         RecordReader rr = new FileBatchRecordReader(recordReader, fb);
         RecordReaderDataSetIterator iter = new RecordReaderDataSetIterator(rr, null, batchSize, labelIndexFrom, labelIndexTo, numPossibleLabels, -1, regression);
-        if(preProcessor != null){
+        if (preProcessor != null) {
             iter.setPreProcessor(preProcessor);
         }
         DataSet ds = iter.next();
