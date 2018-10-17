@@ -4478,7 +4478,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        INDArray ret = Nd4j.createUninitialized(shape, order);
+        INDArray ret = Nd4j.createUninitialized(this.dataType(), shape, order);
         if (order != ordering()) {
             ret.setData(dup(order).data());
         } else
