@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.convolution;
 
+import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1550,10 +1551,10 @@ public class ConvolutionTests extends BaseNd4jTest {
          */
 
 
-        INDArray in = Nd4j.create(1, 1, 3, 3);
-        in.get(point(0), point(0), all(), all()).assign(Nd4j.linspace(1, 9, 9, DataType.FLOAT).reshape('c', 3, 3));
+        INDArray in = Nd4j.create(DataType.DOUBLE, new long[]{1, 1, 3, 3});
+        in.get(point(0), point(0), all(), all()).assign(Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3));
 
-        INDArray out = Nd4j.create(1, 1, 2, 2, 2, 1);    //minibatch, depth, kH, kW, outH, outW
+        INDArray out = Nd4j.create(DataType.DOUBLE, new long[]{1, 1, 2, 2, 2, 1});    //minibatch, depth, kH, kW, outH, outW
         Convolution.im2col(in, kH, kW, sH, sW, pH, pW, dH, dW, same, out);
 
         INDArray act0 = out.get(point(0), point(0), all(), all(), point(0), point(0));
@@ -1589,14 +1590,14 @@ public class ConvolutionTests extends BaseNd4jTest {
         for( char inputOrder : new char[]{'c', 'f'}) {
             for( char outputOrder : new char[]{'c', 'f'}) {
 
-                INDArray input = Nd4j.create(1, 1, 3, 3);
+                INDArray input = Nd4j.create(DataType.DOUBLE, new long[]{1, 1, 3, 3});
                 input.get(point(0), point(0), all(), all())
-                        .assign(Nd4j.linspace(1, 9, 9, DataType.FLOAT).reshape('c', 3, 3))
+                        .assign(Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3))
                         .dup(inputOrder);
 
                 input = input.dup('c');
 
-                INDArray input2 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9}, new int[]{1,1,3,3}, 'c');//.dup(inputOrder);
+                INDArray input2 = Nd4j.create(new double[]{1,2,3,4,5,6,7,8,9}, new long[]{1,1,3,3}, 'c');//.dup(inputOrder);
                 assertEquals(input, input2);
 
                 input = input2;
@@ -1628,13 +1629,13 @@ public class ConvolutionTests extends BaseNd4jTest {
                 DynamicCustomOp op1 = DynamicCustomOp.builder("avgpool2d")
                         .addIntegerArguments(new int[]{2, 2, 1, 1, 0, 0, 1, 1, 1, 0, 0})   //ky, kx, sH, sW, py, px, dy, dx, isSameMode, ???, divisor, nchw
                         .addInputs(input)
-                        .addOutputs(Nd4j.create(new int[]{1, 1, 3, 3}, outputOrder))
+                        .addOutputs(Nd4j.create(DataType.DOUBLE, new long[]{1, 1, 3, 3}, outputOrder))
                         .build();
 
                 DynamicCustomOp op2 = DynamicCustomOp.builder("avgpool2d")
                         .addIntegerArguments(new int[]{2, 2, 1, 1, 0, 0, 1, 1, 1, 1, 0})   //ky, kx, sH, sW, py, px, dy, dx, isSameMode, ???, divisor, nchw
                         .addInputs(input)
-                        .addOutputs(Nd4j.create(new int[]{1, 1, 3, 3}, outputOrder))
+                        .addOutputs(Nd4j.create(DataType.DOUBLE, new long[]{1, 1, 3, 3}, outputOrder))
                         .build();
 
                 Nd4j.getExecutioner().exec(op1);
@@ -1644,7 +1645,8 @@ public class ConvolutionTests extends BaseNd4jTest {
 
 
                 String msg = "inOrder=" + inputOrder + ", outOrder=" + outputOrder;
-                assertEquals(msg, expDl4j, actDl4j.get(point(0), point(0), all(), all()));
+                val vr = actDl4j.get(point(0), point(0), all(), all());
+                assertEquals(msg, expDl4j, vr);
                 assertEquals(msg, expEnabled, actEnabled.get(point(0), point(0), all(), all()));
             }
         }
