@@ -893,8 +893,10 @@ TEST_F(DeclarableOpsTests9, Test_AlphaDropout_BP_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, ress2->status());
     NDArray* res2 = ress2->at(0);
-    ASSERT_FALSE(res2->equalsTo(res));
-    //ress->at(0)->printIndexedBuffer("Result1AlphaBP");
+    //res->printIndexedBuffer("Result1AlphaBP1");
+    //res2->printIndexedBuffer("Result1AlphaBP2");
+    ASSERT_TRUE(res2->equalsTo(res));
+
 
     delete ress;
     delete ress2;
