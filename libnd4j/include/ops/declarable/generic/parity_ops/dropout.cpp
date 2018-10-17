@@ -84,14 +84,12 @@ CONFIGURABLE_OP_IMPL(dropout_bp, 2, 1, false, 1, 1) {
 
     return ND4J_STATUS_OK;
 }
-        DECLARE_TYPES(dropout_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, {ALL_FLOATS})
-                    ->setAllowedInputTypes(1, {ALL_FLOATS})
-                    ->setAllowedInputTypes(2, {ALL_INTS})
-                    ->setAllowedOutputTypes({ALL_FLOATS})
-                    ->setSameMode(true);
-        }
+
+DECLARE_TYPES(dropout_bp) {
+    getOpDescriptor()
+            ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
+            ->setAllowedOutputTypes({ALL_FLOATS});
+}
 
 //////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {

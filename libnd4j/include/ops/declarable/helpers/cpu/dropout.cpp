@@ -83,7 +83,7 @@ namespace helpers {
         
             *dropOutMultiplier += *chunk;
         
-            input->applyPairwiseTransform(pairwise::Multiply, dropOutMultiplier.get(), output, nullptr);
+             output->assign(*input * *dropOutMultiplier); //input->applyPairwiseTransform(pairwise::Multiply, dropOutMultiplier.get(), output, nullptr);
         }
 
         return Status::OK();

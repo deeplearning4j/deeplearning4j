@@ -285,7 +285,7 @@ TEST_F(DeclarableOpsTests6, Test_CumSum_Exclusive_Reverse_2_1) {
 TEST_F(DeclarableOpsTests6, TestDropout_1) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
-    auto shape = NDArrayFactory::create<double>({2.f, 2.f});
+    auto shape = NDArrayFactory::create<Nd4jLong>({2, 2});
     nd4j::ops::dropout op;
 
     auto ress = op.execute({&x, &shape}, {0.2f}, {113}, false, nd4j::DataType::DOUBLE);
@@ -318,7 +318,7 @@ TEST_F(DeclarableOpsTests6, TestDropout_3) {
 //    auto x0 = NDArrayFactory::create<double>('c', {10, 10});
 //    auto x1 = NDArrayFactory::create<double>('c', {10, 10});
     auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
-    auto shape = NDArrayFactory::create<double>({1.f, 2.f});
+    auto shape = NDArrayFactory::create<int>({1, 2});
 
     nd4j::ops::dropout op;
 
