@@ -458,6 +458,10 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
             nd4j_printf("applyTriplewiseLambda requires three operands to be valid NDArrays, but Third is NULL\n","");
             throw std::runtime_error("third is null");
         }
+        if(_dataType != DataTypeUtils::fromT<T>())
+            throw std::runtime_error("NDArray::applyTriplewiseLambda<T> method: wrong template parameter T, its type should be the same as type of this array!");
+        if(_dataType != second->_dataType || _dataType != third->_dataType || _dataType != target->_dataType)
+            throw std::runtime_error("NDArray::applyTriplewiseLambda<T> method: bother four arrays (this, second, third, target) should have the same type !");
 
         if (this->lengthOf() != second->lengthOf() || this->lengthOf() != third->lengthOf() || !this->isSameShape(second) || !this->isSameShape(third)) {
             nd4j_printf("applyPairwiseLambda requires both operands to have the same shape\n","");
@@ -686,7 +690,10 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
             nd4j_printf("applyIndexedPairwiseLambda requires both operands to be valid NDArrays, but Y is NULL\n","");
             throw std::runtime_error("Other is null");
         }
-
+        if(_dataType != DataTypeUtils::fromT<T>())
+            throw std::runtime_error("NDArray::applyIndexedPairwiseLambda<T> method: wrong template parameter T, its type should be the same as type of this array!");
+        if(_dataType != target->_dataType)
+            throw std::runtime_error("NDArray::applyIndexedPairwiseLambda<T> method: types of this and target array should match !");
         if (this->lengthOf() != other->lengthOf()) {
             nd4j_printf("applyIndexedPairwiseLambda requires both operands to have the same shape\n","");
             throw std::runtime_error("Shapes mismach");

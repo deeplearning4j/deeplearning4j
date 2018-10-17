@@ -1355,13 +1355,11 @@ TEST_F(MultiDataTypeTests, ndarray_applyPairwiseLambda_test1) {
     NDArray other3('c', {2,2}, {0, -1, -2, -3}, nd4j::DataType::INT64);
     NDArray other4('c', {2,2}, {1, 0, 0.1, 0}, nd4j::DataType::BOOL);
     
-    const float item1  = 0.1;
-    const double item2 = 0.1;
-    auto func1 = [=](float elem1, float elem2) { return elem1 + elem2; };
-    auto func2 = [=](int elem1, float elem2) { return elem1 + elem2; };
-    auto func3 = [=](int elem1, double elem2) { return elem1 + elem2; };
-    auto func4 = [=](double elem1, float elem2) { return elem1 + elem2; };
-    auto func5 = [=](float elem1, int elem2) { return elem1 - elem2; };
+    auto func1 = [](float elem1, float elem2) { return elem1 + elem2; };
+    auto func2 = [](int elem1, float elem2) { return elem1 + elem2; };
+    auto func3 = [](int elem1, double elem2) { return elem1 + elem2; };
+    auto func4 = [](double elem1, float elem2) { return elem1 + elem2; };
+    auto func5 = [](float elem1, int elem2) { return elem1 - elem2; };
     
     NDArray exp1('c', {2,2}, {0.1, 1.1, 2.1, 3.1}, nd4j::DataType::DOUBLE);
     NDArray exp2('c', {2,2}, {0, 0, 0, 0}, nd4j::DataType::INT64);
@@ -1386,4 +1384,86 @@ TEST_F(MultiDataTypeTests, ndarray_applyPairwiseLambda_test1) {
 
     x6.applyPairwiseLambda<bool>(&other4, func5, &x7);    
     ASSERT_EQ(x7, exp5);    
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyIndexedPairwiseLambda_test1) {
+            
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::DOUBLE);
+    NDArray x2('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray x3('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
+    NDArray x4('c', {2,2}, nd4j::DataType::DOUBLE);
+    NDArray x5('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
+    NDArray x6('c', {2,2}, {0.1, -1, -1,  0.1}, nd4j::DataType::BOOL);
+    NDArray x7('c', {2,2}, nd4j::DataType::BOOL);
+    NDArray other1('c', {2,2}, {0.1, 0.1, 0.1, 0.1}, nd4j::DataType::FLOAT32);
+    NDArray other2('c', {2,2}, {0.1, 0.1, 0.1, 0.1}, nd4j::DataType::DOUBLE);
+    NDArray other3('c', {2,2}, {0, -1, -2, -3}, nd4j::DataType::INT64);
+    NDArray other4('c', {2,2}, {1, 0, 0.1, 0}, nd4j::DataType::BOOL);
+    
+    auto func1 = [](Nd4jLong idx, float elem1, float elem2) { return elem1 + elem2 + idx; };
+    auto func2 = [](Nd4jLong idx, int elem1, float elem2) { return elem1 + elem2 + idx; };
+    auto func3 = [](Nd4jLong idx, int elem1, double elem2) { return elem1 + elem2 + idx; };
+    auto func4 = [](Nd4jLong idx, double elem1, float elem2) { return elem1 + elem2 + idx; };
+    auto func5 = [](Nd4jLong idx, float elem1, int elem2) { return elem1 - elem2 + idx; };
+    
+    NDArray exp1('c', {2,2}, {0.1, 2.1, 4.1, 6.1}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray exp3('c', {2,2}, {0.1, 2.1, 4.1, 6.1}, nd4j::DataType::FLOAT32);
+    NDArray exp4('c', {2,2}, {0.1, 2.6, 4.6, 6.6}, nd4j::DataType::FLOAT32);
+    NDArray exp5('c', {2,2}, {0, 1, 1, 1}, nd4j::DataType::BOOL);    
+    
+    x1.applyIndexedPairwiseLambda<double>(&other2, func1, &x4);
+    ASSERT_EQ(x4, exp1);
+
+    x2.applyIndexedPairwiseLambda<Nd4jLong>(&other3, func1);
+    ASSERT_EQ(x2, exp2);
+
+    x2.applyIndexedPairwiseLambda<Nd4jLong>(&other3, func2);
+    ASSERT_EQ(x2, exp2);
+
+    x3.applyIndexedPairwiseLambda<float>(&other1, func3);
+    ASSERT_EQ(x3, exp3);
+
+    x5.applyIndexedPairwiseLambda<float>(&other1, func4);
+    ASSERT_EQ(x5, exp4);
+
+    x6.applyIndexedPairwiseLambda<bool>(&other4, func5, &x7);    
+    ASSERT_EQ(x7, exp5);    
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyTriplewiseLambda_test1) {
+
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::DOUBLE);
+    NDArray x2('c', {2,2}, {0, -1, -2, -3}, nd4j::DataType::DOUBLE);
+    NDArray x3('c', {2,2}, {0, -1.5, -2.5, -3.5}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {2,2}, nd4j::DataType::DOUBLE);
+
+    NDArray x5('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT32);
+    NDArray x6('c', {2,2}, {0, -1, -2, -3}, nd4j::DataType::INT32);
+    NDArray x7('c', {2,2}, {0, 10, 20, 30}, nd4j::DataType::INT32);
+
+    NDArray x8('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray x9('c', {2,2}, {1, 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray x10('c', {2,2}, {0, 0, 0, 0}, nd4j::DataType::BOOL);
+    
+    auto func1 = [](double elem1, float elem2, int elem3) { return elem1 + elem2 + elem3; };
+    auto func2 = [](float elem1, float elem2, float elem3) { return elem1 + elem2 + elem3; };
+    auto func3 = [](int elem1, int elem2, int elem3) { return elem1 + elem2 + elem3; };
+    auto func4 = [](bool elem1, bool elem2, bool elem3) { return elem1 + elem2 + elem3; };
+    
+    NDArray exp('c', {2,2}, {1, 1, 0, 1}, nd4j::DataType::BOOL);    
+    
+    x1.applyTriplewiseLambda<double>(&x2, &x3, func1, &x4);
+    ASSERT_EQ(x4, x2);
+
+    x1.applyTriplewiseLambda<double>(&x2, &x3, func2);
+    ASSERT_EQ(x1, x3);
+
+    x5.applyTriplewiseLambda<int>(&x6, &x7, func3);
+    ASSERT_EQ(x5, x7);
+
+    x8.applyTriplewiseLambda<bool>(&x9, &x10, func4);
+    ASSERT_EQ(x8, exp);    
 }
