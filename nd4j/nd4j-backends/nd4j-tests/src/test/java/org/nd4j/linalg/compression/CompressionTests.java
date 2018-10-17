@@ -219,7 +219,7 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testGzipCompression1() {
-        INDArray array = Nd4j.linspace(1, 10000, 20000);
+        INDArray array = Nd4j.linspace(1, 10000, 20000, DataType.FLOAT);
         INDArray exp = array.dup();
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("GZIP");
@@ -236,9 +236,9 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testNoOpCompression1() {
-        INDArray array = Nd4j.linspace(1, 10000, 20000);
-        INDArray exp = Nd4j.linspace(1, 10000, 20000);
-        INDArray mps = Nd4j.linspace(1, 10000, 20000);
+        INDArray array = Nd4j.linspace(1, 10000, 20000, DataType.FLOAT);
+        INDArray exp = Nd4j.linspace(1, 10000, 20000, DataType.FLOAT);
+        INDArray mps = Nd4j.linspace(1, 10000, 20000, DataType.FLOAT);
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("NOOP");
 

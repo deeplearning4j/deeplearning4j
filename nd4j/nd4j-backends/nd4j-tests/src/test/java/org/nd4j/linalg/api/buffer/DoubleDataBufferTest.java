@@ -166,7 +166,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testGetRange() throws Exception {
-        DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
+        DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
         double[] get = buffer.getDoublesAt(0, 3);
         double[] data = new double[] {1, 2, 3};
         assertArrayEquals(get, data, 1e-1f);
@@ -181,7 +181,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testGetOffsetRange() throws Exception {
-        DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
+        DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
         double[] get = buffer.getDoublesAt(1, 3);
         double[] data = new double[] {2, 3, 4};
         assertArrayEquals(get, data, 1e-1f);

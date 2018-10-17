@@ -62,7 +62,7 @@ public class ByteOrderTests  extends BaseNd4jTest {
 
     @Test
     public void testByteArrayOrder2() {
-        val original = Nd4j.linspace(1, 25, 25).reshape(5, 5);
+        val original = Nd4j.linspace(1, 25, 25, DataType.FLOAT).reshape(5, 5);
         val bufferBuilder = new FlatBufferBuilder(0);
 
         int array = original.toFlatArray(bufferBuilder);
@@ -78,7 +78,7 @@ public class ByteOrderTests  extends BaseNd4jTest {
 
     @Test
     public void testByteArrayOrder3() {
-        val original = Nd4j.linspace(1, 25, 25).reshape('f', 5, 5);
+        val original = Nd4j.linspace(1, 25, 25, DataType.FLOAT).reshape('f', 5, 5);
         val bufferBuilder = new FlatBufferBuilder(0);
 
         int array = original.toFlatArray(bufferBuilder);

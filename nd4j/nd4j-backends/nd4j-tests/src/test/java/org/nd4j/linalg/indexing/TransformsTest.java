@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -184,7 +185,7 @@ public class TransformsTest extends BaseNd4jTest {
 
     @Test
     public void testSlice_1() {
-        val arr = Nd4j.linspace(1,4, 4).reshape(2, 2, 1);
+        val arr = Nd4j.linspace(1,4, 4, DataType.FLOAT).reshape(2, 2, 1);
         val exp0 = Nd4j.create(new float[]{1, 2}, new int[] {2, 1});
         val exp1 = Nd4j.create(new float[]{3, 4}, new int[] {2, 1});
 

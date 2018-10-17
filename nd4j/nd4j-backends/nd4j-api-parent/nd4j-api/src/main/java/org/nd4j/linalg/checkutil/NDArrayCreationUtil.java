@@ -557,7 +557,7 @@ public class NDArrayCreationUtil {
 
 
 
-    public static List<Pair<INDArray, String>> getAll5dTestArraysWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> getAll5dTestArraysWithShape(int seed, int[] shape, DataType dataType) {
         if (shape.length != 5)
             throw new IllegalArgumentException("Shape is not length 5");
 
@@ -573,21 +573,21 @@ public class NDArrayCreationUtil {
         list.add(new Pair<>(stdF, baseMsg + "1)/Nd4j.rand(" + Arrays.toString(shape) + ",'f')"));
 
         //Various sub arrays:
-        list.addAll(get5dSubArraysWithShape(seed, shape));
+        list.addAll(get5dSubArraysWithShape(seed, shape, dataType));
 
         //TAD
-        list.addAll(get5dTensorAlongDimensionWithShape(seed, shape));
+        list.addAll(get5dTensorAlongDimensionWithShape(seed, shape, dataType));
 
         //Permuted
-        list.addAll(get5dPermutedWithShape(seed, shape));
+        list.addAll(get5dPermutedWithShape(seed, shape, dataType));
 
         //Reshaped
-        list.addAll(get5dReshapedWithShape(seed, shape));
+        list.addAll(get5dReshapedWithShape(seed, shape, dataType));
 
         return list;
     }
 
-    public static List<Pair<INDArray, String>> get5dSubArraysWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> get5dSubArraysWithShape(int seed, int[] shape, DataType dataType) {
         List<Pair<INDArray, String>> list = new ArrayList<>();
         String baseMsg = "get5dSubArraysWithShape(" + seed + "," + Arrays.toString(shape) + ")";
         //Create and return various sub arrays:
@@ -642,7 +642,7 @@ public class NDArrayCreationUtil {
         return list;
     }
 
-    public static List<Pair<INDArray, String>> get5dTensorAlongDimensionWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> get5dTensorAlongDimensionWithShape(int seed, int[] shape, DataType dataType) {
         List<Pair<INDArray, String>> list = new ArrayList<>();
         String baseMsg = "get5dTensorAlongDimensionWithShape(" + seed + "," + Arrays.toString(shape) + ")";
 
@@ -676,7 +676,7 @@ public class NDArrayCreationUtil {
         return list;
     }
 
-    public static List<Pair<INDArray, String>> get5dPermutedWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> get5dPermutedWithShape(int seed, int[] shape, DataType dataType) {
         Nd4j.getRandom().setSeed(seed);
         int[] createdShape = {shape[1], shape[4], shape[3], shape[2], shape[0]};
         INDArray arr = Nd4j.rand(createdShape);
@@ -685,7 +685,7 @@ public class NDArrayCreationUtil {
                         "get5dPermutedWithShape(" + seed + "," + Arrays.toString(shape) + ").get(0)"));
     }
 
-    public static List<Pair<INDArray, String>> get5dReshapedWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> get5dReshapedWithShape(int seed, int[] shape, DataType dataType) {
         Nd4j.getRandom().setSeed(seed);
         int[] shape2d = {shape[0] * shape[2], shape[4], shape[1] * shape[3]};
         INDArray array3d = Nd4j.rand(shape2d);
@@ -696,7 +696,7 @@ public class NDArrayCreationUtil {
 
 
 
-    public static List<Pair<INDArray, String>> getAll6dTestArraysWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> getAll6dTestArraysWithShape(int seed, int[] shape, DataType dataType) {
         if (shape.length != 6)
             throw new IllegalArgumentException("Shape is not length 6");
 
@@ -712,18 +712,18 @@ public class NDArrayCreationUtil {
         list.add(new Pair<>(stdF, baseMsg + "1)/Nd4j.rand(" + Arrays.toString(shape) + ",'f')"));
 
         //Various sub arrays:
-        list.addAll(get6dSubArraysWithShape(seed, shape));
+        list.addAll(get6dSubArraysWithShape(seed, shape, dataType));
 
         //Permuted
-        list.addAll(get6dPermutedWithShape(seed, shape));
+        list.addAll(get6dPermutedWithShape(seed, shape, dataType));
 
         //Reshaped
-        list.addAll(get6dReshapedWithShape(seed, shape));
+        list.addAll(get6dReshapedWithShape(seed, shape, dataType));
 
         return list;
     }
 
-    public static List<Pair<INDArray, String>> get6dSubArraysWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> get6dSubArraysWithShape(int seed, int[] shape, DataType dataType) {
         List<Pair<INDArray, String>> list = new ArrayList<>();
         String baseMsg = "get6dSubArraysWithShape(" + seed + "," + Arrays.toString(shape) + ")";
         //Create and return various sub arrays:
@@ -786,7 +786,7 @@ public class NDArrayCreationUtil {
         return list;
     }
 
-    public static List<Pair<INDArray, String>> get6dPermutedWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> get6dPermutedWithShape(int seed, int[] shape, DataType dataType) {
         Nd4j.getRandom().setSeed(seed);
         int[] createdShape = {shape[1], shape[4], shape[5], shape[3], shape[2], shape[0]};
         INDArray arr = Nd4j.rand(createdShape);
@@ -795,7 +795,7 @@ public class NDArrayCreationUtil {
                         "get6dPermutedWithShape(" + seed + "," + Arrays.toString(shape) + ").get(0)"));
     }
 
-    public static List<Pair<INDArray, String>> get6dReshapedWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> get6dReshapedWithShape(int seed, int[] shape, DataType dataType) {
         Nd4j.getRandom().setSeed(seed);
         int[] shape3d = {shape[0] * shape[2], shape[4] * shape[5], shape[1] * shape[3]};
         INDArray array3d = Nd4j.rand(shape3d);

@@ -124,8 +124,7 @@ public class ConversionTests extends BaseNd4jTest {
 
     @Test
     public void testConvDouble_1(){
-        Nd4j.setDataType(DataType.DOUBLE);
-        val exp = Nd4j.linspace(-5, 5, 11);
+        val exp = Nd4j.linspace(-5, 5, 11, DataType.DOUBLE);
 
         DataType[] types = null;
         if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA) {
@@ -135,12 +134,9 @@ public class ConversionTests extends BaseNd4jTest {
         }
 
         for(val t : types) {
-            Nd4j.setDataType(t);
-
-            val arr = Nd4j.linspace(-5, 5, 11);
+            val arr = Nd4j.linspace(-5, 5, 11, t);
             val arr2 = arr.convertToDoubles();
 
-            Nd4j.setDataType(DataType.DOUBLE);
             assertEquals("Fail with dtype [" + t + "]", exp, arr2);
         }
     }
@@ -148,7 +144,7 @@ public class ConversionTests extends BaseNd4jTest {
     @Test
     public void testConvFloat_1(){
         Nd4j.setDataType(DataType.FLOAT);
-        val exp = Nd4j.linspace(-5, 5, 11);
+        val exp = Nd4j.linspace(-5, 5, 11, DataType.FLOAT);
 
         DataType[] types = null;
         if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA) {
@@ -158,9 +154,7 @@ public class ConversionTests extends BaseNd4jTest {
         }
 
         for(val t : types) {
-            Nd4j.setDataType(t);
-
-            val arr = Nd4j.linspace(-5, 5, 11);
+            val arr = Nd4j.linspace(-5, 5, 11, t);
             val arr2 = arr.convertToFloats();
 
             Nd4j.setDataType(DataType.FLOAT);

@@ -1306,13 +1306,14 @@ public class ConvolutionTests extends BaseNd4jTest {
         int outSize = Convolution.outSize(2, 1, 1, 2, 1, false);
         assertEquals(6, outSize);
     }
-
+/*
     @Test
     public void testIm2Col() {
-        INDArray linspaced = Nd4j.linspace(1, 16, 16).reshape(2, 2, 2, 2);
+        INDArray linspaced = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
         INDArray ret = Convolution.im2col(linspaced, 1, 1, 1, 1, 2, 2, 0, false);
         System.out.println(ret);
     }
+    */
 
 
 
@@ -1489,7 +1490,7 @@ public class ConvolutionTests extends BaseNd4jTest {
         int sx = 1;
         int ph = 1;
         int pw = 1;
-        INDArray linspaced = Nd4j.linspace(1, 64, 64).reshape(2, 2, 2, 2, 2, 2);
+        INDArray linspaced = Nd4j.linspace(1, 64, 64, DataType.DOUBLE).reshape(2, 2, 2, 2, 2, 2);
         INDArray newTest = Convolution.col2im(linspaced, sy, sx, ph, pw, 2, 2);
         INDArray assertion = OldConvolution.col2im(linspaced, sy, sx, ph, pw, 2, 2);
 
@@ -1511,7 +1512,7 @@ public class ConvolutionTests extends BaseNd4jTest {
         int[] padding = {1, 2};
         int prod = nEx * depth * width * height;
 
-        INDArray in = Nd4j.linspace(1, prod, prod).reshape(nEx, depth, width, height);
+        INDArray in = Nd4j.linspace(1, prod, prod, DataType.DOUBLE).reshape(nEx, depth, width, height);
 
         INDArray assertim2col = OldConvolution.im2col(in, kernel, stride, padding);
         INDArray im2col = Convolution.im2col(in, kernel, stride, padding);
@@ -1550,7 +1551,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
 
         INDArray in = Nd4j.create(1, 1, 3, 3);
-        in.get(point(0), point(0), all(), all()).assign(Nd4j.linspace(1, 9, 9).reshape('c', 3, 3));
+        in.get(point(0), point(0), all(), all()).assign(Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3));
 
         INDArray out = Nd4j.create(1, 1, 2, 2, 2, 1);    //minibatch, depth, kH, kW, outH, outW
         Convolution.im2col(in, kH, kW, sH, sW, pH, pW, dH, dW, same, out);
@@ -1590,7 +1591,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
                 INDArray input = Nd4j.create(1, 1, 3, 3);
                 input.get(point(0), point(0), all(), all())
-                        .assign(Nd4j.linspace(1, 9, 9).reshape('c', 3, 3))
+                        .assign(Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3))
                         .dup(inputOrder);
 
                 input = input.dup('c');
@@ -1655,7 +1656,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{6.f, 7.f, 10.f, 11.f, 22.f, 23.f, 26.f, 27.f, 38.f, 39.f, 42.f, 43.f, 54.f, 55.f, 58.f, 59.f}, new int[]{2, 2, 2, 2}, 'c');
 
             int len = 2 * 4 * 4 * 2;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 2, 4, 4, 2);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 2, 4, 4, 2);
 
             DynamicCustomOp op = DynamicCustomOp.builder("avgpool2d")
                     .addIntegerArguments(new int[]{2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1})        //ky, kx, sH, sW, py, px, dy, dx, isSameMode, ???, divisor, nchw
@@ -1717,7 +1718,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{6.f, 7.f,  10.f,  11.f,  22.f,  23.f,  26.f,  27.f,  38.f,  39.f,  42.f,  43.f,  54.f,  55.f,  58.f, 59.f}, new int[]{2, 2, 2, 2}, 'c');
 
             int len = 2 * 4 * 4 * 2;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 2, 4, 4, 2);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 2, 4, 4, 2);
 
             DynamicCustomOp op = DynamicCustomOp.builder("avgpool2d")
                     .addIntegerArguments(new int[]{2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 1})
@@ -1739,7 +1740,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{11.f,  12.f,  15.f,  16.f,  27.f,  28.f,  31.f,  32.f,  43.f,  44.f,  47.f,  48.f,  59.f,  60.f,  63.f, 64.f}, new int[]{2, 2, 2, 2}, 'c');
 
             int len = 2 * 4 * 4 * 2;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 2, 4, 4, 2);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 2, 4, 4, 2);
 
             DynamicCustomOp op = DynamicCustomOp.builder("maxpool2d")
                     .addIntegerArguments(new int[]{2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1})
@@ -1762,7 +1763,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{11.f,  12.f,  15.f,  16.f,  27.f,  28.f,  31.f,  32.f,  43.f,  44.f,  47.f,  48.f,  59.f,  60.f,  63.f, 64.f}, new int[]{2, 2, 2, 2}, 'c');
 
             int len = 2 * 4 * 4 * 2;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 2, 4, 4, 2);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 2, 4, 4, 2);
 
             DynamicCustomOp op = DynamicCustomOp.builder("maxpool2d")
                     .addIntegerArguments(new int[]{2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 1})
@@ -1785,7 +1786,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{7.f,    8.f,   11.f,   12.f,   14.f,   15.f,   27.f,   28.f,   31.f,   32.f,   34.f,   35.f, 42.f,   43.f,   46.f,   47.f,   49.f,   50.f,   57.f,   58.f,   61.f,   62.f,   64.f,   65.f, 77.f,   78.f,   81.f,   82.f,   84.f,   85.f,   92.f,   93.f,   96.f,   97.f,   99.f,  100.f}, new int[]{2, 3, 3, 2}, 'c');
 
             int len = 2 * 5 * 5 * 2;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 2, 5, 5, 2);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 2, 5, 5, 2);
 
             DynamicCustomOp op = DynamicCustomOp.builder("avgpool2d")
                     .addIntegerArguments(new int[]{2, 2, 2, 2, 0, 0, 1, 1, 1, 0, 1})
@@ -1808,7 +1809,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{7.f,   8.f,  11.f,  12.f,  27.f,  28.f,  31.f,  32.f,  57.f,  58.f,  61.f,  62.f,  77.f,  78.f,  81.f, 82.f}, new int[]{2, 2, 2, 2}, 'c');
 
             int len = 2 * 5 * 5 * 2;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 2, 5, 5, 2);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 2, 5, 5, 2);
 
             DynamicCustomOp op = DynamicCustomOp.builder("avgpool2d")
                     .addIntegerArguments(new int[]{2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 1})
@@ -1831,7 +1832,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{7.f, 9.f, 17.f, 19.f, 32.f, 34.f, 42.f, 44.f, 57.f, 59.f, 67.f, 69.f, 82.f, 84.f, 92.f, 94.f}, new int[]{2, 2, 2, 2}, 'c');
 
             int len = 2 * 2 * 5 * 5;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 2, 2, 5, 5);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 2, 2, 5, 5);
 
             DynamicCustomOp op = DynamicCustomOp.builder("maxpool2d")
                     .addIntegerArguments(new int[]{2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 0})
@@ -1853,7 +1854,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{1.f, 2.5f, 4.5f, 8.5f, 10.f, 12.f, 18.5f, 20.f, 22.f, 26.f, 27.5f, 29.5f, 33.5f, 35.f, 37.f, 43.5f, 45.f, 47.f,  51.f, 52.5f, 54.5f,  58.5f, 60.f, 62.f, 68.5f, 70.f, 72.f,  76.f, 77.5f, 79.5f, 83.5f, 85.f, 87.f,  93.5f, 95.f, 97.f}, new int[]{2, 2, 3, 3}, 'c');
 
             int len = 2 * 2 * 5 * 5;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 2, 2, 5, 5);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 2, 2, 5, 5);
 
             DynamicCustomOp op = DynamicCustomOp.builder("avgpool2d")
                     .addIntegerArguments(new int[]{2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0})
@@ -1875,7 +1876,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{0.25f, 1.25f, 2.25f,  4.25f, 10.f, 12.f, 9.25f, 20.f, 22.f, 6.5f, 13.75f, 14.75f, 16.75f, 35.f, 37.f,  21.75f, 45.f, 47.f,  12.75f, 26.25f, 27.25f,  29.25f, 60.f, 62.f, 34.25f, 70.f, 72.f, 19.f, 38.75f, 39.75f, 41.75f, 85.f, 87.f, 46.75f, 95.f, 97.f}, new int[]{2, 2, 3, 3}, 'c');
 
             int len = 2 * 2 * 5 * 5;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 2, 2, 5, 5);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 2, 2, 5, 5);
 
             DynamicCustomOp op = DynamicCustomOp.builder("avgpool2d")
                     .addIntegerArguments(new int[]{2, 2, 2, 2, 1, 1, 1, 1, 0, 1, 0})
@@ -1897,7 +1898,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{4.f, 6.f, 7.5f, 14.f, 16.f, 17.5f,  21.5f, 23.5f, 25.f, 29.f, 31.f, 32.5f, 39.f, 41.f, 42.5f, 46.5f, 48.5f, 50.f, 54.f, 56.f, 57.5f,  64.f, 66.f, 67.5f, 71.5f, 73.5f, 75.f, 79.f, 81.f, 82.5f, 89.f, 91.f, 92.5f,  96.5f, 98.5f, 100.f}, new int[]{2, 2, 3, 3}, 'c');
 
             int len = 2 * 2 * 5 * 5;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 2, 2, 5, 5);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 2, 2, 5, 5);
 
             DynamicCustomOp op = DynamicCustomOp.builder("avgpool2d")
                     .addIntegerArguments(new int[]{2, 2, 2, 2, 0, 0, 1, 1, 1, 0, 0})
@@ -1919,7 +1920,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{3, 4, 6, 7}, new int[]{1, 1, 2, 2}, 'c');
 
             int len = 1 * 1 * 3 * 3;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 1, 1, 3, 3);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 1, 1, 3, 3);
 
             DynamicCustomOp op = DynamicCustomOp.builder("avgpool2d")
                     .addIntegerArguments(new int[]{2, 2, 1, 1, 0, 0, 1, 1, 0, 0, 0})
@@ -1941,7 +1942,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{3.f, 4.f, 4.5f, 6.f, 7.f, 7.5f, 7.5f, 8.5f, 9.f}, new int[]{1, 1, 3, 3}, 'c');
 
             int len = 1 * 1 * 3 * 3;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 1, 1, 3, 3);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 1, 1, 3, 3);
 
             DynamicCustomOp op = DynamicCustomOp.builder("avgpool2d")
                     .addIntegerArguments(new int[]{2, 2, 1, 1, 0, 0, 1, 1, 1, 0, 0})
@@ -1964,7 +1965,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray exp = Nd4j.create(new float[]{3.f, 4.f, 4.5f, 6.f, 7.f, 7.5f, 7.5f, 8.5f, 9.f}, new int[]{1, 1, 3, 3}, 'c');
 
             int len = 1 * 1 * 3 * 3;
-            INDArray x = Nd4j.linspace(1, len, len).reshape('c', 1, 1, 3, 3);
+            INDArray x = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', 1, 1, 3, 3);
 
             DynamicCustomOp op = DynamicCustomOp.builder("avgpool2d")
                     .addIntegerArguments(new int[]{2, 2, 1, 1, 0, 0, 1, 1, 1, 0, 0})
@@ -2036,7 +2037,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
         INDArray origInput = Nd4j.create(inputShape);
         origInput.get(point(0), point(0), all(), all()).assign(
-                Nd4j.linspace(1,20,20).reshape('c',4,5));
+                Nd4j.linspace(1,20,20, DataType.DOUBLE).reshape('c',4,5));
 
 
         INDArray expMax = Nd4j.create(1,1,4,5);
@@ -2069,7 +2070,7 @@ public class ConvolutionTests extends BaseNd4jTest {
         for( int i=0; i<3; i++ ){
 
 
-            List<Pair<INDArray, String>> inputs = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, inputShape);
+            List<Pair<INDArray, String>> inputs = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, inputShape, DataType.DOUBLE);
 
             for(Pair<INDArray,String> pIn : inputs){
                 INDArray input = pIn.getFirst().assign(origInput);
