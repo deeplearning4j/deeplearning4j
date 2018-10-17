@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.datavec.api.records.reader.impl;
+package org.datavec.api.records.reader.impl.filebatch;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
