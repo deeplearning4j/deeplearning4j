@@ -1251,3 +1251,54 @@ TEST_F(MultiDataTypeTests, ndarray_applyScalar_test2) {
 
 }
 
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyLambda_test1) {
+            
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::DOUBLE);
+    NDArray x2('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray x3('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
+    NDArray x4('c', {2,2}, nd4j::DataType::DOUBLE);
+    NDArray x5('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
+    NDArray x6('c', {2,2}, {0, -1, -1, 0.1}, nd4j::DataType::BOOL);
+    NDArray x7('c', {2,2}, nd4j::DataType::BOOL);
+    
+    const float item1  = 0.1;
+    const double item2 = 0.1;
+    auto func1 = [=](float elem) { return elem + item1; };
+    auto func2 = [=](int elem) { return elem + item1; };
+    auto func3 = [=](int elem) { return elem + item2; };
+    auto func4 = [=](double elem) { return elem + item1; };
+    auto func5 = [=](float elem) { return elem - (int)1; };
+    
+    NDArray exp1('c', {2,2}, {0.1, 1.1, 2.1, 3.1}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray exp3('c', {2,2}, {0.1, 1.1, 2.1, 3.1}, nd4j::DataType::FLOAT32);
+    NDArray exp4('c', {2,2}, {0.1, 1.6, 2.6, 3.6}, nd4j::DataType::FLOAT32);
+    NDArray exp5('c', {2,2}, {1, 0, 0, 0}, nd4j::DataType::BOOL);
+    
+    x1.applyLambda<double>(func1, &x4);
+    ASSERT_EQ(x4, exp1);
+
+    x2.applyLambda<Nd4jLong>(func1);
+    ASSERT_EQ(x2, exp2);
+
+    x2.applyLambda<Nd4jLong>(func2);
+    ASSERT_EQ(x2, exp2);
+
+    x3.applyLambda<float>(func3);
+    ASSERT_EQ(x3, exp3);
+
+    x5.applyLambda<float>(func4);
+    ASSERT_EQ(x5, exp4);
+
+    x6.applyLambda<bool>(func5, &x7);    
+    ASSERT_EQ(x7, exp5);
+    
+}
+
+// auto routine = LAMBDA_T(_x, threshold) {
+//             return _x > (T)threshold? _x: (T)0.f;
+//         };
+//         const_cast<NDArray&>(input).applyLambda<T>(routine, &output);
+
+//         void applyLambda(const std::function<T(T)>& func, NDArray* target = nullptr);

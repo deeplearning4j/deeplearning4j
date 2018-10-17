@@ -576,6 +576,11 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
         if (target == nullptr)
             target = this;
 
+        if(_dataType != DataTypeUtils::fromT<T>())
+            throw std::runtime_error("NDArray::applyLambda<T> method: wrong template parameter T, its type should be the same as type of this array!");
+        if(_dataType != target->_dataType)
+            throw std::runtime_error("NDArray::applyLambda<T> method: types of this and target array should match !");
+
         auto f = this->bufferAsT<T>();
         auto z = target->bufferAsT<T>();
 
@@ -620,6 +625,11 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray* target) {
         if (target == nullptr)
             target = this;
+
+        if(_dataType != DataTypeUtils::fromT<T>())
+            throw std::runtime_error("NDArray::applyIndexedLambda<T> method: wrong template parameter T, its type should be the same as type of this array!");
+        if(_dataType != target->_dataType)
+            throw std::runtime_error("NDArray::applyIndexedLambda<T> method: types of this and target array should match !");
 
         auto f = this->bufferAsT<T>();
         auto z = target->bufferAsT<T>();
@@ -740,11 +750,14 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
         return result;
     }
 
-    void NDArray::linspace(const double start) {
+    void NDArray::linspace(const double start) {        
         linspace(start, 1);
     }
 
     void NDArray::linspace(const double start, const double step) {
+        if (isS())
+            throw std::runtime_error("NDArray::linspace: you can't use this method on String array!");
+
         Nd4jLong numElements = this->lengthOf();
 
         for (Nd4jLong e = 0; e < numElements; e++) {
@@ -1043,6 +1056,8 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 //////////////////////////////////////////////////////////////////////////
 // This method returns sum of all elements of this NDArray
     NDArray NDArray::sumNumber() const {
+        if (isS())
+            throw std::runtime_error("NDArray::sumNumber: you can't use this method on String array!");
         NDArray res(_dataType, _workspace);
         NativeOpExcutioner::execReduceSameScalar(nd4j::reduce::SameOps::Sum, _buffer, _shapeInfo, nullptr, res.buffer(), res.shapeInfo());
         return res;
@@ -1051,6 +1066,8 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 //////////////////////////////////////////////////////////////////////////
 // This method returns mean number of this NDArray
     NDArray NDArray::meanNumber() const {
+        if (isS())
+            throw std::runtime_error("NDArray::meanNumber: you can't use this method on String array!");
         NDArray res(DataTypeUtils::pickFloatingType(dataType()), _workspace);
         NativeOpExcutioner::execReduceFloatScalar(nd4j::reduce::FloatOps::Mean, _buffer, _shapeInfo, nullptr, res.buffer(), res.shapeInfo());
         return res;
@@ -1072,14 +1089,20 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     bool NDArray::hasNaNs() {
+        if (isS())
+            throw std::runtime_error("NDArray::hasNaNs: you can't use this method on String array!");
         return this->reduceNumber(nd4j::reduce::IsNan, nullptr).e<int>(0) > 0;
     }
 
     bool NDArray::hasInfs() {
+        if (isS())
+            throw std::runtime_error("NDArray::hasInfs: you can't use this method on String array!");
         return this->reduceNumber(nd4j::reduce::IsInf, nullptr).e<int>(0) > 0;
     }
 
     bool NDArray::isFinite() {
+        if (isS())
+            throw std::runtime_error("NDArray::isFinite: you can't use this method on String array!");
         return this->reduceNumber(nd4j::reduce::IsInfOrNan, nullptr).e<int>(0) == 0;
     }
 
@@ -1138,6 +1161,9 @@ NDArray* NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::vect
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector
 NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
 
+    if (isS())
+        throw std::runtime_error("NDArray::reduceAlongDims FloatOps: you can't use this method on String array!");
+
     std::vector<int> copy(dimensions);
 
     auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
@@ -1155,6 +1181,9 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<in
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
 
+    if (isS())
+        throw std::runtime_error("NDArray::reduceAlongDims SameOps: you can't use this method on String array!");
+    
     std::vector<int> copy(dimensions);
 
     auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
@@ -1169,6 +1198,9 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+
+    if (isS())
+        throw std::runtime_error("NDArray::reduceAlongDims BoolOps: you can't use this method on String array!");
 
     std::vector<int> copy(dimensions);    
 
@@ -1186,6 +1218,9 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+
+    if (isS())
+        throw std::runtime_error("NDArray::reduceAlongDims LongOps: you can't use this method on String array!");
 
     std::vector<int> copy(dimensions);
 
@@ -1205,6 +1240,8 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int
 // method reduces array by excluding its shapes along axes present in dimensions vector
 void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
+    if (isS())
+        throw std::runtime_error("NDArray::reduceAlongDimension FloatOps: you can't use this method on String array!");
     if (target == nullptr || !target->isR())
         throw std::invalid_argument("NDArray::reduceAlongDimension FloatOps: requires target array to be present and have type form real space!");    
 
@@ -1232,6 +1269,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
+    if (isS())
+        throw std::runtime_error("NDArray::reduceAlongDimension SameOps: you can't use this method on String array!");
     if (target == nullptr || target->_dataType != _dataType)
         throw std::runtime_error("NDArray::reduceAlongDimension SameOps: requires target array to be present and have same dtype as input");
 
@@ -1259,6 +1298,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
+    if (isS())
+        throw std::runtime_error("NDArray::reduceAlongDimension BoolOps: you can't use this method on String array!");
     if (target == nullptr || !target->isB())
         throw std::invalid_argument("NDArray::reduceAlongDimension BoolOps: requires target array to be present and have BOOL type!");   
 
@@ -1286,6 +1327,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
+    if (isS())
+        throw std::runtime_error("NDArray::reduceAlongDimension LongOps: you can't use this method on String array!");
     if (target == nullptr || target->_dataType != DataType::INT64)
         throw std::runtime_error("NDArray::reduceAlongDimension LongOps: requires target array to be present and have type of INT64");
 
@@ -1331,6 +1374,9 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
 
 //////////////////////////////////////////////////////////////////////////
     NDArray NDArray::reduceNumber(nd4j::reduce::FloatOps op, void *extraParams) const {
+        if (isS())
+            throw std::runtime_error("NDArray::reduceNumber FloatOps: you can't use this method on String array!");
+
         auto shape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(dataType()), this->_workspace);
         NDArray result(shape, true, this->_workspace);
         RELEASE(shape, this->_workspace);
@@ -1340,13 +1386,18 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     NDArray NDArray::reduceNumber(nd4j::reduce::SameOps op, void *extraParams) const {
+        if (isS())
+            throw std::runtime_error("NDArray::reduceNumber SameOps: you can't use this method on String array!");
+        
         NDArray result(_dataType, _workspace);
-
         NativeOpExcutioner::execReduceSameScalar(op, _buffer, _shapeInfo, extraParams, result.buffer(), result.shapeInfo());
         return result;
     }
 
     NDArray NDArray::reduceNumber(nd4j::reduce::BoolOps op, void *extraParams) const {
+        if (isS())
+            throw std::runtime_error("NDArray::reduceNumber BoolOps: you can't use this method on String array!");
+        
         auto shape = ShapeBuilders::createScalarShapeInfo(DataType::BOOL, this->_workspace);
         NDArray result(shape, true, this->_workspace);
         RELEASE(shape, this->_workspace);
@@ -1356,6 +1407,9 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     NDArray NDArray::reduceNumber(nd4j::reduce::LongOps op, void *extraParams) const {
+        if (isS())
+            throw std::runtime_error("NDArray::reduceNumber LongOps: you can't use this method on String array!");
+
         auto shape = ShapeBuilders::createScalarShapeInfo(DataType::INT64, this->_workspace);
         NDArray result(shape, true, this->_workspace);
         RELEASE(shape, this->_workspace);
@@ -1366,6 +1420,9 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
 
 
     NDArray NDArray::indexReduceNumber(nd4j::indexreduce::Ops op, void *extraParams) {
+        if (isS())
+            throw std::runtime_error("NDArray::indexReduceNumber: you can't use this method on String array!");
+
         auto res = NDArrayFactory::create<Nd4jLong>(0);
         NativeOpExcutioner::execIndexReduceScalar(op, _buffer, _shapeInfo, extraParams, res.buffer(), res.shapeInfo());
         return res;
@@ -1374,6 +1431,10 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
 //////////////////////////////////////////////////////////////////////////
 // perform array transformation
     void NDArray::applyTransform(nd4j::transform::FloatOps op, NDArray *target, void *extraParams) {
+
+        if (isS())
+            throw std::runtime_error("NDArray::applyTransform FloatOps: you can't use this method on String array!");
+
         if (target == nullptr)
             target = this;
 
@@ -1386,6 +1447,9 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, void *extraParams) {
+        if (isS())
+            throw std::runtime_error("NDArray::applyTransform SameOps: you can't use this method on String array!");
+
         if (target == nullptr)
             target = this;
 
@@ -1398,6 +1462,9 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     void NDArray::applyTransform(nd4j::transform::BoolOps op, NDArray *target, void *extraParams) {
+        if (isS())
+            throw std::runtime_error("NDArray::applyTransform BoolOps: you can't use this method on String array!");
+
         if (target == nullptr)
             target = this;
 
@@ -1410,6 +1477,9 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     void NDArray::applyTransform(nd4j::transform::StrictOps op, NDArray *target, void *extraParams) {
+        if (isS())
+            throw std::runtime_error("NDArray::applyTransform StrictOps: you can't use this method on String array!");
+
         if (target == nullptr)
             target = this;
         
@@ -1441,12 +1511,18 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
 
     // perform array transformation
     NDArray NDArray::transform(nd4j::transform::FloatOps op, void *extraParams) const {
+        if (isS())
+            throw std::runtime_error("NDArray::transform FloatOps: you can't use this method on String array!");
+        
         NDArray result(this->ordering(), getShapeAsVector(), DataTypeUtils::pickFloatingType(dataType()), this->_workspace);
         NativeOpExcutioner::execTransformFloat(op, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, extraParams, nullptr, nullptr);
         return result;
     }
 
     NDArray NDArray::transform(nd4j::transform::SameOps op, void *extraParams) const {
+        if (isS())
+            throw std::runtime_error("NDArray::transform SameOps: you can't use this method on String array!");
+
         NDArray result(this->_shapeInfo, false, this->_workspace);
         NativeOpExcutioner::execTransformSame(op, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, extraParams, nullptr, nullptr);
         return result;
@@ -1462,6 +1538,9 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     NDArray NDArray::transform(nd4j::transform::BoolOps op, void *extraParams) const {
+        if (isS())
+            throw std::runtime_error("NDArray::transform BoolOps: you can't use this method on String array!");
+
         NDArray result(this->ordering(), getShapeAsVector(), nd4j::DataType::BOOL, this->_workspace);
         NativeOpExcutioner::execTransformBool(op, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, extraParams, nullptr, nullptr);
         return result;
@@ -1474,6 +1553,8 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray& othe
 }
 
 void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, void *extraParams) const{
+    if (isS())
+        throw std::runtime_error("NDArray::applyPairwiseTransform: you can't use this method on String array!");
     if (other->lengthOf() != target->lengthOf())
         throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
     if (target->_dataType != this->_dataType && target->_dataType != other->_dataType)
@@ -1483,6 +1564,8 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* othe
 }
 
 void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, void *extraParams) const{
+    if (isS())
+        throw std::runtime_error("NDArray::applyPairwiseTransform BoolOps: you can't use this method on String array!");
     if (other->lengthOf() != target->lengthOf())
         throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
     if (!target->isB())
@@ -1780,6 +1863,9 @@ NDArray NDArray::transp() const {
 
 //////////////////////////////////////////////////////////////////////////
     void NDArray::addRowVector(const NDArray *row, NDArray *target) const {
+
+        if (isS())
+            throw std::runtime_error("NDArray::addRowVector: you can't use this method on String array!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->lengthOf())
             throw std::invalid_argument("NDArray::addRowVector: wrong arguments !");
 
@@ -1794,6 +1880,9 @@ NDArray NDArray::transp() const {
 
 //////////////////////////////////////////////////////////////////////////
     void NDArray::subRowVector(const NDArray *row, NDArray * target) const {
+
+        if (isS())
+            throw std::runtime_error("NDArray::subRowVector: you can't use this method on String array!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
             throw std::invalid_argument("NDArray::subRowVector: wrong arguments !");
 
@@ -1808,6 +1897,9 @@ NDArray NDArray::transp() const {
 
 //////////////////////////////////////////////////////////////////////////
     void NDArray::mulRowVector(const NDArray *row, NDArray *target) const {
+
+        if (isS())
+            throw std::runtime_error("NDArray::mulRowVector: you can't use this method on String array!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
             throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
 
@@ -1822,6 +1914,9 @@ NDArray NDArray::transp() const {
 
 //////////////////////////////////////////////////////////////////////////
     void NDArray::divRowVector(const NDArray *row, NDArray *target) const {
+
+        if (isS())
+            throw std::runtime_error("NDArray::divRowVector: you can't use this method on String array!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
             throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
 
@@ -1840,6 +1935,9 @@ NDArray NDArray::transp() const {
 //////////////////////////////////////////////////////////////////////////
 // This method adds given row to all rows in this NDArray, this array becomes affected
     void NDArray::addiRowVector(const NDArray *row) {
+    
+    if (isS())
+        throw std::runtime_error("NDArray::addiRowVector: you can't use this method on String array!");
     if (rankOf() != 2 || !row->isRowVector() || columns() != row->lengthOf())
         throw std::invalid_argument("NDArray::addiRowVector: wrong arguments !");
 
@@ -1857,6 +1955,8 @@ NDArray NDArray::transp() const {
 
 //////////////////////////////////////////////////////////////////////////
     void NDArray::addColumnVector(const NDArray *column, NDArray *target) const {
+        if (isS())
+            throw std::runtime_error("NDArray::addColumnVector: you can't use this method on String array!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::addColumnVector: wrong arguments !");
 
@@ -1874,6 +1974,8 @@ NDArray NDArray::transp() const {
 //////////////////////////////////////////////////////////////////////////
 // This method adds given column to all columns in this NDArray, this array becomes affected
     void NDArray::addiColumnVector(const NDArray *column) {
+        if (isS())
+            throw std::runtime_error("NDArray::addiColumnVector: you can't use this method on String array!");
         if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::addiColumnVector: wrong arguments !");
 
@@ -1891,6 +1993,8 @@ NDArray NDArray::transp() const {
 //////////////////////////////////////////////////////////////////////////
 // This method multiplies each column of this array by given argument-column, this array becomes affected
     void NDArray::muliColumnVector(const NDArray *column) {
+        if (isS())
+            throw std::runtime_error("NDArray::muliColumnVector: you can't use this method on String array!");
         if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::muliColumnVector: wrong arguments !");
 
@@ -1908,7 +2012,8 @@ NDArray NDArray::transp() const {
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray *target, void *extraParams) const {
-    
+    if (isS())
+            throw std::runtime_error("NDArray::applyScalarArr BoolOps: you can't use this method on String array!");
     if (target == nullptr || !target->isB())
         throw std::invalid_argument("NDArray::applyScalarArr bool method: target is nullptr or has not bool type!");
     if (_dataType != scalar->_dataType)
@@ -1936,7 +2041,8 @@ template void NDArray::applyScalar<bool>(nd4j::scalar::BoolOps op, const bool sc
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArray* target, void *extraParams) {
-    
+    if (isS())
+        throw std::runtime_error("NDArray::applyScalarArr: you can't use this method on String array!");
     if (!scalar->isScalar())
         throw std::invalid_argument("NDArray::applyScalarArr method: operand is not a scalar!");
     if(target == nullptr) 
@@ -2137,6 +2243,9 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
 //////////////////////////////////////////////////////////////////////////
     Nd4jLong NDArray::argMax(std::initializer_list<int> dimensions) {
+        if (isS())            
+            throw std::runtime_error("NDArray::argMax: you can't use this method on String array!");
+
         if (dimensions.size() == 0) {
             Nd4jLong max = 0;
             auto mv = -DataTypeUtils::max<float>();
@@ -2567,6 +2676,9 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int>& dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
+        if (isS())            
+            throw std::runtime_error("NDArray::applyBroadcast: you can't use this method on String array!");
+
         if (dimensions.size() == 0)
             return;
         auto result = target == nullptr ? this : target;
@@ -2595,6 +2707,9 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int>& dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
+        if (isS())            
+            throw std::runtime_error("NDArray::applyBroadcast BoolOps: you can't use this method on String array!");
+        
         if (dimensions.size() == 0)
             return;
 
@@ -2626,8 +2741,10 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, void *extraArgs) const {
+        if (isS())            
+            throw std::runtime_error("NDArray::applyTrueBroadcast bool: you can't use this method on String array!");        
         if(target == nullptr || other == nullptr)
-            throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
+            throw std::runtime_error("NDArray::applyTrueBroadcast bool method: target or other = nullptr !");
 
         if (isScalar()) {            
             NDArray temp(target->_shapeInfo, _dataType, false, _workspace);            
@@ -2718,6 +2835,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, void *extraArgs) const {
+        if (isS())            
+            throw std::runtime_error("NDArray::applyTrueBroadcast: you can't use this method on String array!");        
         if(target == nullptr || other == nullptr)
             throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
 
@@ -2878,6 +2997,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     //////////////////////////////////////////////////////////////////////////
     // check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
     bool NDArray::hasOrthonormalBasis(const int arg) {
+        if (isS())            
+            throw std::runtime_error("NDArray::hasOrthonormalBasis: you can't use this method on String array!");        
 	    if(rankOf() !=2 )
 		    throw std::runtime_error("NDArray::hasOrthBasis method: rank of ndarray is not equal 2 !");
 
@@ -2947,6 +3068,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     //////////////////////////////////////////////////////////////////////////
     // check whether array is identity matrix
     bool NDArray::isIdentityMatrix() {
+        if (isS())            
+            throw std::runtime_error("NDArray::isIdentityMatrix: you can't use this method on String array!");        
 	    if(rankOf() !=2 || rows() != columns())
 		    throw std::runtime_error("isIdentityMatrix method: matrix must be square and have rank = 2 !");
 
@@ -2969,6 +3092,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     //////////////////////////////////////////////////////////////////////////
     // check whether array is unitary matrix
     bool NDArray::isUnitary() {
+        if (isS())            
+            throw std::runtime_error("NDArray::isUnitary: you can't use this method on String array!");        
         if(rankOf() !=2 || rows() != columns())
             throw std::runtime_error("isUnitary method: matrix must be square and have rank = 2 !");
 
@@ -3326,24 +3451,35 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
 
     NDArray* NDArray::asT(DataType dtype) {
+        if (isS())            
+            throw std::runtime_error("NDArray::asT: you can't use this method on String array!");        
         BUILD_SINGLE_SELECTOR(dtype, return asT, (), LIBND4J_TYPES);
         return nullptr;
     }
 
     template <typename T>
     NDArray* NDArray::cast() {
+        if (isS())            
+            throw std::runtime_error("NDArray::cast: you can't use this method on String array!");        
         return this->asT<T>();
     }
     NDArray* NDArray::cast(DataType dtype) {
+        if (isS())            
+            throw std::runtime_error("NDArray::cast: you can't use this method on String array!");        
         return this->asT(dtype);
     }
 
     void NDArray::cast(NDArray* target, DataType dtype) {
+        if (isS())            
+            throw std::runtime_error("NDArray::cast: you can't use this method on String array!");        
         // TODO: to be implemented properly
         target->assign(this);
     }
 
     void NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, const NDArray* target, const std::vector<int>& dimensions, const void *extraParams) const {
+        if (isS())            
+            throw std::runtime_error("NDArray::applyIndexReduce: you can't use this method on String array!");        
+
         if (target->dataType() != nd4j::DataType::INT64)
             throw std::runtime_error("IndexReduce operations return INT64");
 
@@ -3368,6 +3504,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     ////////////////////////////////////////////////////////////////////////
     // reduce dimensions in this array relying on index operations
     NDArray* NDArray::applyIndexReduce(nd4j::indexreduce::Ops op,const std::vector<int>& dimensions, const void* extraParams ) const {
+        if (isS())            
+            throw std::runtime_error("NDArray::applyIndexReduce: you can't use this method on String array!");        
 
         std::vector<int> copy(dimensions);
         if (dimensions.size() > 1)
@@ -3397,6 +3535,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     ////////////////////////////////////////////////////////////////////////
     // apply reduce3 operations to this and other array, return result in new output array
     NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const void* extraParams) const {
+        if (isS())            
+            throw std::runtime_error("NDArray::applyReduce3: you can't use this method on String array!");        
         // check shapes consistency
         if(!isSameShape(other))
             throw std::runtime_error("NDArray::applyReduce3 method: the shapes of array must be the same !");
@@ -3439,6 +3579,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     ////////////////////////////////////////////////////////////////////////
     // apply reduce3 (execAll) operations to this and other array, return result in new output array
     NDArray*  NDArray::applyAllReduce3(nd4j::reduce3::Ops op, const NDArray *other, const std::vector<int>& dimensions, const void* extraParams) const {
+        if (isS())            
+            throw std::runtime_error("NDArray::applyAllReduce3: you can't use this method on String array!");        
         // be careful, copy array may undergo changes (sort, transformation of negative dimensions to positive, duplicates removing )
         std::vector<int> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
@@ -3488,7 +3630,9 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     ////////////////////////////////////////////////////////////////////////
     // apply reduce3 (exec) operations to this and other array, return result in new output array
     NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams) const {
-        
+        if (isS())            
+            throw std::runtime_error("NDArray::applyReduce3: you can't use this method on String array!");        
+
         std::vector<int> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other->rankOf(), copy);               
@@ -3526,6 +3670,9 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
     ////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
+        if (isS())            
+            throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");        
+
         std::vector<int> copy(dimensions);
         if (copy.size() > 1)
             std::sort(copy.begin(), copy.end());
@@ -3549,6 +3696,9 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     }
 
     void NDArray::varianceAlongDimension(nd4j::variance::Ops op, const NDArray *target, const bool biasCorrected, const std::vector<int>& dimensions) {
+        if (isS())            
+            throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");        
+
         std::vector<int> copy(dimensions);
         if (copy.size() > 1)
             std::sort(copy.begin(), copy.end());
@@ -3626,6 +3776,9 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     ////////////////////////////////////////////////////////////////////////
     // addition operator array + array
     NDArray NDArray::operator+(const NDArray& other) const {
+        if (isS())            
+            throw std::runtime_error("NDArray::operator+: you can't use this method on String array!");
+
         if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_shapeInfo, other._shapeInfo), false, this->_workspace);            
             NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Add, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
@@ -3639,7 +3792,9 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 // addition operator array + scalar
 template <typename T>
 NDArray NDArray::operator+(const T& scalar) const {
-
+    if (isS())            
+        throw std::runtime_error("NDArray::operator+: you can't use this method on String array!");
+    
     auto tmp = NDArrayFactory::create(scalar, _workspace);
     NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_dataType, DataTypeUtils::fromT<T>()), false, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Add, _buffer, _shapeInfo, result._buffer, result._shapeInfo, tmp.buffer(), tmp.shapeInfo(), nullptr);
@@ -3659,7 +3814,9 @@ template NDArray NDArray::operator+(const bool&     scalar) const;
 // subtraction operator array - scalar
 template<typename T>
 NDArray NDArray::operator-(const T& scalar) const {
-    
+    if (isS())            
+        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
+
     auto tmp = NDArrayFactory::create(scalar);
     NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_dataType, DataTypeUtils::fromT<T>()), false, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Subtract, _buffer, _shapeInfo, result._buffer, result._shapeInfo, tmp.buffer(), tmp.shapeInfo(), nullptr);
@@ -3679,7 +3836,9 @@ template NDArray NDArray::operator-(const bool&     scalar) const;
 // multiplication operator array*scalar
 template<typename T>
 NDArray NDArray::operator*(const T& scalar) const {
-    
+    if (isS())            
+        throw std::runtime_error("NDArray::operator*: you can't use this method on String array!");
+
     auto tmp = NDArrayFactory::create(scalar, _workspace);
     NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_dataType, DataTypeUtils::fromT<T>()), false, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Multiply, _buffer, _shapeInfo, result._buffer, result._shapeInfo, tmp.buffer(), tmp.shapeInfo(), nullptr);
@@ -3699,7 +3858,9 @@ template NDArray NDArray::operator*(const bool&     scalar) const;
 // division operator array / scalar
 template<typename T>
 NDArray NDArray::operator/(const T& scalar) const {
-    
+    if (isS())            
+        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
+
     if(scalar == (T)0.)
         throw std::runtime_error("NDArray::operator/ (division operator) : division by zero !");
 
@@ -3756,6 +3917,8 @@ ND4J_EXPORT NDArray operator*(const int& scalar, const NDArray& arr) {
 
 ////////////////////////////////////////////////////////////////////////
 ND4J_EXPORT NDArray operator-(const float16& scalar, const NDArray & arr) {
+    if (arr.isS())
+        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
 
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());    
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float16>()), false, arr.getWorkspace());
@@ -3764,6 +3927,8 @@ ND4J_EXPORT NDArray operator-(const float16& scalar, const NDArray & arr) {
 }
 
 ND4J_EXPORT NDArray operator-(const float& scalar, const NDArray& arr) {
+    if (arr.isS())            
+        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
 
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float>()), false, arr.getWorkspace());
@@ -3772,6 +3937,8 @@ ND4J_EXPORT NDArray operator-(const float& scalar, const NDArray& arr) {
 }
 
 ND4J_EXPORT NDArray operator-(const double& scalar, const NDArray& arr) {
+    if (arr.isS())            
+        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
 
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<double>()), false, arr.getWorkspace());
@@ -3779,8 +3946,10 @@ ND4J_EXPORT NDArray operator-(const double& scalar, const NDArray& arr) {
     return result;
 }
 
-ND4J_EXPORT NDArray operator-(const Nd4jLong& scalar, const NDArray& arr) {
-    
+ND4J_EXPORT NDArray operator-(const Nd4jLong& scalar, const NDArray& arr) {    
+    if (arr.isS())            
+        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
+
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<Nd4jLong>()), false, arr.getWorkspace());
     NativeOpExcutioner::execScalar(nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
@@ -3788,7 +3957,9 @@ ND4J_EXPORT NDArray operator-(const Nd4jLong& scalar, const NDArray& arr) {
 }
 
 ND4J_EXPORT NDArray operator-(const int& scalar, const NDArray& arr) {
-    
+    if (arr.isS())            
+        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
+
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<int>()), false, arr.getWorkspace());
     NativeOpExcutioner::execScalar(nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
@@ -3798,6 +3969,8 @@ ND4J_EXPORT NDArray operator-(const int& scalar, const NDArray& arr) {
 
 ////////////////////////////////////////////////////////////////////////
 ND4J_EXPORT NDArray operator/(const float16& scalar, const NDArray & arr) {
+    if (arr.isS())            
+        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
 
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float16>()), false, arr.getWorkspace());
@@ -3806,6 +3979,8 @@ ND4J_EXPORT NDArray operator/(const float16& scalar, const NDArray & arr) {
 }
 
 ND4J_EXPORT NDArray operator/(const float& scalar, const NDArray & arr) {
+    if (arr.isS())            
+        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
 
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float>()), false, arr.getWorkspace());
@@ -3814,7 +3989,9 @@ ND4J_EXPORT NDArray operator/(const float& scalar, const NDArray & arr) {
 }
 
 ND4J_EXPORT NDArray operator/(const double& scalar, const NDArray & arr) {
-    
+    if (arr.isS())            
+        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
+
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<double>()), false, arr.getWorkspace());
     NativeOpExcutioner::execScalar(nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
@@ -3822,7 +3999,9 @@ ND4J_EXPORT NDArray operator/(const double& scalar, const NDArray & arr) {
 }
 
 ND4J_EXPORT NDArray operator/(const int& scalar, const NDArray & arr) {
-    
+    if (arr.isS())            
+        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
+
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<int>()), false, arr.getWorkspace());
     NativeOpExcutioner::execScalar(nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
@@ -3831,6 +4010,9 @@ ND4J_EXPORT NDArray operator/(const int& scalar, const NDArray & arr) {
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::operator+=(const NDArray& other) {
+    if (isS())            
+        throw std::runtime_error("NDArray::operator+=: you can't use this method on String array!");
+
     if (!this->isScalar() && other.isScalar()) {
         NativeOpExcutioner::execScalar(nd4j::scalar::Add, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
     } 
@@ -3855,6 +4037,9 @@ void NDArray::operator+=(const NDArray& other) {
 }
 
 void NDArray::operator-=(const NDArray& other) {
+    if (isS())            
+        throw std::runtime_error("NDArray::operator-=: you can't use this method on String array!");
+
     if (!this->isScalar() && other.isScalar()) {
         NativeOpExcutioner::execScalar(nd4j::scalar::Subtract, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
     } 
@@ -3879,6 +4064,9 @@ void NDArray::operator-=(const NDArray& other) {
 }
     
 void NDArray::operator*=(const NDArray& other) {
+    if (isS())            
+        throw std::runtime_error("NDArray::operator*=: you can't use this method on String array!");
+
     if (!this->isScalar() && other.isScalar()) {
         NativeOpExcutioner::execScalar(nd4j::scalar::Multiply, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
     } 
@@ -3903,6 +4091,9 @@ void NDArray::operator*=(const NDArray& other) {
 }
 
 void NDArray::operator/=(const NDArray& other) {
+    if (isS())            
+        throw std::runtime_error("NDArray::operator/=: you can't use this method on String array!");
+
     if (!this->isScalar() && other.isScalar()) {
         NativeOpExcutioner::execScalar(nd4j::scalar::Divide, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
     } 
@@ -3928,6 +4119,9 @@ void NDArray::operator/=(const NDArray& other) {
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 void NDArray::operator+=(const T value) {
+    if (isS())            
+        throw std::runtime_error("NDArray::operator+=: you can't use this method on String array!");
+
     auto tmp = NDArrayFactory::create(value, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Add, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.buffer(), tmp.shapeInfo(), nullptr);
 }
@@ -3940,6 +4134,9 @@ template void NDArray::operator+=(const bool value);
 
 template<typename T>
 void NDArray::operator-=(const T value) {
+    if (isS())            
+        throw std::runtime_error("NDArray::operator-=: you can't use this method on String array!");
+
     auto tmp = NDArrayFactory::create(value, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Subtract, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.buffer(), tmp.shapeInfo(), nullptr);
 }
@@ -3952,6 +4149,9 @@ template void NDArray::operator-=(const bool value);
 
 template<typename T>
 void NDArray::operator*=(const T scalar) {
+    if (isS())            
+        throw std::runtime_error("NDArray::operator*=: you can't use this method on String array!");
+
     auto tmp = NDArrayFactory::create(scalar, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Multiply, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
 }
@@ -3967,6 +4167,9 @@ template void NDArray::operator*=(const bool scalar);
 
 template<typename T>
 void NDArray::operator/=(const T scalar) {
+    if (isS())            
+        throw std::runtime_error("NDArray::operator/=: you can't use this method on String array!");
+
     auto tmp = NDArrayFactory::create(scalar, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Divide, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
 }
@@ -3983,6 +4186,9 @@ template void NDArray::operator/=(const bool scalar);
     ////////////////////////////////////////////////////////////////////////
     // subtraction operator array - array
     NDArray NDArray::operator-(const NDArray& other) const {
+        if (isS())            
+            throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
+
         if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {            
             NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_shapeInfo, other._shapeInfo), false, this->_workspace);
             NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Subtract, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
@@ -3995,6 +4201,8 @@ template void NDArray::operator/=(const bool scalar);
     ////////////////////////////////////////////////////////////////////////
     // negative operator, it makes all array elements = -elements
     NDArray NDArray::operator-() const {
+        if (isS())            
+            throw std::runtime_error("NDArray::negative-: you can't use this method on String array!");
         NDArray result(this->_shapeInfo, false, this->_workspace);
         NativeOpExcutioner::execTransformSame(nd4j::transform::Neg, this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, nullptr, nullptr, nullptr);
 
@@ -4004,6 +4212,8 @@ template void NDArray::operator/=(const bool scalar);
     ////////////////////////////////////////////////////////////////////////
     // multiplication operator array*array
     NDArray NDArray::operator*(const NDArray& other) const {
+        if (isS())            
+            throw std::runtime_error("NDArray::operator*: you can't use this method on String array!");
         
         if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_shapeInfo, other._shapeInfo), false, this->_workspace);
@@ -4017,6 +4227,9 @@ template void NDArray::operator/=(const bool scalar);
     ////////////////////////////////////////////////////////////////////////
     // division operator array/array
     NDArray NDArray::operator/(const NDArray& other) const {
+        if (isS())
+            throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
+
         if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_shapeInfo, other._shapeInfo), false, this->_workspace);
             NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Divide, _buffer, _shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
@@ -4029,6 +4242,8 @@ template void NDArray::operator/=(const bool scalar);
     ////////////////////////////////////////////////////////////////////////
     // mathematical multiplication of two arrays
     NDArray mmul(const NDArray& left, const NDArray& right) {
+        if (left.isS() || right.isS())
+            throw std::runtime_error("mmul friend function: you can't use this function on String array!");
         auto ptr = MmulHelper::mmul(const_cast<NDArray*>(&left), const_cast<NDArray*>(&right), nullptr, 1., 0.);
         NDArray result(*ptr);
         delete ptr;
@@ -4044,6 +4259,9 @@ template void NDArray::operator/=(const bool scalar);
 
     ////////////////////////////////////////////////////////////////////////
     void NDArray::setIdentity() {
+        if (isS())
+            throw std::runtime_error("NDArray::setIdentity: you can't use this method on String array!");
+
         this->assign(0.);
 
         int  rank    = rankOf();
@@ -4109,6 +4327,9 @@ template void NDArray::operator/=(const bool scalar);
 
     ////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::diagonal(const char type) const {
+
+        if (isS())
+            throw std::runtime_error("NDArray::diagonal: you can't use this method on String array!");
         
         const char order = ordering();
         const int  rank  = rankOf();
@@ -4161,6 +4382,8 @@ template void NDArray::operator/=(const bool scalar);
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
     void NDArray::setValueInDiagMatrix(const T& value, const int diag, const char direction) {
+        if (isS())
+            throw std::runtime_error("NDArray::setValueInDiagMatrix: you can't use this method on String array!");
         if(rankOf() != 2)
            throw std::string("NDArray::setValueInDiagMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
 
@@ -4304,6 +4527,9 @@ template void NDArray::operator/=(const bool scalar);
 
     ////////////////////////////////////////////////////////////////////////
     double NDArray::getTrace() const {
+        if (isS())
+            throw std::runtime_error("NDArray::getTrace: you can't use this method on String array!");
+
         int  rank    = rankOf();
         auto shape   = shapeOf();
         auto strides = stridesOf();
