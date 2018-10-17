@@ -59,7 +59,7 @@ public class SoftSignDerivative extends BaseTransformStrictOp {
 
     @Override
     public int opNum() {
-        return 30;
+        return 7;
     }
 
     @Override

@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
@@ -31,24 +32,24 @@ import java.util.List;
  * f(x) = 1 if x > cutoff; 0 otherwise
  * cutoff = 0.0 usually.
  */
-public class Step extends BaseTransformSameOp {
+public class Step extends BaseScalarOp {
     private final double cutoff;
 
     public Step(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
-        super(sameDiff, i_v, inPlace);
+        super(sameDiff, i_v, cutoff, inPlace);
         this.cutoff = cutoff;
         this.extraArgs = new Object[] {cutoff};
 
     }
 
-    public Step(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double cutoff) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    public Step(SameDiff sameDiff, SDVariable i_v, boolean inPlace, Object[] extraArgs, double cutoff) {
+        super(sameDiff, i_v, cutoff, inPlace, extraArgs);
         this.cutoff = cutoff;
         this.extraArgs = new Object[] {cutoff};
     }
 
     public Step(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double cutoff) {
-        super(sameDiff, i_v, extraArgs);
+        super(sameDiff, i_v, cutoff, extraArgs);
         this.cutoff = cutoff;
         this.extraArgs = new Object[] {cutoff};
     }
@@ -59,7 +60,7 @@ public class Step extends BaseTransformSameOp {
     }
 
     public Step(INDArray x, INDArray z) {
-        super(x, z);
+        super(x, z, 0.0);
         cutoff = 0.0;
         this.extraArgs = new Object[] {cutoff};
     }
@@ -70,20 +71,14 @@ public class Step extends BaseTransformSameOp {
         this.extraArgs = new Object[] {cutoff};
     }
 
-    public Step(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        cutoff = 0.0;
-        this.extraArgs = new Object[] {cutoff};
-    }
-
     public Step(INDArray x) {
-        super(x);
+        super(x, 0.0);
         cutoff = 0.0;
         this.extraArgs = new Object[] {cutoff};
     }
 
     public Step(INDArray x, INDArray z, double cutoff) {
-        super(x, z);
+        super(x, z, cutoff);
         this.cutoff = cutoff;
         this.extraArgs = new Object[] {cutoff};
     }
@@ -94,21 +89,15 @@ public class Step extends BaseTransformSameOp {
         this.extraArgs = new Object[] {cutoff};
     }
 
-    public Step(INDArray x, INDArray y, INDArray z, long n, double cutoff) {
-        super(x, y, z, n);
-        this.cutoff = cutoff;
-        this.extraArgs = new Object[] {cutoff};
-    }
-
     public Step(INDArray x, double cutoff) {
-        super(x);
+        super(x, cutoff);
         this.cutoff = cutoff;
         this.extraArgs = new Object[] {cutoff};
     }
 
     @Override
     public int opNum() {
-        return 16;
+        return 41;
     }
 
     @Override

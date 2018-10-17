@@ -285,7 +285,7 @@ public class DefaultOpFactory implements OpFactory {
                 op = new RectifedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
                 break;
             case "step":
-                op = new Step(x,y,z,x.length(),extraArgs == null || extraArgs[0] == null  ? 0.0 : (double) extraArgs[0]);
+                op = new Step(x, z,x.length(),extraArgs == null || extraArgs[0] == null  ? 0.0 : (double) extraArgs[0]);
                 break;
             case "pow":
                 op = new Pow(x, z, (double) extraArgs[0]);

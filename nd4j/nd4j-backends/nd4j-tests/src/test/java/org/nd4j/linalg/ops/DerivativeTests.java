@@ -97,14 +97,13 @@ public class DerivativeTests extends BaseNd4jTest {
 
     @Test
     public void testRectifiedLinearDerivative() {
-        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         //ReLU:
         //f(x) = max(0,x)
         //Piecewise differentiable; choose f'(0) = 0
         //f'(x) = 1 if x > 0
         //f'(x) = 0 if x <= 0
 
-        INDArray z = Nd4j.zeros(100);
+        INDArray z = Nd4j.zeros(100).castTo(DataType.DOUBLE);
         double[] expOut = new double[100];
         for (int i = 0; i < 100; i++) {
             double x = 0.1 * (i - 50);
@@ -339,7 +338,7 @@ public class DerivativeTests extends BaseNd4jTest {
     @Test
     public void testSoftSignDerivative() {
         //Derivative: 1 / (1+abs(x))^2
-        INDArray z = Nd4j.zeros(100);
+        INDArray z = Nd4j.zeros(100).castTo(DataType.DOUBLE);
         double[] expOut = new double[100];
         for (int i = 0; i < 100; i++) {
             double x = 0.1 * (i - 50);
