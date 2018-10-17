@@ -32,7 +32,7 @@ import java.io.IOException;
  * The API (constructor arguments) mirrors {@link RecordReaderDataSetIterator} which it uses internally.
  * Can be used in the context of Spark - see SparkDataUtils methods for this purpose
  */
-public class RecordReaderFileBatchDataSetLoader implements DataSetLoader {
+public class RecordReaderFileBatchLoader implements DataSetLoader {
     private final RecordReader recordReader;
     private final int batchSize;
     private final int labelIndexFrom;
@@ -50,7 +50,7 @@ public class RecordReaderFileBatchDataSetLoader implements DataSetLoader {
      * @param labelIndex   Index of the label Writable (usually an IntWritable), as obtained by recordReader.next()
      * @param numClasses   Number of classes (possible labels) for classification
      */
-    public RecordReaderFileBatchDataSetLoader(RecordReader recordReader, int batchSize, int labelIndex, int numClasses) {
+    public RecordReaderFileBatchLoader(RecordReader recordReader, int batchSize, int labelIndex, int numClasses) {
         this(recordReader, batchSize, labelIndex, labelIndex, numClasses, false, null);
     }
 
@@ -64,7 +64,7 @@ public class RecordReaderFileBatchDataSetLoader implements DataSetLoader {
      * @param batchSize         Minibatch size
      * @param regression        Require regression = true. Mainly included to avoid clashing with other constructors previously defined :/
      */
-    public RecordReaderFileBatchDataSetLoader(RecordReader recordReader, int batchSize, int labelIndexFrom, int labelIndexTo,
+    public RecordReaderFileBatchLoader(RecordReader recordReader, int batchSize, int labelIndexFrom, int labelIndexTo,
                                        boolean regression) {
         this(recordReader, batchSize, labelIndexFrom, labelIndexTo, -1, regression, null);
     }
@@ -80,8 +80,8 @@ public class RecordReaderFileBatchDataSetLoader implements DataSetLoader {
      * @param regression        if true: regression. If false: classification (assume labelIndexFrom is the class it belongs to)
      * @param preProcessor      Optional DataSetPreProcessor. May be null.
      */
-    public RecordReaderFileBatchDataSetLoader(RecordReader recordReader, int batchSize, int labelIndexFrom, int labelIndexTo,
-                                              int numPossibleLabels, boolean regression, DataSetPreProcessor preProcessor) {
+    public RecordReaderFileBatchLoader(RecordReader recordReader, int batchSize, int labelIndexFrom, int labelIndexTo,
+                                       int numPossibleLabels, boolean regression, DataSetPreProcessor preProcessor) {
         this.recordReader = recordReader;
         this.batchSize = batchSize;
         this.labelIndexFrom = labelIndexFrom;

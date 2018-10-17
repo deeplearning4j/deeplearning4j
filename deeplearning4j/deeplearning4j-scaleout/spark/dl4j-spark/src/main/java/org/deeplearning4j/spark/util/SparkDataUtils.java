@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.deeplearning4j.api.loader.impl.RecordReaderFileBatchLoader;
 import org.nd4j.api.loader.FileBatch;
 
 import java.io.BufferedOutputStream;
@@ -60,7 +61,7 @@ public class SparkDataUtils {
      * images in FP32 (or ever UINT8) format - effectively a bitmap - is still much less efficient than the raw image files.<br>
      * Instead, can create minibatches of {@link FileBatch} objects: these objects contain the raw file content for
      * multiple files (as byte[]s) along with their original paths, which can then be used for distributed training using
-     * {@link org.deeplearning4j.api.loader.impl.RecordReaderFileBatchDataSetLoader}.<br>
+     * {@link RecordReaderFileBatchLoader}.<br>
      * This approach gives us the benefits of the original file format (i.e., small size, compression) along with
      * the benefits of a batched DataSet/INDArray format - i.e., disk reads are reduced by a factor of the minibatch size.<br>
      * <br>
@@ -143,7 +144,7 @@ public class SparkDataUtils {
      * images in FP32 (or ever UINT8) format - effectively a bitmap - is still much less efficient than the raw image files.<br>
      * Instead, can create minibatches of {@link FileBatch} objects: these objects contain the raw file content for
      * multiple files (as byte[]s) along with their original paths, which can then be used for distributed training using
-     * {@link org.deeplearning4j.api.loader.impl.RecordReaderFileBatchDataSetLoader}.<br>
+     * {@link RecordReaderFileBatchLoader}.<br>
      * This approach gives us the benefits of the original file format (i.e., small size, compression) along with
      * the benefits of a batched DataSet/INDArray format - i.e., disk reads are reduced by a factor of the minibatch size.<br>
      * <br>
