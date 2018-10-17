@@ -72,7 +72,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                         0.0, 0.0, 0.0, 0.0, 11.0, 12.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 14.0, 0.0, 0.0,
                         0.0, 0.0, 15.0, 16.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-                        new int[] {2, 2, 1, 1, 6, 6});
+                        new long[] {2, 2, 1, 1, 6, 6});
         assertEquals(im2colAssertion, ret);
         INDArray col2ImAssertion = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0,
                         12.0, 13.0, 14.0, 15.0, 16.0
@@ -95,10 +95,10 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int depth = 2;
         INDArray assertion = Nd4j.create(new double[] {1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3,
                         3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4,
-                        4, 4, 2, 2, 2, 2, 4, 4, 4, 4}, new int[] {1, 1, 2, 2, 4, 4});
+                        4, 4, 2, 2, 2, 2, 4, 4, 4, 4}, new long[] {1, 1, 2, 2, 4, 4});
         INDArray ret = Nd4j.create(new double[] {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
                         4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-                        4, 4, 4, 4, 4, 4, 4, 4}, new int[] {1, 1, 8, 8});
+                        4, 4, 4, 4, 4, 4, 4, 4}, new long[] {1, 1, 8, 8});
 
         INDArray test = Convolution.im2col(ret, kh, kw, sy, sx, ph, pw, 0, false);
         assertEquals(assertion, test);
@@ -214,7 +214,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                     for (int kh : sizeH) {
                                         for (int kw : sizeW) {
 
-                                            INDArray in = Nd4j.linspace(1, (m * d * h * w), (m * d * h * w), DataType.DOUBLE).reshape(new int[]{m, d, h, w});
+                                            INDArray in = Nd4j.linspace(1, (m * d * h * w), (m * d * h * w), DataType.FLOAT).reshape(new int[]{m, d, h, w});
 
                                             int[] outSize = getOutputSize(in, new int[]{kh, kw}, new int[]{sh, sw}, null, true);
 
@@ -294,11 +294,11 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
         INDArray ret = Nd4j.create(new double[] {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
                         4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-                        4, 4, 4, 4, 4, 4, 4, 4}, new int[] {1, 1, 8, 8});
+                        4, 4, 4, 4, 4, 4, 4, 4}, new long[] {1, 1, 8, 8});
 
         INDArray assertion = Nd4j.create(new double[] {1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3,
                         3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4,
-                        4, 4, 2, 2, 2, 2, 4, 4, 4, 4}, new int[] {1, 1, 2, 2, 4, 4});
+                        4, 4, 2, 2, 2, 2, 4, 4, 4, 4}, new long[] {1, 1, 2, 2, 4, 4});
         INDArray im2colTest = Convolution.im2col(ret, kh, kw, sy, sx, ph, pw, 0, false);
         assertEquals(assertion, im2colTest);
 
@@ -313,7 +313,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int sx = 1;
         int ph = 1;
         int pw = 1;
-        INDArray linspaced = Nd4j.linspace(1, 64, 64, DataType.DOUBLE).reshape(2, 2, 2, 2, 2, 2);
+        INDArray linspaced = Nd4j.linspace(1, 64, 64, DataType.FLOAT).reshape(2, 2, 2, 2, 2, 2);
         INDArray newTest = Convolution.col2im(linspaced, sy, sx, ph, pw, 2, 2);
         INDArray assertion = OldConvolution.col2im(linspaced, sy, sx, ph, pw, 2, 2);
 
@@ -332,7 +332,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int[] padding = {1, 2};
         int prod = nEx * depth * width * height;
 
-        INDArray in = Nd4j.linspace(1, prod, prod, DataType.DOUBLE).reshape(nEx, depth, width, height);
+        INDArray in = Nd4j.linspace(1, prod, prod, DataType.FLOAT).reshape(nEx, depth, width, height);
 
         INDArray assertim2col = OldConvolution.im2col(in, kernel, stride, padding);
         INDArray im2col = Convolution.im2col(in, kernel, stride, padding);
@@ -376,12 +376,12 @@ public class ConvolutionTestsC extends BaseNd4jTest {
             //a[9]: Not used with max pooling
             a[10] = 0;  //For NCHW
 
-            List<Pair<INDArray, String>> inputs = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, inputShape, DataType.DOUBLE);
+            List<Pair<INDArray, String>> inputs = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, inputShape, DataType.FLOAT);
 
             for(Pair<INDArray,String> pIn : inputs){
                 INDArray input = pIn.getFirst();
                 int[] outShapeHW = getOutputSize(input, kernel, strides, pad, same);
-                List<Pair<INDArray, String>> eps = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, new int[]{inputShape[0], inputShape[1], outShapeHW[0], outShapeHW[1]}, DataType.DOUBLE);
+                List<Pair<INDArray, String>> eps = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, new int[]{inputShape[0], inputShape[1], outShapeHW[0], outShapeHW[1]}, DataType.FLOAT);
                 for(Pair<INDArray,String> pEps : eps){
                     INDArray epsilon = pEps.getFirst();
                     INDArray epsNext = Nd4j.create(inputShape, 'c');
