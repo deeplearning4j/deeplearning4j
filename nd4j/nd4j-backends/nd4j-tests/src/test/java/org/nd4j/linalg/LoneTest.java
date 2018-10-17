@@ -22,6 +22,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.Tanh;
@@ -281,7 +282,7 @@ public class LoneTest extends BaseNd4jTest {
         int[] ranksToCheck = new int[]{2, 3, 4, 5};
         for (int rank = 0; rank < ranksToCheck.length; rank++) {
             log.info("\nRunning through rank " + ranksToCheck[rank]);
-            List<Pair<INDArray, String>> allF = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(ranksToCheck[rank], 'f');
+            List<Pair<INDArray, String>> allF = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(ranksToCheck[rank], 'f', DataType.FLOAT);
             Iterator<Pair<INDArray, String>> iter = allF.iterator();
             while (iter.hasNext()) {
                 Pair<INDArray, String> currentPair = iter.next();

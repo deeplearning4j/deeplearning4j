@@ -2810,6 +2810,24 @@ public class Nd4j {
         return rand(ret);
     }
 
+    public static INDArray rand(DataType dataType, char order, int[] shape) {
+        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), order); //INSTANCE.rand(order, shape);
+        logCreationIfNecessary(ret);
+        return rand(ret);
+    }
+
+    public static INDArray rand(DataType dataType, int[] shape, char order) {
+        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), order); //INSTANCE.rand(order, shape);
+        logCreationIfNecessary(ret);
+        return rand(ret);
+    }
+
+    public static INDArray rand(DataType dataType, int[] shape) {
+        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), Nd4j.order()); //INSTANCE.rand(order, shape);
+        logCreationIfNecessary(ret);
+        return rand(ret);
+    }
+
     /**
      * Create a random ndarray with the given shape using
      * the current time as the seed

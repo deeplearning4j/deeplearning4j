@@ -24,6 +24,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -63,7 +64,7 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
     }
 
     public static void compareArrays(int rank, char ordering, TemporaryFolder testDir) throws Exception {
-        List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering);
+        List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering, DataType.FLOAT);
         Iterator<Pair<INDArray,String>> iter = all.iterator();
         int cnt = 0;
         while (iter.hasNext()) {
