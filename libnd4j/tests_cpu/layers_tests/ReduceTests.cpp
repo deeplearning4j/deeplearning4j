@@ -21,6 +21,7 @@
 #include "testinclude.h"
 #include <loops/reduce3.h>
 #include <loops/reduce_float.h>
+#include <ArrayOptions.h>
 
 class ReduceTest : public testing::Test {
 public:
@@ -64,6 +65,7 @@ public:
 
 TEST_F(EuclideanDistanceTest,Test1) {
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
+    nd4j::ArrayOptions::setDataType(shapeBuffer, nd4j::DataType::FLOAT32);
     auto tadShapeBuffer = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
     //shape::printShapeInfoLinear("tadShape", tadShapeBuffer);
     functions::reduce3::Reduce3<float, float>::exec(opNum,
