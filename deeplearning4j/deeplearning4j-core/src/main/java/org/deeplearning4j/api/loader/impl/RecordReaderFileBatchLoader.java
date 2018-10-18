@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.api.loader.impl;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.filebatch.FileBatchRecordReader;
 import org.deeplearning4j.api.loader.DataSetLoader;
@@ -39,6 +41,7 @@ public class RecordReaderFileBatchLoader implements DataSetLoader {
     private final int labelIndexTo;
     private final int numPossibleLabels;
     private final boolean regression;
+    @Getter @Setter
     private DataSetPreProcessor preProcessor;
 
     /**

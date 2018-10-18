@@ -19,6 +19,7 @@ package org.deeplearning4j.spark.util;
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.JavaRDD;
@@ -28,10 +29,7 @@ import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.impl.RecordReaderFileBatchLoader;
 import org.nd4j.api.loader.FileBatch;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -85,7 +83,7 @@ public class SparkDataUtils {
      * //Create DataSetLoader:
      * int batchSize = 32;
      * int numClasses = 1000;
-     * DataSetLoader loader = RecordReaderFileBatchDataSetLoader(rr, batchSize, 1, numClasses);
+     * DataSetLoader loader = RecordReaderFileBatchLoader(rr, batchSize, 1, numClasses);
      *
      * //Fit the network
      * net.fitPaths(paths, loader);
@@ -170,7 +168,7 @@ public class SparkDataUtils {
      * //Create DataSetLoader:
      * int batchSize = 32;
      * int numClasses = 1000;
-     * DataSetLoader loader = RecordReaderFileBatchDataSetLoader(rr, batchSize, 1, numClasses);
+     * DataSetLoader loader = RecordReaderFileBatchLoader(rr, batchSize, 1, numClasses);
      *
      * //Fit the network
      * net.fitPaths(paths, loader);
@@ -191,7 +189,7 @@ public class SparkDataUtils {
     /**
      * See {@link #createFileBatchesSpark(JavaRDD, String, int, JavaSparkContext)}
      */
-    public static void createFileBatchesSpark(JavaRDD<String> filePaths, final String rootOutputDir, final int batchSize, @NonNull org.apache.hadoop.conf.Configuration hadoopConfig) {
+    public static void createFileBatchesSpark(JavaRDD<String> filePaths, final String rootOutputDir, final int batchSize, @NonNull final org.apache.hadoop.conf.Configuration hadoopConfig) {
         final SerializableHadoopConfig conf = new SerializableHadoopConfig(hadoopConfig);
         //Here: assume input is images. We can't store them as Float32 arrays - that's too inefficient
         // instead: let's store the raw file content in a batch.
@@ -204,7 +202,15 @@ public class SparkDataUtils {
                 //Construct file batch
                 List<String> list = new ArrayList<>();
                 List<byte[]> bytes = new ArrayList<>();
+                FileSystem fs = FileSystem.get(conf.getConfiguration());
                 while (stringIterator.hasNext()) {
+                    String inFile = stringIterator.next();
+                    byte[] fileBytes;
+                    try (BufferedInputStream bis = new BufferedInputStream(fs.open(new Path(inFile)))) {
+                        fileBytes = IOUtils.toByteArray(bis);
+                    }
+                    list.add(inFile);
+                    bytes.add(fileBytes);
 
                     if (list.size() == batchSize) {
                         process(list, bytes);

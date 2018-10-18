@@ -19,6 +19,7 @@ package org.datavec.spark.util;
 import lombok.NonNull;
 import org.apache.hadoop.conf.Configuration;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,7 +28,7 @@ import java.util.Map;
  * A serializable version of {@link Configuration}
  * @author Alex Black
  */
-public class SerializableHadoopConfig {
+public class SerializableHadoopConfig implements Serializable {
 
     private Map<String,String> content;
     private transient Configuration configuration;
