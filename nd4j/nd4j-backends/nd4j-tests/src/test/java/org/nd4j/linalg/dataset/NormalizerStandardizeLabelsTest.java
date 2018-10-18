@@ -58,11 +58,11 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
 
         double meanNaturalNums = (nSamples + 1) / 2.0;
         INDArray theoreticalMean =
-                        Nd4j.create(new double[] {meanNaturalNums * x, meanNaturalNums * y, meanNaturalNums * z});
+                        Nd4j.create(new double[] {meanNaturalNums * x, meanNaturalNums * y, meanNaturalNums * z}).reshape(1, -1);
         INDArray theoreticallabelMean = theoreticalMean.dup().getColumns(new int[] {0});
         double stdNaturalNums = Math.sqrt((nSamples * nSamples - 1) / 12.0);
         INDArray theoreticalStd =
-                        Nd4j.create(new double[] {stdNaturalNums * x, stdNaturalNums * y, stdNaturalNums * z});
+                        Nd4j.create(new double[] {stdNaturalNums * x, stdNaturalNums * y, stdNaturalNums * z}).reshape(1, -1);
         INDArray theoreticallabelStd = theoreticalStd.dup().getColumns(new int[] {0});
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
