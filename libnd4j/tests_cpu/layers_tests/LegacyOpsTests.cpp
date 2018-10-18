@@ -23,7 +23,8 @@
 #include <ops/declarable/LegacyTransformOp.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
-#include <ops/declarable/LegacyReduceOp.h>
+#include <ops/declarable/LegacyReduceSameOp.h>
+#include <ops/declarable/LegacyReduceFloatOp.h>
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <ops/declarable/LegacyBroadcastOp.h>
 
@@ -158,7 +159,7 @@ TEST_F(LegacyOpsTests, ReduceTests_1) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
     int opNum = reduce::Sum;
-    nd4j::ops::LegacyReduceOp op(0);
+    nd4j::ops::LegacyReduceSameOp op(opNum);
 
     auto result = op.execute({&x}, {}, {});
 
@@ -177,7 +178,7 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
 
-    nd4j::ops::LegacyReduceOp op(reduce::Sum);
+    nd4j::ops::LegacyReduceSameOp op(reduce::Sum);
 
     auto result = op.execute({&x}, {}, {1});
 
@@ -201,7 +202,7 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
     auto indices = NDArrayFactory::create<int>('c', {1,1}, {1});
 
 
-    nd4j::ops::LegacyReduceOp op(reduce::Sum);
+    nd4j::ops::LegacyReduceSameOp op(reduce::Sum);
     auto result = op.execute({&x, &indices}, {}, {});
     auto z = result->at(0);
     auto exp = x.reduceAlongDims(reduce::Sum,{1});
@@ -221,10 +222,90 @@ TEST_F(LegacyOpsTests, ReduceTests_4) {
     auto indices = NDArrayFactory::create<int>('c', {1,1}, {1});
 
 
-    nd4j::ops::LegacyReduceOp op(reduce::Sum);
+    nd4j::ops::LegacyReduceSameOp op(reduce::Sum);
     auto result = op.execute({&x, &indices}, {}, {1});
     auto z = result->at(0);
     auto exp = x.reduceAlongDims(reduce::Sum, {1}, true);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(LegacyOpsTests, ReduceTests_5) {
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
+    x.assign(1.0);
+    int opNum = reduce::Mean;
+    nd4j::ops::LegacyReduceFloatOp op(opNum);
+
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(1, result->size());
+
+    auto z = result->at(0);
+    z->printBuffer("ReduceTest1");
+    ASSERT_TRUE(z->isScalar());
+    ASSERT_NEAR(x.meanNumber().e<float>(0), z->e<float>(0), 1e-5f);
+
+    delete result;
+}
+
+
+TEST_F(LegacyOpsTests, ReduceTests_6) {
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
+    x.assign(1.0);
+
+    nd4j::ops::LegacyReduceFloatOp op(reduce::Mean);
+
+    auto result = op.execute({&x}, {}, {1});
+
+    ASSERT_EQ(1, result->size());
+
+    auto z = result->at(0);
+
+    auto exp = x.reduceAlongDimension(reduce::Mean, {1});
+
+    ASSERT_TRUE(exp->isSameShape(z));
+    ASSERT_TRUE(exp->equalsTo(z));
+
+    delete result;
+    delete exp;
+}
+
+
+TEST_F(LegacyOpsTests, ReduceTests_7) {
+    auto x = NDArrayFactory::create<float>('c', {3, 5});
+    x.linspace(1);
+    auto indices = NDArrayFactory::create<int>('c', {1,1}, {1});
+
+
+    nd4j::ops::LegacyReduceFloatOp op(reduce::Mean);
+    auto result = op.execute({&x, &indices}, {}, {});
+    auto z = result->at(0);
+    auto exp = x.reduceAlongDims(reduce::Mean,{1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(LegacyOpsTests, ReduceTests_8) {
+    auto x = NDArrayFactory::create<float>('c', {2, 3, 5});
+    x.linspace(1);
+    auto indices = NDArrayFactory::create<int>('c', {1,1}, {1});
+
+
+    nd4j::ops::LegacyReduceFloatOp op(reduce::Mean);
+    auto result = op.execute({&x, &indices}, {}, {1});
+    auto z = result->at(0);
+    auto exp = x.reduceAlongDims(reduce::Mean, {1}, true);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
