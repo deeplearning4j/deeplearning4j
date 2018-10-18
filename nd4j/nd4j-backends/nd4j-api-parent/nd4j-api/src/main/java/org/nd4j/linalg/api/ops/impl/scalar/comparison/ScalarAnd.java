@@ -66,7 +66,7 @@ public class ScalarAnd extends BaseScalarBoolOp {
 
     @Override
     public String opName() {
-        return "notequals_scalar";
+        return "and_scalar";
     }
 
     @Override

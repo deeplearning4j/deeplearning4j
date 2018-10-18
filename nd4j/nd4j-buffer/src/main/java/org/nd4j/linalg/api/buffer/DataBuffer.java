@@ -48,8 +48,12 @@ public interface DataBuffer extends Serializable {
         DIRECT,
         @Deprecated
         HEAP,
+        @Deprecated
         JAVACPP,
+        @Deprecated
         LONG_SHAPE, // long shapes will be used instead of int
+
+        MIXED_DATA_TYPES, // latest generation of INDArrays support multiple data types, with information stored within shapeInfo "offset" field.
     }
 
     /**

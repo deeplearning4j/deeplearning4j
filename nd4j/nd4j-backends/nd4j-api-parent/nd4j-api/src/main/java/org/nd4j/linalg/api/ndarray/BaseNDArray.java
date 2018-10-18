@@ -505,9 +505,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     public BaseNDArray(float[] data, long[] shape, long[] stride, long offset, char ordering) {
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, Nd4j.dataType()));
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, DataType.FLOAT));
         if (data != null && data.length > 0) {
-            this.data = Nd4j.createBuffer(data, offset);
+            this.data = Nd4j.createTypedBuffer(data, DataType.FLOAT);
             if (offset >= data.length)
                 throw new IllegalArgumentException("invalid offset: must be < data.length");
         }
