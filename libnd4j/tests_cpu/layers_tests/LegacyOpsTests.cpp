@@ -38,14 +38,15 @@ class LegacyOpsTests : public testing::Test {
 TEST_F(LegacyOpsTests, TransformTests_1) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
-
+    auto z = NDArrayFactory::create<float>('c', {5,5});
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(-1.0);
 
-    nd4j::ops::LegacyTransformOp op(6);
-    op.execute({&x}, {&x}, {}, {});
-
-    ASSERT_TRUE(x.equalsTo(&exp));
+    nd4j::ops::LegacyTransformOp op(transform::Neg); // Neg
+    auto status = op.execute({&x}, {&z}, {}, {});
+    ASSERT_EQ(status, ND4J_STATUS_OK);
+    //z.printIndexedBuffer("Output NEG");
+    ASSERT_TRUE(z.equalsTo(&exp));
 }
 
 TEST_F(LegacyOpsTests, TransformTests_2) {
@@ -55,7 +56,7 @@ TEST_F(LegacyOpsTests, TransformTests_2) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(-1.0);
 
-    nd4j::ops::LegacyTransformOp op(6);
+    nd4j::ops::LegacyTransformOp op(transform::Neg); // Neg
     auto result = op.execute({&x}, {}, {});
 
     ASSERT_EQ(1, result->size());
@@ -74,7 +75,7 @@ TEST_F(LegacyOpsTests,  Reciprocal_1) {
     auto ethalon = NDArrayFactory::create<float>('c', {5, 5});
     ethalon.assign(0.5f);
 
-    nd4j::ops::LegacyTransformOp op(94);
+    nd4j::ops::LegacyTransformOp op(transform::Reciprocal); // Reciprocal
     Nd4jStatus status = op.execute({&x}, {&x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -92,7 +93,7 @@ TEST_F(LegacyOpsTests,  PWT_Tests_1) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(6.0);
 
-    nd4j::ops::LegacyPairwiseTransformOp op(6);
+    nd4j::ops::LegacyPairwiseTransformOp op(pairwise::Multiply); // Multiply
     Nd4jStatus status = op.execute({&x, &y}, {&x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -112,7 +113,7 @@ TEST_F(LegacyOpsTests,  PWT_Tests_2) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(6.0);
 
-    nd4j::ops::LegacyPairwiseTransformOp op(6);
+    nd4j::ops::LegacyPairwiseTransformOp op(pairwise::Multiply); // Multiply
     auto result = op.execute({&x, &y}, {}, {});
 
     auto z = result->at(0);
@@ -130,8 +131,8 @@ TEST_F(LegacyOpsTests, Scalar_Test_1) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(7.0);
 
-    nd4j::ops::LegacyScalarOp op(0);
-    op.execute({&x}, {&x}, {5.0}, {});
+    nd4j::ops::LegacyScalarOp op(scalar::Add);
+    op.execute({&x}, {&x}, {5.0}, {}); //
 
     ASSERT_TRUE(exp.equalsTo(&x));
 }
@@ -143,7 +144,7 @@ TEST_F(LegacyOpsTests, Scalar_Test_2) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(7.0);
 
-    nd4j::ops::LegacyScalarOp op(0, 5.0f);
+    nd4j::ops::LegacyScalarOp op(scalar::Add, 5.0f);
     auto result = op.execute({&x}, {}, {});
 
     auto z = result->at(0);
@@ -156,15 +157,15 @@ TEST_F(LegacyOpsTests, Scalar_Test_2) {
 TEST_F(LegacyOpsTests, ReduceTests_1) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
-
-    nd4j::ops::LegacyReduceOp op(1);
+    int opNum = reduce::Sum;
+    nd4j::ops::LegacyReduceOp op(0);
 
     auto result = op.execute({&x}, {}, {});
 
     ASSERT_EQ(1, result->size());
 
     auto z = result->at(0);
-
+    z->printBuffer("ReduceTest1");
     ASSERT_TRUE(z->isScalar());
     ASSERT_NEAR(x.sumNumber().e<float>(0), z->e<float>(0), 1e-5f);
 
@@ -176,7 +177,7 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
 
-    nd4j::ops::LegacyReduceOp op(1);
+    nd4j::ops::LegacyReduceOp op(reduce::Sum);
 
     auto result = op.execute({&x}, {}, {1});
 
@@ -197,10 +198,10 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
 TEST_F(LegacyOpsTests, ReduceTests_3) {
     auto x = NDArrayFactory::create<float>('c', {3, 5});
     x.linspace(1);
-    auto indices = NDArrayFactory::create<float>('c', {1,1}, {1});
+    auto indices = NDArrayFactory::create<int>('c', {1,1}, {1});
 
 
-    nd4j::ops::LegacyReduceOp op(1);
+    nd4j::ops::LegacyReduceOp op(reduce::Sum);
     auto result = op.execute({&x, &indices}, {}, {});
     auto z = result->at(0);
     auto exp = x.reduceAlongDims(reduce::Sum,{1});
@@ -217,10 +218,10 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
 TEST_F(LegacyOpsTests, ReduceTests_4) {
     auto x = NDArrayFactory::create<float>('c', {2, 3, 5});
     x.linspace(1);
-    auto indices = NDArrayFactory::create<float>('c', {1,1}, {1});
+    auto indices = NDArrayFactory::create<int>('c', {1,1}, {1});
 
 
-    nd4j::ops::LegacyReduceOp op(1);
+    nd4j::ops::LegacyReduceOp op(reduce::Sum);
     auto result = op.execute({&x, &indices}, {}, {1});
     auto z = result->at(0);
     auto exp = x.reduceAlongDims(reduce::Sum, {1}, true);
@@ -238,7 +239,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_1) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.linspace(1);
 
-    nd4j::ops::LegacyIndexReduceOp op(0);
+    nd4j::ops::LegacyIndexReduceOp op(indexreduce::IndexMax);
 
     auto result = op.execute({&x}, {}, {});
 
@@ -257,7 +258,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.linspace(1);
 
-    nd4j::ops::LegacyIndexReduceOp op(0);
+    nd4j::ops::LegacyIndexReduceOp op(indexreduce::IndexMax);
 
     auto result = op.execute({&x}, {}, {1});
 
@@ -282,7 +283,7 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
     auto row = NDArrayFactory::create<double>('c', {1, 5});
     row.linspace(1);
 
-    nd4j::ops::LegacyBroadcastOp op(0);
+    nd4j::ops::LegacyBroadcastOp op(broadcast::Add);
     Nd4jStatus status = op.execute({&x, &row}, {&x}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
