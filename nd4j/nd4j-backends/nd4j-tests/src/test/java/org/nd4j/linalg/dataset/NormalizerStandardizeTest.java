@@ -58,10 +58,10 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
 
         double meanNaturalNums = (nSamples + 1) / 2.0;
         INDArray theoreticalMean =
-                        Nd4j.create(new double[] {meanNaturalNums * x, meanNaturalNums * y, meanNaturalNums * z});
+                        Nd4j.create(new double[] {meanNaturalNums * x, meanNaturalNums * y, meanNaturalNums * z}).reshape(1, -1);
         double stdNaturalNums = Math.sqrt((nSamples * nSamples - 1) / 12.0);
         INDArray theoreticalStd =
-                        Nd4j.create(new double[] {stdNaturalNums * x, stdNaturalNums * y, stdNaturalNums * z});
+                        Nd4j.create(new double[] {stdNaturalNums * x, stdNaturalNums * y, stdNaturalNums * z}).reshape(1, -1);
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fit(sampleDataSet);
@@ -167,7 +167,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
     @Test
     public void testDifferentBatchSizes() {
         // Create 6x1 matrix of the numbers 1 through 6
-        INDArray values = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).transpose();
+        INDArray values = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1).transpose();
         DataSet dataSet = new DataSet(values, values);
 
         // Test fitting a DataSet
@@ -217,7 +217,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
         DataSetIterator sampleIter = new TestDataSetIterator(sampleDataSet, bSize);
 
-        INDArray theoreticalMean = Nd4j.create(new double[] {x, y, z});
+        INDArray theoreticalMean = Nd4j.create(new double[] {x, y, z}).reshape(1, -1);
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fit(sampleIter);
