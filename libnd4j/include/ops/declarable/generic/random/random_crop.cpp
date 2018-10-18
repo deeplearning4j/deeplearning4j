@@ -48,16 +48,12 @@ CUSTOM_OP_IMPL(random_crop, 2, 1, false, 0, 0) {
         REQUIRE_TRUE((*shape).e<Nd4jLong>(e) <= input->sizeAt(e), 0, "random_crop: Shape tensor should be less than proper input dimension (dim %i, %i > %i).", e, (*shape).e<Nd4jLong>(e), input->sizeAt(e));
     }
 
-    nd4j::random::RandomBuffer* rng = block.getRNG();
-        
-    if (rng == nullptr)
-        return ND4J_STATUS_BAD_RNG;
-
-    return helpers::randomCropFunctor(rng, input, shape, output, seed);
+    return helpers::randomCropFunctor(block, input, shape, output, seed);
 }
 
 DECLARE_SHAPE_FN(random_crop) {
     auto in = INPUT_VARIABLE(1);
+    auto typeShape = inputShape->at(0);
     std::vector<Nd4jLong> shape(in->lengthOf());
 
     Nd4jLong *newShape;
@@ -65,7 +61,7 @@ DECLARE_SHAPE_FN(random_crop) {
     for (int e = 0; e < shape.size(); e++)
         shape[e] = (*in).e<Nd4jLong>(e);
 
-    shape::shapeBuffer(shape.size(), block.dataType(), shape.data(), newShape);
+    shape::shapeBuffer(shape.size(), ArrayOptions::dataType(typeShape), shape.data(), newShape);
 
     return SHAPELIST(newShape);
 }

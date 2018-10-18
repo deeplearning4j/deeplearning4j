@@ -74,8 +74,13 @@ namespace nd4j {
             template <typename T>
             T relativeT(Nd4jLong index);
 
-
             void rewindH(Nd4jLong steps);
+
+            /**
+             * These methods set up only node states, with non-changed root ones
+             */
+            void setSeed(int seed) { _nodeState._ulong = static_cast<uint64_t>(seed); }
+            void setSeed(uint64_t seed) { _nodeState._ulong = seed; }
         };
     }
 }

@@ -22,12 +22,13 @@
 #include <op_boilerplate.h>
 #include <NDArray.h>
 #include <helpers/helper_random.h>
+#include <graph/Context.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* shape, NDArray* output, int seed);
+    int randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed);
 
 }
 }
