@@ -1966,7 +1966,7 @@ public class Nd4j {
      */
     public static INDArray linspace(double lower, double upper, long num, DataType dataType) {
         // FIXME: int cast
-        return Nd4j.getExecutioner().exec(new Linspace(lower, upper, (int) num));
+        return Nd4j.getExecutioner().exec(new Linspace(lower, upper, (int) num, dataType));
     }
 
     /**
@@ -5193,14 +5193,9 @@ public class Nd4j {
      * @param columns the columns of the ndarray
      * @return the created ndarray
      */
-    public static INDArray ones(int columns) {
-        INDArray ret = INSTANCE.ones(columns);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
 
-    public static INDArray ones(DataType dataType, int columns) {
-        INDArray ret = INSTANCE.createUninitialized(dataType, new long[]{columns}, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
+    public static INDArray ones(DataType dataType, long... columns) {
+        INDArray ret = INSTANCE.createUninitialized(dataType, columns, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
         ret.assign(1);
         logCreationIfNecessary(ret);
         return ret;

@@ -129,7 +129,7 @@ public class ConcatTests extends BaseNd4jTest {
         INDArray third = Nd4j.linspace(36, 48, 12, DataType.DOUBLE).reshape('c', 1, 3, 4);
 
         //ConcatV2, dim 0
-        INDArray exp = Nd4j.create(2 + 1 + 1, 3, 4);
+        INDArray exp = Nd4j.create(DataType.DOUBLE, 2 + 1 + 1, 3, 4);
         exp.put(new INDArrayIndex[] {NDArrayIndex.interval(0, 2), NDArrayIndex.all(), NDArrayIndex.all()}, first);
         exp.put(new INDArrayIndex[] {NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.all()}, second);
         exp.put(new INDArrayIndex[] {NDArrayIndex.point(3), NDArrayIndex.all(), NDArrayIndex.all()}, third);
@@ -143,7 +143,7 @@ public class ConcatTests extends BaseNd4jTest {
         //ConcatV2, dim 1
         second = Nd4j.linspace(24, 32, 8, DataType.DOUBLE).reshape('c', 2, 1, 4);
         third = Nd4j.linspace(32, 48, 16, DataType.DOUBLE).reshape('c', 2, 2, 4);
-        exp = Nd4j.create(2, 3 + 1 + 2, 4);
+        exp = Nd4j.create(DataType.DOUBLE, 2, 3 + 1 + 2, 4);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(0, 3), NDArrayIndex.all()}, first);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.point(3), NDArrayIndex.all()}, second);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(4, 6), NDArrayIndex.all()}, third);
@@ -157,7 +157,7 @@ public class ConcatTests extends BaseNd4jTest {
         //ConcatV2, dim 2
         second = Nd4j.linspace(24, 36, 12, DataType.DOUBLE).reshape('c', 2, 3, 2);
         third = Nd4j.linspace(36, 42, 6, DataType.DOUBLE).reshape('c', 2, 3, 1);
-        exp = Nd4j.create(2, 3, 4 + 2 + 1);
+        exp = Nd4j.create(DataType.DOUBLE, 2, 3, 4 + 2 + 1);
 
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)}, first);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(4, 6)}, second);

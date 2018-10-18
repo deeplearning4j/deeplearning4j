@@ -17,6 +17,7 @@
 package org.nd4j.linalg.rng;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -31,6 +32,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
  */
 @Slf4j
 @RunWith(Parameterized.class)
+@Ignore
 public class RandomPerformanceTests extends BaseNd4jTest {
 
     public RandomPerformanceTests(Nd4jBackend backend) {

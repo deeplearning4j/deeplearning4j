@@ -210,7 +210,7 @@ public class RandomTests extends BaseNd4jTest {
     public void testLinspace1() throws Exception {
         INDArray z1 = Nd4j.linspace(1, 100, 200, DataType.DOUBLE);
 
-        Linspace linspace = new Linspace(1, 100, 200);
+        Linspace linspace = new Linspace(1, 100, 200, DataType.DOUBLE);
         Nd4j.getExecutioner().exec(linspace, Nd4j.getRandom());
 
         INDArray z2 = linspace.z();
