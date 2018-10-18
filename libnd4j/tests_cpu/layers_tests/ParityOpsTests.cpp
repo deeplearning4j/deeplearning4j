@@ -391,10 +391,10 @@ TEST_F(ParityOpsTests, Test_Shape_1) {
 TEST_F(ParityOpsTests, Test_Equals_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<float>('c', {1, 5}, {1, 0, 3, 0, 5});
-    auto exp = NDArrayFactory::create<float>('c', {1, 5}, {1, 0, 1, 0, 1});
+    auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {1, 0, 1, 0, 1});
 
     nd4j::ops::equals op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -409,10 +409,10 @@ TEST_F(ParityOpsTests, Test_Equals_1) {
 TEST_F(ParityOpsTests, Test_NotEquals_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<float>('c', {1, 5}, {1, 0, 3, 0, 5});
-    auto exp = NDArrayFactory::create<float>('c', {1, 5}, {0, 1, 0, 1, 0});
+    auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {0, 1, 0, 1, 0});
 
     nd4j::ops::not_equals op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -426,10 +426,10 @@ TEST_F(ParityOpsTests, Test_NotEquals_1) {
 TEST_F(ParityOpsTests, Test_Less_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<float>('c', {1, 5}, {5, 4, 3, 2, 1});
-    auto exp = NDArrayFactory::create<float>('c', {1, 5}, {1, 1, 0, 0, 0});
+    auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {1, 1, 0, 0, 0});
 
     nd4j::ops::less op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -443,10 +443,10 @@ TEST_F(ParityOpsTests, Test_Less_1) {
 TEST_F(ParityOpsTests, Test_LessEquals_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<float>('c', {1, 5}, {5, 4, 3, 2, 1});
-    auto exp = NDArrayFactory::create<float>('c', {1, 5}, {1, 1, 1, 0, 0});
+    auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {1, 1, 1, 0, 0});
 
     nd4j::ops::less_equal op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -460,10 +460,10 @@ TEST_F(ParityOpsTests, Test_LessEquals_1) {
 TEST_F(ParityOpsTests, Test_GreaterEquals_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<float>('c', {1, 5}, {5, 4, 3, 2, 1});
-    auto exp = NDArrayFactory::create<float>('c', {1, 5}, {0, 0, 1, 1, 1});
+    auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {0, 0, 1, 1, 1});
 
     nd4j::ops::greater_equal op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -477,10 +477,10 @@ TEST_F(ParityOpsTests, Test_GreaterEquals_1) {
 TEST_F(ParityOpsTests, Test_Greater_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<float>('c', {1, 5}, {5, 4, 3, 2, 1});
-    auto exp = NDArrayFactory::create<float>('c', {1, 5}, {0, 0, 0, 1, 1});
+    auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {0, 0, 0, 1, 1});
 
     nd4j::ops::greater op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -492,7 +492,7 @@ TEST_F(ParityOpsTests, Test_Greater_1) {
 }
 
 TEST_F(ParityOpsTests, Test_Where_1) {
-    auto mask = NDArrayFactory::create<float>('c', {3, 3}, {1, 1, 1,  0, 0, 0,  1, 1, 1});
+    auto mask = NDArrayFactory::create<bool>('c', {3, 3}, {1, 1, 1,  0, 0, 0,  1, 1, 1});
     auto x = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto y = NDArrayFactory::create<float>('c', {3, 3}, {9, 8, 7, 6, 5, 4, 3, 2, 1});
     auto exp = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 6, 5, 4, 7, 8, 9});
@@ -512,7 +512,7 @@ TEST_F(ParityOpsTests, Test_Where_1) {
 }
 
 TEST_F(ParityOpsTests, Test_Where_2) {
-    auto mask = NDArrayFactory::create<float>('c', {1, 3}, {1, 0, 0});
+    auto mask = NDArrayFactory::create<bool>('c', {1, 3}, {1, 0, 0});
     auto x = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto y = NDArrayFactory::create<float>('c', {3, 3}, {9, 8, 7, 6, 5, 4, 3, 2, 1});
     auto exp = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 6, 5, 4, 3, 2, 1});
@@ -531,8 +531,8 @@ TEST_F(ParityOpsTests, Test_Where_2) {
 
 
 TEST_F(ParityOpsTests, Test_Where_3) {
-    auto mask = NDArrayFactory::create<float>('c', {2, 2, 3}, {0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0});
-    auto exp = NDArrayFactory::create<float>('c', {5, 3}, {0, 0, 1, 0, 0, 2, 0, 1, 1, 1, 0, 0, 1, 1, 2});
+    auto mask = NDArrayFactory::create<bool>('c', {2, 2, 3}, {0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {5, 3}, {0, 0, 1, 0, 0, 2, 0, 1, 1, 1, 0, 0, 1, 1, 2});
 
     nd4j::ops::Where op;
     auto result = op.execute({&mask}, {}, {});
@@ -549,7 +549,7 @@ TEST_F(ParityOpsTests, Test_Where_3) {
 }
 
 TEST_F(ParityOpsTests, Test_Select_1) {
-    auto mask = NDArrayFactory::create<float>('c', {1, 3}, {1, 0, 0});
+    auto mask = NDArrayFactory::create<bool>('c', {1, 3}, {1, 0, 0});
     auto x = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto y = NDArrayFactory::create<float>('c', {3, 3}, {9, 8, 7, 6, 5, 4, 3, 2, 1});
     auto exp = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 6, 5, 4, 3, 2, 1});
@@ -567,7 +567,7 @@ TEST_F(ParityOpsTests, Test_Select_1) {
 }
 
 TEST_F(ParityOpsTests, Test_Select_2) {
-    auto mask = NDArrayFactory::create<float>('c', {2, 2}, {1, 0, 1, 0});
+    auto mask = NDArrayFactory::create<bool>('c', {2, 2}, {1, 0, 1, 0});
     auto x = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4 });
     auto y = NDArrayFactory::create<float>('c', {2, 2}, {9, 8, 7, 6});
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {1, 8, 3, 6});
@@ -585,7 +585,7 @@ TEST_F(ParityOpsTests, Test_Select_2) {
 }
 
 TEST_F(ParityOpsTests, Test_Select_3) {
-    auto mask = NDArrayFactory::create<float>('c', {1, 1}, {0.});
+    auto mask = NDArrayFactory::create<bool>('c', {1, 1}, {false});
     auto x = NDArrayFactory::create<float>('c', {1, 1}, {1});
     auto y = NDArrayFactory::create<float>('c', {1, 1}, {2});
     auto exp = NDArrayFactory::create<float>('c', {1, 1}, {2});
@@ -603,10 +603,10 @@ TEST_F(ParityOpsTests, Test_Select_3) {
 }
 
 TEST_F(ParityOpsTests, Test_Reshape_TF_1) {
-    auto x = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto shape = NDArrayFactory::create<float>('c', {1, 3}, {1, 2, 2});
+    auto x = NDArrayFactory::create<int>('c', {2, 2}, {1, 2, 3, 4});
+    auto shape = NDArrayFactory::create<int>('c', {1, 3}, {1, 2, 2});
 
-    auto exp = NDArrayFactory::create<float>('c', {1, 2, 2}, {1, 2, 3, 4});
+    auto exp = NDArrayFactory::create<int>('c', {1, 2, 2}, {1, 2, 3, 4});
     
     nd4j::ops::reshape op;
 
