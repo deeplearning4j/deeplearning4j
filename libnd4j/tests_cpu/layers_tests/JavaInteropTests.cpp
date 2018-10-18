@@ -338,7 +338,7 @@ TEST_F(JavaInteropTests, TestPNorm_1) {
 
     nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 11, false);
 
-    ASSERT_TRUE(output.meanNumber() > 0.0);
+    ASSERT_TRUE(output.meanNumber().e<double>(0) > 0.0);
 }
 
 
