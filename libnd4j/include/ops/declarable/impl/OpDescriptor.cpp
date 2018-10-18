@@ -222,6 +222,10 @@ namespace nd4j {
         }
 
         bool OpDescriptor::checkDataTypesMatch(nd4j::DataType needle, std::vector<nd4j::DataType> &haystack) const {
+            // if haystack is empty - INHERIT is occurs - any type is perfect?
+            if (haystack.empty())
+                return true;
+
             // first we're checking for direct input type match
             if (std::find(haystack.begin(), haystack.end(), needle) == haystack.end()) {
 
