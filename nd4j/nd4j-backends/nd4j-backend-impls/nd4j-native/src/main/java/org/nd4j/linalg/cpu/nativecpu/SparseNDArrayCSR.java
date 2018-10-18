@@ -117,21 +117,6 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public INDArray convertToHalfs() {
-        return null;
-    }
-
-    @Override
-    public INDArray convertToFloats() {
-        return null;
-    }
-
-    @Override
-    public INDArray convertToDoubles() {
-        return null;
-    }
-
     /**
      * This method returns true if this INDArray is special case: no-value INDArray
      *
