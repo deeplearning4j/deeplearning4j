@@ -43,50 +43,6 @@ public class CompressionSerDeTests extends BaseNd4jTest {
     }
 
 
-    /*
-        This test checks for automatic decompression after deserialization
-     */
-    @Test
-    public void testAutoDecompression1() throws Exception {
-        INDArray array = Nd4j.linspace(1, 250, 250, DataType.DOUBLE);
-
-        INDArray compressed = Nd4j.getCompressor().compress(array, "UINT8");
-
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        Nd4j.write(bos, compressed);
-
-        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-
-        INDArray result = Nd4j.read(bis);
-        Nd4j.getCompressor().autoDecompress(result);
-
-        array.equals(result);
-        assertEquals(array, result);
-    }
-
-    @Test
-    public void testManualDecompression1() throws Exception {
-        INDArray array = Nd4j.linspace(1, 5, 10, DataType.DOUBLE);
-
-        INDArray compressed = Nd4j.getCompressor().compress(array, "FLOAT16");
-
-        assertEquals(true, compressed.isCompressed());
-
-        //        assertEquals(true, compressed.data() instanceof CompressedDataBuffer);
-
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        Nd4j.write(bos, compressed);
-
-        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-
-        INDArray result = Nd4j.read(bis);
-
-        assertTrue(result.isCompressed());
-        INDArray decomp = Nd4j.getCompressor().decompress(result);
-
-        assertArrayEquals(array.data().asFloat(), decomp.data().asFloat(), 0.1f);
-    }
-
     @Test
     public void testAutoDecompression2() throws Exception {
         INDArray array = Nd4j.linspace(1, 10, 11, DataType.DOUBLE);

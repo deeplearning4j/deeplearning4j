@@ -54,19 +54,6 @@ public class CompressionTests extends BaseNd4jTest {
         super(backend);
     }
 
-    @Test
-    public void testCompressionView() {
-        BasicNDArrayCompressor compressor = BasicNDArrayCompressor.getInstance().setDefaultCompression("UINT8");
-
-        INDArray compressed = compressor.compress(Nd4j.create(1, 1, 1));
-        INDArray reshaped = compressed.reshape(1, 1, 1, 1);
-
-        // After a reshape, "reshaped" is no longer marked as compressed, but the underlying data buffer is of opType compressed
-        // Because of that mismatch, this will fail with an illegal state exception:
-        Convolution.im2col(reshaped, new int[] {1, 1}, new int[] {1, 1}, new int[] {1, 1});
-
-    }
-
 
     @Test
     public void testCompressionDescriptorSerde() {

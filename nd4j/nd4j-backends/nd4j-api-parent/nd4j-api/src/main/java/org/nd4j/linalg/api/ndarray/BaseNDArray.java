@@ -6267,45 +6267,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    @Override
-    public INDArray convertToHalfs() {
-        if (data.dataType() == DataType.HALF)
-            return this;
-
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.HALF);
-
-        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataTypeEx.FLOAT16, buffer.addressPointer(), buffer.length());
-
-        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
-    }
-
-    @Override
-    public INDArray convertToFloats() {
-        if (data.dataType() == DataType.FLOAT)
-            return this;
-
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.FLOAT);
-
-        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataTypeEx.FLOAT, buffer.addressPointer(), buffer.length());
-
-        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
-    }
-
-    @Override
-    public INDArray convertToDoubles() {
-        if (data.dataType() == DataType.DOUBLE)
-            return this;
-
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.DOUBLE);
-
-        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataTypeEx.DOUBLE, buffer.addressPointer(), buffer.length());
-
-        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
-    }
-
     protected static DataTypeEx convertType(DataType type) {
         if (type == DataType.HALF) {
             return DataTypeEx.FLOAT16;
