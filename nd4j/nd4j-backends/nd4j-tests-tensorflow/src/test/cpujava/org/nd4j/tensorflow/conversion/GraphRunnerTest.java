@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
 
@@ -118,4 +119,23 @@ public class GraphRunnerTest {
         }
     }
 
+    @Test
+    public void testSyntaxNetSavedModel() throws Exception {
+        File f = new File("../../../../javacpp-presets/syntaxnet/samples/brain_tagger_demo_model/");
+        try(GraphRunner graphRunner = new GraphRunner(f.getAbsolutePath(),"serve","serving_default")) {
+            INDArray input = Nd4j.create("This is a test.", "This is another test.");
+            INDArray zero = Nd4j.create(new int[] {0}, new long[0], DataType.INT);
+            Map<String,INDArray> inputs = new LinkedHashMap<>();
+            inputs.put("documents_input",input);
+            inputs.put("max_beam_size",zero);
+            Map<String,INDArray> outputs = graphRunner.run(inputs);
+            assertEquals(1, outputs.size());
+            INDArray output = outputs.get("documents_sink");
+            assertEquals(2, output.length());
+            String string = output.getStringUnsafe(0);
+            String string2 = output.getStringUnsafe(1);
+            System.out.println(string);
+            System.out.println(string2);
+        }
+    }
 }

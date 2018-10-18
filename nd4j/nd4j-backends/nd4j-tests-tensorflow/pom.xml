@@ -60,7 +60,7 @@
                                     <all>false</all>
                                 </requireActiveProfile>
                                 <requireActiveProfile>
-                                    <profiles>tf-cpu,tf-gpu</profiles>
+                                    <profiles>tf-cpu,tf-syntaxnet-cpu,tf-gpu</profiles>
                                     <all>false</all>
                                 </requireActiveProfile>
                             </rules>
@@ -117,6 +117,16 @@
                     <artifactId>tensorflow</artifactId>
                     <version>${tensorflow.javacpp.version}</version>
                     <classifier>linux-x86_64-gpu</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>tf-syntaxnet-cpu</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <artifactId>syntaxnet-platform</artifactId>
+                    <version>master-1.4.3</version>
                 </dependency>
             </dependencies>
         </profile>
