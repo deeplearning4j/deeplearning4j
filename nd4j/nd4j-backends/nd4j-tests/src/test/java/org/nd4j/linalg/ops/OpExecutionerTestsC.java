@@ -364,12 +364,13 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testComparisonOps() {
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE);
-        INDArray ones = Nd4j.ones(DataType.DOUBLE, 1,6);
-        INDArray zeros = Nd4j.create(DataType.DOUBLE, new long[]{1,6});
-        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, 0)));
-        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, 7)));
-        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, 0)));
-        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, 7)));
+        INDArray ones = Nd4j.ones(DataType.BOOL, 1,6);
+        INDArray zeros = Nd4j.create(DataType.BOOL, new long[]{1,6});
+        INDArray res = Nd4j.create(DataType.BOOL, new long[]{1,6});
+        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, res, 0)));
+        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, res,7)));
+        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, res,0)));
+        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, res,7)));
     }
 
     @Test
@@ -405,7 +406,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray slice = arr.slice(0);
         Log exp = new Log(slice);
         opExecutioner.exec(exp);
-        INDArray assertion = Nd4j.create(Nd4j.createBuffer(new double[] {0.0, 0.6931471824645996, 1.0986123085021973}));
+        INDArray assertion = Nd4j.create(Nd4j.createBuffer(new double[] {0.0, 0.6931471824645996, 1.0986123085021973})).reshape(1, -1);
         assertEquals(getFailureMessage(), assertion, slice);
     }
 
