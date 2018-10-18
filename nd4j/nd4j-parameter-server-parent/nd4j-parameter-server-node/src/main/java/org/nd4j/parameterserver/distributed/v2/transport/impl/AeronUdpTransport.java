@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
@@ -150,6 +151,8 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         public Thread newThread(@NotNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
+            //TODO implement support for multi-GPU masters
+            Nd4j.getAffinityManager().attachThreadToDevice(t, 0);   //Associate thread with device 0 (no-op for CPU)
             return t;
         }
     });
