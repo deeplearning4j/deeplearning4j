@@ -148,7 +148,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                     double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency,
                     int rddDataSetNumExamples,
                     int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode, int workerPrefetchBatches,
-                    Repartitioner repartitioner) {
+                    Repartitioner repartitioner, Boolean workerTogglePeriodicGC, Integer workerPeriodicGCFrequency) {
         this.voidConfiguration = voidConfiguration;
         this.numWorkers = numWorkers;
         this.threshold = threshold;
@@ -169,6 +169,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         this.numWorkersPerNode = numWorkersPerNode;
         this.workerPrefetchBatches = workerPrefetchBatches;
         this.repartitioner = repartitioner;
+        this.workerTogglePeriodicGC = workerTogglePeriodicGC;
+        this.workerPeriodicGCFrequency = workerPeriodicGCFrequency;
 
 
         if (collectTrainingStats)
@@ -272,7 +274,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logBroadcastEnd();
 
-        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration, listeners, statsStorage);
+        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration, listeners,
+                statsStorage, workerTogglePeriodicGC, workerPeriodicGCFrequency);
 
         return worker;
     }
@@ -301,7 +304,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logBroadcastEnd();
 
-        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration, listeners, statsStorage);
+        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration, listeners,
+                statsStorage, workerTogglePeriodicGC, workerPeriodicGCFrequency);
 
         return worker;
     }
@@ -890,6 +894,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected int numWorkersPerNode = -1;
         protected int workerPrefetchNumBatches = 2;
         protected Repartitioner repartitioner = new DefaultRepartitioner();
+        protected Boolean workerTogglePeriodicGC;
+        protected Integer workerPeriodicGCFrequency;
 
         /**
          * Create a SharedTrainingMaster with defaults other than the RDD number of examples
@@ -1232,11 +1238,36 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             return this;
         }
 
+        /**
+         * Used to disable the periodic garbage collection calls on the workers.<br>
+         * Equivalent to {@code Nd4j.getMemoryManager().togglePeriodicGc(workerTogglePeriodicGC);}<br>
+         * Pass false to disable periodic GC on the workers or true (equivalent to the default, or not setting it) to keep it enabled.
+         * 
+         * @param workerTogglePeriodicGC Worker periodic garbage collection setting
+         */
+        public Builder workerTogglePeriodicGC(boolean workerTogglePeriodicGC){
+            this.workerTogglePeriodicGC = workerTogglePeriodicGC;
+            return this;
+        }
+
+        /**
+         * Used to set the periodic garbage collection frequency on the workers.<br>
+         * Equivalent to calling {@code Nd4j.getMemoryManager().setAutoGcWindow(workerPeriodicGCFrequency);} on each worker<br>
+         * Does not have any effect if {@link #workerTogglePeriodicGC(boolean)} is set to false
+         * 
+         * @param workerPeriodicGCFrequency The periodic GC frequency to use on the workers
+         */
+        public Builder workerPeriodicGCFrequency(int workerPeriodicGCFrequency){
+            this.workerPeriodicGCFrequency = workerPeriodicGCFrequency;
+            return this;
+        }
+
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach,
                             storageLevel, collectTrainingStats, repartitionStrategy, repartition, threshold,
                             minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, rddDataSetNumExamples, batchSize,
-                            debugLongerIterations, numWorkersPerNode, workerPrefetchNumBatches, repartitioner);
+                            debugLongerIterations, numWorkersPerNode, workerPrefetchNumBatches, repartitioner, workerTogglePeriodicGC,
+                    workerPeriodicGCFrequency);
             if (transport != null)
                 master.transport = this.transport;
 
