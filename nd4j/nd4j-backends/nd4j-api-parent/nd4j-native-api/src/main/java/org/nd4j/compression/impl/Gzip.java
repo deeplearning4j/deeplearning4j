@@ -20,6 +20,7 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
@@ -57,7 +58,7 @@ public class Gzip extends AbstractCompressor {
     }
 
     @Override
-    public DataBuffer decompress(DataBuffer buffer) {
+    public DataBuffer decompress(DataBuffer buffer, DataType dataType) {
         try {
 
             CompressedDataBuffer compressed = (CompressedDataBuffer) buffer;
@@ -68,7 +69,7 @@ public class Gzip extends AbstractCompressor {
             GZIPInputStream gzip = new GZIPInputStream(bis);
             DataInputStream dis = new DataInputStream(gzip);
 
-            DataBuffer bufferRestored = Nd4j.createBuffer(descriptor.getNumberOfElements());
+            DataBuffer bufferRestored = Nd4j.createBuffer(dataType, descriptor.getNumberOfElements(), false);
             bufferRestored.read(dis);
 
             return bufferRestored;

@@ -1234,6 +1234,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 pointer = new ShortPointer(length());
                 setIndexer(HalfIndexer.create((ShortPointer) pointer));
                 break;
+            case COMPRESSED:
+                break;
             default:
                 throw new UnsupportedOperationException();
         }

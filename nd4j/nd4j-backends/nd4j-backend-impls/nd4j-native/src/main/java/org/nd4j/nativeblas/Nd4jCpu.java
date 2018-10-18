@@ -4604,8 +4604,13 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
              * This method returns T value between 0 and MAX_T
              */
 
-
             public native void rewindH(@Cast("Nd4jLong") long steps);
+
+            /**
+             * These methods set up only node states, with non-changed root ones
+             */
+            public native void setSeed(int seed);
+            public native void setSeed(@Cast("uint64_t") long seed);
         }
     
 

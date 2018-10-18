@@ -20,6 +20,7 @@ import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
@@ -55,7 +56,7 @@ public class NoOp extends AbstractCompressor {
     }
 
     @Override
-    public DataBuffer decompress(DataBuffer buffer) {
+    public DataBuffer decompress(DataBuffer buffer, DataType type) {
 
         CompressedDataBuffer comp = (CompressedDataBuffer) buffer;
 

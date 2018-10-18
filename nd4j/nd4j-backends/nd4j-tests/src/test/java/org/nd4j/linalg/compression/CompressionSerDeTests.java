@@ -58,7 +58,9 @@ public class CompressionSerDeTests extends BaseNd4jTest {
         ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
 
         INDArray result = Nd4j.read(bis);
+        Nd4j.getCompressor().autoDecompress(result);
 
+        array.equals(result);
         assertEquals(array, result);
     }
 

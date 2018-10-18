@@ -391,6 +391,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
+    public INDArray create(DataBuffer data, long[] shape, long[] stride, long offset, char ordering, DataType dataType) {
+        return new NDArray(data, shape, stride, offset, ordering, dataType);
+    }
+
+    @Override
     public INDArray create(float[] data, long[] shape, long[] stride, char order, long offset) {
         return new NDArray(data, shape, stride, offset, order);
     }
