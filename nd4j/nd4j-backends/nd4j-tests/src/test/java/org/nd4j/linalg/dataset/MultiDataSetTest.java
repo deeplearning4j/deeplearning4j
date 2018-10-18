@@ -430,16 +430,16 @@ public class MultiDataSetTest extends BaseNd4jTest {
 
         //Test 2d mask merging, 2d data
         //features
-        INDArray f2d1 = Nd4j.create(new double[] {1, 2, 3});
+        INDArray f2d1 = Nd4j.create(new double[] {1, 2, 3}).reshape(1, -1);
         INDArray f2d2 = Nd4j.create(new double[][] {{4, 5, 6}, {7, 8, 9}});
         //labels
-        INDArray l2d1 = Nd4j.create(new double[] {1.5, 2.5, 3.5});
+        INDArray l2d1 = Nd4j.create(new double[] {1.5, 2.5, 3.5}).reshape(1, -1);
         INDArray l2d2 = Nd4j.create(new double[][] {{4.5, 5.5, 6.5}, {7.5, 8.5, 9.5}});
         //feature masks
-        INDArray fm2d1 = Nd4j.create(new double[] {0, 1, 1});
+        INDArray fm2d1 = Nd4j.create(new double[] {0, 1, 1}).reshape(1, -1);
         INDArray fm2d2 = Nd4j.create(new double[][] {{1, 0, 1}, {0, 1, 0}});
         //label masks
-        INDArray lm2d1 = Nd4j.create(new double[] {1, 1, 0});
+        INDArray lm2d1 = Nd4j.create(new double[] {1, 1, 0}).reshape(1, -1);
         INDArray lm2d2 = Nd4j.create(new double[][] {{1, 0, 0}, {0, 1, 1}});
 
         MultiDataSet mds2d1 = new MultiDataSet(f2d1, l2d1, fm2d1, lm2d1);

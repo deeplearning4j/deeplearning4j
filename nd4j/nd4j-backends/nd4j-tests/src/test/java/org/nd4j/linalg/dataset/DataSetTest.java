@@ -732,7 +732,7 @@ public class DataSetTest extends BaseNd4jTest {
                     int f_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(i);
                     int f_next_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(j);
                     int f_element_diff = f_next_element - f_element;
-                    assertTrue(f_element_diff == ds_data.stride(dim));
+                    assertEquals(f_element_diff, ds_data.stride(dim));
                 }
             }
         }
@@ -769,7 +769,7 @@ public class DataSetTest extends BaseNd4jTest {
                     int f_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(i);
                     int f_next_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(j);
                     int f_element_diff = f_next_element - f_element;
-                    assertTrue(f_element_diff == ds_data.stride(dim));
+                    assertEquals(f_element_diff, ds_data.stride(dim));
                 }
             }
         }
@@ -783,7 +783,7 @@ public class DataSetTest extends BaseNd4jTest {
                 int l_element = ds.getLabels().tensorAlongDimension(tensorNum, dim).getInt(i);
                 int l_next_element = ds.getLabels().tensorAlongDimension(tensorNum, dim).getInt(j);
                 int l_element_diff = l_next_element - l_element;
-                assertTrue(l_element_diff == ds_labels.stride(dim));
+                assertEquals(l_element_diff, ds_labels.stride(dim));
             }
         }
     }
