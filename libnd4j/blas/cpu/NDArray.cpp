@@ -1571,11 +1571,11 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
     if (isS())
         throw std::runtime_error("NDArray::applyPairwiseTransform BoolOps: you can't use this method on String array!");
     if (other->lengthOf() != target->lengthOf())
-        throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
+        throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - lengths of arrays are mismatched");
     if (!target->isB())
-        throw std::invalid_argument("NDArray::applyPairwiseTransform method - result must have bool type");
+        throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - result must have bool type");
     if (_dataType != other->_dataType)
-        throw std::invalid_argument("NDArray::applyPairwiseTransform method - this and other arrays must have the same type !");
+        throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - this and other arrays must have the same type !");
 
     NativeOpExcutioner::execPairwiseBoolTransform(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
 }
