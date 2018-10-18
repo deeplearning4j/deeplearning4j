@@ -55,33 +55,6 @@ public class CompressionMagicTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testMagicDecompression2() throws Exception {
-        INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
-
-        INDArray compressed = Nd4j.getCompressor().compress(array, "FLOAT16");
-
-        assertTrue(compressed.isCompressed());
-        compressed.muli(1.0);
-
-        assertArrayEquals(array.data().asFloat(), compressed.data().asFloat(), 0.1f);
-    }
-
-    @Test
-    public void testMagicDecompression3() throws Exception {
-        INDArray array = Nd4j.linspace(1, 2500, 2500, DataType.FLOAT);
-
-        INDArray compressed = Nd4j.getCompressor().compress(array, "INT16");
-
-        Nd4j.getExecutioner().commit();;
-
-        assertTrue(compressed.isCompressed());
-        compressed.muli(1.0);
-
-        assertEquals(array, compressed);
-    }
-
-
-    @Test
     public void testMagicDecompression4() throws Exception {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
