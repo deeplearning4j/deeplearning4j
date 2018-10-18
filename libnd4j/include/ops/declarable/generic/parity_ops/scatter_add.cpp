@@ -23,7 +23,7 @@
 #if NOT_EXCLUDED(OP_scatter_add)
 
 #include <ops/declarable/CustomOperations.h>
-//#include <ops/declarable/generic/helpers/ScatterHelper.h>
+#include <ops/declarable/generic/helpers/ScatterHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -32,8 +32,6 @@ namespace nd4j {
             auto indices = INPUT_VARIABLE(1);
             auto updates = INPUT_VARIABLE(2);
 
-            // FIXME: scatter helper should be updated
-/*
             auto output = OUTPUT_VARIABLE(0);
 
             const int inRank  = input->rankOf();
@@ -70,9 +68,8 @@ namespace nd4j {
             if (!block.isInplace())
                 output->assign(input);
 
-            // ScatterHelper<T>::template scatterApply<simdOps::Add<T>>(output, indices, updates);
-            ScatterHelper::scatter<simdOps::Add<T>>(*indices, *updates, *output);
-*/
+            ScatterHelper::scatter(pairwise::Add, *indices, *updates, *output);
+
             return Status::OK();
         }
         DECLARE_SYN(ScatterAdd, scatter_add);
@@ -80,8 +77,10 @@ namespace nd4j {
 
     DECLARE_TYPES(scatter_add) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setSameMode(true);
+            ->setAllowedInputTypes(0, DataType::ANY)
+            ->setAllowedInputTypes(1, {ALL_INTS})
+            ->setAllowedInputTypes(2, DataType::ANY)
+            ->setAllowedOutputTypes(DataType::ANY);
     }
 }
 
