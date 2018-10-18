@@ -162,7 +162,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testReadWriteDouble() throws Exception {
-        INDArray write = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
+        INDArray write = Nd4j.linspace(1, 4, 4, DataType.FLOAT);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         Nd4j.write(write, dos);
@@ -1068,7 +1068,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray row = Nd4j.ones(5).reshape(1, -1);
         for (int i = 0; i < 5; i++) {
             INDArray col = row.getColumn(i);
-            assertArrayEquals(col.shape(), new long[] {1, 1});
+            assertArrayEquals(col.shape(), new long[] {});
         }
 
         INDArray col = Nd4j.ones(5, 1);

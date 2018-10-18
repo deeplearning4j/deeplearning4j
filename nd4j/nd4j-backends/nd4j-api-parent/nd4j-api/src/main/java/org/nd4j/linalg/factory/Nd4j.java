@@ -70,6 +70,7 @@ import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.cache.BasicConstantHandler;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.compression.BasicNDArrayCompressor;
@@ -2545,7 +2546,7 @@ public class Nd4j {
         DataBuffer shapeInformation = Nd4j.createBufferDetached(new long[1], DataType.LONG);
         shapeInformation.read(dis);
         val length = Shape.length(shapeInformation);
-        DataBuffer data = CompressedDataBuffer.readUnknown(dis, length);
+        DataBuffer data = CompressedDataBuffer.readUnknown(dis, length, ArrayOptionsHelper.dataType(shapeInformation.asLong()));
         return createArrayFromShapeBuffer(data, shapeInformation);
     }
 

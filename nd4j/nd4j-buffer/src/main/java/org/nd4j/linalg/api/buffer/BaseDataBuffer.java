@@ -1211,25 +1211,31 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     public void pointerIndexerByGlobalType(DataType currentType) {
-        if (currentType == DataType.LONG) {
-            pointer = new LongPointer(length());
-            setIndexer(LongIndexer.create((LongPointer) pointer));
-            type = DataType.LONG;
-        } else if (currentType == DataType.INT) {
-            pointer = new IntPointer(length());
-            setIndexer(IntIndexer.create((IntPointer) pointer));
-            type = DataType.INT;
-        } else {
-            if (DataTypeUtil.getDtypeFromContext() == DataType.DOUBLE) {
-                pointer = new DoublePointer(length());
-                indexer = DoubleIndexer.create((DoublePointer) pointer);
-            } else if (DataTypeUtil.getDtypeFromContext() == DataType.FLOAT) {
-                pointer = new FloatPointer(length());
-                setIndexer(FloatIndexer.create((FloatPointer) pointer));
-            } else if (DataTypeUtil.getDtypeFromContext() == DataType.LONG) {
+        switch (currentType) {
+            case LONG:
                 pointer = new LongPointer(length());
                 setIndexer(LongIndexer.create((LongPointer) pointer));
-            }
+                type = DataType.LONG;
+                break;
+            case INT:
+                pointer = new IntPointer(length());
+                setIndexer(IntIndexer.create((IntPointer) pointer));
+                type = DataType.INT;
+                break;
+            case DOUBLE:
+                pointer = new DoublePointer(length());
+                indexer = DoubleIndexer.create((DoublePointer) pointer);
+                break;
+            case FLOAT:
+                pointer = new FloatPointer(length());
+                setIndexer(FloatIndexer.create((FloatPointer) pointer));
+                break;
+            case HALF:
+                pointer = new ShortPointer(length());
+                setIndexer(HalfIndexer.create((ShortPointer) pointer));
+                break;
+            default:
+                throw new UnsupportedOperationException();
         }
     }
 
@@ -1615,6 +1621,36 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
                 if (currentType != DataType.COMPRESSED)
                     readContent(s, currentType, DataTypeUtil.getDtypeFromContext());
+            } else if (allocationMode.equals(AllocationMode.MIXED_DATA_TYPES)) {
+                length = s.readLong();
+                type = DataType.valueOf(s.readUTF());
+                switch (type) {
+                    case LONG:
+                    case DOUBLE:
+                        elementSize = 8;
+                        break;
+                    case FLOAT:
+                    case INT:
+                        elementSize = 4;
+                        break;
+                    case SHORT:
+                    case HALF:
+                        elementSize = 2;
+                        break;
+                    case BOOL:
+                    case BYTE:
+                    case UBYTE:
+                    case UTF8:
+                        elementSize = 1;
+                        break;
+                    default:
+                        throw new UnsupportedOperationException();
+                }
+
+                pointerIndexerByGlobalType(type);
+
+                if (type != DataType.COMPRESSED)
+                    readContent(s, type, type);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
