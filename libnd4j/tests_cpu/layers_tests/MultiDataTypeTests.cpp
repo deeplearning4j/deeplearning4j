@@ -1467,3 +1467,46 @@ TEST_F(MultiDataTypeTests, ndarray_applyTriplewiseLambda_test1) {
     x8.applyTriplewiseLambda<bool>(&x9, &x10, func4);
     ASSERT_EQ(x8, exp);    
 }
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
+
+    NDArray x1('c', {2,3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::DOUBLE);   
+    NDArray exp1('c', {0}, {5}, nd4j::DataType::INT64);
+    NDArray exp2('c', {2}, {2,2}, nd4j::DataType::INT64);
+    NDArray exp3('c', {3}, {1,1,1}, nd4j::DataType::INT64);
+    
+    NDArray* scalar = x1.applyIndexReduce(nd4j::indexreduce::IndexMax, {0,1});    
+    ASSERT_EQ(*scalar, exp1);
+
+    NDArray* vec1 = x1.applyIndexReduce(nd4j::indexreduce::IndexMax, {1});    
+    ASSERT_EQ(*vec1, exp2);
+
+    NDArray* vec2 = x1.applyIndexReduce(nd4j::indexreduce::IndexMax, {0});
+    ASSERT_EQ(*vec2, exp3);
+
+    delete scalar;
+    delete vec1;
+    delete vec2;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test2) {
+
+    NDArray x1('c', {2,3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::DOUBLE);   
+    NDArray scalar('c', {0}, {5}, nd4j::DataType::INT64);
+    NDArray vec1('c', {2}, {2,2}, nd4j::DataType::INT64);
+    NDArray vec2('c', {3}, {1,1,1}, nd4j::DataType::INT64);
+    NDArray exp1('c', {0}, {5}, nd4j::DataType::INT64);
+    NDArray exp2('c', {2}, {2,2}, nd4j::DataType::INT64);
+    NDArray exp3('c', {3}, {1,1,1}, nd4j::DataType::INT64);
+    
+    x1.applyIndexReduce(nd4j::indexreduce::IndexMax, &scalar, {0,1});
+    ASSERT_EQ(scalar, exp1);
+
+    x1.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec1, {1});    
+    ASSERT_EQ(vec1, exp2);
+
+    x1.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec2, {0});
+    ASSERT_EQ(vec2, exp3);
+}

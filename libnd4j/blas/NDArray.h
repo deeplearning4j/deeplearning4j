@@ -640,10 +640,10 @@ namespace nd4j {
 
 
         /**
- *  reduces dimensions in this array relying on index operation OpName
- *  dimensions - vector of dimensions to reduce along
- *  extraArgs - extra parameters for operation
- */
+        *  reduces dimensions in this array relying on index operation OpName
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
         NDArray* applyIndexReduce(nd4j::indexreduce::Ops op, const std::vector<int>& dimensions, const void *extraParams = nullptr) const;
 
         /**
