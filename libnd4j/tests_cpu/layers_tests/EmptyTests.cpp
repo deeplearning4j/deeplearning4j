@@ -97,8 +97,8 @@ TEST_F(EmptyTests, Test_Concat_2) {
 
 TEST_F(EmptyTests, Test_Reshape_1) {
     auto vector = NDArrayFactory::create<float>('c', {1}, {119.0f});
-    auto exp = NDArrayFactory::create<float>(119.0f);
-    auto empty = NDArrayFactory::empty<float>();
+    auto exp = NDArrayFactory::create<float>(119.f);
+    auto empty = NDArrayFactory::empty<int>();
 
     nd4j::ops::reshape op;
     auto result = op.execute({&vector, empty}, {}, {});
@@ -114,7 +114,7 @@ TEST_F(EmptyTests, Test_Reshape_1) {
 TEST_F(EmptyTests, Test_Reshape_2) {
     auto vector = NDArrayFactory::create<float>('c', {1}, {119.0f});
     auto exp = NDArrayFactory::create<float>(119.0f);
-    auto empty = NDArrayFactory::empty<float>();
+    auto empty = NDArrayFactory::empty<Nd4jLong>();
 
     nd4j::ops::reshape op;
     auto result = op.execute({&vector, empty}, {}, {}, true);
