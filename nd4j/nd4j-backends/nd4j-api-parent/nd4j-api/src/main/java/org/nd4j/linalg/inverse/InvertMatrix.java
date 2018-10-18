@@ -53,7 +53,7 @@ public class InvertMatrix {
         RealMatrix rmInverse = new LUDecomposition(rm).getSolver().getInverse();
 
 
-        INDArray inverse = CheckUtil.convertFromApacheMatrix(rmInverse);
+        INDArray inverse = CheckUtil.convertFromApacheMatrix(rmInverse, arr.dataType());
         if (inPlace)
             arr.assign(inverse);
         return inverse;
@@ -79,7 +79,7 @@ public class InvertMatrix {
 
         RealMatrix pinvRM = solver.getInverse();
 
-        INDArray pseudoInverse = CheckUtil.convertFromApacheMatrix(pinvRM);
+        INDArray pseudoInverse = CheckUtil.convertFromApacheMatrix(pinvRM, arr.dataType());
 
         if (inPlace)
             arr.assign(pseudoInverse);

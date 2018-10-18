@@ -73,7 +73,7 @@ public class TestInvertMatrices extends BaseNd4jTest {
             RealMatrix rm = CheckUtil.convertToApacheMatrix(orig);
             RealMatrix rmInverse = new LUDecomposition(rm).getSolver().getInverse();
 
-            INDArray expected = CheckUtil.convertFromApacheMatrix(rmInverse);
+            INDArray expected = CheckUtil.convertFromApacheMatrix(rmInverse, orig.dataType());
             assertTrue(p.getSecond(), CheckUtil.checkEntries(expected, inverse, 1e-3, 1e-4));
         }
     }

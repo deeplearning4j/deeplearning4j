@@ -220,7 +220,7 @@ public class CustomOpsTests {
         val array3 = Nd4j.create(new double[] {0, 0, 0, 4, 0});
         val array4 = Nd4j.create(new double[] {0, 0, 0, 0, 5});
 
-        val z = Nd4j.create(5);
+        val z = Nd4j.create(DataType.DOUBLE, 5);
         val exp = Nd4j.create(new double[]{1, 2, 3, 4, 5});
 
         CustomOp op = DynamicCustomOp.builder("mergemax")
