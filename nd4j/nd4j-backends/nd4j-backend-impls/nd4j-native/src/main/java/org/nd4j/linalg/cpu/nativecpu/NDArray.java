@@ -20,6 +20,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.*;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -124,6 +125,10 @@ public class NDArray extends BaseNDArray {
         super(data, shape, stride, ordering, type);
     }
 
+    public NDArray(DataBuffer data, long[] shape, long[] stride, char ordering, DataType type, MemoryWorkspace workspace) {
+        super(data, shape, stride, ordering, type, workspace);
+    }
+
     public NDArray(double[] data, long[] shape, long offset, char ordering) {
         super(data, shape, offset, ordering);
     }
@@ -168,8 +173,16 @@ public class NDArray extends BaseNDArray {
         super(type, shape, stride, offset, ordering, true);
     }
 
+    public NDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, MemoryWorkspace workspace) {
+        super(type, shape, stride, offset, ordering, true, workspace);
+    }
+
     public NDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
         super(type, shape, stride, offset, ordering, initialize);
+    }
+
+    public NDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize, MemoryWorkspace workspace) {
+        super(type, shape, stride, offset, ordering, initialize, workspace);
     }
 
     /**

@@ -21,6 +21,7 @@ import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCOO;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SparseFormat;
@@ -72,17 +73,17 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public INDArray create(DataType dataType, long[] shape, char ordering) {
+    public INDArray create(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(DataType dataType, long[] shape, long[] strides, char ordering) {
+    public INDArray create(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray createUninitialized(DataType dataType, long[] shape, char ordering) {
+    public INDArray createUninitialized(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace) {
         return null;
     }
 
@@ -129,67 +130,67 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public INDArray create(double[] data, long[] shape, long[] stride, DataType dataType) {
+    public INDArray create(double[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(float[] data, long[] shape, long[] stride, DataType dataType) {
+    public INDArray create(float[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(long[] data, long[] shape, long[] stride, DataType dataType) {
+    public INDArray create(long[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(int[] data, long[] shape, long[] stride, DataType dataType) {
+    public INDArray create(int[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(short[] data, long[] shape, long[] stride, DataType dataType) {
+    public INDArray create(short[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType) {
+    public INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType) {
+    public INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(double[] data, long[] shape, long[] stride, char order, DataType dataType) {
+    public INDArray create(double[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(long[] data, long[] shape, long[] stride, char order, DataType dataType) {
+    public INDArray create(long[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(int[] data, long[] shape, long[] stride, char order, DataType dataType) {
+    public INDArray create(int[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(short[] data, long[] shape, long[] stride, char order, DataType dataType) {
+    public INDArray create(short[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(byte[] data, long[] shape, long[] stride, char order, DataType dataType) {
+    public INDArray create(byte[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
     @Override
-    public INDArray create(boolean[] data, long[] shape, long[] stride, char order, DataType dataType) {
+    public INDArray create(boolean[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
@@ -246,6 +247,11 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     @Override
     public INDArray trueScalar(Number value) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
+        return null;
     }
 
     @Override

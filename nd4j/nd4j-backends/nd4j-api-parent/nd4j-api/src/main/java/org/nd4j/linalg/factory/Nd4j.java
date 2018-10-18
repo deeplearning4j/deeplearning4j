@@ -1589,43 +1589,43 @@ public class Nd4j {
      * @return
      */
     public static DataBuffer createTypedBuffer(double[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
     public static DataBuffer createTypedBuffer(float[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
     public static DataBuffer createTypedBuffer(int[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
     public static DataBuffer createTypedBuffer(long[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
     public static DataBuffer createTypedBuffer(short[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
     public static DataBuffer createTypedBuffer(byte[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
     public static DataBuffer createTypedBuffer(boolean[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
@@ -3322,7 +3322,7 @@ public class Nd4j {
     }
 
     public static INDArray create(boolean[] data) {
-        return INSTANCE.create(data, new long[]{data.length}, new long[]{1}, DataType.BOOL);
+        return INSTANCE.create(data, new long[]{data.length}, new long[]{1}, DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
 
@@ -3389,16 +3389,16 @@ public class Nd4j {
 
     public static INDArray create(long[][] data) {
         val shape = new long[]{data.length, data[0].length};
-        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.LONG);
+        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.LONG, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     public static INDArray create(boolean[][] data) {
         val shape = new long[]{data.length, data[0].length};
-        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL);
+        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     public static INDArray create(boolean[][] data, long[] shape) {
-        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL);
+        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     public static INDArray create(double[][][] data) {
@@ -3491,43 +3491,43 @@ public class Nd4j {
 
 
     public static INDArray create(int[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static INDArray create(long[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static INDArray create(double[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static INDArray create(float[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static INDArray create(short[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static INDArray create(byte[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static INDArray create(boolean[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type);
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3631,7 +3631,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, Nd4j.order()), DataType.FLOAT);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, Nd4j.order()), DataType.FLOAT, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3650,7 +3650,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, Nd4j.order()), DataType.DOUBLE);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, Nd4j.order()), DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3673,7 +3673,7 @@ public class Nd4j {
         checkShapeValues(data.length, shape);
 
         val lshape = ArrayUtil.toLongArray(shape);
-        INDArray ret = INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, Nd4j.order()), DataType.DOUBLE);
+        INDArray ret = INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, Nd4j.order()), DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3699,7 +3699,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), DataType.DOUBLE);
+        INDArray ret = INSTANCE.create(data, ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3710,7 +3710,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, stride, order, DataType.DOUBLE);
+        INDArray ret = INSTANCE.create(data, shape, stride, order, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4222,7 +4222,7 @@ public class Nd4j {
 
         checkShapeValues(shape);
 
-        INDArray ret = INSTANCE.create(shape, dataType);
+        INDArray ret = INSTANCE.create(shape, dataType, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4279,7 +4279,7 @@ public class Nd4j {
         checkShapeValues(data.length, shape);
 
         val lshape = ArrayUtil.toLongArray(shape);
-        INDArray ret = INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, ordering), ordering, DataType.DOUBLE);
+        INDArray ret = INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, ordering), ordering, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4324,7 +4324,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, ordering), ordering, DataType.DOUBLE);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, ordering), ordering, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4593,7 +4593,7 @@ public class Nd4j {
 
         checkShapeValues(shape);
 
-        INDArray ret = INSTANCE.create(dataType, shape, strides, ordering);
+        INDArray ret = INSTANCE.create(dataType, shape, strides, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4605,7 +4605,7 @@ public class Nd4j {
 
         checkShapeValues(shape);
 
-        INDArray ret = INSTANCE.create(dataType, shape, ordering);
+        INDArray ret = INSTANCE.create(dataType, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4695,7 +4695,7 @@ public class Nd4j {
 
         checkShapeValues(shape);
 
-        INDArray ret = INSTANCE.createUninitialized(type, shape, ordering);
+        INDArray ret = INSTANCE.createUninitialized(type, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5041,7 +5041,7 @@ public class Nd4j {
     }
 
     public static INDArray zeros(DataType dataType, int columns) {
-        return INSTANCE.create(dataType, new long[]{columns}, 'c');
+        return INSTANCE.create(dataType, new long[]{columns}, 'c', Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
@@ -5199,7 +5199,7 @@ public class Nd4j {
     }
 
     public static INDArray ones(DataType dataType, int columns) {
-        INDArray ret = INSTANCE.createUninitialized(dataType, new long[]{columns}, Nd4j.order());
+        INDArray ret = INSTANCE.createUninitialized(dataType, new long[]{columns}, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
         ret.assign(1);
         logCreationIfNecessary(ret);
         return ret;

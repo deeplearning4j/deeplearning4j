@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 
@@ -840,21 +841,21 @@ public interface NDArrayFactory {
 
     INDArray create(double[] data, long[] shape, long[] stride, long offset);
 
-    INDArray create(double[] data, long[] shape, long[] stride, DataType dataType);
-    INDArray create(float[] data, long[] shape, long[] stride, DataType dataType);
-    INDArray create(long[] data, long[] shape, long[] stride, DataType dataType);
-    INDArray create(int[] data, long[] shape, long[] stride, DataType dataType);
-    INDArray create(short[] data, long[] shape, long[] stride, DataType dataType);
-    INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType);
-    INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType);
+    INDArray create(double[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace);
+    INDArray create(float[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace);
+    INDArray create(long[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace);
+    INDArray create(int[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace);
+    INDArray create(short[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace);
+    INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace);
+    INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace);
 
 
-    INDArray create(double[] data, long[] shape, long[] stride, char order, DataType dataType);
-    INDArray create(long[] data, long[] shape, long[] stride, char order, DataType dataType);
-    INDArray create(int[] data, long[] shape, long[] stride, char order, DataType dataType);
-    INDArray create(short[] data, long[] shape, long[] stride, char order, DataType dataType);
-    INDArray create(byte[] data, long[] shape, long[] stride, char order, DataType dataType);
-    INDArray create(boolean[] data, long[] shape, long[] stride, char order, DataType dataType);
+    INDArray create(double[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace);
+    INDArray create(long[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace);
+    INDArray create(int[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace);
+    INDArray create(short[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace);
+    INDArray create(byte[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace);
+    INDArray create(boolean[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace);
 
 
     /**
@@ -1087,15 +1088,15 @@ public interface NDArrayFactory {
 
     INDArray create(long[] shape, char ordering);
 
-    INDArray create(DataType dataType, long[] shape, char ordering);
+    INDArray create(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace);
 
-    INDArray create(DataType dataType, long[] shape, long[] strides, char ordering);
+    INDArray create(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace workspace);
 
     INDArray createUninitialized(int[] shape, char ordering);
 
     INDArray createUninitialized(long[] shape, char ordering);
 
-    INDArray createUninitialized(DataType dataType, long[] shape, char ordering);
+    INDArray createUninitialized(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace);
 
     /**
      * Cretes uninitialized INDArray detached from any (if any) workspace
@@ -1241,7 +1242,7 @@ public interface NDArrayFactory {
      * @param dataType
      * @return
      */
-    INDArray create(int[] shape, DataType dataType);
+    INDArray create(int[] shape, DataType dataType, MemoryWorkspace workspace);
 
     /**
      *

@@ -130,6 +130,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             for (int k = i - 1, j = 0; k >= 0; k--, j++)
                 tadFinalPermuteDimensions[i][j] = k;
         }
+        val t =1;
     }
 
     public BaseNDArray() {
@@ -196,6 +197,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, char ordering, DataType type) {
+        this.data = buffer;
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, type));
+        init(shape, stride);
+        // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
+    }
+
+    public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, char ordering, DataType type, MemoryWorkspace workspace) {
         this.data = buffer;
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, type));
@@ -311,6 +320,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
+        this(Nd4j.createBuffer(type, ArrayUtil.prodLong(shape), initialize), type, shape, stride, offset, ordering);
+    }
+
+    public BaseNDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize, MemoryWorkspace workspace) {
         this(Nd4j.createBuffer(type, ArrayUtil.prodLong(shape), initialize), type, shape, stride, offset, ordering);
     }
 
