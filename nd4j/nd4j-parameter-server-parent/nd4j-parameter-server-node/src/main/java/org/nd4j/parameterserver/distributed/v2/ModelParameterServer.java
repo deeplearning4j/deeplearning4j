@@ -214,7 +214,7 @@ public final class ModelParameterServer {
      * This method starts parameter server
      */
     public synchronized void launch() {
-        log.info("ModelParameterServer starts");
+        log.info("ModelParameterServer starting");
         if (launchLock.get())
             return;
 
@@ -239,7 +239,7 @@ public final class ModelParameterServer {
                     val uParams = updaterParams.getPayload();
                     if (uParams != null) {
                         updaterParamsSubscribers.forEach(s -> s.onNext(uParams));
-                        log.info("Updater parameters propagated...");
+                        log.debug("Updater parameters propagated...");
                     }
                 } catch (Exception e) {
                     log.error("RestartCallback processing exception: {}", e);
@@ -290,7 +290,7 @@ public final class ModelParameterServer {
                     // we're not requesting updater params if
                     if (!gotFinalState.get()) {
                         val tId = transport.getRandomDownstreamFrom(transport.getRootId(), updaterParametersRequest.getOriginatorId());
-                        log.info("Sending UpdaterParameters request to [{}]", tId);
+                        log.debug("Sending UpdaterParameters request to [{}]", tId);
 
                         // trying to get updaters from root downstreams, excluding original message sender
                         UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), tId);
@@ -313,7 +313,7 @@ public final class ModelParameterServer {
                         updaterParamsLock.readLock().lock();
 
                         // send updater parameters somewhere
-                        log.info("Trying to send back Updater parameters...");
+                        log.debug("Trying to send back Updater parameters...");
                         val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), updaterParameters.get().getParameters());
                         msg.setRequestId(updaterParametersRequest.getRequestId());
                         transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
@@ -328,7 +328,7 @@ public final class ModelParameterServer {
                 @Override
                 public void accept(UpdaterParametersRequest updaterParametersRequest) throws Exception {
                     // master mode physically can't have updater parameters
-                    log.info("Trying to send back Updater parameters...");
+                    log.debug("Trying to send back Updater parameters...");
                     if (updaterParametersProvider == null) {
                         log.warn("UpdaterParametersProvider wasn't set!");
                         val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), null);
@@ -360,10 +360,10 @@ public final class ModelParameterServer {
 
                 // it's possible to get updates messages BEFORE model was properly initalized
                 if (updatesSubscribers.isEmpty()) {
-                    log.info("Storing GradientsUpdateMessage into backlog queue...");
+                    log.debug("Storing GradientsUpdateMessage into backlog queue...");
                     updatesQueue.add(message.getPayload());
                 } else {
-                    log.info("Propagating GradientsUpdateMessage to subscribers: [{}]", updatesSubscribers.size());
+                    log.debug("Propagating GradientsUpdateMessage to subscribers: [{}]", updatesSubscribers.size());
                     updatesSubscribers.forEach(s -> s.onNext(message.getPayload()));
                 }
             } else
