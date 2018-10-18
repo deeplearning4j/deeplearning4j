@@ -74,6 +74,9 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_1)
     Nd4jLong xShapeInfo[]   = {3, 3, 2, 2, 4, 2, 1, 0, 1, 99};
     Nd4jLong yShapeInfo[]   = {2,    1, 2,    2, 1, 0, 1, 99};
     Nd4jLong expShapeInfo[] = {3, 3, 2, 2, 4, 2, 1, 0, 1, 99};
+    ArrayOptions::setDataType(xShapeInfo, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(yShapeInfo, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray x(xShapeInfo);
     NDArray y(yShapeInfo);
@@ -92,7 +95,10 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_2)
 
     Nd4jLong xShapeInfo[]   = {4, 8, 1, 6, 1, 6,   6,  1, 1, 0, 1, 99};    
     Nd4jLong yShapeInfo[]   = {3,    7, 1, 5,      5,  5, 1, 0, 1, 99};
-    Nd4jLong expShapeInfo[] = {4, 8, 7, 6, 5, 210, 30, 5, 1, 0, 1, 99};    
+    Nd4jLong expShapeInfo[] = {4, 8, 7, 6, 5, 210, 30, 5, 1, 0, 1, 99};
+    ArrayOptions::setDataType(xShapeInfo, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(yShapeInfo, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray x(xShapeInfo);
     NDArray y(yShapeInfo);
@@ -112,6 +118,9 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_3)
     Nd4jLong xShapeInfo[]   = {3, 15, 3, 5, 15, 5, 1, 0, 1, 99};
     Nd4jLong yShapeInfo[]   = {3, 15, 1, 5,  5, 5, 1, 0, 1, 99};
     Nd4jLong expShapeInfo[] = {3, 15, 3, 5, 15, 5, 1, 0, 1, 99};
+    ArrayOptions::setDataType(xShapeInfo, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(yShapeInfo, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray x(xShapeInfo);
     NDArray y(yShapeInfo);
@@ -131,6 +140,9 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_4)
     Nd4jLong xShapeInfo[]   = {3, 8, 1, 3,  3, 3, 1, 0, 1, 99};
     Nd4jLong yShapeInfo[]   = {2,    4, 3,     3, 1, 0, 1, 99};    
     Nd4jLong expShapeInfo[] = {3, 8, 4, 3, 12, 3, 1, 0, 1, 99};
+    ArrayOptions::setDataType(xShapeInfo, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(yShapeInfo, nd4j::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShapeInfo, nd4j::DataType::FLOAT32);
 
     NDArray x(xShapeInfo);
     NDArray y(yShapeInfo);
