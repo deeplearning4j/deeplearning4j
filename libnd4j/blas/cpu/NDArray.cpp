@@ -1451,9 +1451,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
             target = this;
 
         if (!target->isR())
-            throw std::runtime_error("Target array must have one of FLOAT types");
-        if (_length != target->_length)
-            throw std::runtime_error("NDArray::applyTransform FloatOps: both array must have the same length !");
+            throw std::runtime_error("NDArray::applyTransform FloatOps: target array must have one of FLOAT types");
 
         NativeOpExcutioner::execTransformFloat(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
     }
@@ -1466,9 +1464,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
             target = this;
 
         if (target->dataType() != this->dataType())
-            throw std::runtime_error("Target array must the same data type as original array");
-        if (_length != target->_length)
-            throw std::runtime_error("NDArray::applyTransform FloatOps: both array must have the same length !");
+            throw std::runtime_error("NDArray::applyTransform SameOps: target array must the same data type as original array");
 
         NativeOpExcutioner::execTransformSame(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
     }
@@ -1481,9 +1477,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
             target = this;
 
         if (!target->isB())
-            throw std::runtime_error("Target array must have one of BOOL types");
-        if (_length != target->_length)
-            throw std::runtime_error("NDArray::applyTransform FloatOps: both array must have the same length !");
+            throw std::runtime_error("NDArray::applyTransform BoolOps: target array must have one of BOOL types");
 
         NativeOpExcutioner::execTransformBool(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
     }
@@ -1496,9 +1490,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
             target = this;
         
         if (!this->isR() || !target->isR() || (this->dataType() != target->dataType()))
-            throw std::runtime_error("Both Source and Target array must have same FLOAT type !");
-        if (_length != target->_length)
-            throw std::runtime_error("NDArray::applyTransform FloatOps: both array must have the same length !");
+            throw std::runtime_error("NDArray::applyTransform StrictOps: both Source and Target array must have same FLOAT type !");
 
         NativeOpExcutioner::execTransformStrict(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
     }

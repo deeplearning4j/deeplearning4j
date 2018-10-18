@@ -37,7 +37,8 @@ namespace nd4j {
             auto shapeList = SHAPELIST();
             auto x = inputShape->at(0);
             auto y = inputShape->at(1);
-            nd4j::DataType dtype;
+            nd4j::DataType dtype = block.dataType();
+            if (block.dataType() != nd4j::DataType::BOOL)
             if (shape::length(y) > shape::length(x)) {
                 dtype = DataTypeUtils::pickPairwiseResultType(y, x);
             } else {
