@@ -339,15 +339,15 @@ public class MultiDataSetTest extends BaseNd4jTest {
         int nColsOut0 = 5;
         int nColsOut1 = 6;
 
-        INDArray expectedIn0 = Nd4j.zeros(nRows, nColsIn0, tsLengthIn0);
-        INDArray expectedIn1 = Nd4j.zeros(nRows, nColsIn1, tsLengthIn1);
-        INDArray expectedOut0 = Nd4j.zeros(nRows, nColsOut0, tsLengthOut0);
-        INDArray expectedOut1 = Nd4j.zeros(nRows, nColsOut1, tsLengthOut1);
+        INDArray expectedIn0 = Nd4j.create(DataType.DOUBLE, nRows, nColsIn0, tsLengthIn0);
+        INDArray expectedIn1 = Nd4j.create(DataType.DOUBLE, nRows, nColsIn1, tsLengthIn1);
+        INDArray expectedOut0 = Nd4j.create(DataType.DOUBLE, nRows, nColsOut0, tsLengthOut0);
+        INDArray expectedOut1 = Nd4j.create(DataType.DOUBLE, nRows, nColsOut1, tsLengthOut1);
 
-        INDArray expectedMaskIn0 = Nd4j.zeros(nRows, tsLengthIn0);
-        INDArray expectedMaskIn1 = Nd4j.zeros(nRows, tsLengthIn1);
-        INDArray expectedMaskOut0 = Nd4j.zeros(nRows, tsLengthOut0);
-        INDArray expectedMaskOut1 = Nd4j.zeros(nRows, tsLengthOut1);
+        INDArray expectedMaskIn0 = Nd4j.create(DataType.DOUBLE, nRows, tsLengthIn0);
+        INDArray expectedMaskIn1 = Nd4j.create(DataType.DOUBLE, nRows, tsLengthIn1);
+        INDArray expectedMaskOut0 = Nd4j.create(DataType.DOUBLE, nRows, tsLengthOut0);
+        INDArray expectedMaskOut1 = Nd4j.create(DataType.DOUBLE, nRows, tsLengthOut1);
 
 
         Random r = new Random(12345);

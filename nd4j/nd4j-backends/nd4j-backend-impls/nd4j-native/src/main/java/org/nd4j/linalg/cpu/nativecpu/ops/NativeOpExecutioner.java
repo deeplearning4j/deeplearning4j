@@ -323,7 +323,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             ret = op.z();
         }
 
-        log.info("X dtype: {}; Z dtype: {}", op.x().dataType(), op.z().dataType());
+        //log.info("X dtype: {}; Z dtype: {}", op.x().dataType(), op.z().dataType());
 
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}

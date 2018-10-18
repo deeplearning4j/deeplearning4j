@@ -639,16 +639,16 @@ public class DataSetTest extends BaseNd4jTest {
 
         //Test 2d mask merging, 2d data
         //features
-        INDArray f2d1 = Nd4j.create(new double[] {1, 2, 3});
+        INDArray f2d1 = Nd4j.create(new double[] {1, 2, 3}).reshape(1, -1);
         INDArray f2d2 = Nd4j.create(new double[][] {{4, 5, 6}, {7, 8, 9}});
         //labels
-        INDArray l2d1 = Nd4j.create(new double[] {1.5, 2.5, 3.5});
+        INDArray l2d1 = Nd4j.create(new double[] {1.5, 2.5, 3.5}).reshape(1, -1);
         INDArray l2d2 = Nd4j.create(new double[][] {{4.5, 5.5, 6.5}, {7.5, 8.5, 9.5}});
         //feature masks
-        INDArray fm2d1 = Nd4j.create(new double[] {0, 1, 1});
+        INDArray fm2d1 = Nd4j.create(new double[] {0, 1, 1}).reshape(1, -1);
         INDArray fm2d2 = Nd4j.create(new double[][] {{1, 0, 1}, {0, 1, 0}});
         //label masks
-        INDArray lm2d1 = Nd4j.create(new double[] {1, 1, 0});
+        INDArray lm2d1 = Nd4j.create(new double[] {1, 1, 0}).reshape(1, -1);
         INDArray lm2d2 = Nd4j.create(new double[][] {{1, 0, 0}, {0, 1, 1}});
 
         DataSet mds2d1 = new DataSet(f2d1, l2d1, fm2d1, lm2d1);
@@ -871,8 +871,8 @@ public class DataSetTest extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         List<DataSet> list = new ArrayList<>(numExamples);
         for (int i = 0; i < numExamples; i++) {
-            INDArray in = Nd4j.rand(new long[] {1, inSize, minTSLength + i});
-            INDArray out = Nd4j.rand(new long[] {1, labelSize, minTSLength + i});
+            INDArray in = Nd4j.rand(DataType.DOUBLE, new long[] {1, inSize, minTSLength + i});
+            INDArray out = Nd4j.rand(DataType.DOUBLE, new long[] {1, labelSize, minTSLength + i});
             list.add(new DataSet(in, out));
         }
 
