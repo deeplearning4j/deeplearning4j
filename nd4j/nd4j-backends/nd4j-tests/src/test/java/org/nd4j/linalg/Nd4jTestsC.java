@@ -290,7 +290,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testAudoBroadcastAddMatrix() {
         INDArray arr = Nd4j.linspace(1,4,4, DataType.DOUBLE).reshape(2,2);
-        INDArray row = Nd4j.ones(2);
+        INDArray row = Nd4j.ones(1, 2);
         INDArray assertion = arr.add(1.0);
         INDArray test = arr.add(row);
         assertEquals(assertion,test);
@@ -2894,8 +2894,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatHorizontally() {
-        INDArray rowVector = Nd4j.ones(5);
-        INDArray other = Nd4j.ones(5);
+        INDArray rowVector = Nd4j.ones(1, 5);
+        INDArray other = Nd4j.ones(1, 5);
         INDArray concat = Nd4j.hstack(other, rowVector);
         assertEquals(rowVector.rows(), concat.rows());
         assertEquals(rowVector.columns() * 2, concat.columns());
@@ -2908,7 +2908,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testArgMaxSameValues() {
         //Here: assume that by convention, argmax returns the index of the FIRST maximum value
         //Thus, argmax(ones(...)) = 0 by convention
-        INDArray arr = Nd4j.ones(10);
+        INDArray arr = Nd4j.ones(DataType.DOUBLE,1,10);
 
         for (int i = 0; i < 10; i++) {
             double argmax = Nd4j.argMax(arr, 1).getDouble(0);

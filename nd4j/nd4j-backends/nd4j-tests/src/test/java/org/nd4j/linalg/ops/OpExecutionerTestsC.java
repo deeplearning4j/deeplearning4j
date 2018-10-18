@@ -186,7 +186,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testScalarMaxOp() {
         INDArray scalarMax = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).negi();
-        INDArray postMax = Nd4j.ones(6);
+        INDArray postMax = Nd4j.ones(DataType.DOUBLE, 1, 6);
         Nd4j.getExecutioner().exec(new ScalarMax(scalarMax, 1));
         assertEquals(getFailureMessage(), scalarMax, postMax);
     }
@@ -356,7 +356,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray oneThroughSix = Nd4j.linspace(1, 6, 6, DataType.DOUBLE);
         Pow pow = new Pow(oneThroughSix, 2);
         Nd4j.getExecutioner().exec(pow);
-        INDArray answer = Nd4j.create(new float[] {1, 4, 9, 16, 25, 36});
+        INDArray answer = Nd4j.create(new double[] {1, 4, 9, 16, 25, 36});
         assertEquals(getFailureMessage(), answer, pow.z());
     }
 
@@ -364,8 +364,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testComparisonOps() {
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE);
-        INDArray ones = Nd4j.ones(6);
-        INDArray zeros = Nd4j.zeros(6);
+        INDArray ones = Nd4j.ones(DataType.DOUBLE, 1,6);
+        INDArray zeros = Nd4j.create(DataType.DOUBLE, new long[]{1,6});
         assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, 0)));
         assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, 7)));
         assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, 0)));
@@ -415,7 +415,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray slice = arr.slice(0);
         // FIXME: int cast
-        float[] expected = new float[(int) slice.length()];
+        val expected = new double[(int) slice.length()];
         for (int i = 0; i < slice.length(); i++)
             expected[i] = (float) Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
@@ -451,7 +451,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testColumnMean() {
         INDArray twoByThree = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray columnMean = twoByThree.mean(0);
-        INDArray assertion = Nd4j.create(new float[] {2, 3});
+        INDArray assertion = Nd4j.create(new double[] {2, 3});
         assertEquals(assertion, columnMean);
     }
 
@@ -460,7 +460,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testColumnVar() {
         INDArray twoByThree = Nd4j.linspace(1, 600, 600, DataType.DOUBLE).reshape(150, 4);
         INDArray columnStd = twoByThree.var(0);
-        INDArray assertion = Nd4j.create(new float[] {30200f, 30200f, 30200f, 30200f});
+        INDArray assertion = Nd4j.create(new double[] {30200f, 30200f, 30200f, 30200f});
         assertEquals(assertion, columnStd);
     }
 
@@ -470,8 +470,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
         INDArray twoByThree = Nd4j.linspace(1, 600, 600, DataType.DOUBLE).reshape(150, 4);
         INDArray columnStd = twoByThree.std(0);
-        INDArray assertion = Nd4j.create(new float[] {173.78147196982766f, 173.78147196982766f, 173.78147196982766f,
-                        173.78147196982766f});
+        INDArray assertion = Nd4j.create(new double[] {173.78147196982766f, 173.78147196982766f, 173.78147196982766f, 173.78147196982766f});
         assertEquals(assertion, columnStd);
     }
 
@@ -825,7 +824,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testEpsOps() {
-        INDArray ones = Nd4j.ones(6);
+        INDArray ones = Nd4j.ones(DataType.DOUBLE, 1, 6);
         double tiny = 1.000000000000001;
         assertTrue(ones.eps(tiny).sumNumber().doubleValue() == 6);
         INDArray consec = Nd4j.linspace(1, 6, 6, DataType.DOUBLE);
