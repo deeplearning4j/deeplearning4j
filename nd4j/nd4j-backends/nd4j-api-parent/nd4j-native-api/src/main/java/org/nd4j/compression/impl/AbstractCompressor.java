@@ -78,19 +78,19 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
             return;
 
         array.markAsCompressed(false);
-        array.setData(decompress(array.data()));
+        array.setData(decompress(array.data(), array.dataType()));
     }
 
     @Override
     public INDArray decompress(INDArray array) {
-        DataBuffer buffer = decompress(array.data());
+        DataBuffer buffer = decompress(array.data(), array.dataType());
         DataBuffer shapeInfo = array.shapeInfoDataBuffer();
         INDArray rest = Nd4j.createArrayFromShapeBuffer(buffer, shapeInfo);
 
         return rest;
     }
 
-    public abstract DataBuffer decompress(DataBuffer buffer);
+    public abstract DataBuffer decompress(DataBuffer buffer, DataType dataType);
 
     public abstract DataBuffer compress(DataBuffer buffer);
 

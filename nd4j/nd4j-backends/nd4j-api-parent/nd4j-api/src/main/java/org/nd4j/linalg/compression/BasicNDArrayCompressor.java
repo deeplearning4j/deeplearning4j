@@ -201,7 +201,7 @@ public class BasicNDArrayCompressor {
      * @param buffer the databuffer to compress
      * @return the decompressed databuffer
      */
-    public DataBuffer decompress(DataBuffer buffer) {
+    public DataBuffer decompress(DataBuffer buffer, DataType targetType) {
         if (buffer.dataType() != DataType.COMPRESSED)
             throw new IllegalStateException("You can't decompress DataBuffer with dataType of: " + buffer.dataType());
 
@@ -212,7 +212,7 @@ public class BasicNDArrayCompressor {
             throw new RuntimeException("Non-existent compression algorithm requested: ["
                             + descriptor.getCompressionAlgorithm() + "]");
 
-        return codecs.get(descriptor.getCompressionAlgorithm()).decompress(buffer);
+        return codecs.get(descriptor.getCompressionAlgorithm()).decompress(buffer, targetType);
     }
 
     public NDArrayCompressor getCompressor(@NonNull String name) {

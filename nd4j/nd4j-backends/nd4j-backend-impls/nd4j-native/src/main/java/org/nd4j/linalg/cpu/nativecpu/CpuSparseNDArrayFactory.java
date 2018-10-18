@@ -235,6 +235,11 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
+    public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType) {
+        return null;
+    }
+
+    @Override
     public INDArray create(List<INDArray> list, long[] shape, char ordering) {
         return null;
     }

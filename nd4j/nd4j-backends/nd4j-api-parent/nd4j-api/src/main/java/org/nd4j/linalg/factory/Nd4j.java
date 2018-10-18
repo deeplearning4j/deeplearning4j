@@ -2506,10 +2506,14 @@ public class Nd4j {
      * @return
      */
     public static INDArray createArrayFromShapeBuffer(DataBuffer data, DataBuffer shapeInfo) {
-        int rank = Shape.rank(shapeInfo);
+        val jvmShapeInfo = shapeInfo.asLong();
+        val rank = Shape.rank(jvmShapeInfo);
+        val dataType = ArrayOptionsHelper.dataType(jvmShapeInfo);
+        val shape = Shape.shape(jvmShapeInfo);
+        val strides = Shape.stridesOf(jvmShapeInfo);
+        val order = Shape.order(jvmShapeInfo);
         long offset = 0;
-        INDArray result = Nd4j.create(data, toIntArray(rank, Shape.shapeOf(shapeInfo)),
-                toIntArray(rank, Shape.stride(shapeInfo)), offset, Shape.order(shapeInfo));
+        INDArray result = Nd4j.create(data, shape, strides, 0, order, dataType);
         if (data instanceof CompressedDataBuffer)
             result.markAsCompressed(true);
 
@@ -4157,6 +4161,15 @@ public class Nd4j {
         logCreationIfNecessary(ret);
         return ret;
     }
+
+    public static INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType) {
+        checkShapeValues(newShape);
+
+        INDArray ret = INSTANCE.create(data, newShape, newStride, offset, ordering, dataType);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
 
     /**
      *

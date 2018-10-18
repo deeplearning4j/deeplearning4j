@@ -2719,11 +2719,6 @@ public interface INDArray extends Serializable {
      */
     int toFlatArray(FlatBufferBuilder builder);
 
-    INDArray convertToHalfs();
-    INDArray convertToFloats();
-    INDArray convertToDoubles();
-
-
     /**
      * This method returns true if this INDArray is special case: no-value INDArray
      * @return

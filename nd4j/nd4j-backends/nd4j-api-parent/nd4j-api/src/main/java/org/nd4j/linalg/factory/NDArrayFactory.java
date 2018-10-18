@@ -1121,6 +1121,8 @@ public interface NDArrayFactory {
 
     INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering);
 
+    INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType);
+
     /**
      *
      * @param rows

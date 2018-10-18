@@ -238,10 +238,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public INDArray convertToHalfs() {
-        return null;
-    }
 
 
     /**
@@ -1265,16 +1261,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public void setShape(long... shape) {
 
-    }
-
-    @Override
-    public INDArray convertToFloats() {
-        return null;
-    }
-
-    @Override
-    public INDArray convertToDoubles() {
-        return null;
     }
 
     /**
