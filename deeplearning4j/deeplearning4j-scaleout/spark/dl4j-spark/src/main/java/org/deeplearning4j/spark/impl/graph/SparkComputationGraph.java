@@ -848,7 +848,20 @@ public class SparkComputationGraph extends SparkListenable {
     }
 
     /**
-     * Perform evaluation on serialized DataSet objects on disk, (potentially in any format), that are loaded using an {@link DataSetLoader}
+     * Perform evaluation on serialized DataSet objects on disk, (potentially in any format), that are loaded using an {@link DataSetLoader}.<br>
+     * Uses the default number of workers (model replicas per JVM) of {@link #DEFAULT_EVAL_WORKERS} with the default
+     * minibatch size of {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}
+     * @param data             List of paths to the data (that can be loaded as / converted to DataSets)
+     * @param loader           Used to load DataSets from their paths
+     * @param emptyEvaluations Evaluations to perform
+     * @return Evaluation
+     */
+    public IEvaluation[] doEvaluation(JavaRDD<String> data, DataSetLoader loader, IEvaluation... emptyEvaluations) {
+        return doEvaluation(data, DEFAULT_EVAL_WORKERS, DEFAULT_EVAL_SCORE_BATCH_SIZE, loader, emptyEvaluations);
+    }
+
+    /**
+     * Perform evaluation on serialized DataSet objects on disk, (potentially in any format), that are loaded using an {@link DataSetLoader}.
      * @param data             List of paths to the data (that can be loaded as / converted to DataSets)
      * @param evalNumWorkers   Number of workers to perform evaluation with. To reduce memory requirements and cache thrashing,
      *                         it is common to set this to a lower value than the number of spark threads per JVM/executor
@@ -859,6 +872,19 @@ public class SparkComputationGraph extends SparkListenable {
      */
     public IEvaluation[] doEvaluation(JavaRDD<String> data, int evalNumWorkers, int evalBatchSize, DataSetLoader loader, IEvaluation... emptyEvaluations) {
         return doEvaluation(data, evalNumWorkers, evalBatchSize, loader, null, emptyEvaluations);
+    }
+
+    /**
+     * Perform evaluation on serialized MultiDataSet objects on disk, (potentially in any format), that are loaded using an {@link MultiDataSetLoader}.<br>
+     * Uses the default number of workers (model replicas per JVM) of {@link #DEFAULT_EVAL_WORKERS} with the default
+     * minibatch size of {@link #DEFAULT_EVAL_SCORE_BATCH_SIZE}
+     * @param data             List of paths to the data (that can be loaded as / converted to DataSets)
+     * @param loader           Used to load MultiDataSets from their paths
+     * @param emptyEvaluations Evaluations to perform
+     * @return Evaluation
+     */
+    public IEvaluation[] doEvaluation(JavaRDD<String> data, MultiDataSetLoader loader, IEvaluation... emptyEvaluations) {
+        return doEvaluation(data, DEFAULT_EVAL_WORKERS, DEFAULT_EVAL_SCORE_BATCH_SIZE, null, loader, emptyEvaluations);
     }
 
     /**

@@ -16,20 +16,20 @@
 
 package org.deeplearning4j.spark.util;
 
+import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.impl.RecordReaderFileBatchLoader;
 import org.nd4j.api.loader.FileBatch;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -51,7 +51,7 @@ public class SparkDataUtils {
     }
 
     /**
-     * Create a number of {@link FileBatch} files from local files.<br>
+     * Create a number of {@link FileBatch} files from local files (in random order).<br>
      * Use cases: distributed training on compressed file formats such as images, that need to be loaded to a remote
      * file storage system such as HDFS. Local files can be created using this method and then copied to HDFS for training.<br>
      * FileBatch is also compressed (zip file format) so space may be saved in some cases (such as CSV sequences)
@@ -83,7 +83,7 @@ public class SparkDataUtils {
      * //Create DataSetLoader:
      * int batchSize = 32;
      * int numClasses = 1000;
-     * DataSetLoader loader = RecordReaderFileBatchDataSetLoader(rr, batchSize, 1, numClasses);
+     * DataSetLoader loader = RecordReaderFileBatchLoader(rr, batchSize, 1, numClasses);
      *
      * //Fit the network
      * net.fitPaths(paths, loader);
@@ -102,6 +102,8 @@ public class SparkDataUtils {
      * @see org.datavec.api.records.reader.impl.filebatch.FileBatchSequenceRecordReader for local training on these files, if required
      */
     public static void createFileBatchesLocal(File inputDirectory, String[] extensions, boolean recursive, File outputDirectory, int batchSize) throws IOException {
+        if(!outputDirectory.exists())
+            outputDirectory.mkdirs();
         //Local version
         List<File> c = new ArrayList<>(FileUtils.listFiles(inputDirectory, extensions, recursive));
         Collections.shuffle(c);
@@ -135,7 +137,7 @@ public class SparkDataUtils {
     }
 
     /**
-     * Create a number of {@link FileBatch} files from files on network storage such as HDFS.<br>
+     * Create a number of {@link FileBatch} files from files on network storage such as HDFS (in random order).<br>
      * Use cases: distributed training on compressed file formats such as images, that need to be loaded to a remote
      * file storage system such as HDFS.<br>
      * For example, if we were training with a minibatch size of 64 images, reading the raw images would result in 64
@@ -166,7 +168,7 @@ public class SparkDataUtils {
      * //Create DataSetLoader:
      * int batchSize = 32;
      * int numClasses = 1000;
-     * DataSetLoader loader = RecordReaderFileBatchDataSetLoader(rr, batchSize, 1, numClasses);
+     * DataSetLoader loader = RecordReaderFileBatchLoader(rr, batchSize, 1, numClasses);
      *
      * //Fit the network
      * net.fitPaths(paths, loader);
@@ -181,8 +183,14 @@ public class SparkDataUtils {
      * @see org.datavec.api.records.reader.impl.filebatch.FileBatchSequenceRecordReader for local training on these files, if required
      */
     public static void createFileBatchesSpark(JavaRDD<String> filePaths, final String rootOutputDir, final int batchSize, JavaSparkContext sc) {
+        createFileBatchesSpark(filePaths, rootOutputDir, batchSize, sc.hadoopConfiguration());
+    }
 
-        final org.apache.hadoop.conf.Configuration hadoopConfig = sc.hadoopConfiguration();
+    /**
+     * See {@link #createFileBatchesSpark(JavaRDD, String, int, JavaSparkContext)}
+     */
+    public static void createFileBatchesSpark(JavaRDD<String> filePaths, final String rootOutputDir, final int batchSize, @NonNull final org.apache.hadoop.conf.Configuration hadoopConfig) {
+        final SerializableHadoopConfig conf = new SerializableHadoopConfig(hadoopConfig);
         //Here: assume input is images. We can't store them as Float32 arrays - that's too inefficient
         // instead: let's store the raw file content in a batch.
         long count = filePaths.count();
@@ -194,7 +202,15 @@ public class SparkDataUtils {
                 //Construct file batch
                 List<String> list = new ArrayList<>();
                 List<byte[]> bytes = new ArrayList<>();
+                FileSystem fs = FileSystem.get(conf.getConfiguration());
                 while (stringIterator.hasNext()) {
+                    String inFile = stringIterator.next();
+                    byte[] fileBytes;
+                    try (BufferedInputStream bis = new BufferedInputStream(fs.open(new Path(inFile)))) {
+                        fileBytes = IOUtils.toByteArray(bis);
+                    }
+                    list.add(inFile);
+                    bytes.add(fileBytes);
 
                     if (list.size() == batchSize) {
                         process(list, bytes);
@@ -209,7 +225,7 @@ public class SparkDataUtils {
                 FileBatch fb = new FileBatch(bytes, paths);
                 String name = UUID.randomUUID().toString().replaceAll("-", "") + ".zip";
                 String outPath = FilenameUtils.concat(rootOutputDir, name);
-                FileSystem fileSystem = FileSystem.get(hadoopConfig);
+                FileSystem fileSystem = FileSystem.get(conf.getConfiguration());
                 try (BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(outPath)))) {
                     fb.writeAsZip(bos);
                 }

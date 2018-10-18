@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.spark.impl.paramavg;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -74,6 +76,10 @@ public abstract class BaseTrainingMaster<R extends TrainingResult, W extends Tra
 
     protected String trainingMasterUID;
 
+    @Setter @Getter
+    protected Boolean workerTogglePeriodicGC;
+    @Setter @Getter
+    protected Integer workerPeriodicGCFrequency;
     protected StatsStorageRouter statsStorage;
 
     //Listeners etc
