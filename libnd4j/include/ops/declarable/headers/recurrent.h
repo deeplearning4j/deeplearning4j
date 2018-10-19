@@ -251,6 +251,9 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(gruCell, 5, 1, false, 0, 0);
         #endif
 
+        #if NOT_EXCLUDED(OP_gruCell)
+        DECLARE_CUSTOM_OP(gruCell_bp, 6, 5, false, 0, 0);
+        #endif
 
     //////////////////////////////////////////////////////////////////////////
     /**
