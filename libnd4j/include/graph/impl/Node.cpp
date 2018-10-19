@@ -309,6 +309,7 @@ namespace nd4j {
             this->_id = id;
             this->_opNum = opNum;
             this->_extraParams = nullptr;
+            this->_dataType = nd4j::DataType::FLOAT32; // float as default
             this->_dim = nullptr;
 
             _hasExternalInputs = false;
@@ -392,7 +393,7 @@ namespace nd4j {
             _hasInternalOutputs = false;
             _extraParams = nullptr;
             _dim = nullptr;
-
+            _dataType = nd4j::DataType::FLOAT32; // float as default
             if (node->scope_id() != 0)
                 this->_scope_id = node->scope_id();
 

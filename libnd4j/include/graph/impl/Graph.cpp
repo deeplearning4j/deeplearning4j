@@ -91,7 +91,6 @@ namespace nd4j {
                         }
 
                         Context ctx(block, _variableSpace);
-                        ctx.setDataType(0, node->dataType());
 
                         ShapeList inSha(inputShapes);
                         auto outSha = op->calculateOutputShape(&inSha, ctx);
@@ -160,7 +159,7 @@ namespace nd4j {
                             newShape[2] = 1;
                             newShape[3] = 1;
                             newShape[4] = 1;
-                            newShape[5] = 0;
+                            newShape[5] = 8192; // set type as FLOAT32 by default
                             newShape[6] = 1;
                             newShape[7] = 99;
 
