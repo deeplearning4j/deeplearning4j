@@ -35,6 +35,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -78,8 +79,16 @@ public class EvaluationRunner {
         Preconditions.checkArgument(evalWorkers > 0, "Invalid number of evaluation workers: must be > 0. Got: %s", evalWorkers);
         Preconditions.checkState(ds != null || mds != null, "No data provided - both DataSet and MultiDataSet iterators were null");
 
+        //For multi-GPU we'll use a round robbin approach for GPUs
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        if(numDevices <= 0)
+            numDevices = 1;
+
         int currentWorkerCount;
         while((currentWorkerCount = workerCount.get()) < evalWorkers){
+            int device = currentWorkerCount % numDevices;
+            Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), device);
+
             if(workerCount.compareAndSet(currentWorkerCount, currentWorkerCount+1)){
                 log.debug("Starting evaluation in thread {}", Thread.currentThread().getId());
                 //This thread is now a worker
