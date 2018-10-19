@@ -24,6 +24,8 @@ import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
+import org.nd4j.parameterserver.distributed.v2.transport.PortSupplier;
+import org.nd4j.parameterserver.distributed.v2.transport.impl.StaticPortSupplier;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -49,10 +51,10 @@ public class VoidConfiguration implements Serializable {
     private int streamId = 119;
 
     /**
-     * This variable defines UDP port that will be used for communication
+     * This variable defines UDP port that will be used for communication with cluster driver
      */
     @Builder.Default
-    private int unicastPort = 49876;
+    private int unicastControllerPort = 49876;
 
     /**
      * This method specifies UDP port for multicast/broadcast transport
@@ -185,6 +187,11 @@ public class VoidConfiguration implements Serializable {
      * Leave it null, and Spark Master node will be used as Master for parameter server as well.
      */
     private String controllerAddress;
+
+    /**
+     *
+     */
+    @Builder.Default private PortSupplier portSupplier = new StaticPortSupplier(49876);
 
     public void setStreamId(int streamId) {
         if (streamId < 1)
