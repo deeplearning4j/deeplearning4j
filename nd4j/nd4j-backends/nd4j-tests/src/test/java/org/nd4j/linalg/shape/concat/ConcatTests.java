@@ -60,8 +60,8 @@ public class ConcatTests extends BaseNd4jTest {
 
     @Test
     public void testConcatHorizontally() {
-        INDArray rowVector = Nd4j.ones(5);
-        INDArray other = Nd4j.ones(5);
+        INDArray rowVector = Nd4j.ones(1, 5);
+        INDArray other = Nd4j.ones(1, 5);
         INDArray concat = Nd4j.hstack(other, rowVector);
         assertEquals(rowVector.rows(), concat.rows());
         assertEquals(rowVector.columns() * 2, concat.columns());

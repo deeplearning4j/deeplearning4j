@@ -110,7 +110,7 @@ public class ShapeTests extends BaseNd4jTest {
 
     @Test
     public void testVectorAlongDimension() {
-        INDArray arr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 3, 2);
+        INDArray arr = Nd4j.linspace(1, 24, 24, DataType.FLOAT).reshape(4, 3, 2);
         INDArray assertion = Nd4j.create(new float[] {5, 17}, new long[] {1, 2});
         INDArray vectorDimensionTest = arr.vectorAlongDimension(1, 2);
         assertEquals(assertion, vectorDimensionTest);
@@ -128,7 +128,7 @@ public class ShapeTests extends BaseNd4jTest {
         assertEquals(testColumn3Assertion, testColumn3);
 
 
-        INDArray v1 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(new long[] {2, 2});
+        INDArray v1 = Nd4j.linspace(1, 4, 4, DataType.FLOAT).reshape(new long[] {2, 2});
         INDArray testColumnV1 = v1.vectorAlongDimension(0, 0);
         INDArray testColumnV1Assertion = Nd4j.create(new float[] {1, 2});
         assertEquals(testColumnV1Assertion, testColumnV1);
@@ -211,10 +211,10 @@ public class ShapeTests extends BaseNd4jTest {
 
     @Test
     public void testDimShuffle() {
-        INDArray scalarTest = Nd4j.scalar(0.0);
+        INDArray scalarTest = Nd4j.scalar(0.0).reshape(1, -1);
         INDArray broadcast = scalarTest.dimShuffle(new Object[] {'x'}, new long[] {0, 1}, new boolean[] {true, true});
         assertTrue(broadcast.rank() == 3);
-        INDArray rowVector = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
+        INDArray rowVector = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, -1);
         assertEquals(rowVector,
                         rowVector.dimShuffle(new Object[] {0, 1}, new int[] {0, 1}, new boolean[] {false, false}));
         //add extra dimension to row vector in middle

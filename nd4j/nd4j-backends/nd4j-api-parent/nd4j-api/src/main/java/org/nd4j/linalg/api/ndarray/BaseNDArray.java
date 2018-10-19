@@ -4244,7 +4244,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray sub(Number n) {
         //return dup().subi(n);
-        return subi(n, Nd4j.createUninitialized(this.shape(), this.ordering()));
+        return subi(n, Nd4j.createUninitialized(this.dataType(), this.shape(), this.ordering()));
     }
 
     @Override

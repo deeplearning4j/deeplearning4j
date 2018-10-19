@@ -421,7 +421,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
             expected[i] = (float) Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
         opExecutioner.exec(exp);
-        assertEquals(getFailureMessage(), Nd4j.create(Nd4j.createBuffer(expected)), slice);
+        assertEquals(getFailureMessage(), Nd4j.create(Nd4j.createBuffer(expected)).reshape(1, -1), slice);
     }
 
     @Test
@@ -827,8 +827,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testEpsOps() {
         INDArray ones = Nd4j.ones(DataType.DOUBLE, 1, 6);
         double tiny = 1.000000000000001;
-        assertTrue(ones.eps(tiny).sumNumber().doubleValue() == 6);
-        INDArray consec = Nd4j.linspace(1, 6, 6, DataType.DOUBLE);
+        assertTrue(ones.eps(tiny).all());
+        INDArray consec = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
         assertTrue(consec.eps(5).sumNumber().doubleValue() == 1);
         assertTrue(consec.sub(1).eps(5).sumNumber().doubleValue() == 1);
         assertTrue(consec.sub(1).eps(5).getDouble(0, 5) == 1);
