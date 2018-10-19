@@ -103,6 +103,7 @@ public class EvaluationRunner {
                 INDArray p = params.getValue();
                 DeviceLocalNDArray dlp = new DeviceLocalNDArray(p);
                 paramsMap.put(params, dlp);
+                log.info("paramsMap: size {}", paramsMap.size());
             }
             deviceLocalParams = paramsMap.get(params);
         }
