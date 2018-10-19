@@ -1885,6 +1885,8 @@ NDArray NDArray::transp() const {
             throw std::runtime_error("NDArray::addRowVector: you can't use this method on String array!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->lengthOf())
             throw std::invalid_argument("NDArray::addRowVector: wrong arguments !");
+        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
+            throw std::invalid_argument("NDArray::addRowVector: wrong type of target array !");
 
         int dimension[1] = {1};
 
@@ -1902,6 +1904,8 @@ NDArray NDArray::transp() const {
             throw std::runtime_error("NDArray::subRowVector: you can't use this method on String array!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
             throw std::invalid_argument("NDArray::subRowVector: wrong arguments !");
+        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
+            throw std::invalid_argument("NDArray::subRowVector: wrong type of target array !");
 
         int dimension[1] = {1};
 
@@ -1919,6 +1923,8 @@ NDArray NDArray::transp() const {
             throw std::runtime_error("NDArray::mulRowVector: you can't use this method on String array!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
             throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
+        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
+            throw std::invalid_argument("NDArray::mulRowVector: wrong type of target array !");
 
         int dimension[1] = {1};
 
@@ -1936,6 +1942,8 @@ NDArray NDArray::transp() const {
             throw std::runtime_error("NDArray::divRowVector: you can't use this method on String array!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
             throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
+        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
+            throw std::invalid_argument("NDArray::divRowVector: wrong type of target array !");
 
         int dimension[1] = {1};
 
@@ -1969,13 +1977,14 @@ NDArray NDArray::transp() const {
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
     }
 
-
 //////////////////////////////////////////////////////////////////////////
     void NDArray::addColumnVector(const NDArray *column, NDArray *target) const {
         if (isS())
             throw std::runtime_error("NDArray::addColumnVector: you can't use this method on String array!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::addColumnVector: wrong arguments !");
+        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, column->_dataType))
+            throw std::invalid_argument("NDArray::addColumnVector: wrong type of target array !");
 
         int dimension[1] = {0};
 
@@ -3683,8 +3692,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
         ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
-        auto result = new NDArray(newShape, true, _workspace);
-        RELEASE(newShape, _workspace);        
+        auto result = new NDArray(newShape, true, _workspace, true);        
         
         if(rankOf() == copy.size() || copy.empty())
             NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, result->buffer(), result->shapeInfo(), biasCorrected);
@@ -3708,7 +3716,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             std::sort(copy.begin(), copy.end());
 
         if (!target->isR())
-            throw std::runtime_error("Target array must have FLOAT type");
+            throw std::runtime_error("NDArray::varianceAlongDimension: target array must have FLOAT type");
 
         if(rankOf() == copy.size() || copy.empty())
             NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, target->getBuffer(), target->getShapeInfo(), biasCorrected);

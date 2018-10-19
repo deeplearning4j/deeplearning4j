@@ -691,8 +691,6 @@ namespace nd4j {
 
         void varianceAlongDimension(nd4j::variance::Ops op, const NDArray* target, const bool biasCorrected, const std::initializer_list<int>& dimensions);
 
-        // FIXME: get rid of this signature
-        void saveResultOfBroadcast(nd4j::broadcast::Ops op, const NDArray& x, const NDArray& y, const bool checkThisShape = false);
 #endif
 
         /**
