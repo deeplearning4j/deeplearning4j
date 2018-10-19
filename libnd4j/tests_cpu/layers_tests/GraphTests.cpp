@@ -418,7 +418,7 @@ TEST_F(GraphTests, IndexReductionsTest1) {
         }
     }
 
-    auto z = NDArrayFactory::create_<float>('c', {5, 1});
+    auto z = NDArrayFactory::create_<Nd4jLong>('c', {5, 1});
 
     graph->getVariableSpace()->putVariable(-1, x);
     graph->getVariableSpace()->putVariable(-2, z);
@@ -964,8 +964,8 @@ TEST_F(GraphTests, MemoryEstimationTest1) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {});
     nodeA1->markInplace(false);
 
     graph.addNode(nodeA0);
@@ -987,8 +987,8 @@ TEST_F(GraphTests, MemoryEstimationTest2) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {});
     //nodeA1->markInplace(false);
 
     graph.addNode(nodeA0);
@@ -1010,9 +1010,9 @@ TEST_F(GraphTests, MemoryEstimationTest3) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {3});
-    auto nodeA2 = new Node(OpType_REDUCE_SAME, 0, 3, {2}, {}, {});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
+    auto nodeA2 = new Node(OpType_REDUCE_FLOAT, reduce::Mean, 3, {2}, {}, {});
     nodeA1->markInplace(false);
 
     graph.addNode(nodeA0);
@@ -1035,9 +1035,9 @@ TEST_F(GraphTests, MemoryEstimationTest4) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {3});
-    auto nodeA2 = new Node(OpType_REDUCE_SAME, 0, 3, {2}, {}, {1});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
+    auto nodeA2 = new Node(OpType_REDUCE_FLOAT, reduce::Mean, 3, {2}, {}, {1});
     nodeA1->markInplace(false);
 
     graph.addNode(nodeA0);
@@ -1060,8 +1060,8 @@ TEST_F(GraphTests, MemoryEstimationTest5) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {3});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
     auto nodeA2 = new Node(OpType_CUSTOM, 0, 3, {2}, {}, {});
     nodeA1->markInplace(false);
 
