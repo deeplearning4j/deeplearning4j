@@ -595,8 +595,8 @@ TEST_F(GraphTests, SymbolicLookupTest1) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 2, {1}, {-2});
 
     std::string p("phi");
     std::string t("theta");
@@ -653,8 +653,8 @@ TEST_F(GraphTests, OutputValidation1) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 2, {1}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -690,8 +690,8 @@ TEST_F(GraphTests, OutputValidation2) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 2, {1}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -732,8 +732,8 @@ TEST_F(GraphTests, OutputValidation3) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 2, {1}, {});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -772,8 +772,8 @@ TEST_F(GraphTests, OutputValidation4) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 2, {1}, {-2});
 
     graph->addOutput(-1);
 
@@ -818,8 +818,8 @@ TEST_F(GraphTests, OutputValidation5) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Sqrt, 2, {1}, {-2});
 
     graph->addOutput(-1);
 
@@ -858,8 +858,8 @@ TEST_F(GraphTests, OutputValidation6) {
     graph->getVariableSpace()->putVariable(-1, vX);
     graph->getVariableSpace()->putVariable(-2, vZ);
 
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 2, {1}, {});
 
     //graph->addOutput(-1);
 
