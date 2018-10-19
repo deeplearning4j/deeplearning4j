@@ -39,6 +39,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocal;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,10 +64,12 @@ public class EvaluationRunner {
     private final AtomicInteger workerCount = new AtomicInteger(0);
     private Queue<Eval> queue = new ConcurrentLinkedQueue<>();
     //parameters map for device local parameters for a given broadcast
-    //Note: Broadcast doesn't override Object.equals hence this is effectively an *identity* weak hash map, which is what we want here
-    //i.e., DeviceLocal<INDArray> can be GC'd once the Broadcast<INDArray> is no longer referenced anywhere
-    //This approach relies on the fact that a single Broadcast object will be shared by all of Spark's threads
-    private Map<Broadcast<INDArray>,DeviceLocalNDArray> paramsMap = new WeakHashMap<>();
+    //Note: byte[] doesn't override Object.equals hence this is effectively an *identity* weak hash map, which is what we want here
+    //i.e., DeviceLocal<INDArray> can be GC'd once the Broadcast<byte[]> is no longer referenced anywhere
+    //This approach relies on the fact that a single Broadcast object's *content* will be shared by all of Spark's threads,
+    // even though the Broadcast object itself mayb not be
+    //Also by storing params as a byte[] (i.e., in serialized form), we sidestep a lot of the thread locality issues
+    private Map<byte[],DeviceLocalNDArray> paramsMap = new WeakHashMap<>();
 
 
     private EvaluationRunner(){ }
@@ -83,7 +87,7 @@ public class EvaluationRunner {
      * @return Future for the results
      */
     public Future<IEvaluation[]> execute(IEvaluation[] evals, int evalWorkers, int evalBatchSize, Iterator<DataSet> ds, Iterator<MultiDataSet> mds,
-                                         boolean isCG, Broadcast<String> json, Broadcast<INDArray> params){
+                                         boolean isCG, Broadcast<String> json, Broadcast<byte[]> params){
         Preconditions.checkArgument(evalWorkers > 0, "Invalid number of evaluation workers: must be > 0. Got: %s", evalWorkers);
         Preconditions.checkState(ds != null || mds != null, "No data provided - both DataSet and MultiDataSet iterators were null");
 
@@ -95,17 +99,23 @@ public class EvaluationRunner {
         //Create the device local params if required
         DeviceLocalNDArray deviceLocalParams;
         synchronized (this){
-            if(!paramsMap.containsKey(params)){
+            if(!paramsMap.containsKey(params.getValue())){
                 //Initially put on device 0. For CPU, this means we only have a single copy of the params INDArray shared by
                 // all threads, which is both safe and uses the least amount of memory
                 //For CUDA, we can't share threads otherwise arrays will be continually relocated, causing a crash
                 Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
-                INDArray p = params.getValue();
+                byte[] pBytes = params.getValue();
+                INDArray p;
+                try{
+                    p = Nd4j.read(new ByteArrayInputStream(pBytes));
+                } catch (IOException e){
+                    throw new RuntimeException(e);  //Should never happen
+                }
                 DeviceLocalNDArray dlp = new DeviceLocalNDArray(p);
-                paramsMap.put(params, dlp);
+                paramsMap.put(params.getValue(), dlp);
                 log.info("paramsMap: size {}", paramsMap.size());
             }
-            deviceLocalParams = paramsMap.get(params);
+            deviceLocalParams = paramsMap.get(params.getValue());
         }
 
         int currentWorkerCount;
