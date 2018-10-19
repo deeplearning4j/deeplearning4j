@@ -1659,3 +1659,105 @@ TEST_F(MultiDataTypeTests, RowCol_test2) {
     x1.addColumnVector(&x2, &x4);
     ASSERT_EQ(x4, exp6);
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, tile_test1) {
+
+    NDArray x1('c', {2,1}, {0,1}, nd4j::DataType::INT32);
+    NDArray x2('c', {2,1}, {0.5,1.5}, nd4j::DataType::DOUBLE);
+    NDArray x3('c', {2,2}, nd4j::DataType::INT32);
+    NDArray x4('c', {2,2}, nd4j::DataType::DOUBLE);
+    NDArray x5('c', {1,2}, {0.5,1.5}, nd4j::DataType::DOUBLE);;
+    NDArray x6('c', {2,2}, nd4j::DataType::FLOAT32);
+    NDArray x7('c', {2,2}, nd4j::DataType::BOOL);
+
+    NDArray exp1('c', {2,2}, {0,0,1,1}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {2,2}, {0.5,1.5,0.5,1.5}, nd4j::DataType::FLOAT32);
+    NDArray exp3('c', {2,2}, {0,0,1,1}, nd4j::DataType::INT32);
+    NDArray exp4('c', {2,2}, {0,0,1,1}, nd4j::DataType::BOOL);
+
+    x1.tile({1,2}, x4);    
+    ASSERT_EQ(x4, exp1);
+
+    x2.tile({1,2}, x3);
+    ASSERT_EQ(x3, exp3);
+
+    x1.tile({1,2}, x7);
+    ASSERT_EQ(x7, exp4);
+
+    x1.tile(x4);
+    ASSERT_EQ(x4, exp1);
+
+    x2.tile(x3);
+    ASSERT_EQ(x3, exp3);
+
+    x1.tile(x7);
+    ASSERT_EQ(x7, exp4);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, broadcast_test1) {
+
+    NDArray x1('c', {2,1,3}, nd4j::DataType::INT32);
+    NDArray x2('c', {2,4,1}, nd4j::DataType::INT64);
+    NDArray x3('c', {2,4,1}, nd4j::DataType::DOUBLE);
+
+    NDArray exp1('c', {2,4,3}, nd4j::DataType::INT32);
+    NDArray exp2('c', {2,4,3}, nd4j::DataType::DOUBLE);
+    
+    auto result = x1.broadcast(x2);
+    ASSERT_TRUE(result->isSameShapeStrict(&exp1));
+    delete result;
+
+    result = x1.broadcast(x3);
+    ASSERT_TRUE(result->isSameShapeStrict(&exp2));
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, asT_test1) {
+
+    NDArray x1('c', {2}, {1.5, 2.5}, nd4j::DataType::FLOAT32);
+    
+    NDArray exp1('c', {2}, {1, 2}, nd4j::DataType::INT32);
+    NDArray exp2('c', {2}, {1.5, 2.5}, nd4j::DataType::DOUBLE);
+    
+    auto result = x1.asT<int>();
+    ASSERT_EQ(*result, exp1);
+    delete result;
+
+    result = x1.asT<double>();
+    ASSERT_EQ(*result, exp2);
+    delete result;
+
+    result = x1.asT(nd4j::DataType::INT32);
+    ASSERT_EQ(*result, exp1);
+    delete result;
+
+    result = x1.asT(nd4j::DataType::DOUBLE);
+    ASSERT_EQ(*result, exp2);
+    delete result;   
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, assign_test2) {
+
+    NDArray x1('c', {2,3}, {1.5,2.5,3.5,4.5,5.5,6.5}, nd4j::DataType::FLOAT32);
+    NDArray x2('c', {3,2}, nd4j::DataType::INT32);
+    NDArray x3('c', {3,2}, nd4j::DataType::DOUBLE);
+    NDArray x4('c', {3,2}, nd4j::DataType::BOOL);
+    NDArray x5('c', {2,3}, {1.5,2.5,0,4.5,5.5,6.5}, nd4j::DataType::FLOAT32);
+    
+    NDArray exp1('c', {3,2}, {1, 2,3,4,5,6}, nd4j::DataType::INT32);
+    NDArray exp2('c', {3,2}, {1.5,2.5,3.5,4.5,5.5,6.5}, nd4j::DataType::DOUBLE);
+    NDArray exp3('c', {3,2}, {1,1,0,1,1,1}, nd4j::DataType::BOOL);
+    
+    x2.assign(x1);
+    ASSERT_EQ(x2, exp1);
+
+    x3.assign(x1);
+    ASSERT_EQ(x3, exp2);
+
+    x4.assign(x5);
+    ASSERT_EQ(x4, exp3);
+}

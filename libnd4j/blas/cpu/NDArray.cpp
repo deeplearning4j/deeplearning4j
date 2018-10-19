@@ -410,11 +410,11 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
     std::vector<T> NDArray::getBufferAsVector() {
-        std::vector<T> vector(this->lengthOf());
+        
+        std::vector<T> vector(_length);
 
-        for (int e = 0; e < this->lengthOf(); e++) {
+        for (int e = 0; e < _length; e++) 
             vector[e] = this->e<T>(e);
-        }
 
         return vector;
     }
@@ -1835,7 +1835,7 @@ NDArray NDArray::transp() const {
 
     void * NDArray::getBufferAsPointer(nd4j::DataType dtype) {
         int8_t *ptr = nullptr;
-        ALLOCATE(ptr, _workspace, _length * sizeOfT(), int8_t); 
+        ALLOCATE(ptr, _workspace, _length * DataTypeUtils::sizeOfElement(dtype), int8_t);
 
         // FIXME: if we're going to merge this - move loop into selector
         for (int e = 0; e < this->lengthOf(); e++) {
@@ -3012,8 +3012,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 		    if(shapeInfoNew[diff+i] == 1 || smallerShapeInfo[i] == 1)
 			    shapeInfoNew[diff+i] *= smallerShapeInfo[i];
 
-	    auto ret = new NDArray(shapeInfoNew, true, _workspace);
-	    ret->updateStrides(order);
+	    auto ret = new NDArray(shapeInfoNew, true, _workspace);	    
+        ShapeUtils::updateStridesAndType(ret->getShapeInfo(), DataTypeUtils::pickPairwiseResultType(_dataType, other._dataType), order);
 	    delete []shapeInfoNew;
 
     	return ret;
