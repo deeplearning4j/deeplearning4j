@@ -100,6 +100,7 @@ public class EvaluationRunner {
         DeviceLocalNDArray deviceLocalParams;
         synchronized (this){
             if(!paramsMap.containsKey(params.getValue())){
+                //Due to singleton pattern, this block should execute only once (first thread)
                 //Initially put on device 0. For CPU, this means we only have a single copy of the params INDArray shared by
                 // all threads, which is both safe and uses the least amount of memory
                 //For CUDA, we can't share threads otherwise arrays will be continually relocated, causing a crash
@@ -120,8 +121,9 @@ public class EvaluationRunner {
 
         int currentWorkerCount;
         while((currentWorkerCount = workerCount.get()) < evalWorkers){
-            int device = currentWorkerCount % numDevices;
-            Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), device);
+            //For load balancing: we're relying on the fact that threads are mapped to devices in a round-robbin approach
+            // the first time they touch an INDArray. If we assume this method is called by new threads,
+            // then the first N workers will be distributed evenly across available devices.
 
             if(workerCount.compareAndSet(currentWorkerCount, currentWorkerCount+1)){
                 log.debug("Starting evaluation in thread {}", Thread.currentThread().getId());
