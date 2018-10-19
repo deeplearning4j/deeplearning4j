@@ -68,7 +68,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
     @Test
     public void testLossFunctionGradients() {
 
-        INDArray[] labels = new INDArray[] {Nd4j.create(new double[] {0, 1, 0}), Nd4j.create(new double[] {0, 1, 1}),
+        INDArray[] labels = new INDArray[] {Nd4j.create(new double[] {0, 1, 0}).reshape(1, -1), Nd4j.create(new double[] {0, 1, 1}).reshape(1, -1),
                         /*Nd4j.create(new double[][]{{1,0,0},{0,1,0},{0,0,1}}),
                         Nd4j.create(new double[]{1,2,1}),
                         Nd4j.create(new double[][]{{1,2,1},{0.1,1,0.5},{20,3,1}}),
@@ -77,13 +77,13 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                         Nd4j.create(new double[]{1,2,1}),
                         Nd4j.create(new double[][]{{101,21,110},{10.1,1,0.5},{200,30,0.001}}),
                         */
-                        Nd4j.create(new double[] {1, 2, 1}),
+                        Nd4j.create(new double[] {1, 2, 1}).reshape(1, -1),
                         Nd4j.create(new double[][] {{101, 21, 110}, {10.1, 1, 0.5}, {200, 30, 0.001}}),
-                        Nd4j.create(new double[] {1, 2, 1}),
+                        Nd4j.create(new double[] {1, 2, 1}).reshape(1, -1),
                         Nd4j.create(new double[][] {{101, 21, 110}, {10.1, 1, 0.5}, {200, 30, 0.001}}),
-                        Nd4j.create(new double[] {1, 2, 1}),
+                        Nd4j.create(new double[] {1, 2, 1}).reshape(1, -1),
                         Nd4j.create(new double[][] {{101, 21, 110}, {10.1, 1, 0.5}, {200, 30, 0.001}}),
-                        Nd4j.create(new double[] {1, 2, 1}),
+                        Nd4j.create(new double[] {1, 2, 1}).reshape(1, -1),
                         Nd4j.create(new double[][] {{101, 21, 110}, {10.1, 1, 0.5}, {200, 30, 0.001}}),
                         //Nd4j.create(new double[][] {{-1,-1,1},{-1,1,1},{-1,1,1}}),
                         Nd4j.create(new double[][] {{-1, 1, -1}, {1, 1, -1}, {-1, 1, 1}}),
@@ -93,22 +93,22 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
                         //Nd4j.create(new double[][] {{10,-1,3},{1,10,1},{1,2,-5}}),
         };
 
-        INDArray[] preOut = new INDArray[] {Nd4j.rand(1, 3), Nd4j.rand(1, 3),
+        INDArray[] preOut = new INDArray[] {Nd4j.rand(DataType.DOUBLE, new long[]{1, 3}), Nd4j.rand(DataType.DOUBLE, new long[]{1, 3}),
                         /*
                         Nd4j.rand(3,3),
                         Nd4j.rand(1,3).add(5),
                         Nd4j.rand(3,3),
                         Nd4j.rand(1,3).add(5),
                         Nd4j.rand(4,4),*/
-                        Nd4j.randn(1, 3), Nd4j.randn(3, 3).add(10), Nd4j.rand(1, 3), Nd4j.randn(3, 3).add(10),
-                        Nd4j.randn(1, 3), Nd4j.randn(3, 3).add(10), Nd4j.rand(1, 3), Nd4j.randn(3, 3).add(10),
+                        Nd4j.randn(1, 3), Nd4j.randn(DataType.DOUBLE, 3, 3).add(10), Nd4j.rand(DataType.DOUBLE, 1, 3), Nd4j.randn(DataType.DOUBLE, 3, 3).add(10),
+                        Nd4j.randn(1, 3), Nd4j.randn(DataType.DOUBLE, 3, 3).add(10), Nd4j.rand(DataType.DOUBLE, 1, 3), Nd4j.randn(DataType.DOUBLE, 3, 3).add(10),
                         /*
                         Nd4j.rand(1,3),
                         Nd4j.randn(3,3).add(10),
                         */
-                        Nd4j.rand(3, 3).addi(-0.5), //adding a neg num makes some +ve/ some -ve
-                        Nd4j.rand(3, 3).addi(-0.5), //adding a neg num makes some +ve/ some -ve
-                        Nd4j.rand(3, 3).addi(-0.5),
+                        Nd4j.rand(DataType.DOUBLE, 3, 3).addi(-0.5), //adding a neg num makes some +ve/ some -ve
+                        Nd4j.rand(DataType.DOUBLE, 3, 3).addi(-0.5), //adding a neg num makes some +ve/ some -ve
+                        Nd4j.rand(DataType.DOUBLE, 3, 3).addi(-0.5),
                         // Nd4j.rand(3,3),
                         //Nd4j.randn(3,3)
         };

@@ -2802,7 +2802,7 @@ public class Nd4j {
         return rand(ret);
     }
 
-    public static INDArray rand(DataType dataType, long[] shape) {
+    public static INDArray rand(DataType dataType, long... shape) {
         INDArray ret = createUninitialized(dataType, shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return rand(ret);
@@ -3022,7 +3022,13 @@ public class Nd4j {
         return randn(ret);
     }
 
-    public static INDArray randn(long[] shape) {
+    public static INDArray randn(DataType dataType, long... shape) {
+        INDArray ret = Nd4j.createUninitialized(dataType, shape, order());
+        logCreationIfNecessary(ret);
+        return randn(ret);
+    }
+
+    public static INDArray randn(long... shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order());
         logCreationIfNecessary(ret);
         return randn(ret);
