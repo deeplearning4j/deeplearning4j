@@ -103,7 +103,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected final AtomicBoolean connectedFlag = new AtomicBoolean(false);
 
     public AeronUdpTransport(@NonNull String ownIp, @NonNull String rootIp, @NonNull VoidConfiguration configuration) {
-        this(ownIp, configuration.getUnicastPort(), rootIp, configuration.getUnicastPort(), configuration);
+        this(ownIp, configuration.getPortSupplier().getPreferredPort(), rootIp, configuration.getUnicastControllerPort(), configuration);
     }
 
     /**
@@ -324,7 +324,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
             val rc = RemoteConnection.builder()
                     .ip(ipAndPort)
-                    .port(voidConfiguration.getUnicastPort())
+                    .port(0)
                     .longHash(hash)
                     .publication(v)
                     .build();

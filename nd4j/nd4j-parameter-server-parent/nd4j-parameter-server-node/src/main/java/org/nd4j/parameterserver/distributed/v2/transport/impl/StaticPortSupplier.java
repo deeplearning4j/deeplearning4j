@@ -28,7 +28,7 @@ import org.nd4j.parameterserver.distributed.v2.transport.PortSupplier;
 public class StaticPortSupplier implements PortSupplier {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private int port = 40123;
+    private int port = 49876;
 
     protected StaticPortSupplier() {
         //

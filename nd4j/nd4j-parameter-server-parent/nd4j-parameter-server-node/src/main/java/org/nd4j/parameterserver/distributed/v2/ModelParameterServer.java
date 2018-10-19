@@ -127,7 +127,7 @@ public final class ModelParameterServer {
      * @param isMasterNode
      */
     protected ModelParameterServer(@NonNull Transport transport, boolean isMasterNode) {
-        this(VoidConfiguration.builder().unicastPort(40123).streamId(119).build(), transport, isMasterNode);
+        this(VoidConfiguration.builder().unicastControllerPort(40123).streamId(119).build(), transport, isMasterNode);
     }
 
     /**
