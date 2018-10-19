@@ -12,6 +12,7 @@ package org.nd4j.aeron.ipc;
  * specific language governing permissions and limitations under the License.
  */
 
+import io.aeron.Aeron;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
@@ -233,6 +234,13 @@ public class AeronUtil {
             t.setName("aeron-shared-thread-" + sharedThreadCount.getAndIncrement());
             return t;
         });
+    }
 
+    public static void setDaemonizedThreadFactories(Aeron.Context aeronCtx){
+        aeronCtx.threadFactory(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            return t;
+        });
     }
 }

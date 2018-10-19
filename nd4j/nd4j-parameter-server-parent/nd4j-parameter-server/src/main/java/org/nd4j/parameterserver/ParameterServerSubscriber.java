@@ -386,6 +386,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
                         .unavailableImageHandler(AeronUtil::printUnavailableImage)
                         .aeronDirectoryName(mediaDriverDirectoryName).keepAliveInterval(100000)
                         .errorHandler(e -> log.error(e.toString(), e));
+        AeronUtil.setDaemonizedThreadFactories(ctx);
         return ctx;
     }
 

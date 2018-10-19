@@ -93,6 +93,7 @@ public class RoutedTransport extends BaseTransport {
 
         context = new Aeron.Context().driverTimeoutMs(30000)
                        .keepAliveInterval(100000000);
+        AeronUtil.setDaemonizedThreadFactories(context);
 
         MediaDriver.Context ctx = new MediaDriver.Context();
         AeronUtil.setDaemonizedThreadFactories(ctx);
