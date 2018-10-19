@@ -338,22 +338,22 @@ TEST_F(GraphTests, InternalBranching1) {
     graph->getVariableSpace()->putVariable(-2, z);
 
     // 1.0
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 26, 1, {-1}, {11, 21});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Ones, 1, {-1}, {11, 21});
 
     // -1
-    auto nodeK = new Node(OpType_TRANSFORM_SAME, 6, 11, {1}, {12});
+    auto nodeK = new Node(OpType_TRANSFORM_SAME, transform::Neg, 11, {1}, {12});
 
     // 2.0
-    auto nodeL = new Node(OpType_TRANSFORM_SAME, 35, 12, {11}, {31});
+    auto nodeL = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 12, {11}, {31});
 
     // -1
-    auto nodeR = new Node(OpType_TRANSFORM_SAME, 6, 21, {1}, {22});
+    auto nodeR = new Node(OpType_TRANSFORM_SAME, transform::Neg, 21, {1}, {22});
 
     // 1
-    auto nodeS = new Node(OpType_TRANSFORM_SAME, 6, 22, {21}, {31});
+    auto nodeS = new Node(OpType_TRANSFORM_SAME, transform::Neg, 22, {21}, {31});
 
     // 1.0
-    auto nodeZ = new Node(OpType_PAIRWISE, 0, 31, {12, 22}, {-2});
+    auto nodeZ = new Node(OpType_PAIRWISE, pairwise::Add, 31, {12, 22}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeK);
@@ -391,8 +391,8 @@ TEST_F(GraphTests, ReductionsTest1) {
     graph->getVariableSpace()->putVariable(-2, z);
 
 
-    auto nodeA = new Node(OpType_REDUCE_SAME, 0, 1, {-1}, {2}, {1});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {-2});
+    auto nodeA = new Node(OpType_REDUCE_FLOAT, reduce::Mean, 1, {-1}, {2}, {1});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
