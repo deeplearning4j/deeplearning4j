@@ -347,6 +347,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_lstmCell.class,
         float_sruCell.class,
         float_gruCell.class,
+        float_gruCell_bp.class,
         float_lstm.class,
         float_gru.class,
         float_static_rnn.class,
@@ -747,6 +748,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_lstmCell.class,
         half_sruCell.class,
         half_gruCell.class,
+        half_gruCell_bp.class,
         half_lstm.class,
         half_gru.class,
         half_static_rnn.class,
@@ -1147,6 +1149,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_lstmCell.class,
         double_sruCell.class,
         double_gruCell.class,
+        double_gruCell_bp.class,
         double_lstm.class,
         double_gru.class,
         double_static_rnn.class,
@@ -27095,6 +27098,54 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public double_gruCell() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
+//         #if NOT_EXCLUDED(OP_gruCell)
+        @Name("nd4j::ops::gruCell_bp<float>") public static class float_gruCell_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_gruCell_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_gruCell_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_gruCell_bp position(long position) {
+                return (float_gruCell_bp)super.position(position);
+            }
+        
+                                                                                    public float_gruCell_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::gruCell_bp<float16>") public static class half_gruCell_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_gruCell_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_gruCell_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_gruCell_bp position(long position) {
+                return (half_gruCell_bp)super.position(position);
+            }
+        
+                                                                                    public half_gruCell_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::gruCell_bp<double>") public static class double_gruCell_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_gruCell_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_gruCell_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_gruCell_bp position(long position) {
+                return (double_gruCell_bp)super.position(position);
+            }
+        
+                                                                                    public double_gruCell_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
