@@ -99,6 +99,7 @@ namespace nd4j {
                 newshape[1] = 0;
                 newshape[2] = 1;
                 newshape[3] = 99;
+                ArrayOptions::setDataType(newshape, ArrayOptions::dataType(inputShape->at(0)));
                 shapeList->push_back(newshape);
             } else if (inputShape->size() == 1 && arguments->size() > 0) {
                 auto outputShapeInfo = ShapeUtils::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());

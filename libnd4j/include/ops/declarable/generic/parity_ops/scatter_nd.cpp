@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_scatter_nd)
 
 #include <ops/declarable/CustomOperations.h>
-//#include <ops/declarable/generic/helpers/ScatterHelper.h>
+#include <ops/declarable/generic/helpers/ScatterHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -33,9 +33,6 @@ namespace ops {
         auto shape = INPUT_VARIABLE(2);
 
         auto output = OUTPUT_VARIABLE(0);
-
-        // FIXME: scatter helper should be updated
-        /*
 
         const int indRank   = indices->rankOf();
         const int updRank   = updates->rankOf();
@@ -54,28 +51,26 @@ namespace ops {
         REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ND OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
 
         // initial zeroing of output
-        if(output->ews() == 1)
-            memset(output->getBuffer(), 0, output->lengthOf() * sizeof(T));
-        else
-            *output = 0;
+        *output = 0;
 
-        ScatterHelper<T>::template scatterND<simdOps::Copy<T>>(*indices, *updates, *output);
-    */
+        ScatterHelper::scatterND(pairwise::Copy, *indices, *updates, *output);
+
         return Status::OK();
     }
 
     DECLARE_TYPES(scatter_nd) {
-        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
-        getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
-        getOpDescriptor()->setAllowedInputTypes(2, {DataType::INT32, DataType::INT64});
-        getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+        getOpDescriptor()
+            ->setAllowedInputTypes(0, {ALL_INTS})
+            ->setAllowedInputTypes(1, DataType::ANY)
+            ->setAllowedInputTypes(2, {ALL_INTS})
+            ->setAllowedOutputTypes(DataType::ANY);
     }
 
 ////////////////////////////////////////////////////////////////////////7
         DECLARE_SHAPE_FN(scatter_nd) {
 
             auto shape = INPUT_VARIABLE(2);
-            auto updShapeInfo = inputShape->at(1);
+            auto updShapeInfo = inputShape->at(1);            
 
             Nd4jLong *outShapeInfo;
             ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(shape->lengthOf()), Nd4jLong);
@@ -84,7 +79,7 @@ namespace ops {
             for (int i = 0; i < outShapeInfo[0]; ++i)
                 outShapeInfo[i + 1] = shape->e<Nd4jLong>(i);
 
-            shape::updateStrides(outShapeInfo, shape::order(updShapeInfo));
+            ShapeUtils::updateStridesAndType(outShapeInfo, updShapeInfo, shape::order(updShapeInfo));
 
             return SHAPELIST(outShapeInfo);
         }

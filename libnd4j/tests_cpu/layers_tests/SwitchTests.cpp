@@ -71,9 +71,9 @@ TEST_F(SwitchTests, SwitchTest1) {
 
 
     // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
-    auto nodeZ0 = new Node(OpType_TRANSFORM_SAME, 0, 4, {}, {});
+    auto nodeZ0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 4, {}, {});
     nodeZ0->pickInput(3, 0);
-    auto nodeZ1 = new Node(OpType_TRANSFORM_SAME, 35, 5, {}, {});
+    auto nodeZ1 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 5, {}, {});
     nodeZ1->pickInput(3, 1);
 
 
@@ -143,28 +143,28 @@ TEST_F(SwitchTests, SwitchTest2) {
     variableSpace->putVariable(-3, condtionY);
 
 
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {3});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
 
-    auto scopeCondition = new Node(OpType_LOGIC, 10, 3);
+    auto scopeCondition = new Node(OpType_LOGIC, broadcast::LessThan, 3);
     scopeCondition->setName("scopeCondition");
 
-    auto nodeCondition = new Node(OpType_BOOLEAN, 0, 119, {-2, -3});
+    auto nodeCondition = new Node(OpType_BOOLEAN, broadcast::LessThan, 119, {-2, -3});
     nodeCondition->setScopeInfo(3, "scopeCondition");
 
     nd4j::ops::eq_scalar eqOp;
     nodeCondition->setCustomOp(&eqOp);
 
-    auto nodeSwitch = new Node(OpType_LOGIC, 30, 5, {3, 2});
+    auto nodeSwitch = new Node(OpType_LOGIC, broadcast::LogicalAnd, 5, {3, 2});
 
     nd4j::ops::Switch switchOp;
     nodeSwitch->setCustomOp(&switchOp);
 
 
     // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
-    auto nodeZ0 = new Node(OpType_TRANSFORM_SAME, 0, 6, {}, {});
+    auto nodeZ0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 6, {}, {});
     nodeZ0->pickInput(5, 0);
-    auto nodeZ1 = new Node(OpType_TRANSFORM_SAME, 35, 7, {}, {});
+    auto nodeZ1 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 7, {}, {});
     nodeZ1->pickInput(5, 1);
 
     graph.addNode(nodeA);
@@ -209,28 +209,28 @@ TEST_F(SwitchTests, SwitchTest3) {
     variableSpace->putVariable(-3, condtionY);
 
 
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {3});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
 
-    auto scopeCondition = new Node(OpType_LOGIC, 10, 3);
+    auto scopeCondition = new Node(OpType_LOGIC, broadcast::LessThan, 3);
     scopeCondition->setName("scopeCondition");
 
-    auto nodeCondition = new Node(OpType_BOOLEAN, 0, 119, {-2, -3});
+    auto nodeCondition = new Node(OpType_BOOLEAN, broadcast::LessThan, 119, {-2, -3});
     nodeCondition->setScopeInfo(3, "scopeCondition");
 
     nd4j::ops::eq_scalar eqOp;
     nodeCondition->setCustomOp(&eqOp);
 
-    auto nodeSwitch = new Node(OpType_LOGIC, 30, 5, {3, 2});
+    auto nodeSwitch = new Node(OpType_LOGIC, broadcast::LogicalOr, 5, {3, 2});
 
     nd4j::ops::Switch switchOp;
     nodeSwitch->setCustomOp(&switchOp);
 
 
     // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
-    auto nodeZ0 = new Node(OpType_TRANSFORM_SAME, 6, 6, {}, {});
+    auto nodeZ0 = new Node(OpType_TRANSFORM_SAME, transform::Neg, 6, {}, {});
     nodeZ0->pickInput(5, 0);
-    auto nodeZ1 = new Node(OpType_TRANSFORM_SAME, 35, 7, {}, {});
+    auto nodeZ1 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 7, {}, {});
     nodeZ1->pickInput(5, 1);
 
     graph.addNode(nodeA);
