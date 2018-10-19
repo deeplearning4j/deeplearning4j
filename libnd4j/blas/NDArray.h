@@ -174,13 +174,13 @@ namespace nd4j {
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         */
-		NDArray(const Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
+		NDArray(Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr, const bool isShapeAlloc = false);
 
         /**
         *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         *  set dtype as array type
         */
-        NDArray(const Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr, const bool isShapeAlloc = false);
 
         /**
         *  this constructor creates new array using shape information contained in vector argument

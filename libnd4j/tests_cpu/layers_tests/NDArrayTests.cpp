@@ -1187,8 +1187,8 @@ TEST_F(NDArrayTest, TestNegSize1) {
 // not-in-place
 TEST_F(NDArrayTest, Permute1) {  
     
-    const Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
-	const Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
+    Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
+	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
     NDArray arr1(shape1,true);
@@ -1204,8 +1204,8 @@ TEST_F(NDArrayTest, Permute1) {
 // in-place
 TEST_F(NDArrayTest, Permute2) {
     
-    const Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
-	const Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
+    Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
+	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
     NDArray arr1(shape1,true);
@@ -1218,9 +1218,9 @@ TEST_F(NDArrayTest, Permute2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Broadcast1) {
     
-    const Nd4jLong shape1[10] = {3, 5, 1, 10, 10, 10, 1, 8192, 1, 99};
-	const Nd4jLong shape2[8]  = {2,    7, 10, 10, 1, 8192, 1, 99};
-	const Nd4jLong shape3[10] = {3, 5, 7, 10, 70, 10, 1, 8192, 1, 99};
+    Nd4jLong shape1[10] = {3, 5, 1, 10, 10, 10, 1, 8192, 1, 99};
+	Nd4jLong shape2[8]  = {2,    7, 10, 10, 1, 8192, 1, 99};
+	Nd4jLong shape3[10] = {3, 5, 7, 10, 70, 10, 1, 8192, 1, 99};
     
 	NDArray arr1(shape1);
     NDArray arr2(shape2);
