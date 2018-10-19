@@ -49,7 +49,7 @@ TEST_F(GraphTests, SingleInput1) {
     graph->getVariableSpace()->putVariable(-1, x);
 
     auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Cosine, 2, {1}, {3});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Cosine, 2, {1}, {3});
     auto nodeC = new Node(OpType_TRANSFORM_SAME, transform::Abs, 3, {2}, {});
 
     graph->addNode(nodeA);
@@ -116,9 +116,9 @@ TEST_F(GraphTests, SingleInput3) {
     graph->getVariableSpace()->putVariable(-2, v0);
     graph->getVariableSpace()->putVariable(-3, v1);
 
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2, 3});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {-2});
-    auto nodeC = new Node(OpType_TRANSFORM_SAME, 26, 3, {1}, {-3});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2, 3});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 2, {1}, {-2});
+    auto nodeC = new Node(OpType_TRANSFORM_SAME, transform::Ones, 3, {1}, {-3});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -148,12 +148,12 @@ TEST_F(GraphTests, SingleInput4) {
     graph->getVariableSpace()->putVariable(-2, v0);
     graph->getVariableSpace()->putVariable(-3, v1);
 
-    auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 14, 2, {1}, {3});
-    auto nodeC = new Node(OpType_TRANSFORM_SAME, 6, 3, {2}, {4, 5});
+    auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 2, {1}, {3});
+    auto nodeC = new Node(OpType_TRANSFORM_SAME, transform::Neg, 3, {2}, {4, 5});
 
-    auto nodeS = new Node(OpType_TRANSFORM_SAME, 26, 4, {3}, {-2});
-    auto nodeE = new Node(OpType_TRANSFORM_SAME, 27, 5, {3}, {-3});
+    auto nodeS = new Node(OpType_TRANSFORM_SAME, transform::Ones, 4, {3}, {-2});
+    auto nodeE = new Node(OpType_TRANSFORM_SAME, transform::Identity, 5, {3}, {-3});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -192,11 +192,11 @@ TEST_F(GraphTests, DoubleInput2) {
 
 
     auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Sqrt, 2, {1}, {3});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 2, {1}, {3});
     auto nodeC = new Node(OpType_TRANSFORM_SAME, transform::Neg, 3, {2}, {-3});
 
     auto nodeT = new Node(OpType_TRANSFORM_SAME, transform::Abs, 11, {-2}, {12});
-    auto nodeU = new Node(OpType_TRANSFORM_SAME, transform::Sqrt, 12, {11}, {13});
+    auto nodeU = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 12, {11}, {13});
     auto nodeV = new Node(OpType_TRANSFORM_SAME, transform::Neg, 13, {12}, {-4});
 
     graph->addNode(nodeA);
@@ -241,11 +241,11 @@ TEST_F(GraphTests, DoubleInput3) {
 
 
     auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Sqrt, 2, {1}, {3});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 2, {1}, {3});
     auto nodeC = new Node(OpType_TRANSFORM_SAME, transform::Neg, 3, {2}, {-3, 21});
 
     auto nodeT = new Node(OpType_TRANSFORM_SAME, transform::Abs, 11, {-2}, {12});
-    auto nodeU = new Node(OpType_TRANSFORM_SAME, transform::Sqrt, 12, {11}, {13});
+    auto nodeU = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 12, {11}, {13});
     auto nodeV = new Node(OpType_TRANSFORM_SAME, transform::Neg, 13, {12}, {-4, 21});
 
     auto nodeW = new Node(OpType_PAIRWISE, pairwise::Add, 21, {3, 13}, {22});
