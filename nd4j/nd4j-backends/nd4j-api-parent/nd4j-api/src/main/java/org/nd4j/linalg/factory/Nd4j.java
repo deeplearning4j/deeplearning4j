@@ -5639,6 +5639,10 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray scalar(boolean value) {
+        return INSTANCE.trueScalar(DataType.BOOL, value ? 1 : 0);
+    }
+
     /**
      * Get the strides for the given order and shape
      *

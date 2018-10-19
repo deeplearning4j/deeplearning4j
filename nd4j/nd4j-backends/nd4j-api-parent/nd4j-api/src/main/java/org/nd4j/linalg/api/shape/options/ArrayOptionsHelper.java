@@ -143,4 +143,31 @@ public class ArrayOptionsHelper {
         return storage;
     }
 
+    public static DataType convertToDataType(org.tensorflow.framework.DataType dataType) {
+        switch (dataType) {
+            case DT_BOOL:
+                return DataType.BOOL;
+            case DT_FLOAT:
+                return DataType.FLOAT;
+            case DT_INT32:
+                return DataType.INT;
+            case DT_INT64:
+                return DataType.LONG;
+            case DT_INT8:
+                return DataType.BYTE;
+            case DT_INT16:
+                return DataType.SHORT;
+            case DT_DOUBLE:
+                return DataType.DOUBLE;
+            case DT_UINT8:
+                return DataType.UBYTE;
+            case DT_HALF:
+                return DataType.HALF;
+            case DT_STRING:
+                return DataType.UTF8;
+            default:
+                throw new UnsupportedOperationException("Unknown TF data type: [" + dataType.name() + "]");
+        }
+    }
+
 }

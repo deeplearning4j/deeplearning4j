@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.IfImportState;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -821,7 +822,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     public INDArray mapTensorProto(TensorProto tfTensor) {
         // building shape first
         int dims = tfTensor.getTensorShape().getDimCount();
-        int[] arrayShape = null;
+        long[] arrayShape = null;
         List<Integer> dimensions = new ArrayList<>();
         // we allow vectors now
         //if(dims == 1) {
@@ -838,7 +839,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
 
 
-        arrayShape = Ints.toArray(dimensions);
+        arrayShape = ArrayUtil.toLongArray(Ints.toArray(dimensions));
 
         if (tfTensor.getDtype() == DataType.DT_INT32 || tfTensor.getDtype() == DataType.DT_INT16 || tfTensor.getDtype() == DataType.DT_INT8) {
             // valueOf
@@ -855,13 +856,13 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                 return Nd4j.valueArrayOf(arrayShape, (double) val);
             } else if (tfTensor.getInt64ValCount() > 0) {
-                double[] jArray = new double[tfTensor.getIntValCount()];
+                val jArray = new int[tfTensor.getIntValCount()];
                 for (int e = 0; e < tfTensor.getIntValCount(); e++) {
-                    jArray[e] = (double) tfTensor.getIntVal(e);
+                    jArray[e] = tfTensor.getIntVal(e);
                 }
 
                 // TF arrays are always C
-                return Nd4j.create(jArray, arrayShape, 0, 'c');
+                return Nd4j.create(Nd4j.createTypedBuffer(jArray, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype())), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
             } else {
                 // FIXME: INT bytebuffers should be converted to floating point
                 //throw new UnsupportedOperationException("To be implemented yet");
@@ -869,21 +870,21 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 // binary representation
                 val bb = tfTensor.getTensorContent().asReadOnlyByteBuffer();
                 val fb = bb.order(ByteOrder.nativeOrder()).asIntBuffer();
-                val fa = new float[fb.capacity()];
+                val fa = new int[fb.capacity()];
                 for (int e = 0; e < fb.capacity(); e++)
-                    fa[e] = (float) fb.get(e);
+                    fa[e] = fb.get(e);
 
                 if (fa.length == 0)
-                    return Nd4j.empty();
+                    return Nd4j.empty(ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
                     //throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
                 if (fa.length == 1)
-                    return Nd4j.trueScalar(fa[0]);
+                    return Nd4j.scalar(ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()), fa[0]);
 
                 if (arrayShape.length == 1)
                     return Nd4j.trueVector(fa);
 
-                val array = Nd4j.create(fa, arrayShape, 'c', 0);
+                val array = Nd4j.create(Nd4j.createTypedBuffer(fa, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype())), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
                 //log.debug("SUM1: {}", array.sumNumber());
                 //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
                 return array;
@@ -898,9 +899,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 float val = tfTensor.getFloatVal(0);
 
                 if (arrayShape == null || arrayShape.length == 0)
-                    arrayShape = new int[]{};
+                    arrayShape = new long[]{};
 
-                INDArray array = Nd4j.valueArrayOf(arrayShape, (double) val);
+                INDArray array = Nd4j.valueArrayOf(arrayShape, val, org.nd4j.linalg.api.buffer.DataType.FLOAT);
                 return array;
             } else if (tfTensor.getFloatValCount() > 0) {
                 float[] jArray = new float[tfTensor.getFloatValCount()];
@@ -908,8 +909,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     jArray[e] = tfTensor.getFloatVal(e);
                 }
 
-                // FIXME: we're missing float[] signature
-                INDArray array = Nd4j.create(Nd4j.createBuffer(jArray), arrayShape,  'c');
+                INDArray array = Nd4j.create(Nd4j.createTypedBuffer(jArray, org.nd4j.linalg.api.buffer.DataType.FLOAT), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c');
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0){
                 // binary representation
@@ -928,7 +928,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 if (arrayShape.length == 1)
                     return Nd4j.trueVector(fa);
 
-                val array = Nd4j.create(fa, arrayShape, 'c', 0);
+                val array = Nd4j.create(fa, arrayShape, 'c');
                 return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_DOUBLE) {
@@ -941,7 +941,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 INDArray array = Nd4j.trueScalar(val);
                 return array;
             } else if (tfTensor.getDoubleValCount() > 0) {
-                double[] jArray = new double[tfTensor.getDoubleValCount()];
+                val jArray = new double[tfTensor.getDoubleValCount()];
                 for (int e = 0; e < tfTensor.getDoubleValCount(); e++) {
                     jArray[e] =  tfTensor.getDoubleVal(e);
                 }
@@ -983,22 +983,22 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 INDArray array = Nd4j.trueScalar(val);
                 return array;
             } else if (tfTensor.getInt64ValCount() > 0) {
-                double[] jArray = new double[tfTensor.getInt64ValCount()];
+                val jArray = new long[tfTensor.getInt64ValCount()];
                 for (int e = 0; e < tfTensor.getInt64ValCount(); e++) {
-                    jArray[e] = (double) tfTensor.getInt64Val(e);
+                    jArray[e] = tfTensor.getInt64Val(e);
                 }
 
                 // TF arrays are always C
-                INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
+                INDArray array = Nd4j.create(Nd4j.createTypedBuffer(jArray, org.nd4j.linalg.api.buffer.DataType.LONG), arrayShape, Nd4j.getStrides(arrayShape, 'c'),0, 'c', org.nd4j.linalg.api.buffer.DataType.LONG);
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0) {
                 //throw new UnsupportedOperationException("To be implemented yet");
                 //Mapping INT bytebuffers should be converted to floating point
                 val bb = tfTensor.getTensorContent().asReadOnlyByteBuffer();
                 val lb = bb.order(ByteOrder.nativeOrder()).asLongBuffer();
-                val fa = new float[lb.capacity()];
+                val fa = new long[lb.capacity()];
                 for (int e = 0; e < lb.capacity(); e++)
-                    fa[e] = (float) lb.get(e);
+                    fa[e] = lb.get(e);
                 if (fa.length == 0)
                     throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
@@ -1007,27 +1007,26 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                 if (arrayShape.length == 1)
                     return Nd4j.trueVector(fa);
-                val array = Nd4j.create(fa, arrayShape, 'c', 0);
-                //log.debug("SUM1: {}", array.sumNumber());
-                //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
+
+                val array = Nd4j.create(Nd4j.createTypedBuffer(fa, org.nd4j.linalg.api.buffer.DataType.LONG), arrayShape, Nd4j.getStrides(arrayShape, 'c'),  0, 'c', org.nd4j.linalg.api.buffer.DataType.LONG);
                 return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_BOOL){
             if (tfTensor.getBoolValCount() == 1 || ArrayUtil.prod(arrayShape) == 1){
                 //straight zero case
                 if(tfTensor.getBoolValCount() < 1)
-                    return Nd4j.trueScalar(0.0);
+                    return Nd4j.scalar(false);
 
                 boolean val = tfTensor.getBoolVal(0);
-                return Nd4j.trueScalar(val ? 1.0 : 0.0);
+                return Nd4j.scalar(val);
             } else if (tfTensor.getBoolValCount() > 0) {
-                float[] jArray = new float[tfTensor.getBoolValCount()];
+                val jArray = new boolean[tfTensor.getBoolValCount()];
                 for (int e = 0; e < tfTensor.getBoolValCount(); e++) {
-                    jArray[e] = tfTensor.getBoolVal(e) ? 1.0f : 0.0f;
+                    jArray[e] = tfTensor.getBoolVal(e);
                 }
 
                 // TF arrays are always C
-                INDArray array = Nd4j.create(jArray, arrayShape, 'c');
+                INDArray array = Nd4j.create(Nd4j.createTypedBuffer(jArray, org.nd4j.linalg.api.buffer.DataType.BOOL), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0,  'c', org.nd4j.linalg.api.buffer.DataType.BOOL);
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0) {
                 throw new UnsupportedOperationException("Not yet implemented for DataType.DT_BOOL");
