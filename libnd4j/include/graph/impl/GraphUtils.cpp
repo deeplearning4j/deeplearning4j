@@ -176,7 +176,8 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     args.emplace_back(std::string("-I../include/types"));
     args.emplace_back(std::string("-I../include/array"));
     args.emplace_back(std::string("-I../include/cnpy"));
-    args.emplace_back(std::string("-I../include/ops/declarable")); 
+        args.emplace_back(std::string("-I../include/graph"));
+    args.emplace_back(std::string("-I../include/ops/declarable"));
     args.emplace_back(input);
 
     std::string preprocessorCmd(cxx);
