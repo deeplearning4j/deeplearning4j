@@ -20,9 +20,11 @@
 
 #include <graph/Node.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <ops/declarable/LegacyTransformOp.h>
+#include <ops/declarable/LegacyTransformSameOp.h>
+#include <ops/declarable/LegacyTransformFloatOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
-#include <ops/declarable/LegacyReduceOp.h>
+#include <ops/declarable/LegacyReduceSameOp.h>
+#include <ops/declarable/LegacyReduceFloatOp.h>
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <ops/declarable/LegacyStatsOp.h>
 #include <ops/declarable/LegacyBroadcastOp.h>
@@ -332,12 +334,12 @@ namespace nd4j {
             }
 
             // these ops allow in-place execution by design
-            if (opType == OpType_TRANSFORM_SAME || opType == OpType_SCALAR || opType == OpType_BROADCAST) {
+            if (opType == OpType_TRANSFORM_SAME || opType == OpType_TRANSFORM_FLOAT || opType == OpType_SCALAR || opType == OpType_BROADCAST) {
                 if (_output.size() <= 1) {
                     _isInplace = true;
                 }
                 _opClass = OpClass_TRANSFORM;
-            } else if (opType == OpType_REDUCE_SAME || opType == OpType_SUMMARYSTATS) {
+            } else if (opType == OpType_REDUCE_SAME || opType == OpType_REDUCE_FLOAT || opType == OpType_SUMMARYSTATS) {
                 _opClass = OpClass_REDUCTION;
             }
 
@@ -346,8 +348,10 @@ namespace nd4j {
                     opType == OpType_INDEX_REDUCE ||
                     opType == OpType_SUMMARYSTATS ||
                     opType == OpType_REDUCE_SAME ||
+                    opType == OpType_REDUCE_FLOAT ||
                     opType == OpType_REDUCE_3 ||
                     opType == OpType_TRANSFORM_SAME ||
+                    opType == OpType_TRANSFORM_FLOAT ||
                     opType == OpType_RANDOM ||
                     opType == OpType_PAIRWISE ||
                     opType == OpType_SCALAR) {
@@ -591,13 +595,17 @@ namespace nd4j {
                 case OpType_PAIRWISE:
                     return new nd4j::ops::LegacyPairwiseTransformOp(opNum);
                 case OpType_TRANSFORM_SAME:
-                    return new nd4j::ops::LegacyTransformOp(opNum);
+                    return new nd4j::ops::LegacyTransformSameOp(opNum);
+                case OpType_TRANSFORM_FLOAT:
+                    return new nd4j::ops::LegacyTransformFloatOp(opNum);
                 case OpType_SCALAR:
                     return new nd4j::ops::LegacyScalarOp(opNum, scalar);
                 case OpType_REDUCE_3:
                     return new nd4j::ops::LegacyReduce3Op(opNum);
                 case OpType_REDUCE_SAME:
-                    return new nd4j::ops::LegacyReduceOp(opNum);
+                    return new nd4j::ops::LegacyReduceSameOp(opNum);
+                case OpType_REDUCE_FLOAT:
+                    return new nd4j::ops::LegacyReduceFloatOp(opNum);
                 case OpType_INDEX_REDUCE:
                     return new nd4j::ops::LegacyIndexReduceOp(opNum);
                 case OpType_SUMMARYSTATS:

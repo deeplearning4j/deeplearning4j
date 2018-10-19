@@ -18,8 +18,8 @@
 // Created by raver119 on 16.10.2017.
 //
 
-#ifndef LIBND4J__LEGACY_TRANSFORM_OP__H
-#define LIBND4J__LEGACY_TRANSFORM_OP__H
+#ifndef LIBND4J__LEGACY_TRANSFORM_FLOAT_OP__H
+#define LIBND4J__LEGACY_TRANSFORM_FLOAT_OP__H
 
 
 #include <ops/declarable/LegacyOp.h>
@@ -29,12 +29,12 @@ namespace nd4j {
         /**
         *   This class provides wrapper for Transform operations (i.e. Pow or OneMinus)
         */
-        class ND4J_EXPORT LegacyTransformOp : public LegacyOp {
+        class ND4J_EXPORT LegacyTransformFloatOp : public LegacyOp {
         protected:
             Nd4jStatus validateAndExecute(Context &block);
         public:
-            LegacyTransformOp();
-            LegacyTransformOp(int opNum);
+            LegacyTransformFloatOp();
+            LegacyTransformFloatOp(int opNum);
 
             ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context &block);
             virtual LegacyOp* clone();
@@ -43,4 +43,4 @@ namespace nd4j {
 }
 
 
-#endif //LIBND4J__LEGACY_TRANSFORM_OP__H
+#endif //LIBND4J__LEGACY_TRANSFORM_FLOAT_OP__H
