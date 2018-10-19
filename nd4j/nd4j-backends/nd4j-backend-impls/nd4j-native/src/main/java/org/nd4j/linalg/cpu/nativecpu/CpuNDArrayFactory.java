@@ -615,10 +615,13 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         long[] outputShape = ArrayUtil.copy(toConcat[0].shape());
 
+        boolean allScalars = true;
 
         for (int i = 0; i < toConcat.length; i++) {
             if (toConcat[i].isCompressed())
                 Nd4j.getCompressor().decompressi(toConcat[i]);
+
+            allScalars &= toConcat[i].rank() == 0;
 
             shapeInfoPointers.put(i, toConcat[i].shapeInfoDataBuffer().addressPointer());
             dataPointers.put(i, toConcat[i].data().addressPointer());
@@ -633,7 +636,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             //log.info("Shape[{}]: {}", i, Arrays.toString(toConcat[i].shapeInfoDataBuffer().asInt()));
         }
 
-        outputShape[dimension] = sumAlongDim;
+        if (allScalars) {
+            outputShape = new long[]{sumAlongDim};
+        } else {
+            outputShape[dimension] = sumAlongDim;
+        }
 
         //PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 

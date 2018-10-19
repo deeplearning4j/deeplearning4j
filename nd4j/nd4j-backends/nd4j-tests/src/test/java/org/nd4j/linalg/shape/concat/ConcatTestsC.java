@@ -50,8 +50,8 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatVertically() {
-        INDArray rowVector = Nd4j.ones(5);
-        INDArray other = Nd4j.ones(5);
+        INDArray rowVector = Nd4j.ones(1, 5);
+        INDArray other = Nd4j.ones(1, 5);
         INDArray concat = Nd4j.vstack(other, rowVector);
         assertEquals(rowVector.rows() * 2, concat.rows());
         assertEquals(rowVector.columns(), concat.columns());
@@ -98,9 +98,9 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatVectors1() {
-        INDArray first = Nd4j.ones(10);
-        INDArray second = Nd4j.ones(10);
-        INDArray third = Nd4j.ones(10);
+        INDArray first = Nd4j.ones(1, 10);
+        INDArray second = Nd4j.ones(1, 10);
+        INDArray third = Nd4j.ones(1, 10);
 
         INDArray result = Nd4j.concat(0, first, second, third);
 
@@ -116,7 +116,7 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatMatrices() {
-        INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray a = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray b = a.dup();
 
 
@@ -214,7 +214,7 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConcatVector() {
-        System.out.println(Nd4j.concat(0, Nd4j.ones(1000000), Nd4j.create(1)));
+        System.out.println(Nd4j.concat(0, Nd4j.ones(1,1000000), Nd4j.create(1, 1)));
     }
 
     @Test
