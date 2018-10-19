@@ -1102,15 +1102,15 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
     graphB.getVariableSpace()->putVariable(-1, new Variable(true));
 
     // abs, result is 5
-    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
     // 1-, result -4
-    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 35, 2, {1}, {3});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 2, {1}, {3});
 
     // graph should return 12: abs(3.0 x -4)
     auto nodeA2 = new Node(OpType_GRAPH, -1, 3, {2}, {4});
 
     // 1 - 12 = -11
-    auto nodeA3 = new Node(OpType_TRANSFORM_SAME, 35, 4, {3}, {});
+    auto nodeA3 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 4, {3}, {});
 
     nodeA2->setGraph(&graphB);
 
@@ -1120,8 +1120,8 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
     graphA.addNode(nodeA3);
 
     // this is going to be PWT
-    auto nodeB0 = new Node(OpType_PAIRWISE, 6, 1, {-1, -2}, {2});
-    auto nodeB1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {});
+    auto nodeB0 = new Node(OpType_PAIRWISE, pairwise::Multiply, 1, {-1, -2}, {2});
+    auto nodeB1 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {});
 
     graphB.addNode(nodeB0);
     graphB.addNode(nodeB1);
@@ -1172,16 +1172,16 @@ TEST_F(GraphTests, TestGraphInGraph_2) {
     graphB.getVariableSpace()->putVariable(-1, placeHolder);
 
     // abs, result is 5
-    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1}, {2});
+    auto nodeA0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
     // 1-, result -4
-    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, 35, 2, {1}, {3});
+    auto nodeA1 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 2, {1}, {3});
     nodeA1->setName(nameA1);
 
     // graph should return 12: abs(3.0 x -4)
     auto nodeA2 = new Node(OpType_GRAPH, -1, 3, {2}, {4});
 
     // 1 - 12 = -11
-    auto nodeA3 = new Node(OpType_TRANSFORM_SAME, 35, 4, {3}, {});
+    auto nodeA3 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 4, {3}, {});
 
     nodeA2->setGraph(&graphB);
 
@@ -1191,8 +1191,8 @@ TEST_F(GraphTests, TestGraphInGraph_2) {
     graphA.addNode(nodeA3);
 
     // this is going to be PWT
-    auto nodeB0 = new Node(OpType_PAIRWISE, 6, 1, {-1, -2}, {2});
-    auto nodeB1 = new Node(OpType_TRANSFORM_SAME, 0, 2, {1}, {});
+    auto nodeB0 = new Node(OpType_PAIRWISE, pairwise::Multiply, 1, {-1, -2}, {2});
+    auto nodeB1 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {});
 
     graphB.addNode(nodeB0);
     graphB.addNode(nodeB1);
