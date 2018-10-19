@@ -532,8 +532,8 @@ TEST_F(GraphTests, BroadcastTest1) {
     graph->getVariableSpace()->putVariable(-2, y);
     graph->getVariableSpace()->putVariable(-3, z);
 
-    auto nodeA = new Node(OpType_BROADCAST, 0, 1, {-1, -2}, {2}, {1});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, 6, 2, {1}, {-3});
+    auto nodeA = new Node(OpType_BROADCAST, 0, broadcast::Subtract, {-1, -2}, {2}, {1});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Neg, 2, {1}, {-3});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -558,7 +558,7 @@ TEST_F(GraphTests, ScalarTest1) {
     graph->getVariableSpace()->putVariable(-2, z);
 
     auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Sqrt, 2, {1}, {3});
+    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Sqrt, 2, {1}, {3});
     auto nodeE = new Node(OpType_SCALAR, scalar::Add, 3, {2}, {-2}, {}, 1.3f);
 
     graph->addNode(nodeA);
