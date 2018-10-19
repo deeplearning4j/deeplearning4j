@@ -58,6 +58,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -258,6 +259,47 @@ public class ParameterServerSubscriber implements AutoCloseable {
                             .maxTermBufferLength(ipcLength).conductorIdleStrategy(new BusySpinIdleStrategy())
                             .receiverIdleStrategy(new BusySpinIdleStrategy())
                             .senderIdleStrategy(new BusySpinIdleStrategy());
+
+            //Set thread factories so we can make the Aeron threads daemon threads (some are not by default)
+            final AtomicInteger conductorCount = new AtomicInteger();
+            mediaDriverCtx.conductorThreadFactory(r -> {
+                Thread t = new Thread(r);
+                t.setDaemon(true);
+                t.setName("aeron-conductor-thread-" + conductorCount.getAndIncrement());
+                return t;
+            });
+
+            final AtomicInteger receiverCount = new AtomicInteger();
+            mediaDriverCtx.receiverThreadFactory(r -> {
+                Thread t = new Thread(r);
+                t.setDaemon(true);
+                t.setName("aeron-receiver-thread-" + receiverCount.getAndIncrement());
+                return t;
+            });
+
+            final AtomicInteger senderCount = new AtomicInteger();
+            mediaDriverCtx.senderThreadFactory(r -> {
+                Thread t = new Thread(r);
+                t.setDaemon(true);
+                t.setName("aeron-sender-thread-" + senderCount.getAndIncrement());
+                return t;
+            });
+
+            final AtomicInteger sharedNetworkCount = new AtomicInteger();
+            mediaDriverCtx.sharedNetworkThreadFactory(r -> {
+                Thread t = new Thread(r);
+                t.setDaemon(true);
+                t.setName("aeron-shared-network-thread-" + sharedNetworkCount.getAndIncrement());
+                return t;
+            });
+
+            final AtomicInteger sharedThreadCount = new AtomicInteger();
+            mediaDriverCtx.sharedThreadFactory(r -> {
+                Thread t = new Thread(r);
+                t.setDaemon(true);
+                t.setName("aeron-shared-thread-" + sharedThreadCount.getAndIncrement());
+                return t;
+            });
 
             mediaDriver = MediaDriver.launchEmbedded(mediaDriverCtx);
             //set the variable since we are using a media driver directly
