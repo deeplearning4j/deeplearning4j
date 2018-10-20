@@ -14,14 +14,19 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.encoding;
+package org.deeplearning4j.optimize.solvers.accumulation.encoding.residual;
 
-public interface ThresholdAlgorithmReducer {
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
-    void add(ThresholdAlgorithm instance);
+public class NoOpResidualClippingPostProcessor implements ResidualPostProcessor {
+    @Override
+    public void processResidual(int iteration, int epoch, double lastThreshold, INDArray residualVector) {
+        //No op
+    }
 
-    ThresholdAlgorithmReducer merge(ThresholdAlgorithmReducer other);
-
-    ThresholdAlgorithm getFinalResult();
-
+    @Override
+    public ResidualPostProcessor clone() {
+        return new NoOpResidualClippingPostProcessor();
+    }
 }

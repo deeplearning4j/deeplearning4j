@@ -22,7 +22,9 @@ import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.util.ThreadUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -31,7 +33,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.AtomicThrowable;
 
 import java.util.ArrayList;
@@ -89,19 +90,6 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
     protected WorkspaceConfiguration appliedConfiguration = WorkspaceConfiguration.builder().minSize(5 * 1024 * 1024L)
                     .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
                     .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
-
-    public EncodedGradientsAccumulator(double parties, boolean encodingDebugMode) {
-        this(Nd4j.getAffinityManager().getNumberOfDevices(), 1e-3, encodingDebugMode);
-    }
-
-    // TODO: delete this one maybe?
-    public EncodedGradientsAccumulator(int parties, boolean encodingDebugMode) {
-        this(parties, 1e-3, encodingDebugMode);
-    }
-
-    public EncodedGradientsAccumulator(int parties, double threshold, boolean encodingDebugMode) {
-        this(parties, new EncodingHandler(threshold, encodingDebugMode), 100 * 1024 * 1024L, 10, 1.0, encodingDebugMode);
-    }
 
     protected EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory,
                     int queueSize, Double boundary, boolean encodingDebugMode) {
@@ -600,7 +588,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     public static class Builder {
         protected int parties;
-        protected double threshold = 1e-3;
+//        protected double threshold = 1e-3;
+        protected ThresholdAlgorithm thresholdAlgorithm;
         protected long initialMemory = 100 * 1024 * 1024L;
         protected int queueSize = 5;
         protected MessageHandler handler;
@@ -632,14 +621,11 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         }
 
         /**
-         * This method allows to set encoding threshold for this accumulator instance
-         *
-         * Default value: 1e-3
-         * @param threshold
+         * This method allows to set the ThresholdAlgorithm to be used for determining the threshold
          * @return
          */
-        public Builder encodingThreshold(double threshold) {
-            this.threshold = threshold;
+        public Builder thresholdAlgorithm(ThresholdAlgorithm thresholdAlgorithm) {
+            this.thresholdAlgorithm = thresholdAlgorithm;
             return this;
         }
 
@@ -683,14 +669,11 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
         public EncodedGradientsAccumulator build() {
             if (handler == null) {
-                if (boundary == null)
-                    handler = new EncodingHandler(threshold, encodingDebugMode);
-                else
-                    handler = new EncodingHandler(threshold, boundary, encodingDebugMode);
+                Preconditions.checkNotNull(thresholdAlgorithm, "Both threshold algorithm and handler are null - one or the other must be set");
+                handler = new EncodingHandler(thresholdAlgorithm, boundary, encodingDebugMode);
             }
 
-            EncodedGradientsAccumulator accumulator =
-                            new EncodedGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary, encodingDebugMode);
+            EncodedGradientsAccumulator accumulator = new EncodedGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary, encodingDebugMode);
 
             return accumulator;
         }

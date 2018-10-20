@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.encoding;
+package org.deeplearning4j.optimize.solvers.accumulation.encoding;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -39,4 +39,5 @@ public interface ResidualPostProcessor extends Serializable {
      */
     void processResidual(int iteration, int epoch, double lastThreshold, INDArray residualVector);
 
+    ResidualPostProcessor clone();
 }

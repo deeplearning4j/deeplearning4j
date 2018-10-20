@@ -19,12 +19,12 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.text.DecimalFormat;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,9 +43,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class EncodingHandler implements MessageHandler {
     protected transient GradientsAccumulator accumulator;
-    protected double threshold, minThreshold, thresholdStep, stepTrigger;
-    protected int shakeFrequency;
-    protected int stepDelay;
+    protected ThreadLocal<ThresholdAlgorithm> thresholdAlgorithm;
+//    protected ThreadLocal<ResidualPostProcessor> residualPostProcessor;
     protected Double boundary = null;
     protected boolean encodingDebugMode;
     protected NDArrayCompressor compressor;
@@ -53,69 +52,13 @@ public class EncodingHandler implements MessageHandler {
 
     protected ThreadLocal<AtomicLong> iterations = new ThreadLocal<>();
     protected ThreadLocal<AtomicLong> lastStep = new ThreadLocal<>();
+    protected ThreadLocal<AtomicDouble> lastThreshold = new ThreadLocal<>();
     protected ThreadLocal<AtomicDouble> currentThreshold = new ThreadLocal<>();
     protected ThreadLocal<AtomicBoolean> bitmapMode = new ThreadLocal<>();
 
-    /**
-     * This method builds new EncodingHandler instance with initial threshold of 1e-3
-     *
-     */
-    public EncodingHandler() {
-        this(1e-3, false);
-    }
-
-    /**
-     * This method builds new EncodingHandler instance
-     *
-     * @param threshold Initial encoding threshold
-     */
-    public EncodingHandler(double threshold, boolean encodingDebugMode) {
-        this(threshold, null, encodingDebugMode);
-    }
-
-    /**
-     * This method builds new EncodingHandler instance
-     *
-     * @param threshold Initial encoding threshold
-     */
-    public EncodingHandler(double threshold, Double boundary, boolean encodingDebugMode) {
-        this(threshold, threshold, 0.0, 0, 0, 0, boundary, encodingDebugMode);
-    }
-
-    /**
-     * This method builds new EncodingHandler instance
-     *
-     * @param threshold Initial encoding threshold
-     * @param minThreshold Minimal encoding threshold (for threshold decay)
-     * @param thresholdStep Decay step for threshold decay
-     * @param stepTrigger Sparse/Dense ratio that will trigger decay step. In range 0..100
-     * @param stepDelay Minimal number of iterations between decay steps
-     * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
-     */
-    public EncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                    int stepDelay, int shakeFrequency, boolean encodingDebugMode) {
-        this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null, encodingDebugMode);
-    }
-
-    /**
-     * This method builds new EncodingHandler instance
-     *
-     * @param threshold Initial encoding threshold
-     * @param minThreshold Minimal encoding threshold (for threshold decay)
-     * @param thresholdStep Decay step for threshold decay
-     * @param stepTrigger Sparse/Dense ratio that will trigger decay step. In range 0..100
-     * @param stepDelay Minimal number of iterations between decay steps
-     * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
-     * @param boundary
-     */
-    public EncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                    int stepDelay, int shakeFrequency, Double boundary, boolean encodingDebugMode) {
-        this.threshold = threshold;
-        this.minThreshold = minThreshold;
-        this.stepTrigger = stepTrigger;
-        this.stepDelay = stepDelay;
-        this.thresholdStep = thresholdStep;
-        this.shakeFrequency = shakeFrequency;
+    public EncodingHandler(final ThresholdAlgorithm thresholdAlgorithm, Double boundary, boolean encodingDebugMode){
+        this.thresholdAlgorithm = ThreadLocal.withInitial(() -> thresholdAlgorithm.clone());
+//        this.residualPostProcessor = (residualPostProcessor == null ? null : ThreadLocal.withInitial(residualPostProcessor.clone()));
         this.boundary = boundary;
         this.encodingDebugMode = encodingDebugMode;
     }
@@ -128,18 +71,24 @@ public class EncodingHandler implements MessageHandler {
         if (compressor == null)
             throw new ND4JIllegalStateException("Can't find Threshold compressor implementation!");
 
-        compressor.configure(threshold);
+        //compressor.configure(threshold);      //TODO
     }
 
-    public INDArray encodeUpdates(INDArray updates) {
+    public INDArray encodeUpdates(int iteration, int epoch, INDArray updates) {
+        // getting statistics
+        //log.info("Residual: {amean: {}; amax: {}; 50%: {}; 95%: {}; 99%: {};  99.9%: {}}; Current Threshold: [{}]", updates.ameanNumber().doubleValue(), updates.amaxNumber().doubleValue(), Transforms.abs(updates, true).percentileNumber(50).doubleValue(), Transforms.abs(updates, true).percentileNumber(90).doubleValue(), Transforms.abs(updates, true).percentileNumber(99).doubleValue(), Transforms.abs(updates, true).percentileNumber(99.9).doubleValue(), currentThreshold.get());
 
-        // special op should be called here for encoding
-        if (bitmapMode.get() == null) {
+        //Determine current threshold to use:
+        double currThreshold = thresholdAlgorithm.get().calculateThreshold(iteration, epoch, lastThreshold.get().get(), updates);
+        if (bitmapMode.get() == null) { //Initialize values for this thread
             bitmapMode.set(new AtomicBoolean(true));
-            currentThreshold.set(new AtomicDouble(threshold));
+            currentThreshold.set(new AtomicDouble(currThreshold));
             iterations.set(new AtomicLong(0));
             lastStep.set(new AtomicLong(0));
+
+            lastThreshold.set(new AtomicDouble(currThreshold));
         }
+        lastThreshold.get().set(currThreshold);
 
         //Debug output if enabled:
         residualDebugOutputIfRequired(updates);
@@ -152,51 +101,33 @@ public class EncodingHandler implements MessageHandler {
         INDArray encoded = null;
 
         if (!bitmapMode.get().get()) {
-            // if shakeFrequency hits here, we'll use bitmap encoding for one round for 1/3 of current threshold
-            if (shakeFrequency != 0 && iterations.get().get() % shakeFrequency == 0) {
+            //Sparse updates
+            encoded = Nd4j.getExecutioner().thresholdEncode(updates, currentThreshold.get().get(),
+                    boundary == null ? null : atomicBoundary.get());
+
+            // updates were TOO sparse, nothing to share here
+            if (encoded == null) {
+                return null;
+            }
+
+
+            double encLen = encoded.data().getInt(0);
+            double encodingRatio = encLen * 100.0 / updates.length();
+
+            // if updates are too dense - we fallback to bitmap encoding
+            if (encLen >= (updates.lengthLong() / 16)) {
+                log.debug("Switching back to bitmapEncoding: iteration {}, epoch {}, threshold {}, encoded length {}", iteration, epoch, currThreshold, encLen);
+                bitmapMode.get().set(true);
+
                 DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
                 encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
 
-                Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get() / 3);
-            } else {
-                // otherwise (probably most often - we go for sparse
-                encoded = Nd4j.getExecutioner().thresholdEncode(updates, currentThreshold.get().get(),
-                                boundary == null ? null : atomicBoundary.get());
+                Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
 
-                // updates were TOO sparse, nothing to share here
-                if (encoded == null)
-                    return null;
-
-
-                double encLen = encoded.data().getInt(0);
-                double encodingRatio = encLen * 100.0 / updates.length();
-
-                // if updates are too dense - we fallback to bitmap encoding
-                if (encLen >= (updates.lengthLong() / 16)) {
-                    log.debug("Going back to bitmapEncoding");
-                    bitmapMode.get().set(true);
-
-                    DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
-                    encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
-
-                    Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
-
-                    return encoded;
-                }
-
-
-                // after encoding is finished, and updates are sparse enough - let's step down a bit
-                // and we don't step down too early, so we wait for 50 iterations at least to step down
-                if (minThreshold <= currentThreshold.get().get()
-                                && minThreshold < currentThreshold.get().get() - thresholdStep
-                                && iterations.get().get() > lastStep.get().get() + stepDelay
-                                && encodingRatio < stepTrigger) {
-                    currentThreshold.get().addAndGet(-thresholdStep);
-                    lastStep.set(iterations.get());
-                    log.debug("Threshold steps down to {}", currentThreshold.get().get());
-                }
+                return encoded;
             }
         } else {
+            //Dense bitmap updates
             DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
             encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
 
@@ -204,7 +135,7 @@ public class EncodingHandler implements MessageHandler {
 
             if (values < (updates.lengthLong() / 16 + 5) / 2) {
                 bitmapMode.get().set(false);
-                log.debug("Switched to threshold encoding");
+                log.debug("Switched to threshold encoding: iteration {}, epoch {}, threshold {}, number of values {}", iteration, epoch, currThreshold, values);
             }
         }
 
@@ -238,7 +169,7 @@ public class EncodingHandler implements MessageHandler {
             1) encode updates
             2) send them somewhere
          */
-        INDArray message = encodeUpdates(updates);
+        INDArray message = encodeUpdates(iterationNumber, epochNumber, updates);
         if (message != null) {
             sendMessage(message, iterationNumber, epochNumber);
             return true;

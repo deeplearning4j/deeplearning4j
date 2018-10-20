@@ -14,20 +14,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.encoding;
+package org.deeplearning4j.optimize.solvers.accumulation.encoding;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
+public interface ThresholdAlgorithmReducer {
 
-import java.io.Serializable;
+    void add(ThresholdAlgorithm instance);
 
-/**
- * ThresholdAlgorithm is responsible for determining the threshold to use when encoding updates
- *
- */
-public interface ThresholdAlgorithm extends Serializable {
+    ThresholdAlgorithmReducer merge(ThresholdAlgorithmReducer other);
 
-    double calculateThreshold(int iteration, int epoch, Double lastThreshold, INDArray updatesPlusResidual);
-
-    ThresholdAlgorithmReducer newReducer();
+    ThresholdAlgorithm getFinalResult();
 
 }

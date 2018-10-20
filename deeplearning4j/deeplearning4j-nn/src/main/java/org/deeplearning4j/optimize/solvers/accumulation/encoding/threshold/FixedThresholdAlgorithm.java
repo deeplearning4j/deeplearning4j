@@ -14,12 +14,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.encoding.threshold;
+package org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.deeplearning4j.spark.parameterserver.encoding.ThresholdAlgorithm;
-import org.deeplearning4j.spark.parameterserver.encoding.ThresholdAlgorithmReducer;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -37,6 +37,11 @@ public class FixedThresholdAlgorithm implements ThresholdAlgorithm {
     @Override
     public ThresholdAlgorithmReducer newReducer() {
         return new FixedAlgorithmThresholdReducer();
+    }
+
+    @Override
+    public FixedThresholdAlgorithm clone() {
+        return new FixedThresholdAlgorithm(threshold);
     }
 
 

@@ -14,10 +14,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.encoding.residual;
+package org.deeplearning4j.optimize.solvers.accumulation.encoding.residual;
 
 import lombok.AllArgsConstructor;
-import org.deeplearning4j.spark.parameterserver.encoding.ResidualPostProcessor;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -34,5 +34,10 @@ public class RedisualClippingPostProcessor implements ResidualPostProcessor {
         //TODO replace with single op once we have this
         BooleanIndexing.replaceWhere(residualVector, currClip, Conditions.greaterThan(currClip));
         BooleanIndexing.replaceWhere(residualVector, -currClip, Conditions.lessThan(-currClip));
+    }
+
+    @Override
+    public RedisualClippingPostProcessor clone() {
+        return new RedisualClippingPostProcessor(thresholdMultipleClipValue);
     }
 }
