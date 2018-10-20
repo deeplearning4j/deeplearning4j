@@ -306,6 +306,15 @@ public class VoidConfiguration implements Serializable {
     //Also hide from builder some unsupported methods
     public static class VoidConfigurationBuilder {
 
+        /**
+         * Equivalent to calling {@link #portSupplier(PortSupplier)} with a {@link StaticPortSupplier}
+         * @param unicastPort Port to use for
+         * @see #portSupplier(PortSupplier)
+         */
+        private VoidConfigurationBuilder unicastPort(int unicastPort){
+            return portSupplier(new StaticPortSupplier(unicastPort));
+        }
+
         private VoidConfigurationBuilder unicastControllerPort(int unicastControllerPort){
             throw new UnsupportedOperationException("Not supported. Use portSupplier method instead");
         }
