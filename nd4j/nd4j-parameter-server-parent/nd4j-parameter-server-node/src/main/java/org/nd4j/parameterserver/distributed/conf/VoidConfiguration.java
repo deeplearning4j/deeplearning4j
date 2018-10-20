@@ -319,15 +319,7 @@ public class VoidConfiguration implements Serializable {
             throw new UnsupportedOperationException("Not supported. Use portSupplier method instead");
         }
 
-        private VoidConfigurationBuilder numberOfShards(int numberOfShards){
-            throw new UnsupportedOperationException("Reserved for future use");
-        }
-
         private VoidConfigurationBuilder faultToleranceStrategy(FaultToleranceStrategy faultToleranceStrategy){
-            throw new UnsupportedOperationException("Reserved for future use");
-        }
-
-        public VoidConfigurationBuilder shardAddresses(List<String> shardAddresses){
             throw new UnsupportedOperationException("Reserved for future use");
         }
 
