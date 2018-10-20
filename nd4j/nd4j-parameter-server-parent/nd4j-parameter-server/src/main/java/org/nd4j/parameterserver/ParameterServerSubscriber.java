@@ -58,6 +58,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -258,6 +259,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
                             .maxTermBufferLength(ipcLength).conductorIdleStrategy(new BusySpinIdleStrategy())
                             .receiverIdleStrategy(new BusySpinIdleStrategy())
                             .senderIdleStrategy(new BusySpinIdleStrategy());
+            AeronUtil.setDaemonizedThreadFactories(mediaDriverCtx);
 
             mediaDriver = MediaDriver.launchEmbedded(mediaDriverCtx);
             //set the variable since we are using a media driver directly
@@ -384,6 +386,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
                         .unavailableImageHandler(AeronUtil::printUnavailableImage)
                         .aeronDirectoryName(mediaDriverDirectoryName).keepAliveInterval(100000)
                         .errorHandler(e -> log.error(e.toString(), e));
+        AeronUtil.setDaemonizedThreadFactories(ctx);
         return ctx;
     }
 

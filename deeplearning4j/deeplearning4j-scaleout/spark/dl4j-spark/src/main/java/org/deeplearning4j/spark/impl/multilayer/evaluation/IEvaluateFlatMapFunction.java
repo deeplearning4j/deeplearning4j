@@ -45,7 +45,7 @@ import java.util.concurrent.Future;
 public class IEvaluateFlatMapFunction<T extends IEvaluation>
                 extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, T[]> {
 
-    public IEvaluateFlatMapFunction(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params,
+    public IEvaluateFlatMapFunction(boolean isCompGraph, Broadcast<String> json, Broadcast<byte[]> params,
                     int evalNumWorkers, int evalBatchSize, T... evaluations) {
         super(new IEvaluateFlatMapFunctionAdapter<>(isCompGraph, json, params, evalNumWorkers, evalBatchSize, evaluations));
     }
@@ -64,7 +64,7 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
 
     protected boolean isCompGraph;
     protected Broadcast<String> json;
-    protected Broadcast<INDArray> params;
+    protected Broadcast<byte[]> params;
     protected int evalNumWorkers;
     protected int evalBatchSize;
     protected T[] evaluations;
@@ -76,7 +76,7 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
      *                              this. Used to avoid doing too many at once (and hence memory issues)
      * @param evaluations Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
-    public IEvaluateFlatMapFunctionAdapter(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params,
+    public IEvaluateFlatMapFunctionAdapter(boolean isCompGraph, Broadcast<String> json, Broadcast<byte[]> params,
                     int evalNumWorkers, int evalBatchSize, T[] evaluations) {
         this.isCompGraph = isCompGraph;
         this.json = json;
