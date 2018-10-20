@@ -33,6 +33,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.serializer.SerializerInstance;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
@@ -640,5 +641,16 @@ public class SparkUtils {
             sparkExecutorId = split[1];
             return sparkExecutorId;
         }
+    }
+
+    public static Broadcast<byte[]> asByteArrayBroadcast(JavaSparkContext sc, INDArray array){
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            Nd4j.write(array, new DataOutputStream(baos));
+        } catch (IOException e){
+            throw new RuntimeException(e);  //Should never happen
+        }
+        byte[] paramBytes = baos.toByteArray();       //See docs in EvaluationRunner for why we use byte[] instead of INDArray (thread locality etc)
+        return sc.broadcast(paramBytes);
     }
 }

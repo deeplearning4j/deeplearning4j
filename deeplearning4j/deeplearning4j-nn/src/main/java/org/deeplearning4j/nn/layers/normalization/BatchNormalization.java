@@ -56,6 +56,7 @@ import java.util.*;
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {
 
     BatchNormalizationHelper helper = null;
+    protected int helperCountFail = 0;
     protected int index = 0;
     protected List<TrainingListener> listeners = new ArrayList<>();
     protected INDArray std;
@@ -131,7 +132,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
 
 
-        if (helper != null ){//&& epsilon.rank() == 4) {
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())){
             //Note that cudnn does not support dense (2d) batch norm case as of v5.1
             if (layerConf.isLockGammaBeta()) {
                 gamma = Nd4j.valueArrayOf(new long[] {1, shape[1]}, layerConf.getGamma());
@@ -148,8 +149,18 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             }
 
             // FIXME: int cast
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(in, eps, ArrayUtil.toInts(shape), gamma, dGammaView, dBetaView,
-                            layerConf.getEps(), workspaceMgr);
+            Pair<Gradient,INDArray> ret = null;
+            try {
+                ret = helper.backpropGradient(in, eps, ArrayUtil.toInts(shape), gamma, dGammaView, dBetaView,
+                        layerConf.getEps(), workspaceMgr);
+            } catch (Throwable t){
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN BatchNormalization backprop execution failed - falling back on built-in implementation",t);
+                } else {
+                    throw new RuntimeException("Error during BatchNormalization CuDNN helper backprop - isCudnnAllowFallback() is set to false", t);
+                }
+            }
             if (ret != null) {
                 ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
                 ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
@@ -299,7 +310,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             beta = getParam(BatchNormalizationParamInitializer.BETA);
         }
 
-        if (helper != null ){   //&& input.rank() == 4) {
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())){
 
             INDArray in = x;
             if(x.rank() == 2)
@@ -309,8 +320,18 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             double decay = layerConf.getDecay();
 
             // FIXME: int cast
-            INDArray ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
-                            globalVarView, decay, layerConf.getEps(), workspaceMgr);
+            INDArray ret = null;
+            try {
+                ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
+                        globalVarView, decay, layerConf.getEps(), workspaceMgr);
+            } catch (Throwable t) {
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN BatchNormalization forward pass execution failed - falling back on built-in implementation",t);
+                } else {
+                    throw new RuntimeException("Error during BatchNormalization CuDNN helper backprop - isCudnnAllowFallback() is set to false", t);
+                }
+            }
             if (ret != null) {
                 if(input.rank() == 2){
                     return ret.reshape(ret.ordering(), ret.size(0), ret.size(1));
