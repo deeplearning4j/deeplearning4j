@@ -342,7 +342,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     log.info("External updates to be applied: {}", ent);
             }
 
-            //if (isFinalStep)
+            if (isFinalStep)
                 synchronize(currentConsumers.get(), isFinalStep);
 
             // TODO: average updates probably?
