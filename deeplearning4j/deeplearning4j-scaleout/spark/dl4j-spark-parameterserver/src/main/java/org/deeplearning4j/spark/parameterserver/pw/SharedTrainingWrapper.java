@@ -386,6 +386,9 @@ public class SharedTrainingWrapper {
                                     .timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
                 }
 
+                // :)
+                accumulator.markExternalUpdates(true);
+
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
                     //log.info("Params at PW:  {mean: [{}]; stdev: [{}]}", originalModel.params().meanNumber().doubleValue(), originalModel.params().stdNumber().doubleValue());

@@ -304,6 +304,10 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                 while (!externalSource.isEmpty()) {
                     INDArray compressed = externalSource.poll();
 
+                    // just for safety safety
+                    if (compressed == null)
+                        continue;
+
                     // if we have multiple devices without p2p support - just duplicate messages right from host side
                     if (relocatable) {
                         try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
