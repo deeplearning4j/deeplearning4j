@@ -67,6 +67,13 @@ public interface GradientsAccumulator extends Serializable {
     void receiveUpdate(INDArray array);
 
     /**
+     * This method allows to highlight early availability of updates
+     *
+     * @param updatesAvailable
+     */
+    void markExternalUpdates(boolean updatesAvailable);
+
+    /**
      * This method resets all accumulated updates (if any)
      */
     void reset();

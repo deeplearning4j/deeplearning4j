@@ -127,6 +127,10 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
         }
     }
 
+    @Override
+    public void markExternalUpdates(boolean updatesAvailable) {
+        // no-op
+    }
 
     /**
      * This method applies accumulated updates via given StepFunction

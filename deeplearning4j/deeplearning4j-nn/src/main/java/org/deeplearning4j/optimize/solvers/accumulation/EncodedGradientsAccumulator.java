@@ -200,13 +200,18 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
         // we're passing number of consumers for current session to externalSource, if applicable
         if (externalSource != null && externalSource instanceof Registerable) {
-            ((Registerable) externalSource).registerConsumers(numConsumers);
-
             externalUpdatesAvailable.set(!externalSource.isEmpty());
+
+            ((Registerable) externalSource).registerConsumers(numConsumers);
         }
 
         currentConsumers.set(numConsumers);
         registered.set(true);
+    }
+
+    @Override
+    public void markExternalUpdates(boolean updatesAvailable) {
+        externalUpdatesAvailable.set(updatesAvailable);
     }
 
     protected void synchronize(int consumers) {
