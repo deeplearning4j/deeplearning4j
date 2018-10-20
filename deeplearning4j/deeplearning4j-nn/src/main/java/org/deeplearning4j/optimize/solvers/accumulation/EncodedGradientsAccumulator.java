@@ -578,6 +578,9 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     @Override
     public boolean hasAnything() {
+        if (externalSource == null)
+            return false;
+
         return !externalSource.isEmpty();
     }
 
