@@ -311,7 +311,7 @@ public class VoidConfiguration implements Serializable {
          * @param unicastPort Port to use for
          * @see #portSupplier(PortSupplier)
          */
-        private VoidConfigurationBuilder unicastPort(int unicastPort){
+        public VoidConfigurationBuilder unicastPort(int unicastPort){
             return portSupplier(new StaticPortSupplier(unicastPort));
         }
 
