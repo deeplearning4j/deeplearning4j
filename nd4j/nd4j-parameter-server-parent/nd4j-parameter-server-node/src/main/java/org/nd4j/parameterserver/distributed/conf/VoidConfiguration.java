@@ -327,10 +327,6 @@ public class VoidConfiguration implements Serializable {
             throw new UnsupportedOperationException("Reserved for future use");
         }
 
-        private VoidConfigurationBuilder executionMode(ExecutionMode executionMode){
-            throw new UnsupportedOperationException("Reserved for future use");
-        }
-
         public VoidConfigurationBuilder shardAddresses(List<String> shardAddresses){
             throw new UnsupportedOperationException("Reserved for future use");
         }
