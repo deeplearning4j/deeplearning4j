@@ -40,6 +40,7 @@ import org.nd4j.parameterserver.distributed.v2.transport.RestartCallback;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvider;
 import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
+import org.nd4j.parameterserver.distributed.v2.transport.impl.StaticPortSupplier;
 import org.nd4j.parameterserver.distributed.v2.util.AbstractSubscriber;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.nd4j.parameterserver.distributed.v2.util.UpdaterParametersHolder;
@@ -127,7 +128,7 @@ public final class ModelParameterServer {
      * @param isMasterNode
      */
     protected ModelParameterServer(@NonNull Transport transport, boolean isMasterNode) {
-        this(VoidConfiguration.builder().unicastControllerPort(40123).streamId(119).build(), transport, isMasterNode);
+        this(VoidConfiguration.builder().portSupplier(new StaticPortSupplier(40123)).streamId(119).build(), transport, isMasterNode);
     }
 
     /**
@@ -217,6 +218,8 @@ public final class ModelParameterServer {
         log.info("ModelParameterServer starting");
         if (launchLock.get())
             return;
+
+        configuration.setUnicastControllerPort(configuration.getPortSupplier().getPort());
 
         transport.setRestartCallback(new RestartCallback() {
             @Override

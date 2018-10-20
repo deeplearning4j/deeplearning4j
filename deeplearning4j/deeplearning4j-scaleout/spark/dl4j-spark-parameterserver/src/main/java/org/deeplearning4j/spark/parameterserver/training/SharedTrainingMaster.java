@@ -257,7 +257,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         NetBroadcastTuple tuple = new NetBroadcastTuple(network.getNetwork().getLayerWiseConfigurations(),
                         network.getNetwork().params(), network.getNetwork().getUpdater().getStateViewArray());
 
-        voidConfiguration.setUnicastControllerPort(voidConfiguration.getPortSupplier().getPreferredPort());
+        voidConfiguration.setUnicastControllerPort(voidConfiguration.getPortSupplier().getPort());
 
         SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder().threshold(threshold)
                         .minThreshold(minThreshold).shakeFrequency(shakeFrequency).thresholdStep(thresholdStep)
@@ -423,8 +423,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (network == null && graph == null)
             throw new IllegalStateException("Both MLN & CG are undefined");
 
-
-        voidConfiguration.setUnicastControllerPort(voidConfiguration.getPortSupplier().getPreferredPort());
+        //Get the port for communicating with the master/driver - and add it to the configuration for use from each machine
+        //Note that each machine will allocate their own port for inbound communications according to what the PortSupplier
+        //returns on each worker machine.
+        voidConfiguration.setUnicastControllerPort(voidConfiguration.getPortSupplier().getPort());
 
         // first of all, we're instantiating ParameterServer shard here\
         if (numWorkers == null)

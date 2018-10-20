@@ -51,7 +51,7 @@ import java.util.concurrent.Future;
 public class IEvaluateMDSPathsFlatMapFunction
                 extends BaseFlatMapFunctionAdaptee<Iterator<String>, IEvaluation[]> {
 
-    public IEvaluateMDSPathsFlatMapFunction(Broadcast<String> json, Broadcast<INDArray> params, int evalNumWorkers, int evalBatchSize,
+    public IEvaluateMDSPathsFlatMapFunction(Broadcast<String> json, Broadcast<byte[]> params, int evalNumWorkers, int evalBatchSize,
                                             DataSetLoader dsLoader, MultiDataSetLoader mdsLoader, IEvaluation... evaluations) {
         super(new IEvaluateMDSPathsFlatMapFunctionAdapter(json, params, evalNumWorkers, evalBatchSize, dsLoader, mdsLoader, evaluations));
     }
@@ -69,7 +69,7 @@ public class IEvaluateMDSPathsFlatMapFunction
 class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<Iterator<String>, IEvaluation[]> {
 
     protected Broadcast<String> json;
-    protected Broadcast<INDArray> params;
+    protected Broadcast<byte[]> params;
     protected int evalNumWorkers;
     protected int evalBatchSize;
     protected DataSetLoader dsLoader;
@@ -83,7 +83,7 @@ class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<
      *                              this. Used to avoid doing too many at once (and hence memory issues)
      * @param evaluations Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
-    public IEvaluateMDSPathsFlatMapFunctionAdapter(Broadcast<String> json, Broadcast<INDArray> params, int evalNumWorkers, int evalBatchSize,
+    public IEvaluateMDSPathsFlatMapFunctionAdapter(Broadcast<String> json, Broadcast<byte[]> params, int evalNumWorkers, int evalBatchSize,
                                                    DataSetLoader dsLoader, MultiDataSetLoader mdsLoader, IEvaluation[] evaluations) {
         this.json = json;
         this.params = params;

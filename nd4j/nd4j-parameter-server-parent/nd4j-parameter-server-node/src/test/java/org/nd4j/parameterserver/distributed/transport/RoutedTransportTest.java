@@ -64,8 +64,8 @@ public class RoutedTransportTest {
             list.add("127.0.0.1:3838" + t);
         }
 
-        VoidConfiguration voidConfiguration = VoidConfiguration.builder().shardAddresses(list).unicastControllerPort(43120) // this port will be used only by client
-                        .build();
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder().shardAddresses(list).build();
+        voidConfiguration.setUnicastControllerPort(43120); // this port will be used only by client
 
         // first of all we start shards
         RoutedTransport[] transports = new RoutedTransport[list.size()];
