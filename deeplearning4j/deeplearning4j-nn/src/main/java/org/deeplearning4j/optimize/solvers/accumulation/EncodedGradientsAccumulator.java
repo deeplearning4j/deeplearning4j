@@ -83,6 +83,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     protected ThreadLocal<AtomicLong> updatesApplied = new ThreadLocal<>();
 
+    protected AtomicBoolean externalUpdatesAvailable = new AtomicBoolean(false);
+
     protected WorkspaceConfiguration appliedConfiguration = WorkspaceConfiguration.builder().minSize(5 * 1024 * 1024L)
                     .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
                     .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
@@ -197,8 +199,11 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         }
 
         // we're passing number of consumers for current session to externalSource, if applicable
-        if (externalSource != null && externalSource instanceof Registerable)
+        if (externalSource != null && externalSource instanceof Registerable) {
             ((Registerable) externalSource).registerConsumers(numConsumers);
+
+            externalUpdatesAvailable.set(!externalSource.isEmpty());
+        }
 
         currentConsumers.set(numConsumers);
         registered.set(true);
@@ -578,10 +583,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     @Override
     public boolean hasAnything() {
-        if (externalSource == null)
-            return false;
-
-        return !externalSource.isEmpty();
+        return externalUpdatesAvailable.get();
     }
 
     public static class Builder {
