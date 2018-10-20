@@ -56,20 +56,23 @@ public class DelayedDummyTransport extends DummyTransport {
         if (msg.getOriginatorId() == null)
             msg.setOriginatorId(this.id());
 
+
         //super.sendMessage(message, id);
         connector.executorService().submit(new Runnable() {
             @Override
             public void run() {
                 try {
-                    // imitate some bad network here, latency of 0.2ms - 0.7ms
-                    val sleepTime = RandomUtils.nextInt(200, 700) * 1000;
+                    // imitate some bad network here, latency of 0.05ms - 0.2ms
+                    val sleepTime = RandomUtils.nextInt(50, 200) * 1000;
                     LockSupport.parkNanos(sleepTime);
 
                     DelayedDummyTransport.super.sendMessage(msg, id);
                 } catch (Exception e) {
-                    //
+                    log.error("Got exception: ", e);
                 }
             }
         });
+
+        //super.sendMessage(msg, id);
     }
 }

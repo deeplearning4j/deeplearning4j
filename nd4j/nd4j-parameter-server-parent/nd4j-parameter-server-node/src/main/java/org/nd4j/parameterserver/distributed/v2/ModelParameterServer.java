@@ -360,10 +360,10 @@ public final class ModelParameterServer {
 
                 // it's possible to get updates messages BEFORE model was properly initalized
                 if (updatesSubscribers.isEmpty()) {
-                    log.debug("Storing GradientsUpdateMessage into backlog queue...");
+                    //log.debug("Storing GradientsUpdateMessage into backlog queue...");
                     updatesQueue.add(message.getPayload());
                 } else {
-                    log.debug("Propagating GradientsUpdateMessage to subscribers: [{}]", updatesSubscribers.size());
+                    //log.debug("Propagating GradientsUpdateMessage to subscribers: [{}]", updatesSubscribers.size());
                     updatesSubscribers.forEach(s -> s.onNext(message.getPayload()));
                 }
             } else
