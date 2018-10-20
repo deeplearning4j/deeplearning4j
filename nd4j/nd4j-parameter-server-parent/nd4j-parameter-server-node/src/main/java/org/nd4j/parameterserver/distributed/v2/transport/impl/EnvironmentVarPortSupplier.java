@@ -56,7 +56,6 @@ public class EnvironmentVarPortSupplier implements PortSupplier {
 
     @Override
     public int getPort() {
-        if (port < 1) {
             val variable = System.getenv(variableName);
             if (variable == null)
                 throw new ND4JIllegalStateException("Unable to get networking port from environment variable:" +
@@ -71,7 +70,6 @@ public class EnvironmentVarPortSupplier implements PortSupplier {
 
             Preconditions.checkState(port > 0 && port <= 65535, "Invalid port for environment variable: ports must be" +
                     "between 0 (exclusive) and 65535 (inclusive). Got port: %s", port);
-        }
 
         return port;
     }
