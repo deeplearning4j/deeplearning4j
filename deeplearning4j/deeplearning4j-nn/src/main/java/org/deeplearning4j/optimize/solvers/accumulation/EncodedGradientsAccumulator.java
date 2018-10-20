@@ -268,7 +268,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
      * @param params
      */
     @Override
-    public void applyUpdate(StepFunction function, INDArray params, INDArray updates) {
+    public void applyUpdate(StepFunction function, INDArray params, INDArray updates, boolean isFinalStep) {
         if (updatesApplied.get() == null)
             updatesApplied.set(new AtomicLong(0));
         try {
@@ -342,7 +342,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     log.info("External updates to be applied: {}", ent);
             }
 
-            synchronize(currentConsumers.get(), true);
+            //if (isFinalStep)
+                synchronize(currentConsumers.get(), isFinalStep);
 
             // TODO: average updates probably?
 
