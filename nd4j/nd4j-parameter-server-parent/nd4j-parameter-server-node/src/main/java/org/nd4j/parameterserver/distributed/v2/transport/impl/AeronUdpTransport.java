@@ -28,7 +28,6 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +43,6 @@ import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
@@ -103,7 +101,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected final AtomicBoolean connectedFlag = new AtomicBoolean(false);
 
     public AeronUdpTransport(@NonNull String ownIp, @NonNull String rootIp, @NonNull VoidConfiguration configuration) {
-        this(ownIp, configuration.getPortSupplier().getPreferredPort(), rootIp, configuration.getUnicastControllerPort(), configuration);
+        this(ownIp, configuration.getPortSupplier().getPort(), rootIp, configuration.getUnicastControllerPort(), configuration);
     }
 
     /**

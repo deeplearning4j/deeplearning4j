@@ -21,7 +21,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.parameterserver.distributed.v2.transport.PortSupplier;
 
 /**
- * This class provides static pre-defined port
+ * This class provides static pre-defined port - a fixed value for all machines in the cluster.
  * @author raver119@gmail.com
  */
 @Data
@@ -39,11 +39,11 @@ public class StaticPortSupplier implements PortSupplier {
      * @param port
      */
     public StaticPortSupplier(int port) {
-        Preconditions.checkArgument(port > 0, "Port must have positive value");
+        Preconditions.checkArgument(port > 0 && port <= 65535, "Invalid port: must be in range 1 to 65535 inclusive. Got: %s", port);
     }
 
     @Override
-    public int getPreferredPort() {
+    public int getPort() {
         return port;
     }
 }

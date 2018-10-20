@@ -19,13 +19,23 @@ package org.nd4j.parameterserver.distributed.v2.transport;
 import java.io.Serializable;
 
 /**
+ * PortSupplier is an interface that is used to control the network ports used by Aeron (used in DL4J GradientSharing
+ * implementation and ND4J's parameter server functionality).
+ *
+ * Build-in implementations include:
+ * {@link org.nd4j.parameterserver.distributed.v2.transport.impl.StaticPortSupplier}: used to provide a fixed port for
+ * use across all machines.<br>
+ * {@link org.nd4j.parameterserver.distributed.v2.transport.impl.EnvironmentVarPortSupplier}: used to specify an environment
+ * variable that should be read to determine the port to be used. The environment variable (and hence port) may be different
+ * on different machines in the cluster.
+ *
  * @author raver119@gmail.com
  */
 public interface PortSupplier extends Serializable {
 
     /**
-     * This method determines, which port should be used for Transport
-     * @return
+     * This method determines which port should be used for networking - Aeron Transport layer
+     * @return Port to use for networking. This must be available for use on the machine on which it is used.
      */
-    int getPreferredPort();
+    int getPort();
 }

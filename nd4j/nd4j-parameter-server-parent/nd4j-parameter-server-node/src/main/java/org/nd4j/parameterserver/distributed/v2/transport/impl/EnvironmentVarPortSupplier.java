@@ -22,11 +22,18 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.v2.transport.PortSupplier;
 
 /**
- * This class provides port information for Transport, based on environment variables
+ * This class is an implementation of {@link PortSupplier} that provides port information for Transport, based on
+ * an environment variable.<br>
+ * Note: The environment variable must be available on all machines in the cluster, and contain a valid port in range 1
+ * to 65535 (inclusive) as an integer value. The environment variable may have different values on different machines,
+ * which can be used to set the port to a different value on each worker node.<br>
+ * Note that this implementation does not check if a port is actually available - it merely reads and parses
+ * the environment variable on the worker, to decide the port to use.
+ *
  * @author raver119@gmail.com
  */
 @Data
-public class EnvironmentalPortSupplier implements PortSupplier {
+public class EnvironmentVarPortSupplier implements PortSupplier {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private int port = -1;
@@ -35,7 +42,7 @@ public class EnvironmentalPortSupplier implements PortSupplier {
     @Setter(AccessLevel.NONE)
     private String variableName;
 
-    protected EnvironmentalPortSupplier() {
+    protected EnvironmentVarPortSupplier() {
         //
     }
 
@@ -43,22 +50,27 @@ public class EnvironmentalPortSupplier implements PortSupplier {
      * This constructor builds StaticPortSupplier instance with pre-defined port
      * @param port
      */
-    public EnvironmentalPortSupplier(@NonNull String varName) {
+    public EnvironmentVarPortSupplier(@NonNull String varName) {
         variableName = varName;
     }
 
     @Override
-    public int getPreferredPort() {
+    public int getPort() {
         if (port < 1) {
             val variable = System.getenv(variableName);
             if (variable == null)
-                throw new ND4JIllegalStateException("Environment variable ["+ variableName+"] isn't defined");
+                throw new ND4JIllegalStateException("Unable to get networking port from environment variable:" +
+                        " environment variable ["+ variableName+"] isn't defined");
 
             try {
                 port = Integer.valueOf(variable);
             } catch (NumberFormatException e) {
-                throw new ND4JIllegalStateException("Environment variable ["+ variableName+"] contains bad value: [" + variable + "]");
+                throw new ND4JIllegalStateException("Unable to get network port from environment variable:" +
+                        " environment variable ["+ variableName+"] contains bad value: [" + variable + "]");
             }
+
+            Preconditions.checkState(port > 0 && port <= 65535, "Invalid port for environment variable: ports must be" +
+                    "between 0 (exclusive) and 65535 (inclusive). Got port: %s", port);
         }
 
         return port;
