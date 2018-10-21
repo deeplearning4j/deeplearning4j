@@ -98,7 +98,7 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
      * @param params
      */
     @Override
-    public void applyUpdate(StepFunction function, INDArray params, INDArray grad) {
+    public void applyUpdate(StepFunction function, INDArray params, INDArray grad, boolean isFinalStep) {
 
         try {
             updatesLock.readLock().lock();
@@ -127,6 +127,10 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
         }
     }
 
+    @Override
+    public void markExternalUpdates(boolean updatesAvailable) {
+        // no-op
+    }
 
     /**
      * This method applies accumulated updates via given StepFunction

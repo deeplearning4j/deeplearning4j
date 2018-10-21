@@ -143,9 +143,9 @@ public class RoutedTransport extends BaseTransport {
                 remoteIp = split[0];
                 remotePort = Integer.valueOf(split[1]);
             } else {
-                shardChannelUri = "aeron:udp?endpoint=" + ip + ":" + voidConfiguration.getUnicastPort();
+                shardChannelUri = "aeron:udp?endpoint=" + ip + ":" + voidConfiguration.getUnicastControllerPort();
                 remoteIp = ip;
-                remotePort = voidConfiguration.getUnicastPort();
+                remotePort = voidConfiguration.getUnicastControllerPort();
             }
 
             Publication publication = aeron.addPublication(shardChannelUri, voidConfiguration.getStreamId());

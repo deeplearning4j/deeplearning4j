@@ -306,9 +306,12 @@ public class SharedTrainingWrapper {
 
                     // if we're running in spark localhost mode - we don't want double initialization
                     if (!ModelParameterServer.getInstance().isInitialized()) {
-                        log.info("Initializing transport [{}:{}] with root as [{}:{}]...", localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort());
+                        log.info("Initializing transport [{}:{}] with root as [{}:{}]...", localIP, voidConfiguration.getPortSupplier().getPort(),
+                                voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastControllerPort());
                         // FIXME: implement support for Custom transport implementation
-                        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration) :  null;
+
+                        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getPortSupplier().getPort(),
+                                voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastControllerPort(), voidConfiguration) :  null;
 
                         if (transport == null)
                             throw new DL4JInvalidConfigException(
@@ -382,6 +385,9 @@ public class SharedTrainingWrapper {
                     model.addListeners(SleepyTrainingListener.builder()
                                     .timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
                 }
+
+                // :)
+                accumulator.markExternalUpdates(true);
 
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
