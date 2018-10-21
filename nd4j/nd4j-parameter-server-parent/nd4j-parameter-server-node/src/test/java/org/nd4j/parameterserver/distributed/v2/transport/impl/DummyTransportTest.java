@@ -153,7 +153,7 @@ public class DummyTransportTest {
         transportB.propagateMessage(msg, PropagationMode.BOTH_WAYS);
 
         // we expect that each of the nodes gets this message
-        assertEquals(300, counter.get());
+        assertEquals(400, counter.get());
     }
 
     @Test
