@@ -11239,6 +11239,18 @@ public class SameDiff {
             return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
         else if (val == DataType.HALF)
             return  org.nd4j.linalg.api.buffer.DataType.HALF;
+        else if (val == DataType.INT32)
+            return org.nd4j.linalg.api.buffer.DataType.INT;
+        else if (val == DataType.INT64)
+            return org.nd4j.linalg.api.buffer.DataType.LONG;
+        else if (val == DataType.INT8)
+            return org.nd4j.linalg.api.buffer.DataType.BYTE;
+        else if (val == DataType.BOOL)
+            return org.nd4j.linalg.api.buffer.DataType.BOOL;
+        else if (val == DataType.UINT8)
+            return org.nd4j.linalg.api.buffer.DataType.UBYTE;
+        else if (val == DataType.INT16)
+            return org.nd4j.linalg.api.buffer.DataType.SHORT;
 
         throw new UnsupportedOperationException("Unsupported DataType: [" + val + "]");
     }
