@@ -733,7 +733,9 @@ public class SameDiff {
 
 
     public void putShapeForVarName(String varName, LongShapeDescriptor shape) {
-        throw new UnsupportedOperationException();
+        val v = getVariable(varName);
+        putShapeForVarName(varName, shape.getShape());
+        v.setDataType(shape.dataType());
     }
 
     /**
@@ -755,7 +757,11 @@ public class SameDiff {
     }
 
     public void putOrUpdateShapeForVarName(String varName, @NonNull LongShapeDescriptor shape, boolean clearArrayOnShapeMismatch){
-        throw new UnsupportedOperationException();
+        if(variableNameToShape.containsKey(varName)){
+            updateShapeForVarName(varName, shape.getShape(), clearArrayOnShapeMismatch);
+        } else {
+            putShapeForVarName(varName, shape);
+        }
     }
 
 
@@ -1772,7 +1778,7 @@ public class SameDiff {
                      */
                     public INDArray getArr() {
                         if (arr.getArr() == null) {
-                            INDArray retArr = arr.getWeightInitScheme().create(arr.getShape());
+                            INDArray retArr = arr.getWeightInitScheme().create(arr.dataType(), arr.getShape());
                             associateArrayWithVariable(retArr, arr);
                         }
                         return arr.getArr();
@@ -11233,6 +11239,18 @@ public class SameDiff {
             return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
         else if (val == DataType.HALF)
             return  org.nd4j.linalg.api.buffer.DataType.HALF;
+        else if (val == DataType.INT32)
+            return org.nd4j.linalg.api.buffer.DataType.INT;
+        else if (val == DataType.INT64)
+            return org.nd4j.linalg.api.buffer.DataType.LONG;
+        else if (val == DataType.INT8)
+            return org.nd4j.linalg.api.buffer.DataType.BYTE;
+        else if (val == DataType.BOOL)
+            return org.nd4j.linalg.api.buffer.DataType.BOOL;
+        else if (val == DataType.UINT8)
+            return org.nd4j.linalg.api.buffer.DataType.UBYTE;
+        else if (val == DataType.INT16)
+            return org.nd4j.linalg.api.buffer.DataType.SHORT;
 
         throw new UnsupportedOperationException("Unsupported DataType: [" + val + "]");
     }

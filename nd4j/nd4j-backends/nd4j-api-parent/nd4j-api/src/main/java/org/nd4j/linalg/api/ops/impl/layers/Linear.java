@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ops.Module;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.AttrValue;
@@ -184,10 +185,10 @@ public class Linear extends BaseModule {
                                         WeightInitScheme paramsScheme,
                                         WeightInitScheme biasInitScheme) {
         if(biasInitScheme != null) {
-            return new INDArray[] {paramsScheme.create(new long[]{nOut,nIn}),biasInitScheme.create(new long[]{nOut,1})};
+            return new INDArray[] {paramsScheme.create(Nd4j.defaultFloatintPointType(), new long[]{nOut,nIn}),biasInitScheme.create(Nd4j.defaultFloatintPointType(), new long[]{nOut,1})};
         }
         else {
-            return new INDArray[] {paramsScheme.create(new long[]{nOut,nIn})};
+            return new INDArray[] {paramsScheme.create(Nd4j.defaultFloatintPointType(), new long[]{nOut,nIn})};
 
         }
     }

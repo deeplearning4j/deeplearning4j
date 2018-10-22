@@ -3058,6 +3058,12 @@ public class Nd4j {
         return randn(ret);
     }
 
+    public static INDArray randn(DataType dataType, char order, long[] shape) {
+        INDArray ret = Nd4j.createUninitialized(dataType, shape, order);
+        logCreationIfNecessary(ret);
+        return randn(ret);
+    }
+
     /**
      * Random normal using the specified seed
      *
@@ -6473,33 +6479,78 @@ public class Nd4j {
         val _dtype = SameDiff.getDataTypeFromByte(dtype);
         val _order = SameDiff.getOrderFromByte(order);
         val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
-        val doubles = new double[prod];
+
 
         val bb = array.bufferAsByteBuffer();
         switch (_dtype) {
             case DOUBLE: {
+                val doubles = new double[prod];
                 val db = bb.order(_order).asDoubleBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = db.get(e);
+
+                return Nd4j.create(doubles, shapeOf, DataType.DOUBLE);
             }
-            break;
             case FLOAT: {
+                val doubles = new float[prod];
                 val fb = bb.order(_order).asFloatBuffer();
                 for (int e = 0; e < prod; e++)
-                    doubles[e] = (double) fb.get(e);
+                    doubles[e] = fb.get(e);
+
+                return Nd4j.create(doubles, shapeOf, DataType.FLOAT);
             }
-            break;
             case HALF: {
+                val doubles = new float[prod];
                 val sb = bb.order(_order).asShortBuffer();
                 for (int e = 0; e < prod; e++)
-                    doubles[e] = (double) HalfIndexer.toFloat((int) sb.get(e));
+                    doubles[e] = HalfIndexer.toFloat((int) sb.get(e));
+
+                return Nd4j.create(doubles, shapeOf, DataType.HALF);
             }
-            break;
+            case INT: {
+                val doubles = new int[prod];
+                val sb = bb.order(_order).asIntBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = sb.get(e);
+
+                return Nd4j.create(doubles, shapeOf, DataType.INT);
+            }
+            case LONG: {
+                val doubles = new long[prod];
+                val sb = bb.order(_order).asLongBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = sb.get(e);
+
+                return Nd4j.create(doubles, shapeOf, DataType.LONG);
+            }
+            case SHORT: {
+                val doubles = new short[prod];
+                val sb = bb.order(_order).asShortBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = sb.get(e);
+
+                return Nd4j.create(doubles, shapeOf, DataType.SHORT);
+            }
+            case BYTE: {
+                val doubles = new byte[prod];
+                val sb = bb.order(_order).asCharBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = (byte) sb.get(e);
+
+                return Nd4j.create(doubles, shapeOf, DataType.BYTE);
+            }
+            case BOOL: {
+                val doubles = new boolean[prod];
+                val sb = bb.order(_order).asCharBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = sb.get(e) == 1;
+
+                return Nd4j.create(doubles, shapeOf, DataType.BOOL);
+            }
             default:
                 throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");
         }
 
-        return Nd4j.create(doubles, shapeOf, stridesOf, 0, ordering);
     }
 
     /**

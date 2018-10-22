@@ -17,6 +17,7 @@
 package org.nd4j.weightinit.impl;
 
 import lombok.AllArgsConstructor;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.weightinit.WeightInit;
 import org.nd4j.weightinit.WeightInitScheme;
@@ -46,7 +47,7 @@ public class NDArraySupplierInitScheme implements WeightInitScheme {
     }
 
     @Override
-    public INDArray create(long[] shape) {
+    public INDArray create(DataType dataType, long[] shape) {
         return supplier.getArr();
     }
 

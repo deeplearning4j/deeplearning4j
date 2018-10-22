@@ -265,7 +265,43 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     private INDArray attemptToGetOrCreateArrForVar(SDVariable var, @NonNull LongShapeDescriptor descriptor) {
-        throw new UnsupportedOperationException();
+        INDArray arr = null;
+        if (Shape.isPlaceholderShape(var.getShape())) {
+            if (var.getShape() == null) {
+                val shape = calculateOutputShape();
+
+                val currShape = descriptor.getShape();
+
+                if (!shape.isEmpty()) {
+                    if (currShape != null && !Shape.isPlaceholderShape(currShape)) {
+                        sameDiff.putShapeForVarName(var.getVarName(), currShape);
+                        var.setDataType(descriptor.dataType());
+                        if(currShape.length == 1 && currShape[0] == Long.MIN_VALUE){
+                            //Temporary sentinel for empty array
+                            arr = Nd4j.empty(descriptor.dataType());
+                        } else {
+                            arr = var.storeAndAllocateNewArray();
+                        }
+                    }
+
+                } else
+                    arr = null;
+            }
+
+        } else if (sameDiff.getArrForVarName(var.getVarName()) == null) {
+            if (var.getShape() != null)
+                arr = var.storeAndAllocateNewArray();
+        } else {
+            arr = var.getArr();
+        }
+
+        if (arr != null) {
+            sameDiff.associateArrayWithVariable(arr, var);
+            addOutputArgument(arr);
+        }
+
+
+        return arr;
     }
 
     @Deprecated

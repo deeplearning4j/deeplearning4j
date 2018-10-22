@@ -846,15 +846,15 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             if (tfTensor.getIntValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
                 if(tfTensor.getIntValCount() < 1)
-                    return Nd4j.trueScalar(0.0);
+                    return Nd4j.scalar( ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()), 0);
 
                 //should be scalar otherwise
                 int val = tfTensor.getIntVal(0);
 
                 if (arrayShape == null || arrayShape.length == 0)
-                    return Nd4j.trueScalar((double) val);
+                    return Nd4j.scalar( ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()), val);
 
-                return Nd4j.valueArrayOf(arrayShape, (double) val);
+                return Nd4j.valueArrayOf(arrayShape, val, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
             } else if (tfTensor.getInt64ValCount() > 0) {
                 val jArray = new int[tfTensor.getIntValCount()];
                 for (int e = 0; e < tfTensor.getIntValCount(); e++) {

@@ -130,7 +130,7 @@ public class Transpose extends DynamicCustomOp {
         INDArray arr = sameDiff.getArrForVarName(arg().getVarName());
         if (arr == null) {
             val arrVar = sameDiff.getVariable(arg().getVarName());
-            arr = arrVar.getWeightInitScheme().create(arrVar.getShape());
+            arr = arrVar.getWeightInitScheme().create(arrVar.dataType(), arrVar.getShape());
             sameDiff.putArrayForVarName(arg().getVarName(), arr);
         }
 
