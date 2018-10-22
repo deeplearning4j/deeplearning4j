@@ -315,13 +315,11 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
     @Override
     public INDArray getMeanCache() {
-        Nd4j.getExecutioner().commit();
-        try{ Thread.sleep(500);} catch (Exception e) { }
         if(Nd4j.dataType() == DataBuffer.Type.HALF){
             //Buffer is FP32
             return meanCache.convertToHalfs();
         }
-        return meanCache.dup();
+        return meanCache;
     }
 
     @Override
