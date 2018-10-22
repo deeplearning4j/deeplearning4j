@@ -65,6 +65,10 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     @Setter
     protected WeightInitScheme weightInitScheme;
 
+    @Getter (AccessLevel.NONE)
+    @Setter (AccessLevel.NONE)
+    protected DataType dataType;
+
 
     // autogen_tag::sdvars::start
 
@@ -72,10 +76,12 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     private SDVariable(String varName,
                        SameDiff sameDiff,
                        long[] shape,
+                       DataType dataType,
                        WeightInitScheme weightInitScheme) {
         super(sameDiff,new Object[]{});
         this.varName = varName;
         this.weightInitScheme = weightInitScheme;
+        this.dataType = dataType;
 
         if(weightInitScheme == null) {
             // we want C order as default in ALL cases
@@ -273,12 +279,12 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
 
-
+/*
     public DataType dataType() {
         throw new UnsupportedOperationException();
     }
 
-
+*/
     /**
      * Returns the shape of this variable
      * @return
@@ -294,8 +300,12 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return initialShape;
     }
 
+    public DataType dataType() {
+        return this.dataType;
+    }
+
     public LongShapeDescriptor getShapeDescriptor() {
-        return LongShapeDescriptor.fromShape(getShape(), dataType());
+        return LongShapeDescriptor.fromShape(getShape(), this.dataType());
     }
 
 

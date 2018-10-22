@@ -1668,17 +1668,40 @@ public class SameDiff {
                 .sameDiff(this)
                 .shape(shape).weightInitScheme(weightInitScheme)
                 .varName(name)
+                .dataType(Nd4j.dataType())
                 .build();
 
 
         addVariable(ret);
         variableMap.put(name, ret);
         return ret;
-
     }
 
     public SDVariable var(String name, LongShapeDescriptor shape, WeightInitScheme weightInitScheme) {
-        throw new UnsupportedOperationException();
+        if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
+            throw new IllegalArgumentException("Another variable with the name " + name +
+                    " already exists.");
+
+
+        if (name == null || name.length() < 1)
+            name = getNewVarName();
+
+        if (workspace == null)
+            initWorkspace();
+
+
+        SDVariable ret = SDVariable.builder()
+                .sameDiff(this)
+                .shape(shape != null ? shape.getShape() : null)
+                .weightInitScheme(weightInitScheme)
+                .dataType(shape != null ? shape.dataType() : Nd4j.dataType())
+                .varName(name)
+                .build();
+
+
+        addVariable(ret);
+        variableMap.put(name, ret);
+        return ret;
     }
 
 

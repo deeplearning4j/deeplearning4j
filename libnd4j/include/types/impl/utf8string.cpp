@@ -65,5 +65,6 @@ namespace nd4j {
         _allocated = true;
         std::memcpy(_buffer, other._buffer, _length);
         _buffer[_length] = 0;
+        return *this;
     }
 }

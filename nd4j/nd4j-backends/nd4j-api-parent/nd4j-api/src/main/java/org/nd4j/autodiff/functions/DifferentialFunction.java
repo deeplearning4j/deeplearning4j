@@ -727,7 +727,7 @@ public abstract class DifferentialFunction {
      * @return
      */
     public List<LongShapeDescriptor> calculateOutputShape() {
-        throw new UnsupportedOperationException();
+        throw new ND4JIllegalStateException("calculateOutputShape() method leaked out for [" + this.opName() + "]");
     }
 
 

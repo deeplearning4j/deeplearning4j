@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.summarystats;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -25,8 +26,12 @@ import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Bias;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Mean;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -184,5 +189,23 @@ public class Variance extends BaseReduceOp {
             return false;
 
         return true;
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        if(args().length < 1) {
+            throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
+        }
+
+        long[] argShape = arg().getShape();
+        if (argShape == null && x() == null) {
+            return Collections.emptyList();
+        }
+        long[] inputShape = (argShape == null ? x().shape() : argShape);
+
+        val ret = new ArrayList<LongShapeDescriptor>(1);
+        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
+        ret.add(LongShapeDescriptor.fromShape(reducedShape, resultType()));
+        return ret;
     }
 }

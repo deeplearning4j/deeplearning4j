@@ -3054,35 +3054,35 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         */
-		public NDArray(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
-		private native void allocate(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
-		public NDArray(@Cast("const Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
-		private native void allocate(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-		public NDArray(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
-		private native void allocate(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
-		public NDArray(@Cast("const Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
-		private native void allocate(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-		public NDArray(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
-		private native void allocate(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
-		public NDArray(@Cast("const Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
-		private native void allocate(@Cast("const Nd4jLong*") long[] shapeInfo);
+		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace, isShapeAlloc); }
+		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
+		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo);
+		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace, isShapeAlloc); }
+		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
+		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo);
+		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace, isShapeAlloc); }
+		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
+		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo);
 
         /**
         *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         *  set dtype as array type
         */
-        public NDArray(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace); }
-        private native void allocate(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
-        public NDArray(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
-        private native void allocate(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype);
-        public NDArray(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace); }
-        private native void allocate(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
-        public NDArray(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
-        private native void allocate(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype);
-        public NDArray(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace); }
-        private native void allocate(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
-        public NDArray(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
-        private native void allocate(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype);
+        public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace, isShapeAlloc); }
+        private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
+        public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype);
+        public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace, isShapeAlloc); }
+        private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
+        public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype);
+        public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace, isShapeAlloc); }
+        private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
+        public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype);
 
         /**
         *  this constructor creates new array using shape information contained in vector argument
@@ -3409,6 +3409,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @ByVal NDArray meanNumber();
 
 // #ifndef __JAVACPP_HACK__
+
 // #endif
 
         /**
@@ -14643,6 +14644,23 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+//         #if NOT_EXCLUDED(OP_gruCell)
+        @Namespace("nd4j::ops") public static class gruCell_bp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public gruCell_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public gruCell_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public gruCell_bp position(long position) {
+                return (gruCell_bp)super.position(position);
+            }
+        
+                                                                                    public gruCell_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
 
     //////////////////////////////////////////////////////////////////////////
     /**

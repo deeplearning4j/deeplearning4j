@@ -22,7 +22,13 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public abstract class BaseTransformAnyOp extends BaseTransformOp implements TransformSameOp {
 
@@ -104,5 +110,20 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
             Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point");
 
         return true;
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        val ret = new ArrayList<LongShapeDescriptor>(1);
+        if(arg() == null)
+            throw new ND4JIllegalStateException("No arg found for op!");
+
+        val arr = sameDiff.getArrForVarName(arg().getVarName());
+        if(arr == null)
+            return Collections.emptyList();
+
+        ret.add(LongShapeDescriptor.fromShape(arr.shape(), arr.dataType()));
+        this.n = arr.length();
+        return ret;
     }
 }
