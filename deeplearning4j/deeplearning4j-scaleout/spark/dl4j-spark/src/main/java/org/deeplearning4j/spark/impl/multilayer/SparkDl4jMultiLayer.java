@@ -704,7 +704,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalNumWorkers, int evalBatchSize, T... emptyEvaluations) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(false, sc.broadcast(conf.toJson()),
-                        sc.broadcast(network.params()), evalNumWorkers, evalBatchSize, emptyEvaluations);
+                        SparkUtils.asByteArrayBroadcast(sc, network.params()), evalNumWorkers, evalBatchSize, emptyEvaluations);
         JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(), new IEvaluationReduceFunction<T>());
     }
@@ -766,7 +766,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
 
     protected IEvaluation[] doEvaluation(JavaRDD<String> data, int evalNumWorkers, int evalBatchSize, DataSetLoader loader, MultiDataSetLoader mdsLoader, IEvaluation... emptyEvaluations){
         IEvaluateMDSPathsFlatMapFunction evalFn = new IEvaluateMDSPathsFlatMapFunction(sc.broadcast(conf.toJson()),
-                sc.broadcast(network.params()), evalNumWorkers, evalBatchSize, loader, mdsLoader, emptyEvaluations);
+                SparkUtils.asByteArrayBroadcast(sc, network.params()), evalNumWorkers, evalBatchSize, loader, mdsLoader, emptyEvaluations);
         Preconditions.checkArgument(evalNumWorkers > 0, "Invalid number of evaulation workers: require at least 1 - got %s", evalNumWorkers);
         JavaRDD<IEvaluation[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<>(), new IEvaluateAggregateFunction<>());

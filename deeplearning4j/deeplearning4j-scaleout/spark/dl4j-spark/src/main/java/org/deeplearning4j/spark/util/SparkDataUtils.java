@@ -112,7 +112,7 @@ public class SparkDataUtils {
         List<String> list = new ArrayList<>();
         List<byte[]> bytes = new ArrayList<>();
         for (int i = 0; i < c.size(); i++) {
-            list.add(c.get(i).getPath());
+            list.add(c.get(i).toURI().toString());
             bytes.add(FileUtils.readFileToByteArray(c.get(i)));
 
             if (list.size() == batchSize) {

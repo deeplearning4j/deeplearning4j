@@ -17,6 +17,7 @@
 package org.deeplearning4j.optimize.solvers.accumulation;
 
 
+import EDU.oswego.cs.dl.util.concurrent.ReaderPreferenceReadWriteLock;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -42,7 +43,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @Slf4j
 public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
-    protected final ReentrantReadWriteLock smartLock = new ReentrantReadWriteLock();
+    protected final ReaderPreferenceReadWriteLock smartLock = new ReaderPreferenceReadWriteLock();
     protected int decompressionThreshold = 32;
     protected AtomicBoolean collapsedMode = new AtomicBoolean(false);
 
@@ -83,7 +84,7 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
     @Override
     public void put(INDArray array) throws InterruptedException {
         try {
-            smartLock.writeLock().lock();
+            smartLock.writeLock().acquire();
 
             if (backingQueue.size() > decompressionThreshold || collapsedMode.get()) {
                 collapsedMode.set(true);
@@ -102,7 +103,7 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
             } else
                 super.put(array);
         } finally {
-            smartLock.writeLock().unlock();
+            smartLock.writeLock().release();
         }
     }
 
@@ -110,14 +111,16 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
     public INDArray poll() {
         try {
             // we use this lock to make
-            smartLock.readLock().lock();
+            smartLock.readLock().acquire();
 
             // from now on this SFBQ instance won't add up to single compressed array
             collapsedMode.set(false);
 
             return super.poll();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
         } finally {
-            smartLock.readLock().unlock();
+            smartLock.readLock().release();
         }
     }
 }

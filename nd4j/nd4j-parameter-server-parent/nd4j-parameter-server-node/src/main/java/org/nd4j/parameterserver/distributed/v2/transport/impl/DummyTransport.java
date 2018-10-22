@@ -135,6 +135,11 @@ public class DummyTransport extends BaseTransport {
         }
     }
 
+    @Override
+    protected void internalProcessMessage(VoidMessage message) {
+        processMessage(message);
+    }
+
     /**
      * This class is written to mimic network connectivity locally
      */
@@ -144,7 +149,7 @@ public class DummyTransport extends BaseTransport {
             @Override
             public Thread newThread(@NotNull Runnable r) {
                 val t = Executors.defaultThreadFactory().newThread(r);
-                t.setDaemon(true);
+                //t.setDaemon(true);
                 return t;
             }
         });

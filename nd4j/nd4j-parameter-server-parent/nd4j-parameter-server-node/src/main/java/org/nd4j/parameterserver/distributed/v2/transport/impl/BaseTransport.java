@@ -323,11 +323,11 @@ public abstract  class BaseTransport  implements Transport {
 
         // now we're sending message down
         if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode) {
-            downstreams.forEach(n -> {
+            for (val n:downstreams) {
                 if (!isLoopedNode(n, originatorId, relayId)) {
                     sendMessage(voidMessage, n.getId());
                 }
-            });
+            };
         }
     }
 
@@ -348,6 +348,7 @@ public abstract  class BaseTransport  implements Transport {
     }
 
     protected void internalProcessMessage(VoidMessage message) {
+        val m = message instanceof INDArrayMessage;
         /**
          * TODO: we need better isolation here
          */

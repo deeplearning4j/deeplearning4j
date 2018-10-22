@@ -56,6 +56,7 @@ public class BatchNormalization extends FeedForwardLayer {
     protected double gamma = 1.0;
     protected double beta = 0.0;
     protected boolean lockGammaBeta = false;
+    protected boolean cudnnAllowFallback = true;
 
     private BatchNormalization(Builder builder) {
         super(builder);
@@ -65,6 +66,7 @@ public class BatchNormalization extends FeedForwardLayer {
         this.gamma = builder.gamma;
         this.beta = builder.beta;
         this.lockGammaBeta = builder.lockGammaBeta;
+        this.cudnnAllowFallback = builder.cudnnAllowFallback;
         initializeConstraints(builder);
     }
 
@@ -225,6 +227,7 @@ public class BatchNormalization extends FeedForwardLayer {
         protected double beta = 0.0;
         protected List<LayerConstraint> betaConstraints;
         protected List<LayerConstraint> gammaConstraints;
+        protected boolean cudnnAllowFallback = true;
 
         public Builder(double decay, boolean isMinibatch) {
             this.decay = decay;
@@ -341,6 +344,18 @@ public class BatchNormalization extends FeedForwardLayer {
          */
         public Builder constrainGamma(LayerConstraint... constraints) {
             this.gammaConstraints = Arrays.asList(constraints);
+            return this;
+        }
+
+        /**
+         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in (non-CuDNN)
+         * implementation for BatchNormalization will be used
+         *
+         * @param allowFallback Whether fallback to non-CuDNN implementation should be used
+         */
+        public Builder cudnnAllowFallback(boolean allowFallback) {
+            this.cudnnAllowFallback = allowFallback;
             return this;
         }
 

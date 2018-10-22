@@ -83,6 +83,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     protected ThreadLocal<AtomicLong> updatesApplied = new ThreadLocal<>();
 
+    protected AtomicBoolean externalUpdatesAvailable = new AtomicBoolean(false);
+
     protected WorkspaceConfiguration appliedConfiguration = WorkspaceConfiguration.builder().minSize(5 * 1024 * 1024L)
                     .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
                     .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
@@ -197,11 +199,19 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         }
 
         // we're passing number of consumers for current session to externalSource, if applicable
-        if (externalSource != null && externalSource instanceof Registerable)
+        if (externalSource != null && externalSource instanceof Registerable) {
+            externalUpdatesAvailable.set(!externalSource.isEmpty());
+
             ((Registerable) externalSource).registerConsumers(numConsumers);
+        }
 
         currentConsumers.set(numConsumers);
         registered.set(true);
+    }
+
+    @Override
+    public void markExternalUpdates(boolean updatesAvailable) {
+        externalUpdatesAvailable.set(updatesAvailable);
     }
 
     protected void synchronize(int consumers) {
@@ -263,7 +273,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
      * @param params
      */
     @Override
-    public void applyUpdate(StepFunction function, INDArray params, INDArray updates) {
+    public void applyUpdate(StepFunction function, INDArray params, INDArray updates, boolean isFinalStep) {
         if (updatesApplied.get() == null)
             updatesApplied.set(new AtomicLong(0));
         try {
@@ -293,6 +303,10 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                 int ent = 0;
                 while (!externalSource.isEmpty()) {
                     INDArray compressed = externalSource.poll();
+
+                    // just for safety safety
+                    if (compressed == null)
+                        continue;
 
                     // if we have multiple devices without p2p support - just duplicate messages right from host side
                     if (relocatable) {
@@ -337,7 +351,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     log.info("External updates to be applied: {}", ent);
             }
 
-            synchronize(currentConsumers.get(), true);
+            if (isFinalStep)
+                synchronize(currentConsumers.get(), isFinalStep);
 
             // TODO: average updates probably?
 
@@ -578,7 +593,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     @Override
     public boolean hasAnything() {
-        return !externalSource.isEmpty();
+        return externalUpdatesAvailable.get();
     }
 
     public static class Builder {
