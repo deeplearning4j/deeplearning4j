@@ -149,7 +149,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                     double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency,
                     int rddDataSetNumExamples,
                     int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode, int workerPrefetchBatches,
-                    Repartitioner repartitioner, Boolean workerTogglePeriodicGC, Integer workerPeriodicGCFrequency) {
+                    Repartitioner repartitioner, Boolean workerTogglePeriodicGC, Integer workerPeriodicGCFrequency,
+                    boolean encodingDebugMode) {
         this.voidConfiguration = voidConfiguration;
         this.numWorkers = numWorkers;
         this.threshold = threshold;
@@ -1291,7 +1292,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                             storageLevel, collectTrainingStats, repartitionStrategy, repartition, threshold,
                             minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, rddDataSetNumExamples, batchSize,
                             debugLongerIterations, numWorkersPerNode, workerPrefetchNumBatches, repartitioner, workerTogglePeriodicGC,
-                    workerPeriodicGCFrequency);
+                    workerPeriodicGCFrequency, encodingDebugMode);
             if (transport != null)
                 master.transport = this.transport;
 
