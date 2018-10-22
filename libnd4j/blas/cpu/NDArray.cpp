@@ -1673,17 +1673,42 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
     void NDArray::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
         if (limit == -1)
             limit = (int) this->lengthOf();
-
+        int rank = this->rankOf();
+        bool rowFlag = rank < 2 || (rank == 2 && this->_shapeInfo[1] == 1);
+        if (rank > 0) // non-scalar
         if (msg != nullptr)
-            printf("%s: [", msg);
+            printf("%s: %s[", msg, rowFlag?"":"\n");
         else
             printf("[");
         if (this->isR()) {
+            if (rowFlag) // vector case
             for (Nd4jLong e = 0; e < limit; e++) {
                 printf("%f", this->e<float>(e));
 
                 if (e < limit - 1)
-                    printf(", ");
+                    printf(" ");
+            }
+            else {
+                // loop for last dim
+                std::vector<int> dims({rank - 1});
+                for (size_t l = 0; l < dims.size(); ++l)
+                    dims[l] = l;
+                ResultSet* lastDims(this->allTensorsAlongDimension(dims));
+                Nd4jLong k = 0;
+                for (size_t j = 0; j < lastDims->size(); ++j) {
+                    //printf("[");
+                    //for (Nd4jLong i = 0; i < this->sizeAt(dim); i++) {
+                        printf("\n[");
+                        for (Nd4jLong e = 0; e < lastDims->at(j)->lengthOf(); e++) {
+                            if (e)
+                                printf(" ");
+                            printf("%f", lastDims->at(j)->e<float>(e));
+                        }
+                        printf("]");
+                    //}
+                    //printf("]\n");
+                    //k++;
+                }
             }
         } else if (this->isZ()) {
             for (Nd4jLong e = 0; e < limit; e++) {
@@ -1711,8 +1736,11 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
                     printf(", ");
             }
         }
+        if (this->rankOf() > 0)
+            printf("]\n");
+        else
+            printf("\n");
 
-        printf("]\n");
         fflush(stdout);
     }
 
