@@ -324,18 +324,18 @@ namespace nd4j {
                             auto iv = block.variable(index);
 
                             if (iv->getNDArray()->dataType() != cType) {
-                                nd4j_printf("Failed check for output [%i], DataType: [%i]\n", index, (int)cType);
+                                nd4j_printf("Op [%s] failed  check for output [%i], DataType: [%i]\n", _descriptor->getOpName()->data(), index, (int)cType);
                                 return ND4J_STATUS_BAD_ARGUMENTS;
                             }
                         } else if (_descriptor->isInherit(index)) {
                             // in inherit mode, output type must be the same as one of input types
                             if (std::find(inputTypes.begin(), inputTypes.end(), cType) == inputTypes.end()) {
-                                nd4j_printf("Failed check for output [%i], DataType: [%i].\n", index, (int)cType);
+                                nd4j_printf("Op [%s] failed check for output [%i], DataType: [%i].\n", _descriptor->getOpName()->data(), index, (int)cType);
                                 return ND4J_STATUS_BAD_ARGUMENTS;
                             }
 
                         } else if (!_descriptor->checkOutputMatch(index, cType)) {
-                            nd4j_printf("Failed check for output [%i], DataType: [%i];\n", index, (int)cType);
+                            nd4j_printf("Op [%s] failed  check for output [%i], DataType: [%i];\n", _descriptor->getOpName()->data(), index, (int)cType);
                             return ND4J_STATUS_BAD_ARGUMENTS;
                         }
                     }
