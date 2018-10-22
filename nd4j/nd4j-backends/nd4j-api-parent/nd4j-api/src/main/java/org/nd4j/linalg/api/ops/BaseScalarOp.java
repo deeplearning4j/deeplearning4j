@@ -125,7 +125,12 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         List<LongShapeDescriptor> ret = new ArrayList<>(1);
-        ret.add(LongShapeDescriptor.fromShape(arg().getShape(), Shape.pickPairwiseDataType(larg().dataType(), scalarValue.dataType())));
+
+        val s = arg().getShape();
+        val aT = arg().dataType();
+        val sT = scalarValue.dataType();
+
+        ret.add(LongShapeDescriptor.fromShape(s, Shape.pickPairwiseDataType(aT, sT)));
         return ret;
     }
 

@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
@@ -193,25 +194,9 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         return keepDims;
     }
 
-    /*
-    @Override
-    public List<long[]> calculateOutputShape() {
-        if(args().length < 1) {
-            throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
-        }
 
-        long[] argShape = arg().getShape();
-        if (argShape == null && x() == null) {
-            return Collections.emptyList();
-        }
-        long[] inputShape = (argShape == null ? x().shape() : argShape);
+    public abstract List<LongShapeDescriptor> calculateOutputShape();
 
-        List<long[]> ret = new ArrayList<>(1);
-        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
-        ret.add(reducedShape);
-        return ret;
-    }
-    */
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
