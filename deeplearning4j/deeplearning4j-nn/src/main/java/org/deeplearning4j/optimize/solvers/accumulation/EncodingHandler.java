@@ -246,18 +246,12 @@ public class EncodingHandler implements MessageHandler {
             return false;
     }
 
-    protected static ThreadLocal<DecimalFormat> formatter = new ThreadLocal<>();
-
     protected void residualDebugOutputIfRequired(INDArray residual){
         if(!encodingDebugMode)
             return;
 
-        if(formatter.get() == null){
-            formatter.set(new DecimalFormat("0.###E0"));
-        }
-        DecimalFormat df = formatter.get();
-
         double currThreshold = currentThreshold.get().get();
+        String currThresholdStr = format(currThreshold);
 
 
         INDArray absResidual = Transforms.abs(residual, true);
@@ -270,24 +264,51 @@ public class EncodingHandler implements MessageHandler {
         double dPc999 = absResidual.percentileNumber(99.9).doubleValue();
         double dPc9999 = absResidual.percentileNumber(99.99).doubleValue();
 
-        String amean = df.format(dAmean).replace('E', 'e');
-        String aMax = df.format(dAMax).replace('E', 'e');
-        String pc50 = df.format(dPc50).replace('E', 'e');
-        String pc95 = df.format(dPc95).replace('E', 'e');
-        String pc99 = df.format(dPc99).replace('E', 'e');
-        String pc999 = df.format(dPc999).replace('E', 'e');
-        String pc9999 = df.format(dPc9999).replace('E', 'e');
+        String amean = format(dAmean).replace('E', 'e');
+        String aMax = format(dAMax).replace('E', 'e');
+        String pc50 = format(dPc50).replace('E', 'e');
+        String pc95 = format(dPc95).replace('E', 'e');
+        String pc99 = format(dPc99).replace('E', 'e');
+        String pc999 = format(dPc999).replace('E', 'e');
+        String pc9999 = format(dPc9999).replace('E', 'e');
 
-        String ameanThr = df.format(dAmean / currThreshold).replace('E', 'e');
-        String aMaxThr = df.format(dAMax / currThreshold).replace('E', 'e');
-        String pc50Thr = df.format(dPc50 / currThreshold).replace('E', 'e');
-        String pc95Thr = df.format(dPc95 / currThreshold).replace('E', 'e');
-        String pc99Thr = df.format(dPc99 / currThreshold).replace('E', 'e');
-        String pc999Thr = df.format(dPc999 / currThreshold).replace('E', 'e');
-        String pc9999Thr = df.format(dPc9999 / currThreshold).replace('E', 'e');
+        String ameanThr = format(dAmean / currThreshold).replace('E', 'e');
+        String aMaxThr = format(dAMax / currThreshold).replace('E', 'e');
+        String pc50Thr = format(dPc50 / currThreshold).replace('E', 'e');
+        String pc95Thr = format(dPc95 / currThreshold).replace('E', 'e');
+        String pc99Thr = format(dPc99 / currThreshold).replace('E', 'e');
+        String pc999Thr = format(dPc999 / currThreshold).replace('E', 'e');
+        String pc9999Thr = format(dPc9999 / currThreshold).replace('E', 'e');
 
-        log.info("Encoding debug info, residual vector: threshold={}, amean: {} ({}x); amax: {} ({}x); 50%: {} ({}x); 95%: {} ({}x}; 99%: {} ({}x);  99.9%: {} ({}x); 99.99%: {} ({}x)",
-                currThreshold, amean, ameanThr, aMax, aMaxThr, pc50, pc50Thr,
+        long length = absResidual.length();
+        long countAbsGTEThreshold = absResidual.gte(currThreshold).sumNumber().longValue();
+        double sparsity = countAbsGTEThreshold / (double)length;
+        String sparsityStr = format(sparsity);
+
+        log.info("Encoding debug info, residual vector: length: {}, threshold: {}, count > thr: {}, sparsity: {}, amean: {} ({}x); amax: {} ({}x); 50%: {} ({}x); 95%: {} ({}x}; 99%: {} ({}x);  99.9%: {} ({}x); 99.99%: {} ({}x)",
+                length, currThresholdStr, countAbsGTEThreshold, sparsityStr,
+                amean, ameanThr, aMax, aMaxThr, pc50, pc50Thr,
                 pc95, pc95Thr, pc99, pc99Thr, pc999, pc999Thr, pc9999, pc9999Thr);
+    }
+
+    protected static ThreadLocal<DecimalFormat> formatter = new ThreadLocal<>();
+    protected static ThreadLocal<DecimalFormat> formatter2 = new ThreadLocal<>();
+
+    protected static String format(double d){
+        if(d == 0){
+            return "0.0";
+        }
+        if(d >= -0.1 && d < 100){
+            if(formatter2.get() == null){
+                formatter2.set(new DecimalFormat("0.###"));
+            }
+            return formatter2.get().format(d);
+        }
+
+        if(formatter.get() == null){
+            formatter.set(new DecimalFormat("0.###E0"));
+        }
+        DecimalFormat df = formatter.get();
+        return df.format(d).replace('E','e');
     }
 }

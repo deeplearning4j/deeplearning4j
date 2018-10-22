@@ -1278,7 +1278,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         /**
          * Enable debug mode for threshold encoding. When enabled, various statistics for the threshold and the residual
          * will be calculated and logged on each worker (at info log level).<br>
-         * NOTE: this has a performance overhead, and should not be enabled unless the debug information is actually required.
+         * This information can be used to check if the encoding threshold is too big (for example, virtually all updates
+         * are much smaller than the threshold) or too big (majority of updates are much larger than the threshold).<br>
+         * encodingDebugMode is disabled by default.<br>
+         * <b>IMPORTANT</b>: enabling this has a performance overhead, and should not be enabled unless the debug information is actually required.<br>
          *
          * @param enabled True to enable
          */
