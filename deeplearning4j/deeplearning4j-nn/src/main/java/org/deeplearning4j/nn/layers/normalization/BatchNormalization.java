@@ -185,7 +185,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                  */
 
                 INDArray batchMean = helper.getMeanCache();
-                INDArray batchVar = helper.getVarCache();
+                INDArray batchVar = input.rank() == 2 ? input.var(true, 0) : input.var(true, 0, 2, 3);  //TODO work out what CuDNN "inverse variance cache" actually stores and use that
 
                 Nd4j.getExecutioner().exec(new OldSubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
                 dGlobalMeanView.muli(1-layerConf().getDecay());
@@ -470,25 +470,15 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                                             + layerId());
         }
 
-        // store mean and var if using batch mean while training
-        double decay;
-        if (training == TrainingMode.TRAIN) {
-            if (layerConf.isMinibatch()) {
-                //Standard case: Estimate global mean and variance stats by moving average
-                //globalMean = decay * globalMean + (1-decay) * minibatchMean
-                //globalVar  = decay * globalVar  + (1-decay) * minibatchVar
-
-                decay = layerConf.getDecay();
-                globalMeanView.muli(decay).addi(mean.muli(1 - decay));
-                globalVarView.muli(decay).addi(var.muli(1 - decay));
-
-            } else {
-                //Special case: doing full-batch (entire data set) training (uncommon; only tiny data sets)
-                //In this case, minibatch and global stats are identical. Don't want to use a moving average estimate.
-                globalMeanView.assign(mean);
-                globalVarView.assign(var);
-            }
-        }
+        /*
+        A note regarding running mean and variance updating:
+        Normally these are updated like globalMean = decay * globalMean + (1-decay) * minibatchMean
+        However, because of distributed training (gradient sharing), we don't want to do this...
+        Instead: We'll use the mathematically equivalent but "distributed safe" approach of:
+        mean[t+1] = mean[t] - updateMean
+        updateMean = mean[t] - mean[t+1] = (1-d) * (mean[t] - minibatchMean)
+        And use the same idea for global variance estimate
+         */
 
         activations = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, activations);   //Most of the time this should be a no-op
         return activations;

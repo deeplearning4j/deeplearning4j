@@ -108,9 +108,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     protected final int batchNormMode = CUDNN_BATCHNORM_SPATIAL; // would need to increase rank of gamma and beta for CUDNN_BATCHNORM_PER_ACTIVATION
 
     private CudnnBatchNormalizationContext cudnnContext = new CudnnBatchNormalizationContext();
-    @Getter
     private INDArray meanCache;
-    @Getter
     private INDArray varCache;
 
     public boolean checkSupported(double eps) {
@@ -272,9 +270,15 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         if (training) {
             if(meanCache == null || meanCache.length() < mean.length()){
                 meanCache = Nd4j.createUninitializedDetached((int)mean.length());
+                if(Nd4j.dataType() == DataBuffer.Type.HALF){
+                    meanCache = meanCache.convertToFloats();
+                }
             }
             if(varCache == null || varCache.length() < mean.length()){
                 varCache = Nd4j.createUninitializedDetached((int)mean.length());
+                if(Nd4j.dataType() == DataBuffer.Type.HALF){
+                    varCache = varCache.convertToFloats();
+                }
             }
             Pointer meanCacheData = allocator.getPointer(meanCache, context);
             Pointer varCacheData = allocator.getPointer(varCache, context);
@@ -283,6 +287,8 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
                             cudnnContext.srcTensorDesc, srcData, cudnnContext.dstTensorDesc, dstData,
                             cudnnContext.gammaBetaTensorDesc, gammaData, betaData, decay, meanData, varData, eps,
                             meanCacheData, varCacheData));
+            AtomicAllocator.getInstance().getAllocationPoint(meanCache).tickDeviceWrite();
+            AtomicAllocator.getInstance().getAllocationPoint(varCache).tickDeviceWrite();
         } else {
             checkCudnn(cudnnBatchNormalizationForwardInference(cudnnContext, batchNormMode, this.alpha, this.beta,
                             cudnnContext.srcTensorDesc, srcData, cudnnContext.dstTensorDesc, dstData,
@@ -294,6 +300,8 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             context.syncOldStream();
 
+        context.syncOldStream();
+
         if(training && isHalf){
             //Update the running mean and variance arrays; also gamma/beta
             origMean.assign(((JCublasNDArray)mean).convertToHalfs());
@@ -303,6 +311,31 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         }
 
         return activations;
+    }
+
+    @Override
+    public INDArray getMeanCache() {
+        Nd4j.getExecutioner().commit();
+        try{ Thread.sleep(500);} catch (Exception e) { }
+        if(Nd4j.dataType() == DataBuffer.Type.HALF){
+            //Buffer is FP32
+            return meanCache.convertToHalfs();
+        }
+        return meanCache.dup();
+    }
+
+    @Override
+    public INDArray getVarCache() {
+//        Nd4j.getExecutioner().commit();
+//        try{ Thread.sleep(500);} catch (Exception e) { }
+//        if(Nd4j.dataType() == DataBuffer.Type.HALF){
+//            //Buffer is FP32
+//            return varCache.convertToHalfs();
+//        }
+//        return varCache.dup();
+        //TODO This is NOT the variance directly... called "resultSaveInvVariance" in docs
+        //But can be negative, which suggests it might be something else...
+        throw new UnsupportedOperationException("Not supported");
     }
 
 
