@@ -110,6 +110,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     private CudnnBatchNormalizationContext cudnnContext = new CudnnBatchNormalizationContext();
     private INDArray meanCache;
     private INDArray varCache;
+    private double eps;
 
     public boolean checkSupported(double eps) {
         boolean supported = checkSupported();
@@ -123,6 +124,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                     INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr layerWorkspaceMgr) {
+        this.eps = eps;
         val miniBatch = (int) input.size(0);
         val depth = (int) input.size(1);
         val inH = (int) input.size(2);
@@ -214,7 +216,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
-
+        this.eps = eps;
         final boolean isHalf = (Nd4j.dataType() == DataBuffer.Type.HALF);
         INDArray origGamma = gamma;
         INDArray origBeta = beta;
@@ -324,16 +326,13 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
     @Override
     public INDArray getVarCache() {
-//        Nd4j.getExecutioner().commit();
-//        try{ Thread.sleep(500);} catch (Exception e) { }
-//        if(Nd4j.dataType() == DataBuffer.Type.HALF){
-//            //Buffer is FP32
-//            return varCache.convertToHalfs();
-//        }
-//        return varCache.dup();
-        //TODO This is NOT the variance directly... called "resultSaveInvVariance" in docs
-        //But can be negative, which suggests it might be something else...
-        throw new UnsupportedOperationException("Not supported");
+        Nd4j.getExecutioner().commit();
+        INDArray ret = varCache.mul(varCache).rdivi(1.0).subi(eps);
+        if(Nd4j.dataType() == DataBuffer.Type.HALF){
+            //Buffer is FP32
+            return ret.convertToHalfs();
+        }
+        return ret;
     }
 
 
