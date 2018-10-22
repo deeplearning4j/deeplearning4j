@@ -185,7 +185,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                  */
 
                 INDArray batchMean = helper.getMeanCache();
-                INDArray batchVar = input.rank() == 2 ? input.var(true, 0) : input.var(true, 0, 2, 3);  //TODO work out what CuDNN "inverse variance cache" actually stores and use that
+                INDArray batchVar = helper.getVarCache();
 
                 Nd4j.getExecutioner().exec(new OldSubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
                 dGlobalMeanView.muli(1-layerConf().getDecay());
