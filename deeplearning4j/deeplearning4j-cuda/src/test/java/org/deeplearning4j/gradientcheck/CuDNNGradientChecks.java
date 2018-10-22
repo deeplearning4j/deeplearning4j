@@ -53,7 +53,10 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -294,8 +297,10 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
         }
 
+        //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
+        Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var"));
         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, excludeParams);
 
         assertTrue(gradOK);
     }

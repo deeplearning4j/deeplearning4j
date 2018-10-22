@@ -35,4 +35,8 @@ public interface BatchNormalizationHelper extends LayerHelper {
 
     INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr);
+
+    INDArray getMeanCache();
+
+    INDArray getVarCache();
 }
