@@ -270,21 +270,21 @@ public class EncodingHandler implements MessageHandler {
         double dPc999 = absResidual.percentileNumber(99.9).doubleValue();
         double dPc9999 = absResidual.percentileNumber(99.99).doubleValue();
 
-        String amean = df.format(dAmean);
-        String aMax = df.format(dAMax);
-        String pc50 = df.format(dPc50);
-        String pc95 = df.format(dPc95);
-        String pc99 = df.format(dPc99);
-        String pc999 = df.format(dPc999);
-        String pc9999 = df.format(dPc9999);
+        String amean = df.format(dAmean).replace('E', 'e');
+        String aMax = df.format(dAMax).replace('E', 'e');
+        String pc50 = df.format(dPc50).replace('E', 'e');
+        String pc95 = df.format(dPc95).replace('E', 'e');
+        String pc99 = df.format(dPc99).replace('E', 'e');
+        String pc999 = df.format(dPc999).replace('E', 'e');
+        String pc9999 = df.format(dPc9999).replace('E', 'e');
 
-        String ameanThr = df.format(dAmean / currThreshold);
-        String aMaxThr = df.format(dAMax / currThreshold);
-        String pc50Thr = df.format(dPc50 / currThreshold);
-        String pc95Thr = df.format(dPc95 / currThreshold);
-        String pc99Thr = df.format(dPc99 / currThreshold);
-        String pc999Thr = df.format(dPc999 / currThreshold);
-        String pc9999Thr = df.format(dPc9999 / currThreshold);
+        String ameanThr = df.format(dAmean / currThreshold).replace('E', 'e');
+        String aMaxThr = df.format(dAMax / currThreshold).replace('E', 'e');
+        String pc50Thr = df.format(dPc50 / currThreshold).replace('E', 'e');
+        String pc95Thr = df.format(dPc95 / currThreshold).replace('E', 'e');
+        String pc99Thr = df.format(dPc99 / currThreshold).replace('E', 'e');
+        String pc999Thr = df.format(dPc999 / currThreshold).replace('E', 'e');
+        String pc9999Thr = df.format(dPc9999 / currThreshold).replace('E', 'e');
 
         log.info("Encoding debug info, residual vector: threshold={}, amean: {} ({}x); amax: {} ({}x); 50%: {} ({}x); 95%: {} ({}x}; 99%: {} ({}x);  99.9%: {} ({}x); 99.99%: {} ({}x)",
                 currThreshold, amean, ameanThr, aMax, aMaxThr, pc50, pc50Thr,
