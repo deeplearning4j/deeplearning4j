@@ -199,8 +199,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
         retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
 
-        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
-            context.syncOldStream();
+        context.syncOldStream();
 
         //Convert back and assign, if required:
         if(isHalf){
@@ -289,8 +288,6 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
                             cudnnContext.srcTensorDesc, srcData, cudnnContext.dstTensorDesc, dstData,
                             cudnnContext.gammaBetaTensorDesc, gammaData, betaData, decay, meanData, varData, eps,
                             meanCacheData, varCacheData));
-            AtomicAllocator.getInstance().getAllocationPoint(meanCache).tickDeviceWrite();
-            AtomicAllocator.getInstance().getAllocationPoint(varCache).tickDeviceWrite();
         } else {
             checkCudnn(cudnnBatchNormalizationForwardInference(cudnnContext, batchNormMode, this.alpha, this.beta,
                             cudnnContext.srcTensorDesc, srcData, cudnnContext.dstTensorDesc, dstData,
@@ -303,6 +300,10 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
             context.syncOldStream();
 
         context.syncOldStream();
+        if(training) {
+            AtomicAllocator.getInstance().getAllocationPoint(meanCache).tickDeviceWrite();
+            AtomicAllocator.getInstance().getAllocationPoint(varCache).tickDeviceWrite();
+        }
 
         if(training && isHalf){
             //Update the running mean and variance arrays; also gamma/beta
@@ -326,7 +327,6 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
     @Override
     public INDArray getVarCache() {
-        Nd4j.getExecutioner().commit();
         INDArray ret = varCache.mul(varCache).rdivi(1.0).subi(eps);
         if(Nd4j.dataType() == DataBuffer.Type.HALF){
             //Buffer is FP32

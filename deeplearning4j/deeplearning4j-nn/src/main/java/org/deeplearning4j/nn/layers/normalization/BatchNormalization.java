@@ -184,6 +184,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 And use the same idea for global variance estimate
                  */
 
+//                INDArray batchMean = input.rank() == 2 ? input.mean(0) : input.mean(0, 2, 3);
+//                INDArray batchVar = input.rank() == 2 ? input.var(false, 0) : input.var(false, 0, 2, 3);
                 INDArray batchMean = helper.getMeanCache();
                 INDArray batchVar = helper.getVarCache();
 
@@ -365,7 +367,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             try {
                 ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
                         globalVarView, decay, layerConf.getEps(), workspaceMgr);
-                //TODO NEED TO HANDLE MEAN/VARIANCE UPDATING PROPERLY FOR CUDNN
             } catch (Throwable t) {
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
