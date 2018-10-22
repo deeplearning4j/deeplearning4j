@@ -44,7 +44,7 @@ public class WiredEncodingHandler extends EncodingHandler {
      *
      */
     public WiredEncodingHandler() {
-        super(1e-3);
+        super(1e-3, false);
     }
 
     /**
@@ -52,8 +52,8 @@ public class WiredEncodingHandler extends EncodingHandler {
      *
      * @param threshold Initial encoding threshold
      */
-    public WiredEncodingHandler(double threshold) {
-        super(threshold);
+    public WiredEncodingHandler(double threshold, boolean encodingDebugMode) {
+        super(threshold, encodingDebugMode);
     }
 
     /**
@@ -62,8 +62,8 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param threshold Initial encoding threshold
      * @param boundary
      */
-    public WiredEncodingHandler(double threshold, Double boundary) {
-        super(threshold, boundary);
+    public WiredEncodingHandler(double threshold, Double boundary, boolean encodingDebugMode) {
+        super(threshold, boundary, encodingDebugMode);
     }
 
     /**
@@ -77,8 +77,8 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
      */
     public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                                int stepDelay, int shakeFrequency) {
-        this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null);
+                                int stepDelay, int shakeFrequency, boolean encodingDebugMode) {
+        this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null, encodingDebugMode);
     }
 
     /**
@@ -93,8 +93,8 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param boundary
      */
     public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                                int stepDelay, int shakeFrequency, Double boundary) {
-        super(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, boundary);
+                                int stepDelay, int shakeFrequency, Double boundary, boolean encodingDebugMode) {
+        super(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, boundary, encodingDebugMode);
     }
 
     /**

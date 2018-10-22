@@ -26,6 +26,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.text.DecimalFormat;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,6 +47,7 @@ public class EncodingHandler implements MessageHandler {
     protected int shakeFrequency;
     protected int stepDelay;
     protected Double boundary = null;
+    protected boolean encodingDebugMode;
     protected NDArrayCompressor compressor;
     protected AtomicInteger atomicBoundary = new AtomicInteger(-1);
 
@@ -59,7 +61,7 @@ public class EncodingHandler implements MessageHandler {
      *
      */
     public EncodingHandler() {
-        this(1e-3);
+        this(1e-3, false);
     }
 
     /**
@@ -67,8 +69,8 @@ public class EncodingHandler implements MessageHandler {
      *
      * @param threshold Initial encoding threshold
      */
-    public EncodingHandler(double threshold) {
-        this(threshold, null);
+    public EncodingHandler(double threshold, boolean encodingDebugMode) {
+        this(threshold, null, encodingDebugMode);
     }
 
     /**
@@ -76,8 +78,8 @@ public class EncodingHandler implements MessageHandler {
      *
      * @param threshold Initial encoding threshold
      */
-    public EncodingHandler(double threshold, Double boundary) {
-        this(threshold, threshold, 0.0, 0, 0, 0, boundary);
+    public EncodingHandler(double threshold, Double boundary, boolean encodingDebugMode) {
+        this(threshold, threshold, 0.0, 0, 0, 0, boundary, encodingDebugMode);
     }
 
     /**
@@ -91,8 +93,8 @@ public class EncodingHandler implements MessageHandler {
      * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
      */
     public EncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                    int stepDelay, int shakeFrequency) {
-        this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null);
+                    int stepDelay, int shakeFrequency, boolean encodingDebugMode) {
+        this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null, encodingDebugMode);
     }
 
     /**
@@ -107,7 +109,7 @@ public class EncodingHandler implements MessageHandler {
      * @param boundary
      */
     public EncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                    int stepDelay, int shakeFrequency, Double boundary) {
+                    int stepDelay, int shakeFrequency, Double boundary, boolean encodingDebugMode) {
         this.threshold = threshold;
         this.minThreshold = minThreshold;
         this.stepTrigger = stepTrigger;
@@ -115,6 +117,7 @@ public class EncodingHandler implements MessageHandler {
         this.thresholdStep = thresholdStep;
         this.shakeFrequency = shakeFrequency;
         this.boundary = boundary;
+        this.encodingDebugMode = encodingDebugMode;
     }
 
     @Override
@@ -129,9 +132,6 @@ public class EncodingHandler implements MessageHandler {
     }
 
     public INDArray encodeUpdates(INDArray updates) {
-        // getting statistics
-        //log.info("Residual: {amean: {}; amax: {}; 50%: {}; 95%: {}; 99%: {};  99.9%: {}}; Current Threshold: [{}]", updates.ameanNumber().doubleValue(), updates.amaxNumber().doubleValue(), Transforms.abs(updates, true).percentileNumber(50).doubleValue(), Transforms.abs(updates, true).percentileNumber(90).doubleValue(), Transforms.abs(updates, true).percentileNumber(99).doubleValue(), Transforms.abs(updates, true).percentileNumber(99.9).doubleValue(), currentThreshold.get());
-
 
         // special op should be called here for encoding
         if (bitmapMode.get() == null) {
@@ -140,6 +140,9 @@ public class EncodingHandler implements MessageHandler {
             iterations.set(new AtomicLong(0));
             lastStep.set(new AtomicLong(0));
         }
+
+        //Debug output if enabled:
+        residualDebugOutputIfRequired(updates);
 
         iterations.get().incrementAndGet();
 
@@ -241,5 +244,50 @@ public class EncodingHandler implements MessageHandler {
             return true;
         } else
             return false;
+    }
+
+    protected static ThreadLocal<DecimalFormat> formatter = new ThreadLocal<>();
+
+    protected void residualDebugOutputIfRequired(INDArray residual){
+        if(!encodingDebugMode)
+            return;
+
+        if(formatter.get() == null){
+            formatter.set(new DecimalFormat("0.###E0"));
+        }
+        DecimalFormat df = formatter.get();
+
+        double currThreshold = currentThreshold.get().get();
+
+
+        INDArray absResidual = Transforms.abs(residual, true);
+
+        double dAmean = absResidual.meanNumber().doubleValue();
+        double dAMax = absResidual.maxNumber().doubleValue();
+        double dPc50 = absResidual.percentileNumber(50).doubleValue();
+        double dPc95 = absResidual.percentileNumber(95).doubleValue();
+        double dPc99 = absResidual.percentileNumber(99).doubleValue();
+        double dPc999 = absResidual.percentileNumber(99.9).doubleValue();
+        double dPc9999 = absResidual.percentileNumber(99.99).doubleValue();
+
+        String amean = df.format(dAmean);
+        String aMax = df.format(dAMax);
+        String pc50 = df.format(dPc50);
+        String pc95 = df.format(dPc95);
+        String pc99 = df.format(dPc99);
+        String pc999 = df.format(dPc999);
+        String pc9999 = df.format(dPc9999);
+
+        String ameanThr = df.format(dAmean / currThreshold);
+        String aMaxThr = df.format(dAMax / currThreshold);
+        String pc50Thr = df.format(dPc50 / currThreshold);
+        String pc95Thr = df.format(dPc95 / currThreshold);
+        String pc99Thr = df.format(dPc99 / currThreshold);
+        String pc999Thr = df.format(dPc999 / currThreshold);
+        String pc9999Thr = df.format(dPc9999 / currThreshold);
+
+        log.info("Encoding debug info, residual vector: threshold={}, amean: {} ({}x); amax: {} ({}x); 50%: {} ({}x); 95%: {} ({}x}; 99%: {} ({}x);  99.9%: {} ({}x); 99.99%: {} ({}x)",
+                currThreshold, amean, ameanThr, aMax, aMaxThr, pc50, pc50Thr,
+                pc95, pc95Thr, pc99, pc99Thr, pc999, pc999Thr, pc9999, pc9999Thr);
     }
 }

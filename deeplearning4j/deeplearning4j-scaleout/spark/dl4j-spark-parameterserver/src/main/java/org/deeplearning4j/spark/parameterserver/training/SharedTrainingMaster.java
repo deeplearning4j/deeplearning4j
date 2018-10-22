@@ -108,6 +108,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected int rddDataSetNumExamples;
     protected long debugLongerIterations = 0L;
     protected boolean logMinibatchesPerWorker = true;
+    protected boolean encodingDebugMode = false;
 
     // TODO: this option should be abstracted, if we decide to generalize this trainingmaster
     protected double threshold;
@@ -171,6 +172,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         this.repartitioner = repartitioner;
         this.workerTogglePeriodicGC = workerTogglePeriodicGC;
         this.workerPeriodicGCFrequency = workerPeriodicGCFrequency;
+        this.encodingDebugMode = encodingDebugMode;
 
 
         if (collectTrainingStats)
@@ -262,7 +264,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder().threshold(threshold)
                         .minThreshold(minThreshold).shakeFrequency(shakeFrequency).thresholdStep(thresholdStep)
                         .stepTrigger(stepTrigger).stepDelay(stepDelay).voidConfiguration(voidConfiguration)
-                        .debugLongerIterations(debugLongerIterations).numberOfWorkersPerNode(numWorkersPerNode).build();
+                        .debugLongerIterations(debugLongerIterations).numberOfWorkersPerNode(numWorkersPerNode)
+                        .encodingDebugMode(encodingDebugMode).build();
 
         if (collectTrainingStats)
             stats.logBroadcastStart();
@@ -292,6 +295,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                         .voidConfiguration(voidConfiguration).debugLongerIterations(debugLongerIterations)
                         .numberOfWorkersPerNode(numWorkersPerNode)
                         .prefetchSize(workerPrefetchBatches)
+                        .encodingDebugMode(encodingDebugMode)
                 .build();
 
         if (collectTrainingStats)
@@ -903,6 +907,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected Repartitioner repartitioner = new DefaultRepartitioner();
         protected Boolean workerTogglePeriodicGC;
         protected Integer workerPeriodicGCFrequency;
+        protected boolean encodingDebugMode = false;
 
         /**
          * Create a SharedTrainingMaster with defaults other than the RDD number of examples
@@ -1266,6 +1271,18 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
          */
         public Builder workerPeriodicGCFrequency(int workerPeriodicGCFrequency){
             this.workerPeriodicGCFrequency = workerPeriodicGCFrequency;
+            return this;
+        }
+
+        /**
+         * Enable debug mode for threshold encoding. When enabled, various statistics for the threshold and the residual
+         * will be calculated and logged on each worker (at info log level).<br>
+         * NOTE: this has a performance overhead, and should not be enabled unless the debug information is actually required.
+         *
+         * @param enabled True to enable
+         */
+        public Builder encodingDebugMode(boolean enabled){
+            this.encodingDebugMode = enabled;
             return this;
         }
 
