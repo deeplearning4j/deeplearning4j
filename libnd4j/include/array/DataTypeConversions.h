@@ -33,6 +33,32 @@
 namespace nd4j {
     template <typename T>
     class ND4J_EXPORT DataTypeConversions {
+    private:
+        template <typename T2>
+        static FORCEINLINE void rconv(bool isBe, bool canKeep, T *buffer, Nd4jLong length, void *src) {
+            if (std::is_same<T, T2>::value && canKeep) {
+                memcpy(buffer, src, length * sizeof(T));
+            } else {
+                auto tmp = new T2[length];
+                memcpy(tmp, src, length * sizeof(T2));
+
+
+#if __GNUC__ <= 4
+                if (!canKeep)
+                                for (Nd4jLong e = 0; e < length; e++)
+                                    buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                            else
+                                TypeCast::convertGeneric<T2, T>(nullptr, tmp, length, buffer);
+#else
+#pragma omp parallel for simd schedule(guided)
+                for (Nd4jLong e = 0; e < length; e++)
+                    buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+#endif
+
+                delete[] tmp;
+            }
+        }
+
     public:
         static FORCEINLINE void convertType(void* vbuffer, void* src, DataType dataType, ByteOrder order, Nd4jLong length) {
             auto buffer = reinterpret_cast<T *>(vbuffer);
@@ -40,6 +66,14 @@ namespace nd4j {
             bool canKeep = (isBe && order == ByteOrder::BE) || (!isBe && order == ByteOrder::LE);
 
             switch (dataType) {
+                case INT32: {
+                    DataTypeConversions<T>::template rconv<int>(isBe, canKeep, buffer, length, src);
+                }
+                    break;
+                case INT64: {
+                    DataTypeConversions<T>::template rconv<Nd4jLong>(isBe, canKeep, buffer, length, src);
+                }
+                    break;
                 case FLOAT32: {
                         if (std::is_same<T, float>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));

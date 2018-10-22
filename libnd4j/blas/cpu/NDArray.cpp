@@ -1688,11 +1688,12 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
             limit = (int) this->lengthOf();
         int rank = this->rankOf();
         bool rowFlag = rank < 2 || (rank == 2 && this->_shapeInfo[1] == 1);
-        if (rank > 0) // non-scalar
+//        if (rank > 0) // non-scalar
         if (msg != nullptr)
             printf("%s: %s[", msg, rowFlag?"":"\n");
         else
             printf("[");
+
         if (this->isR()) {
             if (rowFlag) // vector case
             for (Nd4jLong e = 0; e < limit; e++) {
@@ -1749,10 +1750,10 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
                     printf(", ");
             }
         }
-        if (this->rankOf() > 0)
+        //if (this->rankOf() > 0)
             printf("]\n");
-        else
-            printf("\n");
+        //else
+//            printf("\n");
 
         fflush(stdout);
     }
