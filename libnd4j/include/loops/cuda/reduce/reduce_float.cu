@@ -16,6 +16,7 @@
 
 //
 //  @author raver119@gmail.com
+//  @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
@@ -24,7 +25,7 @@
 #include <helpers/DebugHelper.h>
 
 
-template <typename X, typename Z, typename OpClass>
+template <typename X, typename Z, typename OpType>
 __device__ void reduceSimpleGeneric(
         void *dx,
         Nd4jLong *xShapeInfo,
@@ -38,14 +39,14 @@ __device__ void reduceSimpleGeneric(
     __shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
-        c __shared__ unsigned char shmem[];
+        extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceFunction<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceFloatFunction<X,Z>), sizeof(shape::TAD), shape::rank(xShapeInfo));
     }
     __syncthreads();
 
 
-    functions::reduce::ReduceFunction<T>::template transformCudaXD<OpClass>(
+    functions::reduce::ReduceFloatFunction<X, Z>::template transformCudaXD<OpType>(
             dx,
             xShapeInfo,
             extraParams,
@@ -59,7 +60,7 @@ __device__ void reduceSimpleGeneric(
             tadOffsets);
 }
 
-template <typename T, typename OpClass>
+template <typename T, typename OpType>
 __device__ void reduceSimpleGeneric1D(
         T *dx,
         Nd4jLong *xShapeInfo,
@@ -72,7 +73,7 @@ __device__ void reduceSimpleGeneric1D(
         Nd4jLong *tadOnlyShapeInfo,
         Nd4jLong *tadOffsets) {
 
-    functions::reduce::ReduceFunction<T>::template transformCuda1D<OpClass>(
+    functions::reduce::ReduceFunction<T>::template transformCuda1D<OpType>(
             dx,
             xShapeInfo,
             extraParams,
@@ -83,7 +84,7 @@ __device__ void reduceSimpleGeneric1D(
             reductionBuffer, nullptr, tadOnlyShapeInfo, tadOffsets);
 }
 
-template <typename T, typename OpClass>
+template <typename T, typename OpType>
 __device__ void reduceSimpleGeneric3D(
         T *dx,
         Nd4jLong *xShapeInfo,
@@ -96,7 +97,7 @@ __device__ void reduceSimpleGeneric3D(
         Nd4jLong *tadOnlyShapeInfo,
         Nd4jLong *tadOffsets) {
 
-    functions::reduce::ReduceFunction<T>::template transformCuda3D<OpClass>(
+    functions::reduce::ReduceFunction<T>::template transformCuda3D<OpType>(
             dx,
             xShapeInfo,
             extraParams,
@@ -110,7 +111,7 @@ __device__ void reduceSimpleGeneric3D(
             tadOffsets);
 }
 
-template <typename T, typename OpClass>
+template <typename T, typename OpType>
 __device__ void reduceScalarGeneric(
         T *dx,
         Nd4jLong *xShapeInfo,
@@ -130,7 +131,7 @@ __device__ void reduceScalarGeneric(
     }
     __syncthreads();
 
-    functions::reduce::ReduceFunction<T>::template execScalarCuda<OpClass>(
+    functions::reduce::ReduceFunction<T>::template execScalarCuda<OpType>(
             dx,
             xShapeInfo,
             extraParams,
