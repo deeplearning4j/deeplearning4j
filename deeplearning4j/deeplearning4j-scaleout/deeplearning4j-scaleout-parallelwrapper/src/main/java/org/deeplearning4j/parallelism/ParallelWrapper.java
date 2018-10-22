@@ -929,7 +929,7 @@ public class ParallelWrapper implements AutoCloseable {
                     this.trainerContext = new SymmetricTrainerContext();
                     if (this.accumulator == null) {
                         log.info("Creating new GradientsAccumulator instance with threshold of [5e-4");
-                        this.accumulator = new EncodedGradientsAccumulator(workers, 5e-4);
+                        this.accumulator = new EncodedGradientsAccumulator(workers, 5e-4, false);
                     }
                 }
                     break;

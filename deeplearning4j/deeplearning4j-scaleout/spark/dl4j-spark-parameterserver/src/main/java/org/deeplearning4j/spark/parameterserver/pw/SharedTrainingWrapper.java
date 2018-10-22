@@ -254,7 +254,7 @@ public class SharedTrainingWrapper {
                 val handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(),
                                 trainingConfiguration.getMinThreshold(), trainingConfiguration.getThresholdStep(),
                                 trainingConfiguration.getStepTrigger(), trainingConfiguration.getStepDelay(),
-                                trainingConfiguration.getShakeFrequency());
+                                trainingConfiguration.getShakeFrequency(), trainingConfiguration.isEncodingDebugMode());
 
                 // TODO: if there will be no code difference - use the same class instead of 2 different classes
                 val modelParamsSupplier = new ModelParamsConsumer();
@@ -277,7 +277,9 @@ public class SharedTrainingWrapper {
 
                     accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
                                     .encodingThreshold(trainingConfiguration.getThreshold())
-                                    .memoryParameters(bufferSize, queueSize).build();
+                                    .memoryParameters(bufferSize, queueSize)
+                                    .encodingDebugMode(trainingConfiguration.isEncodingDebugMode())
+                            .build();
 
                     // we should introduce ourselves to controller
                     // FIXME: if localIP is null - use original ip discovery available in VoidParameterServer
