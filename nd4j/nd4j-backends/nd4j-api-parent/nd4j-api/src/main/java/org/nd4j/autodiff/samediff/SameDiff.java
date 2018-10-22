@@ -1772,7 +1772,7 @@ public class SameDiff {
                      */
                     public INDArray getArr() {
                         if (arr.getArr() == null) {
-                            INDArray retArr = arr.getWeightInitScheme().create(arr.getShape());
+                            INDArray retArr = arr.getWeightInitScheme().create(arr.dataType(), arr.getShape());
                             associateArrayWithVariable(retArr, arr);
                         }
                         return arr.getArr();

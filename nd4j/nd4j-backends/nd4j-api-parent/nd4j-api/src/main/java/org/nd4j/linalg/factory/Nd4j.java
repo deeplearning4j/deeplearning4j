@@ -3058,6 +3058,12 @@ public class Nd4j {
         return randn(ret);
     }
 
+    public static INDArray randn(DataType dataType, char order, long[] shape) {
+        INDArray ret = Nd4j.createUninitialized(dataType, shape, order);
+        logCreationIfNecessary(ret);
+        return randn(ret);
+    }
+
     /**
      * Random normal using the specified seed
      *

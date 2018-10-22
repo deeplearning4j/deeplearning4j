@@ -212,7 +212,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     this.z = getResult.getArr();
                 else if(sameDiff.getShapeForVarName(getResult.getVarName()) != null) {
                     val shape = sameDiff.getShapeForVarName(getResult.getVarName());
-                    sameDiff.putArrayForVarName(getResult.getVarName(),getResult.getWeightInitScheme().create(shape));
+                    sameDiff.putArrayForVarName(getResult.getVarName(),getResult.getWeightInitScheme().create(getResult.dataType(), shape));
                 }
                 else
                     throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");

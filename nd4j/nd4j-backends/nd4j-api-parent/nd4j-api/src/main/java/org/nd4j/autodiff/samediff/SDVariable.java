@@ -179,7 +179,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             throw new ND4JIllegalStateException("Unable to allocate new array. No shape found for variable " + varName);
         }
 
-        val arr = getWeightInitScheme().create(shape);
+        val arr = getWeightInitScheme().create(dataType(), shape);
         sameDiff.associateArrayWithVariable(arr, this);
         if(log.isTraceEnabled()){
             log.trace("Generated and stored new array for variable \"{}\": old shape: {}, new shape {}", getVarName(),
@@ -237,7 +237,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             return null;
         } else {
             long[] shape = sameDiff.getShapeForVarName(getVarName());
-            INDArray newAlloc = getWeightInitScheme().create(shape);
+            INDArray newAlloc = getWeightInitScheme().create(dataType(), shape);
             sameDiff.associateArrayWithVariable(newAlloc,this);
             if(log.isTraceEnabled()){
                 log.trace("getArr() for variable \"{}\" allocated new array with shape {}", getVarName(), Arrays.toString(getShape()));
