@@ -275,6 +275,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 if (!shape.isEmpty()) {
                     if (currShape != null && !Shape.isPlaceholderShape(currShape)) {
                         sameDiff.putShapeForVarName(var.getVarName(), currShape);
+                        var.setDataType(descriptor.dataType());
                         if(currShape.length == 1 && currShape[0] == Long.MIN_VALUE){
                             //Temporary sentinel for empty array
                             arr = Nd4j.empty(descriptor.dataType());

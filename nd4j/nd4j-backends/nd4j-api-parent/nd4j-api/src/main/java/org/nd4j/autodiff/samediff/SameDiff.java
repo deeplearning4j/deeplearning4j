@@ -733,7 +733,9 @@ public class SameDiff {
 
 
     public void putShapeForVarName(String varName, LongShapeDescriptor shape) {
-        throw new UnsupportedOperationException();
+        val v = getVariable(varName);
+        putShapeForVarName(varName, shape.getShape());
+        v.setDataType(shape.dataType());
     }
 
     /**
@@ -755,7 +757,11 @@ public class SameDiff {
     }
 
     public void putOrUpdateShapeForVarName(String varName, @NonNull LongShapeDescriptor shape, boolean clearArrayOnShapeMismatch){
-        throw new UnsupportedOperationException();
+        if(variableNameToShape.containsKey(varName)){
+            updateShapeForVarName(varName, shape.getShape(), clearArrayOnShapeMismatch);
+        } else {
+            putShapeForVarName(varName, shape);
+        }
     }
 
 

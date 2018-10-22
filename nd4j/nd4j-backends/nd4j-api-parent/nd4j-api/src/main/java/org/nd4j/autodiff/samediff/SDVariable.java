@@ -66,7 +66,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     protected WeightInitScheme weightInitScheme;
 
     @Getter (AccessLevel.NONE)
-    @Setter (AccessLevel.NONE)
+    @Setter
     protected DataType dataType;
 
 
