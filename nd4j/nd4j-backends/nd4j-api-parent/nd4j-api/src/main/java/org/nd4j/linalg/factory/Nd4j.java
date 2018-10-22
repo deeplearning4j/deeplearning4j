@@ -3549,6 +3549,50 @@ public class Nd4j {
         return ret;
     }
 
+    ////////////////////////////////////////////////
+
+    public static INDArray create(int[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(long[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(double[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(float[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(short[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(byte[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(boolean[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
     /**
      * This method creates new 0D INDArray, aka scalar.
      *
@@ -6489,7 +6533,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = db.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.DOUBLE);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.DOUBLE);
             }
             case FLOAT: {
                 val doubles = new float[prod];
@@ -6497,7 +6541,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = fb.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.FLOAT);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.FLOAT);
             }
             case HALF: {
                 val doubles = new float[prod];
@@ -6505,7 +6549,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = HalfIndexer.toFloat((int) sb.get(e));
 
-                return Nd4j.create(doubles, shapeOf, DataType.HALF);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.HALF);
             }
             case INT: {
                 val doubles = new int[prod];
@@ -6513,7 +6557,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.INT);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.INT);
             }
             case LONG: {
                 val doubles = new long[prod];
@@ -6521,7 +6565,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.LONG);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.LONG);
             }
             case SHORT: {
                 val doubles = new short[prod];
@@ -6529,7 +6573,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.SHORT);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.SHORT);
             }
             case BYTE: {
                 val doubles = new byte[prod];
@@ -6537,7 +6581,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = (byte) sb.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.BYTE);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BYTE);
             }
             case BOOL: {
                 val doubles = new boolean[prod];
@@ -6545,7 +6589,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e) == 1;
 
-                return Nd4j.create(doubles, shapeOf, DataType.BOOL);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BOOL);
             }
             default:
                 throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");

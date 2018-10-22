@@ -10805,7 +10805,7 @@ public class SameDiff {
                 0,
                 0,
                 -1,
-                0.0f, 0, 0);
+                0.0f, 0, 0, 0);
 
         return flatNode;
     }
@@ -10949,7 +10949,7 @@ public class SameDiff {
                 integerArgs,
                 dimensions,
                 -1,
-                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().getFloat(0) : 0.0f, 0, scopeName);
+                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().getFloat(0) : 0.0f, 0, scopeName, 0);
 
         return flatNode;
     }
@@ -11008,7 +11008,7 @@ public class SameDiff {
             int id = IntPair.createIntPair(bufferBuilder, idCounter.get(), 0);
 
 
-            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, 0, array, -1);
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name,  getDataTypeAsByte(arr.dataType()), 0, array, -1);
             flatVariables.add(flatVariable);
         }
 
@@ -11041,7 +11041,7 @@ public class SameDiff {
 
                 log.debug("Adding [{}] as [{}]", pair.getFirst(), idx);
 
-                int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, 0, array, -1);
+                int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, getDataTypeAsByte(arr.dataType()),0, array, -1);
                 flatVariables.add(flatVariable);
             }
 
