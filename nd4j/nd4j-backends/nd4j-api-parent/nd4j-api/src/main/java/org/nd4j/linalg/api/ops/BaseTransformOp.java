@@ -186,21 +186,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         super(x);
     }
 
-    /*
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        List<long[]> ret = new ArrayList<>(1);
-        if(arg() == null)
-            throw new ND4JIllegalStateException("No arg found for op!");
-
-        val arr = sameDiff.getArrForVarName(arg().getVarName());
-        if(arr == null)
-            return Collections.emptyList();
-        ret.add(arr.shape());
-        this.n = arr.length();
-        return ret;
-    }
-    */
+    public abstract List<LongShapeDescriptor> calculateOutputShape();
 
 
     @Override

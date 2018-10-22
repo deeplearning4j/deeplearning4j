@@ -43,7 +43,7 @@ public class RectifedLinear extends BaseScalarOp {
     }
 
     public RectifedLinear() {
-
+        super();
     }
 
     public RectifedLinear(INDArray x, INDArray z, double cutoff) {

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -37,7 +38,9 @@ import java.util.List;
 @Slf4j
 public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
-    public BaseScalarOp() {}
+    public BaseScalarOp() {
+        this.scalarValue = Nd4j.scalar(0.f);
+    }
 
     public BaseScalarOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n);
@@ -124,9 +127,13 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        List<LongShapeDescriptor> ret = new ArrayList<>(1);
+        val ret = new ArrayList<LongShapeDescriptor>(1);
 
         val s = arg().getShape();
+
+        if (s == null)
+            return Collections.emptyList();
+
         val aT = arg().dataType();
         val sT = scalarValue.dataType();
 
