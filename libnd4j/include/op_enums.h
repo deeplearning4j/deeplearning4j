@@ -116,6 +116,22 @@ namespace nd4j {
             BUILD_ENUMERATION(SUMMARY_STATS_OPS)
         };
     }
+
+    namespace logic {
+        enum Ops {
+            While = 0,
+            Scope = 10,
+            Conditional = 20,
+            Switch = 30,
+            Return = 40,
+            Expose = 50,
+            Merge = 60,
+            LoopCond = 70,
+            NextIteration = 80,
+            Exit = 90,
+            Enter = 100,
+        };
+    }
 }
 
 #endif
