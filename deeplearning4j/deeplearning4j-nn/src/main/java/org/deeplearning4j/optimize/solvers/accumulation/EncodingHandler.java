@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.text.DecimalFormat;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class EncodingHandler implements MessageHandler {
     protected transient GradientsAccumulator accumulator;
+    protected ThresholdAlgorithm initialThresholdAlgorithm;
     protected ThreadLocal<ThresholdAlgorithm> thresholdAlgorithm;
 //    protected ThreadLocal<ResidualPostProcessor> residualPostProcessor;
     protected Double boundary = null;
@@ -57,7 +59,8 @@ public class EncodingHandler implements MessageHandler {
     protected ThreadLocal<AtomicBoolean> bitmapMode = new ThreadLocal<>();
 
     public EncodingHandler(final ThresholdAlgorithm thresholdAlgorithm, Double boundary, boolean encodingDebugMode){
-        this.thresholdAlgorithm = ThreadLocal.withInitial(() -> thresholdAlgorithm.clone());
+        this.initialThresholdAlgorithm = thresholdAlgorithm;
+        this.thresholdAlgorithm = new ThreadLocal<>();
 //        this.residualPostProcessor = (residualPostProcessor == null ? null : ThreadLocal.withInitial(residualPostProcessor.clone()));
         this.boundary = boundary;
         this.encodingDebugMode = encodingDebugMode;
@@ -77,6 +80,13 @@ public class EncodingHandler implements MessageHandler {
     public INDArray encodeUpdates(int iteration, int epoch, INDArray updates) {
         // getting statistics
         //log.info("Residual: {amean: {}; amax: {}; 50%: {}; 95%: {}; 99%: {};  99.9%: {}}; Current Threshold: [{}]", updates.ameanNumber().doubleValue(), updates.amaxNumber().doubleValue(), Transforms.abs(updates, true).percentileNumber(50).doubleValue(), Transforms.abs(updates, true).percentileNumber(90).doubleValue(), Transforms.abs(updates, true).percentileNumber(99).doubleValue(), Transforms.abs(updates, true).percentileNumber(99.9).doubleValue(), currentThreshold.get());
+
+        if(thresholdAlgorithm.get() == null){
+            synchronized (this){
+                //Synchronized in case threshold algorithm has INDArrays and we're running on GPU - don't want race condition for shifting devices
+                thresholdAlgorithm.set(initialThresholdAlgorithm.clone());
+            }
+        }
 
         //Determine current threshold to use:
         double currThreshold = thresholdAlgorithm.get().calculateThreshold(iteration, epoch, lastThreshold.get().get(), updates);

@@ -31,7 +31,6 @@ import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
-import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
@@ -273,9 +272,9 @@ public class SharedTrainingWrapper {
                                     : EncodedGradientsAccumulator.getOptimalBufferSize(model, numWorkers, 2);
 
                     accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
-                                    .encodingThreshold(trainingConfiguration.getThreshold())
-                                    .memoryParameters(bufferSize, queueSize)
-                                    .encodingDebugMode(trainingConfiguration.isEncodingDebugMode())
+                            .thresholdAlgorithm(trainingConfiguration.getThresholdAlgorithm())
+                            .memoryParameters(bufferSize, queueSize)
+                            .encodingDebugMode(trainingConfiguration.isEncodingDebugMode())
                             .build();
 
                     // we should introduce ourselves to controller
@@ -400,6 +399,7 @@ public class SharedTrainingWrapper {
                                     .prefetchBuffer(trainingConfiguration.getPrefetchSize())
                                     .modelParamsSupplier(modelParamsSupplier)
                                     .updaterParamsSupplier(updateParamsSupplier)
+                                    .thresholdAlgorithm(trainingConfiguration.getThresholdAlgorithm())
                                     .build();
                     wrapper.setExceptionEncountered(exceptionEncountered);
                 } else {

@@ -52,6 +52,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 public class EncodedGradientsAccumulator implements GradientsAccumulator, Registerable {
+    public static final long DEFAULT_INITIAL_MEMORY = 100 * 1024 * 1024L;
     protected ThreadLocal<INDArray> accumulator = new ThreadLocal<>();
 
     protected int parties;
@@ -90,6 +91,10 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
     protected WorkspaceConfiguration appliedConfiguration = WorkspaceConfiguration.builder().minSize(5 * 1024 * 1024L)
                     .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
                     .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
+
+    public EncodedGradientsAccumulator(int parties, ThresholdAlgorithm thresholdAlgorithm, boolean encodingDebugMode) {
+        this(parties, new EncodingHandler(thresholdAlgorithm, 1.0, encodingDebugMode), 100 * 1024 * 1024L, 10, 1.0, encodingDebugMode);
+    }
 
     protected EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory,
                     int queueSize, Double boundary, boolean encodingDebugMode) {

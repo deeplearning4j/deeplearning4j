@@ -44,7 +44,7 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param thresholdAlgorithm The threshold algorithm to use
      */
     public WiredEncodingHandler(ThresholdAlgorithm thresholdAlgorithm, Double boundary, boolean encodingDebugMode) {
-        super(thresholdAlgorithm, boundary);
+        super(thresholdAlgorithm, boundary, encodingDebugMode);
     }
 
     /**
