@@ -45,8 +45,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 	std::string currentPaddingsShape  = ShapeUtils::shapeAsString(paddings);
 	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", expectedPaddingsShape.c_str(), currentPaddingsShape.c_str());
 
-	// FIXME: double
-	auto padValue = NDArrayFactory::create(0., block.getWorkspace());
+	double padValue = 0.;
 
 	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 
 	// REFLECT case
@@ -76,9 +75,10 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(pad) {
-    getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
-    getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64}); // INT32 with TF, but used also INT64 due long shapes
-    getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+    getOpDescriptor()
+    	->setAllowedInputTypes(0, nd4j::DataType::ANY)
+    	->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64}) // INT32 with TF, but used also INT64 due long shapes
+    	->setSameMode(true);
 }
 
 DECLARE_SHAPE_FN(pad) {

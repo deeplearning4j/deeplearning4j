@@ -308,7 +308,8 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
                     ->setAllowedInputTypes(2, nd4j::DataType::ANY)
                     ->setAllowedInputTypes(3, nd4j::DataType::ANY)
                     ->setAllowedInputTypes(4, nd4j::DataType::ANY)
-                    ->setAllowedInputTypes(5, {ALL_FLOATS});
+                    ->setAllowedInputTypes(5, {ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
 //////////////////////////////////////////////////////////////////////////

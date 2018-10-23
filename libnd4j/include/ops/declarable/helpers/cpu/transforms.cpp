@@ -204,25 +204,25 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
     }
 
     BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
+
 //////////////////////////////////////////////////////////////////////////
 
-/*
 template<typename T>
-void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const T padValue ) {
+void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const double padValue) {
 
     const int rank = output.rankOf();
     std::vector<int> dimsToExclude(rank);
     std::iota(dimsToExclude.begin(), dimsToExclude.end(), 0);             // fill with 0, 1, ... rank-1
 
-    Nd4jLong numLeft    = paddings(rank-1,0);
-    Nd4jLong numRight   = paddings(rank-1,1);
+    Nd4jLong numLeft    = paddings.e<Nd4jLong>(rank-1,0);
+    Nd4jLong numRight   = paddings.e<Nd4jLong>(rank-1,1);
     Nd4jLong inDimSize  = input.sizeAt(rank-1);
     Nd4jLong outDimSize = output.sizeAt(rank-1);
 
     std::vector<std::vector<Nd4jLong>> outIdx = { std::vector<Nd4jLong>(2*rank), {numLeft, numLeft + inDimSize}, {0, numLeft}, {numLeft + inDimSize, outDimSize} };
 
     for(int i = 0; i < rank-1; ++i) {
-        outIdx[0][2*i]     = paddings(i, 0);
+        outIdx[0][2*i]     = paddings.e<Nd4jLong>(i, 0);
         outIdx[0][2*i + 1] = outIdx[0][2*i] + input.sizeAt(i);
     }
     outIdx[0][2*rank-1] = outIdx[0][2*rank-2] = 0;
@@ -233,36 +233,36 @@ void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, ND
     Nd4jLong startL = mode == 1 ? 1 : 0;                            // REFLECT or SYMMETRIC
     Nd4jLong startR = mode == 1 ? inDimSize-2 : inDimSize-1;        // REFLECT or SYMMETRIC
 
-    Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+    Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
 
-    NDArray<T> outSubArr0 = output(outIdx[0], true);
+    auto outSubArr0 = output(outIdx[0], true);
 
 #pragma omp parallel for schedule(guided)
     for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
 
-        NDArray<T> outSubArr1   = outSubArr0(j, dimsToExclude);
-        NDArray<T> inSubArr     = input(j, dimsToExclude);
-        NDArray<T> outSubArrMid = outSubArr1(outIdx[1]);
+        auto outSubArr1   = outSubArr0(j, dimsToExclude);
+        auto inSubArr     = input(j, dimsToExclude);
+        auto outSubArrMid = outSubArr1(outIdx[1]);
 
         outSubArrMid.assign(inSubArr);      // assign middle
 
         if(mode == 0)  { // CONSTANT
             if(numLeft != 0) {
-                NDArray<T> temp = outSubArr1(outIdx[2]);
+                auto temp = outSubArr1(outIdx[2]);
                 temp = padValue;                        // assign left
             }
             if(numRight != 0) {
-                NDArray<T> temp = outSubArr1(outIdx[3]);
+                auto temp = outSubArr1(outIdx[3]);
                 temp = padValue;                        // assign right
             }
         }
         else {                                                              // REFLECT or SYMMETRIC
 
             for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e)     // fill left side
-                outSubArr1(k) = inSubArr(e);
+                outSubArr1.p<T>(k, inSubArr.e<T>(e));
 
-            for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side
-                outSubArr1(k) = inSubArr(e);
+            for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side                
+                outSubArr1.p<T>(k, inSubArr.e<T>(e));
         }
     }
 
@@ -277,8 +277,8 @@ void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, ND
         outIdxInner.push_back(0), outIdxInner.push_back(0);
         outIdxOuter.push_back(0), outIdxOuter.push_back(0);
 
-        Nd4jLong numLeft  = paddings(i,0);
-        Nd4jLong numRight = paddings(i,1);
+        Nd4jLong numLeft  = paddings.e<Nd4jLong>(i,0);
+        Nd4jLong numRight = paddings.e<Nd4jLong>(i,1);
 
         if(numLeft == 0 && numRight == 0)
             continue;
@@ -294,22 +294,22 @@ void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, ND
         startL = mode == 1 ? numLeft+1 : numLeft;                            // REFLECT or SYMMETRIC
         startR = mode == 1 ? numLeft+inDimSize-2 : numLeft+inDimSize-1;      // REFLECT or SYMMETRIC
 
-        numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(output.getShapeInfo(), dimsToExclude);
+        numOfSubArrs = ShapeUtils::getNumOfSubArrs(output.getShapeInfo(), dimsToExclude);
 
 #pragma omp parallel for schedule(guided) firstprivate(outIdxOuter, outIdxInner)
         for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
 
-            NDArray<T> outSubArr = output(j, dimsToExclude);
+            auto outSubArr = output(j, dimsToExclude);
 
             if(mode == 0)  { // CONSTANT
 
                 if(numLeft != 0) {
-                    NDArray<T> temp = outSubArr(outIdxOuter);
+                    auto temp = outSubArr(outIdxOuter);
                     temp = padValue;                              // assign left
                 }
 
                 if(numRight != 0) {
-                    NDArray<T> temp = outSubArr(outIdxInner);
+                    auto temp = outSubArr(outIdxInner);
                     temp = padValue;                              // assign right
                 }
             }
@@ -320,8 +320,8 @@ void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, ND
                     outIdxOuter[1] = k+1;
                     outIdxInner[0] = e;
                     outIdxInner[1] = e+1;
-                    NDArray<T> outSubArrInner = outSubArr(outIdxInner);
-                    NDArray<T> outSubArrOuter = outSubArr(outIdxOuter);
+                    auto outSubArrInner = outSubArr(outIdxInner);
+                    auto outSubArrOuter = outSubArr(outIdxOuter);
                     outSubArrOuter.assign(outSubArrInner);
                 }
 
@@ -330,8 +330,8 @@ void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, ND
                     outIdxOuter[1] = k+1;
                     outIdxInner[0] = e;
                     outIdxInner[1] = e+1;
-                    NDArray<T> outSubArrInner = outSubArr(outIdxInner);
-                    NDArray<T> outSubArrOuter = outSubArr(outIdxOuter);
+                    auto outSubArrInner = outSubArr(outIdxInner);
+                    auto outSubArrOuter = outSubArr(outIdxOuter);
                     outSubArrOuter.assign(outSubArrInner);
                 }
             }
@@ -339,7 +339,12 @@ void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, ND
     }
 }
 
-*/
+void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const double padValue) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), pad_, (mode, input, paddings, output,padValue), LIBND4J_TYPES);
+}
+BUILD_SINGLE_TEMPLATE(template void pad_, (const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const double padValue), LIBND4J_TYPES);
+
+
 
 ////////////////////////////////////////////////////////////////////////
 /*// initial values of inIdx, outIdx, dim must be equal to zero
