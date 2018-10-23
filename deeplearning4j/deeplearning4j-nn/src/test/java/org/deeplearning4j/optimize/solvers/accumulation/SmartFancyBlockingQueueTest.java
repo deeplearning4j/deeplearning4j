@@ -61,8 +61,10 @@ public class SmartFancyBlockingQueueTest {
                     int cnt = 0;
                     while (true) {
                         while (cnt < 1000) {
-                            log.info("Thread {}: [{}]", f, cnt);
                             if (!queue.isEmpty()) {
+                                if (cnt % 50 == 0)
+                                    log.info("Thread {}: [{}]", f, cnt);
+
                                 val arr = queue.poll();
 
                                 assertNotNull(arr);

@@ -82,6 +82,19 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
     }
 
     @Override
+    public boolean isEmpty() {
+        try {
+            // we use this lock to make
+            smartLock.readLock().acquire();
+            return super.isEmpty();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            smartLock.readLock().release();
+        }
+    }
+
+    @Override
     public void put(INDArray array) throws InterruptedException {
         try {
             smartLock.writeLock().acquire();
