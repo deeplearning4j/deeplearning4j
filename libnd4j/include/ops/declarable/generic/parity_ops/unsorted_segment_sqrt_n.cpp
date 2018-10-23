@@ -24,9 +24,9 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(unsorted_segment_sqrt_n, 2, 1, false, 0, 1) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* idxSegments = INPUT_VARIABLE(1);
-            NDArray<T>* segmentedOutput = OUTPUT_VARIABLE(0);
+            auto input = INPUT_VARIABLE(0);
+            auto idxSegments = INPUT_VARIABLE(1);
+            auto segmentedOutput = OUTPUT_VARIABLE(0);
             Nd4jLong numOfClasses = INT_ARG(0);
             REQUIRE_TRUE(idxSegments->isVector(), 0, "unsorted_segment_sqrt_n: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "unsorted_segment_sqrt_n: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));

@@ -107,7 +107,7 @@ DECLARE_SHAPE_FN(gru) {
     hShapeInfo[0] = rank;
     hShapeInfo[1] = time;
     hShapeInfo[2] = bS;
-    hShapeInfo[3] = nU;
+    hShapeInfo[3] = numUnits;
 
     ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));
          

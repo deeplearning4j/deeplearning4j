@@ -144,16 +144,15 @@ namespace nd4j {
                 // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
                 if (numOfTrue) {
                     for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
-                        Nd4jLong *newShape;
 //                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
                         //                  shape::shapeVector(numOfTrue, newShape);
-                        newShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, numOfTrue, block.workspace());
+                        auto newShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, numOfTrue, block.workspace());
                     //ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
                         shapes->push_back(newShape);
                     }
                 }
                 else {
-                    newShape = ShapeUtils<T>::createScalarShapeInfo(block.getWorkspace());
+                    newShape = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.getWorkspace());
                     ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
                     shapes->push_back(newShape);
                 }

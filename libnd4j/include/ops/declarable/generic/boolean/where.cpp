@@ -117,13 +117,11 @@ namespace nd4j {
                     newShape[6] = 1;
                     newShape[7] = 99;
 
-                    ArrayOptions::setDataType(newshape, nd4j::DataType::INT64);
+                    ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
                 }
                 else {
-                    newShape = ShapeUtils<T>::createScalarShapeInfo(block.getWorkspace());
+                    newShape = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.getWorkspace());
                     ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
-
-                    ArrayOptions::setDataType(newshape, nd4j::DataType::INT64);
                 }
 
                     return SHAPELIST(newShape);

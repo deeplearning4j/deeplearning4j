@@ -108,17 +108,17 @@ DECLARE_SHAPE_FN(batchnorm) {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
 
-    NDArray<T>* input    = INPUT_VARIABLE(0);
-    NDArray<T>* mean     = INPUT_VARIABLE(1);
-    NDArray<T>* variance = INPUT_VARIABLE(2);
-    NDArray<T>* gamma    = nullptr;
-    NDArray<T>* beta     = nullptr;
+    auto input    = INPUT_VARIABLE(0);
+    auto mean     = INPUT_VARIABLE(1);
+    auto variance = INPUT_VARIABLE(2);
+    NDArray* gamma    = nullptr;
+    NDArray* beta     = nullptr;
 
-    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+    auto output   = OUTPUT_VARIABLE(0);
 
     const bool applyScale  = (bool)INT_ARG(0);
     const bool applyOffset = (bool)INT_ARG(1);
-    const T    epsilon     = T_ARG(0);
+    const double    epsilon     = T_ARG(0);
 
     if(applyScale)
         gamma = INPUT_VARIABLE(3);
@@ -147,14 +147,14 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
     // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
     // for example if input shape is {2,3,4,5,6} and axes = {1,3}, then expected shape would be {1,3,1,5,1}, and if axes = {3}, then expected shape would be {5}
     std::vector<Nd4jLong> expShape = numOfAxes == 1 ? std::vector<Nd4jLong>(1, input->sizeAt(axes[0])) : expShapeWithUnities;
-    std::string expShapeStr = ShapeUtils<T>::shapeAsString(expShape);
+    std::string expShapeStr = ShapeUtils::shapeAsString(expShape);
 
-    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(mean)     == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of mean array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(mean).c_str());
-    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of variance array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(variance).c_str());
+    REQUIRE_TRUE(ShapeUtils::shapeAsString(mean)     == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of mean array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(mean).c_str());
+    REQUIRE_TRUE(ShapeUtils::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of variance array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(variance).c_str());
     if(gamma)
-        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of gamma array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(gamma).c_str());
+        REQUIRE_TRUE(ShapeUtils::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of gamma array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(gamma).c_str());
     if(beta)
-        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(beta) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of beta array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(beta).c_str());
+        REQUIRE_TRUE(ShapeUtils::shapeAsString(beta) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of beta array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(beta).c_str());
 
     // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
 
@@ -167,7 +167,7 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
             beta  = beta->reshape(beta->ordering(), expShapeWithUnities);
     }
 
-    NDArray<T> sigmaInvGam = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();
+    auto sigmaInvGam = (*variance + epsilon).transform(transform::RSqrt);
     if(applyScale)
         sigmaInvGam *= *gamma;
 

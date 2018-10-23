@@ -45,12 +45,12 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
             v = i++;
         }
 
-        std::unique_ptr<ResultSet<T>> outputView(output->allTensorsAlongDimension(dims));
+        std::unique_ptr<ResultSet> outputView(output->allTensorsAlongDimension(dims));
         REQUIRE_TRUE(block.width() > output->sizeAt(0), 0, "embedding_lookup: input list should be greater then %i, but %i given.",
                     output->sizeAt(0), block.width()
                 );
         for (Nd4jLong e = 0; e < indeces->lengthOf(); ++e) {
-            Nd4jLong thisIndex = static_cast<Nd4jLong>((*indeces)(e));
+            Nd4jLong thisIndex = (*indeces).e<Nd4jLong>(e);
             input   = INPUT_VARIABLE(thisIndex); // lookup param
 
             outputView->at(e)->assign(input);
@@ -98,9 +98,9 @@ DECLARE_SHAPE_FN(embedding_lookup) {
         for (int e = 1; e < outRank; e++)
             shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
         if (shape::order(inShapeInfo) == 'c')
-            shape::shapeBuffer(outRank, shapeInfo.data(), outShapeInfo);
+            shape::shapeBuffer(outRank, block.dataType(), shapeInfo.data(), outShapeInfo);
         else
-            shape::shapeBufferFortran(outRank, shapeInfo.data(), outShapeInfo);
+            shape::shapeBufferFortran(outRank, block.dataType(), shapeInfo.data(), outShapeInfo);
 
         return SHAPELIST(outShapeInfo);
     }
@@ -109,7 +109,7 @@ DECLARE_SHAPE_FN(embedding_lookup) {
     int outRank = inRank + 1;
     ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
     std::vector<Nd4jLong> shapeInfo(outRank);
-    NDArray<T>* indeces = INPUT_VARIABLE(block.width() - 1);
+    auto indeces = INPUT_VARIABLE(block.width() - 1);
     shapeInfo[0] = indeces->lengthOf(); // vector - how many elements
     for (int e = 1; e < outRank; e++)
         shapeInfo[e] = shape::sizeAt(inShapeInfo, e);

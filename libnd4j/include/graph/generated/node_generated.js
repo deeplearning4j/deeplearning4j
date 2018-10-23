@@ -69,7 +69,7 @@ nd4j.graph.FlatNode.prototype.name = function(optionalEncoding) {
  */
 nd4j.graph.FlatNode.prototype.opType = function() {
   var offset = this.bb.__offset(this.bb_pos, 8);
-  return offset ? /** @type {nd4j.graph.OpType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.OpType.TRANSFORM;
+  return offset ? /** @type {nd4j.graph.OpType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.OpType.TRANSFORM_FLOAT;
 };
 
 /**
@@ -254,7 +254,7 @@ nd4j.graph.FlatNode.prototype.device = function() {
  */
 nd4j.graph.FlatNode.prototype.scalar = function() {
   var offset = this.bb.__offset(this.bb_pos, 30);
-  return offset ? this.bb.readFloat32(this.bb_pos + offset) : 0.0;
+  return offset ? this.bb.readFloat64(this.bb_pos + offset) : 0.0;
 };
 
 /**
@@ -302,10 +302,35 @@ nd4j.graph.FlatNode.prototype.opName = function(optionalEncoding) {
 };
 
 /**
+ * @param {number} index
+ * @returns {nd4j.graph.DataType}
+ */
+nd4j.graph.FlatNode.prototype.outputTypes = function(index) {
+  var offset = this.bb.__offset(this.bb_pos, 40);
+  return offset ? /** @type {nd4j.graph.DataType} */ (this.bb.readInt8(this.bb.__vector(this.bb_pos + offset) + index)) : /** @type {nd4j.graph.DataType} */ (0);
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.FlatNode.prototype.outputTypesLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 40);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @returns {Int8Array}
+ */
+nd4j.graph.FlatNode.prototype.outputTypesArray = function() {
+  var offset = this.bb.__offset(this.bb_pos, 40);
+  return offset ? new Int8Array(this.bb.bytes().buffer, this.bb.bytes().byteOffset + this.bb.__vector(this.bb_pos + offset), this.bb.__vector_len(this.bb_pos + offset)) : null;
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatNode.startFlatNode = function(builder) {
-  builder.startObject(18);
+  builder.startObject(19);
 };
 
 /**
@@ -329,7 +354,7 @@ nd4j.graph.FlatNode.addName = function(builder, nameOffset) {
  * @param {nd4j.graph.OpType} opType
  */
 nd4j.graph.FlatNode.addOpType = function(builder, opType) {
-  builder.addFieldInt8(2, opType, nd4j.graph.OpType.TRANSFORM);
+  builder.addFieldInt8(2, opType, nd4j.graph.OpType.TRANSFORM_FLOAT);
 };
 
 /**
@@ -564,7 +589,7 @@ nd4j.graph.FlatNode.addDevice = function(builder, device) {
  * @param {number} scalar
  */
 nd4j.graph.FlatNode.addScalar = function(builder, scalar) {
-  builder.addFieldFloat32(13, scalar, 0.0);
+  builder.addFieldFloat64(13, scalar, 0.0);
 };
 
 /**
@@ -618,6 +643,35 @@ nd4j.graph.FlatNode.startOutputNamesVector = function(builder, numElems) {
  */
 nd4j.graph.FlatNode.addOpName = function(builder, opNameOffset) {
   builder.addFieldOffset(17, opNameOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} outputTypesOffset
+ */
+nd4j.graph.FlatNode.addOutputTypes = function(builder, outputTypesOffset) {
+  builder.addFieldOffset(18, outputTypesOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<nd4j.graph.DataType>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatNode.createOutputTypesVector = function(builder, data) {
+  builder.startVector(1, data.length, 1);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addInt8(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.FlatNode.startOutputTypesVector = function(builder, numElems) {
+  builder.startVector(1, numElems, 1);
 };
 
 /**

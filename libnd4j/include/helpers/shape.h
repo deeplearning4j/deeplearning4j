@@ -2609,11 +2609,6 @@ template <typename T>
         return shapeInfoByteLength((int) shapeInfo[0]);
     }
 
-    INLINEDEF _CUDA_HD size_t shapeInfoByteLength(const Nd4jLong* shapeInfo) {
-        //FIXME magic numbers
-        return shapeInfoByteLength((int) shapeInfo[0]);
-    }
-
 /**
  * Returns the rank portion of
  * an information buffer

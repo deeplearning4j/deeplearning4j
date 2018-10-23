@@ -45,8 +45,6 @@ namespace nd4j {
             uint64_t _rootSeed;
             RandomGenerator _randomGenerator;
 
-            bool _useMKLDNN = true;
-
             std::vector<nd4j::DataType> _dataTypes;
 
             bool _useMKLDNN = nd4j::Environment::getInstance()->isUseMKLDNN();

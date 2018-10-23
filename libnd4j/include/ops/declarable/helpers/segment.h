@@ -30,8 +30,7 @@ namespace helpers {
 
     bool segmentIndicesValidate(NDArray* indices, NDArray& expected, NDArray& output);
 
-    template <typename T>
-    bool unsortedSegmentIndicesValidate(NDArray<T>* indices, Nd4jLong numOfClasses, Nd4jLong& output);
+    bool unsortedSegmentIndicesValidate(NDArray* indices, Nd4jLong numOfClasses, Nd4jLong& output);
 
     void segmentMaxFunctor(NDArray* input, NDArray* indices, NDArray* output);
 
@@ -43,56 +42,39 @@ namespace helpers {
 
     void segmentProdFunctor(NDArray* input, NDArray* indices, NDArray* output);
 
-    template <typename T>
-    void unsortedSegmentSqrtNFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output);
+    void unsortedSegmentSqrtNFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    template <typename T>
-    void unsortedSegmentMaxFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output);
+    void unsortedSegmentMaxFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    template <typename T>
-    void unsortedSegmentMinFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output);
+    void unsortedSegmentMinFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    template <typename T>
-    void unsortedSegmentMeanFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output);
+    void unsortedSegmentMeanFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    template <typename T>
-    void unsortedSegmentSumFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output);
+    void unsortedSegmentSumFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    template <typename T>
-    void unsortedSegmentProdFunctor(NDArray<T>* input, NDArray<T>* indices, Nd4jLong numOfClasses, NDArray<T>* output);
+    void unsortedSegmentProdFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    template <typename T>
-    int segmentMaxFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, NDArray<T>* output);
+    int segmentMaxFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
 
-    template <typename T>
-    int segmentMinFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, NDArray<T>* output);
+    int segmentMinFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
 
-    template <typename T>
-    int segmentMeanFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, NDArray<T>* output);
+    int segmentMeanFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
 
-    template <typename T>
-    int segmentSumFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, NDArray<T>* output);
+    int segmentSumFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
 
-    template <typename T>
-    int segmentProdFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, NDArray<T>* output);
+    int segmentProdFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
 
-    template <typename T>
-    int unsortedSegmentSqrtNFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, Nd4jLong numOfClasses, NDArray<T>* output);
+    int unsortedSegmentSqrtNFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
-    template <typename T>
-    int unsortedSegmentMaxFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, Nd4jLong numOfClasses, NDArray<T>* output);
+    int unsortedSegmentMaxFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
-    template <typename T>
-    int unsortedSegmentMinFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, Nd4jLong numOfClasses, NDArray<T>* output);
+    int unsortedSegmentMinFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
-    template <typename T>
-    int unsortedSegmentMeanFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, Nd4jLong numOfClasses, NDArray<T>* output);
+    int unsortedSegmentMeanFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
-    template <typename T>
-    int unsortedSegmentSumFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, Nd4jLong numOfClasses, NDArray<T>* output);
+    int unsortedSegmentSumFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
-    template <typename T>
-    int unsortedSegmentProdFunctorBP(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* gradOut, Nd4jLong numOfClasses, NDArray<T>* output);
+    int unsortedSegmentProdFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
 }
 }

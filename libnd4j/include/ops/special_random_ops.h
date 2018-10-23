@@ -387,11 +387,11 @@ namespace randomOps {
 
                     T realMean0 = y == z ? mean : y[e * yEWS];
 
-                    z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_cos<T>(two_pi * r1)) * stddev + realMean0;
+                    z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
 
                     if (epm < zLength) {
                         T realMean1 = y == z ? mean : y[epm * yEWS];
-                        z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_sin<T>(two_pi * r1)) * stddev + realMean1;
+                        z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
                     }
                 }
             }
@@ -953,11 +953,11 @@ namespace randomOps {
 
                     T realMean = y == z ? mean : y[e * yEWS];
 
-                    z[e * zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_cos<T>(two_pi * r1)) * stddev + realMean);
+                    z[e * zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean);
 
                     if (epm < zLength) {
                         realMean = y == z ? mean : y[epm * yEWS];
-                        z[epm * zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_sin<T>(two_pi * r1)) * stddev + realMean);
+                        z[epm * zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean);
                     }
                 }
             }

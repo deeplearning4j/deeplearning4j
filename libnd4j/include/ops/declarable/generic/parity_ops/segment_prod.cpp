@@ -77,7 +77,7 @@ namespace nd4j {
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
                     ->setSameMode(true);
         }
-    }
+
 
         DECLARE_SHAPE_FN(segment_prod_bp){
             Nd4jLong* in = inputShape->at(0);
