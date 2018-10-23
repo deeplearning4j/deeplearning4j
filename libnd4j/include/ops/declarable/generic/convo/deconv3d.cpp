@@ -88,6 +88,14 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
 
 }
 
+   DECLARE_TYPES(deconv3d) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(1, {ALL_FLOATS})
+                ->setAllowedInputTypes(2, {ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
 DECLARE_SHAPE_FN(deconv3d) {
 
     auto inputShapeInfo   = inputShape->at(0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NDCHW)
@@ -154,7 +162,7 @@ DECLARE_SHAPE_FN(deconv3d) {
         outputShapeInfo[5] = oC;
     }
     
-    shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
+    ShapeUtils::updateStridesAndType(outputShapeInfo, weightsShapeInfo, shape::order(inputShapeInfo));
 
     return SHAPELIST(outputShapeInfo);
 }
@@ -244,6 +252,15 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
     return ND4J_STATUS_OK;
 }
 
+ DECLARE_TYPES(deconv3d_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(1, {ALL_FLOATS})
+                ->setAllowedInputTypes(2, {ALL_FLOATS})
+                ->setAllowedInputTypes(3, {ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+    
 DECLARE_SHAPE_FN(deconv3d_bp) {
 
     auto inputShapeInfo   = inputShape->at(0);                                                // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
@@ -295,16 +312,14 @@ DECLARE_SHAPE_FN(deconv3d_bp) {
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weightsShapeInfo), 0, "CUSTOM DECONV3D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     if(biasShapeInfo)
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM DECONV3D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
-
-    Nd4jLong *gradIShapeInfo(nullptr), *gradWShapeInfo(nullptr);
-    COPY_SHAPE(inputShapeInfo, gradIShapeInfo);
-    COPY_SHAPE(weightsShapeInfo, gradWShapeInfo);
+    
+    Nd4jLong* gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo,   gradOShapeInfo, false, block.getWorkspace());
+    Nd4jLong* gradWShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, gradOShapeInfo, false, block.getWorkspace());
 
     auto shapes = SHAPELIST(gradIShapeInfo, gradWShapeInfo);
 
     if (biasShapeInfo != nullptr) {
-        Nd4jLong *gradBShapeInfo(nullptr);
-        COPY_SHAPE(biasShapeInfo, gradBShapeInfo);
+        Nd4jLong* gradBShapeInfo = ShapeBuilders::copyShapeInfoAndType(biasShapeInfo, gradOShapeInfo, false, block.getWorkspace());
         shapes->push_back(gradBShapeInfo);
     }
 

@@ -100,7 +100,7 @@ DECLARE_SHAPE_FN(batchnorm) {
     const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
 
-    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(in));
+    ArrayOptions::setDataType(outShapeInfo, DataTypeUtils::pickFloatingType(ArrayOptions::dataType(in)));
 
     return SHAPELIST(outShapeInfo);
 }
@@ -186,11 +186,18 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
     return Status::OK();
 }
 
+   DECLARE_TYPES(batchnorm_new) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
 DECLARE_SHAPE_FN(batchnorm_new) {
 
-    Nd4jLong* outShapeInfo = nullptr;
-
-    COPY_SHAPE(inputShape->at(0), outShapeInfo);    // output shape is identical to input shape
+    auto inShapeInfo = inputShape->at(0);
+    DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(inShapeInfo));
+     
+    Nd4jLong* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inShapeInfo, outType, false, block.getWorkspace());    // output shape is identical to input shape
 
     return SHAPELIST(outShapeInfo);
 }
@@ -296,8 +303,12 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
         DECLARE_TYPES(batchnorm_bp) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(1, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(2, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(3, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(4, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(5, {ALL_FLOATS});
         }
 
 //////////////////////////////////////////////////////////////////////////

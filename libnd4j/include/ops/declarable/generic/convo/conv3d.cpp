@@ -87,10 +87,11 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     return Status::OK();
 }
 
-
-    DECLARE_TYPES(conv3dnew) {
+   DECLARE_TYPES(conv3dnew) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(1, {ALL_FLOATS})
+                ->setAllowedInputTypes(2, {ALL_FLOATS})
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
@@ -164,12 +165,6 @@ DECLARE_SHAPE_FN(conv3dnew) {
     return SHAPELIST(outputShapeInfo);
 }
 
-
-    DECLARE_TYPES(conv3dnew_bp) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setAllowedOutputTypes({ALL_FLOATS});
-    }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
@@ -254,6 +249,14 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     return Status::OK();
 }
 
+   DECLARE_TYPES(conv3dnew_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(1, {ALL_FLOATS})
+                ->setAllowedInputTypes(2, {ALL_FLOATS})
+                ->setAllowedInputTypes(3, {ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 
 DECLARE_SHAPE_FN(conv3dnew_bp) {
