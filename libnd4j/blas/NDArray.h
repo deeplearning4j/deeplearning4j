@@ -1101,7 +1101,21 @@ namespace nd4j {
         *  returns reference on array element with given index
         */
         template<typename T>
-        FORCEINLINE T& getRefOnElem(const Nd4jLong index);
+        FORCEINLINE T& t(const Nd4jLong index);
+
+        template<typename T>
+        FORCEINLINE T& t(const Nd4jLong i, const Nd4jLong j);
+
+        /**
+        *  returns array element with given index
+        *  i - element index in array
+        */
+        template<typename T>
+        FORCEINLINE T t(const Nd4jLong i) const;
+
+        template<typename T>
+        FORCEINLINE T t(const Nd4jLong i, const Nd4jLong j) const;
+
 
         /**
         *  default destructor
@@ -1852,9 +1866,40 @@ DataType NDArray::dataType() const {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-T& NDArray::getRefOnElem(const Nd4jLong index) {
+T& NDArray::t(const Nd4jLong index) {
 
     return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(index))));
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
+
+    if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
+            throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
+        
+    Nd4jLong coords[2] = {i, j};
+    auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return *(reinterpret_cast<T*>(bufferWithOffset(offset)));        
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+T NDArray::t(const Nd4jLong index) const {
+
+    return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(index))));
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
+
+    if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
+            throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
+        
+    Nd4jLong coords[2] = {i, j};
+    auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return *(reinterpret_cast<T*>(bufferWithOffset(offset)));        
 }
 
 

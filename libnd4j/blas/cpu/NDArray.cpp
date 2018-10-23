@@ -1156,7 +1156,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     void* NDArray::bufferWithOffset(Nd4jLong offset) const {
-        // FIXME, use this instead -> _buffer + (offset * DataTypeUtils::sizeOf(_dataType));
+        
         return _buffer + (offset * sizeOfT());
     }
 
