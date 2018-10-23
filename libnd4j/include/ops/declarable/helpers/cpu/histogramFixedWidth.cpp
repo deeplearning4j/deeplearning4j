@@ -24,8 +24,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-template <typename T>
-void histogramFixedWidth(const NDArray<T>& input, const NDArray<T>& range, NDArray<T>& output) {
+/*
+void histogramFixedWidth(const NDArray& input, const NDArray& range, NDArray& output) {
 
      const int nbins = output.lengthOf();
 
@@ -65,6 +65,7 @@ void histogramFixedWidth(const NDArray<T>& input, const NDArray<T>& range, NDArr
 template void histogramFixedWidth<float16>(const NDArray<float16>& input, const NDArray<float16>& range, NDArray<float16>& output);
 template void histogramFixedWidth<float>(const NDArray<float>& input, const NDArray<float>& range, NDArray<float>& output);
 template void histogramFixedWidth<double>(const NDArray<double>& input, const NDArray<double>& range, NDArray<double>& output);
+*/
 
 }
 }

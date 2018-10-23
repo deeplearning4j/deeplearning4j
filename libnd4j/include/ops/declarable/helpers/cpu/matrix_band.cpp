@@ -22,7 +22,7 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-
+/*
     template <typename T>
     void matrixBandPart(NDArray<T>* input, NDArray<T>* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         // TO DO: retrieve all 2D submatricies with last dimensions and process them with given bands
@@ -66,7 +66,7 @@ namespace helpers {
     template void matrixBandPart(NDArray<float>* input, NDArray<float>* output, Nd4jLong lowerBand, Nd4jLong upperBand);
     template void matrixBandPart(NDArray<float16>* input, NDArray<float16>* output, Nd4jLong lowerBand, Nd4jLong upperBand);
     template void matrixBandPart(NDArray<double>* input, NDArray<double>* output, Nd4jLong lowerBand, Nd4jLong upperBand);
-
+*/
 }
 }
 }

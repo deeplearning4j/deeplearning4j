@@ -2558,18 +2558,18 @@ TEST_F(DeclarableOpsTests9, gru_cell_bp_test3) {
 // }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, gru_cell_bp_test3) {
+TEST_F(DeclarableOpsTests9, gru_cell_bp_test3_1) {
 
     const int bS = 2;
     const int iS = 3;
     const int nU = 4;
 
-    NDArray<double> x     ('c', {bS, iS});
-    NDArray<double> h0    ('c', {bS, nU});
-    NDArray<double> Wx    ('c', {iS, 3*nU});
-    NDArray<double> Wh    ('c', {nU, 3*nU});
-    NDArray<double> b     ('c', {3*nU});
-    NDArray<double> dLdh  ('c', {bS, nU});
+    auto x  = NDArrayFactory::create<double>('c', {bS, iS});
+    auto h0  = NDArrayFactory::create<double>('c', {bS, nU});
+    auto Wx  = NDArrayFactory::create<double>('c', {iS, 3*nU});
+    auto Wh  = NDArrayFactory::create<double>('c', {nU, 3*nU});
+    auto b  = NDArrayFactory::create<double>('c', {3*nU});
+    auto dLdh  = NDArrayFactory::create<double>('c', {bS, nU});
     // NDArray<double> dLdWx0('c', {iS, 3*nU});
     // NDArray<double> dLdWh0('c', {nU, 3*nU});
     // NDArray<double> dLdb0 ('c', {3*nU});
@@ -2580,11 +2580,11 @@ TEST_F(DeclarableOpsTests9, gru_cell_bp_test3) {
     Wh = 0.0;
     b  = 0.5;
 
-    const OpArgsHolder<double> argsHolderFF({&x, &h0, &Wx, &Wh, &b}, {}, {});
-    const OpArgsHolder<double> argsHolderBP({&x, &h0, &Wx, &Wh, &b, &dLdh}, {}, {});
+    const OpArgsHolder argsHolderFF({&x, &h0, &Wx, &Wh, &b}, {}, {});
+    const OpArgsHolder argsHolderBP({&x, &h0, &Wx, &Wh, &b, &dLdh}, {}, {});
 
-    nd4j::ops::gruCell<double> opFF;
-    nd4j::ops::gruCell_bp<double> opBP;
+    nd4j::ops::gruCell opFF;
+    nd4j::ops::gruCell_bp opBP;
 
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 

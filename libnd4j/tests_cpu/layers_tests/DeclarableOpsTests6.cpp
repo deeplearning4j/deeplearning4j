@@ -814,13 +814,13 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_5) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, MatrixDeterminant_6) {
 
-    NDArray<double> x('c', {4, 4});
-    NDArray<double> exp(-16.0);
+    auto x = NDArrayFactory::create<double>('c', {4, 4});
+    auto exp = NDArrayFactory::create<double>(-16.0);
     x.linspace(1);
     x(5) = 4.0;
     x(12) = 12.0;
 
-    nd4j::ops::matrix_determinant<double> op;
+    nd4j::ops::matrix_determinant op;
     auto result = op.execute({&x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());

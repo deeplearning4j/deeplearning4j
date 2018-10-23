@@ -82,8 +82,8 @@ DECLARE_SHAPE_FN(mirror_pad) {
     Nd4jLong* outShapeInfo(nullptr);
 
     if(rank == 1) {
-        Nd4jLong len = input->lengthOf() + paddings->getScalar(0L) + (*paddings)(1);
-        outShapeInfo = ShapeUtils<T>::createVectorShapeInfo(len, block.getWorkspace());
+        Nd4jLong len = input->lengthOf() + paddings->e<Nd4jLong>(0) + paddings->e<Nd4jLong>(1);
+        outShapeInfo = ShapeBuilders::createVectorShapeInfo(len, block.getWorkspace());
     }
     else {
         ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);

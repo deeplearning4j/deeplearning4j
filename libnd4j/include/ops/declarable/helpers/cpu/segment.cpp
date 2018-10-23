@@ -340,6 +340,7 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     // Unsorted segment ops
     // -------------------------------------------------------------------------------------------------------------- //
+    /*
     template <typename T>
     bool unsortedSegmentIndicesValidate(NDArray<T>* indices, Nd4jLong expected, Nd4jLong& output) {
         Nd4jLong val = static_cast<Nd4jLong >((*indices)(0.));
@@ -1225,6 +1226,7 @@ namespace helpers {
     template int unsortedSegmentSqrtNFunctorBP<float>(NDArray<float>* input, NDArray<float>* indices, NDArray<float>* gradOut, Nd4jLong numOfClasses, NDArray<float>* output);
     template int unsortedSegmentSqrtNFunctorBP<float16>(NDArray<float16>* input, NDArray<float16>* indices, NDArray<float16>* gradOut, Nd4jLong numOfClasses, NDArray<float16>* output);
     template int unsortedSegmentSqrtNFunctorBP<double>(NDArray<double>* input, NDArray<double>* indices, NDArray<double>* gradOut, Nd4jLong numOfClasses, NDArray<double>* output);
+     */
 }
 }
 }

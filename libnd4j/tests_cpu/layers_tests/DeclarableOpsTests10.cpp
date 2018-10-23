@@ -136,17 +136,17 @@ TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, InTopK_SGO_Test_1) {
 
-    NDArray<double> input('c', {4, 5});
-    NDArray<double> idx('c', {4});
+    auto input = NDArrayFactory::create<double>('c', {4, 5});
+    auto idx = NDArrayFactory::create<double>('c', {4});
 
-    NDArray<double> exp({0., 0., 0., 1.});
+    auto exp = NDArrayFactory::create<double>({0., 0., 0., 1.});
 
     int exclusive, reverse;
     input.linspace(1);
     idx.linspace(1);
     ////////////////////////////////////////
 
-    nd4j::ops::in_top_k<double> op;
+    nd4j::ops::in_top_k op;
 
     auto res = op.execute({&input, &idx}, {}, {1});
 
@@ -179,14 +179,14 @@ TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, MirrorPad_SGO_Test_1) {
 
-    NDArray<double> in({1., 1., 1., 1., 1.});
+    auto in = NDArrayFactory::create<double>({1., 1., 1., 1., 1.});
 //    NDArray<double> pad('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new long[]{1, 2});
-    NDArray<double> pad('c', {1, 2}, {1., 1.});
+    auto pad = NDArrayFactory::create<double>('c', {1, 2}, {1., 1.});
 //    NDArray<double> value(10.0);
 
-    NDArray<double> exp({1., 1., 1., 1., 1., 1., 1.});
+    auto exp = NDArrayFactory::create<double>({1., 1., 1., 1., 1., 1., 1.});
 
-    nd4j::ops::mirror_pad<double> op;
+    nd4j::ops::mirror_pad op;
 
     auto res = op.execute({&in, &pad}, {10.0}, {0});
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);

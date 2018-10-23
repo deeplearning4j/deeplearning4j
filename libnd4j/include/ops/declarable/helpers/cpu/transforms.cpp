@@ -205,6 +205,8 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
 
     BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
 //////////////////////////////////////////////////////////////////////////
+
+/*
 template<typename T>
 void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const T padValue ) {
 
@@ -337,7 +339,7 @@ void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, ND
     }
 }
 
-
+*/
 
 ////////////////////////////////////////////////////////////////////////
 /*// initial values of inIdx, outIdx, dim must be equal to zero
@@ -479,14 +481,14 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
     }
 }
  */
-
+/*
     void recursiveLoopForPad(const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, NDArray& padValue ) {
         BUILD_SINGLE_SELECTOR(input.dataType(), recursiveLoopForPad_, (mode, input, paddings, output, dimensions, dim, inIdx, outIdx, padValue), LIBND4J_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template void recursiveLoopForPad_, (const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, NDArray& padValue), LIBND4J_TYPES);
 
-
+*/
 
 ////////////////////////////////////////////////////////////////////////
 void invertPermutation(const NDArray& input, NDArray& output) {

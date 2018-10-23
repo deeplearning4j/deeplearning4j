@@ -30,11 +30,11 @@ namespace helpers {
         int e = 0, x = 0, y = 0;
 //#pragma omp parallel for
         if (x_shape->lengthOf() == 1 || y_shape->lengthOf() == 1) {// except case
-            NDArray<T>* lesser = (x_shape->lengthOf() == 1 ? x_shape: y_shape);
-            NDArray<T>* greater = (x_shape->lengthOf() == 1 ? y_shape: x_shape);
+            auto lesser = (x_shape->lengthOf() == 1 ? x_shape: y_shape);
+            auto greater = (x_shape->lengthOf() == 1 ? y_shape: x_shape);
             output->assign(greater);
 
-            output->putScalar(greater->lengthOf() - 1, lesser->getScalar(0L));
+            //output->putScalar(greater->lengthOf() - 1, lesser->getScalar(0L));
         }
         else
         for ( ; e < output->lengthOf(); e++) {
@@ -54,7 +54,7 @@ namespace helpers {
             }
             if (e)
                 if (val != output->e<Nd4jLong>(e - 1)) {
-                    nd4j_printf("broadcast_dynamic_shape: Input shapes should be compatible, but %f and %f were given.", val, (*output)(e - 1));
+                    nd4j_printf("broadcast_dynamic_shape: Input shapes should be compatible, but %f and %f were given.", val, output->e<float>(e - 1));
                     return Status::CODE(ND4J_STATUS_VALIDATION, "BDS validation failed!");
                 }
             output->p(e, val);
