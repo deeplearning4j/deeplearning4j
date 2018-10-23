@@ -253,7 +253,7 @@ void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray&
             }
             if(numRight != 0) {
                 NDArray temp = outSubArr1(outIdx[3]);
-                temp = padValue;                        // assign right
+                temp.assign(padValue);                        // assign right
             }
         }
         else {                                                              // REFLECT or SYMMETRIC
@@ -267,8 +267,8 @@ void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray&
     }
 
     // ***** fill rest of outer sub-arrays ***** //
-    std::vector<Nd4jLong> outIdxInner(2,0);
-    std::vector<Nd4jLong> outIdxOuter(2,0);
+    std::vector<Nd4jLong> outIdxInner(2, 0);
+    std::vector<Nd4jLong> outIdxOuter(2, 0);
 
     for(int i = rank - 2; i >= 0; --i) {
 
@@ -277,8 +277,8 @@ void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray&
         outIdxInner.push_back(0), outIdxInner.push_back(0);
         outIdxOuter.push_back(0), outIdxOuter.push_back(0);
 
-        Nd4jLong numLeft  = paddings.e<Nd4jLong>(i,0);
-        Nd4jLong numRight = paddings.e<Nd4jLong>(i,1);
+        Nd4jLong numLeft  = paddings.e<Nd4jLong>(i, 0);
+        Nd4jLong numRight = paddings.e<Nd4jLong>(i, 1);
 
         if(numLeft == 0 && numRight == 0)
             continue;
@@ -291,8 +291,8 @@ void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray&
             outIdxInner[0] = numLeft + inDimSize; outIdxInner[1] = outDimSize;
         }
 
-        startL = mode == 1 ? numLeft+1 : numLeft;                            // REFLECT or SYMMETRIC
-        startR = mode == 1 ? numLeft+inDimSize-2 : numLeft+inDimSize-1;      // REFLECT or SYMMETRIC
+        startL = mode == 1 ? numLeft + 1 : numLeft;                            // REFLECT or SYMMETRIC
+        startR = mode == 1 ? numLeft + inDimSize - 2 : numLeft + inDimSize-1;      // REFLECT or SYMMETRIC
 
         numOfSubArrs = ShapeUtils::getNumOfSubArrs(output.getShapeInfo(), dimsToExclude);
 
@@ -304,13 +304,13 @@ void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray&
             if(mode == 0)  { // CONSTANT
 
                 if(numLeft != 0) {
-                    NDArray temp = outSubArr(outIdxOuter);
-                    temp = padValue;                              // assign left
+                    NDArray tempO = outSubArr(outIdxOuter);
+                    tempO.assign(padValue.e<double>(0));                              // assign left
                 }
 
                 if(numRight != 0) {
-                    NDArray temp = outSubArr(outIdxInner);
-                    temp = padValue;                              // assign right
+                    NDArray tempI = outSubArr(outIdxInner);
+                    tempI.assign(padValue.e<double>(0));                              // assign right
                 }
             }
             else {                                                              // REFLECT or SYMMETRIC
