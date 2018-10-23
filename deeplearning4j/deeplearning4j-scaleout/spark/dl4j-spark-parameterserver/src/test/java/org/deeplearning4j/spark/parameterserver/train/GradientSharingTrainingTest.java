@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
 import org.deeplearning4j.spark.api.RDDTrainingApproach;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
@@ -46,6 +47,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AMSGrad;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 
@@ -101,11 +103,10 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                     .controllerAddress(controller)
                     .meshBuildMode(MeshBuildMode.PLAIN) // everyone is connected to the master
                     .build();
-            TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, 1e-4, 16)
+            TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, new FixedThresholdAlgorithm(1e-3), 16)
                     .rngSeed(12345)
                     .collectTrainingStats(false)
                     .batchSizePerWorker(16) // Minibatch size for each worker
-                    .updatesThreshold(1e-4) // Encoding threshold (see docs for details)
                     .workersPerNode(2) // Workers per node
                     .rddTrainingApproach(rddTrainingApproach)
                     .exportDirectory("file:///" + temp.getAbsolutePath().replaceAll("\\\\", "/"))
@@ -114,7 +115,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .seed(12345)
-                    .updater(new AMSGrad(0.01))
+                    .updater(new AMSGrad(0.1))
                     .graphBuilder()
                     .addInputs("in")
                     .layer("out", new OutputLayer.Builder().nIn(784).nOut(10).activation(Activation.SOFTMAX)
@@ -167,10 +168,10 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                 }
 
                 INDArray paramsAfter = after.params();
-//            System.out.println(Arrays.toString(paramsBefore.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
-//            System.out.println(Arrays.toString(paramsAfter.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
-//            System.out.println(Arrays.toString(
-//                    Transforms.abs(paramsAfter.sub(paramsBefore)).get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+                System.out.println(Arrays.toString(paramsBefore.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+                System.out.println(Arrays.toString(paramsAfter.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+                System.out.println(Arrays.toString(
+                        Transforms.abs(paramsAfter.sub(paramsBefore)).get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
                 assertNotEquals(paramsBefore, paramsAfter);
 
 
@@ -249,11 +250,10 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                     .networkMask(networkMask) // Local network mask
                     .controllerAddress(controller)
                     .build();
-            TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, 1e-4, batch)
+            TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, new FixedThresholdAlgorithm(1e-4), batch)
                     .rngSeed(12345)
                     .collectTrainingStats(false)
                     .batchSizePerWorker(batch) // Minibatch size for each worker
-                    .updatesThreshold(1e-5) // Encoding threshold (see docs for details)
                     .workersPerNode(2) // Workers per node
                     .build();
 

@@ -88,8 +88,13 @@ public class EncodingHandler implements MessageHandler {
             }
         }
 
+        Double lastThr = null;
+        if(lastThreshold.get() != null){
+            lastThr = lastThreshold.get().get();
+        }
+
         //Determine current threshold to use:
-        double currThreshold = thresholdAlgorithm.get().calculateThreshold(iteration, epoch, lastThreshold.get().get(), updates);
+        double currThreshold = thresholdAlgorithm.get().calculateThreshold(iteration, epoch, lastThr, updates);
         if (bitmapMode.get() == null) { //Initialize values for this thread
             bitmapMode.set(new AtomicBoolean(true));
             currentThreshold.set(new AtomicDouble(currThreshold));
@@ -98,7 +103,12 @@ public class EncodingHandler implements MessageHandler {
 
             lastThreshold.set(new AtomicDouble(currThreshold));
         }
-        lastThreshold.get().set(currThreshold);
+
+        if(lastThreshold.get() == null) {
+            lastThreshold.set(new AtomicDouble(currThreshold));
+        } else {
+            lastThreshold.get().set(currThreshold);
+        }
 
         //Debug output if enabled:
         residualDebugOutputIfRequired(updates);
