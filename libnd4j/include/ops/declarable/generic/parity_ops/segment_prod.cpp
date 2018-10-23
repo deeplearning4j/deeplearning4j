@@ -89,5 +89,12 @@ namespace nd4j {
             COPY_SHAPE(inIdx, outIndex);
             return SHAPELIST(outShape, outIndex);
         }
+
+        DECLARE_TYPES(segment_prod_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes({ALL_FLOATS})
+                    ->setSameMode(false);
+        }
     }
 }

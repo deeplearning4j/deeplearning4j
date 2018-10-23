@@ -83,7 +83,12 @@ namespace nd4j {
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
                     ->setSameMode(true);
         }
+        DECLARE_TYPES(segment_sum_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes({ALL_FLOATS})
+                    ->setSameMode(false);
+        }
     }
-
 
 }

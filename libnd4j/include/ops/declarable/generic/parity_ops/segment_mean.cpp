@@ -65,7 +65,8 @@ namespace nd4j {
         DECLARE_TYPES(segment_mean) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setAllowedOutputTypes({ALL_FLOATS})
+                    ->setSameMode(false);
         }
 
 
@@ -87,6 +88,12 @@ namespace nd4j {
             COPY_SHAPE(in, outShape);
             COPY_SHAPE(inIdx, outIndex);
             return SHAPELIST(outShape, outIndex);
+        }
+        DECLARE_TYPES(segment_mean_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS})
+                    ->setSameMode(false);
         }
     }
 }

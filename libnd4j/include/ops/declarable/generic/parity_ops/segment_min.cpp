@@ -86,5 +86,11 @@ namespace nd4j {
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
                     ->setSameMode(true);
         }
+        DECLARE_TYPES(segment_min_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
