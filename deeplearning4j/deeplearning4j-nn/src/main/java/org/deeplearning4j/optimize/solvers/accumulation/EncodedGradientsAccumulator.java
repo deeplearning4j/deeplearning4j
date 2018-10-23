@@ -64,6 +64,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
     protected long initialMemory = 100 * 1024 * 1024L;
     protected int queueSize = 5;
     protected Double boundary = 1.0;
+    protected boolean encodingDebugMode;
 
     protected Queue<INDArray> externalSource;
 
@@ -89,26 +90,27 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
                     .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
 
-    public EncodedGradientsAccumulator(double parties) {
-        this(Nd4j.getAffinityManager().getNumberOfDevices(), 1e-3);
+    public EncodedGradientsAccumulator(double parties, boolean encodingDebugMode) {
+        this(Nd4j.getAffinityManager().getNumberOfDevices(), 1e-3, encodingDebugMode);
     }
 
     // TODO: delete this one maybe?
-    public EncodedGradientsAccumulator(int parties) {
-        this(parties, 1e-3);
+    public EncodedGradientsAccumulator(int parties, boolean encodingDebugMode) {
+        this(parties, 1e-3, encodingDebugMode);
     }
 
-    public EncodedGradientsAccumulator(int parties, double threshold) {
-        this(parties, new EncodingHandler(threshold), 100 * 1024 * 1024L, 10, 1.0);
+    public EncodedGradientsAccumulator(int parties, double threshold, boolean encodingDebugMode) {
+        this(parties, new EncodingHandler(threshold, encodingDebugMode), 100 * 1024 * 1024L, 10, 1.0, encodingDebugMode);
     }
 
     protected EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory,
-                    int queueSize, Double boundary) {
+                    int queueSize, Double boundary, boolean encodingDebugMode) {
         this.parties = parties;
         this.handler = handler;
         this.initialMemory = initialMemory;
         this.queueSize = queueSize;
         this.boundary = boundary;
+        this.encodingDebugMode = encodingDebugMode;
 
         // maybe not the best idea in the world, but we'll use cyclic workspace of 25MB to receive updates
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(initialMemory)
@@ -603,6 +605,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         protected int queueSize = 5;
         protected MessageHandler handler;
         protected Double boundary = null;
+        protected boolean encodingDebugMode;
 
         /**
          * This
@@ -673,16 +676,21 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
             return this;
         }
 
+        public Builder encodingDebugMode(boolean enable){
+            this.encodingDebugMode = enable;
+            return this;
+        }
+
         public EncodedGradientsAccumulator build() {
             if (handler == null) {
                 if (boundary == null)
-                    handler = new EncodingHandler(threshold);
+                    handler = new EncodingHandler(threshold, encodingDebugMode);
                 else
-                    handler = new EncodingHandler(threshold, boundary);
+                    handler = new EncodingHandler(threshold, boundary, encodingDebugMode);
             }
 
             EncodedGradientsAccumulator accumulator =
-                            new EncodedGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary);
+                            new EncodedGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary, encodingDebugMode);
 
             return accumulator;
         }

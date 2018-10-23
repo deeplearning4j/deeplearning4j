@@ -366,7 +366,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 throw new RuntimeException("Error executing previous op: " + last.getOp().getClass().getName() + " - note that in some cases the error/" +
                         "stack trace may be delayed by 1 operation due to the asynchronous nature of ND4J's CUDA grid executioner.\n" +
                         "To obtain the original error stack trace for debugging purposes, use nd4j-native backend, Nd4j.getExecutioner().commit() calls after ops, " +
-                        "or set the following system property: set \"opexec\" to org.nd4j.linalg.jcublas.ops.executioner.CudaExecutioner");
+                        "or set the following system property: set \"opexec\" to org.nd4j.linalg.jcublas.ops.executioner.CudaExecutioner", t);
             }
         } else {
             //&& Nd4j.dataType() != DataBuffer.Type.HALF
