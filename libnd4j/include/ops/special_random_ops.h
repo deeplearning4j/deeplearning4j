@@ -331,11 +331,11 @@ namespace randomOps {
 
                 T realMean0 = y == z ? mean : y[e * yEWS];
 
-                z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_cos<T>(two_pi * r1)) * stddev + realMean0;
+                z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
 
                 if (epm < zLength) {
                     T realMean1 = y == z ? mean : y[epm * yEWS];
-                    z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_sin<T>(two_pi * r1)) * stddev + realMean1;
+                    z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
                 }
             }
 
@@ -728,7 +728,7 @@ namespace randomOps {
                     u0 = buffer->relativeT<T>(e + generation0, epsilon, static_cast<T>(1.0f));
                     u1 = buffer->relativeT<T>(epm + generation0, epsilon, static_cast<T>(1.0f));
 
-                    uT = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0));
+                    uT = nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(u0));
                     uP = two_pi * u1;
 
                     z0 = uT * nd4j::math::nd4j_cos<T,T>(uP);
@@ -802,7 +802,7 @@ namespace randomOps {
                     do {
                         u0 = buffer->relativeT<T>(e + generation0, static_cast<T>(1e-6f), static_cast<T>(1.0f));
                         u1 = buffer->relativeT<T>((epm + generation0), static_cast<T>(1e-6f), static_cast<T>(1.0f));
-                        lnu0 = nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(u0));
+                        lnu0 = nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(u0));
                         lnu1 = two_pi * u1;
                         z0 = lnu0 * nd4j::math::nd4j_cos<T,T>(lnu1);
                         z1 = lnu0 * nd4j::math::nd4j_sin<T,T>(lnu1);
@@ -898,11 +898,11 @@ namespace randomOps {
 
                 T realMean = y == z ? mean : y[e * yEWS];
 
-                z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_cos<T>(two_pi * r1)) * stddev + realMean);
+                z[e *zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean);
 
                 if (epm < zLength) {
                     realMean = y == z ? mean : y[epm * yEWS];
-                    z[epm *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_sin<T>(two_pi * r1)) * stddev + realMean);
+                    z[epm *zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean);
                 }
             }
 
