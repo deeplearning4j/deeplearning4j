@@ -16,9 +16,12 @@
 
 package org.deeplearning4j.nn.layers.normalization;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.DoubleBufferIndexer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseCudnnHelper;
@@ -105,8 +108,9 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     protected final int batchNormMode = CUDNN_BATCHNORM_SPATIAL; // would need to increase rank of gamma and beta for CUDNN_BATCHNORM_PER_ACTIVATION
 
     private CudnnBatchNormalizationContext cudnnContext = new CudnnBatchNormalizationContext();
-    private DataCache meanCache = new DataCache();
-    private DataCache varCache = new DataCache();
+    private INDArray meanCache;
+    private INDArray varCache;
+    private double eps;
 
     public boolean checkSupported(double eps) {
         boolean supported = checkSupported();
@@ -120,6 +124,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                     INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr layerWorkspaceMgr) {
+        this.eps = eps;
         val miniBatch = (int) input.size(0);
         val depth = (int) input.size(1);
         val inH = (int) input.size(2);
@@ -179,12 +184,14 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         Pointer gammaData = allocator.getPointer(gamma, context);
         Pointer dGammaData = allocator.getPointer(dGammaView, context);
         Pointer dBetaData = allocator.getPointer(dBetaView, context);
+        Pointer meanCacheData = allocator.getPointer(meanCache, context);
+        Pointer varCacheData = allocator.getPointer(varCache, context);
 
         checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
         checkCudnn(cudnnBatchNormalizationBackward(cudnnContext, batchNormMode, alpha, beta, alpha, alpha,
                         cudnnContext.srcTensorDesc, srcData, cudnnContext.deltaTensorDesc, epsData,
                         cudnnContext.dstTensorDesc, dstData, cudnnContext.gammaBetaTensorDesc, gammaData, dGammaData,
-                        dBetaData, eps, meanCache, varCache));
+                        dBetaData, eps, meanCacheData, varCacheData));
 
         allocator.getFlowController().registerActionAllWrite(context, input, epsilon, nextEpsilon, gamma, dGammaView,
                         dBetaView);
@@ -192,8 +199,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
         retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
 
-        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
-            context.syncOldStream();
+        context.syncOldStream();
 
         //Convert back and assign, if required:
         if(isHalf){
@@ -209,7 +215,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
-
+        this.eps = eps;
         final boolean isHalf = (Nd4j.dataType() == DataBuffer.Type.HALF);
         INDArray origGamma = gamma;
         INDArray origBeta = beta;
@@ -226,7 +232,9 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         //Us:       runningMean = (1-decay) * batchMean + decay * runningMean
         //CuDNN:    runningMean = decay * batchMean + (1-decay) * runningMean
         //i.e., "decay" has a different meaning...
-        decay = 1.0 - decay;
+        //Disable in-place updating of running mean/variance, so that all parameter changes are done via the update/gradient
+        // vector. This is necessary for BatchNormalization to be safe to use in distributed gradient sharing settings
+        decay = 0.0;                //From cudnn docs: runningMean = newMean*factor + runningMean*(1-factor). -> 0 = "in-place modification of running mean disabled"
 
         val miniBatch = (int) x.size(0);
         val inDepth = (int) x.size(1);
@@ -261,18 +269,25 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
         checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
         if (training) {
-            if (meanCache.capacity() < mean.data().length() * mean.data().getElementSize()) {
-                meanCache.deallocate();
-                meanCache = new DataCache(mean.data().length() * mean.data().getElementSize());
+            if(meanCache == null || meanCache.length() < mean.length()){
+                meanCache = Nd4j.createUninitializedDetached((int)mean.length());
+                if(Nd4j.dataType() == DataBuffer.Type.HALF){
+                    meanCache = meanCache.convertToFloats();
+                }
             }
-            if (varCache.capacity() < var.data().length() * mean.data().getElementSize()) {
-                varCache.deallocate();
-                varCache = new DataCache(var.data().length() * mean.data().getElementSize());
+            if(varCache == null || varCache.length() < mean.length()){
+                varCache = Nd4j.createUninitializedDetached((int)mean.length());
+                if(Nd4j.dataType() == DataBuffer.Type.HALF){
+                    varCache = varCache.convertToFloats();
+                }
             }
+            Pointer meanCacheData = allocator.getPointer(meanCache, context);
+            Pointer varCacheData = allocator.getPointer(varCache, context);
+
             checkCudnn(cudnnBatchNormalizationForwardTraining(cudnnContext, batchNormMode, this.alpha, this.beta,
                             cudnnContext.srcTensorDesc, srcData, cudnnContext.dstTensorDesc, dstData,
                             cudnnContext.gammaBetaTensorDesc, gammaData, betaData, decay, meanData, varData, eps,
-                            meanCache, varCache));
+                            meanCacheData, varCacheData));
         } else {
             checkCudnn(cudnnBatchNormalizationForwardInference(cudnnContext, batchNormMode, this.alpha, this.beta,
                             cudnnContext.srcTensorDesc, srcData, cudnnContext.dstTensorDesc, dstData,
@@ -283,6 +298,12 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             context.syncOldStream();
+
+        context.syncOldStream();
+        if(training) {
+            AtomicAllocator.getInstance().getAllocationPoint(meanCache).tickDeviceWrite();
+            AtomicAllocator.getInstance().getAllocationPoint(varCache).tickDeviceWrite();
+        }
 
         if(training && isHalf){
             //Update the running mean and variance arrays; also gamma/beta
@@ -295,12 +316,31 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         return activations;
     }
 
+    @Override
+    public INDArray getMeanCache() {
+        if(Nd4j.dataType() == DataBuffer.Type.HALF){
+            //Buffer is FP32
+            return meanCache.convertToHalfs();
+        }
+        return meanCache;
+    }
+
+    @Override
+    public INDArray getVarCache() {
+        INDArray ret = varCache.mul(varCache).rdivi(1.0).subi(eps);
+        if(Nd4j.dataType() == DataBuffer.Type.HALF){
+            //Buffer is FP32
+            return ret.convertToHalfs();
+        }
+        return ret;
+    }
+
 
     @Override
     public Map<String, Long> helperMemoryUse() {
         Map<String,Long> memUse = new HashMap<>();
-        memUse.put("meanCache", meanCache.capacity());
-        memUse.put("varCache", varCache.capacity());
+        memUse.put("meanCache", meanCache == null ? 0 : meanCache.length() * meanCache.data().getElementSize());
+        memUse.put("varCache", varCache == null ? 0 : varCache.length() * varCache.data().getElementSize());
         return memUse;
     }
 }
