@@ -70,7 +70,7 @@ TEST_F(DeclarableOpsTests10, Test_ArgMax_2) {
 
     auto z = *result->at(0);
 
-    //z.printIndexedBuffer("z");
+    z.printIndexedBuffer("z");
     //z.printShapeInfo("z shape");
 
     ASSERT_EQ(e, z);
@@ -269,7 +269,7 @@ TEST_F(DeclarableOpsTests10, atan2_test1) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
+    exp.printIndexedBuffer("3D atan");
     delete result;
 }
 
@@ -586,4 +586,53 @@ TEST_F(DeclarableOpsTests10, bool_broadcast_test_1) {
 
     ASSERT_TRUE(expd.isSameShape(result));
     ASSERT_TRUE(expd.equalsTo(result));
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, printIndexedTest_1) {
+
+    NDArray arr('c', {2,2,2,2}, {1, 2, 3, 4, 5, 6, 7, 8,9, 10, 11, 12, 13, 14, 15, 16}, nd4j::DataType::INT32);
+//    NDArray arr2('c', {  2,2}, {0, 1, 0, 4}, nd4j::DataType::INT32);
+
+//    NDArray expd('c', {2,2,2}, {0,1,0,0, 0,0,0,1}, nd4j::DataType::BOOL);
+
+//    NDArray result('c', {2,2,2}, nd4j::DataType::BOOL);
+
+//    arr1.applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple::custom(scalar::EqualTo, pairwise::EqualTo, broadcast::EqualTo), &arr2, &result, true, nullptr);
+    // result.printIndexedBuffer();
+    // expd.printIndexedBuffer();
+
+//    ASSERT_TRUE(expd.isSameShape(result));
+//    ASSERT_TRUE(expd.equalsTo(result));
+    arr.printIndexedBuffer("Test Print"); // output as [1, 2, 3, 4, 5, 6, 7, 8]
+//
+// we want output as
+//  [[[1 2]
+//    [3 4]]
+//
+//   [[5 6]
+//    [7 8]]]
+//
+    ResultSet* lastDims = arr.allTensorsAlongDimension({3}); // last dim
+    size_t k = 0; // k from 0 to lastDims->size()
+    Nd4jLong rank = 4; // in this case
+    printf("[");
+    for (Nd4jLong i = 0; i < rank - 1; i++) {
+
+        for (Nd4jLong l = 0; l < i; ++l)
+            printf("\n");
+        printf("[");
+        for (Nd4jLong j = 0; j < arr.sizeAt(i); j++) {
+            //    if (!i)
+            //        printf("[");
+            //    else
+            //        printf(" ");
+            lastDims->at(k++)->printBuffer();
+        //if (k == arr.sizeAt(i))
+        //    printf("]\n");
+        }
+        printf("]\n");
+    }
+    printf("]\n");
+
 }

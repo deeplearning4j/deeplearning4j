@@ -395,7 +395,7 @@ namespace nd4j {
         *  msg - message to print out 
         *  limit - number of array elements to print out
         */ 
-        void printBuffer(const char* msg = nullptr, Nd4jLong limit = -1);
+        void printBuffer(const char* msg = nullptr, Nd4jLong limit = -1) const;
 
         /**
         *  prints buffer elements, takes into account offset between elements (element-wise-stride)
