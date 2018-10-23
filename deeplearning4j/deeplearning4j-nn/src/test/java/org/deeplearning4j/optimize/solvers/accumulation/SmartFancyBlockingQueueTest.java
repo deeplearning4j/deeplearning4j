@@ -50,7 +50,7 @@ public class SmartFancyBlockingQueueTest {
 
     @Test
     public void testSFBQ_2() throws Exception {
-        final val queue = new SmartFancyBlockingQueue(8, Nd4j.create(5, 5));
+        final val queue = new SmartFancyBlockingQueue(1285601, Nd4j.create(5, 5));
 
         val threads = new ArrayList<Thread>();
         for (int e = 0; e< 4; e++) {
