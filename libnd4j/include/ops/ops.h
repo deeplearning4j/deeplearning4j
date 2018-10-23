@@ -115,8 +115,8 @@ namespace simdOps {
 			return d1 + params[0];
 		}
 
-		op_def static Z startingValue() {
-			return static_cast<Z>(0.f);
+		op_def static X startingValue() {
+			return static_cast<X>(0.f);
 		}
 	};
 
@@ -257,8 +257,8 @@ namespace simdOps {
 			return d1 * params[0];
 		}
 
-		op_def static Z startingValue() {
-			return static_cast<Z>(1.f);
+		op_def static X startingValue() {
+			return static_cast<X>(1.f);
 		}
 	};
 
@@ -282,8 +282,8 @@ namespace simdOps {
 			return d1 / params[0];
 		}
 
-		op_def static Z startingValue() {
-			return static_cast<Z>(1);
+		op_def static X startingValue() {
+			return static_cast<X>(1);
 		}
 	};
 
@@ -1237,8 +1237,8 @@ namespace simdOps {
 			return nd4j::math::nd4j_isnan(d1) ? static_cast<X>(1) : static_cast<X>(0);
 		}
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(0);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
         }
 
         op_def static Z merge(X old, X opOutput, X *extraParams) {
@@ -1281,8 +1281,8 @@ namespace simdOps {
 			return d1 > (X)0.f;
 		}
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(0);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
         }
 
         op_def static Z merge(X old, X opOutput, X *extraParams) {
@@ -1313,8 +1313,8 @@ namespace simdOps {
 			return nd4j::math::nd4j_isinf<X>(d1) ? static_cast<Z>(1) : static_cast<Z>(0);
 		}
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(0);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
         }
 
         op_def static Z merge(X old, X opOutput, X *extraParams) {
@@ -1346,8 +1346,8 @@ namespace simdOps {
 			return nd4j::math::nd4j_isfin<X>(d1) ? static_cast<Z>(0) : static_cast<Z>(1);
 		}
 
-		op_def static Z startingValue(const X *input) {
-			return static_cast<Z>(0);
+		op_def static X startingValue(const X *input) {
+			return static_cast<X>(0);
 		}
 
 		op_def static Z merge(X old, X opOutput, X *extraParams) {
@@ -1379,8 +1379,8 @@ namespace simdOps {
 			return nd4j::math::nd4j_isfin<X>(d1) ? static_cast<Z>(1) : static_cast<Z>(0);
 		}
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(0);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
         }
 
         op_def static Z merge(X old, X opOutput, X *extraParams) {
@@ -1903,8 +1903,8 @@ namespace simdOps {
 		no_op_exec_special_accumulation_long
         no_op_exec_special_accumulation_cuda
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(0);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
         }
 
         op_def static Z merge(Z old, Z opOutput, X *extraParams) {
@@ -2257,8 +2257,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(0);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
         }
 
         op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2285,8 +2285,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(0);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
         }
 
         op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2313,8 +2313,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(0);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
         }
 
         op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2369,8 +2369,8 @@ namespace simdOps {
         no_op_exec_special_accumulation_long
         no_op_exec_special_accumulation_cuda
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(0);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
         }
 
         op_def static Z merge(Z old, Z opOutput, X *extraParams) {
@@ -2397,8 +2397,8 @@ namespace simdOps {
         no_op_exec_special_accumulation_long
         no_op_exec_special_accumulation_cuda
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(0.0f);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0.0f);
         }
 
         op_def static Z merge(Z old, Z opOutput, X *extraParams) {
@@ -2452,8 +2452,8 @@ namespace simdOps {
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
 
-		op_def static Z startingValue(const X *input) {
-			return static_cast<Z>(0.0f);
+		op_def static X startingValue(const X *input) {
+			return static_cast<X>(0.0f);
 		}
 
 		op_def static Z merge(X old, X opOutput, X *extraParams) {
@@ -2480,8 +2480,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(1);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(1);
         }
 
         op_def static Z merge(X old, X opOutput, X *extraParams) {
@@ -2507,8 +2507,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static Z startingValue(const X *input) {
-			return static_cast<Z>(0);
+		op_def static X startingValue(const X *input) {
+			return static_cast<X>(0);
 		}
 
 		op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2535,8 +2535,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-        op_def static Z startingValue(const X *input) {
-            return static_cast<Z>(0);
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
         }
 
         op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2759,8 +2759,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static Z startingValue(const X *input) {
-			return static_cast<Z>(0);
+		op_def static X startingValue(const X *input) {
+			return static_cast<X>(0);
 		}
 
 		op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2789,8 +2789,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static Z startingValue(const X *input) {
-			return static_cast<Z>(0);
+		op_def static X startingValue(const X *input) {
+			return static_cast<X>(0);
 		}
 
 		op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2818,8 +2818,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static Z startingValue(const X *input) {
-			return static_cast<Z>(0);
+		op_def static X startingValue(const X *input) {
+			return static_cast<X>(0);
 		}
 
 		op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2846,8 +2846,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static Z startingValue(const X *input) {
-			return static_cast<Z>(0);
+		op_def static X startingValue(const X *input) {
+			return static_cast<X>(0);
 		}
 
 		op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2875,8 +2875,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static Z startingValue(const X *input) {
-			return static_cast<Z>(0);
+		op_def static X startingValue(const X *input) {
+			return static_cast<X>(0);
 		}
 
 		op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2902,8 +2902,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static Z startingValue(const X *input) {
-			return static_cast<Z>(0);
+		op_def static X startingValue(const X *input) {
+			return static_cast<X>(0);
 		}
 
 		op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2932,8 +2932,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static Z startingValue(const X *input) {
-			return static_cast<Z>(0.0f);
+		op_def static X startingValue(const X *input) {
+			return static_cast<X>(0.0f);
 		}
 
 		op_def static Z merge(X old, X opOutput, Z *extraParams) {
@@ -2967,8 +2967,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static Z startingValue(const X *input) {
-			return static_cast<Z>(0.0f);
+		op_def static X startingValue(const X *input) {
+			return static_cast<X>(0.0f);
 		}
 
 		op_def static Z merge(X old, X opOutput, Z *extraParams) {
