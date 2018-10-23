@@ -82,7 +82,7 @@ DECLARE_SHAPE_FN(pointwise_conv2d) {
 
     int isNCHW = block.getIArguments()->size() > 0 ? !INT_ARG(0) : 1;       // INT_ARG(0): 0-NCHW, 1-NHWC
 
-    int indIOioC, indWoC(3); 
+    int indIOioC, indWoC(3);
     if(!isNCHW)
         indIOioC = 3;
     else
@@ -93,11 +93,11 @@ DECLARE_SHAPE_FN(pointwise_conv2d) {
     const int oC = weightsShapeInfo[indWoC+1];                   // output channels
 
     std::string expectedWeightsShape = ShapeUtils::shapeAsString({1, 1, iC, oC});
-    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weightsShapeInfo), 0, "POINTWISECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());    
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weightsShapeInfo), 0, "POINTWISECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     if (biasShapeInfo) 
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "POINTWISECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));    
 
-    Nd4jLong* outputShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, weightsShapeInfo, true, block.getWorkspace());    
+    Nd4jLong* outputShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, weightsShapeInfo, true, block.getWorkspace());
 
     // do not forget to put oC instead of iC in outputShapeInfo
     outputShapeInfo[indIOioC + 1] = oC;                                   

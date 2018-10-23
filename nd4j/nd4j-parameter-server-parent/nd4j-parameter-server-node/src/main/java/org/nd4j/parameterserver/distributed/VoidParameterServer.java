@@ -62,6 +62,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class VoidParameterServer {
     private static final VoidParameterServer INSTANCE = new VoidParameterServer();
 
@@ -232,7 +233,7 @@ public class VoidParameterServer {
                         port = Integer.valueOf(split[1]);
                     } else {
                         ip = ipAndPort;
-                        port = voidConfiguration.getUnicastPort();
+                        port = voidConfiguration.getUnicastControllerPort();
                     }
 
                     // if we're Shard here, we should define shardIndex
@@ -264,7 +265,7 @@ public class VoidParameterServer {
                                     ? voidConfiguration.getControllerAddress() : "127.0.0.1";
 
                     this.transport.init(voidConfiguration, clipboard, nodeRole, localIp,
-                                    voidConfiguration.getUnicastPort(), shardIndex);
+                                    voidConfiguration.getUnicastControllerPort(), shardIndex);
                 }
 
 
@@ -369,7 +370,7 @@ public class VoidParameterServer {
             throw new ND4JIllegalStateException("Can't get IP address for UDP communcation");
 
         // local IP from pair is used for shard only, so we don't care
-        return Pair.create(result, sparkIp + ":" + voidConfiguration.getUnicastPort());
+        return Pair.create(result, sparkIp + ":" + voidConfiguration.getUnicastControllerPort());
     }
 
     /**

@@ -14,7 +14,7 @@ using [Keras](https://keras.io/), a popular Python deep learning library.
 
 Once you have imported your model into DL4J, our full production stack is at your disposal.
 We support import of all Keras model types, most layers and practically all utility functionality. 
-Please check [here](./supported-features) for a complete list of supported Keras features.
+Please check [here](./keras-import-supported-features) for a complete list of supported Keras features.
 
 
 ## Getting started: Import a Keras model in 60 seconds

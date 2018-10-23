@@ -18,13 +18,11 @@ package org.nd4j.linalg.api.ops;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.FunctionProperties;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -689,21 +687,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         if(log.isTraceEnabled()){
             log.trace("Populating inputs and outputs for op {}: {}", opName, (nullArr ? "Unsuccessful" : "Successful"));
         }
-    }
-
-
-    /**
-     * Return function properties for the given function
-     *
-     * @return
-     */
-    public FunctionProperties asProperties() {
-        return FunctionProperties.builder()
-                .name(opName())
-                .l(iArguments)
-                .d(tArguments)
-                .fieldNames(propertiesForFunction())
-                .build();
     }
 
 

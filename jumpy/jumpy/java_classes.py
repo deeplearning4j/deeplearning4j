@@ -17,14 +17,13 @@
 
 import jnius_config
 import os
+import warnings
+import pydl4j
 
-jnius_config.add_options('-Dorg.bytedeco.javacpp.nopointergc=true')
-jnius_class_path = os.environ.get('JUMPY_CLASS_PATH')
-if not jnius_class_path:
-    raise Exception('Environment variable JUMPY_CLASS_PATH not set.')
-elif not os.path.exists(jnius_class_path):
-    raise Exception('File not found : {0}'.format(jnius_class_path))
-jnius_config.set_classpath(jnius_class_path)
+pydl4j.validate_nd4j_jars()
+
+
+# -------------JVM starts here-------------
 
 from jnius import autoclass
 
@@ -47,3 +46,9 @@ DataTypeUtil = autoclass('org.nd4j.linalg.api.buffer.util.DataTypeUtil')
 MemoryManager = autoclass('org.nd4j.linalg.memory.MemoryManager')
 SameDiff = autoclass('org.nd4j.autodiff.samediff.SameDiff')
 TFGraphMapper = autoclass('org.nd4j.imports.graphmapper.tf.TFGraphMapper')
+
+try:
+    KerasModelImport = autoclass('org.deeplearning4j.nn.modelimport.keras.KerasModelImport')
+except Exception as e:
+    warnings.warn('Dl4J Core not installed. Keras model import not available.')    
+    KerasModelImport

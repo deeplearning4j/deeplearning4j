@@ -84,15 +84,6 @@ else()
     message("OPENMP NOT FOUND")
 endif()
 
-
-if(APPLE)
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
-    #SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
-elseif(MSYS)
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
-endif()
-
-
 file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.h)
 
 # Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
@@ -107,4 +98,4 @@ endforeach(TMP_PATH)
 add_executable(runtests ${TEST_SOURCES})
 
 
-target_link_libraries(runtests ${LIBND4J_NAME}static gtest gtest_main)
+target_link_libraries(runtests ${LIBND4J_NAME}static ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} gtest gtest_main)

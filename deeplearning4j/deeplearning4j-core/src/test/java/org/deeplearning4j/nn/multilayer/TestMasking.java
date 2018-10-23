@@ -25,10 +25,14 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.graph.MergeVertex;
+import org.deeplearning4j.nn.conf.graph.StackVertex;
+import org.deeplearning4j.nn.conf.graph.UnstackVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -43,6 +47,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -302,5 +307,50 @@ public class TestMasking extends BaseDL4JTest {
                 Nd4j.create(1, 2, 5),
                 Nd4j.ones(1, 5),
                 Nd4j.ones(1, 5)));
+    }
+
+
+    @Test
+    public void testMaskingStackUnstack(){
+
+        ComputationGraphConfiguration nnConfig = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(2e-2))
+                .graphBuilder()
+                .setInputTypes(
+                        InputType.recurrent(3),
+                        InputType.recurrent(3)
+                )
+                .addInputs("m1", "m2")
+                .addVertex("stack", new StackVertex(), "m1", "m2")
+                .addLayer("lastUnStacked", new LastTimeStep(new LSTM.Builder().nIn(3).nOut(1).activation(Activation.TANH).build()), "stack")
+                .addVertex("unstacked1", new UnstackVertex(0, 2), "lastUnStacked")
+                .addVertex("unstacked2", new UnstackVertex(1, 2), "lastUnStacked")
+                .addVertex("restacked", new StackVertex(), "unstacked1", "unstacked2")
+                .addVertex("un1", new UnstackVertex(0, 2), "restacked")
+                .addVertex("un2", new UnstackVertex(1, 2), "restacked")
+                .addVertex("q", new MergeVertex(), "un1", "un2")
+                .addLayer("probability", new OutputLayer.Builder().nIn(2).nOut(6).lossFunction(LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR).build(), "q")
+                .setOutputs("probability")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(nnConfig);
+        cg.init();
+
+        INDArray i1 = Nd4j.create(1, 3, 5);
+        INDArray i2 = Nd4j.create(1, 3, 5);
+        INDArray fm1 = Nd4j.ones(1, 5);
+        INDArray fm2 = Nd4j.ones(1, 5);
+
+        //First: check no masks case
+        INDArray o1 = cg.output(false, new INDArray[]{i1, i2}, null)[0];
+
+        //Second: check null mask arrays case
+        INDArray o2 = cg.output(false, new INDArray[]{i1, i2}, new INDArray[]{null, null})[0];
+
+        //Third: masks present case
+        INDArray o3 = cg.output(false, new INDArray[]{i1, i2}, new INDArray[]{fm1, fm2})[0];
+
+        assertEquals(o1, o2);
+        assertEquals(o1, o3);
     }
 }

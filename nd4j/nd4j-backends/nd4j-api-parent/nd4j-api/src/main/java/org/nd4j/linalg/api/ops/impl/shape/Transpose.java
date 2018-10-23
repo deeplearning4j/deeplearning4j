@@ -76,13 +76,6 @@ public class Transpose extends DynamicCustomOp {
         return ret;
     }
 
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("permuteDims", permuteDims);
-        return ret;
-    }
-
 
     @Override
     public String opName() {
@@ -114,12 +107,9 @@ public class Transpose extends DynamicCustomOp {
 
         }
 
-        val permuteArrayOp = TFGraphMapper.getInstance().getNDArrayFromTensor("value", permuteDimsNode, graph);
+        INDArray permuteArrayOp = TFGraphMapper.getInstance().getNDArrayFromTensor("value", permuteDimsNode, graph);
         if (permuteArrayOp != null) {
             this.permuteDims = permuteArrayOp.data().asInt();
-            for (int i = 0; i < permuteDims.length; i++) {
-                addIArgument(permuteDims[i]);
-            }
         }
 
         //handle once properly mapped
@@ -134,7 +124,11 @@ public class Transpose extends DynamicCustomOp {
             sameDiff.putArrayForVarName(arg().getVarName(), arr);
         }
 
-        addInputArgument(arr);
+        if(permuteArrayOp != null){
+            addInputArgument(arr, permuteArrayOp);
+        } else {
+            addInputArgument(arr);
+        }
 
         if (arr != null && permuteDims == null) {
             this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arr.rank()));

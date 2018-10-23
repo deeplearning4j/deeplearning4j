@@ -29,6 +29,7 @@ import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
  */
 @Data
 @Slf4j
+@Deprecated
 public abstract class BaseCompleteMessage extends BaseVoidMessage implements MeaningfulMessage {
 
     protected INDArray payload;

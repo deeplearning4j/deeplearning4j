@@ -82,10 +82,9 @@ public class RandomTests extends BaseNd4jTest {
         int[] shape = {1, 12};
         double mean = 0;
         double standardDeviation = 1.0;
-        INDArray exp = Nd4j.create(new double[] {0.3201344790670888, 1.5718323114821624, 2.3576019088920157,
-                        0.011034205622299313, -1.6848556179688527, 0.05479720804200661, -0.3641108263800006,
-                        -0.04683796849808572, -0.7358251292982549, 1.3590746854410898, 0.6587930319509204,
-                        0.13347446589944548});
+        INDArray exp = Nd4j.create(new double[] {1.471510750295504, -1.7311058575777973, -0.769667196547541, -1.8070080465616434,
+                0.4985966540066825, 1.16259104957499, -0.6385914698509185, -0.222683562215109, 2.228457081217583, 3.3375576505757727,
+                -1.6103237518102358, 0.2355462332312932});
         Nd4j.getRandom().setSeed(12345);
         INDArray arr = Nd4j.getExecutioner().exec(new GaussianDistribution(
                         Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), Nd4j.getRandom());

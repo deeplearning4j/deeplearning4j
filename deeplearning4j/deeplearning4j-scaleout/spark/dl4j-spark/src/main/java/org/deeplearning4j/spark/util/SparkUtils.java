@@ -17,6 +17,8 @@
 package org.deeplearning4j.spark.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -31,6 +33,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.serializer.SerializerInstance;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
@@ -534,6 +537,37 @@ public class SparkUtils {
      * @throws IOException If error occurs getting directory contents
      */
     public static JavaRDD<String> listPaths(JavaSparkContext sc, String path, boolean recursive) throws IOException {
+        //NativeImageLoader.ALLOWED_FORMATS
+        return listPaths(sc, path, recursive, (Set<String>)null);
+    }
+
+    /**
+     * List of the files in the given directory (path), as a {@code JavaRDD<String>}
+     *
+     * @param sc                Spark context
+     * @param path              Path to list files in
+     * @param recursive         Whether to walk the directory tree recursively (i.e., include subdirectories)
+     * @param allowedExtensions If null: all files will be accepted. If non-null: only files with the specified extension will be allowed.
+     *                          Exclude the extension separator - i.e., use "txt" not ".txt" here.
+     * @return Paths in the directory
+     * @throws IOException If error occurs getting directory contents
+     */
+    public static JavaRDD<String> listPaths(JavaSparkContext sc, String path, boolean recursive, String[] allowedExtensions) throws IOException {
+        return listPaths(sc, path, recursive, (allowedExtensions == null ? null : new HashSet<>(Arrays.asList(allowedExtensions))));
+    }
+
+    /**
+     * List of the files in the given directory (path), as a {@code JavaRDD<String>}
+     *
+     * @param sc                Spark context
+     * @param path              Path to list files in
+     * @param recursive         Whether to walk the directory tree recursively (i.e., include subdirectories)
+     * @param allowedExtensions If null: all files will be accepted. If non-null: only files with the specified extension will be allowed.
+     *                          Exclude the extension separator - i.e., use "txt" not ".txt" here.
+     * @return Paths in the directory
+     * @throws IOException If error occurs getting directory contents
+     */
+    public static JavaRDD<String> listPaths(JavaSparkContext sc, String path, boolean recursive, Set<String> allowedExtensions) throws IOException {
         List<String> paths = new ArrayList<>();
         Configuration config = new Configuration();
         FileSystem hdfs = FileSystem.get(URI.create(path), config);
@@ -541,7 +575,14 @@ public class SparkUtils {
 
         while (fileIter.hasNext()) {
             String filePath = fileIter.next().getPath().toString();
-            paths.add(filePath);
+            if(allowedExtensions == null){
+                paths.add(filePath);
+            } else {
+                String ext = FilenameUtils.getExtension(path);
+                if(allowedExtensions.contains(ext)){
+                    paths.add(filePath);
+                }
+            }
         }
         return sc.parallelize(paths);
     }
@@ -600,5 +641,16 @@ public class SparkUtils {
             sparkExecutorId = split[1];
             return sparkExecutorId;
         }
+    }
+
+    public static Broadcast<byte[]> asByteArrayBroadcast(JavaSparkContext sc, INDArray array){
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            Nd4j.write(array, new DataOutputStream(baos));
+        } catch (IOException e){
+            throw new RuntimeException(e);  //Should never happen
+        }
+        byte[] paramBytes = baos.toByteArray();       //See docs in EvaluationRunner for why we use byte[] instead of INDArray (thread locality etc)
+        return sc.broadcast(paramBytes);
     }
 }

@@ -374,15 +374,14 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testDynamicPartition() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new float[]{4, 3, 5, 7, 8, 0}, new int[]{1, 6});
-        INDArray partitions = Nd4j.create(new float[]{1, 0, 1, 0, 0, 1});
+        INDArray ia = Nd4j.trueVector(new float[]{4, 3, 5, 7, 8, 0});
+        INDArray partitions = Nd4j.trueVector(new float[]{1, 0, 1, 0, 0, 1});
         int numPartitions = 2;
 
-        SDVariable in = sd.var("in", new int[]{1, 6});
-        SDVariable sdPartitions = sd.var("partitions", new int[]{1, 6});
+        SDVariable in = sd.var("in", new long[]{6});
+        SDVariable sdPartitions = sd.var("partitions", new long[]{6});
 
         INDArray expOut1 = Nd4j.create(3L);
         INDArray expOut2 = Nd4j.create(3L);
@@ -402,8 +401,11 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable loss = sd.mean("loss", t);
 
         sd.associateArrayWithVariable(ia, in);
+        sd.associateArrayWithVariable(partitions, sdPartitions);
 
         String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true)
+                .gradCheckSkipVariables("partitions")
                 .expectedOutput("dp0", expOut[0])
                 .expectedOutput("dp1", expOut[1])
                 .gradientCheck(true));
@@ -1424,7 +1426,6 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
     @Test
-    @Ignore
     public void testBooleanAnd(){
         Nd4j.setDataType(DataType.FLOAT);
         INDArray arr1 = Nd4j.create(new long[]{3,4});
@@ -1450,7 +1451,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
 
     @Test
-    @Ignore
     public void testScatterOpsScalar(){
         for(String s : new String[]{"add", "sub", "mul", "div"}) {
             INDArray ref = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(10, 3);
@@ -1599,7 +1599,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testUnique(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6173
         INDArray in = Nd4j.trueVector(new double[]{3, 4, 3, 1, 3, 0, 2, 4, 2, 4});
 
         INDArray expUnique = Nd4j.trueVector(new double[]{3, 4, 1, 0, 2});
@@ -1622,7 +1621,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testTopK(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6177
+        OpValidationSuite.ignoreFailing();  //Can't assume sorted here
         INDArray in = Nd4j.trueVector(new double[]{7, 3, 1, 2, 5, 0, 4, 6, 9, 8});
 
         INDArray expTopK = Nd4j.trueVector(new double[]{7, 5, 6, 9, 8});
@@ -1651,8 +1650,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testInTopK() {
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6179
-
         for( int k=4; k>= 1; k--){
             log.info("Testing: k=" + k);
             INDArray in = Nd4j.linspace(1, 20, 20, DataType.DOUBLE).reshape(4, 5);

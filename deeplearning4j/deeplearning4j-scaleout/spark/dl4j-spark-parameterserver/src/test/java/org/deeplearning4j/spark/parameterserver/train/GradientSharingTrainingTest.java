@@ -47,6 +47,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AMSGrad;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 
 import java.io.File;
 import java.net.Inet4Address;
@@ -67,7 +68,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
         INDArray last = null;
         INDArray lastDup = null;
-        for (String s : new String[]{"direct", "export", "paths"}) {
+        for (String s : new String[]{"paths", "direct", "export"}) {
             System.out.println("--------------------------------------------------------------------------------------------------------------");
             log.info("Starting: {}", s);
             boolean isPaths = "paths".equals(s);
@@ -98,6 +99,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                     .unicastPort(40123) // Should be open for IN/OUT communications on all Spark nodes
                     .networkMask(networkMask) // Local network mask
                     .controllerAddress(controller)
+                    .meshBuildMode(MeshBuildMode.PLAIN) // everyone is connected to the master
                     .build();
             TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, 1e-4, 16)
                     .rngSeed(12345)

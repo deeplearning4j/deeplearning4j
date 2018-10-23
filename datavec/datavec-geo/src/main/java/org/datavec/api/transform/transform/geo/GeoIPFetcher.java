@@ -17,6 +17,7 @@
 package org.datavec.api.transform.transform.geo;
 
 import org.apache.commons.io.FileUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +65,7 @@ public class GeoIPFetcher {
         dir.mkdirs();
         FileUtils.copyURLToFile(new URL(CITY_LITE_URL), archive);
         ArchiveUtils.unzipFileTo(archive.getAbsolutePath(), dir.getAbsolutePath());
-        assert cityFile.isFile();
+        Preconditions.checkState(cityFile.isFile(), "Error extracting files: expected city file does not exist after extraction");
 
         return cityFile;
     }

@@ -143,6 +143,10 @@ public class NativeImageLoader extends BaseImageLoader {
         return ALLOWED_FORMATS;
     }
 
+    public INDArray asRowVector(String filename) throws IOException {
+        return asRowVector(new File(filename));
+    }
+
     /**
      * Convert a file to a row vector
      *
@@ -173,6 +177,10 @@ public class NativeImageLoader extends BaseImageLoader {
     }
 
     public INDArray asRowVector(Mat image) throws IOException {
+        return asMatrix(image).ravel();
+    }
+
+    public INDArray asRowVector(org.opencv.core.Mat image) throws IOException {
         return asMatrix(image).ravel();
     }
 
@@ -214,6 +222,9 @@ public class NativeImageLoader extends BaseImageLoader {
         return mat2;
     }
 
+    public INDArray asMatrix(String filename) throws IOException {
+        return asMatrix(new File(filename));
+    }
 
     @Override
     public INDArray asMatrix(File f) throws IOException {
@@ -290,6 +301,10 @@ public class NativeImageLoader extends BaseImageLoader {
             return bufferMat;
         }
 
+    }
+
+    public Image asImageMatrix(String filename) throws IOException {
+        return asImageMatrix(filename);
     }
 
     @Override
@@ -491,6 +506,10 @@ public class NativeImageLoader extends BaseImageLoader {
         image.deallocate();
     }
 
+    public void asMatrixView(String filename, INDArray view) throws IOException {
+        asMatrixView(new File(filename), view);
+    }
+
     public void asMatrixView(File f, INDArray view) throws IOException {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
             asMatrixView(bis, view);
@@ -501,14 +520,29 @@ public class NativeImageLoader extends BaseImageLoader {
         transformImage(image, view);
     }
 
+    public void asMatrixView(org.opencv.core.Mat image, INDArray view) throws IOException {
+        transformImage(image, view);
+    }
+
     public INDArray asMatrix(Frame image) throws IOException {
         return asMatrix(converter.convert(image));
+    }
+
+    public INDArray asMatrix(org.opencv.core.Mat image) throws IOException {
+        INDArray ret = transformImage(image, null);
+
+        return ret.reshape(ArrayUtil.combine(new long[] {1}, ret.shape()));
     }
 
     public INDArray asMatrix(Mat image) throws IOException {
         INDArray ret = transformImage(image, null);
 
         return ret.reshape(ArrayUtil.combine(new long[] {1}, ret.shape()));
+    }
+
+    protected INDArray transformImage(org.opencv.core.Mat image, INDArray ret) throws IOException {
+        Frame f = converter.convert(image);
+        return transformImage(converter.convert(f), ret);
     }
 
     protected INDArray transformImage(Mat image, INDArray ret) throws IOException {
@@ -628,6 +662,10 @@ public class NativeImageLoader extends BaseImageLoader {
         return scaled;
     }
 
+
+    public ImageWritable asWritable(String filename) throws IOException {
+        return asWritable(new File(filename));
+    }
 
     /**
      * Convert a file to a INDArray

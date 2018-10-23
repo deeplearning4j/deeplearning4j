@@ -32,7 +32,9 @@ import java.util.Scanner;
  * @author saudet
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCpu",
-                value = {@Platform(include = {"array/DataType.h",
+                value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
+                                              "NativeOps.h",
+                                              "array/DataType.h",
                                               "types/utf8string.h",
                                               "NativeOps.h",
                                               "memory/ExternalWorkspace.h",
@@ -114,14 +116,18 @@ import java.util.Scanner;
                                               "ops/declarable/headers/third_party.h",
                                               "cnpy/cnpy.h"
                                    },
-                                compiler = {"cpp11", "nowarnings"}, library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
-                                @Platform(value = "linux", preload = "gomp@.1",
+                                compiler = {"cpp11", "nowarnings"}, library = "jnind4jcpu", link = "nd4jcpu",
+                                preloadresource = "org/bytedeco/javacpp/", preload = {"openblas", "openblas_nolapack", "libnd4jcpu"}),
+                                @Platform(value = "linux", preload = {"gomp@.1", "iomp5", "mklml_intel", "mkldnn@.0"},
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/",
                                                                 "/usr/lib/powerpc64le-linux-gnu/"}),
-                @Platform(define = "LIBND4J_ALL_OPS"),
-                @Platform(value = "macosx", preload = {"gcc_s@.1", "gomp@.1", "stdc++@.6"},
-                                preloadpath = {"/usr/local/lib/gcc/7/", "/usr/local/lib/gcc/6/", "/usr/local/lib/gcc/5/"}),
+                @Platform(value = {"linux-arm", "linux-ppc"},
+                                preload = {"gomp@.1", "gcc_s@.1", "quadmath@.0", "gfortran@.3", "openblas@.0", "libnd4jcpu"}),
+                @Platform(value = "macosx", preload = {"gcc_s@.1", "gomp@.1", "stdc++@.6", "iomp5", "mklml", "mkldnn@.0"},
+                                preloadpath = {"/usr/local/lib/gcc/8/", "/usr/local/lib/gcc/7/", "/usr/local/lib/gcc/6/", "/usr/local/lib/gcc/5/"}),
+                @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6",
+                                                        "msvcr120", "libiomp5md", "mklml", "libmkldnn", "libnd4jcpu"}),
                 @Platform(extension = {"-avx512", "-avx2"}) })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
@@ -138,7 +144,8 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
     @Override
     public void map(InfoMap infoMap) {
-        infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE", "_CUDA_H", "_CUDA_D", "_CUDA_G", "_CUDA_HD", "LIBND4J_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
+        infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE",
+                             "_CUDA_H", "_CUDA_D", "_CUDA_G", "_CUDA_HD", "LIBND4J_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                         .put(new Info("NativeOps").base("org.nd4j.nativeblas.NativeOps"))
                         .put(new Info("char").valueTypes("char").pointerTypes("@Cast(\"char*\") String",
                                         "@Cast(\"char*\") BytePointer"))
@@ -150,10 +157,8 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                         .put(new Info("float16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                                         "short[]"));
 
-        infoMap.put(new Info("__CUDACC__").define(false))
-               .put(new Info("__JAVACPP_HACK__").define(true))
-               .put(new Info("LIBND4J_ALL_OPS").define(true))
-               .put(new Info("MAX_UINT").translate(false))
+        infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN").define(false))
+               .put(new Info("__JAVACPP_HACK__", "LIBND4J_ALL_OPS").define(true))
                .put(new Info("std::initializer_list", "cnpy::NpyArray", "nd4j::NDArray::applyLambda", "nd4j::NDArray::applyPairwiseLambda",
                              "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable").skip())
                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")

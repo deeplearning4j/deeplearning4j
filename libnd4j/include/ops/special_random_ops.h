@@ -318,28 +318,25 @@ namespace randomOps {
             }
             __syncthreads();
 
-            Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
+            int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-            for (Nd4jLong e = tid; e < zLength; e += step) {
+            int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
+
+            for (int e = tid; e < middle; e += step) {
+                auto epm = e + middle;
+
                 // we need to get random values
+                T r0 = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+                T r1 = buffer->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-                tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+                T realMean0 = y == z ? mean : y[e * yEWS];
 
-                // fix for "next rng value"
-                if (e + 1 >= zLength && e % 2 == 0) {
-                    tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, static_cast<T>(1.0f));
+                z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_cos<T>(two_pi * r1)) * stddev + realMean0;
+
+                if (epm < zLength) {
+                    T realMean1 = y == z ? mean : y[epm * yEWS];
+                    z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_sin<T>(two_pi * r1)) * stddev + realMean1;
                 }
-
-                T realMean = y == z ? mean : y[e * yEWS];
-
-                __syncthreads();
-
-                if (e % 2 == 0)
-                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T,T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean;
-                else
-                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T,T>(two_pi * tZ[threadIdx.x])) * stddev + realMean;
-
-                __syncthreads();
             }
 
             __syncthreads();
@@ -356,54 +353,45 @@ namespace randomOps {
             auto yEWS = shape::elementWiseStride(yShapeBuffer);
             auto zEWS = shape::elementWiseStride(zShapeBuffer);
 
-            int elementsPerThread = zLength / TAD_THRESHOLD;
+            auto middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
+
+            int elementsPerThread = middle / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-            int span = (zLength / _threads) + 8;
+            int span = (middle / _threads) + 8;
 
             // we're enforcing even chunks, since it's mandatory for this algorithm
             span -= span % 2;
 
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
-            T mean = extraArguments[0];
-            T stddev = extraArguments[1];
+            const T mean = extraArguments[0];
+            const T stddev = extraArguments[1];
+
+            const T epsilon = static_cast<T>(1e-5);
 
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
                 Nd4jLong start = span * tid;
                 Nd4jLong end = span * (tid + 1);
-                if (end > zLength) end = zLength;
-
-                T z0, z1;
-                T u0, u1;
-                T lnU0;
-                bool generated = false;
+                if (end > middle)
+                    end = middle;
 
                 for (Nd4jLong e = start; e < end; e++) {
-                    if (!generated) {
-                        /*
-                         * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
-                         */
-                        u0 = buffer->relativeT<T>(e, static_cast<T>(1e-5f), static_cast<T>(1.0f));
-                        u1 = buffer->relativeT<T>((e + 1), static_cast<T>(1e-5f), static_cast<T>(1.0f));
-                        lnU0 = nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(u0));
-                        z0 = lnU0 * nd4j::math::nd4j_cos<T,T>(two_pi * u1);
-                        z1 = lnU0 * nd4j::math::nd4j_sin<T,T>(two_pi * u1);
+                    auto epm = e + middle;
+                    // we need to get random values
+                    T r0 = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+                    T r1 = buffer->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-                        generated = true;
+                    T realMean0 = y == z ? mean : y[e * yEWS];
 
-                        T realMean = y == z ? mean : y[e * yEWS];
+                    z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
 
-                        z[e * zEWS] = z0 * stddev + realMean;
-                    } else {
-                        T realMean = y == z ? mean : y[e * yEWS];
-
-                        z[e * zEWS] = z1 * stddev + realMean;
-
-                        generated = false;
+                    if (epm < zLength) {
+                        T realMean1 = y == z ? mean : y[epm * yEWS];
+                        z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
                     }
                 }
             }
@@ -476,10 +464,6 @@ namespace randomOps {
                     if (randVal < prob)
                         success++;
                 }
-
-                // we need this, to eliminate excessive code branching in runtime
-                __syncthreads();
-
                 // if trials is set to 0, effectively we just have successful memset
                 z[e * zEWS] = static_cast<T>(success);
             }
@@ -602,9 +586,6 @@ namespace randomOps {
                     if (randVal < prob)
                         success++;
                 }
-
-                // we need this, to eliminate excessive code branching in runtime
-                __syncthreads();
 
                 // if trials is set to 0, effectively we just have successful memset
                 z[e * zEWS] = (T) success;
@@ -906,25 +887,23 @@ namespace randomOps {
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-            for (Nd4jLong e = tid; e < zLength; e += step) {
+            int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
+
+            for (Nd4jLong e = tid; e < middle; e += step) {
+                auto epm = e + middle;
+
                 // we need to get random values
-
-                tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
-
-                // fix for "next rng value"
-                if (e + 1 >= zLength && e % 2 == 0) {
-                    tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, static_cast<T>(1.0f));
-                }
+                T r0 = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+                T r1 = buffer->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
                 T realMean = y == z ? mean : y[e * yEWS];
 
-                __syncthreads();
+                z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_cos<T>(two_pi * r1)) * stddev + realMean);
 
-                if (e % 2 == 0)
-                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T,T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean);
-                else
-                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T,T>(two_pi * tZ[threadIdx.x])) * stddev + realMean);
-                __syncthreads();
+                if (epm < zLength) {
+                    realMean = y == z ? mean : y[epm * yEWS];
+                    z[epm *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(r0)) * nd4j::math::nd4j_sin<T>(two_pi * r1)) * stddev + realMean);
+                }
             }
 
             __syncthreads();
@@ -940,7 +919,9 @@ namespace randomOps {
             auto yEWS = shape::elementWiseStride(yShapeBuffer);
             auto zEWS = shape::elementWiseStride(zShapeBuffer);
 
-            int elementsPerThread = zLength / TAD_THRESHOLD;
+            auto middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
+
+            int elementsPerThread = middle / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
@@ -951,43 +932,32 @@ namespace randomOps {
 
             auto buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
-            T mean = extraArguments[0];
-            T stddev = extraArguments[1];
+            const T mean = extraArguments[0];
+            const T stddev = extraArguments[1];
+            const T epsilon = static_cast<T>(1e-5);
 
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
                 Nd4jLong start = span * tid;
                 Nd4jLong end = span * (tid + 1);
-                if (end > zLength) end = zLength;
-
-                T z0, z1;
-                T u0, u1;
-                T lnU0;
-                bool generated = false;
+                if (end > middle)
+                    end = middle;
 
                 for (Nd4jLong e = start; e < end; e++) {
-                    if (!generated) {
-                        /*
-                         * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
-                         */
-                        u0 = buffer->relativeT<T>(e, static_cast<T>(1e-5f), static_cast<T>(1.0f));
-                        u1 = buffer->relativeT<T>((e + 1), static_cast<T>(1e-5f), static_cast<T>(1.0f));
-                        lnU0 = nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(u0));
-                        z0 = lnU0 * nd4j::math::nd4j_cos<T,T>(two_pi * u1);
-                        z1 = lnU0 * nd4j::math::nd4j_sin<T,T>(two_pi * u1);
+                    auto epm = e + middle;
 
-                        generated = true;
+                    // we need to get random values
+                    T r0 = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+                    T r1 = buffer->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-                        T realMean = y == z ? mean : y[e * yEWS];
+                    T realMean = y == z ? mean : y[e * yEWS];
 
-                        z[e * zEWS] = nd4j::math::nd4j_exp<T, T>(z0 * stddev + realMean);
-                    } else {
-                        T realMean = y == z ? mean : y[e * yEWS];
+                    z[e * zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean);
 
-                        z[e * zEWS] = nd4j::math::nd4j_exp<T, T>(z1 * stddev + realMean);
-
-                        generated = false;
+                    if (epm < zLength) {
+                        realMean = y == z ? mean : y[epm * yEWS];
+                        z[epm * zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean);
                     }
                 }
             }

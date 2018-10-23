@@ -24,21 +24,21 @@
 #include <helpers/DebugHelper.h>
 
 
-template <typename T, typename OpClass>
+template <typename X, typename Z, typename OpClass>
 __device__ void reduceSimpleGeneric(
-        T *dx,
+        void *dx,
         Nd4jLong *xShapeInfo,
-        T *extraParams,
-        T *result,
+        void *extraParams,
+        void *result,
         Nd4jLong *resultShapeInfo,
         int *dimension,
         int dimensionLength,
-        T *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
     __shared__ UnifiedSharedMemory *manager;
 
     if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
+        c __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
         manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceFunction<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
     }

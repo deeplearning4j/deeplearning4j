@@ -18,6 +18,8 @@ package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
@@ -70,11 +72,22 @@ public class OldSoftMax extends BaseTransformStrictOp {
 
     public OldSoftMax(INDArray x, INDArray z, long n) {
         super(x, z, n);
+        this(x, null, z, n);
+    }
+
+    public OldSoftMax(INDArray x, INDArray y, INDArray z, long n) {
+        super(x, y, z, n);
+        Preconditions.checkArgument(x != null && x.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only. Got x (source) array with shape: %ndShape", x);
+        Preconditions.checkArgument(z != null && z.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only. Got z (result) array with shape: %ndShape", z);
+    }
+
+    public OldSoftMax(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, x.lengthLong());
     }
 
     public OldSoftMax(INDArray x) {
         super(x);
-
+        Preconditions.checkArgument(x != null && x.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only");
     }
 
     @Override
@@ -100,7 +113,7 @@ public class OldSoftMax extends BaseTransformStrictOp {
 
     @Override
     public String tensorflowName() {
-        return "Softmax";
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
 

@@ -32,6 +32,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
@@ -974,12 +975,13 @@ public class Nd4j {
     /** Matrix multiply: Implements c = alpha*op(a)*op(b) + beta*c where op(X) means transpose X (or not)
      * depending on setting of arguments transposeA and transposeB.<br>
      * Note that matrix c MUST be fortran order, have zero offset and have c.data().length == c.length().
-     * An exception will be thrown otherwise.<br>
+     * i.e., the result array must not be a view. An exception will be thrown otherwise.<br>
+     * (Note: some views are allowed, if and only if they have f order and are contiguous in the buffer other than an
+     * offset. Put another way, they must be f order and have strides identical to a non-view/default array of the same shape)<br>
      * Don't use this unless you know about level 3 blas and NDArray storage orders.
      * @param a First matrix
      * @param b Second matrix
-     * @param c result matrix. Used in calculation (assuming beta != 0) and result is stored in this. f order,
-     *          zero offset and length == data.length only
+     * @param c result matrix. Used in calculation (assuming beta != 0) and result is stored in this. f order, and not a view only
      * @param transposeA if true: transpose matrix a before mmul
      * @param transposeB if true: transpose matrix b before mmul
      * @return result, i.e., matrix c is returned for convenience
@@ -991,6 +993,11 @@ public class Nd4j {
                                 boolean transposeB,
                                 double alpha,
                                 double beta) {
+        //Note: some views have non-zero offset but 'default' strides (these are OK). And a 'c' order vector such as [10,1] is OK - same buffer as an 'f' order vector with same shape
+        Preconditions.checkState(c.length() == 1 || c.ordering() == 'f' && Shape.hasDefaultStridesForShape(c) ||
+                        c.isVectorOrScalar() && c.elementWiseStride() == 1,
+                "C (result) array is not F order or is a view. Nd4j.gemm requires the result array to be F order " +
+                        "and not a view. C (result) array: [%ndSInfo]", c);
         getBlasWrapper().level3().gemm(a, b, c, transposeA, transposeB, alpha, beta);
         return c;
     }
@@ -2299,9 +2306,9 @@ public class Nd4j {
             String[] data = line.trim().split(split);
             if (numColumns < 0) {
                 numColumns = data.length;
-
             } else
-                assert data.length == numColumns : "Data has inconsistent number of columns";
+                Preconditions.checkState(data.length == numColumns,
+                        "Data has inconsistent number of columns: data length %s, numColumns %s", data.length, numColumns);
             data2.add(readSplit(data));
 
 
@@ -3545,6 +3552,50 @@ public class Nd4j {
 
     public static INDArray create(boolean[] data, long[] shape, DataType type) {
         val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    ////////////////////////////////////////////////
+
+    public static INDArray create(int[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(long[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(double[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(float[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(short[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(byte[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(boolean[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -6330,6 +6381,15 @@ public class Nd4j {
         DynamicCustomOp o = op.build();
         outShapes = Nd4j.getExecutioner().calculateOutputShape(o);
         INDArray[] outputs = new INDArray[outShapes.size()];
+
+        if(x == null && (outShapes.get(0) == null || outShapes.get(0).length == 0 || outShapes.get(0)[0] == 0)){
+            //Empty: no conditions match
+            for( int i=0; i<outputs.length; i++ ){
+                outputs[i]  = Nd4j.empty();
+            }
+            return outputs;
+        }
+
         for(int i=0; i<outputs.length; i++){
             outputs[i] = Nd4j.create(outShapes.get(i), false);
         }
@@ -6476,8 +6536,8 @@ public class Nd4j {
         val shapeOf = Shape.shapeOf(shapeInfo);
         val stridesOf = Shape.stridesOf(shapeInfo);
 
-        val _dtype = SameDiff.getDataTypeFromByte(dtype);
-        val _order = SameDiff.getOrderFromByte(order);
+        val _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
+        val _order = FlatBuffersMapper.getOrderFromByte(order);
         val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
 
 
@@ -6489,7 +6549,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = db.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.DOUBLE);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.DOUBLE);
             }
             case FLOAT: {
                 val doubles = new float[prod];
@@ -6497,7 +6557,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = fb.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.FLOAT);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.FLOAT);
             }
             case HALF: {
                 val doubles = new float[prod];
@@ -6505,7 +6565,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = HalfIndexer.toFloat((int) sb.get(e));
 
-                return Nd4j.create(doubles, shapeOf, DataType.HALF);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.HALF);
             }
             case INT: {
                 val doubles = new int[prod];
@@ -6513,7 +6573,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.INT);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.INT);
             }
             case LONG: {
                 val doubles = new long[prod];
@@ -6521,7 +6581,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.LONG);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.LONG);
             }
             case SHORT: {
                 val doubles = new short[prod];
@@ -6529,7 +6589,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.SHORT);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.SHORT);
             }
             case BYTE: {
                 val doubles = new byte[prod];
@@ -6537,7 +6597,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = (byte) sb.get(e);
 
-                return Nd4j.create(doubles, shapeOf, DataType.BYTE);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BYTE);
             }
             case BOOL: {
                 val doubles = new boolean[prod];
@@ -6545,7 +6605,7 @@ public class Nd4j {
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e) == 1;
 
-                return Nd4j.create(doubles, shapeOf, DataType.BOOL);
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BOOL);
             }
             default:
                 throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");

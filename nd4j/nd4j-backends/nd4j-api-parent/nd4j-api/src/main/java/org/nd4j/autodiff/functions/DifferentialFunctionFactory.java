@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
+import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -46,6 +47,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
+import org.nd4j.linalg.api.ops.impl.loss.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.scatter.*;
@@ -76,6 +78,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SwishDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.*;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
@@ -462,13 +466,14 @@ public class DifferentialFunctionFactory {
                                 SDVariable variance, SDVariable gamma,
                                 SDVariable beta,
                                 boolean applyGamma, boolean applyBeta,
-                                double epsilon) {
+                                double epsilon, int... axis) {
         BatchNorm batchNorm = BatchNorm.builder()
                 .inputFunctions(new SDVariable[]{input, mean, variance, gamma, beta})
                 .applyGamma(applyGamma)
                 .applyBeta(applyBeta)
                 .epsilon(epsilon)
                 .sameDiff(sameDiff())
+                .axis(axis)
                 .build();
 
         val outputVars = batchNorm.outputVariables();
@@ -1329,100 +1334,42 @@ public class DifferentialFunctionFactory {
         return new WeightedCrossEntropyLoss(sameDiff(), targets, inputs, weights).outputVariable();
     }
 
-    public SDVariable sigmoidCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
-                                                    int reductionMode, double labelSmoothing) {
-        return new SigmoidCrossEntropyLoss(sameDiff(), logits, weights, labels,
-                reductionMode, labelSmoothing).outputVariable();
+    public SDVariable lossAbsoluteDifference(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new AbsoluteDifferenceLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
     }
 
-    public SDVariable softmaxCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
-                                                    int reductionMode, double labelSmoothing) {
-        return new SoftmaxCrossEntropyLoss(sameDiff(), logits, weights, labels,
-                reductionMode, labelSmoothing).outputVariable();
+    public SDVariable lossCosineDistance(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, int dimension){
+        return new CosineDistanceLoss(sameDiff(), lossReduce, predictions, weights, label, dimension).outputVariable();
     }
 
-    public SDVariable lossBinaryXENT(SDVariable iX,
-                                     SDVariable i_y,
-                                     int... dimensions) {
-        throw new UnsupportedOperationException();
+    public SDVariable lossHinge(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new HingeLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
     }
 
-
-    public SDVariable lossCosineSimilarity(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
+    public SDVariable lossHuber(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, double delta){
+        return new HuberLoss(sameDiff(), lossReduce, predictions, weights, label, delta).outputVariable();
     }
 
-
-    public SDVariable lossHinge(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
+    public SDVariable lossLog(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, double epsilon){
+        return new LogLoss(sameDiff(), lossReduce, predictions, weights, label, epsilon).outputVariable();
     }
 
-
-    public SDVariable lossKLD(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
+    public SDVariable lossMeanPairwiseSquaredError(SDVariable label, SDVariable predictions, SDVariable weights){
+        return new MeanPairwiseSquaredErrorLoss(sameDiff(), predictions, weights, label).outputVariable();
     }
 
-
-    public SDVariable lossL1(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
+    public SDVariable lossMeanSquaredError(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new MeanSquaredErrorLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
     }
 
-
-    public SDVariable lossL2(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
+    public SDVariable lossSigmoidCrossEntropy(SDVariable labels, SDVariable logits, SDVariable weights, LossReduce lossReduce, double labelSmoothing) {
+        return new SigmoidCrossEntropyLoss(sameDiff(), lossReduce, logits, weights, labels, labelSmoothing).outputVariable();
     }
 
-
-    public SDVariable lossMAE(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
+    public SDVariable lossSoftmaxCrossEntropy(SDVariable labels, SDVariable logits, SDVariable weights, LossReduce lossReduce, double labelSmoothing) {
+        return new SoftmaxCrossEntropyLoss(sameDiff(), lossReduce, logits, weights, labels, labelSmoothing).outputVariable();
     }
 
-
-    public SDVariable lossMAPE(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-
-    public SDVariable lossMSE(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-
-    public SDVariable lossMCXENT(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-
-    public SDVariable lossMSLE(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-
-    public SDVariable lossNegativeLogLikelihood(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-
-    public SDVariable lossPoisson(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
-
-
-    public SDVariable lossSquaredHinge(SDVariable iX, SDVariable i_y, int... dimensions) {
-        throw new UnsupportedOperationException();
-
-    }
 
     public SDVariable xwPlusB(SDVariable input, SDVariable weights, SDVariable bias) {
         return new XwPlusB(sameDiff(), input, weights, bias).outputVariable();
@@ -1611,6 +1558,10 @@ public class DifferentialFunctionFactory {
                 .outputVariables();
     }
 
+    public SDVariable[] dynamicPartitionBp(SDVariable input, SDVariable partitions, SDVariable[] grads, int numPartitions){
+        return new DynamicPartitionBp(sameDiff(), input, partitions, grads, numPartitions).outputVariables();
+    }
+
     public SDVariable dynamicStitch(SDVariable[] indices, SDVariable[] differentialFunctions) {
         for (SDVariable df : differentialFunctions)
             validateDifferentialFunctionsameDiff(df);
@@ -1622,21 +1573,93 @@ public class DifferentialFunctionFactory {
         return new SegmentMax(sameDiff(), data, segmentIds).outputVariable();
     }
 
+    public SDVariable[] segmentMaxBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentMaxBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+    }
+
     public SDVariable segmentMin(SDVariable data, SDVariable segmentIds){
         return new SegmentMin(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] segmentMinBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentMinBp(sameDiff(), data, segmentIds, gradient).outputVariables();
     }
 
     public SDVariable segmentMean(SDVariable data, SDVariable segmentIds){
         return new SegmentMean(sameDiff(), data, segmentIds).outputVariable();
     }
 
+    public SDVariable[] segmentMeanBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentMeanBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+    }
+
     public SDVariable segmentProd(SDVariable data, SDVariable segmentIds){
         return new SegmentProd(sameDiff(), data, segmentIds).outputVariable();
+    }
+
+    public SDVariable[] segmentProdBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentProdBp(sameDiff(), data, segmentIds, gradient).outputVariables();
     }
 
     public SDVariable segmentSum(SDVariable data, SDVariable segmentIds){
         return new SegmentSum(sameDiff(), data, segmentIds).outputVariable();
     }
+
+    public SDVariable[] segmentSumBp(SDVariable data, SDVariable segmentIds, SDVariable gradient){
+        return new SegmentSumBp(sameDiff(), data, segmentIds, gradient).outputVariables();
+    }
+
+
+    public SDVariable unsortedSegmentMax(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentMax(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentMaxBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentMaxBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+    public SDVariable unsortedSegmentMin(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentMin(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentMinBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentMinBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+    public SDVariable unsortedSegmentMean(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentMean(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentMeanBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentMeanBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+    public SDVariable unsortedSegmentProd(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentProd(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentProdBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentProdBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentSum(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentSumBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentSumBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+    public SDVariable unsortedSegmentSqrtN(SDVariable data, SDVariable segmentIds, int numSegments){
+        return new UnsortedSegmentSqrtN(sameDiff(), data, segmentIds, numSegments).outputVariable();
+    }
+
+    public SDVariable[] unsortedSegmentSqrtNBp(SDVariable data, SDVariable segmentIds, SDVariable gradient, int numSegments){
+        return new UnsortedSegmentSqrtNBp(sameDiff(), data, segmentIds, gradient, numSegments).outputVariables();
+    }
+
+
+
 
     public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides,
                                  int[] rates, boolean isSameMode) {

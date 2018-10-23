@@ -20,6 +20,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -82,7 +83,7 @@ public class Cast extends BaseDynamicTransformOp {
     }
 
     protected void addArgs() {
-        addIArgument(SameDiff.getDataTypeAsByte(typeDst));
+        addIArgument(FlatBuffersMapper.getDataTypeAsByte(typeDst));
     }
 
     @Override
@@ -116,6 +117,14 @@ public class Cast extends BaseDynamicTransformOp {
         ret.put(tensorflowName(),map);
 
         return ret;
+    }
+
+    @Override
+    public void setValueFor(Field target, Object value) {
+        //This is a hack around a property mapping issue - TF datatype DT_DOUBLE return attribute.getType() of DT_DOUBLE which doesn't make sense
+        if(value == null || value instanceof String || value instanceof DataBuffer.Type){
+            super.setValueFor(target, value);
+        }
     }
 
     @Override

@@ -2,34 +2,22 @@ Jumpy: Python interface for [nd4j](https://nd4j.org)
 ===========================================
 
 [![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/deeplearning4j/deeplearning4j/blob/master/jumpy/LICENSE)
+[![PyPI version](https://badge.fury.io/py/jumpy.svg)](https://badge.fury.io/py/jumpy)
 
-Jumpy allows you to use nd4j from python via pointers (no network communication required like a lot of python libraries).
+Jumpy allows you to use ND4J from Python _without any network communication_. Many other Python libraries bridging Java
+have considerable overhead, jumpy uses pointers to directly access your numpy arrays. Under the hood, Jumpy uses `pydl4j` 
+for dependency management and `pyjnius` to load Java classes.
 
 ## Installation
 
-Jumpy requires an uber jar (a jar file that contains nd4j and all its dependencies) and the path to this file is expected to be found in the environment variable `JUMPY_CLASS_PATH`.
-
-Easiest way to build the uber jar is by running `mvn package` on the [`pom.xml`](/pom.xml) file:
-
-```bash 
-git clone https://github.com/deeplearning4j/deeplearning4j.git
-cd jumpy
-mvn package
-```
-
-This will create a jar file called `jumpy-1.0.0-beta.jar` in the `target` directory. Set `JUMPY_CLASS_PATH` environment variable to path of this file.
-
-```bash
-export JUMPY_CLASS_PATH='/...../jumpy/target/jumpy-1.0.0-SNAPSHOT.jar'
-```
-
-Finally, either install jumpy via pip:
+Jumpy is on PyPI, simply install it with
 
 ```bash
 pip install jumpy
 ```
 
-Or from source:
+or build it from source:
 
 ```bash
 python setup.py install

@@ -185,7 +185,7 @@ public class ParameterServerNode implements AutoCloseable {
 
 
     private static Aeron.Context getContext(MediaDriver mediaDriver) {
-        return new Aeron.Context().publicationConnectionTimeout(-1)
+        return new Aeron.Context()
                         .availableImageHandler(AeronUtil::printAvailableImage)
                         .unavailableImageHandler(AeronUtil::printUnavailableImage)
                         .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)

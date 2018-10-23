@@ -62,23 +62,23 @@
             <artifactId>mkl</artifactId>
             <version>${mkl.version}-${javacpp-presets.version}</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.bytedeco.javacpp-presets</groupId>-->
-<!--            <artifactId>mkl</artifactId>-->
-<!--            <version>${mkl.version}-${javacpp-presets.version}</version>-->
-<!--            <classifier>${dependency.platform}</classifier>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>mkl</artifactId>
+            <version>${mkl.version}-${javacpp-presets.version}</version>
+            <classifier>${dependency.platform2}</classifier>
+        </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>mkl-dnn</artifactId>
-            <version>${mkl-dnn.version}-${javacpp-presets.version}</version>
+            <version>${mkl-dnn.javacpp.version}</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.bytedeco.javacpp-presets</groupId>-->
-<!--            <artifactId>mkl-dnn</artifactId>-->
-<!--            <version>${mkl-dnn.version}-${javacpp-presets.version}</version>-->
-<!--            <classifier>${dependency.platform}</classifier>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>mkl-dnn</artifactId>
+            <version>${mkl-dnn.javacpp.version}</version>
+            <classifier>${dependency.platform2}</classifier>
+        </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -227,8 +227,29 @@
                         <includePath>${libnd4jhome}/include/indexing</includePath>
                     </includePaths>
                     <linkPath>${libnd4jhome}/blasbuild/cpu/blas</linkPath>
+                    <buildResources>
+                        <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                        <buildResource>/org/bytedeco/javacpp/${javacpp.platform}/</buildResource>
+                    </buildResources>
+                    <includeResources>
+                        <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
+                        <includeResource>/org/bytedeco/javacpp/${javacpp.platform}/include/</includeResource>
+                    </includeResources>
+                    <linkResources>
+                        <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                        <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                        <linkResource>/org/bytedeco/javacpp/${javacpp.platform}/</linkResource>
+                        <linkResource>/org/bytedeco/javacpp/${javacpp.platform}/lib/</linkResource>
+                    </linkResources>
                 </configuration>
                 <executions>
+                    <execution>
+                        <id>javacpp.validate</id>
+                        <phase>validate</phase>
+                        <goals>
+                          <goal>build</goal>
+                        </goals>
+                    </execution>
                     <execution>
                         <id>javacpp.parser</id>
                         <phase>generate-sources</phase>
@@ -288,6 +309,14 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -317,6 +346,17 @@
             </activation>
             <properties>
                 <javacpp.platform.extension>-avx512</javacpp.platform.extension>
+            </properties>
+        </profile>
+        <profile>
+            <id>macosx-gcc8</id>
+            <activation>
+                <file>
+                    <exists>/usr/local/bin/g++-8</exists>
+                </file>
+            </activation>
+            <properties>
+                <javacpp.platform.compiler>/usr/local/bin/g++-8</javacpp.platform.compiler>
             </properties>
         </profile>
         <profile>
@@ -353,29 +393,6 @@
             </properties>
         </profile>
         <profile>
-            <id>macosx</id>
-            <activation>
-                <os><family>mac os x</family></os>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>javacpp</artifactId>
-<!-- We cannot use those to propagate C++ exceptions across shared libraries. -->
-<!--
-                        <configuration>
-                            <compilerOptions>
-                                <compilerOption>-static-libgcc</compilerOption>
-                                <compilerOption>-static-libstdc++</compilerOption>
-                            </compilerOptions>
-                        </configuration>
--->
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
             <id>mingw</id>
             <activation>
                 <os><family>windows</family></os>
@@ -387,16 +404,6 @@
                         <artifactId>javacpp</artifactId>
                         <configuration>
                             <properties>${javacpp.platform}-mingw</properties>
-                            <compilerOptions>
-                                <compilerOption>-static-libgcc</compilerOption>
-                                <compilerOption>-static-libstdc++</compilerOption>
-                                <compilerOption>-Wl,-Bstatic</compilerOption>
-                                <compilerOption>-lstdc++</compilerOption>
-                                <compilerOption>-lgcc</compilerOption>
-                                <compilerOption>-lgcc_eh</compilerOption>
-                                <compilerOption>-lpthread</compilerOption>
-                                <compilerOption>-Wl,-Bdynamic</compilerOption>
-                            </compilerOptions>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -139,7 +139,7 @@ public class SqueezeNet extends ZooModel {
                 // output
                 .addLayer("drop9", new DropoutLayer.Builder(0.5).build(), "fire9")
                 .addLayer("conv10", new ConvolutionLayer.Builder(1,1).nOut(numClasses)
-                        .cudnnAlgoMode(cudnnAlgoMode).build(), "input")
+                        .cudnnAlgoMode(cudnnAlgoMode).build(), "drop9")
                 .addLayer("conv10_act", new ActivationLayer(Activation.RELU), "conv10")
                 .addLayer("avg_pool", new GlobalPoolingLayer(PoolingType.AVG), "conv10_act")
 
@@ -161,11 +161,12 @@ public class SqueezeNet extends ZooModel {
                         .cudnnAlgoMode(cudnnAlgoMode).build(), input)
                 .addLayer(prefix+"_relu_sq1x1", new ActivationLayer(Activation.RELU), prefix+"_sq1x1")
 
-                .addLayer(prefix+"exp1x1", new ConvolutionLayer.Builder(1, 1).nOut(expand)
+                .addLayer(prefix+"_exp1x1", new ConvolutionLayer.Builder(1, 1).nOut(expand)
                         .cudnnAlgoMode(cudnnAlgoMode).build(), prefix+"_relu_sq1x1")
                 .addLayer(prefix+"_relu_exp1x1", new ActivationLayer(Activation.RELU), prefix+"_exp1x1")
 
                 .addLayer(prefix+"_exp3x3", new ConvolutionLayer.Builder(3,3).nOut(expand)
+                        .convolutionMode(ConvolutionMode.Same)
                         .cudnnAlgoMode(cudnnAlgoMode).build(), prefix+"_relu_sq1x1")
                 .addLayer(prefix+"_relu_exp3x3", new ActivationLayer(Activation.RELU), prefix+"_exp3x3")
 

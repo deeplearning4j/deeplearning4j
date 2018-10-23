@@ -30,6 +30,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitial
  */
 @Slf4j
 @Builder
+@Deprecated
 public class InitializationRequestMessage extends BaseVoidMessage implements RequestMessage {
     protected int vectorLength;
     protected int numWords;

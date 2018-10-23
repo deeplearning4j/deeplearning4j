@@ -27,6 +27,7 @@ import org.deeplearning4j.ui.storage.FileStatsStorage;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
@@ -48,7 +49,7 @@ public class TestTransferStatsCollection {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                        .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).build()).build();
+                        .layer(1, new OutputLayer.Builder().activation(Activation.SOFTMAX).nIn(10).nOut(10).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();

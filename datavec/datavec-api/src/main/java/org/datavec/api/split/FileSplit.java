@@ -21,14 +21,12 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.datavec.api.util.files.URIUtil;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 import org.nd4j.linalg.util.MathUtils;
 
 import java.io.*;
 import java.net.URI;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -80,7 +78,7 @@ public class FileSplit extends BaseInputSplit {
 
 
     protected void initialize() {
-        Collection<File> subFiles;
+//        Collection<File> subFiles;
 
         if (rootDir == null)
             throw new IllegalArgumentException("File path must not be null");
@@ -104,20 +102,19 @@ public class FileSplit extends BaseInputSplit {
             // translated to existed locations
             throw new IllegalArgumentException("No such file or directory: " + rootDir.getAbsolutePath());
         else if (rootDir.isDirectory()) {
-            subFiles = new LinkedList<>();
-            listFiles(subFiles, rootDir.toPath(), allowFormat, recursive);
+            List<File> list = listFiles(rootDir, allowFormat, recursive);
 
             uriStrings = new CompactHeapStringList();
 
             if (randomize) {
-                iterationOrder = new int[subFiles.size()];
+                iterationOrder = new int[list.size()];
                 for (int i = 0; i < iterationOrder.length; i++) {
                     iterationOrder[i] = i;
                 }
 
                 MathUtils.shuffleArray(iterationOrder, random);
             }
-            for (File f : subFiles) {
+            for (File f : list) {
                 uriStrings.add(URIUtil.fileToURI(f).toString());
                 ++length;
             }
@@ -219,15 +216,12 @@ public class FileSplit extends BaseInputSplit {
     }
 
 
-
-
-
     public File getRootDir() {
         return rootDir;
     }
 
-    private Collection<File> listFiles(Collection<File> fileNames, Path dir, String[] allowedFormats,
-                                       boolean recursive) {
+    private List<File> listFiles(File dir, String[] allowedFormats, boolean recursive) {
+        Preconditions.checkState(dir.isDirectory(), "Argument is not a directory: %s", dir);
         IOFileFilter filter;
         if (allowedFormats == null) {
             filter = new RegexFileFilter(".*");
@@ -235,24 +229,24 @@ public class FileSplit extends BaseInputSplit {
             filter = new SuffixFileFilter(allowedFormats);
         }
 
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
-            for (Path path : stream) {
-                if (Files.isDirectory(path) && recursive) {
-                    listFiles(fileNames, path, allowedFormats, recursive);
-                } else {
-                    if (allowedFormats == null) {
-                        fileNames.add(path.toFile());
-                    } else {
-                        if (filter.accept(path.toFile())) {
-                            fileNames.add(path.toFile());
-                        }
+        LinkedList<File> queue = new LinkedList<>();
+        queue.add(dir);
+
+        List<File> out = new ArrayList<>();
+        while(!queue.isEmpty()){
+            File[] listFiles = queue.remove().listFiles();
+            if(listFiles != null){
+                for(File f : listFiles){
+                    boolean isDir = f.isDirectory();
+                    if(isDir && recursive){
+                        queue.add(f);
+                    } else if(!isDir && filter.accept(f)){
+                        out.add(f);
                     }
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-        return fileNames;
+        return out;
     }
 }
 

@@ -52,6 +52,7 @@ public class Linspace extends BaseRandomOp {
     public Linspace(@NonNull INDArray z, double from, double to) {
         this.from = from;
         this.to = to;
+        this.length = z.length();
         init(null, null, z, z.lengthLong());
         this.extraArgs = new Object[] {from, to};
     }
@@ -63,14 +64,6 @@ public class Linspace extends BaseRandomOp {
         this.to = to;
         this.length = length;
         this.extraArgs = new Object[] {from, to};
-    }
-
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("from",from);
-        ret.put("to",to);
-        return ret;
     }
 
 

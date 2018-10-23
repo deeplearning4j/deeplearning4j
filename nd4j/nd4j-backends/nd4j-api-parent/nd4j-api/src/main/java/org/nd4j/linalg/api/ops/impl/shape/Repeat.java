@@ -67,9 +67,7 @@ public class Repeat extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("axis", axis);
-        return ret;
+        return Collections.<String,Object>singletonMap("axis", axis);
     }
 
 

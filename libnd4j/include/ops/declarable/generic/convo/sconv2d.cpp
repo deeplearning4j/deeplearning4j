@@ -31,10 +31,10 @@ namespace ops  {
 
 
 CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
-    
+
     NDArray *input        = INPUT_VARIABLE(0);                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     NDArray *weightsDepth = INPUT_VARIABLE(1);                                           // [kH, kW, iC, mC]  always
-    NDArray *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] always 
+    NDArray *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] always
     NDArray *bias         = nullptr;                                                     // [oC], oC = iC*mC if weightsPoint=nullptr
 
     NDArray *output    = OUTPUT_VARIABLE(0);                                          // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)
@@ -178,7 +178,7 @@ DECLARE_SHAPE_FN(sconv2d) {
         outputShapeInfo[3] = oW;
         outputShapeInfo[4] = oC;
     }
-    
+
     ShapeUtils::updateStridesAndType(outputShapeInfo, weightsDShapeInfo, shape::order(inputShapeInfo));
 
     return SHAPELIST(outputShapeInfo);
@@ -192,7 +192,7 @@ DECLARE_SHAPE_FN(sconv2d) {
 
 ////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
-    
+
     NDArray *input        = INPUT_VARIABLE(0);                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     NDArray *gradO        = INPUT_VARIABLE(1);                                           // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
     NDArray *weightsDepth = INPUT_VARIABLE(2);                                           // [kH, kW, iC, mC] always
@@ -366,7 +366,7 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
         REQUIRE_TRUE((biasShapeInfo[0] == 1 || biasShapeInfo[0] == 2) && oC == shape::length(biasShapeInfo), 0, "SCONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
     Nd4jLong* gradIshapeInfo  = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo,    gradOShapeInfo, false, block.getWorkspace());
-    Nd4jLong* gradWDshapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsDShapeInfo, gradOShapeInfo, false, block.getWorkspace());    
+    Nd4jLong* gradWDshapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsDShapeInfo, gradOShapeInfo, false, block.getWorkspace());
 
     Nd4jLong* gradWPshapeInfo(nullptr), *gradBshapeInfo(nullptr);
 

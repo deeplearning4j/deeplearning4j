@@ -64,6 +64,8 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
     protected WorkspaceMode trainingWorkspaceMode;
     @JsonProperty
     protected WorkspaceMode inferenceWorkspaceMode;
+    @JsonProperty
+    protected boolean validateOutputLayerConfig = true;
 
 
     protected MultiLayerSpace(Builder builder) {
@@ -87,6 +89,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
 
         this.trainingWorkspaceMode = builder.trainingWorkspaceMode;
         this.inferenceWorkspaceMode = builder.inferenceWorkspaceMode;
+        this.validateOutputLayerConfig = builder.validateOutputLayerConfig;
     }
 
     protected MultiLayerSpace() {
@@ -132,6 +135,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             listBuilder.setInputType(inputType.getValue(values));
         if (inputPreProcessors != null)
             listBuilder.setInputPreProcessors(inputPreProcessors.getValue(values));
+        listBuilder.validateOutputLayerConfig(validateOutputLayerConfig);
 
         MultiLayerConfiguration configuration = listBuilder.build();
 
@@ -139,6 +143,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             configuration.setTrainingWorkspaceMode(trainingWorkspaceMode);
         if (inferenceWorkspaceMode != null)
             configuration.setInferenceWorkspaceMode(inferenceWorkspaceMode);
+
 
         return new DL4JConfiguration(configuration, earlyStoppingConfiguration, numEpochs);
     }

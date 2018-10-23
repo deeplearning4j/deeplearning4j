@@ -593,8 +593,9 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         //log.info("nodeSum inputs length: {}; inputPaired length: {}",nodeSum.inputLength(), nodeSum.inputPairedLength());
 
-        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim.fb"));
-        val executioner = new NativeGraphExecutioner();
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim.fb"));
+
+        /*val executioner = new NativeGraphExecutioner();
 
         val exp = Nd4j.create(3, 1).assign(3);
 
@@ -603,6 +604,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertNotNull(results);
         assertEquals(1, results.length);
         assertEquals(exp, results[0]);
+        */
     }
 
     @Test
@@ -1001,7 +1003,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    //@Ignore
     public void testCrash_119_reduce_dim_false() throws Exception {
         Nd4j.create(1);
 
@@ -1012,7 +1014,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    //@Ignore
     public void testCrash_119_reduce_dim_true() throws Exception {
         Nd4j.create(1);
 

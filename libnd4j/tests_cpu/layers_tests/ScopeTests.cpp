@@ -83,13 +83,13 @@ TEST_F(ScopeTests, RealTests_1) {
     auto nodeB = new Node(OpType_SCALAR, scalar::Add, 2, {1}, {}, {}, 1.0);
 
     //
-    auto scopeCondition = new Node(OpType_LOGIC, pairwise::LessThanOrEqual, 3);
+    auto scopeCondition = new Node(OpType_LOGIC, logic::Scope, 3);
     scopeCondition->setName("scopeCondition");
     nd4j::ops::Scope opScope;
     scopeCondition->setCustomOp(&opScope);
 
     // this is scope of the body, it'll be executed multiple times
-    auto scopeBody = new Node(OpType_LOGIC, pairwise::LessThanOrEqual, 10);
+    auto scopeBody = new Node(OpType_LOGIC, logic::Scope, 10);
     scopeBody->setName("scopeBody");
     scopeBody->setCustomOp(&opScope);
 
@@ -101,7 +101,7 @@ TEST_F(ScopeTests, RealTests_1) {
     scopedA0->setScopeInfo(3, "scopeCondition");
 
     // this op compares LT A0 result with variable `scalar` which is 10;
-    auto scopedA1 = new Node(OpType_BOOLEAN, scalar::EqualTo, 5, {4, -3});
+    auto scopedA1 = new Node(OpType_BOOLEAN, 0, 5, {4, -3});
     nd4j::ops::lt_scalar op;
     scopedA1->setCustomOp(&op);
     scopedA1->setScopeInfo(3, "scopeCondition");
@@ -114,13 +114,13 @@ TEST_F(ScopeTests, RealTests_1) {
     scopedB0->markInplace(false);
     scopedB0->setScopeInfo(10, "scopeBody");
 
-    auto nodeReturn = new Node(OpType_LOGIC, pairwise::LogicalAnd, 7, {6}, {12});
+    auto nodeReturn = new Node(OpType_LOGIC, logic::Return, 7, {6}, {12});
     nd4j::ops::Return opReturn;
     nodeReturn->setCustomOp(&opReturn);
     nodeReturn->setScopeInfo(10, "scopeBody");
 
     // WHILE operations takes 2 scopes - :0 is condition scope, and :1 is loop body scope
-    auto nodeWhile = new Node(OpType_LOGIC, pairwise::EqualTo, 12, {-2, 3, 10});
+    auto nodeWhile = new Node(OpType_LOGIC, logic::While, 12, {-2, 3, 10});
     nd4j::ops::While opWhile;
     nodeWhile->setCustomOp(&opWhile);
 

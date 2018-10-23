@@ -33,6 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.schedule.ExponentialSchedule;
 import org.nd4j.linalg.schedule.ScheduleType;
@@ -138,6 +139,35 @@ public class TestLrChanges extends BaseDL4JTest {
 
         assertEquals(net.params(), net3.params());
         assertEquals(net.getUpdater().getStateViewArray(), net3.getUpdater().getStateViewArray());
+    }
+
+    @Test
+    public void testChangeLSGD() {
+        //Simple test for no updater nets
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activation(Activation.TANH)
+                .seed(12345)
+                .updater(new Sgd(0.1))
+                .list()
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+        net.setLearningRate(1.0);
+        net.setLearningRate(1, 0.5);
+        assertEquals(1.0, net.getLearningRate(0), 0.0);
+        assertEquals(0.5, net.getLearningRate(1), 0.0);
+
+
+        ComputationGraph cg = net.toComputationGraph();
+        cg.setLearningRate(2.0);
+        cg.setLearningRate("1", 2.5);
+        assertEquals(2.0, cg.getLearningRate("0"), 0.0);
+        assertEquals(2.5, cg.getLearningRate("1"), 0.0);
+
     }
 
     @Test

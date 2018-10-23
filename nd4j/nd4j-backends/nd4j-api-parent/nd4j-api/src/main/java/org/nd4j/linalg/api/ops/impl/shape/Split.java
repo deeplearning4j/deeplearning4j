@@ -30,7 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * SplitV op
+ * Split op
  */
 public class Split extends DynamicCustomOp {
 
@@ -60,16 +60,6 @@ public class Split extends DynamicCustomOp {
             addIArgument(splitDim.getInt(0));
         }
     }
-
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("numSplit",numSplit);
-        ret.put("splitDim",splitDim);
-        return ret;
-    }
-
-
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {

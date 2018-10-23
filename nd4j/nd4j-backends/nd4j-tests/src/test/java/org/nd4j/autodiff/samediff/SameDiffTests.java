@@ -184,28 +184,6 @@ public class SameDiffTests {
     }
 
     @Test
-    public void testSoftmaxXentWithLogits() {
-
-        SameDiff sameDiff = SameDiff.create();
-        INDArray logits = Nd4j.create(new long[]{1, 1});
-        INDArray weights = Nd4j.create(new long[]{1, 1});
-        INDArray labels = Nd4j.create(new long[]{1, 1});
-
-        SDVariable sdLogits = sameDiff.var("logits", logits);
-        SDVariable sdWeights = sameDiff.var("weights", weights);
-        SDVariable sdLabels = sameDiff.var("labels", labels);
-
-        int mode = 0;
-        double labelSmoothing = 0.0;
-
-        SDVariable res = sameDiff.softmaxCrossEntropyWithLogits(sdLogits, sdWeights, sdLabels, mode, labelSmoothing);
-        sameDiff.exec();
-
-        INDArray resultArray = res.getArr();
-        assertArrayEquals(new long[]{1, 1}, res.getShape());
-    }
-
-    @Test
     public void testWeightedXentWithLogits() {
         SameDiff sameDiff = SameDiff.create();
         INDArray targets = Nd4j.create(new long[]{1, 5});
@@ -221,28 +199,6 @@ public class SameDiffTests {
 
         INDArray resultArray = res.getArr();
         assertArrayEquals(new long[]{1, 5}, res.getShape());
-    }
-
-    @Test
-    public void testSigmoidXentWithLogits() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray logits = Nd4j.create(new long[]{1, 5});
-        INDArray weights = Nd4j.create(new long[]{1, 5});
-        INDArray labels = Nd4j.create(new long[]{1, 5});
-
-        SDVariable sdLogits = sameDiff.var("logits", logits);
-        SDVariable sdWeights = sameDiff.var("weights", weights);
-        SDVariable sdLabels = sameDiff.var("labels", labels);
-
-        int mode = 0;
-        double labelSmoothing = 0.0;
-
-        SDVariable res = sameDiff.sigmoidCrossEntropyWithLogits(sdLogits, sdWeights, sdLabels, mode, labelSmoothing);
-        sameDiff.exec();
-
-        INDArray resultArray = res.getArr();
-        assertArrayEquals(new long[]{1, 5}, res.getShape());
-
     }
 
     @Test
@@ -1544,10 +1500,10 @@ public class SameDiffTests {
         SameDiff sd = SameDiff.create();
 
         INDArray input = Nd4j.rand(1, 10);
-        INDArray mean = Nd4j.rand(1, 10);
-        INDArray var = Nd4j.rand(1, 10);
-        INDArray gamma = Nd4j.rand(1, 10);
-        INDArray beta = Nd4j.rand(1, 10);
+        INDArray mean = Nd4j.rand(1, 10).reshape(10);
+        INDArray var = Nd4j.rand(1, 10).reshape(10);
+        INDArray gamma = Nd4j.rand(1, 10).reshape(10);
+        INDArray beta = Nd4j.rand(1, 10).reshape(10);
 
         SDVariable sdInput = sd.var("input", input);
         SDVariable sdMean = sd.var("mean", mean);
@@ -1556,7 +1512,7 @@ public class SameDiffTests {
         SDVariable sdBeta = sd.var("beta", beta);
 
         SDVariable out = sd.batchNorm(sdInput, sdMean, sdVar, sdGamma, sdBeta,
-                true, true, 0.0);
+                0.0, 1);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
@@ -1584,7 +1540,7 @@ public class SameDiffTests {
         sd.exec();
 
         for (int i = 0; i < 4; i++)
-            assert out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getDouble(0) == 1;
+            assertEquals(1, out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getInt(0));
 
     }
 
@@ -1659,7 +1615,7 @@ public class SameDiffTests {
 
 
         SameDiff sd = SameDiff.create();
-        INDArray depthWeightArr = Nd4j.create(depthWise, nIn, kH, kW);
+        INDArray depthWeightArr = Nd4j.create(kH, kW, nIn, depthWise);
 
         INDArray bArr = Nd4j.create(1, depthWise * nIn);
         INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);

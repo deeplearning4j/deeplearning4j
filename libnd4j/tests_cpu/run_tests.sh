@@ -19,4 +19,15 @@
 
 set -exo pipefail
 
+# On Mac, make sure it can find libraries for GCC
+export DYLD_LIBRARY_PATH=/usr/local/lib/gcc/8/:/usr/local/lib/gcc/7/:/usr/local/lib/gcc/6/:/usr/local/lib/gcc/5/
+
+# For Windows, add DLLs of MKL-DNN and OpenBLAS to the PATH
+if [ -n "$BUILD_PATH" ]; then
+    if which cygpath; then
+        BUILD_PATH=$(cygpath -p $BUILD_PATH)
+    fi
+    export PATH="$PATH:$BUILD_PATH"
+fi
+
 ../blasbuild/cpu/tests_cpu/layers_tests/runtests --gtest_output="xml:../target/surefire-reports/TEST-results.xml"

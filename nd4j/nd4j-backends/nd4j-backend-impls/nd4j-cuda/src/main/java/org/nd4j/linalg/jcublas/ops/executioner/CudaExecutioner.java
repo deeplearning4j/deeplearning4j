@@ -1494,7 +1494,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer retPointer = null;
         int dimension[] = null;
 
-        if (op.opNum() == 41 && op.extraArgs() != null) {
+        if (op.opNum() == 41 && op.extraArgs() != null && op.extraArgs().length > 0) {
             // for IsMax along dimension we need special temporary buffer
             dimension = new int[(int) op.extraArgs()[0]];
 

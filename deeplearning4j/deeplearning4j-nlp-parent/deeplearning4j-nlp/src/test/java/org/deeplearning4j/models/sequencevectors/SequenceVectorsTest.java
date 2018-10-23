@@ -71,6 +71,7 @@ import static org.junit.Assert.*;
  *
  * @author raver119@gmail.com
  */
+@Ignore
 public class SequenceVectorsTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(SequenceVectorsTest.class);

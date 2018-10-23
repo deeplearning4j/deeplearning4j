@@ -55,8 +55,12 @@ public class JdbcWritableConverter {
                 return new Text(columnValue.toString());
 
             case Types.FLOAT:
-            case Types.REAL:
                 return new FloatWritable((float) columnValue);
+                
+            case Types.REAL:
+                return columnValue instanceof Float
+                    ? new FloatWritable((float) columnValue)
+                    : new DoubleWritable((double) columnValue);
 
             case Types.DECIMAL:
             case Types.NUMERIC:

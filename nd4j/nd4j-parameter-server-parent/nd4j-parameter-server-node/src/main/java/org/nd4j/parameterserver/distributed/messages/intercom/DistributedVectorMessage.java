@@ -28,6 +28,7 @@ import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregat
  */
 @Data
 @Slf4j
+@Deprecated
 public class DistributedVectorMessage extends BaseVoidMessage implements DistributedMessage {
     protected int rowIndex;
     protected int key;

@@ -241,6 +241,14 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     boolean isPlaceHolder(TENSOR_TYPE nodeType);
 
+
+    /**
+     * Returns true if the given node is a constant
+     * @param nodeType
+     * @return
+     */
+    boolean isConstant(TENSOR_TYPE nodeType);
+
     /**
      *
      *

@@ -186,9 +186,11 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         /**
          * Here we s
          */
-        if (paramServerConfiguration == null)
-            paramServerConfiguration = VoidConfiguration.builder().faultToleranceStrategy(FaultToleranceStrategy.NONE)
-                            .numberOfShards(2).unicastPort(40123).multicastPort(40124).build();
+        if (paramServerConfiguration == null) {
+            paramServerConfiguration = VoidConfiguration.builder()
+                    .numberOfShards(2).unicastPort(40123).multicastPort(40124).build();
+            paramServerConfiguration.setFaultToleranceStrategy(FaultToleranceStrategy.NONE);
+        }
 
         isAutoDiscoveryMode = paramServerConfiguration.getShardAddresses() != null
                         && !paramServerConfiguration.getShardAddresses().isEmpty() ? false : true;
@@ -234,7 +236,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
             } else {
                 // for single host (aka driver-only, aka spark-local) just run on loopback interface
                 paramServerConfiguration.setShardAddresses(
-                                Arrays.asList("127.0.0.1:" + paramServerConfiguration.getUnicastPort()));
+                                Arrays.asList("127.0.0.1:" + paramServerConfiguration.getPortSupplier().getPort()));
                 paramServerConfiguration.setFaultToleranceStrategy(FaultToleranceStrategy.NONE);
             }
 

@@ -91,14 +91,6 @@ public class LeakyReLU extends BaseScalarOp {
     }
 
     @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("alpha", alpha);
-        return ret;
-    }
-
-
-    @Override
     public int opNum() {
         return 35;
     }

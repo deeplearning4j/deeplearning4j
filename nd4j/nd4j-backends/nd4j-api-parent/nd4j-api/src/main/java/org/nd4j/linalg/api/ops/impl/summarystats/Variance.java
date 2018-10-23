@@ -159,8 +159,8 @@ public class Variance extends BaseReduceOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "moments";
+    public String tensorflowName(){
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
 
@@ -207,5 +207,10 @@ public class Variance extends BaseReduceOp {
         val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
         ret.add(LongShapeDescriptor.fromShape(reducedShape, resultType()));
         return ret;
+    }
+
+    @Override
+    public Type opType(){
+        return Type.VARIANCE;
     }
 }
