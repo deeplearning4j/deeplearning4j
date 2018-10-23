@@ -16,9 +16,11 @@
 
 package org.nd4j.linalg.mixed;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.IsInf;
@@ -289,6 +291,55 @@ public class MixedDataTypesTests {
         val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.DOUBLE);
 
         arrayX.addi(arrayY);
+    }
+
+
+    @Test
+    public void testFlatSerde_1() throws Exception {
+        val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
+
+        val builder = new FlatBufferBuilder(512);
+        val flat = arrayX.toFlatArray(builder);
+        builder.finish(flat);
+        val db = builder.dataBuffer();
+
+        val flatb = FlatArray.getRootAsFlatArray(db);
+
+        val restored = Nd4j.createFromFlatArray(flatb);
+
+        assertEquals(arrayX, restored);
+    }
+
+    @Test
+    public void testFlatSerde_2() throws Exception {
+        val arrayX = Nd4j.create(new long[]{1, 2, 3, 4}, new  long[]{4}, DataType.LONG);
+
+        val builder = new FlatBufferBuilder(512);
+        val flat = arrayX.toFlatArray(builder);
+        builder.finish(flat);
+        val db = builder.dataBuffer();
+
+        val flatb = FlatArray.getRootAsFlatArray(db);
+
+        val restored = Nd4j.createFromFlatArray(flatb);
+
+        assertEquals(arrayX, restored);
+    }
+
+    @Test
+    public void testFlatSerde_3() throws Exception {
+        val arrayX = Nd4j.create(new boolean[]{true, false, true, true}, new  long[]{4}, DataType.BOOL);
+
+        val builder = new FlatBufferBuilder(512);
+        val flat = arrayX.toFlatArray(builder);
+        builder.finish(flat);
+        val db = builder.dataBuffer();
+
+        val flatb = FlatArray.getRootAsFlatArray(db);
+
+        val restored = Nd4j.createFromFlatArray(flatb);
+
+        assertEquals(arrayX, restored);
     }
 
 }

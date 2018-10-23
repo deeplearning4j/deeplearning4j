@@ -1054,22 +1054,92 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public byte[] asBytes() {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        if (dataType() == DataType.DOUBLE) {
-            for (int i = 0; i < length(); i++) {
-                try {
-                    dos.writeDouble(getDouble(i));
-                } catch (IOException e) {
-                    e.printStackTrace();
+        val dataType = dataType();
+        switch (dataType) {
+            case DOUBLE:
+                    for (int i = 0; i < length(); i++) {
+                        try {
+                            dos.writeDouble(getDouble(i));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    break;
+                case FLOAT:
+                    for (int i = 0; i < length(); i++) {
+                        try {
+                            dos.writeFloat(getFloat(i));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    break;
+            case HALF:
+                for (int i = 0; i < length(); i++) {
+                    try {
+                        dos.writeShort(HalfIndexer.fromFloat(getFloat(i)));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-            }
-        } else {
-            for (int i = 0; i < length(); i++) {
-                try {
-                    dos.writeFloat(getFloat(i));
-                } catch (IOException e) {
-                    e.printStackTrace();
+                break;
+            case BOOL:
+                for (int i = 0; i < length(); i++) {
+                    try {
+                        dos.writeBoolean(getInt(i) == 1);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-            }
+                break;
+            case BYTE:
+                for (int i = 0; i < length(); i++) {
+                    try {
+                        dos.writeByte((byte) getShort(i));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                break;
+            case UBYTE:
+                for (int i = 0; i < length(); i++) {
+                    //try {
+                        throw new UnsupportedOperationException();
+                        //dos.writeByte(getShort(i));
+                    //} catch (IOException e) {
+                    //    e.printStackTrace();
+                    //}
+                }
+                break;
+            case SHORT:
+                    for (int i = 0; i < length(); i++) {
+                        try {
+                            dos.writeShort(getShort(i));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    break;
+            case INT:
+                for (int i = 0; i < length(); i++) {
+                    try {
+                        dos.writeInt(getInt(i));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                break;
+            case LONG:
+                for (int i = 0; i < length(); i++) {
+                    try {
+                        dos.writeLong(getLong(i));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                break;
+                default:
+                    throw new UnsupportedOperationException("Unknown data type: [" + dataType + "]");
         }
         return bos.toByteArray();
     }
