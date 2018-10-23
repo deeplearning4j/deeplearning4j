@@ -46,11 +46,13 @@ The CUDA Backend has some additional requirements before it can be built:
 In order to build the CUDA backend you will have to setup some more environment variables first, by calling `vcvars64.bat`.
 But first, set the system environment variable `SET_FULL_PATH` to `true`, so all of the variables that `vcvars64.bat` sets up, are passed to the mingw shell.
 Additionally, you need to open the `mingw64.ini` in your msys64 installation folder and add the command: `MSYS2_PATH_TYPE=inherit`.
+Replace *YOUR VERSION* with the target version. 14.0 is known to work.
 
-1. Inside a normal cmd.exe command prompt, run `C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\vcvars64.bat`
+1. Inside a normal cmd.exe command prompt, run `C:\Program Files (x86)\Microsoft Visual Studio *YOUR VERSION*\VC\bin\amd64\vcvars64.bat`
 2. Run `c:\msys64\mingw64.exe` inside that
 3. Change to your libnd4j folder
 4. `./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH`
+
 
 This builds the CUDA nd4j.dll.
 

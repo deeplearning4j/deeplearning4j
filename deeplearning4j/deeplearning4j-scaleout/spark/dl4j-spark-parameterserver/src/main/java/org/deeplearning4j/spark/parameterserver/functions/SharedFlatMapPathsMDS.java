@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.parameterserver.functions;
 
+import org.apache.commons.io.LineIterator;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
@@ -26,6 +27,8 @@ import org.deeplearning4j.spark.parameterserver.pw.SharedTrainingWrapper;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
 
+import java.io.File;
+import java.io.FileReader;
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -59,13 +62,22 @@ class SharedFlatMapPathsMDSAdapter<R extends TrainingResult> implements FlatMapF
         }
         // here we'll be converting out Strings coming out of iterator to DataSets
         // PathSparkDataSetIterator does that for us
+        //For better fault tolerance, we'll pull all paths to a local file. This way, if the Iterator<String> is backed
+        // by a remote source that later goes down, we won't fail (as long as the source is still available)
+        File f = SharedFlatMapPaths.toTempFile(dataSetIterator);
 
-        // iterator should be silently attached to VirtualDataSetIterator, and used appropriately
-        SharedTrainingWrapper.getInstance(worker.getInstanceId()).attachMDS(new PathSparkMultiDataSetIterator(dataSetIterator, loader));
+        LineIterator lineIter = new LineIterator(new FileReader(f));    //Buffered reader added automatically
+        try {
+            // iterator should be silently attached to VirtualDataSetIterator, and used appropriately
+            SharedTrainingWrapper.getInstance(worker.getInstanceId()).attachMDS(new PathSparkMultiDataSetIterator(lineIter, loader));
 
-        // first callee will become master, others will obey and die
-        SharedTrainingResult result = SharedTrainingWrapper.getInstance(worker.getInstanceId()).run(worker);
+            // first callee will become master, others will obey and die
+            SharedTrainingResult result = SharedTrainingWrapper.getInstance(worker.getInstanceId()).run(worker);
 
-        return Collections.singletonList((R) result);
+            return Collections.singletonList((R) result);
+        } finally {
+            lineIter.close();
+            f.delete();
+        }
     }
 }

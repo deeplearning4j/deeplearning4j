@@ -28,6 +28,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public abstract class BaseRouter implements ClientRouter {
     protected VoidConfiguration voidConfiguration;
     protected Transport transport;

@@ -148,7 +148,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
     /**
-     * Main constructor for multi-label regression (i.e., regression with multiple outputs)
+     * Main constructor for multi-label regression (i.e., regression with multiple outputs). Can also be used for single
+     * output regression with labelIndexFrom == labelIndexTo
      *
      * @param recordReader      RecordReader to get data from
      * @param labelIndexFrom    Index of the first regression target

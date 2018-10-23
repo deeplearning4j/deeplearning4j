@@ -20,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.nd4j.base.Preconditions;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -29,16 +30,31 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Conv1DConfig extends BaseConvolutionConfig {
+    public static final String NCW = "NCW";
+    public static final String NWC = "NWC";
+
     @Builder.Default private long k = -1L;
     @Builder.Default
     private long s = 1;
     @Builder.Default
     private long p = 0;
     @Builder.Default
-    private String dataFormat = "NHC";
-    @Builder.Default
-    private boolean isNHC = false;
+    private String dataFormat = NCW;
     private boolean isSameMode;
+
+    public boolean isNWC(){
+        Preconditions.checkState(dataFormat.equalsIgnoreCase(NCW) || dataFormat.equalsIgnoreCase(NWC),
+                "Data format must be one of %s or %s, got %s", NCW, NWC, dataFormat);
+        return dataFormat.equalsIgnoreCase(NWC);
+    }
+
+    public void isNWC(boolean isNWC){
+        if(isNWC){
+            dataFormat = NWC;
+        } else {
+            dataFormat = NCW;
+        }
+    }
 
     public Map<String, Object> toProperties() {
         Map<String, Object> ret = new LinkedHashMap<>();
@@ -47,7 +63,6 @@ public class Conv1DConfig extends BaseConvolutionConfig {
         ret.put("p", p);
         ret.put("isSameMode", isSameMode);
         ret.put("dataFormat", dataFormat);
-        ret.put("isNHC", isNHC);
         return ret;
     }
 

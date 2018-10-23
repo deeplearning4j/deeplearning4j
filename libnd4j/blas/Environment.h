@@ -37,6 +37,7 @@ namespace nd4j{
         std::atomic<int> _maxThreads;
         std::atomic<nd4j::DataType> _dataType;
         std::atomic<bool> _precBoost;
+        std::atomic<bool> _useMKLDNN{true};
 
         static Environment* _instance;
 
@@ -61,6 +62,9 @@ namespace nd4j{
 
         int maxThreads();
         void setMaxThreads(int max);
+
+        bool isUseMKLDNN() { return _useMKLDNN.load(); }
+        void setUseMKLDNN(bool useMKLDNN) { _useMKLDNN.store(useMKLDNN); }
 
         nd4j::DataType defaultFloatDataType();
         void setDefaultFloatDataType(nd4j::DataType dtype);

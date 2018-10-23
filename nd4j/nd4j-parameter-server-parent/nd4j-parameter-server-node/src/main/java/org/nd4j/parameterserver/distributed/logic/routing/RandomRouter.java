@@ -30,6 +30,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class RandomRouter extends BaseRouter {
     protected int numShards;
 

@@ -32,14 +32,30 @@ public final class FlatProperties extends Table {
   public FlatArray a(int j) { return a(new FlatArray(), j); }
   public FlatArray a(FlatArray obj, int j) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int aLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
+  public boolean b(int j) { int o = __offset(14); return o != 0 ? 0!=bb.get(__vector(o) + j * 1) : false; }
+  public int bLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
+  public ByteBuffer bAsByteBuffer() { return __vector_as_bytebuffer(14, 1); }
+  public ByteBuffer bInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 14, 1); }
+  public String s(int j) { int o = __offset(16); return o != 0 ? __string(__vector(o) + j * 4) : null; }
+  public int sLength() { int o = __offset(16); return o != 0 ? __vector_len(o) : 0; }
+  public int shape(int j) { int o = __offset(18); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
+  public int shapeLength() { int o = __offset(18); return o != 0 ? __vector_len(o) : 0; }
+  public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(18, 4); }
+  public ByteBuffer shapeInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 18, 4); }
 
   public static int createFlatProperties(FlatBufferBuilder builder,
       int nameOffset,
       int iOffset,
       int lOffset,
       int dOffset,
-      int aOffset) {
-    builder.startObject(5);
+      int aOffset,
+      int bOffset,
+      int sOffset,
+      int shapeOffset) {
+    builder.startObject(8);
+    FlatProperties.addShape(builder, shapeOffset);
+    FlatProperties.addS(builder, sOffset);
+    FlatProperties.addB(builder, bOffset);
     FlatProperties.addA(builder, aOffset);
     FlatProperties.addD(builder, dOffset);
     FlatProperties.addL(builder, lOffset);
@@ -48,7 +64,7 @@ public final class FlatProperties extends Table {
     return FlatProperties.endFlatProperties(builder);
   }
 
-  public static void startFlatProperties(FlatBufferBuilder builder) { builder.startObject(5); }
+  public static void startFlatProperties(FlatBufferBuilder builder) { builder.startObject(8); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(0, nameOffset, 0); }
   public static void addI(FlatBufferBuilder builder, int iOffset) { builder.addOffset(1, iOffset, 0); }
   public static int createIVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
@@ -62,6 +78,15 @@ public final class FlatProperties extends Table {
   public static void addA(FlatBufferBuilder builder, int aOffset) { builder.addOffset(4, aOffset, 0); }
   public static int createAVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startAVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addB(FlatBufferBuilder builder, int bOffset) { builder.addOffset(5, bOffset, 0); }
+  public static int createBVector(FlatBufferBuilder builder, boolean[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) builder.addBoolean(data[i]); return builder.endVector(); }
+  public static void startBVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
+  public static void addS(FlatBufferBuilder builder, int sOffset) { builder.addOffset(6, sOffset, 0); }
+  public static int createSVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
+  public static void startSVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addShape(FlatBufferBuilder builder, int shapeOffset) { builder.addOffset(7, shapeOffset, 0); }
+  public static int createShapeVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
+  public static void startShapeVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endFlatProperties(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

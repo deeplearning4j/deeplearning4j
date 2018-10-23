@@ -53,6 +53,7 @@ import static org.junit.Assert.*;
  */
 @Slf4j
 @Ignore
+@Deprecated
 public class VoidParameterServerTest {
     private static List<String> localIPs;
     private static List<String> badIPs;
@@ -74,8 +75,9 @@ public class VoidParameterServerTest {
 
     @Test(timeout = 30000L)
     public void testNodeRole1() throws Exception {
-        final VoidConfiguration conf = VoidConfiguration.builder().unicastPort(34567).multicastPort(45678)
+        final VoidConfiguration conf = VoidConfiguration.builder().multicastPort(45678)
                         .numberOfShards(10).multicastNetwork("224.0.1.1").shardAddresses(localIPs).ttl(4).build();
+        conf.setUnicastControllerPort(34567);
 
         VoidParameterServer node = new VoidParameterServer();
         node.init(conf, transport, new SkipGramTrainer());
@@ -86,9 +88,10 @@ public class VoidParameterServerTest {
 
     @Test(timeout = 30000L)
     public void testNodeRole2() throws Exception {
-        final VoidConfiguration conf = VoidConfiguration.builder().unicastPort(34567).multicastPort(45678)
+        final VoidConfiguration conf = VoidConfiguration.builder().multicastPort(45678)
                         .numberOfShards(10).shardAddresses(badIPs).backupAddresses(localIPs)
                         .multicastNetwork("224.0.1.1").ttl(4).build();
+        conf.setUnicastControllerPort(34567);
 
         VoidParameterServer node = new VoidParameterServer();
         node.init(conf, transport, new SkipGramTrainer());
@@ -99,9 +102,10 @@ public class VoidParameterServerTest {
 
     @Test(timeout = 30000L)
     public void testNodeRole3() throws Exception {
-        final VoidConfiguration conf = VoidConfiguration.builder().unicastPort(34567).multicastPort(45678)
+        final VoidConfiguration conf = VoidConfiguration.builder().multicastPort(45678)
                         .numberOfShards(10).shardAddresses(badIPs).backupAddresses(badIPs).multicastNetwork("224.0.1.1")
                         .ttl(4).build();
+        conf.setUnicastControllerPort(34567);
 
         VoidParameterServer node = new VoidParameterServer();
         node.init(conf, transport, new SkipGramTrainer());
@@ -115,8 +119,9 @@ public class VoidParameterServerTest {
         final AtomicInteger failCnt = new AtomicInteger(0);
         final AtomicInteger passCnt = new AtomicInteger(0);
 
-        final VoidConfiguration conf = VoidConfiguration.builder().unicastPort(34567).multicastPort(45678)
+        final VoidConfiguration conf = VoidConfiguration.builder().multicastPort(45678)
                         .numberOfShards(10).shardAddresses(localIPs).multicastNetwork("224.0.1.1").ttl(4).build();
+        conf.setUnicastControllerPort(34567);
 
         Thread[] threads = new Thread[10];
         for (int t = 0; t < threads.length; t++) {
@@ -166,21 +171,25 @@ public class VoidParameterServerTest {
                         2.00, 2.00});
 
 
-        final VoidConfiguration clientConf = VoidConfiguration.builder().unicastPort(34567).multicastPort(45678)
+        final VoidConfiguration clientConf = VoidConfiguration.builder().multicastPort(45678)
                         .numberOfShards(3).shardAddresses(localIPs).multicastNetwork("224.0.1.1").streamId(119)
                         .forcedRole(NodeRole.CLIENT).ttl(4).build();
+        clientConf.setUnicastControllerPort(34567);
 
-        final VoidConfiguration shardConf1 = VoidConfiguration.builder().unicastPort(34567).multicastPort(45678)
+        final VoidConfiguration shardConf1 = VoidConfiguration.builder().multicastPort(45678)
                         .numberOfShards(3).streamId(119).shardAddresses(localIPs).multicastNetwork("224.0.1.1").ttl(4)
                         .build();
+        shardConf1.setUnicastControllerPort(34568);
 
-        final VoidConfiguration shardConf2 = VoidConfiguration.builder().unicastPort(34569) // we'll never get anything on this port
+        final VoidConfiguration shardConf2 = VoidConfiguration.builder()
                         .multicastPort(45678).numberOfShards(3).streamId(119).shardAddresses(localIPs)
                         .multicastNetwork("224.0.1.1").ttl(4).build();
+        shardConf2.setUnicastControllerPort(34569); // we'll never get anything on this port
 
-        final VoidConfiguration shardConf3 = VoidConfiguration.builder().unicastPort(34570) // we'll never get anything on this port
+        final VoidConfiguration shardConf3 = VoidConfiguration.builder()
                         .multicastPort(45678).numberOfShards(3).streamId(119).shardAddresses(localIPs)
                         .multicastNetwork("224.0.1.1").ttl(4).build();
+        shardConf3.setUnicastControllerPort(34570); // we'll never get anything on this port
 
 
 
@@ -412,21 +421,25 @@ public class VoidParameterServerTest {
 
         Nd4j.create(1);
 
-        final VoidConfiguration clientConf = VoidConfiguration.builder().unicastPort(34567).multicastPort(45678)
+        final VoidConfiguration clientConf = VoidConfiguration.builder().multicastPort(45678)
                         .numberOfShards(3).shardAddresses(localIPs).multicastNetwork("224.0.1.1").streamId(119)
                         .forcedRole(NodeRole.CLIENT).ttl(4).build();
+        clientConf.setUnicastControllerPort(34567);
 
-        final VoidConfiguration shardConf1 = VoidConfiguration.builder().unicastPort(34567).multicastPort(45678)
+        final VoidConfiguration shardConf1 = VoidConfiguration.builder().multicastPort(45678)
                         .numberOfShards(3).streamId(119).shardAddresses(localIPs).multicastNetwork("224.0.1.1").ttl(4)
                         .build();
+        shardConf1.setUnicastControllerPort(34567);
 
-        final VoidConfiguration shardConf2 = VoidConfiguration.builder().unicastPort(34569) // we'll never get anything on this port
+        final VoidConfiguration shardConf2 = VoidConfiguration.builder()
                         .multicastPort(45678).numberOfShards(3).streamId(119).shardAddresses(localIPs)
                         .multicastNetwork("224.0.1.1").ttl(4).build();
+        shardConf2.setUnicastControllerPort(34569); // we'll never get anything on this port
 
-        final VoidConfiguration shardConf3 = VoidConfiguration.builder().unicastPort(34570) // we'll never get anything on this port
+        final VoidConfiguration shardConf3 = VoidConfiguration.builder()
                         .multicastPort(45678).numberOfShards(3).streamId(119).shardAddresses(localIPs)
                         .multicastNetwork("224.0.1.1").ttl(4).build();
+        shardConf3.setUnicastControllerPort(34570); // we'll never get anything on this port
 
 
 

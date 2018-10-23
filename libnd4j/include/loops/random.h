@@ -40,18 +40,18 @@ namespace functions {
 
 #ifdef __CUDACC__
             template<typename OpClass>
-            static _CUDA_D void execTransformCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
+            static _CUDA_D void execTransformCuda(Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *y, Nd4jLong *yShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
 
             template<typename OpClass>
-            static _CUDA_D void execTransformCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
+            static _CUDA_D void execTransformCuda(Nd4jPointer state, X *x, Nd4jLong *xShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
 
             template<typename OpClass>
-            static _CUDA_D void execTransformCuda(Nd4jPointer state, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
+            static _CUDA_D void execTransformCuda(Nd4jPointer state, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
 
 
-            static _CUDA_H void executeCudaSingle(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
-            static _CUDA_H void executeCudaDouble(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, T *x, Nd4jLong *xShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
-            static _CUDA_H void executeCudaTriple(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments);
+            static _CUDA_H void executeCudaSingle(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
+            static _CUDA_H void executeCudaDouble(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, X *x, Nd4jLong *xShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
+            static _CUDA_H void executeCudaTriple(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, X *x, Nd4jLong *xShapeBuffer, X *y, Nd4jLong *yShapeBuffer, X *z, Nd4jLong *zShapeBuffer, X *extraArguments);
 #endif
 
             template<typename OpClass>

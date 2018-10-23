@@ -54,19 +54,21 @@ public class TestComputationGraphSpace {
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
                         .addLayer("1", new DenseLayer.Builder().nIn(10).nOut(10).build(), "0").addLayer("2",
-                                        new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5)
+                                        new OutputLayer.Builder().lossFunction(LossFunction.MCXENT)
+                                                .activation(Activation.SOFTMAX)
+                                                .nIn(10).nOut(5)
                                                         .build(),
                                         "1")
-                        .setOutputs("2").backprop(true).pretrain(false).build();
+                        .setOutputs("2").build();
 
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
                         .updater(new Sgd(0.005))
                         .seed(12345).addInputs("in")
                         .addLayer("0", new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), "in")
                         .addLayer("1", new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), "0")
-                        .addLayer("2", new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5)
+                        .addLayer("2", new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(5)
                                         .build(), "1")
-                        .setOutputs("2").backprop(true).pretrain(false).setInputTypes(InputType.feedForward(10))
+                        .setOutputs("2").setInputTypes(InputType.feedForward(10))
                         .build();
 
         int nParams = cgs.numParameters();

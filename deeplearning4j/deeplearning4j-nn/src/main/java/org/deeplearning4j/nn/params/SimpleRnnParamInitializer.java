@@ -115,6 +115,8 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
 
             INDArray rw = WeightInitUtil.initWeights(nOut, nOut, new long[]{nOut, nOut}, rwInit, rwDist, 'f', m.get(RECURRENT_WEIGHT_KEY));
             m.put(RECURRENT_WEIGHT_KEY, rw);
+
+            m.get(BIAS_KEY).assign(c.getBiasInit());
         } else {
             m = getSubsets(paramsView, nIn, nOut, true);
         }

@@ -19,6 +19,7 @@ package org.nd4j.parameterserver.distributed.messages.complete;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public class FrameCompleteMessage extends BaseCompleteMessage {
     protected FrameCompleteMessage() {
         super(19);

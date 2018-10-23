@@ -98,7 +98,7 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
      * @param params
      */
     @Override
-    public void applyUpdate(StepFunction function, INDArray params, INDArray grad) {
+    public void applyUpdate(StepFunction function, INDArray params, INDArray grad, boolean isFinalStep) {
 
         try {
             updatesLock.readLock().lock();
@@ -127,6 +127,10 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
         }
     }
 
+    @Override
+    public void markExternalUpdates(boolean updatesAvailable) {
+        // no-op
+    }
 
     /**
      * This method applies accumulated updates via given StepFunction
@@ -170,7 +174,7 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
      * @param array
      */
     @Override
-    public void storeUpdate(INDArray array) {
+    public void storeUpdate(INDArray array, int iterationNumber, int epochNumber) {
         /*
             Here we want to do 4 things:
             1) update accumulated values
@@ -210,7 +214,7 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
                 Nd4j.getExecutioner().commit();
 
                 // if there's something to send - send it. Skip otherwise!!!
-                if (handler.broadcastUpdates(storage)) {
+                if (handler.broadcastUpdates(storage, iterationNumber, epochNumber)) {
                     ownCounter.getAndIncrement();
                 }
 
@@ -290,5 +294,11 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
     public void setExternalSource(Queue<INDArray> source) {
         // TODO: to be implemented
         throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public boolean hasAnything() {
+        return false;
     }
 }

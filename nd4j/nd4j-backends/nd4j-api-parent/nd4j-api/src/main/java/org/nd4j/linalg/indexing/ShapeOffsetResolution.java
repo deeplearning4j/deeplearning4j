@@ -132,6 +132,15 @@ public class ShapeOffsetResolution implements Serializable {
             }
             //point or interval is possible
             if (arr.isRowVector()) {
+                //1D edge case
+                if(arr.rank() == 1 && indexes.length == 1 && indexes[0] instanceof IntervalIndex){
+                    offset = indexes[0].offset();
+                    this.shapes = new long[1];
+                    this.shapes[0] = indexes[0].length();
+                    this.strides = new long[]{arr.stride(0)};
+                    this.offsets = new long[1];
+                    return true;
+                }
                 if (indexes[0] instanceof PointIndex) {
                     if (indexes.length > 1 && indexes[1] instanceof IntervalIndex) {
                         offset = indexes[1].offset();
@@ -644,31 +653,6 @@ public class ShapeOffsetResolution implements Serializable {
         else
             this.offset += ArrayUtil.calcOffsetLong2(accumShape, accumOffsets, accumStrides)
                     / Math.max(1, numIntervals);
-
-
-        //collapse singular dimensions with specified index
-        List<Integer> removeShape = new ArrayList<>();
-        for (int i = 0; i < Math.min(this.shapes.length, indexes.length); i++) {
-            if (this.shapes[i] == 1 && indexes[i] instanceof SpecifiedIndex) {
-                removeShape.add(i);
-            }
-        }
-
-
-        if (!removeShape.isEmpty()) {
-            List<Long> newShape = new ArrayList<>();
-            List<Long> newStrides = new ArrayList<>();
-            for (int i = 0; i < this.shapes.length; i++) {
-                if (!removeShape.contains(i)) {
-                    newShape.add(this.shapes[i]);
-                    newStrides.add(this.strides[i]);
-                }
-            }
-
-            this.shapes = Longs.toArray(newShape);
-            this.strides = Longs.toArray(newStrides);
-        }
-
     }
 
     public void resolveFixedDimensionsCOO(INDArrayIndex... indexes) {

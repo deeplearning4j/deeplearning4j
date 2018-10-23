@@ -31,7 +31,6 @@
 
 namespace nd4j {
 namespace ops  {
- 
 
 CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
             
@@ -46,7 +45,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
 
     int kH = INT_ARG(0);                                                        // filter(kernel) height
     int kW = INT_ARG(1);                                                        // filter(kernel) width
-    int sH = INT_ARG(2);                                                        // strides height 
+    int sH = INT_ARG(2);                                                        // strides height
     int sW = INT_ARG(3);                                                        // strides width
     int pH = INT_ARG(4);                                                        // paddings height
     int pW = INT_ARG(5);                                                        // paddings width
@@ -71,7 +70,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(),  block.getWorkspace());
-    
+
     //----- calculation of output -----//
     // NHWC: [kH, kW, oC, iC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
     // NCHW: [iC, oC, kH, kW] x [bS, iC, iH, iW] = [oC, kH, kW, bS, iH, iW]
@@ -117,7 +116,7 @@ DECLARE_SHAPE_FN(deconv2d) {
 
     int indIOioC, indIiH, indWoC(2);
     if(!isNCHW) {
-        indIOioC = 3; indIiH = 1; 
+        indIOioC = 3; indIiH = 1;
     }
     else {
         indIOioC = 1; indIiH = 2;
@@ -151,7 +150,7 @@ DECLARE_SHAPE_FN(deconv2d) {
         outputShapeInfo[2] = oH;
         outputShapeInfo[3] = oW;
         outputShapeInfo[4] = oC;
-    }    
+    }
     
     ShapeUtils::updateStridesAndType(outputShapeInfo, weightsShapeInfo, shape::order(inputShapeInfo));
 
@@ -226,10 +225,10 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
 
     // ----- calculation of gradW ----- //
     NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(), block.getWorkspace());
-    
+
     LaunchContext ctx;
     helpers::im2col(ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
-    MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, {0, 4, 5}, {3, 2, 0, 1});           // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
+    MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, {0, 4, 5}, {3, 2, 0, 1});     // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
 
     // ----- calculation of gradB ----- //
     if(gradB) {

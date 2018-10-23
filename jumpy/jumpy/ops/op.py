@@ -30,6 +30,7 @@ def _is_nd4j(x):
 def _is_jumpy(x):
     return type(x) == ndarray
 
+
 '''
 Use the @op decorator over a method to automatically
 take care of nd4j<->jumpy conversions. e.g:
@@ -59,21 +60,20 @@ will be automatically bound to ndarray class.
 
 def op(f):
     def wrapper(*args, **kwargs):
-        spec = inspect.getargspec(f)
-        received_arg_count = len(args)
-        received_kwargs = kwargs.copy()
-        defs = list(spec.defaults)
-        for arg in spec.args:
-            if received_arg_count:
-                received_arg_count -= 1
-            elif arg not in received_kwargs:
-                kwargs[arg] = defs.pop(0)
-            else:
-                raise Exception("Value not provided for argument " + arg + ".")
         args = list(args)
         for i, arg in enumerate(args):
             if _is_jumpy(arg):
                 args[i] = arg.array
+            elif type(arg) is list:
+                for j, a in enumerate(arg):
+                    if _is_jumpy(a):
+                        arg[j] = a.array
+            elif type(arg) is tuple:
+                arg = list(arg)
+                for j, a in enumerate(arg):
+                    if _is_jumpy(a):
+                        arg[j] = a.array
+                args[i] = tuple(arg)    
         for k in kwargs:
             v = kwargs[k]
             if _is_jumpy(v):

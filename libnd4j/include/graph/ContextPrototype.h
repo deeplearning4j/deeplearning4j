@@ -22,6 +22,7 @@
 #define ND4J_CONTEXT_PROTOTYPE_H
 
 #include <vector>
+#include <Environment.h>
 #include <array/DataType.h>
 #include <dll.h>
 #include <RandomGenerator.h>
@@ -44,9 +45,9 @@ namespace nd4j {
             uint64_t _rootSeed;
             RandomGenerator _randomGenerator;
 
-            bool _useMKLDNN = true;
-
             std::vector<nd4j::DataType> _dataTypes;
+
+            bool _useMKLDNN = nd4j::Environment::getInstance()->isUseMKLDNN();
 
         public:
             explicit ContextPrototype(int nodeId = 1, bool inPlace = false);

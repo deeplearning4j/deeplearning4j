@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.broadcast.bool;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseBroadcastBoolOp;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
@@ -78,8 +79,8 @@ public class BroadcastLessThan extends BaseBroadcastBoolOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "less";
+    public String tensorflowName(){
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
     @Override

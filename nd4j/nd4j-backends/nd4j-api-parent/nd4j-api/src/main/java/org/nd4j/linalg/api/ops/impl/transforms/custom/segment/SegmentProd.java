@@ -20,6 +20,9 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Segment product operation
  *
@@ -43,4 +46,8 @@ public class SegmentProd extends DynamicCustomOp {
         return "SegmentProd";
     }
 
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradients){
+        return Arrays.asList(f().segmentProdBp(arg(0), arg(1), gradients.get(0)));
+    }
 }

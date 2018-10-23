@@ -30,6 +30,7 @@ import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
  */
 @Data
 @NoArgsConstructor
+@Deprecated
 public class DistributedSolidMessage extends BaseVoidMessage implements DistributedMessage {
     /**
      * The only use of this message is negTable sharing.

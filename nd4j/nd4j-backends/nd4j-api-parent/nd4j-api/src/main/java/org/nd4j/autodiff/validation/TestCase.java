@@ -43,6 +43,7 @@ import java.util.*;
 @Accessors(fluent = true)
 @Getter
 public class TestCase {
+    public enum TestSerialization {BEFORE_EXEC, AFTER_EXEC, BOTH, NONE};
 
     public static final boolean GC_DEFAULT_PRINT = true;
     public static final boolean GC_DEFAULT_EXIT_FIRST_FAILURE = false;
@@ -74,6 +75,9 @@ public class TestCase {
     private double gradCheckMaxRelativeError = GC_DEFAULT_MAX_REL_ERROR;
     private double gradCheckMinAbsError = GC_DEFAULT_MIN_ABS_ERROR;
     private Set<String> gradCheckSkipVariables;
+
+    //FlatBuffers serialization configuration
+    private TestSerialization testFlatBufferSerialization = TestSerialization.BOTH;
 
 
     /**

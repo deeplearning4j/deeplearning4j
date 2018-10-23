@@ -37,6 +37,7 @@ import org.nd4j.parameterserver.distributed.messages.VoidMessage;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class MulticastTransport extends BaseTransport {
     protected String multicastChannelUri;
 
@@ -95,7 +96,7 @@ public class MulticastTransport extends BaseTransport {
                  */
                 if (ip == null) {
                     ip = localIp;
-                    port = voidConfiguration.getUnicastPort();
+                    port = voidConfiguration.getUnicastControllerPort();
                 }
 
 
@@ -136,7 +137,7 @@ public class MulticastTransport extends BaseTransport {
                 String[] split = rts.split(":");
                 if (split.length == 1) {
                     ip = rts;
-                    port = voidConfiguration.getUnicastPort();
+                    port = voidConfiguration.getUnicastControllerPort();
                 } else {
                     ip = split[0];
                     port = Integer.valueOf(split[1]);

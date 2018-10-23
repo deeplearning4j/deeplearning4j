@@ -20,6 +20,24 @@
 
 #ifndef NATIVEOPERATIONS_CBLAS_H
 #define NATIVEOPERATIONS_CBLAS_H
+
+#ifdef __MKL_CBLAS_H__
+// CBLAS from MKL is already included
+#define CBLAS_H
+#endif
+
+#ifdef HAVE_MKLDNN
+// include CBLAS from MKL-DNN
+#include <mkl_cblas.h>
+#define CBLAS_H
+#endif
+
+#ifdef HAVE_OPENBLAS
+// include CBLAS from OpenBLAS
+#include <cblas.h>
+#define CBLAS_H
+#endif
+
 #ifndef CBLAS_H
 #include <dll.h>
 

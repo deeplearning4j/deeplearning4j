@@ -38,7 +38,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * An <a href="https://lucene.apache.org/solr/7_4_0/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html">
+ * An <a href="https://lucene.apache.org/solr/7_5_0/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html">
  * org.apache.solr.ltr.model.LTRScoringModel</a> that computes scores using a {@link MultiLayerNetwork} or
  * {@link ComputationGraph} model.
  * <p>
@@ -58,7 +58,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * <p>
  * Apache Solr Reference Guide:
  * <ul>
- * <li> <a href="https://lucene.apache.org/solr/guide/7_4/learning-to-rank.html">Learning To Rank</a>
+ * <li> <a href="https://lucene.apache.org/solr/guide/7_5/learning-to-rank.html">Learning To Rank</a>
  * </ul>
  */
 public class ScoringModel extends AdapterModel {

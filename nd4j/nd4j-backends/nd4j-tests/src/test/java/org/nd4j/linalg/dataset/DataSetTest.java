@@ -683,12 +683,12 @@ public class DataSetTest extends BaseNd4jTest {
         DataSet ds3d2 = new DataSet(f3d2, l3d2, null, lm3d2);
 
         INDArray expLabels3d = Nd4j.create(3, 3, 4);
-        expLabels3d.put(new INDArrayIndex[] {point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
+        expLabels3d.put(new INDArrayIndex[] {interval(0,1), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
                         l3d1);
         expLabels3d.put(new INDArrayIndex[] {NDArrayIndex.interval(1, 2, true), NDArrayIndex.all(),
                         NDArrayIndex.interval(0, 3)}, l3d2);
         INDArray expLM3d = Nd4j.create(3, 3, 4);
-        expLM3d.put(new INDArrayIndex[] {point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
+        expLM3d.put(new INDArrayIndex[] {interval(0,1), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
                         lm3d1);
         expLM3d.put(new INDArrayIndex[] {NDArrayIndex.interval(1, 2, true), NDArrayIndex.all(),
                         NDArrayIndex.interval(0, 3)}, lm3d2);

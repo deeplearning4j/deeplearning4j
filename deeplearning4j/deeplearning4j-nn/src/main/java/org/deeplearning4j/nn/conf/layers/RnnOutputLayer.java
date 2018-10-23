@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -108,7 +109,8 @@ public class RnnOutputLayer extends BaseOutputLayer {
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
         public Builder() {
-
+            //Set default activation function to softmax (to match default loss function MCXENT)
+            this.activationFn = new ActivationSoftmax();
         }
 
         /**
@@ -116,6 +118,8 @@ public class RnnOutputLayer extends BaseOutputLayer {
          */
         public Builder(LossFunction lossFunction) {
             lossFunction(lossFunction);
+            //Set default activation function to softmax (for consistent behaviour with no-arg constructor)
+            this.activationFn = new ActivationSoftmax();
         }
 
         /**
@@ -123,6 +127,8 @@ public class RnnOutputLayer extends BaseOutputLayer {
          */
         public Builder(ILossFunction lossFunction) {
             this.lossFn = lossFunction;
+            //Set default activation function to softmax (for consistent behaviour with no-arg constructor)
+            this.activationFn = new ActivationSoftmax();
         }
 
         @Override

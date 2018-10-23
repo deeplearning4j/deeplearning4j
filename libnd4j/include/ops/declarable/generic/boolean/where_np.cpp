@@ -104,12 +104,14 @@ namespace nd4j {
                 // in this case we return 2D matrix, which basically contains coordinates fo true
 
                 REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead", block.width());
-
+//                if (output->isEmpty())
                 Nd4jLong width = condition->rankOf();
                 nd4j::ops::Where op;
                 std::unique_ptr<ResultSet> res(op.execute({condition}, {}, {}));
                 REQUIRE_OK(res->status());
                 NDArray* whereTrue = res->at(0);
+                if (whereTrue->isEmpty())
+                    return ND4J_STATUS_OK;
                 for (Nd4jLong outNext = 0; outNext < width; ++outNext) {
                     auto output = OUTPUT_VARIABLE(outNext);
                     for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
@@ -123,8 +125,6 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
-
-
 
         DECLARE_SHAPE_FN(where_np) {
             auto shapes = SHAPELIST();
@@ -142,12 +142,18 @@ namespace nd4j {
                     if (condition->e<bool>(i)) numOfTrue++;
 
                 // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
-                for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
-                    Nd4jLong *newShape;
+                if (numOfTrue) {
+                    for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
 //                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-  //                  shape::shapeVector(numOfTrue, newShape);
-                    newShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, numOfTrue, block.workspace());
+                        //                  shape::shapeVector(numOfTrue, newShape);
+                        auto newShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, numOfTrue, block.workspace());
                     //ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
+                        shapes->push_back(newShape);
+                    }
+                }
+                else {
+                    newShape = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.getWorkspace());
+                    ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
                     shapes->push_back(newShape);
                 }
             }

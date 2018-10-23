@@ -24,14 +24,16 @@ import com.rits.cloning.Cloner;
 import com.rits.cloning.IFastCloner;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.functions.FunctionProperties;
+import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.flow.FlowPath;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.base.Preconditions;
@@ -61,6 +63,9 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
+import org.nd4j.linalg.api.ops.impl.loss.LogLoss;
+import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
+import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
@@ -88,7 +93,6 @@ import org.nd4j.weightinit.impl.ZeroInitScheme;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -116,6 +120,8 @@ public class SameDiff {
     private Map<String, int[]> permuteOrder;
     private boolean shouldBootStrap = true;
     private Set<String> importedVarName;
+    @Getter @Setter
+    private Set<String> importedConstants;
     //map a function's instance id to a base name, used for propagating variable names
     //for output during import
     private Map<String, String> baseNameForFunctionInstanceId;
@@ -748,7 +754,8 @@ public class SameDiff {
      *                                  its shape does not match the specified shape
      */
     @Deprecated
-    public void putOrUpdateShapeForVarName(String varName, @NonNull long[] shape, boolean clearArrayOnShapeMismatch){
+    public void putOrUpdateShapeForVarName(String varName, long[] shape, boolean clearArrayOnShapeMismatch){
+        Preconditions.checkNotNull(shape, "Cannot put null shape for variable: %s", varName);
         if(variableNameToShape.containsKey(varName)){
             updateShapeForVarName(varName, shape, clearArrayOnShapeMismatch);
         } else {
@@ -1403,7 +1410,10 @@ public class SameDiff {
     public long numElements() {
         long ret = 0;
         for (SDVariable variable : variables()) {
-            ret += ArrayUtil.prod(variable.getShape());
+            long[] shape = variable.getShape();
+            if(shape != null) {
+                ret += ArrayUtil.prod(shape);
+            }
         }
         return ret;
     }
@@ -2536,7 +2546,7 @@ public class SameDiff {
      * 1D Convolution layer operation - Conv1d
      *
      * @param input        the input array/activations for the conv1d op
-     * @param weights      weights for conv1d op
+     * @param weights      weights for conv1d op - rank 3 array with values [kernelSize, inputChannels, outputChannels]
      * @param conv1DConfig the configuration
      * @return
      */
@@ -2549,7 +2559,7 @@ public class SameDiff {
      *
      * @param name         name of the operation in SameDiff
      * @param input        the inputs to conv1d
-     * @param weights      weights for conv1d op
+     * @param weights      weights for conv1d op - rank 3 array with values [kernelSize, inputChannels, outputChannels]
      * @param conv1DConfig the configuration
      * @return
      */
@@ -2589,9 +2599,7 @@ public class SameDiff {
      *
      * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights    Weights for the convolution operation. 4 dimensions.
-     *                   If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
-     *                   If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param weights    Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels]
      * @param config     Conv2DConfig configuration
      * @return result of conv2d op
      */
@@ -2605,9 +2613,7 @@ public class SameDiff {
      *
      * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights    Weights for the convolution operation. 4 dimensions.
-     *                   If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
-     *                   If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param weights    Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels]
      * @param bias       Optional 1D bias array with shape [outputChannels]. May be null.
      * @param config     Conv2DConfig configuration
      * @return result of conv2d op
@@ -2652,9 +2658,7 @@ public class SameDiff {
      *
      * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights depth-wise conv 2D weights. 4 dimensions.
-     *                     If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
-     *                     If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
      * @param config       Conv2DConfig configuration
      * @return result of conv2d op
      */
@@ -2668,9 +2672,7 @@ public class SameDiff {
      *
      * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights depth-wise conv 2D weights. 4 dimensions.
-     *                     If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
-     *                     If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
      * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
      * @param config       Conv2DConfig configuration
      * @return result of depthwise conv2d op
@@ -2720,12 +2722,9 @@ public class SameDiff {
      *
      * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights Depth weights, rank 4.
-     *                     If layer input is in NCHW format, depth weights should have format [outputChannels, depthMultiplier, kernelHeight, kernelWidth].
-     *                     If layer input is in NHWC format, depth weights should have format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
-     * @param pointWeights Point weights, rank 4.
-     *                     If layer input is in NCHW format, point weights should have format [outputChannels, inputChannels*depthMultiplier, 1, 1].
-     *                     If layer input is in NHWC format, point weights should have format [1, 1, inputChannels*depthMultiplier, outputChannels]
+     * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
+     * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]
+     *                     May be null
      * @param config       Conv2DConfig configuration
      * @return result of separable convolution 2d operation
      */
@@ -2740,12 +2739,9 @@ public class SameDiff {
      *
      * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
      *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights Depth weights, rank 4.
-     *                     If layer input is in NCHW format, depth weights should have format [outputChannels, depthMultiplier, kernelHeight, kernelWidth].
-     *                     If layer input is in NHWC format, depth weights should have format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
-     * @param pointWeights Point weights, rank 4.
-     *                     If layer input is in NCHW format, point weights should have format [outputChannels, inputChannels*depthMultiplier, 1, 1].
-     *                     If layer input is in NHWC format, point weights should have format [1, 1, inputChannels*depthMultiplier, outputChannels]
+     * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
+     * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]
+     *                     May be null
      * @param bias         Optional bias, rank 1 with shape [outputChannels]. May be null.
      * @param config       Conv2DConfig configuration
      * @return result of separable convolution 2d operation
@@ -2792,11 +2788,9 @@ public class SameDiff {
     /**
      * 2D deconvolution operation without bias
      *
-     * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
-     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights    Weights for the 2d deconvolution operation. 4 dimensions.
-     *                   If layer input data is in NCHW format, weights should have format [inputChannels, outputChannels, kernelHeight, kernelWidth].
-     *                   If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, outputChannels, inputChannels]
+     * @param layerInput     the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
+     *                       (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
+     * @param weights        Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth].
      * @param deconv2DConfig DeConv2DConfig configuration
      * @return result of deconv2d op
      */
@@ -2810,9 +2804,7 @@ public class SameDiff {
      *
      * @param layerInput     the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
      *                       (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights        Weights for the 2d deconvolution operation. 4 dimensions.
-     *                       If layer input data is in NCHW format, weights should have format [inputChannels, outputChannels, kernelHeight, kernelWidth].
-     *                       If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, outputChannels, inputChannels]
+     * @param weights        Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth].
      * @param bias           Optional 1D bias array with shape [outputChannels]. May be null.
      * @param deconv2DConfig DeConv2DConfig configuration
      * @return result of deconv2d op
@@ -2860,9 +2852,7 @@ public class SameDiff {
      * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
      *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
      *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5.
-     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
-     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
+     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
      * @param conv3DConfig the configuration
      * @return Conv3d output variable
      */
@@ -2876,9 +2866,7 @@ public class SameDiff {
      * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
      *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
      *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5.
-     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
-     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
+     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
      * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
      * @param conv3DConfig the configuration
      * @return Conv3d output variable
@@ -2894,9 +2882,7 @@ public class SameDiff {
      * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
      *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
      *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5.
-     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
-     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
+     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
      * @param conv3DConfig the configuration
      * @return Conv3d output variable
      */
@@ -2911,9 +2897,7 @@ public class SameDiff {
      * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
      *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
      *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5.
-     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
-     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
+     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
      * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
      * @param conv3DConfig the configuration
      * @return Conv3d output variable
@@ -2931,22 +2915,44 @@ public class SameDiff {
 
     /**
      * Batch norm operation.
+     * @see #batchNorm(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, double, int...)
      */
     public SDVariable batchNorm(SDVariable input, SDVariable mean,
                                 SDVariable variance, SDVariable gamma,
-                                SDVariable beta,
-                                boolean applyGamma, boolean applyBeta, double epsilon) {
-        return batchNorm(null, input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon);
+                                SDVariable beta, double epsilon, int... axis) {
+        return batchNorm(null, input, mean, variance, gamma, beta, true, true, epsilon, axis);
     }
 
     /**
-     * Batch norm operation.
+     * Neural network batch normalization operation.<br>
+     * For details, see <a href="http://arxiv.org/abs/1502.03167">http://arxiv.org/abs/1502.03167</a>
+     *
+     * @param name       Name of the output variable
+     * @param input      Input variable.
+     * @param mean       Mean value. For 1d axis, this should match input.size(axis)
+     * @param variance   Variance value. For 1d axis, this should match input.size(axis)
+     * @param gamma      Gamma value. For 1d axis, this should match input.size(axis)
+     * @param beta       Beta value. For 1d axis, this should match input.size(axis)
+     * @param epsilon    Epsilon constant for numerical stability (to avoid division by 0)
+     * @param axis       For 2d CNN activations: 1 for NCHW format activations, or 3 for NHWC format activations.<br>
+     *                   For 3d CNN activations: 1 for NCDHW format, 4 for NDHWC<br>
+     *                   For 1d/RNN activations: 1 for NCW format, 2 for NWC
+     * @return Output variable for batch normalization
      */
     public SDVariable batchNorm(String name, SDVariable input, SDVariable mean,
                                 SDVariable variance, SDVariable gamma,
-                                SDVariable beta,
-                                boolean applyGamma, boolean applyBeta, double epsilon) {
-        SDVariable res = f().batchNorm(input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon);
+                                SDVariable beta, double epsilon, int... axis) {
+        return batchNorm(name, input, mean, variance, gamma, beta, true, true, epsilon, axis);
+    }
+
+    /**
+     * Batch normalization with optional application of gamma/beta args.
+     * See {@link #batchNorm(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, double, int...)}
+     */
+    public SDVariable batchNorm(String name, SDVariable input, SDVariable mean,
+                                SDVariable variance, SDVariable gamma,
+                                SDVariable beta, boolean applyGamma, boolean applyBeta, double epsilon, int... axis) {
+        SDVariable res = f().batchNorm(input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon, axis);
         return updateVariableNameAndReference(res, name);
     }
 
@@ -3009,7 +3015,7 @@ public class SameDiff {
      * @return SDVariable
      */
     public SDVariable scalar(String name, double value) {
-        return var(name, Nd4j.scalar(value));
+        return var(name, Nd4j.trueScalar(value));
     }
 
 
@@ -4882,7 +4888,10 @@ public class SameDiff {
      * Segment max operation.<br>
      * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-     * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)
+     * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
+     * Note that the segment IDs must be sorted from smallest to largest segment.
+     * See {@link #unsortedSegmentMax(String, SDVariable, SDVariable, int)}
+     * for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4891,6 +4900,31 @@ public class SameDiff {
      */
     public SDVariable segmentMax(String name, SDVariable data, SDVariable segmentIds){
         SDVariable ret = f().segmentMax(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentMax(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentMax(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentMax(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment max operation. As per {@link #segmentMax(String, SDVariable, SDVariable)} but without
+     * the requirement for the indices to be sorted.<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
+     *
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment max on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
+     * @return Unsorted segment max output
+     */
+    public SDVariable unsortedSegmentMax(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentMax(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4905,7 +4939,9 @@ public class SameDiff {
      * Segment min operation.<br>
      * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-     * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)
+     * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
+     * Note that the segment IDs must be sorted from smallest to largest segment.
+     * See {@link #unsortedSegmentMin(String, SDVariable, SDVariable, int)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4914,6 +4950,31 @@ public class SameDiff {
      */
     public SDVariable segmentMin(String name, SDVariable data, SDVariable segmentIds){
         SDVariable ret = f().segmentMin(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentMin(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentMin(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentMin(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment min operation. As per {@link #segmentMin(String, SDVariable, SDVariable)} but without
+     * the requirement for the indices to be sorted.<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
+     *
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment min on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
+     * @return Unsorted segment min output
+     */
+    public SDVariable unsortedSegmentMin(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentMin(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4928,7 +4989,9 @@ public class SameDiff {
      * Segment mean operation.<br>
      * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-     * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)
+     * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+     * Note that the segment IDs must be sorted from smallest to largest segment.
+     * See {@link #unsortedSegmentMean(String, SDVariable, SDVariable, int)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4937,6 +5000,31 @@ public class SameDiff {
      */
     public SDVariable segmentMean(String name, SDVariable data, SDVariable segmentIds){
         SDVariable ret = f().segmentMean(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentMean(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentMean(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentMean(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment mean operation. As per {@link #segmentMean(String, SDVariable, SDVariable)} but without
+     * the requirement for the indices to be sorted.<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+     *
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment mean on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
+     * @return Unsorted segment mean output
+     */
+    public SDVariable unsortedSegmentMean(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentMean(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4951,7 +5039,9 @@ public class SameDiff {
      * Segment product operation.<br>
      * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-     * then output = [18, 36, 16] = [prod(3,6), prod(1,4,9), prod(2,8)
+     * then output = [18, 36, 16] = [prod(3,6), prod(1,4,9), prod(2,8)]<br>
+     * Note that the segment IDs must be sorted from smallest to largest segment.
+     * See {@link #unsortedSegmentProd(String, SDVariable, SDVariable, int)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4960,6 +5050,30 @@ public class SameDiff {
      */
     public SDVariable segmentProd(String name, SDVariable data, SDVariable segmentIds){
         SDVariable ret = f().segmentProd(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentProd(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentProd(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentProd(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment product operation. As per {@link #segmentProd(String, SDVariable, SDVariable)} but without
+     * the requirement for the indices to be sorted.<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+     *
+     * @param name       Name of the output variable
+     * @param data       Data (variable) to perform unsorted segment product on
+     * @param segmentIds Variable for the segment IDs
+     * @return Unsorted segment product output
+     */
+    public SDVariable unsortedSegmentProd(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentProd(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -4974,7 +5088,9 @@ public class SameDiff {
      * Segment sum operation.<br>
      * If data =     [3, 6, 1, 4, 9, 2, 8]<br>
      * segmentIds =  [0, 0, 1, 1, 1, 2, 2]<br>
-     * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)
+     * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
+     * Note that the segment IDs must be sorted from smallest to largest segment.
+     * See {@link #unsortedSegmentSum(String, SDVariable, SDVariable, int)} for the same op without this sorted requirement
      *
      * @param name       Name of the output variable. May be null
      * @param data       Data to perform segment max on
@@ -4983,6 +5099,54 @@ public class SameDiff {
      */
     public SDVariable segmentSum(String name, SDVariable data, SDVariable segmentIds){
         SDVariable ret = f().segmentSum(data, segmentIds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentSum(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentSum(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment sum operation. As per {@link #segmentSum(String, SDVariable, SDVariable)} but without
+     * the requirement for the indices to be sorted.<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
+     *
+     * @param name        Name of the output variable
+     * @param data        Data (variable) to perform unsorted segment sum on
+     * @param segmentIds  Variable for the segment IDs
+     * @param numSegments Number of segments
+     * @return Unsorted segment sum output
+     */
+    public SDVariable unsortedSegmentSum(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentSum(data, segmentIds, numSegments);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #unsortedSegmentSqrtN(String, SDVariable, SDVariable, int)}
+     */
+    public SDVariable unsortedSegmentSqrtN(SDVariable data, SDVariable segmentIds, int numSegments){
+        return unsortedSegmentSqrtN(null, data, segmentIds, numSegments);
+    }
+
+    /**
+     * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment<br>
+     * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+     * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+     * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]<br>
+     *
+     * @param name       Name of the output variable
+     * @param data       Data (variable) to perform unsorted segment sqrtN on
+     * @param segmentIds Variable for the segment IDs
+     * @return Unsorted segment sqrtN output
+     */
+    public SDVariable unsortedSegmentSqrtN(String name, SDVariable data, SDVariable segmentIds, int numSegments){
+        SDVariable ret = f().unsortedSegmentSqrtN(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -6907,7 +7071,7 @@ public class SameDiff {
     }
 
     /**
-     * @see #cumsum(String, SDVariable, SDVariable, boolean, boolean)
+     * @see #cumsum(String, SDVariable, boolean, boolean, int...)
      */
     public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
         return cumsum(null, in, exclusive, reverse, axis);
@@ -6934,7 +7098,7 @@ public class SameDiff {
     }
 
     /**
-     * @see #cumprod(String, SDVariable, SDVariable, boolean, boolean)
+     * @see #cumprod(String, SDVariable, boolean, boolean, int...)
      */
     public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... axis) {
         return cumprod(null, in, exclusive, reverse, axis);
@@ -8111,165 +8275,6 @@ public class SameDiff {
     }
 
     /**
-     * Binary cross entropy loss.
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossBinaryXENT(SDVariable x, SDVariable y, int... dimensions) {
-        return lossBinaryXENT(generateNewVarName(new LossBinaryXENT().opName(), 0), x, y, dimensions);
-    }
-
-    /**
-     * TODO doc string
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossCosineSimilarity(SDVariable x, SDVariable y, int... dimensions) {
-        return lossCosineSimilarity(generateNewVarName(new LossCosineProximity().opName(), 0), x, y, dimensions);
-    }
-
-    // TODO: document all losses
-    /**
-     * Hinge loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossHinge(SDVariable x, SDVariable y, int... dimensions) {
-        return lossHinge(generateNewVarName(new LossHinge().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * Kullback-Leibler divergence loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossKLD(SDVariable x, SDVariable y, int... dimensions) {
-        return lossKLD(generateNewVarName(new LossKLD().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * L1 loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossL1(SDVariable x, SDVariable y, int... dimensions) {
-        return lossL1(generateNewVarName(new LossL1().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * L2 loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossL2(SDVariable x, SDVariable y, int... dimensions) {
-        return lossL2(generateNewVarName(new LossL2().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * Mean absolute error loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossMAE(SDVariable x, SDVariable y, int... dimensions) {
-        return lossMAE(generateNewVarName(new LossMAE().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * Mean squared error loss
-     *
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossMSE(SDVariable x, SDVariable y, int... dimensions) {
-        return lossMSE(generateNewVarName(new LossMSE().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossMCXENT(SDVariable x, SDVariable y, int... dimensions) {
-        return lossMCXENT(generateNewVarName(new LossMCXENT().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossMSLE(SDVariable x, SDVariable y, int... dimensions) {
-        return lossMSLE(generateNewVarName(new LossMSLE().opName(), 0), x, y, dimensions);
-
-    }
-
-    /**
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossNegativeLogLikelihood(SDVariable x, SDVariable y, int... dimensions) {
-        return lossNegativeLogLikelihood(generateNewVarName(new LossNegativeLogLikelihood().opName(), 0),
-                x, y, dimensions);
-
-    }
-
-    /**
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossPoisson(SDVariable x, SDVariable y, int... dimensions) {
-        return lossPoisson(generateNewVarName(new LossPoisson().opName(), 0), x, y, dimensions);
-
-    }
-
-
-    /**
-     * @param x          Input variable x
-     * @param y          Input variable y
-     * @param dimensions Reduction dimensions
-     * @return Output variable
-     */
-    public SDVariable lossSquaredHinge(SDVariable x, SDVariable y, int... dimensions) {
-        return lossSquaredHinge(generateNewVarName(new LossSquaredHinge().opName(), 0), x, y, dimensions);
-    }
-
-    /**
      * @param x
      * @return
      */
@@ -8297,67 +8302,328 @@ public class SameDiff {
     }
 
     /**
-     * TODO
-     *
-     * @param logits
-     * @param weights
-     * @param labels
-     * @param reductionMode
-     * @param labelSmoothing
-     * @return
+     * See {@link #lossAbsoluteDifference(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
      */
-    public SDVariable sigmoidCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
-                                                    int reductionMode, double labelSmoothing) {
-        return sigmoidCrossEntropyWithLogits(null, logits, weights, labels, reductionMode, labelSmoothing);
+    public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossAbsoluteDifference(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
     }
 
     /**
-     * TODO
-     *
-     * @param name
-     * @param logits
-     * @param weights
-     * @param labels
-     * @param reductionMode
-     * @param labelSmoothing
-     * @return
+     * See {@link #lossAbsoluteDifference(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
      */
-    public SDVariable sigmoidCrossEntropyWithLogits(String name, SDVariable logits, SDVariable weights, SDVariable labels,
-                                                    int reductionMode, double labelSmoothing) {
-        SDVariable res = f().sigmoidCrossEntropyWithLogits(logits, weights, labels, reductionMode, labelSmoothing);
-        return updateVariableNameAndReference(res, name);
+    public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossAbsoluteDifference(name, label, predictions, null, lossReduce);
     }
 
     /**
-     * TODO
+     * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )
      *
-     * @param logits
-     * @param weights
-     * @param labels
-     * @param reductionMode
-     * @param labelSmoothing
-     * @return
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Loss variable
      */
-    public SDVariable softmaxCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
-                                                    int reductionMode, double labelSmoothing) {
-        return softmaxCrossEntropyWithLogits(null, logits, weights, labels, reductionMode, labelSmoothing);
+    public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossAbsoluteDifference(label, predictions, weights, lossReduce);
+        return updateVariableNameAndReference(result, name);
+    }
+
+
+    /**
+     * See {@link #lossCosineDistance(String, SDVariable, SDVariable, SDVariable, LossReduce, int)}.
+     */
+    public SDVariable lossCosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, int dimension) {
+        return lossCosineDistance(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, dimension);
     }
 
     /**
-     * TODO
-     *
-     * @param name
-     * @param logits
-     * @param weights
-     * @param labels
-     * @param reductionMode
-     * @param labelSmoothing
-     * @return
+     * See {@link #lossCosineDistance(String, SDVariable, SDVariable, SDVariable, LossReduce, int)}.
      */
-    public SDVariable softmaxCrossEntropyWithLogits(String name, SDVariable logits, SDVariable weights, SDVariable labels,
-                                                    int reductionMode, double labelSmoothing) {
-        SDVariable res = f().softmaxCrossEntropyWithLogits(logits, weights, labels, reductionMode, labelSmoothing);
-        return updateVariableNameAndReference(res, name);
+    public SDVariable lossCosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                         @NonNull LossReduce lossReduce, int dimension) {
+        return lossCosineDistance(name, label, predictions, null, lossReduce, dimension);
+    }
+
+    /**
+     *
+     * Cosine distance loss: {@code 1 - cosineSimilarity(x,y)} or {@code 1 - sum_i label[i] * prediction[i]}, which is
+     * equivalent to cosine distance when both the predictions and labels are normalized.<br>
+     * <b>Note</b>: This loss function assumes that both the predictions and labels are normalized to have unit l2 norm.
+     * If this is not the case, you should normalize them first by dividing by {@link #norm2(String, SDVariable, boolean, int...)}
+     * along the cosine distance dimension (with keepDims=true).
+     *
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @param dimension   Dimension to perform the cosine distance over
+     * @return Cosine distance loss variable
+     */
+    public SDVariable lossCosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce, int dimension) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossCosineDistance(label, predictions, weights, lossReduce, dimension);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossHinge(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossHinge(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossHinge(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
+    }
+
+    /**
+     * See {@link #lossHinge(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossHinge(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossHinge(name, label, predictions, null, lossReduce);
+    }
+
+    /**
+     * Hinge loss: a loss function used for training classifiers.
+     * Implements {@code L = max(0, 1 - t * predictions)} where t is the label values after internally converting to {-1,1}
+     * from the user specified {0,1}. Note that Labels should be provided with values {0,1}.
+     *
+     * @param name        Name of the operation
+     * @param label       Label array. Each value should be 0.0 or 1.0 (internally -1 to 1 is used)
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Loss variable
+     */
+    public SDVariable lossHinge(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossHinge(label, predictions, weights, lossReduce);
+        return updateVariableNameAndReference(result, name);
+    }
+
+
+    /**
+     * See {@link #lossHuber(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, double delta) {
+        return lossHuber(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta);
+    }
+
+    /**
+     * See {@link #lossHuber(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce, double delta) {
+        return lossHuber(name, label, predictions, null, lossReduce, delta);
+    }
+
+    /**
+     * Huber loss function, used for robust regression. It is similar both squared error loss and absolute difference loss,
+     * though is less sensitive to outliers than squared error.<br>
+     * Huber loss implements:
+     * <pre>
+     *{@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta
+     *  L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise
+     *     }
+     * </pre>
+     *
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @param delta       Loss function delta value
+     * @return Huber loss variable
+     */
+    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce, double delta) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossHuber(label, predictions, weights, lossReduce, delta);
+        return updateVariableNameAndReference(result, name);
+    }
+
+
+    /**
+     * See {@link #lossLog(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossLog(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, LogLoss.DEFAULT_EPSILON);
+    }
+
+    /**
+     * See {@link #lossLog(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossLog(name, label, predictions, null, lossReduce, LogLoss.DEFAULT_EPSILON);
+    }
+
+    /**
+     * Log loss, i.e., binary cross entropy loss, usually used for binary multi-label classification. Implements:
+     * {@code -1/numExamples * sum_i (labels[i] * log(predictions[i] + epsilon) + (1-labels[i]) * log(1-predictions[i] + epsilon))}
+     *
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Log loss variable
+     */
+    public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce, double epsilon) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossLog(label, predictions, weights, lossReduce, epsilon);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossMeanPairwiseSquaredError(String, SDVariable, SDVariable, SDVariable)}.
+     */
+    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossMeanPairwiseSquaredError(name, label, predictions, null);
+    }
+
+    /**
+     * Mean pairwise squared error.<br>
+     * MPWSE loss calculates the difference between pairs of consecutive elements in the predictions and labels arrays.
+     * For example, if predictions = [p0, p1, p2] and labels are [l0, l1, l2] then MPWSE is:
+     * {@code [((p0-p1) - (l0-l1))^2 + ((p0-p2) - (l0-l2))^2 + ((p1-p2) - (l1-l2))^2] / 3}<br>
+     *
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used. Must be either null, scalar, or have shape [batchSize]
+     * @return Loss variable, scalar output
+     */
+    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, SDVariable weights) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossMeanPairwiseSquaredError(label, predictions, weights);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossMeanSquaredError(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossMeanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossMeanSquaredError(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
+    }
+
+    /**
+     * See {@link #lossMeanSquaredError(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossMeanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossMeanSquaredError(name, label, predictions, null, lossReduce);
+    }
+
+    /**
+     * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.
+     * When averaged (using {@link LossReduce#MEAN_BY_WEIGHT} or {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT} (the default))
+     * this is the mean squared error loss function.
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictions Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Loss variable
+     */
+    public SDVariable lossMeanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossMeanSquaredError(label, predictions, weights, lossReduce);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossSigmoidCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossSigmoidCrossEntropy(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, SigmoidCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
+    }
+
+    /**
+     * See {@link #lossSigmoidCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossSigmoidCrossEntropy(name, label, predictions, null, lossReduce, SigmoidCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
+    }
+
+    /**
+     * Sigmoid cross entropy: applies the sigmoid activation function on the input logits (input "pre-sigmoid preductions")
+     * and implements the binary cross entropy loss function. This implementation is numerically more stable than using
+     * standard (but separate) sigmoid activation function and log loss (binary cross entropy) loss function.<br>
+     * Implements:
+     * {@code -1/numExamples * sum_i (labels[i] * log(sigmoid(logits[i])) + (1-labels[i]) * log(1-sigmoid(logits[i])))}
+     * though this is done in a mathematically equivalent but more numerical stable form.<br>
+     * <br>
+     * When label smoothing is > 0, the following label smoothing is used:<br>
+     * <pre>
+     * {@code numClasses = labels.size(1);
+     * label = (1.0 - labelSmoothing) * label + 0.5 * labelSmoothing}
+     * </pre>
+     *
+     * @param name        Name of the operation
+     * @param label       Label array
+     * @param predictionLogits Predictions array
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Loss variable
+     */
+    public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictionLogits,
+                                             SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossSigmoidCrossEntropy(label, predictionLogits, weights, lossReduce, labelSmoothing);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossSoftmaxCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossSoftmaxCrossEntropy(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, SoftmaxCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
+    }
+
+    /**
+     * See {@link #lossSoftmaxCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
+     */
+    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossSoftmaxCrossEntropy(name, label, predictions, null, lossReduce, SoftmaxCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
+    }
+
+    /**
+     * Applies the softmax activation function to the input, then implement multi-class cross entropy:<br>
+     * {@code -sum_classes label[i] * log(p[c])} where {@code p = softmax(logits)}<br>
+     * If {@link LossReduce#NONE} is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;
+     * otherwise, the output is a scalar.<br>
+     * <p>
+     * When label smoothing is > 0, the following label smoothing is used:<br>
+     * <pre>
+     * {@code numClasses = labels.size(1);
+     * oneHotLabel = (1.0 - labelSmoothing) * oneHotLabels + labelSmoothing/numClasses}
+     * </pre>
+     *
+     * @param name             Name of the operation
+     * @param oneHotLabels     Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut])
+     * @param logitPreductions Predictions array (pre-softmax)
+     * @param weights          Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce       Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @param labelSmoothing   Label smoothing value. Default value: 0
+     * @return Loss variable
+     */
+    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable oneHotLabels, @NonNull SDVariable logitPreductions,
+                                             SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossSoftmaxCrossEntropy(oneHotLabels, logitPreductions, weights, lossReduce, labelSmoothing);
+        return updateVariableNameAndReference(result, name);
     }
 
     /**
@@ -8386,151 +8652,6 @@ public class SameDiff {
                                                      SDVariable weights) {
         SDVariable res = f().weightedCrossEntropyWithLogits(targets, inputs, weights);
         return updateVariableNameAndReference(res, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossBinaryXENT(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossBinaryXENT(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossCosineSimilarity(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossCosineSimilarity(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossHinge(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossHinge(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossKLD(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossKLD(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossL1(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossL1(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossL2(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossL2(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossMAE(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossMAE(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossMSE(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossMSE(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossMCXENT(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossMCXENT(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossMSLE(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossMSLE(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossNegativeLogLikelihood(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossNegativeLogLikelihood(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossPoisson(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossPoisson(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    /**
-     * @param x
-     * @param y
-     * @param dimensions
-     * @return
-     */
-    public SDVariable lossSquaredHinge(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.lossSquaredHinge(x, y, dimensions);
-        return updateVariableNameAndReference(result, name);
     }
 
     /**
@@ -9737,6 +9858,19 @@ public class SameDiff {
         }
     }
 
+    /**
+     * Undo an {@link #addAsPlaceHolder(String)} call - i.e., the variable will still be present in the SameDiff
+     * graph, but it will no longer be marked as a placeholder. If the variable was not marked as a placeholder
+     * initially, this operation will be a no-op.
+     * Note that this function should not generally be used by users - it is intended for developer/internal use.
+     *
+     * @param varName Variable name
+     */
+    public void removeAsPlaceholder(String varName) {
+        placeHolderVarNames.remove(varName);
+        placeHolderOriginalShapes.remove(varName);
+    }
+
 
     /**
      * Resolve all ndarrays by updating the variables for each array specified in the given map.
@@ -10112,7 +10246,7 @@ public class SameDiff {
 
             val args = getInputsForFunction(differentialFunction);
 
-            log.debug("Step: {}; Executing op [{}] for node [{}]", exec_counter, opName, ownName);
+            log.trace("Step: {}; Executing op [{}] for node [{}]", exec_counter, opName, ownName);
 
             // check if inputs are active nodes. skip step otherwise
             // please note: Exit node can't be skipped, because it's either rewind point or exit loop point
@@ -10842,14 +10976,21 @@ public class SameDiff {
         }
     }
 
-    protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables, Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter) {
+    protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables,
+                             Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) {
         val opName = node.opName();
-        val hash = getOpNum(node.opName(), node.opType());
+        val hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
-        double[] extras = node.getExtraArgs() != null ? new double[node.getExtraArgs().length] : new double[0];
-        for (int e = 0; e < extras.length; e++) {
-            extras[e] = ((Number) node.getExtraArgs()[e]).doubleValue();
+        double[] extras;
+        if(node.opType() == Op.Type.CUSTOM){
+            CustomOp op = (CustomOp)node;
+            extras = op.tArgs();
+        } else {
+            extras = node.getExtraArgs() != null ? new double[node.getExtraArgs().length] : new double[0];
+            for (int e = 0; e < extras.length; e++) {
+                extras[e] = ((Number) node.getExtraArgs()[e]).doubleValue();
+            }
         }
 
         long[] extraBits = null;
@@ -10886,37 +11027,52 @@ public class SameDiff {
         }
 
 
-        val inputs = node.args();
-        log.trace("");
-        for (val input : inputs) {
-            //for (int i = 0; i < outputVertexId.length; i++) {
-            val pair = parseVariable(input.getVarName());
-            if (!reverseMap.containsKey(pair.getFirst())) {
-                if (pair.getFirst().contains("NextIteration")) {
+        SDVariable[] inputs = node.args();
+        for (SDVariable input : inputs) {
+            String varName = input.getVarName();
+            int outIdx;
+            if(functionOutputFor.containsKey(varName)){
+                DifferentialFunction df = functionOutputFor.get(varName).get(0);
+                outIdx = ArrayUtils.indexOf(outgoingArgsReverse.get(df.getOwnName()), varName);
+            } else {
+                outIdx = 0;
+            }
+
+            if (!reverseMap.containsKey(varName)) {
+                if (varName.contains("NextIteration")) {
                     // forward declaration: Merge node in case of loop will be referring to NextIteration node, which wasn't announced yet
                     int fwdNodeId = idCounter.incrementAndGet();
-                    forwardMap.put(pair.getFirst(), fwdNodeId);
-                    reverseMap.put(pair.getFirst(), fwdNodeId);
+                    forwardMap.put(varName, fwdNodeId);
+                    reverseMap.put(varName, fwdNodeId);
                 } else {
-                    throw new ND4JIllegalStateException("Unknown variable used in input: [" + pair.getFirst() + "]");
+                    throw new ND4JIllegalStateException("Unknown variable used in input: [" + varName + "]");
                 }
             }
 
-            int nodeId = reverseMap.get(pair.getFirst());
-            int outputIndex = pair.getSecond();
-
-            inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outputIndex));
-            //}
+            int nodeId = reverseMap.get(varName);
+            inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outIdx));
         }
 
         log.debug("Own Name: {}", node.getOwnName());
-        int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
-        reverseMap.put(node.getOwnName(), ownId);
+        int ownId = id != null ? id : idCounter.incrementAndGet();  //forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
+        String[] outNames = node.outputVariablesNames();
+        for(String s : outNames){
+            if(!reverseMap.containsKey(s)){
+                reverseMap.put(s, ownId);
+            }
+        }
 
-        val dims = (node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_FLOAT  || node.opType() == Op.Type.REDUCE_LONG  || node.opType() == Op.Type.REDUCE_BOOL) && node.getDimensions() != null ? node.getDimensions() : new int[]{};
-        // TODO: Adam, just put your props here, instead of empty list, and they will be saved
-        List<FunctionProperties> props = new ArrayList<>();
-        int properties = FunctionProperties.asFlatProperties(bufferBuilder, props);
+        int[] dims;
+        if(node.opType() == Op.Type.REDUCE || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3){
+            dims = node.getDimensions();
+            if(dims == null)
+                dims = new int[0];
+        } else {
+            dims = new int[0];
+        }
+        Map<String,Object> fnProps = node.propertiesForFunction();
+        int[] flatProperties = FlatBuffersMapper.mapFunctionPropertiesToFlatProperties(bufferBuilder, fnProps);
+        int propIdx = FlatNode.createPropertiesVector(bufferBuilder, flatProperties);
 
         int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
         int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
@@ -10934,13 +11090,23 @@ public class SameDiff {
         if (node.opType() == null)
             log.warn("Null-op node: {}", node);
 
+
+        String[] outVarNames = node.getSameDiff().outgoingArgsReverse.get(node.getOwnName());
+        int[] outVarNamesStringsOffsets = new int[outVarNames == null ? 0 : outVarNames.length];
+        for( int i=0; i<outVarNamesStringsOffsets.length; i++ ){
+            outVarNamesStringsOffsets[i] = bufferBuilder.createString(outVarNames[i]);
+        }
+        int outVarNamesOffset = FlatNode.createOutputNamesVector(bufferBuilder, outVarNamesStringsOffsets);
+
+        int opNameOffset = bufferBuilder.createString(opName);
+
         int flatNode = FlatNode.createFlatNode(
                 bufferBuilder,
                 ownId,
                 fname,
-                getFlatOpType(node.opType()),
+                FlatBuffersMapper.getFlatOpType(node.opType()),
                 hash,
-                properties,
+                propIdx,
                 nodesIn,
                 nodesInPaired,
                 (byte) 0,
@@ -10949,7 +11115,9 @@ public class SameDiff {
                 integerArgs,
                 dimensions,
                 -1,
-                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().getFloat(0) : 0.0f, 0, scopeName, 0);
+                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().floatValue() : 0.0f, 0, scopeName,
+                outVarNamesOffset,
+                opNameOffset);
 
         return flatNode;
     }
@@ -10988,6 +11156,7 @@ public class SameDiff {
         val framesMap = new LinkedHashMap<String, Integer>();
 
         int idx = 0;
+        Map<DifferentialFunction,Integer> idxForOps = new IdentityHashMap<>();
         for (val variable : variables()) {
             log.debug("Exporting variable: [{}]", variable.getVarName());
             if (variable.getArr() == null || variable.getShape() == null) {
@@ -10996,16 +11165,37 @@ public class SameDiff {
                 continue;
             }
 
+            //If variable is the output of some op - let's use the ONE index for exporting, and properly track the output
+            // numbers. For example, unstack(x) -> y0, y1, y2 -> the y's should be say (3,0), (3,1), (3,2) NOT (4,0), (5,0), (6,0)
+            String varName = variable.getVarName();
+            int varIdx;
+            int outputNum;
+            if(functionOutputFor.containsKey(varName)){
+                //This variable is the output of a node
+                DifferentialFunction df = functionOutputFor.get(varName).get(0);
+                if(!idxForOps.containsKey(df)){
+                    varIdx = idCounter.incrementAndGet();
+                    idxForOps.put(df, varIdx);
+                } else {
+                    varIdx = idxForOps.get(df);
+                }
+                String[] outNames = df.outputVariablesNames();
+                outputNum = ArrayUtils.indexOf(outNames, varName);
+                Preconditions.checkState(outputNum >= 0, "Variable name \"%s\" not found in list of outputs: %s", varName, outNames);
+            } else {
+                varIdx = idCounter.incrementAndGet();
+                outputNum = 0;
+            }
 
-            val pair = parseVariable(variable.getVarName());
-            reverseMap.put(pair.getFirst(), idCounter.incrementAndGet());
-            log.debug("Adding [{}] as [{}]", pair.getFirst(), idCounter.get());
+
+            reverseMap.put(variable.getVarName(), varIdx);
+            log.debug("Adding [{}] as [{}]", variable.getVarName(), varIdx);
 
             val arr = variable.getArr();
 
             int name = bufferBuilder.createString(variable.getVarName());
             int array = arr.toFlatArray(bufferBuilder);
-            int id = IntPair.createIntPair(bufferBuilder, idCounter.get(), 0);
+            int id = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
 
 
             int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name,  getDataTypeAsByte(arr.dataType()), 0, array, -1);
@@ -11014,21 +11204,23 @@ public class SameDiff {
 
         //add functions
         for (val func : functionInstancesById.values()) {
-            flatNodes.add(asFlatNode(func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter));
+            Integer fnId = idxForOps.get(func);
+            flatNodes.add(asFlatNode(func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter, fnId));
         }
 
         // we're dumping scopes now
-        for (val scope : sameDiffFunctionInstances.entrySet()) {
+        for (Map.Entry<String, SameDiff> scope : sameDiffFunctionInstances.entrySet()) {
+            if(scope.getKey().equalsIgnoreCase("grad")){
+                //Skip the gradient function for export
+                continue;
+            }
+
             flatNodes.add(asFlatNode(scope.getKey(), scope.getValue(), bufferBuilder));
             val currVarList = new ArrayList<SDVariable>(scope.getValue().variables());
             // converting all ops from node
             for (val node : scope.getValue().variables()) {
                 INDArray arr = node.getArr();
                 if (arr == null) {
-                    //val otherArr = Nd4j.scalar(1.0);
-                    //scope.getValue().putArrayForVarName(node.getVarName(), otherArr);
-                    //log.warn("Adding placeholder for export for var name {}", node.getVarName());
-                    //arr = otherArr;
                     continue;
                 }
 
@@ -11047,9 +11239,8 @@ public class SameDiff {
 
             //add functions
             for (val func : scope.getValue().functionInstancesById.values()) {
-                flatNodes.add(asFlatNode(func, bufferBuilder, currVarList, reverseMap, forwardMap, framesMap, idCounter));
+                flatNodes.add(asFlatNode(func, bufferBuilder, currVarList, reverseMap, forwardMap, framesMap, idCounter, null));
             }
-
         }
 
         int outputsOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatOffsets));
@@ -11098,30 +11289,7 @@ public class SameDiff {
         return asFlatBuffers(configuration);
     }
 
-    /**
-     * This method just converts enums
-     *
-     * @param val
-     * @return
-     */
-    public static ByteOrder getOrderFromByte(byte val) {
-        if (val == org.nd4j.graph.ByteOrder.LE)
-            return ByteOrder.LITTLE_ENDIAN;
-        else
-            return ByteOrder.BIG_ENDIAN;
-    }
 
-    /**
-     * This method returns current byte order for this JVM as libnd4j enum
-     *
-     * @return
-     */
-    public static byte getOrderAsByte() {
-        if (ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN))
-            return org.nd4j.graph.ByteOrder.BE;
-        else
-            return org.nd4j.graph.ByteOrder.LE;
-    }
 
     /**
      * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later
@@ -11155,6 +11323,172 @@ public class SameDiff {
         }
     }
 
+
+    public static SameDiff fromFlatFile(@NonNull File file) throws IOException {
+        byte[] bytes;
+        try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
+            bytes = IOUtils.toByteArray(is);
+        }
+        ByteBuffer bbIn = ByteBuffer.wrap(bytes);
+        return fromFlatBuffers(bbIn);
+    }
+
+    public static SameDiff fromFlatBuffers(ByteBuffer bbIn) throws IOException {
+
+        FlatGraph fg = FlatGraph.getRootAsFlatGraph(bbIn);
+
+        int numOps = fg.nodesLength();
+        int numVars = fg.variablesLength();
+        List<FlatNode> ops = new ArrayList<>(numOps);
+        for( int i=0; i<numOps; i++ ){
+            ops.add(fg.nodes(i));
+        }
+        List<FlatVariable> vars = new ArrayList<>(numVars);
+        for( int i=0; i<numVars; i++ ){
+            vars.add(fg.variables(i));
+        }
+
+        FlatConfiguration conf = fg.configuration();
+
+        /* Reconstruct the graph
+        We'll do the reconstruction manually here, rather than using sd.var(...), so that we have more control
+        over the final result.
+         */
+
+        SameDiff sd = SameDiff.create();
+
+        //Reconstruct variables:
+        Map<Integer,SDVariable> varNodeIds = new HashMap<>();
+        Map<Pair<Integer,Integer>, SDVariable> variablesByNodeAndOutNum = new HashMap<>();
+        Map<String,List<SDVariable>> variablesByName = new HashMap<>();
+        for(FlatVariable v : vars){
+            int shapeLength = v.shapeLength();
+            long[] shape = new long[shapeLength];
+            for( int i=0; i<shapeLength; i++ ){
+                shape[i] = v.shape(i);
+            }
+
+            String n = v.name();
+
+            SDVariable var = SDVariable.builder()
+                    .varName(n)
+                    .sameDiff(sd)
+                    .shape(shape)
+                    .build();
+            sd.variableMap.put(n, var);
+            sd.variableNameToShape.put(n, shape);
+
+
+            FlatArray fa = v.ndarray();
+            if(fa != null){
+                INDArray arr = Nd4j.createFromFlatArray(fa);
+                sd.variableNameToArr.put(n, arr);
+            }
+
+            IntPair id = v.id();    //First value: node (op) id. Second: output number
+            variablesByNodeAndOutNum.put(new Pair<>(id.first(), id.second()), var);
+
+            if(!variablesByName.containsKey(n)){
+                variablesByName.put(n, new ArrayList<SDVariable>());
+            }
+            List<SDVariable> list = variablesByName.get(n);
+            list.add(var);
+        }
+
+        //Reconstruct ops:
+        for(FlatNode fn : ops){
+            DifferentialFunction df = FlatBuffersMapper.fromFlatNode(fn);
+            String name = fn.name();
+            df.setSameDiff(sd);
+            df.setOwnName(name);
+            sd.functionInstancesById.put(name, df);
+            int outLength = fn.outputLength();
+            int[] outs = new int[outLength];
+            for( int i=0; i<outLength; i++ ){
+                outs[i] = fn.output(i);
+            }
+
+            int opId = fn.id();
+
+            //Work out inputs and outputs:
+            int[] output = new int[fn.outputLength()];
+            for (int i = 0; i < output.length; i++) {
+                output[i] = fn.output(i);
+            }
+            int[] input = new int[fn.inputLength()];
+            for (int i = 0; i < input.length; i++) {
+                input[i] = fn.input(i);
+            }
+            IntPair[] inputPaired = new IntPair[fn.inputPairedLength()];
+            List<Pair<Integer,Integer>> intPairList = new ArrayList<>();
+            for (int i = 0; i < inputPaired.length; i++) {
+                inputPaired[i] = fn.inputPaired(i);
+                intPairList.add(new Pair<>(inputPaired[i].first(), inputPaired[i].second()));
+            }
+
+            String[] inputNames = new String[inputPaired.length];
+            for(int i=0; i<inputPaired.length; i++ ){
+                int nodeId = inputPaired[i].first();
+                int nodeOutNum = inputPaired[i].second();
+                SDVariable varIn = variablesByNodeAndOutNum.get(new Pair<>(nodeId, nodeOutNum));
+                if(varIn == null){
+                    //The variable corresponding to this op was not
+                }
+                inputNames[i] = varIn.getVarName();
+            }
+            sd.incomingArgsReverse.put(df.getOwnName(), inputNames);
+
+            List<SDVariable> varsForOp = variablesByName.get(name);
+
+            //Can't assume that variables for the op have all been defined. For example, if we export before execution in SameDiff
+            //In theory, we can reconstruct the output variables (minus names) if we know the number of op outputs
+            //And we can calculate the op outputs - in most cases - after the op has been created and parameters set
+            int numOutputs = df.getNumOutputs();
+            if(numOutputs <= 0){
+                numOutputs = fn.outputLength();
+            }
+
+            String[] varNames = null;
+            if(varsForOp != null && varsForOp.size() == numOutputs){
+                varNames = new String[varsForOp.size()];
+                for( int i=0; i<varNames.length; i++ ){
+                    varNames[i] = varsForOp.get(i).getVarName();
+                }
+                sd.outgoingArgsReverse.put(df.getOwnName(), varNames);
+            } else {
+                //We're missing some variables...
+                int outputNamesLength = fn.outputNamesLength();
+                varNames = new String[outputNamesLength];
+                for( int i=0; i<outputNamesLength; i++ ){
+                    String n = fn.outputNames(i);
+                    varNames[i] = n;
+                    if(!sd.variableMap.containsKey(n)){
+                        //Need to create the variable - perhaps it wasn't exported
+                        SDVariable var = SDVariable.builder()
+                                .varName(n)
+                                .sameDiff(sd)
+                                .shape(null)
+                                .build();
+                        sd.variableMap.put(n, var);
+                        variablesByNodeAndOutNum.put(new Pair<>(opId, i), var);
+                    }
+                }
+                sd.outgoingArgsReverse.put(df.getOwnName(), varNames);
+            }
+
+            //Check the op mapping int he variablesByNodeAndOutputNum
+            //For multi-output ops, variables will have their own index, not related to the op index
+            for( int i=0; i<varNames.length; i++ ){
+                Pair<Integer,Integer> p = new Pair<>(opId, i);
+                if(!variablesByNodeAndOutNum.containsKey(p)){
+                    variablesByNodeAndOutNum.put(p, sd.getVariable(varNames[i]));
+                }
+            }
+        }
+
+        return sd;
+    }
+
     /**
      * This method returns a text representation of the "flattened" graph.
      *
@@ -11186,9 +11520,9 @@ public class SameDiff {
 
             log.info("{}:<{}>", node.id(), node.name());
             sb.append(node.id())
-                    .append(":<").append(node.name()).append("> ").append(SameDiff.getTypeFromByte(node.opType()));
+                    .append(":<").append(node.name()).append("> ").append(FlatBuffersMapper.getTypeFromByte(node.opType()));
 
-            if (SameDiff.getTypeFromByte(node.opType()) != Op.Type.CUSTOM)
+            if (FlatBuffersMapper.getTypeFromByte(node.opType()) != Op.Type.CUSTOM)
                 sb.append(": ").append(node.opNum());
             else {
                 val keys = map.keySet();
@@ -11226,12 +11560,31 @@ public class SameDiff {
         return sb.toString();
     }
 
+
     /**
-     * This method converts enums for DataType
-     *
-     * @param val
-     * @return
+     * This method checks the order of ops defined in the current SameDiff instance, and shuffles them if required
+     * such that the order is valid for execution. An example of an invalid order is the graph "A -> B" but B is scheduled
+     * for execution before A. The order of a graph directly after importing it may not be valid in all cases.<br>
+     * This method generally shouldn't be used by users (i.e., isn't necessary).
+     * It is useful for situations such as graph import
      */
+    public void validateExecutionOrder(){
+        //First: check order. SameDiff.exec() iterates over functionInstancesById (a linked hash map)
+        Set<String> seen = new HashSet<>();
+        boolean valid = true;
+        for(Map.Entry<String,DifferentialFunction> e : functionInstancesById.entrySet()){
+            String[] inputs = incomingArgsReverse.get(e.getKey());
+            if(inputs != null) {
+                for (String s : inputs) {
+                    if(!seen.contains(s)){
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+            if(!valid){
+                break;
+            }
     public static org.nd4j.linalg.api.buffer.DataType getDataTypeFromByte(byte val) {
         if (val == DataType.FLOAT)
             return org.nd4j.linalg.api.buffer.DataType.FLOAT;
@@ -11252,8 +11605,11 @@ public class SameDiff {
         else if (val == DataType.INT16)
             return org.nd4j.linalg.api.buffer.DataType.SHORT;
 
-        throw new UnsupportedOperationException("Unsupported DataType: [" + val + "]");
-    }
+            String[] outputs = outgoingArgsReverse.get(e.getKey());
+            if(outputs != null){
+                Collections.addAll(seen, outputs);
+            }
+        }
 
     /**
      * This method converts enums for DataType
@@ -11278,47 +11634,50 @@ public class SameDiff {
         }
     }
 
-    /**
-     * This method return operation ID for given op name/type pair.
-     *
-     * @param name
-     * @param type
-     * @return
-     */
-    public static long getOpNum(String name, Op.Type type) {
-        if (type == Op.Type.LOOP) {
-            return 0;
-        } else if (type == Op.Type.RETURN) {
-            return 40;
-        } else if (type == Op.Type.IF) {
-            return 30;
-        } else if (type == Op.Type.CONDITIONAL) {
-            return 10;
-        } else if (type == Op.Type.MERGE) {
-            return 60L;
-        } else if (type == Op.Type.LOOP_COND) {
-            return 70L;
-        } else if (type == Op.Type.NEXT_ITERATION) {
-            return 80L;
-        } else if (type == Op.Type.EXIT) {
-            return 90L;
-        } else if (type == Op.Type.ENTER) {
-            return 100L;
-        } else if (type == Op.Type.CUSTOM) {
-            val name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
-            if (name2 == null) {
-                val name3 = Nd4j.getExecutioner().getCustomOperations().get(name);
-                if (name3 == null)
-                    return 0;
-                else
-                    return name3.getHash();
-            } else
-                return name2.getHash();
-            //return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
+        if(!valid){
+            //Need to re-order
+            //Algorithm here: add all ops to a queue. Take the first one for
+            // this keeps the current order as much as possible
+            // O(n) best case, O(n^2) worst case
+            LinkedList<Map.Entry<String,DifferentialFunction>> queue = new LinkedList<>();
+            for(Map.Entry<String,DifferentialFunction> e : functionInstancesById.entrySet()){
+                queue.add(e);
+            }
 
-        } else
-            return (long) Nd4j.getOpFactory().getOpNumByName(name);
-    }
+            Map<String,DifferentialFunction> newMap = new LinkedHashMap<>();
+            seen.clear();
+            //Add all placeholders and constants - these are available at the start of execution
+            seen.addAll(placeHolderVarNames);
+            if(importedConstants != null){
+                seen.addAll(importedConstants);
+            }
+
+            while(!queue.isEmpty()) {
+                Iterator<Map.Entry<String, DifferentialFunction>> iterator = queue.iterator();
+                boolean anySeen = false;
+                while (iterator.hasNext()) {
+                    Map.Entry<String, DifferentialFunction> e = iterator.next();
+                    boolean allSeen = true;
+                    for (String in : incomingArgsReverse.get(e.getKey())) {
+                        if (!seen.contains(in)) {
+                            allSeen = false;
+                            break;
+                        }
+                    }
+
+                    if (allSeen){
+                        newMap.put(e.getKey(), e.getValue());
+                        anySeen = true;
+                        iterator.remove();
+                        SDVariable[] outputVars = e.getValue().outputVariables();
+//                        String[] outputs = outgoingArgsReverse.get(e.getKey());
+//                        Collections.addAll(seen, outputs);
+                        for(SDVariable s : outputVars){
+                            seen.add(s.getVarName());
+                        }
+                        break;  //Restart loop over remaining queue elements
+                    }
+                }
 
     /**
      * This method converts enums for Op.Type
@@ -11368,7 +11727,32 @@ public class SameDiff {
                 throw new UnsupportedOperationException("Unknown op type passed in: " + type);
         }
     }
+                if(!anySeen){
+                    iterator = queue.iterator();
+                    while (iterator.hasNext()) {
+                        Map.Entry<String, DifferentialFunction> e = iterator.next();
+                        boolean allSeen = true;
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(e.getKey()).append(" - missing: ");
+                        boolean first = true;
+                        for (String in : incomingArgsReverse.get(e.getKey())) {
+                            if (!seen.contains(in)) {
+                                sb.append(in);
+                                if(!first){
+                                    sb.append(", ");
+                                }
+                                first = false;
+                            }
+                        }
+                        log.info(sb.toString());
+                    }
+                }
 
+                Preconditions.checkState(anySeen, "No ops available with all inputs previously calculated." +
+                        " Graph structure is invalid?");
+            }
+
+            functionInstancesById = newMap;
     /**
      * This method converts an Op.Type to it's corresponding byte value
      *

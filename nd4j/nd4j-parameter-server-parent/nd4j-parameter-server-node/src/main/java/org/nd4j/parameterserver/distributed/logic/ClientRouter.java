@@ -27,6 +27,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public interface ClientRouter {
 
     void init(VoidConfiguration voidConfiguration, Transport transport);

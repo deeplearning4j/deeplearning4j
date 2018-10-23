@@ -24,7 +24,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.text.DecimalFormat;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -45,6 +47,7 @@ public class EncodingHandler implements MessageHandler {
     protected int shakeFrequency;
     protected int stepDelay;
     protected Double boundary = null;
+    protected boolean encodingDebugMode;
     protected NDArrayCompressor compressor;
     protected AtomicInteger atomicBoundary = new AtomicInteger(-1);
 
@@ -58,7 +61,7 @@ public class EncodingHandler implements MessageHandler {
      *
      */
     public EncodingHandler() {
-        this(1e-3);
+        this(1e-3, false);
     }
 
     /**
@@ -66,8 +69,8 @@ public class EncodingHandler implements MessageHandler {
      *
      * @param threshold Initial encoding threshold
      */
-    public EncodingHandler(double threshold) {
-        this(threshold, null);
+    public EncodingHandler(double threshold, boolean encodingDebugMode) {
+        this(threshold, null, encodingDebugMode);
     }
 
     /**
@@ -75,8 +78,8 @@ public class EncodingHandler implements MessageHandler {
      *
      * @param threshold Initial encoding threshold
      */
-    public EncodingHandler(double threshold, Double boundary) {
-        this(threshold, threshold, 0.0, 0, 0, 0, boundary);
+    public EncodingHandler(double threshold, Double boundary, boolean encodingDebugMode) {
+        this(threshold, threshold, 0.0, 0, 0, 0, boundary, encodingDebugMode);
     }
 
     /**
@@ -90,8 +93,8 @@ public class EncodingHandler implements MessageHandler {
      * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
      */
     public EncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                    int stepDelay, int shakeFrequency) {
-        this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null);
+                    int stepDelay, int shakeFrequency, boolean encodingDebugMode) {
+        this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null, encodingDebugMode);
     }
 
     /**
@@ -106,7 +109,7 @@ public class EncodingHandler implements MessageHandler {
      * @param boundary
      */
     public EncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                    int stepDelay, int shakeFrequency, Double boundary) {
+                    int stepDelay, int shakeFrequency, Double boundary, boolean encodingDebugMode) {
         this.threshold = threshold;
         this.minThreshold = minThreshold;
         this.stepTrigger = stepTrigger;
@@ -114,6 +117,7 @@ public class EncodingHandler implements MessageHandler {
         this.thresholdStep = thresholdStep;
         this.shakeFrequency = shakeFrequency;
         this.boundary = boundary;
+        this.encodingDebugMode = encodingDebugMode;
     }
 
     @Override
@@ -128,6 +132,7 @@ public class EncodingHandler implements MessageHandler {
     }
 
     public INDArray encodeUpdates(INDArray updates) {
+
         // special op should be called here for encoding
         if (bitmapMode.get() == null) {
             bitmapMode.set(new AtomicBoolean(true));
@@ -135,6 +140,9 @@ public class EncodingHandler implements MessageHandler {
             iterations.set(new AtomicLong(0));
             lastStep.set(new AtomicLong(0));
         }
+
+        //Debug output if enabled:
+        residualDebugOutputIfRequired(updates);
 
         iterations.get().incrementAndGet();
 
@@ -218,13 +226,13 @@ public class EncodingHandler implements MessageHandler {
      * This method does loops encoded data back to updates queue
      * @param message
      */
-    protected void sendMessage(INDArray message) {
+    protected void sendMessage(INDArray message, int iterationNumber, int epochNumber) {
         //INDArray update = decodeUpdates(message);
         accumulator.receiveUpdate(message);
     }
 
     @Override
-    public boolean broadcastUpdates(INDArray updates) {
+    public boolean broadcastUpdates(INDArray updates, int iterationNumber, int epochNumber) {
         /*
             we want to do 2 things here:
             1) encode updates
@@ -232,9 +240,75 @@ public class EncodingHandler implements MessageHandler {
          */
         INDArray message = encodeUpdates(updates);
         if (message != null) {
-            sendMessage(message);
+            sendMessage(message, iterationNumber, epochNumber);
             return true;
         } else
             return false;
+    }
+
+    protected void residualDebugOutputIfRequired(INDArray residual){
+        if(!encodingDebugMode)
+            return;
+
+        double currThreshold = currentThreshold.get().get();
+        String currThresholdStr = format(currThreshold);
+
+
+        INDArray absResidual = Transforms.abs(residual, true);
+
+        double dAmean = absResidual.meanNumber().doubleValue();
+        double dAMax = absResidual.maxNumber().doubleValue();
+        double dPc50 = absResidual.percentileNumber(50).doubleValue();
+        double dPc95 = absResidual.percentileNumber(95).doubleValue();
+        double dPc99 = absResidual.percentileNumber(99).doubleValue();
+        double dPc999 = absResidual.percentileNumber(99.9).doubleValue();
+        double dPc9999 = absResidual.percentileNumber(99.99).doubleValue();
+
+        String amean = format(dAmean).replace('E', 'e');
+        String aMax = format(dAMax).replace('E', 'e');
+        String pc50 = format(dPc50).replace('E', 'e');
+        String pc95 = format(dPc95).replace('E', 'e');
+        String pc99 = format(dPc99).replace('E', 'e');
+        String pc999 = format(dPc999).replace('E', 'e');
+        String pc9999 = format(dPc9999).replace('E', 'e');
+
+        String ameanThr = format(dAmean / currThreshold).replace('E', 'e');
+        String aMaxThr = format(dAMax / currThreshold).replace('E', 'e');
+        String pc50Thr = format(dPc50 / currThreshold).replace('E', 'e');
+        String pc95Thr = format(dPc95 / currThreshold).replace('E', 'e');
+        String pc99Thr = format(dPc99 / currThreshold).replace('E', 'e');
+        String pc999Thr = format(dPc999 / currThreshold).replace('E', 'e');
+        String pc9999Thr = format(dPc9999 / currThreshold).replace('E', 'e');
+
+        long length = absResidual.length();
+        long countAbsGTEThreshold = absResidual.gte(currThreshold).sumNumber().longValue();
+        double sparsity = countAbsGTEThreshold / (double)length;
+        String sparsityStr = format(sparsity);
+
+        log.info("Encoding debug info, residual vector: length: {}, threshold: {}, count > thr: {}, sparsity: {}, amean: {} ({}x); amax: {} ({}x); 50%: {} ({}x); 95%: {} ({}x}; 99%: {} ({}x);  99.9%: {} ({}x); 99.99%: {} ({}x)",
+                length, currThresholdStr, countAbsGTEThreshold, sparsityStr,
+                amean, ameanThr, aMax, aMaxThr, pc50, pc50Thr,
+                pc95, pc95Thr, pc99, pc99Thr, pc999, pc999Thr, pc9999, pc9999Thr);
+    }
+
+    protected static ThreadLocal<DecimalFormat> formatter = new ThreadLocal<>();
+    protected static ThreadLocal<DecimalFormat> formatter2 = new ThreadLocal<>();
+
+    protected static String format(double d){
+        if(d == 0){
+            return "0.0";
+        }
+        if(d >= -0.1 && d < 100){
+            if(formatter2.get() == null){
+                formatter2.set(new DecimalFormat("0.###"));
+            }
+            return formatter2.get().format(d);
+        }
+
+        if(formatter.get() == null){
+            formatter.set(new DecimalFormat("0.###E0"));
+        }
+        DecimalFormat df = formatter.get();
+        return df.format(d).replace('E','e');
     }
 }

@@ -18,6 +18,7 @@ package org.datavec.nlp.movingwindow;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.collection.MultiDimensionalMap;
 import org.nd4j.linalg.primitives.Pair;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
@@ -80,10 +81,10 @@ public class ContextLabelRetriever {
             if (currLabel != null && endLabel != null) {
                 currLabel = currLabel.replaceAll("[<>/]", "");
                 endLabel = endLabel.replaceAll("[<>/]", "");
-                assert !currLabel.isEmpty() : "Current label is empty!";
-                assert !endLabel.isEmpty() : "End label is empty!";
-                assert currLabel.equals(endLabel) : "Current label begin and end did not match for the parse. Was: "
-                                + currLabel + " ending with " + endLabel;
+                Preconditions.checkState(!currLabel.isEmpty(), "Current label is empty!");
+                Preconditions.checkState(!endLabel.isEmpty(), "End label is empty!");
+                Preconditions.checkState(currLabel.equals(endLabel), "Current label begin and end did not match for the parse. Was: %s ending with %s",
+                        currLabel, endLabel);
 
                 tokensWithSameLabel.add(new Pair<>(currLabel, (List<String>) new ArrayList<>(currTokens)));
                 currTokens.clear();

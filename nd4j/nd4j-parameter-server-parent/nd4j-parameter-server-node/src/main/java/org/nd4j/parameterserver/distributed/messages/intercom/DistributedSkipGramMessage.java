@@ -24,6 +24,7 @@ import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMes
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public class DistributedSkipGramMessage extends BaseVoidMessage implements DistributedMessage {
 
     // learning rate for this sequence

@@ -140,7 +140,6 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 Set<String> labelsSet = new HashSet<>();
                 for (URI location : locations) {
                     File imgFile = new File(location);
-                    File parentDir = imgFile.getParentFile();
                     String name = labelGenerator.getLabelForPath(location).toString();
                     labelsSet.add(name);
                     if (pattern != null) {

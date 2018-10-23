@@ -45,6 +45,7 @@ namespace nd4j {
                 this->_opNum = prototype->opNum();
                 this->_isInplace = prototype->isInplace();
                 this->_nodeId = prototype->nodeId();
+                this->_useMKLDNN = prototype->isUseMKLDNN();
             }
 
 
@@ -89,6 +90,11 @@ namespace nd4j {
             this->_iArgs.clear();
             this->_tArgs.clear();
             this->_inputs.clear();
+#ifdef HAVE_MKLDNN
+            if (_mkldnnStream != nullptr) {
+                delete _mkldnnStream;
+            }
+#endif
         }
 
         bool Context::hasWorkspaceProvided() {
