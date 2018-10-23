@@ -60,8 +60,10 @@ namespace helpers {
                             maxPos = pos;
                             maxVal = trial.e<T>(pos);
                         }
-                    indeces->p(e, maxPos); //topIndex;
-                    values->p(e, maxVal);
+                    if (indeces)
+                        indeces->p(e, maxPos); //topIndex;
+                    if (values)
+                        values->p(e, maxVal);
                 }
             }
             else { 
