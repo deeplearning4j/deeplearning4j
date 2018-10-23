@@ -1118,7 +1118,7 @@ namespace simdOps {
 			return op(d1, d2);
 		}
 
-		op_def static X op(X d1) {
+		op_def static Z op(X d1) {
 			return static_cast<Z>(0);
 		}
 	};
@@ -1131,11 +1131,11 @@ namespace simdOps {
 
 		op_def static Z op(X d1, Y d2, Z *params) {
 			X threshold = params[0];
-			return nd4j::math::nd4j_re<X>(d1, d2) > threshold ? static_cast<X>(1) : static_cast<X>(0);
+			return nd4j::math::nd4j_re<X>(d1, d2) > threshold ? static_cast<Z>(1) : static_cast<Z>(0);
 		}
 
-		op_def static X op(X d1) {
-			return static_cast<X>(0);
+		op_def static Z op(X d1) {
+			return static_cast<Z>(0);
 		}
 	};
 
@@ -1238,7 +1238,7 @@ namespace simdOps {
 		}
 
         op_def static Z startingValue(const X *input) {
-            return static_cast<X>(0);
+            return static_cast<Z>(0);
         }
 
         op_def static Z merge(X old, X opOutput, X *extraParams) {
@@ -1346,20 +1346,20 @@ namespace simdOps {
 			return nd4j::math::nd4j_isfin<X>(d1) ? static_cast<Z>(0) : static_cast<Z>(1);
 		}
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0);
+		op_def static Z startingValue(const X *input) {
+			return static_cast<Z>(0);
 		}
 
-		op_def static X merge(X old, X opOutput, X *extraParams) {
+		op_def static Z merge(X old, X opOutput, X *extraParams) {
 			return opOutput + old;
 		}
 
 
-		op_def static X update(X old, X opOutput, X *extraParams) {
+		op_def static Z update(X old, X opOutput, X *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
+		op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
 			return reduction;
 		}
 	};
@@ -1903,8 +1903,8 @@ namespace simdOps {
 		no_op_exec_special_accumulation_long
         no_op_exec_special_accumulation_cuda
 
-        op_def static X startingValue(const X *input) {
-            return static_cast<X>(0);
+        op_def static Z startingValue(const X *input) {
+            return static_cast<Z>(0);
         }
 
         op_def static Z merge(Z old, Z opOutput, X *extraParams) {
@@ -1970,7 +1970,7 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static X op(X d1, Z *params) {
+		op_def static Z op(X d1, Z *params) {
 			return nd4j::math::nd4j_elu<X,Z>(d1);
 		}
 	};
@@ -2257,23 +2257,23 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-        op_def static X startingValue(const X *input) {
-            return static_cast<X>(0);
+        op_def static Z startingValue(const X *input) {
+            return static_cast<Z>(0);
         }
 
-        op_def static X merge(X old, X opOutput, Z *extraParams) {
+        op_def static Z merge(X old, X opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static X update(X old, X opOutput, Z *extraParams) {
+        op_def static Z update(X old, X opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static X op(X d1, Z *extraParams) {
-            return nd4j::math::nd4j_pow<X, X, X>(d1, static_cast<X>(2)) * nd4j::math::nd4j_log<X, X>(nd4j::math::nd4j_pow<X, X, X>(d1, static_cast<X>(2.0f)));
+        op_def static Z op(X d1, Z *extraParams) {
+            return nd4j::math::nd4j_pow<X, X, Z>(d1, static_cast<X>(2)) * nd4j::math::nd4j_log<X, Z>(nd4j::math::nd4j_pow<X, X, Z>(d1, static_cast<X>(2.0f)));
         }
 
-        op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+        op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
             return -reduction;
         }
     };
@@ -2285,25 +2285,25 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-        op_def static X startingValue(const X *input) {
-            return static_cast<X>(0);
+        op_def static Z startingValue(const X *input) {
+            return static_cast<Z>(0);
         }
 
-        op_def static X merge(X old, X opOutput, Z *extraParams) {
+        op_def static Z merge(X old, X opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static X update(X old, X opOutput, Z *extraParams) {
+        op_def static Z update(X old, X opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static X op(X d1, Z *extraParams) {
-			return d1 * nd4j::math::nd4j_log<X, X>(d1);
+        op_def static Z op(X d1, Z *extraParams) {
+			return d1 * nd4j::math::nd4j_log<X, Z>(d1);
         }
 
-        op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+        op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
 			//entropy is -sum(p(x) * log(p(x))); log entropy is log of this
-			return nd4j::math::nd4j_log<X, X>(-reduction);
+			return nd4j::math::nd4j_log<X, Z>(-reduction);
         }
     };
 
@@ -2313,23 +2313,23 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-        op_def static X startingValue(const X *input) {
-            return static_cast<X>(0);
+        op_def static Z startingValue(const X *input) {
+            return static_cast<Z>(0);
         }
 
-        op_def static X merge(X old, X opOutput, Z *extraParams) {
+        op_def static Z merge(X old, X opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static X update(X old, X opOutput, Z *extraParams) {
+        op_def static Z update(X old, X opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static X op(X d1, Z *extraParams) {
-            return d1 * nd4j::math::nd4j_log<X, X>(d1);
+        op_def static Z op(X d1, Z *extraParams) {
+            return d1 * nd4j::math::nd4j_log<X, Z>(d1);
         }
 
-        op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+        op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
             return -reduction;		//entropy is -sum(p(x) * log(p(x)))
         }
     };
@@ -2452,19 +2452,19 @@ namespace simdOps {
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0.0f);
+		op_def static Z startingValue(const X *input) {
+			return static_cast<Z>(0.0f);
 		}
 
-		op_def static X merge(X old, X opOutput, X *extraParams) {
+		op_def static Z merge(X old, X opOutput, X *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static X update(X old, X opOutput, X *extraParams) {
+		op_def static Z update(X old, X opOutput, X *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static X op(X d1, X *extraParams) {
+		op_def static Z op(X d1, X *extraParams) {
 			return d1;
 		}
 
@@ -2480,19 +2480,19 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-        op_def static X startingValue(const X *input) {
-            return static_cast<X>(1);
+        op_def static Z startingValue(const X *input) {
+            return static_cast<Z>(1);
         }
 
-        op_def static X merge(X old, X opOutput, X *extraParams) {
+        op_def static Z merge(X old, X opOutput, X *extraParams) {
             return opOutput * old;
         }
 
-        op_def static X update(X old, X opOutput, X *extraParams) {
+        op_def static Z update(X old, X opOutput, X *extraParams) {
             return opOutput * old;
         }
 
-        op_def static X op(X d1, X *extraParams) {
+        op_def static Z op(X d1, X *extraParams) {
             return d1;
         }
 
@@ -2507,19 +2507,19 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0);
+		op_def static Z startingValue(const X *input) {
+			return static_cast<Z>(0);
 		}
 
-		op_def static X merge(X old, X opOutput, Z *extraParams) {
+		op_def static Z merge(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static X update(X old, X opOutput, Z *extraParams) {
+		op_def static Z update(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static X op(X d1, Z *extraParams) {
+		op_def static Z op(X d1, Z *extraParams) {
 			return d1;
 		}
 
@@ -2535,11 +2535,11 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-        op_def static X startingValue(const X *input) {
-            return static_cast<X>(0);
+        op_def static Z startingValue(const X *input) {
+            return static_cast<Z>(0);
         }
 
-        op_def static X merge(X old, X opOutput, Z *extraParams) {
+        op_def static Z merge(X old, X opOutput, Z *extraParams) {
             return nd4j::math::nd4j_abs<X>(opOutput) + nd4j::math::nd4j_abs<X>(old);
         }
 
@@ -2547,11 +2547,11 @@ namespace simdOps {
             return nd4j::math::nd4j_abs<X>(opOutput) + nd4j::math::nd4j_abs<X>(old);
         }
 
-        op_def static X op(X d1, Z *extraParams) {
+        op_def static Z op(X d1, Z *extraParams) {
             return nd4j::math::nd4j_abs<X>(d1);
         }
 
-        op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+        op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
             return nd4j::math::nd4j_abs<X>(reduction) / static_cast<X>(n);
         }
     };
@@ -2596,11 +2596,11 @@ namespace simdOps {
 	template <typename X, typename Y, typename Z>
 	class AMaxPairwise {
 	public:
-		op_def static X op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return nd4j::math::nd4j_abs<Z>((Z) d1) > nd4j::math::nd4j_abs<Z>((Z) d2) ? (Z) d1 : (Z) d2;
 		}
 
-		op_def static X op(X d1, Y d2) {
+		op_def static Z op(X d1, Y d2) {
             return nd4j::math::nd4j_abs<Z>((Z) d1) > nd4j::math::nd4j_abs<Z>((Z) d2) ? (Z) d1 : (Z) d2;
 		}
 	};
@@ -2609,11 +2609,11 @@ namespace simdOps {
 	template <typename X, typename Y, typename Z>
 	class AMinPairwise {
 	public:
-		op_def static X op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
             return nd4j::math::nd4j_abs<Z>((Z) d1) < nd4j::math::nd4j_abs<Z>((Z) d2) ? (Z) d1 : (Z) d2;
 		}
 
-		op_def static X op(X d1, Y d2) {
+		op_def static Z op(X d1, Y d2) {
             return nd4j::math::nd4j_abs<Z>((Z) d1) < nd4j::math::nd4j_abs<Z>((Z) d2) ? (Z) d1 : (Z) d2;
 		}
 	};
@@ -2621,11 +2621,11 @@ namespace simdOps {
 	template <typename X, typename Y, typename Z>
 	class MaxPairwise {
 	public:
-		op_def static X op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return nd4j::math::nd4j_max<X>(d1, static_cast<X>(d2));
 		}
 
-		op_def static X op(X d1, Y d2) {
+		op_def static Z op(X d1, Y d2) {
 			return nd4j::math::nd4j_max<X>(d1, static_cast<X>(d2));
 		}
 	};
@@ -2634,11 +2634,11 @@ namespace simdOps {
 	template <typename X, typename Y, typename Z>
 	class MinPairwise {
 	public:
-		op_def static X op(X d1, Y d2, Z *params) {
+		op_def static Z op(X d1, Y d2, Z *params) {
 			return nd4j::math::nd4j_min<X>(d1, static_cast<X>(d2));
 		}
 
-		op_def static X op(X d1, Y d2) {
+		op_def static Z op(X d1, Y d2) {
 			return nd4j::math::nd4j_min<X>(d1, static_cast<X>(d2));
 		}
 	};
@@ -2759,25 +2759,25 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0);
+		op_def static Z startingValue(const X *input) {
+			return static_cast<Z>(0);
 		}
 
-		op_def static X merge(X old, X opOutput, Z *extraParams) {
+		op_def static Z merge(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 
 		}
 
-		op_def static X update(X old, X opOutput, Z *extraParams) {
+		op_def static Z update(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 
 		}
 
-		op_def static X op(X d1, Z *extraParams) {
+		op_def static Z op(X d1, Z *extraParams) {
 			return nd4j::math::nd4j_abs<X>(d1);
 		}
 
-		op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+		op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
 			return reduction;
 		}
 	};
@@ -2789,25 +2789,25 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0);
+		op_def static Z startingValue(const X *input) {
+			return static_cast<Z>(0);
 		}
 
-		op_def static X merge(X old, X opOutput, Z *extraParams) {
+		op_def static Z merge(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
 
-		op_def static X update(X old, X opOutput, Z *extraParams) {
+		op_def static Z update(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
 
-		op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+		op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
 			return nd4j::math::nd4j_sqrt<X, X>(reduction);
 		}
 
-        op_def static X op(X d1, Z *extraParams) {
+        op_def static Z op(X d1, Z *extraParams) {
             return d1 * d1;
         }
     };
@@ -2818,24 +2818,24 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0);
+		op_def static Z startingValue(const X *input) {
+			return static_cast<Z>(0);
 		}
 
-		op_def static X merge(X old, X opOutput, Z *extraParams) {
+		op_def static Z merge(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
 
-		op_def static X update(X old, X opOutput, Z *extraParams) {
+		op_def static Z update(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static X op(X d1, Z *extraParams) {
+		op_def static Z op(X d1, Z *extraParams) {
 			return d1 * d1;
 		}
 
-		op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+		op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
 			return reduction;
 		}
 	};
@@ -2846,26 +2846,26 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0);
+		op_def static Z startingValue(const X *input) {
+			return static_cast<Z>(0);
 		}
 
-		op_def static X merge(X old, X opOutput, Z *extraParams) {
+		op_def static Z merge(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
 
-		op_def static X update(X old, X opOutput, Z *extraParams) {
+		op_def static Z update(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static X op(X d1, Z *extraParams) {
+		op_def static Z op(X d1, Z *extraParams) {
 			X v = nd4j::math::nd4j_abs<X>(d1);
 			return v * v;
 		}
 
-		op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
-			return nd4j::math::nd4j_sqrt<X, X>(reduction);
+		op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+			return nd4j::math::nd4j_sqrt<X, Z>(reduction);
 		}
 	};
 
@@ -2875,24 +2875,24 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0);
+		op_def static Z startingValue(const X *input) {
+			return static_cast<Z>(0);
 		}
 
-		op_def static X merge(X old, X opOutput, Z *extraParams) {
+		op_def static Z merge(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static X update(X old, X opOutput, Z *extraParams) {
+		op_def static Z update(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static X op(X d1, Z *extraParams) {
-			return nd4j::math::nd4j_pow<X, X, X>(nd4j::math::nd4j_abs(d1), extraParams[0]);
+		op_def static Z op(X d1, Z *extraParams) {
+			return nd4j::math::nd4j_pow<X, X, Z>(nd4j::math::nd4j_abs<X>(d1), extraParams[0]);
 		}
 
-		op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
-			return nd4j::math::nd4j_pow<X, X, X>(reduction, static_cast<X>(1.0f) / extraParams[0]);
+		op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+			return nd4j::math::nd4j_pow<X, X, Z>(reduction, static_cast<X>(1.0f) / extraParams[0]);
 		}
 	};
 
@@ -2902,25 +2902,25 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0);
+		op_def static Z startingValue(const X *input) {
+			return static_cast<Z>(0);
 		}
 
-		op_def static X merge(X old, X opOutput, Z *extraParams) {
+		op_def static Z merge(X old, X opOutput, Z *extraParams) {
 			return opOutput + old;
 
 		}
 
-		op_def static X update(X old, X opOutput, Z *extraParams) {
+		op_def static Z update(X old, X opOutput, Z *extraParams) {
 			return nd4j::math::nd4j_max<X>(nd4j::math::nd4j_abs<X>(old),
 				nd4j::math::nd4j_abs<X>(opOutput));
 		}
 
-		op_def static X op(X d1, Z *extraParams) {
+		op_def static Z op(X d1, Z *extraParams) {
 			return d1;
 		}
 
-		op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+		op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
 			return nd4j::math::nd4j_max<X>(nd4j::math::nd4j_abs<X>(reduction),
 				nd4j::math::nd4j_abs<X>(reduction));
 		}
@@ -2932,15 +2932,15 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0.0f);
+		op_def static Z startingValue(const X *input) {
+			return static_cast<Z>(0.0f);
 		}
 
-		op_def static X merge(X old, X opOutput, Z *extraParams) {
+		op_def static Z merge(X old, X opOutput, Z *extraParams) {
 			return old + opOutput;
 		}
 
-		op_def static X update(X old, X opOutput, Z *extraParams) {
+		op_def static Z update(X old, X opOutput, Z *extraParams) {
 			return old + opOutput;
 
 		}
@@ -2951,7 +2951,7 @@ namespace simdOps {
 			return ret * ret;
 		}
 
-		op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+		op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
 			// T bias = extraParams[1];
 			// return (reduction - (nd4j::math::nd4j_pow<T>(bias, static_cast<T>(2.0f)) / static_cast<T>(n))) / (n - 1)
 			return reduction / static_cast<X>(n - 1);
@@ -2967,26 +2967,26 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0.0f);
+		op_def static Z startingValue(const X *input) {
+			return static_cast<Z>(0.0f);
 		}
 
-		op_def static X merge(X old, X opOutput, Z *extraParams) {
+		op_def static Z merge(X old, X opOutput, Z *extraParams) {
 			return old + opOutput;
 		}
 
-		op_def static X update(X old, X opOutput, Z *extraParams) {
+		op_def static Z update(X old, X opOutput, Z *extraParams) {
 			return old + opOutput;
 
 		}
 
-		op_def static X op(X d1, Z *extraParams) {
+		op_def static Z op(X d1, Z *extraParams) {
 			X mean = extraParams[0];
 			X ret = d1 - mean;
 			return ret * ret;
 		}
 
-		op_def static X postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+		op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
 			Z ret = Variance<X,Z>::postProcess(reduction, n, extraParams);
 			Z sqrtRet = nd4j::math::nd4j_sqrt<X, Z>(ret);
 			return sqrtRet;
@@ -3007,8 +3007,8 @@ namespace simdOps {
 			//delete[] extraParams;
 		}
 
-		op_def static X startingValue(const X *input) {
-			return static_cast<X>(0.0f);
+		op_def static Y startingValue(const X *input) {
+			return static_cast<Y>(0.0f);
 		}
 
 		op_def static Y postProcess(Y reduction, Nd4jLong n, Y *extraParams) {
@@ -3060,7 +3060,7 @@ namespace simdOps {
             //delete[] extraParams;
         }
 
-        op_def static X startingValue(const X *input) {
+        op_def static Y startingValue(const X *input) {
             return static_cast<X>(0.0f);
         }
 
@@ -3123,8 +3123,8 @@ namespace simdOps {
             //delete[] extraParams;
         }
 
-        op_def static X startingValue(X *input) {
-            return static_cast<X>(0.0f);
+        op_def static Y startingValue(X *input) {
+            return static_cast<Y>(0.0f);
         }
 
         op_def static Y postProcess(Y reduction, Nd4jLong n, Y *extraParams) {
@@ -3170,8 +3170,8 @@ namespace simdOps {
             //delete[] extraParams;
         }
 
-        op_def static X startingValue(X *input) {
-            return static_cast<X>(0.0f);
+        op_def static Y startingValue(X *input) {
+            return static_cast<Y>(0.0f);
         }
 
         op_def static Y postProcess(Y reduction, Nd4jLong n, Y *extraParams) {
@@ -3226,8 +3226,8 @@ namespace simdOps {
 			//delete[] * extraParamsRef;
 		}
 
-		op_def static X startingValue(X *input) {
-			return static_cast<X>(0.0f);
+		op_def static Y startingValue(X *input) {
+			return static_cast<Y>(0.0f);
 		}
 
 		op_def static Y postProcess(Y reduction, Nd4jLong n, Y *extraParamsRef) {
@@ -3274,8 +3274,8 @@ namespace simdOps {
             //no-op
         }
 
-        op_def static X startingValue(X *input) {
-            return static_cast<X>(0.0f);
+        op_def static Y startingValue(X *input) {
+            return static_cast<Y>(0.0f);
         }
 
         op_def static Y postProcess(Y reduction, Nd4jLong n, Y *extraParamsRef) {
@@ -3333,8 +3333,8 @@ namespace simdOps {
 			//no-op
 		}
 
-		op_def static X startingValue(X *input) {
-			return static_cast<X>(0.0f);
+		op_def static Y startingValue(X *input) {
+			return static_cast<Y>(0.0f);
 		}
 
 		op_def static Y postProcess(Y reduction, Nd4jLong n, Y *extraParamsRef) {
@@ -3379,8 +3379,8 @@ namespace simdOps {
 			//no-op
 		}
 
-		op_def static X startingValue(X *input) {
-			return static_cast<X>(0.0f);
+		op_def static Y startingValue(X *input) {
+			return static_cast<Y>(0.0f);
 		}
 
 		op_def static Y postProcess(Y reduction, Nd4jLong n, Y *extraParamsRef) {
@@ -3410,7 +3410,7 @@ namespace simdOps {
 #ifndef __clang__
 #pragma omp declare simd uniform(extraParamsRef)
 #endif
-		op_def static X merge(X old, X opOutput, X *extraParamsRef) {
+		op_def static Y merge(X old, X opOutput, X *extraParamsRef) {
 			return update(old, opOutput, extraParamsRef);
 		}
 	};
