@@ -183,9 +183,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 updateMean = mean[t] - mean[t+1] = (1-d) * (mean[t] - minibatchMean)
                 And use the same idea for global variance estimate
                  */
-
-//                INDArray batchMean = input.rank() == 2 ? input.mean(0) : input.mean(0, 2, 3);
-//                INDArray batchVar = input.rank() == 2 ? input.var(false, 0) : input.var(false, 0, 2, 3);
                 INDArray batchMean = helper.getMeanCache();
                 INDArray batchVar = helper.getVarCache();
 
