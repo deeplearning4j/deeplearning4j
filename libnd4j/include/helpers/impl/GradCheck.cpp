@@ -75,7 +75,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 		
 		for(Nd4jLong j = idxStart; j < idxEnd; ++j) {			// loop through all elements for current array
 
-			double& elem = inArrsFF[i]->getRefOnElem<double>(j);
+			double& elem = inArrsFF[i]->t<double>(j);
 			const double orig = elem;
 
 			// add epsilon, feed forward

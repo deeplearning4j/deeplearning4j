@@ -1101,7 +1101,7 @@ namespace nd4j {
         *  returns reference on array element with given index
         */
         template<typename T>
-        FORCEINLINE T& getRefOnElem(const Nd4jLong index);
+        FORCEINLINE T& t(const Nd4jLong index);
 
         /**
         *  default destructor
@@ -1852,7 +1852,7 @@ DataType NDArray::dataType() const {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-T& NDArray::getRefOnElem(const Nd4jLong index) {
+T& NDArray::t(const Nd4jLong index) {
 
     return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(index))));
 }
