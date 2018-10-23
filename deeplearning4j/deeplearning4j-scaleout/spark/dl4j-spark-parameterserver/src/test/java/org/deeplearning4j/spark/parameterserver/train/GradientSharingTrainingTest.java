@@ -104,6 +104,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                     .meshBuildMode(MeshBuildMode.PLAIN) // everyone is connected to the master
                     .build();
             TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, new FixedThresholdAlgorithm(1e-3), 16)
+
                     .rngSeed(12345)
                     .collectTrainingStats(false)
                     .batchSizePerWorker(16) // Minibatch size for each worker

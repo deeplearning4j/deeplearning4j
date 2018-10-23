@@ -16,28 +16,38 @@
 
 package org.deeplearning4j.optimize.solvers.accumulation.encoding.residual;
 
-import lombok.AllArgsConstructor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
-@AllArgsConstructor
-public class RedisualClippingPostProcessor implements ResidualPostProcessor {
+public class ResidualClippingPostProcessor implements ResidualPostProcessor {
 
     private final double thresholdMultipleClipValue;
+    private final int frequency;
 
-    @Override
-    public void processResidual(int iteration, int epoch, double lastThreshold, INDArray residualVector) {
-
-        double currClip = lastThreshold * thresholdMultipleClipValue;
-        //TODO replace with single op once we have this
-        BooleanIndexing.replaceWhere(residualVector, currClip, Conditions.greaterThan(currClip));
-        BooleanIndexing.replaceWhere(residualVector, -currClip, Conditions.lessThan(-currClip));
+    public ResidualClippingPostProcessor(double thresholdMultipleClipValue, int frequency) {
+        Preconditions.checkState(thresholdMultipleClipValue >= 1.0, "Threshold multiple must be a positive value and " +
+                "greater than 1.0 (1.0 means ");
+        this.thresholdMultipleClipValue = thresholdMultipleClipValue;
+        this.frequency = frequency;
     }
 
     @Override
-    public RedisualClippingPostProcessor clone() {
-        return new RedisualClippingPostProcessor(thresholdMultipleClipValue);
+    public void processResidual(int iteration, int epoch, double lastThreshold, INDArray residualVector) {
+        if(iteration > 0 && iteration % frequency == 0) {
+
+
+            double currClip = lastThreshold * thresholdMultipleClipValue;
+            //TODO replace with single op once we have GPU op version
+            BooleanIndexing.replaceWhere(residualVector, currClip, Conditions.greaterThan(currClip));
+            BooleanIndexing.replaceWhere(residualVector, -currClip, Conditions.lessThan(-currClip));
+        }
+    }
+
+    @Override
+    public ResidualClippingPostProcessor clone() {
+        return new ResidualClippingPostProcessor(thresholdMultipleClipValue, frequency);
     }
 }

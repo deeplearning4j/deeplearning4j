@@ -37,7 +37,9 @@ import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.residual.ResidualClippingPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -115,6 +117,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected boolean encodingDebugMode = false;
 
     protected ThresholdAlgorithm thresholdAlgorithm;
+    protected ResidualPostProcessor residualPostProcessor;
 
     protected Repartition repartition;
     protected RepartitionStrategy repartitionStrategy;
@@ -144,7 +147,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers,
                     RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats,
                     RepartitionStrategy repartitionStrategy, Repartition repartition,
-                    ThresholdAlgorithm thresholdAlgorithm,
+                    ThresholdAlgorithm thresholdAlgorithm, ResidualPostProcessor residualPostProcessor,
                     int rddDataSetNumExamples,
                     int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode, int workerPrefetchBatches,
                     Repartitioner repartitioner, Boolean workerTogglePeriodicGC, Integer workerPeriodicGCFrequency,
@@ -152,6 +155,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         this.voidConfiguration = voidConfiguration;
         this.numWorkers = numWorkers;
         this.thresholdAlgorithm = thresholdAlgorithm;
+        this.residualPostProcessor = residualPostProcessor;
         this.rddTrainingApproach = rddTrainingApproach;
         this.repartitionStrategy = repartitionStrategy;
         this.repartition = repartition;
@@ -878,6 +882,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     public static class Builder {
         protected ThresholdAlgorithm thresholdAlgorithm = new FixedThresholdAlgorithm(1e-3);
+        protected ResidualPostProcessor residualPostProcessor = new ResidualClippingPostProcessor(5.0, 5);
         protected int rddDataSetNumExamples = 1;
         @Deprecated
         protected Repartition repartition = Repartition.Always;
@@ -1073,6 +1078,11 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             return this;
         }
 
+        public Builder residualPostProcessor(ResidualPostProcessor residualPostProcessor){
+            this.residualPostProcessor = residualPostProcessor;
+            return this;
+        }
+
         /**
          * Minibatch size to use when training workers. In principle, the source data (i.e., {@code RDD<DataSet>} etc)
          * can have a different number of examples in each {@code DataSet} than we want to use when training.
@@ -1206,7 +1216,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach,
                             storageLevel, collectTrainingStats, repartitionStrategy, repartition,
-                        thresholdAlgorithm, rddDataSetNumExamples, batchSize,
+                        thresholdAlgorithm, residualPostProcessor, rddDataSetNumExamples, batchSize,
                             debugLongerIterations, numWorkersPerNode, workerPrefetchNumBatches, repartitioner, workerTogglePeriodicGC,
                     workerPeriodicGCFrequency, encodingDebugMode);
             if (transport != null)
