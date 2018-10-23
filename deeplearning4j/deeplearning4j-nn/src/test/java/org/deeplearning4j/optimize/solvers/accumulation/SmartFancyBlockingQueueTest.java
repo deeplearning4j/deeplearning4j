@@ -237,4 +237,90 @@ public class SmartFancyBlockingQueueTest {
         for (val t:threads)
             t.join();
     }
+
+
+    @Test
+    public void testSFBQ_5() throws Exception {
+        final val queue = new SmartFancyBlockingQueue(16, Nd4j.create(5, 5));
+        final val barrier = new CyclicBarrier(4);
+
+        // writers are just spamming updates every X ms
+        val writers = new ArrayList<Thread>();
+        for (int e = 0; e < 4; e++) {
+            val w = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (true) {
+                        try {
+                            val n = RandomUtils.nextInt(8, 64);
+                            for (int i = 0; i < n; i++) {
+                                queue.put(Nd4j.createUninitialized(5, 5).assign(n));
+                            }
+
+                            ThreadUtils.uncheckedSleep(5);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            });
+
+            w.setName("writer thread " + e);
+            w.setDaemon(true);
+            w.start();
+            writers.add(w);
+        }
+
+        // each reader will read 250 updates. supposedly equal :)
+        val means = new long[4];
+        val readers = new ArrayList<Thread>();
+        for (int e = 0; e < 4; e++) {
+            val f = e;
+            means[f] = 0;
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        int cnt = 0;
+                        while (cnt < 250) {
+
+                            if (f == 0)
+                                queue.registerConsumers(4);
+
+                            barrier.await();
+
+                            if (!queue.isEmpty()) {
+                                while (!queue.isEmpty()) {
+                                    val m = queue.poll();
+
+                                    val arr = m.unsafeDuplication(true);
+                                    means[f] += arr.meanNumber().longValue();
+                                }
+                                cnt++;
+                            }
+
+                            barrier.await();
+                        }
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    } catch (BrokenBarrierException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+
+            t.setName("reader thread " + f);
+            t.start();
+            readers.add(t);
+        }
+
+
+        for (val t:readers)
+            t.join();
+
+        // all messages should be the same
+        assertEquals(means[0], means[1]);
+        assertEquals(means[0], means[2]);
+        assertEquals(means[0], means[3]);
+    }
 }

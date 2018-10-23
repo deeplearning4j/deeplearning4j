@@ -36,6 +36,7 @@ import org.nd4j.linalg.util.AtomicThrowable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -304,11 +305,16 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
             if (externalSource != null) {
                 int ent = 0;
                 while (!externalSource.isEmpty()) {
-                    INDArray compressed = externalSource.poll();
+                    INDArray compressed = null;
+                    try {
+                        compressed = externalSource.poll();
+                    } catch (NoSuchElementException e) {
+                        break;
+                    }
 
                     // just for safety safety
                     if (compressed == null)
-                        continue;
+                        break;
 
                     // if we have multiple devices without p2p support - just duplicate messages right from host side
                     if (relocatable) {
