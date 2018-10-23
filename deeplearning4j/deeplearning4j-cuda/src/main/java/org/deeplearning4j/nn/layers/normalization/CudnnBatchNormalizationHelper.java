@@ -234,7 +234,9 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         //i.e., "decay" has a different meaning...
         //Disable in-place updating of running mean/variance, so that all parameter changes are done via the update/gradient
         // vector. This is necessary for BatchNormalization to be safe to use in distributed gradient sharing settings
-        decay = 0.0;                //From cudnn docs: runningMean = newMean*factor + runningMean*(1-factor). -> 0 = "in-place modification of running mean disabled"
+//        decay = 0.0;                //From cudnn docs: runningMean = newMean*factor + runningMean*(1-factor). -> 0 = "in-place modification of running mean disabled"
+
+        decay = 1 - decay;
 
         val miniBatch = (int) x.size(0);
         val inDepth = (int) x.size(1);

@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldSubOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -63,6 +64,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     protected INDArray std;
     protected INDArray xMu;
     protected INDArray xHat;
+
+    protected INDArray meanVarTemp;
 
     public BatchNormalization(NeuralNetConfiguration conf) {
         super(conf);
@@ -152,6 +155,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             // FIXME: int cast
             Pair<Gradient,INDArray> ret = null;
+//            INDArray meanAndVarViewCopy = meanAndVarView.dup();
             try {
                 ret = helper.backpropGradient(in, eps, ArrayUtil.toInts(shape), gamma, dGammaView, dBetaView,
                         layerConf.getEps(), workspaceMgr);
@@ -184,17 +188,47 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 And use the same idea for global variance estimate
                  */
 
+//                INDArray batchMeanManual = input.rank() == 2 ? input.mean(0) : input.mean(0, 2, 3);
+//                INDArray batchVarManual = input.rank() == 2 ? input.var(false, 0) : input.var(false, 0, 2, 3);
+//                INDArray batchMean = helper.getMeanCache();
+//                INDArray batchVar = helper.getVarCache();
+
 //                INDArray batchMean = input.rank() == 2 ? input.mean(0) : input.mean(0, 2, 3);
 //                INDArray batchVar = input.rank() == 2 ? input.var(false, 0) : input.var(false, 0, 2, 3);
-                INDArray batchMean = helper.getMeanCache();
-                INDArray batchVar = helper.getVarCache();
+//
+//                INDArray absDiffM = Transforms.abs(batchMeanManual.sub(batchMean));
+//                INDArray absDiffV = Transforms.abs((batchVarManual).sub(batchVar));
+//                double maxMDiff = absDiffM.maxNumber().doubleValue();
+//                double maxVDiff = absDiffV.maxNumber().doubleValue();
+//
+//                if(maxMDiff > 1e-6){
+//                    System.out.println("MAX MEAN DIFFENECE OF " + maxMDiff + " AT (epoch,iter)=" + getEpochCount() + "," + getIterationCount() + ")");
+//                    System.out.println("CUDA:   " + batchMean);
+//                    System.out.println("MANUAL: " + batchMeanManual);
+//                }
+//                if(maxVDiff > 1e-6){
+//                    System.out.println("MAX VARIANCE DIFFENECE OF " + maxVDiff + " AT (epoch,iter)=" + getEpochCount() + "," + getIterationCount() + ")");
+//                    System.out.println("CUDA:   " + batchVar);
+//                    System.out.println("MANUAL: " + batchVarManual);
+//                }
 
-                Nd4j.getExecutioner().exec(new OldSubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
-                dGlobalMeanView.muli(1-layerConf().getDecay());
+//                System.out.println("e=" + getEpochCount() + ", i=" + getIterationCount() + " absMeanDiff: (max) " + absDiffM.maxNumber().doubleValue());
+//                System.out.println("e=" + getEpochCount() + ", i=" + getIterationCount() + " absVarDiff: (max) " + absDiffV.maxNumber().doubleValue());
 
-                Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
-                dGlobalVarView.muli(1-layerConf().getDecay());
 
+//                Nd4j.getExecutioner().exec(new OldSubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
+//                dGlobalMeanView.muli(1-layerConf().getDecay());
+//
+//                Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
+//                dGlobalVarView.muli(1-layerConf().getDecay());
+
+                long nOut = in.size(1);
+                INDArray meanAndVarView = paramsFlattened.get(NDArrayIndex.point(0), NDArrayIndex.interval(2 * nOut, 4 * nOut));    //Before update
+
+                INDArray meanAndVarUpdateView = gradientsFlattened.get(NDArrayIndex.point(0), NDArrayIndex.interval(2 * nOut, 4 * nOut));
+//                Nd4j.getExecutioner().exec(new OldSubOp(meanAndVarView, meanVarTemp, meanAndVarUpdateView));
+//                meanAndVarView.assign(meanAndVarViewCopy);
+                Nd4j.getExecutioner().exec(new OldSubOp(meanAndVarView, meanVarTemp, meanAndVarUpdateView));
 
                 return ret;
             }
@@ -364,9 +398,28 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             // FIXME: int cast
             INDArray ret = null;
+            long nOut = in.size(1);
+            INDArray meanAndVarView = paramsFlattened.get(NDArrayIndex.point(0), NDArrayIndex.interval(2*nOut, 4*nOut));
+//            INDArray meanAndVarViewCopy = meanAndVarView.dup();
+            INDArray updateableMean;
+            INDArray updateableVar;
+            if(training == TrainingMode.TRAIN){
+                if(meanVarTemp == null) {
+                    meanVarTemp = Nd4j.createUninitializedDetached(new long[]{1, meanAndVarView.length()});
+                }
+                meanVarTemp.assign(meanAndVarView);
+                updateableMean = meanVarTemp.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
+                updateableVar = meanVarTemp.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, 2*nOut));
+            } else {
+                updateableMean = globalMeanView;
+                updateableVar = globalVarView;
+            }
+
             try {
-                ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
-                        globalVarView, decay, layerConf.getEps(), workspaceMgr);
+//                ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
+//                        globalVarView, decay, layerConf.getEps(), workspaceMgr);
+                ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, updateableMean,
+                        updateableVar, decay, layerConf.getEps(), workspaceMgr);
             } catch (Throwable t) {
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
@@ -375,6 +428,13 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     throw new RuntimeException("Error during BatchNormalization CuDNN helper backprop - isCudnnAllowFallback() is set to false", t);
                 }
             }
+
+//            if(training == TrainingMode.TRAIN) {
+//                INDArray meanAndVarUpdateView = gradientsFlattened.get(NDArrayIndex.point(0), NDArrayIndex.interval(2*nOut, 4*nOut));
+//                Nd4j.getExecutioner().exec(new OldSubOp(meanAndVarView, meanVarTemp, meanAndVarUpdateView));
+//                meanAndVarView.assign(meanVarTemp); //Reset back to original mean/variance
+//            }
+
             if (ret != null) {
                 if(input.rank() == 2){
                     return ret.reshape(ret.ordering(), ret.size(0), ret.size(1));
