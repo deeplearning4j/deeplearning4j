@@ -18,6 +18,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.util.ThreadUtils;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -89,6 +90,79 @@ public class SmartFancyBlockingQueueTest {
             queue.registerConsumers(4);
         }
 
+
+        for (val t: threads)
+            t.join();
+    }
+
+
+    @Test
+    public void testSFBQ_3() throws Exception {
+        final val queue = new SmartFancyBlockingQueue(1285601, Nd4j.create(5, 5));
+
+        val threads = new ArrayList<Thread>();
+        for (int e = 0; e< 4; e++) {
+            val f = e;
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    int cnt = 0;
+                    while (true) {
+                        while (cnt < 1000) {
+                            if (!queue.isEmpty()) {
+                                if (cnt % 50 == 0)
+                                    log.info("Thread {}: [{}]", f, cnt);
+
+                                val arr = queue.poll();
+
+                                assertNotNull(arr);
+                                val local = arr.unsafeDuplication(true);
+                                cnt++;
+                            }
+                        }
+                        break;
+                    }
+                }
+            });
+            t.start();
+            threads.add(t);
+        }
+
+        val b  = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    queue.registerConsumers(4);
+                    ThreadUtils.uncheckedSleep(100);
+                }
+            }
+        });
+
+        b.setDaemon(true);
+        b.start();
+
+        val writers = new ArrayList<Thread>();
+        for (int e = 0; e < 4; e++) {
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    for (int e = 0; e <250; e++) {
+                        try {
+                            queue.put(Nd4j.createUninitialized(5, 5).assign(e));
+                            Thread.sleep(100);
+                        } catch (Exception ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
+                }
+            });
+
+            writers.add(t);
+            t.start();
+        }
+
+        for (val t: writers)
+            t.join();
 
         for (val t: threads)
             t.join();
