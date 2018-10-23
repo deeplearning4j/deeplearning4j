@@ -38,9 +38,9 @@ namespace helpers {
 	void randomShuffle(NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
     
     // auxiliary function which serves for recursion purpose and is used in pad operation
-	void recursiveLoopForPad(const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, NDArray& padValue);
+	// void recursiveLoopForPad(const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, NDArray& padValue);
 
-	void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray &padValue );
+	void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue);
 
 	void invertPermutation(const NDArray& input, NDArray& output);
 

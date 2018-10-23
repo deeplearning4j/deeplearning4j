@@ -52,6 +52,12 @@ CUSTOM_OP_IMPL(broadcast_to, 2, 1, false, 0, 0) {
     return Status::OK();
 }
 
+DECLARE_TYPES(broadcast_to) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(DataType::ANY)
+        ->setSameMode(true);
+}
+
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(broadcast_to) {
     
@@ -71,7 +77,7 @@ DECLARE_SHAPE_FN(broadcast_to) {
     for(int i = 1; i <= inputRank; ++i)
         REQUIRE_TRUE(inputShapeInfo[inputRank+1-i] == outShape[shapeLen-i] || inputShapeInfo[inputRank+1-i] == 1, 0, "BROADCAST_TO op: shape of input array %s can't be broadcasted to the shape %s !", ShapeUtils::shapeAsString(inputShapeInfo).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
         
-    Nd4jLong* outShapeInfo = ShapeBuilders::createShapeInfo(shape::order(inputShapeInfo), outShape, block.getWorkspace());
+    Nd4jLong* outShapeInfo = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), outShape, block.getWorkspace());
 
     return SHAPELIST(outShapeInfo);
 }

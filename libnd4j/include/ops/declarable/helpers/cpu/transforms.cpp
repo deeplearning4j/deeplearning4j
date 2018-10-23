@@ -204,10 +204,11 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
     }
 
     BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
+
 //////////////////////////////////////////////////////////////////////////
 
 
-void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray& padValue ) {
+void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue ) {
 
     const int rank = output.rankOf();
     std::vector<int> dimsToExclude(rank);
