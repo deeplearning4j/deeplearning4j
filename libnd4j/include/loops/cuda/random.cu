@@ -26,6 +26,8 @@
 #include <cuda_launch_config.h>
 #include <helpers/DebugHelper.h>
 
+using namespace randomOps;
+
 template <typename T, typename OpClass>
 static inline __device__ void randomSingleGeneric(
         Nd4jPointer state,
