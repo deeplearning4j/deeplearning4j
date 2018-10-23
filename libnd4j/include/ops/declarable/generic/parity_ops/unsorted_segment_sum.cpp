@@ -40,6 +40,12 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+        DECLARE_TYPES(unsorted_segment_sum) {
+            getOpDescriptor()
+                    ->setAllowedOutputTypes({ALL_FLOATS})
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(false);
+        }
 
         DECLARE_SHAPE_FN(unsorted_segment_sum) {
 
@@ -73,6 +79,12 @@ namespace nd4j {
             COPY_SHAPE(inIdx, outIndex);
             return SHAPELIST(outShape, outIndex);
 
+        }
+        DECLARE_TYPES(unsorted_segment_sum_bp) {
+            getOpDescriptor()
+                    ->setAllowedOutputTypes({ALL_FLOATS})
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(false);
         }
 
     }

@@ -60,8 +60,22 @@ namespace nd4j {
             return SHAPELIST(outputShape);
         }
 
+        DECLARE_TYPES(unsorted_segment_min) {
+            getOpDescriptor()
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
         CUSTOM_OP_IMPL(unsorted_segment_min_bp, 3, 2, false, 0, 1) {
             return helpers::unsortedSegmentMinFunctorBP(INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), INT_ARG(0), OUTPUT_VARIABLE(0));
+        }
+
+        DECLARE_TYPES(unsorted_segment_min_bp) {
+            getOpDescriptor()
+                    ->setAllowedOutputTypes({ALL_FLOATS})
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(false);
         }
 
         DECLARE_SHAPE_FN(unsorted_segment_min_bp){
