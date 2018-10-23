@@ -18,6 +18,7 @@ package org.nd4j.parameterserver.distributed.messages;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
@@ -34,6 +35,8 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
+@Deprecated
 public class FrameTest {
     @Before
     public void setUp() throws Exception {

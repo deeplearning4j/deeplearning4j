@@ -27,7 +27,8 @@ import org.bytedeco.javacpp.tools.InfoMapper;
  * @author saudet
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCuda",
-                value = {@Platform(include = {"NativeOps.h",
+                value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
+                        "NativeOps.h",
                         "memory/ExternalWorkspace.h",
                         "memory/Workspace.h",
                         "indexing/NDIndex.h",
@@ -71,7 +72,6 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         exclude = {"cnpy/cnpy.h"},
                                 compiler = {"cpp11", "nowarnings"},
                                 library = "jnind4jcuda", link = "nd4jcuda", preload = "libnd4jcuda"),
-                                @Platform(define = "LIBND4J_ALL_OPS"),
                                 @Platform(value = "linux", preload = "gomp@.1",
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/",
@@ -79,7 +79,8 @@ import org.bytedeco.javacpp.tools.InfoMapper;
 public class Nd4jCudaPresets implements InfoMapper {
     @Override
     public void map(InfoMap infoMap) {
-        infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE", "_CUDA_H", "_CUDA_D", "_CUDA_G", "_CUDA_HD", "LIBND4J_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
+        infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE",
+                             "_CUDA_H", "_CUDA_D", "_CUDA_G", "_CUDA_HD", "LIBND4J_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("NativeOps").base("org.nd4j.nativeblas.NativeOps"))
                 .put(new Info("char").valueTypes("char").pointerTypes("@Cast(\"char*\") String",
                         "@Cast(\"char*\") BytePointer"))
@@ -91,10 +92,8 @@ public class Nd4jCudaPresets implements InfoMapper {
                 .put(new Info("float16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                         "short[]"));
 
-        infoMap.put(new Info("__CUDACC__").define(false))
-               .put(new Info("__JAVACPP_HACK__").define(true))
-               .put(new Info("LIBND4J_ALL_OPS").define(true))
-                .put(new Info("MAX_UINT").translate(false))
+        infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN").define(false))
+               .put(new Info("__JAVACPP_HACK__", "LIBND4J_ALL_OPS").define(true))
                .put(new Info("std::initializer_list", "cnpy::NpyArray", "nd4j::NDArray::applyLambda", "nd4j::NDArray::applyPairwiseLambda",
                              "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable").skip())
                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")

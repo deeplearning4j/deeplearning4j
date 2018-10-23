@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.graph.vertex.impl;
 
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -176,6 +177,17 @@ public class StackVertex extends BaseGraphVertex {
                     int minibatchSize) {
         //Cases here: no mask arrays, or all mask arrays - all of the same size
         if (maskArrays == null) {
+            return new Pair<>(null, currentMaskState);
+        }
+
+        boolean allNull = true;
+        for(INDArray i : maskArrays){
+            if(i != null) {
+                allNull = false;
+                break;
+            }
+        }
+        if(allNull){
             return new Pair<>(null, currentMaskState);
         }
 

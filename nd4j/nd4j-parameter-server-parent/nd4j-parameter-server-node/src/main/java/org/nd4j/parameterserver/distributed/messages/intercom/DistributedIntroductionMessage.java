@@ -23,6 +23,7 @@ import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 /**
  * @author raver119@gmail.com
  */
+@Deprecated
 public class DistributedIntroductionMessage extends BaseVoidMessage implements DistributedMessage {
     private String ip;
     private int port;

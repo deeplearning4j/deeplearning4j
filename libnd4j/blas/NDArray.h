@@ -150,7 +150,7 @@ namespace nd4j {
         NDArray();
 
         /**
-        *  do not allocate memory, memory for array is passed from outside 
+        *  do not allocate memory, memory for array is passed from outside
         */
         NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::memory::Workspace* workspace = nullptr, const bool isBuffAlloc = false, const bool isShapeAlloc = false);
 
@@ -177,7 +177,7 @@ namespace nd4j {
 		NDArray(Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr, const bool isShapeAlloc = false);
 
         /**
-        *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
+        *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         *  set dtype as array type
         */
         NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr, const bool isShapeAlloc = false);
@@ -206,7 +206,7 @@ namespace nd4j {
         *  this constructor creates scalar and set its value = 0
         */
         NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
-                
+
 
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
@@ -294,9 +294,9 @@ namespace nd4j {
         */
         template <typename T>
         NDArray* cast();
-        
+
         NDArray* cast(DataType dtype);
-        
+
         void cast(NDArray* target, DataType dtype);
 
         /**
@@ -516,7 +516,7 @@ namespace nd4j {
         Nd4jLong argMax(std::initializer_list<int> dimensions = {});
 
         /**
-         * 
+         *
          */
         void applyTransform(nd4j::transform::FloatOps op, NDArray *target = nullptr, void *extraParams = nullptr);
         void applyTransform(nd4j::transform::FloatOps, void *extraParams = nullptr);
@@ -858,7 +858,7 @@ namespace nd4j {
         *  returns an array which is result of broadcasting of this and other arrays 
         *  other - input array
         */
-		NDArray*  broadcast(const NDArray& other);
+		NDArray* broadcast(const NDArray& other);
 		
         /**
         *  check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
@@ -875,7 +875,7 @@ namespace nd4j {
         *  check whether array is unitary matrix
         */
 		bool isUnitary(); 
-                        
+
 
         /**
         *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
@@ -943,7 +943,7 @@ namespace nd4j {
         *  scalar - input scalar to subtract
         */
         template <typename T>
-        NDArray operator-(const T& scalar) const;        
+        NDArray operator-(const T& scalar) const;
 
         /**
         *  negative operator, it changes sign of all array elements on opposite
@@ -960,7 +960,7 @@ namespace nd4j {
         *  pairwise multiplication operator: array * other
         *  other - input array to multiply on
         */
-        NDArray operator*(const NDArray& other) const;        
+        NDArray operator*(const NDArray& other) const;
     
         /**
         *  multiplication operator: array * scalar
@@ -986,7 +986,7 @@ namespace nd4j {
         *  pairwise division operator: array / other
         *  other - input array to divide on
         */
-        NDArray operator/(const NDArray& other) const;        
+        NDArray operator/(const NDArray& other) const;
 
         /**
         *  division operator: array / scalar
@@ -1090,7 +1090,7 @@ namespace nd4j {
 
         ResultSet* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
 
-        ResultSet* allExamples()const ;        
+        ResultSet* allExamples()const ;
 
         /**
         *  returns absolute offset which corresponds to given sequential index
@@ -1198,13 +1198,13 @@ namespace nd4j {
         template <typename T>
         T r(const Nd4jLong i) const;
 
-        /** 
+        /**
         *  returns array element with given index from linear buffer
         *  i - element index in array
         */
         template <typename T>
         T e(const Nd4jLong i) const;
-       
+
         /** 
         *  returns element with given indexes from 2D array 
         *  i - number of row 
@@ -1231,9 +1231,9 @@ namespace nd4j {
         /** 
         *  returns array-scalar containing element of this array with given index
         *  i - element index in array
-        */        
-        NDArray e(const Nd4jLong i) const; 
-        
+        */
+        NDArray e(const Nd4jLong i) const;
+
         /** 
         *  assigns given scalar to array element by given index, regards array buffer as linear
         *  i - element index in array
@@ -1266,7 +1266,7 @@ namespace nd4j {
         template <typename T>
         void p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const T value);
 
-        
+
         template <typename T>
         void pIdx(const Nd4jLong* indices, const T value);
 
@@ -1502,7 +1502,7 @@ namespace nd4j {
     //////////////////////////////////////////////////////////////////////////
 
     size_t NDArray::sizeOfT() const {
-        
+
         return DataTypeUtils::sizeOfElement(_dataType);
     }
 
@@ -1812,7 +1812,7 @@ bool NDArray::isSameShape(const std::initializer_list<Nd4jLong>& other) const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::areSameShapeAndType(const NDArray& other) const {
-    
+
     if(rankOf() != other.rankOf() || _dataType != other._dataType)
         return false;
 
@@ -1843,11 +1843,11 @@ bool NDArray::operator==(const NDArray &other) const {
 
     return this->equalsTo(&other);
 }
-    
+
 //////////////////////////////////////////////////////////////////////////
 DataType NDArray::dataType() const {
     return _dataType;
-    // return ArrayOptions::dataType(_shapeInfo);    
+    // return ArrayOptions::dataType(_shapeInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1859,5 +1859,5 @@ T& NDArray::getRefOnElem(const Nd4jLong index) {
 
 
 }
- 
+
 #endif

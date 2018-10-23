@@ -72,6 +72,11 @@ public class Entropy extends BaseReduceFloatOp {
     }
 
     @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //dL/dx = dL/dOut * dOut/dIn
         //out = -sum(x*log(x))

@@ -52,6 +52,7 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class ScoringModelTest {
 
@@ -189,7 +190,7 @@ public class ScoringModelTest {
 
     final MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
         .list(
-            new OutputLayer.Builder().nIn(numFeatures).nOut(1).activation(Activation.IDENTITY).build()
+            new OutputLayer.Builder().nIn(numFeatures).nOut(1).lossFunction(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).build()
             )
         .build();
 
@@ -216,7 +217,7 @@ public class ScoringModelTest {
         .graphBuilder()
         .addInputs("inputLayer")
         .addLayer("outputLayer",
-          new OutputLayer.Builder().nIn(numFeatures).nOut(1).activation(Activation.IDENTITY).build(),
+          new OutputLayer.Builder().nIn(numFeatures).nOut(1).lossFunction(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).build(),
           "inputLayer")
         .setOutputs("outputLayer")
         .build();

@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class DotAggregation extends BaseAggregation {
 
     protected DotAggregation() {

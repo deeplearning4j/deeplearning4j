@@ -133,7 +133,8 @@ public class RandomOpValidation extends BaseOpValidation {
                 TestCase tc = new TestCase(sd)
                         .gradCheckSkipVariables("shape")
                         .testName(msg)
-                        .expected(rand, checkFn);
+                        .expected(rand, checkFn)
+                        .testFlatBufferSerialization(TestCase.TestSerialization.NONE);  //Can't compare values due to randomness
 
                 log.info("TEST: " + msg);
 
@@ -258,7 +259,8 @@ public class RandomOpValidation extends BaseOpValidation {
                 TestCase tc = new TestCase(sd)
                         .gradCheckSkipVariables("shape")
                         .testName(msg)
-                        .expected(rand, checkFn);
+                        .expected(rand, checkFn)
+                        .testFlatBufferSerialization(TestCase.TestSerialization.NONE);  //Can't compare values due to randomness
 
                 log.info("TEST: " + msg);
 

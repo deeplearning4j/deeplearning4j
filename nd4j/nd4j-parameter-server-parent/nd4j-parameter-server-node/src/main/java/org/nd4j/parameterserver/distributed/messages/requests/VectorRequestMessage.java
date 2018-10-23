@@ -34,6 +34,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedVectorM
  */
 @Data
 @Slf4j
+@Deprecated
 public class VectorRequestMessage extends BaseVoidMessage implements RequestMessage {
 
     protected Integer key;

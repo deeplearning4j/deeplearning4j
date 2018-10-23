@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
     int oH = 0;
     int oW = 0;
 
-    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NDHWC, 1-NCDHW    
+    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // INT_ARG(10): 1-NHWC, 0-NCHW
 
     const int iH = isNCHW ? input->sizeAt(2) : input->sizeAt(1);
     const int iW = isNCHW ? input->sizeAt(3) : input->sizeAt(2);
@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
     if (isSameMode)
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; poolingMode; 9 - divisor;    
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; poolingMode; 9 - divisor;
     ConvolutionUtils::pooling2d(*input, *output, kH, kW, sH, sW, pH, pW, dH, dW, 0, 1);
             
     if (!isNCHW) {
@@ -106,7 +106,7 @@ DECLARE_SHAPE_FN(maxpool2d) {
     int dH = INT_ARG(6);
     int dW = INT_ARG(7);
     int isSameMode = INT_ARG(8);
-    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;           // 0-NHWC, 1-NCHW
+    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;           // INT_ARG(10): 1-NHWC, 0-NCHW
 
     REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
@@ -163,7 +163,7 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // 0-NHWC, 1-NCHW    
+    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // INT_ARG(10): 1-NHWC, 0-NCHW
 
     REQUIRE_TRUE(input->rankOf() == 4, 0, "MAXPOOL2D_BP op: input should have rank of 4, but got %i instead", input->rankOf());
     REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D_BP op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
@@ -220,7 +220,7 @@ DECLARE_SHAPE_FN(maxpool2d_bp) {
     REQUIRE_TRUE(inputShape->at(0)[0] == 4, 0, "MAXPOOL2D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
     REQUIRE_TRUE(inputShape->at(1)[0] == 4, 0, "MAXPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!", inputShape->at(1)[0]);
     
-    Nd4jLong* gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());    
+    Nd4jLong* gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());
     return SHAPELIST(gradIShapeInfo);
 }
 

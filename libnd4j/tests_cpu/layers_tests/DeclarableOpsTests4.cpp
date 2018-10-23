@@ -866,7 +866,9 @@ TEST_F(DeclarableOpsTests4, Test_Reshape_Negative_1) {
 
 TEST_F(DeclarableOpsTests4, Test_TileToShape_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 1, 3});
-    auto exp = NDArrayFactory::create<double>('c', {2, 4, 3});
+    auto exp = NDArrayFactory::create<double>('c', {2, 4, 3}, {1.f, 2.f, 3.f,1.f, 2.f, 3.f,1.f, 2.f, 3.f,1.f, 2.f, 3.f,
+                                        4.f, 5.f, 6.f,4.f, 5.f, 6.f,4.f, 5.f, 6.f,4.f, 5.f, 6.f});
+    x.linspace(1.f);
 
     nd4j::ops::tile_to_shape op;
     auto result = op.execute({&x},{}, {2, 4, 3});
@@ -876,10 +878,10 @@ TEST_F(DeclarableOpsTests4, Test_TileToShape_1) {
     auto z = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
 }
-
 
 TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_1) {
     auto x = NDArrayFactory::create<double>('c', {3, 4, 5});
@@ -939,7 +941,7 @@ TEST_F(DeclarableOpsTests4, parallel_stack_test1) {
     
     nd4j::ops::parallel_stack op;
     auto  results = op.execute({&x1, &x2, &x3}, {}, {});
-    auto  output = results->at(0);        
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -955,11 +957,11 @@ TEST_F(DeclarableOpsTests4, parallel_stack_test2) {
     auto x2 = NDArrayFactory::create<double>('c', {1,2}, {3,4});
     auto x3 = NDArrayFactory::create<double>('c', {1,2}, {5,6});
     
-    auto expected = NDArrayFactory::create<double>('c', {3,1,2}, {1,2,3,4,5,6});    
+    auto expected = NDArrayFactory::create<double>('c', {3,1,2}, {1,2,3,4,5,6});
     
     nd4j::ops::parallel_stack op;
     auto  results = op.execute({&x1, &x2, &x3}, {}, {});
-    auto  output = results->at(0);        
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -976,11 +978,11 @@ TEST_F(DeclarableOpsTests4, parallel_stack_test3) {
     auto x2 = NDArrayFactory::create<double>('c', {2,1}, {3,4});
     auto x3 = NDArrayFactory::create<double>('c', {2,1}, {5,6});
     
-    auto expected = NDArrayFactory::create<double>('c', {3,2,1}, {1,2,3,4,5,6});    
+    auto expected = NDArrayFactory::create<double>('c', {3,2,1}, {1,2,3,4,5,6});
     
     nd4j::ops::parallel_stack op;
     auto  results = op.execute({&x1, &x2, &x3}, {}, {});
-    auto  output = results->at(0);        
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -996,11 +998,11 @@ TEST_F(DeclarableOpsTests4, parallel_stack_test4) {
     auto x2 = NDArrayFactory::create<double>('c', {2}, {3,4});
     auto x3 = NDArrayFactory::create<double>('c', {2}, {5,6});
     
-    auto expected = NDArrayFactory::create<double>('c', {3,2}, {1,2,3,4,5,6});    
+    auto expected = NDArrayFactory::create<double>('c', {3,2}, {1,2,3,4,5,6});
     
     nd4j::ops::parallel_stack op;
     auto  results = op.execute({&x1, &x2, &x3}, {}, {});
-    auto  output = results->at(0);        
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1016,11 +1018,11 @@ TEST_F(DeclarableOpsTests4, parallel_stack_test5) {
     auto x2 = NDArrayFactory::create<double>('c', {1}, {3});
     auto x3 = NDArrayFactory::create<double>('c', {1}, {5});
     
-    auto expected = NDArrayFactory::create<double>('c', {3,1}, {1,3,5});    
+    auto expected = NDArrayFactory::create<double>('c', {3,1}, {1,3,5});
     
     nd4j::ops::parallel_stack op;
     auto  results = op.execute({&x1, &x2, &x3}, {}, {});
-    auto  output = results->at(0);        
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1036,11 +1038,11 @@ TEST_F(DeclarableOpsTests4, parallel_stack_test6) {
     auto x2 = NDArrayFactory::create<double>(3.);
     auto x3 = NDArrayFactory::create<double>(5.);
     
-    auto expected = NDArrayFactory::create<double>('c', {3}, {1,3,5});    
+    auto expected = NDArrayFactory::create<double>('c', {3}, {1,3,5});
     
     nd4j::ops::parallel_stack op;
     auto  results = op.execute({&x1, &x2, &x3}, {}, {});
-    auto  output = results->at(0);        
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1053,11 +1055,11 @@ TEST_F(DeclarableOpsTests4, parallel_stack_test6) {
 TEST_F(DeclarableOpsTests4, parallel_stack_test7) {
 
     auto x1 = NDArrayFactory::create<double>(1.);
-    auto expected = NDArrayFactory::create<double>('c', {1}, {1.});    
+    auto expected = NDArrayFactory::create<double>('c', {1}, {1.});
     
     nd4j::ops::parallel_stack op;
     auto  results = op.execute({&x1}, {}, {});
-    auto  output = results->at(0);        
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1380,11 +1382,11 @@ TEST_F(DeclarableOpsTests4, lstm_test1) {
     auto expClast = NDArrayFactory::create<double>('c', {1, batchSize, numProj}, {1.1589154,1.1589154,1.1589154,1.1892855,1.1892855,1.1892855,1.219861 ,1.219861 ,1.219861});
 
     nd4j::ops::lstm op;
-    auto results = op.execute({&x, &h0, &c0, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 0.}, {0, 0});    
+    auto results = op.execute({&x, &h0, &c0, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 0.}, {0, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *h = results->at(0);    
+    auto *h = results->at(0);
     auto *c = results->at(1);
     auto cLast = (*c)({4,5,0,0,0,0},true);
 
@@ -1425,11 +1427,11 @@ TEST_F(DeclarableOpsTests4, gru_test1) {
                                                            0.60603,0.60603,0.60603,0.61531,0.61531,0.61531,0.62443,0.62443,0.62443});    
     
     nd4j::ops::gru op;
-    auto results = op.execute({&x, &h0, &Wx, &Wh, &b}, {}, {});    
+    auto results = op.execute({&x, &h0, &Wx, &Wh, &b}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *h = results->at(0);    
+    auto *h = results->at(0);
 
     ASSERT_TRUE(expH.isSameShape(h));
     ASSERT_TRUE(expH.equalsTo(h));    
@@ -1448,7 +1450,7 @@ TEST_F(DeclarableOpsTests4, relu6_test1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto  output = results->at(0);    
+    auto  output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));    
@@ -1461,7 +1463,7 @@ TEST_F(DeclarableOpsTests4, relu6_test1) {
 TEST_F(DeclarableOpsTests4, relu6_bp_test1) {
     
     auto input  = NDArrayFactory::create<double>('c', {2,4}, {-13.,10, -5,  0,  2,  7,  6,  5});
-    auto gradO  = NDArrayFactory::create<double>('c', {2,4}, {-1., -2., 0., 4., 5., 6., 7., 8.});    
+    auto gradO  = NDArrayFactory::create<double>('c', {2,4}, {-1., -2., 0., 4., 5., 6., 7., 8.});
     
     auto expected  = NDArrayFactory::create<double>('c', {2,4}, {0., 0., 0., 0., 5., 0., 0., 8.});
     
@@ -1470,7 +1472,7 @@ TEST_F(DeclarableOpsTests4, relu6_bp_test1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto  output = results->at(0);        
+    auto  output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));    
@@ -1577,7 +1579,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_3) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, LrnTest_4) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, { 
+    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
 
                     5.5, 0., 0.3, 5.5,
                     1.5, 0., 1.3, 6.5,
@@ -1616,7 +1618,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_4) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, LrnTest_5) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, { 
+    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
 
                 5.5,0., 0.3, 5.5,
                 1.5,0., 1.3, 6.5,
@@ -1674,7 +1676,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test1) {
     
     nd4j::ops::avgpool3dnew op;
     auto results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1702,7 +1704,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test2) {
 
     nd4j::ops::avgpool3dnew op;
     auto results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 0, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1727,7 +1729,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test3) {
 
     nd4j::ops::avgpool3dnew op;
     auto results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1745,7 +1747,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test4) {
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
     auto input    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, oD, oH, oW},{0.416667, 1.00, 1.333333, 0.75, 1.00, 2.25, 2.75, 1.50, 1.75, 3.75, 4.25, 2.25, 1.416667, 3.00, 3.333333, 1.75, 2.833333, 6.00, 6.666667, 3.50, 5.00, 10.50, 11.50, 6.00, 6.50, 
+    auto expected = NDArrayFactory::create<double>('c', {bS, iC, oD, oH, oW},{0.416667, 1.00, 1.333333, 0.75, 1.00, 2.25, 2.75, 1.50, 1.75, 3.75, 4.25, 2.25, 1.416667, 3.00, 3.333333, 1.75, 2.833333, 6.00, 6.666667, 3.50, 5.00, 10.50, 11.50, 6.00, 6.50,
                                                         13.50, 14.50, 7.50, 4.833333, 10.00, 10.666667, 5.50, 6.833333, 14.00, 14.666667, 7.50, 11.00, 22.50, 23.50, 12.00, 12.50, 25.50, 26.50, 13.50, 8.833333, 18.00, 18.666666, 9.50,
                                                         4.416667, 9.00, 9.333333, 4.75, 7.00, 14.25, 14.75, 7.50, 7.75, 15.75, 16.25, 8.25, 5.416667, 11.00, 11.333333, 5.75, 6.416667, 13.00, 13.333333, 6.75, 10.00, 20.25, 20.75, 
                                                         10.50, 10.75, 21.75, 22.25, 11.25, 7.416667, 15.00, 15.333333, 7.75, 14.833333, 30.00, 30.666666, 15.50, 23.00, 46.50, 47.50, 24.00, 24.50, 49.50, 50.50, 25.50, 16.833334, 
@@ -1767,7 +1769,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test4) {
     
     nd4j::ops::avgpool3dnew op;
     auto results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1800,7 +1802,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test1) {
     
     nd4j::ops::avgpool3dnew_bp op;
     auto results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1834,7 +1836,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test2) {
     
     nd4j::ops::avgpool3dnew_bp op;
     auto results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1867,7 +1869,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test3) {
     
     nd4j::ops::avgpool3dnew_bp op;
     auto results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 0, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
     
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1899,7 +1901,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test4) {
     
     nd4j::ops::avgpool3dnew_bp op;
     auto results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 0, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
     
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1924,7 +1926,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test1) {
     
     nd4j::ops::maxpool3dnew op;
     auto results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1952,7 +1954,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test2) {
 
     nd4j::ops::maxpool3dnew op;
     auto results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);        
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1976,7 +1978,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test3) {
 
     nd4j::ops::maxpool3dnew op;
     auto results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -2006,7 +2008,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test4) {
     
     nd4j::ops::maxpool3dnew op;
     auto results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -2037,7 +2039,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test1) {
     
     nd4j::ops::maxpool3dnew_bp op;
     auto results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -2070,7 +2072,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test2) {
     
     nd4j::ops::maxpool3dnew_bp op;
     auto results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -2102,7 +2104,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test3) {
     
     nd4j::ops::maxpool3dnew_bp op;
     auto results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
     
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -2122,7 +2124,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test4) {
 
     auto input    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
     auto gradO    = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    auto expected = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0.2, 0.3, 1.1, 1.3, 1.5, 0, 0, 0, 5.7, 6, 6.3, 
                                                          14.1, 14.7, 15.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 11.2, 11.4, 23.8, 24.2, 
                                                          24.6, 0, 0, 0, 43.8, 44.4, 45, 93, 94.2, 95.4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -2134,7 +2136,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test4) {
     
     nd4j::ops::maxpool3dnew_bp op;
     auto results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);    
+    auto output = results->at(0);
     
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -2158,11 +2160,11 @@ TEST_F(DeclarableOpsTests4, maxpool2d_test1) {
     
     int isSameMode = 0;         // 1-SAME,  0-VALID
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});    
+    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
     
     nd4j::ops::maxpool2d op;
     auto results = op.execute({&input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, isSameMode, 1, 0});
-    auto output = results->at(0);     
+    auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
     ASSERT_TRUE(output->isSameShape({bS, iC, oH, oW}));    
@@ -2181,7 +2183,7 @@ TEST_F(DeclarableOpsTests4, tri_test1) {
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols});
-    auto  output = results->at(0);    
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2202,7 +2204,7 @@ TEST_F(DeclarableOpsTests4, tri_test2) {
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
-    auto  output = results->at(0);    
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2223,7 +2225,7 @@ TEST_F(DeclarableOpsTests4, tri_test3) {
    
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
-    auto  output = results->at(0);    
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2244,7 +2246,7 @@ TEST_F(DeclarableOpsTests4, tri_test4) {
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
-    auto  output = results->at(0);    
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2263,7 +2265,7 @@ TEST_F(DeclarableOpsTests4, tri_test5) {
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows});
-    auto  output = results->at(0);    
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2284,7 +2286,7 @@ TEST_F(DeclarableOpsTests4, tri_test6) {
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
-    auto  output = results->at(0);    
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2305,7 +2307,7 @@ TEST_F(DeclarableOpsTests4, tri_test7) {
     
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
-    auto  output = results->at(0);    
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2318,12 +2320,12 @@ TEST_F(DeclarableOpsTests4, tri_test7) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test1) {    
     
-    auto input = NDArrayFactory::create<double>('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
-    auto expected = NDArrayFactory::create<double>('c', {4, 3}, {1,  2,  3, 0, 5, 6, 0,  0,  9, 0,  0, 0});    
+    auto input = NDArrayFactory::create<double>('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    auto expected = NDArrayFactory::create<double>('c', {4, 3}, {1,  2,  3, 0, 5, 6, 0,  0,  9, 0,  0, 0});
     
     nd4j::ops::triu op;
     auto results = op.execute({&input}, {}, {});
-    auto  output = results->at(0);       
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2336,12 +2338,12 @@ TEST_F(DeclarableOpsTests4, triu_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test2) {    
     
-    auto input = NDArrayFactory::create<double>('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
-    auto expected = NDArrayFactory::create<double>('c', {4, 3}, {1,  2,  3,4,  5,  6,0,  8,  9,0,  0, 12});    
+    auto input = NDArrayFactory::create<double>('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    auto expected = NDArrayFactory::create<double>('c', {4, 3}, {1,  2,  3,4,  5,  6,0,  8,  9,0,  0, 12});
     
     nd4j::ops::triu op;
     auto results = op.execute({&input}, {}, {-1});
-    auto  output = results->at(0);       
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2354,12 +2356,12 @@ TEST_F(DeclarableOpsTests4, triu_test2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test3) {    
     
-    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
-    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2,3, 4,0, 6,7, 8,9,10,0,12});    
+    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2,3, 4,0, 6,7, 8,9,10,0,12});
     
     nd4j::ops::triu op;
     auto results = op.execute({&input}, {}, {-1});
-    auto  output = results->at(0);       
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2372,12 +2374,12 @@ TEST_F(DeclarableOpsTests4, triu_test3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test4) {    
     
-    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
-    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {1,  2,0,  4,0,  0,7,  8,0, 10,0,  0});    
+    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {1,  2,0,  4,0,  0,7,  8,0, 10,0,  0});
     
     nd4j::ops::triu op;
     auto results = op.execute({&input}, {}, {});
-    auto  output = results->at(0);       
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2390,12 +2392,12 @@ TEST_F(DeclarableOpsTests4, triu_test4) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test5) {    
     
-    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
-    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {0, 2,0,  0,0,  0,0,  8,0, 0,0,  0});    
+    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {0, 2,0,  0,0,  0,0,  8,0, 0,0,  0});
     
     nd4j::ops::triu op;
     auto results = op.execute({&input}, {}, {1});
-    auto  output = results->at(0);       
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2408,12 +2410,12 @@ TEST_F(DeclarableOpsTests4, triu_test5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test6) {    
     
-    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
-    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {0, 0,0,  0,0,  0,0,  0,0, 0,0,  0});    
+    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {0, 0,0,  0,0,  0,0,  0,0, 0,0,  0});
     
     nd4j::ops::triu op;
     auto results = op.execute({&input}, {}, {10});
-    auto  output = results->at(0);       
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2426,12 +2428,12 @@ TEST_F(DeclarableOpsTests4, triu_test6) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test7) {    
     
-    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
-    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
+    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
     
     nd4j::ops::triu op;
     auto results = op.execute({&input}, {}, {-10});
-    auto  output = results->at(0);       
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2444,12 +2446,12 @@ TEST_F(DeclarableOpsTests4, triu_test7) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test8) {    
     
-    auto input = NDArrayFactory::create<double>('c', {6}, {1, 2, 3, 4, 5, 6});    
-    auto expected = NDArrayFactory::create<double>('c', {6, 6}, {1, 2, 3, 4, 5, 6,0, 2, 3, 4, 5, 6,0, 0, 3, 4, 5, 6,0, 0, 0, 4, 5, 6,0, 0, 0, 0, 5, 6,0, 0, 0, 0, 0, 6});    
+    auto input = NDArrayFactory::create<double>('c', {6}, {1, 2, 3, 4, 5, 6});
+    auto expected = NDArrayFactory::create<double>('c', {6, 6}, {1, 2, 3, 4, 5, 6,0, 2, 3, 4, 5, 6,0, 0, 3, 4, 5, 6,0, 0, 0, 4, 5, 6,0, 0, 0, 0, 5, 6,0, 0, 0, 0, 0, 6});
     
     nd4j::ops::triu op;
     auto results = op.execute({&input}, {}, {});
-    auto  output = results->at(0);       
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2462,12 +2464,12 @@ TEST_F(DeclarableOpsTests4, triu_test8) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test9) {    
     
-    auto input = NDArrayFactory::create<double>('c', {6}, {1, 2, 3, 4, 5, 6});    
-    auto expected = NDArrayFactory::create<double>('c', {6, 6}, {1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 0, 2, 3, 4, 5, 6, 0, 0, 3, 4, 5, 6});    
+    auto input = NDArrayFactory::create<double>('c', {6}, {1, 2, 3, 4, 5, 6});
+    auto expected = NDArrayFactory::create<double>('c', {6, 6}, {1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 0, 2, 3, 4, 5, 6, 0, 0, 3, 4, 5, 6});
     
     nd4j::ops::triu op;
     auto results = op.execute({&input}, {}, {-3});
-    auto  output = results->at(0);       
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2480,12 +2482,12 @@ TEST_F(DeclarableOpsTests4, triu_test9) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test10) {    
     
-    auto input = NDArrayFactory::create<double>('c', {6}, {1, 2, 3, 4, 5, 6});    
+    auto input = NDArrayFactory::create<double>('c', {6}, {1, 2, 3, 4, 5, 6});
     auto expected = NDArrayFactory::create<double>('c', {6, 6}, {0, 0, 0, 4, 5, 6, 0, 0, 0, 0, 5, 6, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
     
     nd4j::ops::triu op;
     auto results = op.execute({&input}, {}, {3});
-    auto  output = results->at(0);       
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2498,12 +2500,12 @@ TEST_F(DeclarableOpsTests4, triu_test10) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test11) {    
     
-    auto input = NDArrayFactory::create<double>('c', {6}, {1, 2, 3, 4, 5, 6});    
+    auto input = NDArrayFactory::create<double>('c', {6}, {1, 2, 3, 4, 5, 6});
     auto expected = NDArrayFactory::create<double>('c', {6, 6}, {1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6});
     
     nd4j::ops::triu op;
     auto results = op.execute({&input}, {}, {-58});
-    auto  output = results->at(0);       
+    auto  output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2517,15 +2519,15 @@ TEST_F(DeclarableOpsTests4, triu_test11) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_bp_test1) {    
     
-    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
-    auto gradO = NDArrayFactory::create<double>('c', {2, 3, 2});    
+    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    auto gradO = NDArrayFactory::create<double>('c', {2, 3, 2});
     gradO = 0.5;
 
-    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {0.,0.5,0.,0. ,0.,0. ,0.,0.5,0.,0. ,0.,0.});    
+    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {0.,0.5,0.,0. ,0.,0. ,0.,0.5,0.,0. ,0.,0.});
     
     nd4j::ops::triu_bp op;
     auto results = op.execute({&input, &gradO}, {}, {1});
-    auto  gradI = results->at(0);       
+    auto  gradI = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2538,15 +2540,15 @@ TEST_F(DeclarableOpsTests4, triu_bp_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_bp_test2) {    
     
-    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
-    auto gradO = NDArrayFactory::create<double>('c', {2, 3, 2});    
+    auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    auto gradO = NDArrayFactory::create<double>('c', {2, 3, 2});
     gradO = 0.5;
 
-    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {0.5,0.5,0. ,0.5,0. ,0. ,0.5,0.5,0. ,0.5,0. ,0.});    
+    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {0.5,0.5,0. ,0.5,0. ,0. ,0.5,0.5,0. ,0.5,0. ,0.});
     
     nd4j::ops::triu_bp op;
     auto results = op.execute({&input, &gradO}, {}, {});
-    auto  gradI = results->at(0);       
+    auto  gradI = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2559,15 +2561,15 @@ TEST_F(DeclarableOpsTests4, triu_bp_test2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_bp_test3) {    
     
-    auto input = NDArrayFactory::create<double>('c', {6}, {1, 2, 3, 4, 5, 6});    
-    auto gradO = NDArrayFactory::create<double>('c', {6,6});    
+    auto input = NDArrayFactory::create<double>('c', {6}, {1, 2, 3, 4, 5, 6});
+    auto gradO = NDArrayFactory::create<double>('c', {6,6});
     gradO = 0.5;
 
-    auto expected = NDArrayFactory::create<double>('c', {6,6}, {0.5, 0.5, 0.5, 0.5, 0.5, 0.5,0.5, 0.5, 0.5, 0.5, 0.5, 0.5,0.5, 0.5, 0.5, 0.5, 0.5, 0.5,0. , 0.5, 0.5, 0.5, 0.5, 0.5,0. , 0. , 0.5, 0.5, 0.5, 0.5,0. , 0. , 0. , 0.5, 0.5, 0.5});    
+    auto expected = NDArrayFactory::create<double>('c', {6,6}, {0.5, 0.5, 0.5, 0.5, 0.5, 0.5,0.5, 0.5, 0.5, 0.5, 0.5, 0.5,0.5, 0.5, 0.5, 0.5, 0.5, 0.5,0. , 0.5, 0.5, 0.5, 0.5, 0.5,0. , 0. , 0.5, 0.5, 0.5, 0.5,0. , 0. , 0. , 0.5, 0.5, 0.5});
     
     nd4j::ops::triu_bp op;
     auto results = op.execute({&input, &gradO}, {}, {-2});
-    auto  gradI = results->at(0);       
+    auto  gradI = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 
@@ -2580,15 +2582,15 @@ TEST_F(DeclarableOpsTests4, triu_bp_test3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_bp_test4) {    
     
-    auto input = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 3, 4, 5, 6});    
-    auto gradO = NDArrayFactory::create<double>('c', {2,3});    
+    auto input = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 3, 4, 5, 6});
+    auto gradO = NDArrayFactory::create<double>('c', {2,3});
     gradO = 0.5;
 
-    auto expected = NDArrayFactory::create<double>('c', {2,3}, {0., 0., 0., 0., 0., 0.});    
+    auto expected = NDArrayFactory::create<double>('c', {2,3}, {0., 0., 0., 0., 0., 0.});
     
     nd4j::ops::triu_bp op;
     auto results = op.execute({&input, &gradO}, {}, {10});
-    auto  gradI = results->at(0);       
+    auto  gradI = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());    
 

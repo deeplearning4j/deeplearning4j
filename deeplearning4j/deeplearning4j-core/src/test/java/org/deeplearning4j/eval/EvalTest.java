@@ -32,13 +32,11 @@ import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.LSTM;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -1306,7 +1304,8 @@ public class EvalTest extends BaseDL4JTest {
         List<MultiDataSet> list = new ArrayList<>();
         DataSetIterator iter = new IrisDataSetIterator(30, 150);
         while(iter.hasNext()){
-            list.add(ComputationGraphUtil.toMultiDataSet(iter.next()));
+            DataSet ds = iter.next();
+            list.add(new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[]{ds.getFeatures()}, new INDArray[]{ds.getLabels(), ds.getLabels()}));
         }
 
         Evaluation e = new Evaluation();
@@ -1319,5 +1318,34 @@ public class EvalTest extends BaseDL4JTest {
 
         assertEquals(150, e.getNumRowCounter());
         assertEquals(150, e2.getExampleCountPerColumn().getInt(0));
+    }
+
+    @Test
+    public void testMultiOutputEvalCG(){
+        //Simple sanity check on evaluation
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new EmbeddingSequenceLayer.Builder().nIn(10).nOut(10).build(), "in")
+                .layer("1", new LSTM.Builder().nIn(10).nOut(10).build(), "0")
+                .layer("2", new LSTM.Builder().nIn(10).nOut(10).build(), "0")
+                .layer("out1", new RnnOutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "1")
+                .layer("out2", new RnnOutputLayer.Builder().nIn(10).nOut(20).activation(Activation.SOFTMAX).build(), "2")
+                .setOutputs("out1", "out2")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        org.nd4j.linalg.dataset.MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(
+                new INDArray[]{Nd4j.create(10, 1, 10)},
+                new INDArray[]{Nd4j.create(10, 10, 10), Nd4j.create(10, 20, 10)});
+
+        Map<Integer,IEvaluation[]> m = new HashMap<>();
+        m.put(0, new IEvaluation[]{new Evaluation()});
+        m.put(1, new IEvaluation[]{new Evaluation()});
+
+        cg.evaluate(new SingletonMultiDataSetIterator(mds), m);
     }
 }

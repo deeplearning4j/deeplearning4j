@@ -22,10 +22,7 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.LSTM;
-import org.deeplearning4j.nn.conf.layers.RnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -241,6 +238,155 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
 
                     assertTrue(testName, gradOK);
                     TestUtils.testModelSerialization(mln);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testCnn3dLossLayer() {
+        Nd4j.getRandom().setSeed(12345L);
+
+        int chIn = 2;
+        int layerSize = 2;
+        int chOut = 2;
+        int miniBatchSize = 3;
+
+        ILossFunction[] lfs = new ILossFunction[]{new LossMSE(), new LossMCXENT()};
+
+        int[] heights = {4, 4, 5};
+        int[] widths = {4, 5, 6};
+
+        for(Convolution3D.DataFormat dataFormat : Convolution3D.DataFormat.values()){
+            for (int i = 0; i < heights.length; i++) {
+                int h = heights[i];
+                int w = widths[i];
+                int d = h;
+
+                for (int maskType = 0; maskType < 4; maskType++) {
+
+                    Random r = new Random(12345L);
+                    INDArray input;
+                    if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                        input = Nd4j.rand(new int[]{miniBatchSize, chIn, d, h, w});
+                    } else {
+                        input = Nd4j.rand(new int[]{miniBatchSize, d, h, w, chIn});
+                    }
+
+                    INDArray labelMask;
+                    String mt;
+                    switch (maskType) {
+                        case 0:
+                            //No masking
+                            labelMask = null;
+                            mt = "none";
+                            break;
+                        case 1:
+                            //Per example masking (shape [minibatch, 1, 1, 1, 1]
+                            labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, 1, 1, 1, 1});
+                            Nd4j.getExecutioner().exec(new BernoulliDistribution(labelMask, 0.5));
+                            mt = "PerExample";
+                            break;
+                        case 2:
+                            //Per channel masking (5d mask, shape [minibatch, d, 1, 1, 1] or [minibatch, 1, 1, 1, d])
+                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                                labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, chOut, 1, 1, 1});
+                            } else {
+                                labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, 1, 1, 1, chOut});
+                            }
+                            Nd4j.getExecutioner().exec(new BernoulliDistribution(labelMask, 0.5));
+                            mt = "PerChannel";
+                            break;
+                        case 3:
+                            //Per output masking (5d mask, same shape as output [minibatch, c, h, w])
+                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                                labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, chOut, d, h, w});
+                            } else {
+                                labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, d, h, w, chOut});
+                            }
+                            Nd4j.getExecutioner().exec(new BernoulliDistribution(labelMask, 0.5));
+                            mt = "PerOutput";
+                            break;
+                        default:
+                            throw new RuntimeException();
+                    }
+
+                    for (ILossFunction lf : lfs) {
+
+                        if((mt.equals("PerOutput") || mt.equals("PerChannel")) && lf instanceof LossMCXENT){
+                            //Per-output masking + MCXENT: not supported
+                            continue;
+                        }
+
+                        INDArray labels;
+                        if (lf instanceof LossMSE) {
+                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                                labels = Nd4j.rand(new int[]{miniBatchSize, chOut, d, h, w});
+                            } else {
+                                labels = Nd4j.rand(new int[]{miniBatchSize, d, h, w, chOut});
+                            }
+                        } else {
+                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                                labels = Nd4j.zeros(miniBatchSize, chOut, d, h, w);
+                                for (int mb = 0; mb < miniBatchSize; mb++) {
+                                    for( int d2=0; d2<d; d2++) {
+                                        for (int x = 0; x < w; x++) {
+                                            for (int y = 0; y < h; y++) {
+                                                int idx = r.nextInt(chOut);
+                                                labels.putScalar(new int[]{mb, idx, d2, y, x}, 1.0);
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                labels = Nd4j.zeros(miniBatchSize, d, h, w, chOut);
+                                for (int mb = 0; mb < miniBatchSize; mb++) {
+                                    for( int d2=0; d2<d; d2++) {
+                                        for (int x = 0; x < w; x++) {
+                                            for (int y = 0; y < h; y++) {
+                                                int idx = r.nextInt(chOut);
+                                                labels.putScalar(new int[]{mb, d2, y, x, idx}, 1.0);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Activation oa = maskType == 1 ? Activation.SOFTMAX : Activation.SIGMOID;
+
+                        MultiLayerConfiguration conf =
+                                new NeuralNetConfiguration.Builder().seed(12345L)
+                                        .updater(new NoOp())
+                                        .convolutionMode(ConvolutionMode.Same)
+                                        .list()
+                                        .layer(new Convolution3D.Builder().nIn(chIn).nOut(chOut).activation(Activation.TANH)
+                                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                                                .dataFormat(dataFormat)
+                                                .updater(new NoOp()).build())
+                                        .layer(new Cnn3DLossLayer.Builder(dataFormat)
+                                                .lossFunction(lf)
+                                                .activation(oa)
+                                                .build())
+                                        .validateOutputLayerConfig(false).build();
+
+                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                        mln.init();
+
+                        String testName = "testCnn3dLossLayer(dataFormat=" + dataFormat + ",lf=" + lf + ", maskType=" + mt + ", outputActivation = " + oa + ")";
+                        if (PRINT_RESULTS) {
+                            System.out.println(testName);
+                            for (int j = 0; j < mln.getnLayers(); j++)
+                                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                        }
+
+                        System.out.println("Starting test: " + testName);
+                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, labelMask);
+
+                        assertTrue(testName, gradOK);
+                        TestUtils.testModelSerialization(mln);
+                    }
                 }
             }
         }

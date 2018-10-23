@@ -96,7 +96,7 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
      * @return Pointer for that key, or null if none exists
      */
     public <T extends Pointer> T getHelperWorkspace(String key){
-        return (T)helperWorkspacePointers.get(key);
+        return helperWorkspacePointers == null ? null : (T)helperWorkspacePointers.get(key);
     }
 
     /**
@@ -108,6 +108,9 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
      * @param value Pointer
      */
     public void setHelperWorkspace(@NonNull String key, Pointer value){
+        if(helperWorkspacePointers == null){
+            helperWorkspacePointers = new HashMap<>();
+        }
         helperWorkspacePointers.put(key, value);
     }
 

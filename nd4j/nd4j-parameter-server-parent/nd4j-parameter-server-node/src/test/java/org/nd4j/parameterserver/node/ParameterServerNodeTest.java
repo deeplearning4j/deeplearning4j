@@ -20,6 +20,7 @@ import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayMessage;
@@ -35,6 +36,8 @@ import static org.junit.Assert.*;
  * Created by agibsonccc on 12/3/16.
  */
 @Slf4j
+@Ignore
+@Deprecated
 public class ParameterServerNodeTest {
     private static MediaDriver mediaDriver;
     private static Aeron aeron;

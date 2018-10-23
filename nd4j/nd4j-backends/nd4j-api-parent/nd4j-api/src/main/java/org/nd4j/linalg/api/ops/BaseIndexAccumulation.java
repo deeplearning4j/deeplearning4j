@@ -168,6 +168,10 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         return ret;
     }
 
+    @Override
+    public Type opType() {
+        return Type.INDEXREDUCE;
+    }
 
 
     @Override

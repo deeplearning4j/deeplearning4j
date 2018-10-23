@@ -49,7 +49,6 @@ namespace nd4j {
             }
             else { // only two last dimensions are excluded
                 ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
-
                 if (shape::order(inShape) == 'c')
                     shape::shapeBuffer(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), determinantShape);
                 else

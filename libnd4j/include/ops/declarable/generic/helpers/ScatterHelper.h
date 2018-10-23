@@ -108,7 +108,7 @@ class ScatterHelper {
         //         return Status::THROW("ScatterHelper failed");
         // }
 
-////////////////////////////////////////////////////////////////////////               
+////////////////////////////////////////////////////////////////////////
         static FORCEINLINE void scatter(pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output) {
 
             const int outRank = output.rankOf();
@@ -121,9 +121,9 @@ class ScatterHelper {
 // #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
 #pragma omp parallel for schedule(guided)
                 for(Nd4jLong i = 0; i < indLen; ++i) {
-                    Nd4jLong idx = indices.e<Nd4jLong>(i); 
+                    Nd4jLong idx = indices.e<Nd4jLong>(i);
                     NDArray out = output({idx, idx+1});
-#pragma omp critical                    
+#pragma omp critical
                     out.applyPairwiseTransform(op, updates.e(i), nullptr);
                 }
             }
@@ -151,7 +151,7 @@ class ScatterHelper {
 
 
 ////////////////////////////////////////////////////////////////////////
-static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output) {   
+static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output) {
 
     const Nd4jLong indLen = indices.lengthOf();
     const int outRank = output.rankOf();
@@ -164,7 +164,7 @@ static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, cons
 #pragma omp parallel for schedule(guided)        
         for(Nd4jLong i = 0; i < indLen; ++i) {
 
-            Nd4jLong idx = indices.e<Nd4jLong>(i); 
+            Nd4jLong idx = indices.e<Nd4jLong>(i);
             NDArray out = output({idx, idx+1});
 #pragma omp critical                    
             out.applyPairwiseTransform(op, updates.e(i), nullptr);

@@ -33,6 +33,7 @@ import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.batch.NDArrayRecordBatch;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
@@ -540,6 +541,15 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
     }
 
     private void putExample(INDArray arr, INDArray singleExample, int exampleIdx) {
+        Preconditions.checkState(singleExample.size(0) == 1 && singleExample.rank() == arr.rank(), "Cannot put array: array should have leading dimension of 1 " +
+                "and equal rank to output array. Attempting to put array of shape %s into output array of shape %s", singleExample.shape(), arr.shape());
+
+        long[] arrShape = arr.shape();
+        long[] singleShape = singleExample.shape();
+        for( int i=1; i<arr.rank(); i++ ){
+            Preconditions.checkState(arrShape[i] == singleShape[i], "Single example array and output arrays differ at position %s:" +
+                    "single example shape %s, output array shape %s", i, singleShape, arrShape);
+        }
         switch (arr.rank()) {
             case 2:
                 arr.put(new INDArrayIndex[] {NDArrayIndex.point(exampleIdx), NDArrayIndex.all()}, singleExample);
@@ -552,8 +562,12 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                 arr.put(new INDArrayIndex[] {NDArrayIndex.point(exampleIdx), NDArrayIndex.all(), NDArrayIndex.all(),
                                 NDArrayIndex.all()}, singleExample);
                 break;
+            case 5:
+                arr.put(new INDArrayIndex[] {NDArrayIndex.point(exampleIdx), NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.all()}, singleExample);
+                break;
             default:
-                throw new RuntimeException("Unexpected rank: " + arr.rank());
+                throw new RuntimeException("Unexpected array rank: " + arr.rank() + " with shape " + Arrays.toString(arr.shape()) + " input arrays should be rank 2 to 5 inclusive");
         }
     }
 

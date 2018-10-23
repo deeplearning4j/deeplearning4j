@@ -89,11 +89,13 @@ namespace helpers {
                     for (int i = k; i < width; ++i) {
                         T val = trial.e<T>(i);
                         if (sortedVals[0] < val) { // value should be inserted to top k
-                            // only if it is not contained in 
-                            if (sortedVals.end() == std::find(sortedVals.begin(), sortedVals.end(), val)) {    
-                                // exchangePos - a distance between begin and minimal existed to be suppressed by val
+                            // only if it is not contained in
+                            auto itPos = std::find(sortedVals.begin(), sortedVals.end(), val);
+                            if (sortedVals.end() == itPos) {
+                                //exchangePos - a distance between begin and minimal existed to be suppressed by val
                                 auto exchangePos = std::distance(topValues.begin(), std::find(topValues.begin(), topValues.end(), sortedVals[0]));
-                                topValues[exchangePos] = val;
+                                topValues[exchangePos] = val; //*exchangeIt = val;
+                                topIndices[exchangePos] = i;
                                 sortedVals[0] = val; // suppress in sorted
                                 std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
                             }
@@ -104,12 +106,30 @@ namespace helpers {
                         std::sort(topValues.begin(), topValues.end(), [](double a, double b) {
                             return a > b;   
                         });
-                    }
 
-                    for (int j = 0; j < width; j++)
-                        for (int pos = 0; pos < k; ++pos)
-                            if (topValues[pos] == trial.e<T>(j))
-                                topIndices[pos] = j;
+                        for (int j = 0; j < width; j++)
+                            for (int pos = 0; pos < k; ++pos)
+                                if (topValues[pos] == trial.e<T>(j))
+                                    topIndices[pos] = j;
+                    }
+                    else { // else sort by indices
+
+                        std::vector<std::pair<int, T>> data(topValues.size());
+                        for (size_t e = 0; e < topValues.size(); ++e) {
+                            data[e].first = topIndices[e];
+                            data[e].second = topValues[e];
+                        }
+
+                        std::sort(data.begin(), data.end(), [](std::pair<int, T> const& a, std::pair<int, T> const& b) {
+                            return a.first < b.first;
+                        });
+
+                        for (size_t e = 0; e < topValues.size(); ++e) {
+                            topIndices[e] = data[e].first;
+                            topValues[e] = data[e].second;
+                        }
+
+                    }
 
                     for (int pos = 0; pos < k; ++pos, ++nextPos) {
                         if (values != nullptr)

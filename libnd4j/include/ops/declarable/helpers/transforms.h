@@ -39,6 +39,8 @@ namespace helpers {
     
     // auxiliary function which serves for recursion purpose and is used in pad operation
 	void recursiveLoopForPad(const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, NDArray& padValue);
+	template<typename T>
+	void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const T padValue );
 
 	void invertPermutation(const NDArray& input, NDArray& output);
 

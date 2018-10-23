@@ -74,7 +74,7 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 4) {
     }
     else {
         reshapeForInput   = {input->sizeAt(0),  input->sizeAt(1),  1, input->sizeAt(2)};                // [bS, iC, iW] -> [bS, iC, 1, iW]
-        reshapeForOutput  = {output->sizeAt(0), output->sizeAt(1), 1, output->sizeAt(2)};               // [bS, oC, oW] -> [bS, oC, 1, oW]       
+        reshapeForOutput  = {output->sizeAt(0), output->sizeAt(1), 1, output->sizeAt(2)};               // [bS, oC, oW] -> [bS, oC, 1, oW]
     }
 
     auto inputReshaped   = input  ->reshape(input->ordering(),   reshapeForInput);
@@ -151,7 +151,7 @@ DECLARE_TYPES(conv1d) {
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS, DataType::QINT8, DataType::QINT16})
         ->setAllowedInputTypes(1, {ALL_FLOATS})
-        ->setAllowedInputTypes(2, {ALL_FLOATS}) 
+        ->setAllowedInputTypes(2, {ALL_FLOATS})
         ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
@@ -285,8 +285,8 @@ DECLARE_TYPES(conv1d_bp) {
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS, DataType::QINT8, DataType::QINT16})
         ->setAllowedInputTypes(1, {ALL_FLOATS})
-        ->setAllowedInputTypes(2, {ALL_FLOATS}) 
-        ->setAllowedInputTypes(3, {ALL_FLOATS}) 
+        ->setAllowedInputTypes(2, {ALL_FLOATS})
+        ->setAllowedInputTypes(3, {ALL_FLOATS})
         ->setAllowedOutputTypes(0, {ALL_FLOATS})
         ->setAllowedOutputTypes(1, {ALL_FLOATS});
 }

@@ -63,3 +63,6 @@ target/
 
 # IDE settings
 .idea/
+
+.pytest_cache/
+venv/

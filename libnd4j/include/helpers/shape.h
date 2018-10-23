@@ -37,6 +37,7 @@
 #define MAX_DIMENSION 0x7fffffff
 #define MAX_NUM_THREADS  1024
 #define MAX_RANK 32
+#define MAX_SHAPEINFOLENGTH 2*MAX_RANK+4
 #define MAX_COORD 3
 #define PREALLOC_SIZE 33554432
 #ifdef __CUDACC__
@@ -214,7 +215,15 @@ namespace shape {
     ND4J_EXPORT _CUDA_HD ShapeInformation *shapeCopy( ShapeInformation *toCopy);
 
 
-    ND4J_EXPORT _CUDA_HD bool strideDescendingCAscendingF(Nd4jLong *shapeBuffer);
+    ND4J_EXPORT _CUDA_HD bool strideDescendingCAscendingF(const Nd4jLong *shapeBuffer);
+
+
+/**
+ * copy-past from java hasDefaultStridesForShape function
+ * check whether array is not permuted and has contiguous elements in memory
+ */ 
+    ND4J_EXPORT _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo);
+
 
 /**
  * Compute the element wise stride
@@ -349,11 +358,11 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD int oneDimEqualToLength(Nd4jLong *shapeInfo);
 
-    ND4J_EXPORT _CUDA_HD int isVector(Nd4jLong *shapeInfo);
+    ND4J_EXPORT _CUDA_HD int isVector(const Nd4jLong *shapeInfo);
 
     ND4J_EXPORT _CUDA_HD bool isLikeVector(Nd4jLong *shapeInfo, int& posOfNonUnityDim);
 
-    ND4J_EXPORT _CUDA_HD bool isRowVector(Nd4jLong *shapeInfo);
+    ND4J_EXPORT _CUDA_HD bool isRowVector(const Nd4jLong *shapeInfo);
 
     ND4J_EXPORT _CUDA_HD bool isColumnVector(Nd4jLong *shapeInfo);
     /**
@@ -436,7 +445,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(int rank);
 
-    ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(Nd4jLong* shapeInfo);
+    ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(const Nd4jLong* shapeInfo);
 
     ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(const Nd4jLong* shapeInfo);
 
@@ -467,9 +476,9 @@ namespace shape {
 /**
  * Compute the length of the given shape
  */
-    ND4J_EXPORT _CUDA_HD bool isEmpty(Nd4jLong *shapeInfo);
+    ND4J_EXPORT _CUDA_HD bool isEmpty(const Nd4jLong *shapeInfo);
 
-    ND4J_EXPORT _CUDA_HD Nd4jLong length(Nd4jLong *shapeInfo);
+    ND4J_EXPORT _CUDA_HD Nd4jLong length(const Nd4jLong *shapeInfo);
 
     ND4J_EXPORT _CUDA_HD Nd4jLong length(std::initializer_list<int>& shape);
 
@@ -1354,12 +1363,12 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         }
 
 
-        if (shape::isVector(shape, rank)) {
-            for (int i = 0; i < 2; i++)
-                stride[i] = 1;
-            return stride;
+        // if (shape::isVector(shape, rank)) {
+        //     for (int i = 0; i < 2; i++)
+        //         stride[i] = 1;
+        //     return stride;
 
-        }
+        // }
 
         int st = startNum;
         for (int j = rank - 1; j >= 0; j--) {
@@ -1376,12 +1385,12 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
             return ret;
         }
 
-        if (shape::isVector(shape, rank)) {
-            for (int i = 0; i < 2; i++)
-                ret[i] = 1;
-            return ret;
+        // if (shape::isVector(shape, rank)) {
+        //     for (int i = 0; i < 2; i++)
+        //         ret[i] = 1;
+        //     return ret;
 
-        }
+        // }
 
         int st = startNum;
         for (int j = rank - 1; j >= 0; j--) {
@@ -2373,13 +2382,13 @@ template <typename T>
         return newShape;
     }
 
-    INLINEDEF _CUDA_HD int isVector(Nd4jLong *shapeInfo) {
-        return isVector(shape::shapeOf(shapeInfo),shape::rank(shapeInfo));
+    INLINEDEF _CUDA_HD int isVector(const Nd4jLong *shapeInfo) {
+        return isVector(shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo)), shape::rank(shapeInfo));
     }
 
-    INLINEDEF _CUDA_HD bool isRowVector(Nd4jLong *shapeInfo) {
+    INLINEDEF _CUDA_HD bool isRowVector(const Nd4jLong *shapeInfo) {
         bool isVector = shape::isVector(shapeInfo) == 1;
-        bool shapeFirstOne = shape::shapeOf(shapeInfo)[0] == 1;
+        bool shapeFirstOne = shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo))[0] == 1;
         return isVector && shapeFirstOne;
     }
 
@@ -2595,7 +2604,7 @@ template <typename T>
         return (rank * 2 + 4) * sizeof(Nd4jLong);
     }
 
-    INLINEDEF _CUDA_HD size_t shapeInfoByteLength(Nd4jLong* shapeInfo) {
+    INLINEDEF _CUDA_HD size_t shapeInfoByteLength(const Nd4jLong* shapeInfo) {
         //FIXME magic numbers
         return shapeInfoByteLength((int) shapeInfo[0]);
     }
@@ -2651,15 +2660,15 @@ template <typename T>
         return buffer + (1 + rank(buffer));
     }
 
-    INLINEDEF _CUDA_HD bool isEmpty(Nd4jLong *shapeInfo) {
-        return ((shape::extra(shapeInfo) & ARRAY_EMPTY) == ARRAY_EMPTY);
+    INLINEDEF _CUDA_HD bool isEmpty(const Nd4jLong *shapeInfo) {
+        return ((shape::extra(const_cast<Nd4jLong*>(shapeInfo)) & ARRAY_EMPTY) == ARRAY_EMPTY);
     }
 
 
 /**
  * Compute the length of the given shape
  */
-    INLINEDEF _CUDA_HD Nd4jLong length(Nd4jLong *shapeInfo) {
+    INLINEDEF _CUDA_HD Nd4jLong length(const Nd4jLong *shapeInfo) {
         int rank = shape::rank(shapeInfo);
         if (rank == 0) {
             if (isEmpty(shapeInfo))
@@ -2671,7 +2680,7 @@ template <typename T>
             return shapeInfo[1];
 
 
-        return shape::prodLong(shape::shapeOf(shapeInfo), rank);
+        return shape::prodLong(shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo)), rank);
     }
 
     INLINEDEF _CUDA_HD Nd4jLong length(std::initializer_list<int>& shape) {
@@ -3787,9 +3796,9 @@ template <typename T>
         }
     }
 
-    INLINEDEF _CUDA_HD bool strideDescendingCAscendingF(Nd4jLong *shapeBuffer) {
+    INLINEDEF _CUDA_HD bool strideDescendingCAscendingF(const Nd4jLong *shapeBuffer) {
         int rank = shape::rank(shapeBuffer);
-        Nd4jLong *strides = shape::stride(shapeBuffer);
+        Nd4jLong *strides = shape::stride(const_cast<Nd4jLong*>(shapeBuffer));
         char order = shape::order(shapeBuffer);
 
         if (shape::isRowVector(shapeBuffer) && strides[0] == 1 && strides[1] == 1)
@@ -3811,6 +3820,30 @@ template <typename T>
         }
     }
 
+////////////////////////////////////////////////////////////////////////// 
+// copy-past from java hasDefaultStridesForShape function
+INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
+
+    const int rank = shape::rank(shapeInfo);
+
+    if(rank == 0)
+        return true;
+    if(!strideDescendingCAscendingF(shapeInfo))
+        return false;
+
+    Nd4jLong defaultShapeInfo[MAX_SHAPEINFOLENGTH];
+    memcpy(defaultShapeInfo, shapeInfo, shape::shapeInfoByteLength(shapeInfo));
+    shape::updateStrides(defaultShapeInfo, shape::order(shapeInfo));
+
+    bool result = true;
+    for(int i = rank+1; i <= 2*rank; ++i)
+        if(defaultShapeInfo[i] != shapeInfo[i]) {            
+            result = false;
+            break;
+        }
+ 
+    return result;
+}
 
     INLINEDEF _CUDA_H bool reshapeCF(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShapeOf, bool isFOrder, Nd4jLong* target) {
         int oldnd;

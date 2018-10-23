@@ -431,7 +431,7 @@ bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool
     for (int i = 0; i < minRank; ++i)
         if(maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i])
             resultShapeInfo[maxRank - i] = minShapeInfo[minRank-i];
-        
+
     ShapeUtils::updateStridesAndType(resultShapeInfo, DataTypeUtils::pickPairwiseResultType(maxShapeInfo, minShapeInfo), shape::order(maxShapeInfo));
 
     return true;
@@ -538,7 +538,7 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
     }
     shape::updateStrides(newShapeInfo, arr.ordering());
     ArrayOptions::setDataType(newShapeInfo, arr.dataType());
-    
+
     return newShapeInfo;
 }
 
@@ -927,14 +927,14 @@ std::vector<Nd4jLong> ShapeUtils::evalDimsWithoutUnities(const Nd4jLong* shapeIn
 
 ////////////////////////////////////////////////////////////////////////////////
 void ShapeUtils::updateStridesAndType(Nd4jLong* dest, const Nd4jLong* source, const char order) {
-    
+
     shape::updateStrides(dest, order);
     ArrayOptions::copyDataType(dest, source);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void ShapeUtils::updateStridesAndType(Nd4jLong* dest, const DataType dtype, const char order) {
-    
+
     shape::updateStrides(dest, order);
     ArrayOptions::setDataType(dest, dtype);
 }

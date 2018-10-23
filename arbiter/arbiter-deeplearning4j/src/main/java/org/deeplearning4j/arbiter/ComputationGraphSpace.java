@@ -76,6 +76,8 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
     protected WorkspaceMode trainingWorkspaceMode;
     @JsonProperty
     protected WorkspaceMode inferenceWorkspaceMode;
+    @JsonProperty
+    protected boolean validateOutputLayerConfig = true;
 
     //Early stopping configuration / (fixed) number of epochs:
     protected EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration;
@@ -92,6 +94,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         this.inputTypes = builder.inputTypes;
         this.trainingWorkspaceMode = builder.trainingWorkspaceMode;
         this.inferenceWorkspaceMode = builder.inferenceWorkspaceMode;
+        this.validateOutputLayerConfig = builder.validateOutputLayerConfig;
 
         //Determine total number of parameters:
         List<ParameterSpace> list = LeafUtils.getUniqueObjects(collectLeaves());
@@ -131,6 +134,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
             graphBuilder.tBPTTForwardLength(tbpttFwdLength.getValue(values));
         if (tbpttBwdLength != null)
             graphBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
+        graphBuilder.validateOutputLayerConfig(validateOutputLayerConfig);
 
         ComputationGraphConfiguration configuration = graphBuilder.build();
 

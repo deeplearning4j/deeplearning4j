@@ -90,7 +90,7 @@ public class OldFloorDivOp extends BaseTransformAnyOp {
 
     @Override
     public String tensorflowName() {
-        return "FloorDiv";
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
 

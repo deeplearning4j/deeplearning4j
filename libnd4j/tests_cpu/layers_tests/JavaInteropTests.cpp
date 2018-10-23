@@ -39,7 +39,7 @@ public:
 TEST_F(JavaInteropTests, TestShapeExposure1) {
     auto input = NDArrayFactory::create<float>('c', {1, 2, 5, 4});
     auto weights = NDArrayFactory::create<float>('c', {2, 2, 2, 3});
-    auto exp = NDArrayFactory::create<float>('c', {1, 3, 5, 4});    
+    auto exp = NDArrayFactory::create<float>('c', {1, 3, 5, 4});
 
     NativeOps nativeOps;
 

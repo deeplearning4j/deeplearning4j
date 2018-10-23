@@ -26,10 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.imports.descriptors.properties.adapters.ConditionalFieldValueNDArrayShapeAdapter;
-import org.nd4j.imports.descriptors.properties.adapters.IntArrayIntIndexAdpater;
-import org.nd4j.imports.descriptors.properties.adapters.StringEqualsAdapter;
-import org.nd4j.imports.descriptors.properties.adapters.StringNotEqualsAdapter;
+import org.nd4j.imports.descriptors.properties.adapters.*;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -96,27 +93,31 @@ public class Conv3D extends DynamicCustomOp {
                 getConfig().isValidMode() ? 0 : 1,
                 getConfig().isNCDHW() ? 0 : 1
         );
-
     }
 
 
     @Override
     public Object getValue(Field property) {
-        if (config == null) {
-            config = Conv3DConfig.builder().build();
+        if (config == null && !iArguments.isEmpty()) {
+            config = Conv3DConfig.builder()
+                    .kD(iArguments.get(0))
+                    .kH(iArguments.get(1))
+                    .kW(iArguments.get(2))
+                    .sD(iArguments.get(3))
+                    .sH(iArguments.get(4))
+                    .sW(iArguments.get(5))
+                    .pD(iArguments.get(6))
+                    .pH(iArguments.get(7))
+                    .pW(iArguments.get(8))
+                    .dD(iArguments.get(9))
+                    .dH(iArguments.get(10))
+                    .dW(iArguments.get(11))
+                    .isValidMode(iArguments.get(12) == 0)
+                    .dataFormat(iArguments.get(13) == 1 ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
+                    .build();
         }
 
         return config.getValue(property);
-    }
-
-    @Override
-    public void setValueFor(Field target, Object value) {
-        if (config == null) {
-            config = Conv3DConfig.builder().build();
-        }
-
-        if (target != null)
-            config.setValueFor(target, value);
     }
 
     @Override
@@ -133,9 +134,10 @@ public class Conv3D extends DynamicCustomOp {
         Map<String, AttributeAdapter> tfAdapters = new LinkedHashMap<>();
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
-        tfAdapters.put("kD", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 0, 2, fields.get("dataFormat")));
-        tfAdapters.put("kH", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 1, 3, fields.get("dataFormat")));
-        tfAdapters.put("kW", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 2, 4, fields.get("dataFormat")));
+        //TF uses [kD, kH, kW, iC, oC] for weights
+        tfAdapters.put("kD", new NDArrayShapeAdapter(0));
+        tfAdapters.put("kH", new NDArrayShapeAdapter(1));
+        tfAdapters.put("kW", new NDArrayShapeAdapter(2));
 
         tfAdapters.put("sD", new IntArrayIntIndexAdpater(1));
         tfAdapters.put("sH", new IntArrayIntIndexAdpater(2));
@@ -147,7 +149,6 @@ public class Conv3D extends DynamicCustomOp {
 
 
         tfAdapters.put("isValidMode", new StringEqualsAdapter("VALID"));
-        tfAdapters.put("isNCDHW", new StringEqualsAdapter("NCDHW"));
 
         ret.put(tensorflowName(), tfAdapters);
 
@@ -206,7 +207,7 @@ public class Conv3D extends DynamicCustomOp {
         val dataFormat = PropertyMapping.builder()
                 .onnxAttrName("data_format")
                 .tfAttrName("data_format")
-                .propertyNames(new String[]{"isNCDHW"})
+                .propertyNames(new String[]{"dataFormat"})
                 .build();
 
 

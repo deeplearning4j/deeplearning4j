@@ -169,6 +169,22 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(cumprod_bp, 2, -21, false, 0, 2);
         #endif
 
+        /**
+         * returns histogram (as 1D array) with fixed bins width
+         * 
+         * Input arrays:
+         * - input array with elements to be binned into output histogram 
+         * - range array with first element being bottom limit and second element being top limit of histogram,
+             please note that input_value <= range[0] will be mapped to histogram[0], input_value >= range[1] will be mapped to histogram[-1]
+         * 
+         * Input integer arguments:
+         *    nbins (optional) - number of histogram bins, default value is 100
+         */
+        #if NOT_EXCLUDED(OP_histogram_fixed_width)
+        DECLARE_CUSTOM_OP(histogram_fixed_width, 2, 1, false, 0, 0);
+        #endif
+
+
     }
 }
 

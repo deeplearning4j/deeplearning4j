@@ -157,12 +157,6 @@ public class Slice extends DynamicCustomOp {
         return ret;
     }
 
-
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        return super.propertiesForFunction();
-    }
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         return Collections.singletonList(f().sliceBp(arg(), grad.get(0), begin, size));

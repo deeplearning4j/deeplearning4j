@@ -25,6 +25,7 @@ import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.base.Preconditions;
+import org.nd4j.base.Preconditions;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -56,6 +57,7 @@ import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
+import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.LongPointerWrapper;
@@ -233,6 +235,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(ReduceOp op, int... dimension) {
+        Preconditions.checkNotNull(op.x(), "Op.x() cannot be null: Was null for op %s", op);
         dimension = Shape.normalizeAxis(op.x().rank(), dimension);
 
 
@@ -388,31 +391,40 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             ((Variance) op).isBiasCorrected());
                 } else {
                     Variance var = (Variance) op;
-                    loop.execSummaryStats(dummy, op.opNum(), op.x().data().addressPointer(),
+                    try {
+                        loop.execSummaryStats(dummy, op.opNum(), op.x().data().addressPointer(),
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             getPointerForExtraArgs(op, op.z().dataType()),
-                            op.z().data().addressPointer(),
+                                op.z().data().addressPointer(),
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length, var.isBiasCorrected());
+                            (IntPointer) dimensionAddress, dimension.length, var.isBiasCorrected());} catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    }
                 }
 
             }
             //pairwise reduction like similarity of two arrays
             else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                 if (op.isComplexAccumulation()) {
-                    loop.execReduce3All(dummy, op.opNum(), op.x().data().addressPointer(),
+                    try {
+                        loop.execReduce3All(dummy, op.opNum(), op.x().data().addressPointer(),
                             (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             getPointerForExtraArgs(op, op.z().dataType()),
-                             op.y().data().addressPointer(),
-                            (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                             op.z().data().addressPointer(),
-                            (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length,
-                            (LongPointer) tadBuffers.getFirst().addressPointer(),
-                            new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
-                            (LongPointer) yTadBuffers.getFirst().addressPointer(),
-                            new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
-                    );
+                                 op.y().data().addressPointer(),
+                                (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                                 op.z().data().addressPointer(),
+                                (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                (IntPointer) dimensionAddress, dimension.length,
+                                (LongPointer) tadBuffers.getFirst().addressPointer(),
+                                new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
+                                (LongPointer) yTadBuffers.getFirst().addressPointer(),
+                                new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
+                        );
+                    } catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    }
                 } else if (ret.isScalar()) {
                             loop.execReduce3Scalar(dummy, op.opNum(),
                                     op.x().data().addressPointer(),
@@ -423,15 +435,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     ret.data().addressPointer(),
                                     (LongPointer) ret.shapeInfoDataBuffer().addressPointer());
                 } else {
-                    loop.execReduce3(dummy, op.opNum(),
+                    try {
+                        loop.execReduce3(dummy, op.opNum(),
                             op.x().data().addressPointer(),
-                            (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            getPointerForExtraArgs(op, op.z().dataType()),
-                            op.y().data().addressPointer(),
+                                (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                getPointerForExtraArgs(op, op.z().dataType()),
+                                op.y().data().addressPointer(),
                             (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
                             op.z().data().addressPointer(),
                             (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (IntPointer) dimensionAddress, dimension.length);
+                            (IntPointer) dimensionAddress, dimension.length);} catch (Throwable t){
+                        String str = opInfoString(op, Optional.of(dimension));
+                        throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    }
                 }
 
             } else {
@@ -662,7 +678,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * The extra argument in the op here is the {@link IsMax#IsMax(INDArray, int...)}
          * dimension to do the ismax along
          */
-        if (op.opName().equalsIgnoreCase("ismax") && op.extraArgs() != null) {
+        if (op.opName().equalsIgnoreCase("ismax") && op.extraArgs() != null && op.extraArgs().length > 0) {
             int[] dimension = new int[(int) op.extraArgs()[0]];
 
             for (int i = 0; i < dimension.length; i++) {

@@ -45,10 +45,10 @@ public:
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, evalHHmatrix_test1) {
             
-    auto x = NDArrayFactory::create<double>('c', {1,4}, {14,17,3,1});                
+    auto x = NDArrayFactory::create<double>('c', {1,4}, {14,17,3,1});
     auto exp = NDArrayFactory::create<double>('c', {4,4}, {-0.629253, -0.764093,   -0.13484, -0.0449467, -0.764093,  0.641653, -0.0632377, -0.0210792, -0.13484,-0.0632377,    0.98884,-0.00371987, -0.0449467,-0.0210792,-0.00371987,    0.99876});
     
-    auto result = ops::helpers::Householder<double>::evalHHmatrix(x);    
+    auto result = ops::helpers::Householder<double>::evalHHmatrix(x);
 
     ASSERT_TRUE(result.isSameShapeStrict(&exp));
     ASSERT_TRUE(result.equalsTo(&exp));
@@ -58,10 +58,10 @@ TEST_F(HelpersTests1, evalHHmatrix_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, evalHHmatrix_test2) {
             
-    auto x = NDArrayFactory::create<double>('c', {1,3}, {14,-4,3});                
+    auto x = NDArrayFactory::create<double>('c', {1,3}, {14,-4,3});
     auto exp = NDArrayFactory::create<double>('c', {3,3}, {-0.941742, 0.269069,-0.201802, 0.269069, 0.962715,0.0279639, -0.201802,0.0279639, 0.979027});
     
-    auto result = ops::helpers::Householder<double>::evalHHmatrix(x);    
+    auto result = ops::helpers::Householder<double>::evalHHmatrix(x);
 
     ASSERT_TRUE(result.isSameShapeStrict(&exp));
     ASSERT_TRUE(result.equalsTo(&exp));
@@ -72,8 +72,8 @@ TEST_F(HelpersTests1, evalHHmatrix_test2) {
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, evalHHmatrixData_test1) {
             
-    auto x = NDArrayFactory::create<double>('c', {1,4}, {14,17,3,1});            
-    auto tail = NDArrayFactory::create<double>('c', {1,3});        
+    auto x = NDArrayFactory::create<double>('c', {1,4}, {14,17,3,1});
+    auto tail = NDArrayFactory::create<double>('c', {1,3});
     auto expTail = NDArrayFactory::create<double>('c', {1,3}, {0.468984, 0.0827618, 0.0275873});
     const double normXExpected = -22.2486;
     const double coeffExpected = 1.62925;
@@ -92,8 +92,8 @@ TEST_F(HelpersTests1, evalHHmatrixData_test1) {
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, Householder_mulLeft_test1) {
             
-    auto x = NDArrayFactory::create<double>('c', {4,4}, {12 ,19 ,14 ,3 ,10 ,4 ,17 ,19 ,19 ,18 ,5 ,3 ,6 ,4 ,2 ,16});            
-    auto tail = NDArrayFactory::create<double>('c', {1,3}, {0.5,0.5,0.5});            
+    auto x = NDArrayFactory::create<double>('c', {4,4}, {12 ,19 ,14 ,3 ,10 ,4 ,17 ,19 ,19 ,18 ,5 ,3 ,6 ,4 ,2 ,16});
+    auto tail = NDArrayFactory::create<double>('c', {1,3}, {0.5,0.5,0.5});
     auto exp = NDArrayFactory::create<double>('c', {4,4}, {9.05,15.8,11.4, 0.8, 8.525, 2.4,15.7,17.9, 17.525,16.4, 3.7, 1.9, 4.525, 2.4, 0.7,14.9});
     
     ops::helpers::Householder<double>::mulLeft(x, tail, 0.1);
@@ -107,8 +107,8 @@ TEST_F(HelpersTests1, Householder_mulLeft_test1) {
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, Householder_mulLeft_test2) {
             
-    auto x = NDArrayFactory::create<double>('c', {4,4}, {12 ,19 ,14 ,3 ,10 ,4 ,17 ,19 ,19 ,18 ,5 ,3 ,6 ,4 ,2 ,16});            
-    auto tail = NDArrayFactory::create<double>('c', {3,1}, {0.5,0.5,0.5});            
+    auto x = NDArrayFactory::create<double>('c', {4,4}, {12 ,19 ,14 ,3 ,10 ,4 ,17 ,19 ,19 ,18 ,5 ,3 ,6 ,4 ,2 ,16});
+    auto tail = NDArrayFactory::create<double>('c', {3,1}, {0.5,0.5,0.5});
     auto exp = NDArrayFactory::create<double>('c', {4,4}, {9.05,15.8,11.4, 0.8, 8.525, 2.4,15.7,17.9, 17.525,16.4, 3.7, 1.9, 4.525, 2.4, 0.7,14.9});
     
     ops::helpers::Householder<double>::mulLeft(x, tail, 0.1);    
@@ -121,8 +121,8 @@ TEST_F(HelpersTests1, Householder_mulLeft_test2) {
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, Householder_mulRight_test1) {
             
-    auto x = NDArrayFactory::create<double>('c', {4,4}, {12 ,19 ,14 ,3 ,10 ,4 ,17 ,19 ,19 ,18 ,5 ,3 ,6 ,4 ,2 ,16});            
-    auto tail = NDArrayFactory::create<double>('c', {1,3}, {0.5,0.5,0.5});            
+    auto x = NDArrayFactory::create<double>('c', {4,4}, {12 ,19 ,14 ,3 ,10 ,4 ,17 ,19 ,19 ,18 ,5 ,3 ,6 ,4 ,2 ,16});
+    auto tail = NDArrayFactory::create<double>('c', {1,3}, {0.5,0.5,0.5});
     auto exp = NDArrayFactory::create<double>('c', {4,4}, {9,17.5,12.5,  1.5, 7, 2.5,15.5, 17.5, 15.8,16.4, 3.4,  1.4, 4.3,3.15,1.15,15.15});
     
     ops::helpers::Householder<double>::mulRight(x, tail, 0.1);    
@@ -136,11 +136,11 @@ TEST_F(HelpersTests1, Householder_mulRight_test1) {
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, BiDiagonalizeUp_test1) {
             
-    auto matrix = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6,13,11,7,6,3,7,4,7,6,6,7,10});      
+    auto matrix = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6,13,11,7,6,3,7,4,7,6,6,7,10});
     auto hhMatrixExp = NDArrayFactory::create<double>('c', {4,4}, {1.524000,  1.75682,0.233741,0.289458, 0.496646,   1.5655, 1.02929,0.971124, 0.114611,-0.451039, 1.06367,0, 0.229221,-0.272237,0.938237,0});
     auto hhBidiagExp = NDArrayFactory::create<double>('c', {4,4}, {-17.1756, 24.3869,       0,      0, 0,-8.61985,-3.89823,      0, 0,       0, 4.03047,4.13018, 0,       0,       0,1.21666});
     
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     // object._HHmatrix.printBuffer();
 
     ASSERT_TRUE(hhMatrixExp.isSameShapeStrict(&object._HHmatrix));
@@ -152,11 +152,11 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, BiDiagonalizeUp_test2) {
             
-    auto matrix = NDArrayFactory::create<double>('c', {5,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12});      
+    auto matrix = NDArrayFactory::create<double>('c', {5,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12});
     auto hhMatrixExp = NDArrayFactory::create<double>('c', {5,4}, {1.52048, 1.37012, 0.636326, -0.23412, 0.494454, 1.66025,  1.66979,-0.444696, 0.114105,0.130601, 1.58392,        0, -0.22821, 0.215638,0.0524781,  1.99303, 0.0760699,0.375605, 0.509835,0.0591568});
     auto hhBidiagExp = NDArrayFactory::create<double>('c', {4,4}, {-17.2916,7.03123,       0,       0, 0, 16.145,-22.9275,       0, 0,      0, -9.9264,-11.5516, 0,      0,       0,-12.8554});
     
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     // object._HHmatrix.printBuffer();
 
     ASSERT_TRUE(hhMatrixExp.isSameShapeStrict(&object._HHmatrix));
@@ -168,11 +168,11 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, BiDiagonalizeUp_test3) {
             
-    auto matrix = NDArrayFactory::create<double>('c', {6,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12, 0,-15,10,2});      
+    auto matrix = NDArrayFactory::create<double>('c', {6,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12, 0,-15,10,2});
     auto hhMatrixExp = NDArrayFactory::create<double>('c', {6,4}, {1.52048,  1.37012, 0.636326, -0.23412, 0.494454,  1.65232,  1.59666,-0.502606, 0.114105, 0.129651,  1.35075,        0, -0.22821, 0.214071, 0.103749,  1.61136, 0.0760699, 0.372875, 0.389936,   0.2398, 0,0.0935171,-0.563777, 0.428587});
     auto hhBidiagExp = NDArrayFactory::create<double>('c', {4,4}, {-17.2916,7.03123,       0,      0, 0,16.3413,-20.7828,      0, 0,      0,-18.4892,4.13261, 0,      0,       0,-21.323});
     
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     // object._HHmatrix.printBuffer();
 
     ASSERT_TRUE(hhMatrixExp.isSameShapeStrict(&object._HHmatrix));
@@ -186,11 +186,11 @@ TEST_F(HelpersTests1, HHsequence_test1) {
             
     auto matrix = NDArrayFactory::create<double>('c', {5,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12});
     auto vectorsUseqExp = NDArrayFactory::create<double>('c', {5,4}, {1.52048, 1.37012, 0.636326, -0.23412, 0.494454, 1.66025,  1.66979,-0.444696, 0.114105,0.130601, 1.58392, 0, -0.22821,0.215638,0.0524781,  1.99303, 0.0760699,0.375605, 0.509835,0.0591568});
-    auto vectorsVseqExp = NDArrayFactory::create<double>('c', {5,4}, {1.52048, 1.37012, 0.636326, -0.23412, 0.494454, 1.66025,  1.66979,-0.444696, 0.114105,0.130601, 1.58392, 0, -0.22821,0.215638,0.0524781,  1.99303, 0.0760699,0.375605, 0.509835,0.0591568});      
-    auto coeffsUseqExp = NDArrayFactory::create<double>('c', {4,1}, {1.52048,1.66025,1.58392,1.99303});      
-    auto coeffsVseqExp = NDArrayFactory::create<double>('c', {3,1}, {1.37012,1.66979,0});      
+    auto vectorsVseqExp = NDArrayFactory::create<double>('c', {5,4}, {1.52048, 1.37012, 0.636326, -0.23412, 0.494454, 1.66025,  1.66979,-0.444696, 0.114105,0.130601, 1.58392, 0, -0.22821,0.215638,0.0524781,  1.99303, 0.0760699,0.375605, 0.509835,0.0591568});
+    auto coeffsUseqExp = NDArrayFactory::create<double>('c', {4,1}, {1.52048,1.66025,1.58392,1.99303});
+    auto coeffsVseqExp = NDArrayFactory::create<double>('c', {3,1}, {1.37012,1.66979,0});
         
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
 
@@ -210,11 +210,11 @@ TEST_F(HelpersTests1, HHsequence_test2) {
             
     auto matrix = NDArrayFactory::create<double>('c', {6,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12 ,0,-15,10,2});
     auto vectorsUseqExp = NDArrayFactory::create<double>('c', {6,4}, {1.52048,  1.37012, 0.636326, -0.23412, 0.494454,  1.65232,  1.59666,-0.502606, 0.114105, 0.129651,  1.35075,        0, -0.22821, 0.214071, 0.103749,  1.61136, 0.0760699, 0.372875, 0.389936,   0.2398, 0,0.0935171,-0.563777, 0.428587});
-    auto vectorsVseqExp = NDArrayFactory::create<double>('c', {6,4}, {1.52048,  1.37012, 0.636326, -0.23412, 0.494454,  1.65232,  1.59666,-0.502606, 0.114105, 0.129651,  1.35075,        0, -0.22821, 0.214071, 0.103749,  1.61136, 0.0760699, 0.372875, 0.389936,   0.2398, 0,0.0935171,-0.563777, 0.428587});      
-    auto coeffsUseqExp = NDArrayFactory::create<double>('c', {4,1}, {1.52048,1.65232,1.35075,1.61136});      
-    auto coeffsVseqExp = NDArrayFactory::create<double>('c', {3,1}, {1.37012,1.59666,0});      
+    auto vectorsVseqExp = NDArrayFactory::create<double>('c', {6,4}, {1.52048,  1.37012, 0.636326, -0.23412, 0.494454,  1.65232,  1.59666,-0.502606, 0.114105, 0.129651,  1.35075,        0, -0.22821, 0.214071, 0.103749,  1.61136, 0.0760699, 0.372875, 0.389936,   0.2398, 0,0.0935171,-0.563777, 0.428587});
+    auto coeffsUseqExp = NDArrayFactory::create<double>('c', {4,1}, {1.52048,1.65232,1.35075,1.61136});
+    auto coeffsVseqExp = NDArrayFactory::create<double>('c', {3,1}, {1.37012,1.59666,0});
         
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
 
@@ -234,11 +234,11 @@ TEST_F(HelpersTests1, HHsequence_test3) {
             
     auto matrix = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6, 13,11,7,6, 3,7,4,7, 6,6,7,10});
     auto vectorsUseqExp = NDArrayFactory::create<double>('c', {4,4}, {1.524,  1.75682,0.233741,0.289458, 0.496646,   1.5655, 1.02929,0.971124, 0.114611,-0.451039, 1.06367,       0, 0.229221,-0.272237,0.938237, 0});
-    auto vectorsVseqExp = NDArrayFactory::create<double>('c', {4,4}, {1.524,  1.75682,0.233741,0.289458, 0.496646,   1.5655, 1.02929,0.971124, 0.114611,-0.451039, 1.06367,       0, 0.229221,-0.272237,0.938237, 0});      
-    auto coeffsUseqExp = NDArrayFactory::create<double>('c', {4,1}, { 1.524, 1.5655,1.06367,0});      
+    auto vectorsVseqExp = NDArrayFactory::create<double>('c', {4,4}, {1.524,  1.75682,0.233741,0.289458, 0.496646,   1.5655, 1.02929,0.971124, 0.114611,-0.451039, 1.06367,       0, 0.229221,-0.272237,0.938237, 0});
+    auto coeffsUseqExp = NDArrayFactory::create<double>('c', {4,1}, { 1.524, 1.5655,1.06367,0});
     auto coeffsVseqExp = NDArrayFactory::create<double>('c', {3,1}, {1.75682,1.02929, 0});
         
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
 
@@ -259,7 +259,7 @@ TEST_F(HelpersTests1, HHsequence_test4) {
     auto matrix = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6, 13,11,7,6, 3,7,4,7, 6,6,7,10});
     auto exp    = NDArrayFactory::create<double>('c', {4,4}, {2.49369, 2.62176, 5.88386, 7.69905, -16.0588,-18.7319,-9.15007,-12.6164, 4.7247, 3.46252, 1.02038, -1.4533, 2.9279,-2.29178, 1.90139,-0.66187});
         
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     uSeq.mulLeft(matrix);
     
@@ -273,7 +273,7 @@ TEST_F(HelpersTests1, HHsequence_test5) {
     auto matrix = NDArrayFactory::create<double>('c', {5,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12});
     auto exp    = NDArrayFactory::create<double>('c', {5,4}, {4.52891, 8.09473,-2.73704,-13.0302, -11.0752, 7.41549,-3.75125,0.815252, -7.76818,-15.9102,-9.90869,-11.8677, 1.63942,-17.0312,-9.05102,-4.49088, -9.63311,0.540226,-1.52764, 5.79111});
             
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     uSeq.mulLeft(matrix);
     
@@ -288,7 +288,7 @@ TEST_F(HelpersTests1, HHsequence_test6) {
     auto matrix2 = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9,-1,3,9, -4.43019,-15.1713, -3.2854,-7.65743, -9.39162,-7.03599, 8.03827, 9.48453, -2.97785, -16.424, 5.35265,-20.1171, -0.0436177, -13.118,-8.37287,-17.3012, -1.14074, 4.18282,-10.0914,-5.69014});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     uSeq.mulLeft(matrix2);
     
@@ -302,7 +302,7 @@ TEST_F(HelpersTests1, HHsequence_test7) {
     auto matrix = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6, 13,11,7,6, 3,7,4,7, 6,6,7,10});
     auto exp    = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6,-5.90424,-2.30926,-0.447417, 3.05712, -10.504,-9.31339, -8.85493,-10.8886, -8.29494,-10.6737, -5.94895,-7.55591});
         
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
     vSeq.mulLeft(matrix);    
     
@@ -315,7 +315,7 @@ TEST_F(HelpersTests1, HHsequence_test8) {
     auto matrix = NDArrayFactory::create<double>('c', {5,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12});
     auto exp    = NDArrayFactory::create<double>('c', {5,4}, {9,     -13,        3,       6, 13,      11,        7,      -6, -6.90831,-5.01113, 0.381677,0.440128, -0.80107,0.961605,-0.308019,-1.96153, -0.795985, 18.6538,  12.0731, 16.9988});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
     vSeq.mulLeft(matrix);    
 
@@ -328,7 +328,7 @@ TEST_F(HelpersTests1, HHsequence_test9) {
     auto matrix = NDArrayFactory::create<double>('c', {6,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12 ,0,-15,10,2});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9,     -13,        3,       6, 13,      11,        7,      -6, 3,       7,        4,       7, 3.77597, 18.6226,-0.674868, 4.61365, 5.02738,-14.1486, -2.22877,-8.98245, -0.683766, 1.73722,  14.9859, 12.0843});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
     vSeq.mulLeft(matrix);    
 
@@ -342,7 +342,7 @@ TEST_F(HelpersTests1, HHsequence_test10) {
     auto matrix2 = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9,      -1,       3,        9, 10,      11,      -7,       -5, 3,       2,       4,        7, 2.58863, 11.0295,-4.17483,-0.641012, -1.21892,-16.3151, 6.12049, -20.0239, -0.901799,-15.0389,-12.4944, -20.2394});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
     vSeq.mulLeft(matrix2);
     
@@ -356,7 +356,7 @@ TEST_F(HelpersTests1, HHsequence_test11) {
     auto matrix2 = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9,      -1,       3,       9, 10,      11,      -7,      -5, 3,       2,       4,       7, 1.14934, 4.40257, 8.70127,-1.18824, 1.5132,0.220419,-11.6285,-11.7549, 2.32148, 24.3838,0.256531, 25.9116});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
     vSeq.mulLeft(matrix2);
     
@@ -370,7 +370,7 @@ TEST_F(HelpersTests1, HHsequence_test12) {
     auto matrix2 = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9,      -1,       3,       9, 10,      11,      -7,      -5, 3,       2,       4,       7, -1,       6,       7,      19, -2.62252,-22.2914, 4.76743,-19.6689, -1.05943,-9.00514,-11.8013,-7.94571});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
     vSeq.mulLeft(matrix2);
     
@@ -384,7 +384,7 @@ TEST_F(HelpersTests1, HHsequence_test13) {
     auto matrix2 = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9 ,     -1 ,      3 ,      9, -4.65167, 3.44652, 7.83593, 22.6899, -9.48514, -21.902, 5.66559,-13.0533, -0.343184, 15.2895,  7.2888, 14.0489, 0.289638,-1.87752,   3.944,-1.49707, -2.48845, 3.18285,-10.6685,0.406502});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     uSeq.mulLeft(matrix2);
     
@@ -398,7 +398,7 @@ TEST_F(HelpersTests1, HHsequence_test14) {
     auto matrix2 = NDArrayFactory::create<double>('c',{5,5}, {9,-1,3,9,10,  11,-7,-5,3, 2,  4,7,-1,6,7,  19,2,17,9,15, 2,17,-9,15,2});
     auto exp    = NDArrayFactory::create<double>('c', {5,5}, {1.78958,  8.06962,-6.13687, 4.36267, 1.06472, -14.9578,  -8.1522, 1.30442,-18.3343,-13.2578, 13.5536,  5.50764, 15.7859, 7.60831, 11.7871, -1.3626,-0.634986, 7.60934, -2.1841, 5.62694, -13.0577,  15.1554, -7.6511, 3.76365,-5.87368});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     uSeq.mulLeft(matrix2);
     
@@ -413,7 +413,7 @@ TEST_F(HelpersTests1, HHsequence_test15) {
     auto matrix2 = NDArrayFactory::create<double>('c',{5,5}, {9,-1,3,9,10,  11,-7,-5,3, 2,  4,7,-1,6,7,  19,2,17,9,15, 2,17,-9,15,2});
     auto exp    = NDArrayFactory::create<double>('c', {5,5}, {9,      -1,       3,       9,      10, 11,      -7,      -5,       3,       2, 4,       7,      -1,       6,       7, -9.26566,-16.4298, 1.64125,-17.3243,-7.70257, -16.7077, 4.80216,-19.1652,-2.42279,-13.0258});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
     vSeq.mulLeft(matrix2);
     
@@ -428,7 +428,7 @@ TEST_F(HelpersTests1, HHsequence_test16) {
     matrix2 = 100.;
     auto exp = NDArrayFactory::create<double>('c',{5,5}, {-0.372742, 0.295145, 0.325359, 0.790947,   0.20615, -0.455573,-0.824221,-0.239444, 0.216163,-0.0951492, -0.165663, 0.285319, -0.18501, 0.130431, -0.916465, -0.7869, 0.245393, 0.116952,-0.541267,  0.117997, -0.0828315, 0.303191,-0.888202, 0.133021,    0.3076});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     uSeq.applyTo(matrix2);
     
@@ -443,7 +443,7 @@ TEST_F(HelpersTests1, HHsequence_test17) {
     matrix2 = 100.;
     auto exp = NDArrayFactory::create<double>('c',{5,5}, {1,        0,        0,         0,        0, 0,-0.022902, 0.986163, 0.0411914, 0.158935, 0, -0.44659, 0.021539,  0.797676,-0.404731, 0,-0.554556, 0.103511, -0.600701, -0.56649, 0,-0.701784,-0.127684,-0.0342758, 0.700015});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
     vSeq.applyTo(matrix2);
     
@@ -458,7 +458,7 @@ TEST_F(HelpersTests1, HHsequence_test18) {
     matrix2 = 100.;
     auto exp = NDArrayFactory::create<double>('c',{6,6}, {-0.637993,  0.190621,-0.524821,-0.312287, 0.407189, 0.133659, -0.708881, 0.0450803,  0.47462, 0.232701,-0.204602,-0.417348, -0.212664,-0.0405892,-0.297123,0.0240276,-0.821557, 0.435099, 0.0708881, -0.432466, -0.49252,-0.145004,-0.199312,-0.710367, -0.141776,  -0.56468,-0.180549, 0.706094, 0.274317, 0.233707, -0.141776, -0.673865, 0.368567,-0.572848,0.0490246, 0.243733});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     uSeq.applyTo(matrix2);
     
@@ -473,7 +473,7 @@ TEST_F(HelpersTests1, HHsequence_test19) {
     matrix2 = 100.;
     auto exp = NDArrayFactory::create<double>('c',{4,4}, {1,        0,        0,        0, 0,-0.859586,  0.28601, -0.42345, 0,  0.19328,-0.585133,-0.787567, 0,-0.473027,-0.758826, 0.447693});
 
-    ops::helpers::BiDiagonalUp object(matrix);    
+    ops::helpers::BiDiagonalUp object(matrix);
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
     vSeq.applyTo(matrix2);
     
@@ -624,8 +624,8 @@ TEST_F(HelpersTests1, SVD_test8) {
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
 
     auto expM  = NDArrayFactory::create<double>('c', {6,5}, {12, 20,19,-18, -6, 3,  6, 2, -7, -7, 14,-15, 2,-17, 18, -14,  8, 1, 18,  2, -3,-18, 8,-17,-19, 12, 18, 6, -2,-17});
-    auto expU  = NDArrayFactory::create<double>('c', {6,6}, {-10,-20,-16, 13, 20,-10, -9, -7, -1,-20, -4, 20, -11, -5, 19,-18, 12,-19, 18, 17,-18,-10,-19, 14, -2, -7,-17,-14, -4,-16, 18, -6,-18,  1,-15,-12});                                        
-    auto expV  = NDArrayFactory::create<double>('c', {5,5}, {-18,  1, 19,-7, 1, 2,-18,-13, 2,14, -2,-11,  8,-6, 2, -3, -8,  8, 7,-2, 16, 15, -3, 7, 0});                                        
+    auto expU  = NDArrayFactory::create<double>('c', {6,6}, {-10,-20,-16, 13, 20,-10, -9, -7, -1,-20, -4, 20, -11, -5, 19,-18, 12,-19, 18, 17,-18,-10,-19, 14, -2, -7,-17,-14, -4,-16, 18, -6,-18,  1,-15,-12});
+    auto expV  = NDArrayFactory::create<double>('c', {5,5}, {-18,  1, 19,-7, 1, 2,-18,-13, 2,14, -2,-11,  8,-6, 2, -3, -8,  8, 7,-2, 16, 15, -3, 7, 0});
 
     ops::helpers::SVD<double> svd(matrix3, 4, true, true, true, 't');    
     svd._m = matrix1;
@@ -668,14 +668,14 @@ TEST_F(HelpersTests1, SVD_test10) {
     auto singVals = NDArrayFactory::create<double>('c', {4,1}, {1 ,1 ,1 ,1});
     auto col0 = NDArrayFactory::create<double>('c', {4,1}, {1 ,1 ,1 ,1});
     auto diag = NDArrayFactory::create<double>('c', {4,1}, {5 ,7 ,-13 ,14});
-    auto permut = NDArrayFactory::create<double>('c', {1,4}, {0 ,2 ,3 ,1 });    
-    auto mus  = NDArrayFactory::create<double>('c', {4,1}, {4,1,4,6});    
-    auto shifts = NDArrayFactory::create<double>('c', {4,1}, {4,2,5,6});    
+    auto permut = NDArrayFactory::create<double>('c', {1,4}, {0 ,2 ,3 ,1 });
+    auto mus  = NDArrayFactory::create<double>('c', {4,1}, {4,1,4,6});
+    auto shifts = NDArrayFactory::create<double>('c', {4,1}, {4,2,5,6});
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     
     auto expZhat = NDArrayFactory::create<double>('c', {4,1}, {0, 0.278208, 72.501953, 0});
 
-    auto zhat = NDArrayFactory::create<double>('c', {4,1});    
+    auto zhat = NDArrayFactory::create<double>('c', {4,1});
 
     ops::helpers::SVD<double> svd(matrix3, 4, true, true, true, 't');        
     svd.perturb(col0, diag, permut, singVals, shifts,  mus, zhat);    
@@ -691,9 +691,9 @@ TEST_F(HelpersTests1, SVD_test11) {
     auto singVals = NDArrayFactory::create<double>('c', {4,1}, {1 ,1 ,1 ,1});
     auto zhat   = NDArrayFactory::create<double>('c', {4,1}, {2 ,1 ,2 ,1});
     auto diag = NDArrayFactory::create<double>('c', {4,1}, {5 ,7 ,-13 ,14});
-    auto permut = NDArrayFactory::create<double>('c', {1,4}, {0 ,2 ,3 ,1 });    
-    auto mus  = NDArrayFactory::create<double>('c', {4,1}, {4,1,4,6});    
-    auto shifts = NDArrayFactory::create<double>('c', {4,1}, {4,2,5,6});    
+    auto permut = NDArrayFactory::create<double>('c', {1,4}, {0 ,2 ,3 ,1 });
+    auto mus  = NDArrayFactory::create<double>('c', {4,1}, {4,1,4,6});
+    auto shifts = NDArrayFactory::create<double>('c', {4,1}, {4,2,5,6});
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     
     auto expU = NDArrayFactory::create<double>('c', {5,5}, {-0.662161, 0.980399,-0.791469,-0.748434, 0, -0.744931, 0.183825,-0.593602,-0.392928, 0, 0.0472972, 0.061275,0.0719517, 0.104781, 0, 0.0662161,0.0356509, 0.126635, 0.523904, 0, 0,        0,        0,        0, 1});
@@ -747,8 +747,8 @@ TEST_F(HelpersTests1, SVD_test13) {
     auto expCoeffs = NDArrayFactory::create<double>('c', {1,5}, {1.53975, 1.19431, 1.63446, 1.7905, 1.43356});
     auto expPermut = NDArrayFactory::create<double>('c', {5,5}, {0,0,0,1,0, 1,0,0,0,0, 0,0,0,0,1, 0,0,1,0,0, 0,1,0,0,0});
 
-    ops::helpers::HHcolPivQR qr(matrix1);        
-    
+    ops::helpers::HHcolPivQR qr(matrix1);
+
     ASSERT_TRUE(expQR.equalsTo(&qr._qr));
     ASSERT_TRUE(expCoeffs.equalsTo(&qr._coeffs));
     ASSERT_TRUE(expPermut.equalsTo(&qr._permut));
@@ -768,7 +768,7 @@ TEST_F(HelpersTests1, SVD_test14) {
     auto expCoeffs = NDArrayFactory::create<double>('c', {1,5}, {1.58166, 1.28555, 1.98605, 1.99949, 0});
     auto expPermut = NDArrayFactory::create<double>('c', {6,6}, {0,1,0,0,0,0, 0,0,1,0,0,0, 1,0,0,0,0,0, 0,0,0,0,0,1, 0,0,0,0,1,0, 0,0,0,1,0,0});
 
-    ops::helpers::HHcolPivQR qr(matrix1);    
+    ops::helpers::HHcolPivQR qr(matrix1);
         
     ASSERT_TRUE(expQR.equalsTo(&qr._qr));
     ASSERT_TRUE(expCoeffs.equalsTo(&qr._coeffs));
@@ -789,7 +789,7 @@ TEST_F(HelpersTests1, SVD_test15) {
     auto expCoeffs = NDArrayFactory::create<double>('c', {1,6}, {1.26198, 1.38824, 1.15567, 1.25667, 1.27682, 0});
     auto expPermut = NDArrayFactory::create<double>('c', {6,6}, {0,0,1,0,0,0, 0,0,0,0,1,0, 0,0,0,1,0,0, 0,1,0,0,0,0, 0,0,0,0,0,1, 1,0,0,0,0,0});
 
-    ops::helpers::HHcolPivQR qr(matrix1);    
+    ops::helpers::HHcolPivQR qr(matrix1);
         
     ASSERT_TRUE(expQR.equalsTo(&qr._qr));
     ASSERT_TRUE(expCoeffs.equalsTo(&qr._coeffs));
@@ -850,7 +850,7 @@ TEST_F(HelpersTests1, JacobiSVD_test3) {
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double, double>(0.6), 0.2});
     
-    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18,       1,     19,      -7,       1, -1.14919,-12.1206,3.59677, 4.34919,-4.24758, -1.94919, 11.7427,11.6698,-10.4444,-2.74919, -3,      -8,      8,      -2,       7, 16,      15,     -3,       7,       0});    
+    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18,       1,     19,      -7,       1, -1.14919,-12.1206,3.59677, 4.34919,-4.24758, -1.94919, 11.7427,11.6698,-10.4444,-2.74919, -3,      -8,      8,      -2,       7, 16,      15,     -3,       7,       0});
 
     ops::helpers::JacobiSVD<double>::mulRotationOnLeft(1, 2, matrix, rotation);
     
@@ -863,7 +863,7 @@ TEST_F(HelpersTests1, JacobiSVD_test4) {
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double, double>(0.6), 0.2});
     
-    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18,       1,      19,     -7,       1, 1.94919, 4.92056,-8.79677,1.25081, 5.04758, 1.14919,-16.1427,-8.46976,11.2444,0.349193, -3,      -8,       8,     -2,       7, 16,      15,      -3,      7,       0});    
+    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18,       1,      19,     -7,       1, 1.94919, 4.92056,-8.79677,1.25081, 5.04758, 1.14919,-16.1427,-8.46976,11.2444,0.349193, -3,      -8,       8,     -2,       7, 16,      15,      -3,      7,       0});
 
     ops::helpers::JacobiSVD<double>::mulRotationOnLeft(2, 1, matrix, rotation);
     
@@ -876,7 +876,7 @@ TEST_F(HelpersTests1, JacobiSVD_test5) {
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double, double>(0.6), 0.2});
     
-    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18,      1,      19,      -7,       1, 2,    -18,     -13,      14,       2, 1.14919,6.32056,-4.59677,-1.14919, 3.44758, -3,     -8,       8,      -2,       7, 16,     15,      -3,       7,       0});    
+    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18,      1,      19,      -7,       1, 2,    -18,     -13,      14,       2, 1.14919,6.32056,-4.59677,-1.14919, 3.44758, -3,     -8,       8,      -2,       7, 16,     15,      -3,       7,       0});
 
     ops::helpers::JacobiSVD<double>::mulRotationOnLeft(2, 2, matrix, rotation);
     
@@ -889,7 +889,7 @@ TEST_F(HelpersTests1, JacobiSVD_test6) {
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double, double>(0.6), 0.2});
     
-    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18,-14.5173,  4.5746,-7, 1, 2, 6.46976,-16.5427,14, 2, -2,-8.39677,-6.92056, 2,-6, -3,-7.79677,-4.59677,-2, 7, 16, 5.32379,  11.019, 7, 0});    
+    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18,-14.5173,  4.5746,-7, 1, 2, 6.46976,-16.5427,14, 2, -2,-8.39677,-6.92056, 2,-6, -3,-7.79677,-4.59677,-2, 7, 16, 5.32379,  11.019, 7, 0});
 
     ops::helpers::JacobiSVD<double>::mulRotationOnRight(1, 2, matrix, rotation);
     
@@ -902,7 +902,7 @@ TEST_F(HelpersTests1, JacobiSVD_test7) {
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double, double>(0.6), 0.2});
     
-    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18, 14.9173, 3.0254,-7, 1, 2,-13.6698,11.3427,14, 2, -2, 3.99677,10.1206, 2,-6, -3, 4.59677,7.79677,-2, 7, 16, 0.67621,-12.219, 7, 0});    
+    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18, 14.9173, 3.0254,-7, 1, 2,-13.6698,11.3427,14, 2, -2, 3.99677,10.1206, 2,-6, -3, 4.59677,7.79677,-2, 7, 16, 0.67621,-12.219, 7, 0});
 
     ops::helpers::JacobiSVD<double>::mulRotationOnRight(2, 1, matrix, rotation);
     
@@ -915,7 +915,7 @@ TEST_F(HelpersTests1, JacobiSVD_test8) {
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double,double>(0.6), 0.2});
     
-    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18,  1, 18.5173,-7, 1, 2,-18,-12.6698,14, 2, -2,-11, 7.79677, 2,-6, -3, -8, 7.79677,-2, 7, 16, 15,-2.92379, 7, 0});    
+    auto expected = NDArrayFactory::create<double>('c', {5,5}, {-18,  1, 18.5173,-7, 1, 2,-18,-12.6698,14, 2, -2,-11, 7.79677, 2,-6, -3, -8, 7.79677,-2, 7, 16, 15,-2.92379, 7, 0});
 
     ops::helpers::JacobiSVD<double>::mulRotationOnRight(2, 2, matrix, rotation);
     

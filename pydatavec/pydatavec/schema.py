@@ -25,7 +25,8 @@ class Schema(object):
 
     def add_column(self, column_type, column_name, *args):
         if column_name in self.columns:
-            raise Exception("Column names should be unique. Another column with name " + column_name + " already exists.")
+            raise Exception(
+                "Column names should be unique. Another column with name " + column_name + " already exists.")
         self.columns[column_name] = [column_type] + list(args)
 
     def add_string_column(self, column):

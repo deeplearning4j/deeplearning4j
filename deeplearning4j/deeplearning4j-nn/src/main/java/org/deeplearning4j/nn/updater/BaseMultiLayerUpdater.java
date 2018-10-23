@@ -211,6 +211,13 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @param viewArray The new updater state
      */
     public void setStateViewArray(INDArray viewArray) {
+        if(this.updaterStateViewArray == null){
+            if(viewArray == null)
+                return; //No op - for example, SGD and NoOp updater - i.e., no stored state
+            else {
+                throw new IllegalStateException("Attempting to set updater state view array with null value");
+            }
+        }
         if (this.updaterStateViewArray.length() != viewArray.length())
             throw new IllegalStateException("Invalid input: view arrays differ in length. " + "Expected length "
                             + this.updaterStateViewArray.length() + ", got length " + viewArray.length());
@@ -225,6 +232,17 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     @Override
     public INDArray getStateViewArray() {
         return updaterStateViewArray;
+    }
+
+    /**
+     * A synchronized version of {@link #getStateViewArray()} that duplicates the view array internally.
+     * This should be used in preference to {@link #getStateViewArray()} when the updater state is accessed in one
+     * thread while another thread is using the updater for training.
+     * @return A copy (duplicate) of the updater state
+     */
+    public synchronized INDArray getStateViewArrayCopy(){
+        Nd4j.getExecutioner().commit();
+        return updaterStateViewArray.dup();
     }
 
     @Override
@@ -243,7 +261,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @param iteration The current iteration (i.e., number of parameter updates so far)
      * @param batchSize The current minibatch size (number of examples)
      */
-    public void update(Gradient gradient, int iteration, int epoch, int batchSize, LayerWorkspaceMgr workspaceMgr) {
+    public synchronized void update(Gradient gradient, int iteration, int epoch, int batchSize, LayerWorkspaceMgr workspaceMgr) {
 
         //First: check if gradient is standard or external...
         //In a MultiLayerNetwork, the INDArray returned by .gradient() is always the standard full view array
@@ -352,12 +370,16 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             case RenormalizeL2PerLayer:
                 if (layerGradientView != null) {
                     double l2 = layerGradientView.norm2Number().doubleValue();
+                    if (l2 == 0.0)
+                        l2 = 1e-5;  //Avoid 0/0 -> NaN
                     layerGradientView.divi(l2);
                 }
                 break;
             case RenormalizeL2PerParamType:
                 for (INDArray g : gradient.gradientForVariable().values()) {
                     double l2 = Nd4j.getExecutioner().execAndReturn(new Norm2(g)).getFinalResult().doubleValue();
+                    if (l2 == 0.0)
+                        l2 = 1e-5;  //Avoid 0/0 -> NaN
                     g.divi(l2);
                 }
                 break;

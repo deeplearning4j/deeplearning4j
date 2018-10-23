@@ -29,8 +29,8 @@
 
     <properties>
         <!-- Default scala versions, may be overwritten by build profiles -->
-        <scala.version>2.10.7</scala.version>
-        <scala.binary.version>2.10</scala.binary.version>
+        <scala.version>2.11.12</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
     </properties>
 
     <dependencies>
@@ -61,7 +61,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-9.2</id>
+            <id>test-nd4j-cuda-10.0</id>
         </profile>
     </profiles>
 

@@ -27,6 +27,4 @@ mvn clean install -Ptestresources -Ptest-native -Dlibnd4j.cuda=x.x -Dlibnd4j.com
 # Want some examples?
 We have separate repository with various examples available: https://github.com/deeplearning4j/dl4j-examples
 
-In the monorepo, you'll find a tutorial series in Zeppelin:
-
- * https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/dl4j-examples/tutorials
+In the examples repo, you'll also find a tutorial series in Zeppelin: https://github.com/deeplearning4j/dl4j-examples/tree/master/tutorials

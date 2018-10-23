@@ -139,6 +139,26 @@ public class ShapeTest extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testEqualsWithSqueeze(){
+
+        assertTrue(Shape.shapeEqualWithSqueeze(null, null));
+        assertTrue(Shape.shapeEqualWithSqueeze(new long[0], new long[0]));
+        assertTrue(Shape.shapeEqualWithSqueeze(new long[0], new long[]{1}));
+        assertFalse(Shape.shapeEqualWithSqueeze(new long[0], new long[]{1,2}));
+        assertFalse(Shape.shapeEqualWithSqueeze(new long[0], new long[]{2,1}));
+        assertTrue(Shape.shapeEqualWithSqueeze(new long[]{1}, new long[0]));
+        assertTrue(Shape.shapeEqualWithSqueeze(new long[0], new long[]{1,1,1,1,1}));
+        assertTrue(Shape.shapeEqualWithSqueeze(new long[]{1,1,1,1,1}, new long[0]));
+        assertTrue(Shape.shapeEqualWithSqueeze(new long[]{1}, new long[]{1,1,1}));
+
+        assertTrue(Shape.shapeEqualWithSqueeze(new long[]{2,3}, new long[]{2,3}));
+        assertFalse(Shape.shapeEqualWithSqueeze(new long[]{2,3}, new long[]{3,2}));
+        assertTrue(Shape.shapeEqualWithSqueeze(new long[]{1,2,2}, new long[]{2,2}));
+        assertTrue(Shape.shapeEqualWithSqueeze(new long[]{1,2,3}, new long[]{2,1,1,3}));
+        assertFalse(Shape.shapeEqualWithSqueeze(new long[]{1,2,3}, new long[]{2,1,1,4}));
+
+    }
 
     @Override
     public char ordering() {

@@ -81,15 +81,6 @@ else()
     message("OPENMP NOT FOUND")
 endif()
 
-
-if(APPLE)
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
-    #SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
-elseif(MSYS)
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
-endif()
-
-
 file(GLOB_RECURSE TYPES_SOURCES false ../../include/types/*.cpp ../../include/types/*.h)
 file(GLOB_RECURSE ARRAY_SOURCES false ../../include/array/*.cpp ../../include/array/*.h)
 file(GLOB_RECURSE MEMORY_SOURCES false ../../include/memory/*.cpp ../../include/memory/*.h)

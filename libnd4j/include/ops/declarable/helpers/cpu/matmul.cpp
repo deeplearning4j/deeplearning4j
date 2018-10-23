@@ -51,7 +51,7 @@ namespace nd4j {
                         C[m + n * ldC] = alpha * c_mnp + beta * C[m + n * ldC];
                     }
                 }
-            };
+            }
 
 
             void _matmul(NDArray *vA, NDArray *vB, NDArray *vC, int transA, int transB, double alpha, double beta) {

@@ -24,6 +24,7 @@ import org.nd4j.parameterserver.distributed.messages.intercom.DistributedShutdow
  * This message
  * @author raver119@gmail.com
  */
+@Deprecated
 public class ShutdownRequestMessage extends BaseVoidMessage implements RequestMessage {
 
     public ShutdownRequestMessage() {

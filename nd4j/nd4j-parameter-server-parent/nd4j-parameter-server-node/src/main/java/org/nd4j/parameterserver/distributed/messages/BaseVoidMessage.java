@@ -18,7 +18,7 @@ package org.nd4j.parameterserver.distributed.messages;
 
 import lombok.*;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.apache.commons.lang3.SerializationUtils;
+import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
@@ -31,6 +31,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
  */
 @NoArgsConstructor
 @Data
+@Deprecated
 public abstract class BaseVoidMessage implements VoidMessage {
     protected int messageType = -1;
     protected long originatorId = 0L;
@@ -55,7 +56,7 @@ public abstract class BaseVoidMessage implements VoidMessage {
 
     @Override
     public byte[] asBytes() {
-        return SerializationUtils.serialize(this);
+        return SerializationUtils.toByteArray(this);
     }
 
     @Override

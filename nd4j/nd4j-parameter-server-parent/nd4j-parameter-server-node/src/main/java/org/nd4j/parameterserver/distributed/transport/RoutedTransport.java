@@ -26,6 +26,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.HashUtil;
@@ -55,6 +56,7 @@ import static java.lang.System.setProperty;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class RoutedTransport extends BaseTransport {
 
     private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,25); //32MB
@@ -88,10 +90,14 @@ public class RoutedTransport extends BaseTransport {
             System.setProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP, String.valueOf(DEFAULT_TERM_BUFFER_PROP));
         }
 
-        context = new Aeron.Context().publicationConnectionTimeout(30000000000L).driverTimeoutMs(30000)
-                        .keepAliveInterval(100000000);
 
-        driver = MediaDriver.launchEmbedded();
+        context = new Aeron.Context().driverTimeoutMs(30000)
+                       .keepAliveInterval(100000000);
+        AeronUtil.setDaemonizedThreadFactories(context);
+
+        MediaDriver.Context ctx = new MediaDriver.Context();
+        AeronUtil.setDaemonizedThreadFactories(ctx);
+        driver = MediaDriver.launchEmbedded(ctx);
         context.aeronDirectoryName(driver.aeronDirectoryName());
         aeron = Aeron.connect(context);
 
@@ -137,9 +143,9 @@ public class RoutedTransport extends BaseTransport {
                 remoteIp = split[0];
                 remotePort = Integer.valueOf(split[1]);
             } else {
-                shardChannelUri = "aeron:udp?endpoint=" + ip + ":" + voidConfiguration.getUnicastPort();
+                shardChannelUri = "aeron:udp?endpoint=" + ip + ":" + voidConfiguration.getUnicastControllerPort();
                 remoteIp = ip;
-                remotePort = voidConfiguration.getUnicastPort();
+                remotePort = voidConfiguration.getUnicastControllerPort();
             }
 
             Publication publication = aeron.addPublication(shardChannelUri, voidConfiguration.getStreamId());

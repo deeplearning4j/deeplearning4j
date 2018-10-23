@@ -231,5 +231,4 @@ public interface Op {
      * @return the equivalent {@link CustomOp}
      */
     CustomOp toCustomOp();
-
 }

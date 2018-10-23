@@ -306,7 +306,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Get a given layer by name.
      */
     public Layer getLayer(String name) {
-        return verticesMap.get(name).getLayer(); //TODO checks
+        Preconditions.checkState(verticesMap.containsKey(name), "Layer with name %s does not exist in the network", name);
+        return verticesMap.get(name).getLayer();
     }
 
     /**
@@ -1378,6 +1379,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             int outNum = 0;
             for (String s : configuration.getNetworkOutputs()) {
                 GraphVertex gv = verticesMap.get(s);
+                if(gv instanceof LayerVertex) {
+                    //At this point: the input to the output layer might not be set on the layer itself - just the vertex
+                    LayerVertex lv = (LayerVertex) gv;
+                    if(!lv.isSetLayerInput()) {
+                        lv.applyPreprocessorAndSetInput(workspaceMgr);
+                    }
+                }
                 Layer vertexLayer = gv.getLayer();
                 if (vertexLayer instanceof FrozenLayerWithBackprop) {
                     vertexLayer = ((FrozenLayerWithBackprop) vertexLayer).getInsideLayer();
@@ -2546,7 +2554,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         //No existing free workspace managers for forward pass - create a new one...
                         String wsName = "WS_LAYER_ACT_" + allWorkspaceManagers.size();
                         workspaceMgr = LayerWorkspaceMgr.builder()
-                                .with(ArrayType.INPUT, wsName, WS_LAYER_ACT_X_CONFIG)
+                                .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                                 .with(ArrayType.ACTIVATION_GRAD, wsName, WS_LAYER_ACT_X_CONFIG)
                                 .with(ArrayType.ACTIVATIONS, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG) //For forward pass in the context of BP
                                 .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
@@ -3585,7 +3593,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private List<INDArray[]> getSubsetsForTbptt(int startTimeIdx, long endTimeIdx, INDArray[] inputs, INDArray[] labels,
                                                 INDArray[] featureMasks, INDArray[] labelMasks){
         INDArray[] newInputs = new INDArray[inputs.length];
-        INDArray[] newLabels = new INDArray[inputs.length];
+        INDArray[] newLabels = new INDArray[labels.length];
         INDArray[] newFeatureMasks = (featureMasks != null ? new INDArray[featureMasks.length] : null);
         INDArray[] newLabelMasks = (labelMasks != null ? new INDArray[labelMasks.length] : null);
 
@@ -4047,13 +4055,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 //Assuming single output here
                 INDArray[] features = next.getFeatures();
                 INDArray[] featuresMasks = next.getFeaturesMaskArrays();
-                INDArray labels = next.getLabels(0);
+                INDArray[] labels = next.getLabels();
                 INDArray[] labelMasks = next.getLabelsMaskArrays();
 
                 try (MemoryWorkspace ws = outputWs.notifyScopeEntered()) {
                     INDArray[] out = outputOfLayersDetached(false, FwdPassType.STANDARD, getOutputLayerIndices(), features, featuresMasks, labelMasks, true, false, ws);
 
                     for (Integer i : evaluations.keySet()) {
+                        Preconditions.checkState(i >= 0 && i <labels.length, "Invalid output index: evaluation/output indices must be between 0" +
+                                " and numOutputs-1 (%s), got index %s", numOutputArrays, (int)i);
                         IEvaluation[] evalsThisOutput = evaluations.get(i);
                         if (evalsThisOutput == null)
                             continue;
@@ -4061,10 +4071,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         Preconditions.checkState(i >= 0 && i < getNumOutputArrays(), "Invalid output index: indices for outputs " +
                                 "must be between 0 and %s inclusive - found index %s", numOutputArrays, (int) i);
                         INDArray currOut = out[i];
+                        INDArray currLabel = labels[i];
 
                         try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                             for (IEvaluation evaluation : evalsThisOutput)
-                                evaluation.eval(labels, currOut, next.getLabelsMaskArray(i));
+                                evaluation.eval(currLabel, currOut, next.getLabelsMaskArray(i));
                         }
                     }
                 }
@@ -4142,7 +4153,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @see #memoryInfo(int, InputType...)
      */
     public String summary() {
-        return summary(null);
+        return summary((InputType[])null);
     }
 
     /**
@@ -4157,26 +4168,24 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @see #memoryInfo(int, InputType...)
      */
     public String summary(InputType... inputTypes) {
-
-        String ret = "\n";
-        ret += StringUtils.repeat("=", 250);
-        ret += "\n";
-        if (inputTypes != null) {
-            //inputTypes length has to match
-            if (inputTypes.length != configuration.getNetworkInputs().size())
-                throw new IllegalArgumentException("The number of inputTypes should match the size of the inputs in the computation graph");
-            ret += String.format("%-40s%-10s%-12s%-40s%-30s%-75s%-75s\n", "VertexName (VertexType)", "nIn,nOut", "TotalParams",
-                    "ParamsShape", "Vertex Inputs", "InputShape", "OutputShape");
-        } else {
-            ret += String.format("%-40s%-10s%-12s%-40s%-30s\n", "VertexName (VertexType)", "nIn,nOut", "TotalParams",
-                    "ParamsShape", "Vertex Inputs");
-        }
-        ret += StringUtils.repeat("=", 250);
-        ret += "\n";
+        StringBuilder ret = new StringBuilder();
+        ret.append("\n");
 
         int frozenParams = 0;
         Map<String, InputType> vertexOutputs = new HashMap<>(); //vertex name and output types
         int currLayerIdx = -1;
+
+        List<String[]> lines = new ArrayList<>();
+        if(inputTypes == null){
+            lines.add(new String[]{"VertexName (VertexType)", "nIn,nOut", "TotalParams", "ParamsShape", "Vertex Inputs"});
+        } else {
+            lines.add(new String[]{"VertexName (VertexType)", "nIn,nOut", "TotalParams", "ParamsShape", "Vertex Inputs", "InputShape", "OutputShape"});
+        }
+        int[] maxLength = new int[inputTypes == null || inputTypes.length == 0 ? 5 : 7];
+        String[] header = lines.get(0);
+        for( int i=0; i<header.length; i++ ){
+            maxLength[i] = header[i].length();
+        }
 
         for (int currVertexIdx : topologicalOrder) {
 
@@ -4265,25 +4274,58 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
 
             //Add on to summary string
-            if (inputTypes != null) {
-                ret += String.format("%-40s%-10s%-12s%-40s%-30s%-75s%-75s", currentVertexName + " (" + className + ")", in + "," + out, paramCount,
-                        paramShape, connections, inShape, outShape);
+            String[] line;
+            if (inputTypes == null) {
+                line = new String[]{currentVertexName + " (" + className + ")", in + "," + out, paramCount, paramShape, connections};
             } else {
-                ret += String.format("%-40s%-10s%-12s%-40s%-30s", currentVertexName + " (" + className + ")", in + "," + out, paramCount,
-                        paramShape, connections);
+                line = new String[]{currentVertexName + " (" + className + ")", in + "," + out, paramCount, paramShape, connections, inShape, outShape};
             }
-            ret += "\n";
-
+            for( int i=0; i<line.length; i++ ){
+                maxLength[i] = Math.max(maxLength[i], line[i] == null ? 0 : line[i].length());
+            }
+            lines.add(line);
         }
-        ret += StringUtils.repeat("-", 250);
-        ret += String.format("\n%30s %d", "Total Parameters: ", params().length());
-        ret += String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams);
-        ret += String.format("\n%30s %d", "Frozen Parameters: ", frozenParams);
-        ret += "\n";
-        ret += StringUtils.repeat("=", 250);
-        ret += "\n";
 
-        return ret;
+        StringBuilder sbFormat = new StringBuilder();
+        int totalLength = 0;
+        int pos = 0;
+        for(int length : maxLength){
+            int currLength;
+            if(pos++ == maxLength.length-1){
+                currLength = length;
+            } else {
+                currLength = length+3;
+            }
+            sbFormat.append("%-").append(currLength).append("s");
+            totalLength += currLength;
+        }
+        sbFormat.append("\n");
+        String format = sbFormat.toString();
+
+
+
+        ret.append(StringUtils.repeat("=", totalLength))
+                .append("\n");
+
+        boolean first = true;
+        for(String[] line : lines){
+            String formatted = String.format(format, (Object[])line);
+            ret.append(formatted);
+            if(first){
+                ret.append(StringUtils.repeat("=", totalLength)).append("\n");
+                first = false;
+            }
+        }
+
+        ret.append(StringUtils.repeat("-", totalLength))
+                .append(String.format("\n%30s %d", "Total Parameters: ", params().length()))
+                .append(String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams))
+                .append(String.format("\n%30s %d", "Frozen Parameters: ", frozenParams))
+                .append("\n")
+                .append(StringUtils.repeat("=", totalLength))
+                .append("\n");
+
+        return ret.toString();
     }
 
     /**
@@ -4305,7 +4347,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     /**
      * This method just makes sure there's no state preserved within layers
      */
-    protected void clearLayersStates() {
+    public void clearLayersStates() {
         for (Layer layer : layers) {
             layer.clear();
             layer.clearNoiseWeightParams();
