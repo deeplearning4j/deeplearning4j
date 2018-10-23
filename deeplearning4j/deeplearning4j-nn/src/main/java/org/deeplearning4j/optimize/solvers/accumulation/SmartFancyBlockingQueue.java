@@ -111,6 +111,9 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
                     smartDecompress(arr, params);
                 }
 
+                numElementsDrained.set(0);
+                numElementsReady.set(1);
+
                 // now just put single array back
                 super.put(params);
             } else
