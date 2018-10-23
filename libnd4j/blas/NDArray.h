@@ -1866,9 +1866,14 @@ DataType NDArray::dataType() const {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-T& NDArray::t(const Nd4jLong index) {
+T& NDArray::t(const Nd4jLong i) {
 
-    return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(index))));
+    if (i >= _length)
+        throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
+    if (DataTypeUtils::fromT<T>() != _dataType)
+        throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
+    
+    return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(i))));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1877,6 +1882,8 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
 
     if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
             throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
+    if (DataTypeUtils::fromT<T>() != _dataType)
+        throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
         
     Nd4jLong coords[2] = {i, j};
     auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
@@ -1885,9 +1892,14 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-T NDArray::t(const Nd4jLong index) const {
+T NDArray::t(const Nd4jLong i) const {
 
-    return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(index))));
+    if (i >= _length)
+        throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
+    if (DataTypeUtils::fromT<T>() != _dataType)
+        throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
+
+    return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(i))));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1896,6 +1908,8 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
 
     if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
             throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
+    if (DataTypeUtils::fromT<T>() != _dataType)
+        throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
         
     Nd4jLong coords[2] = {i, j};
     auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
