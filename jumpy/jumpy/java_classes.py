@@ -51,4 +51,4 @@ try:
     KerasModelImport = autoclass('org.deeplearning4j.nn.modelimport.keras.KerasModelImport')
 except Exception as e:
     warnings.warn('Dl4J Core not installed. Keras model import not available.')    
-    KerasModelImport
+    KerasModelImport = None
