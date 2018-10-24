@@ -77,6 +77,15 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
     }
 
     /**
+     * Create the adaptive threshold algorithm with the specified initial threshold, but defaults for the other values:
+     * default minimum sparsity target {@link #DEFAULT_MIN_SPARSITY_TARGET}, default maximum sparsity target {@link #DEFAULT_MAX_SPARSITY_TARGET},
+     * and default decay rate {@link #DEFAULT_DECAY_RATE}
+     */
+    public AdaptiveThresholdAlgorithm(double initialThreshold){
+        this(initialThreshold, DEFAULT_MIN_SPARSITY_TARGET, DEFAULT_MAX_SPARSITY_TARGET, DEFAULT_DECAY_RATE);
+    }
+
+    /**
      *
      * @param initialThreshold  The initial threshold to use
      * @param minTargetSparsity The minimum target sparsity ratio - for example 1e-4
