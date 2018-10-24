@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.parameterserver.networking.v1;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.spark.parameterserver.networking.v1.messages.SilentUpdatesMessage;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -44,8 +45,8 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param thresholdAlgorithm threshold algorithm to use
      * @param boundary
      */
-    public WiredEncodingHandler(ThresholdAlgorithm thresholdAlgorithm, Double boundary, boolean encodingDebugMode) {
-        super(thresholdAlgorithm, boundary, encodingDebugMode);
+    public WiredEncodingHandler(ThresholdAlgorithm thresholdAlgorithm, ResidualPostProcessor residualPostProcessor, Double boundary, boolean encodingDebugMode) {
+        super(thresholdAlgorithm, residualPostProcessor, boundary, encodingDebugMode);
     }
 
     /**

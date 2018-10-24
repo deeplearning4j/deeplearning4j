@@ -250,7 +250,7 @@ public class SharedTrainingWrapper {
                     }
                 }
 
-                val handler = new WiredEncodingHandler(trainingConfiguration.getThresholdAlgorithm(), null, trainingConfiguration.isEncodingDebugMode());
+                val handler = new WiredEncodingHandler(trainingConfiguration.getThresholdAlgorithm(), trainingConfiguration.getResidualPostProcessor(), null, trainingConfiguration.isEncodingDebugMode());
 
                 // TODO: if there will be no code difference - use the same class instead of 2 different classes
                 val modelParamsSupplier = new ModelParamsConsumer();

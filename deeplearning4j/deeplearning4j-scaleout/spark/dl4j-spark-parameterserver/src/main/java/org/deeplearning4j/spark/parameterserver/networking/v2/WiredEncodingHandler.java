@@ -20,6 +20,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,8 +44,8 @@ public class WiredEncodingHandler extends EncodingHandler {
      *
      * @param thresholdAlgorithm The threshold algorithm to use
      */
-    public WiredEncodingHandler(ThresholdAlgorithm thresholdAlgorithm, Double boundary, boolean encodingDebugMode) {
-        super(thresholdAlgorithm, boundary, encodingDebugMode);
+    public WiredEncodingHandler(ThresholdAlgorithm thresholdAlgorithm, ResidualPostProcessor residualPostProcessor, Double boundary, boolean encodingDebugMode) {
+        super(thresholdAlgorithm, residualPostProcessor, boundary, encodingDebugMode);
     }
 
     /**
