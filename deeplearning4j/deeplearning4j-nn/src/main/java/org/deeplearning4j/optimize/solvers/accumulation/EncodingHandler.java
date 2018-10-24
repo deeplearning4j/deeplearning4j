@@ -61,6 +61,7 @@ public class EncodingHandler implements MessageHandler {
     protected ThreadLocal<AtomicDouble> lastSparsityRatio = new ThreadLocal<>();
     protected ThreadLocal<AtomicDouble> currentThreshold = new ThreadLocal<>();
     protected ThreadLocal<AtomicBoolean> bitmapMode = new ThreadLocal<>();
+    protected ThreadLocal<AtomicBoolean> lastIterWasDense = new ThreadLocal<>();    //Same as bitmapMode but lagging by 1 iter
 
     public EncodingHandler(final ThresholdAlgorithm thresholdAlgorithm, final ResidualPostProcessor residualPostProcessor,
                            Double boundary, boolean encodingDebugMode){
@@ -95,9 +96,9 @@ public class EncodingHandler implements MessageHandler {
         Boolean lastWasDense = null;
         Double lastSparsity = null;
         if(lastThreshold.get() != null){
-            //Null on first iteration in an epoch
+            //Keep null on first iteration in an epoch, or get for later iterations
             lastThr = lastThreshold.get().get();
-            lastWasDense = bitmapMode.get().get();
+            lastWasDense = lastIterWasDense.get().get();
             lastSparsity = lastWasDense || lastSparsityRatio.get() == null ? null : lastSparsityRatio.get().get();
         }
 
@@ -105,13 +106,14 @@ public class EncodingHandler implements MessageHandler {
 
         //Determine current threshold to use:
         double currThreshold = thresholdAlgorithm.get().calculateThreshold(iteration, epoch, lastThr, lastWasDense, lastSparsity, updates);
-        if (bitmapMode.get() == null) { //Initialize values for this thread
+        if (bitmapMode.get() == null) { //Initialize values for this thread on first iteration (per epoch)
             bitmapMode.set(new AtomicBoolean(true));
             currentThreshold.set(new AtomicDouble(currThreshold));
             iterations.set(new AtomicLong(0));
             lastStep.set(new AtomicLong(0));
 
             lastThreshold.set(new AtomicDouble(currThreshold));
+            lastIterWasDense.set(new AtomicBoolean());
         }
 
         lastThreshold.get().set(currThreshold);
@@ -138,6 +140,7 @@ public class EncodingHandler implements MessageHandler {
                     lastSparsityRatio.set(new AtomicDouble(0.0));
                 else
                     lastSparsityRatio.get().set(0.0);
+                lastIterWasDense.get().set(false);
                 return null;
             }
 
@@ -156,14 +159,17 @@ public class EncodingHandler implements MessageHandler {
 
                 applyPostProcessor(iteration, epoch, currThreshold, updates);
                 lastSparsityRatio.set(null);
+                lastIterWasDense.get().set(true);
                 return encoded;
             } else {
+                //Record sparsity for use in calculation
                 double sparsityRatio = encLen / (double)updates.length();
                 if(lastSparsityRatio.get() == null){
                     lastSparsityRatio.set(new AtomicDouble(sparsityRatio));
                 } else {
                     lastSparsityRatio.get().set(sparsityRatio);
                 }
+                lastIterWasDense.get().set(false);
             }
         } else {
             //Dense bitmap updates
@@ -178,6 +184,7 @@ public class EncodingHandler implements MessageHandler {
             }
 
             lastSparsityRatio.set(null);
+            lastIterWasDense.get().set(true);
         }
 
         //if (encoded != null)
