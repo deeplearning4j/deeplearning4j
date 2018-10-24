@@ -67,9 +67,7 @@ public class ResidualClippingPostProcessor implements ResidualPostProcessor {
             //TODO replace with single op once we have GPU version
             BooleanIndexing.replaceWhere(residualVector, currClip, Conditions.greaterThan(currClip));
             BooleanIndexing.replaceWhere(residualVector, -currClip, Conditions.lessThan(-currClip));
-            log.info("Applied residual clipping: iter={}, epoch={}, lastThreshold={}, multiple={}, clipValue={}", iteration, epoch, lastThreshold, thresholdMultipleClipValue, currClip);
-        } else {
-            log.info("SKIPPED applying residual clipping: iter={}, epoch={}, lastThreshold={}, multiple={}", iteration, epoch, lastThreshold, thresholdMultipleClipValue);
+            log.debug("Applied residual clipping: iter={}, epoch={}, lastThreshold={}, multiple={}, clipValue={}", iteration, epoch, lastThreshold, thresholdMultipleClipValue, currClip);
         }
     }
 

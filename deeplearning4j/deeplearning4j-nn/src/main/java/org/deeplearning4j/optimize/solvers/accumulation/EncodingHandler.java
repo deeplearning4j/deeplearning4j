@@ -198,12 +198,10 @@ public class EncodingHandler implements MessageHandler {
 
     public void applyPostProcessor(int iteration, int epoch, Double lastThreshold, INDArray residuals){
         if(initialResidualPostProcessor == null) {
-            log.info("No residual post processor to apply - iter {}, epoch {}", iteration, epoch);
             return; //No op
         }
 
         residualPostProcessor.get().processResidual(iteration, epoch, lastThreshold, residuals);
-        log.info("Applied residual post processor at - iter {}, epoch {}", iteration, epoch);
     }
 
     @Deprecated
@@ -289,7 +287,7 @@ public class EncodingHandler implements MessageHandler {
         if(d == 0){
             return "0.0";
         }
-        if(d >= -0.1 && d < 100){
+        if((d <= -0.1 && d > -100) ||(d >= 0.1 && d < 100)){
             if(formatter2.get() == null){
                 formatter2.set(new DecimalFormat("0.###"));
             }

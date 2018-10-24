@@ -292,6 +292,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder()
                 .thresholdAlgorithm(thresholdAlgorithm)
+                .residualPostProcessor(residualPostProcessor)
                 .voidConfiguration(voidConfiguration).debugLongerIterations(debugLongerIterations)
                 .numberOfWorkersPerNode(numWorkersPerNode)
                 .prefetchSize(workerPrefetchBatches)
