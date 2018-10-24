@@ -21,6 +21,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.NDArrayCompressor;
@@ -29,6 +30,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.text.DecimalFormat;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -55,6 +60,7 @@ public class EncodingHandler implements MessageHandler {
     protected AtomicInteger atomicBoundary = new AtomicInteger(-1);
 
     protected ThreadLocal<ThresholdAlgorithm> thresholdAlgorithm = new ThreadLocal<>();
+    protected Map<Long,ThresholdAlgorithm> allThreadThresholdAlgorithms = new ConcurrentHashMap<>();    //All instances - we need to average them at the end once training is complete
     protected ThreadLocal<ResidualPostProcessor> residualPostProcessor = new ThreadLocal<>();
     protected ThreadLocal<AtomicLong> iterations = new ThreadLocal<>();
     protected ThreadLocal<AtomicLong> lastStep = new ThreadLocal<>();
@@ -88,6 +94,7 @@ public class EncodingHandler implements MessageHandler {
             synchronized (this){
                 //Synchronized in case threshold algorithm has INDArrays and we're running on GPU - don't want race condition for shifting devices
                 thresholdAlgorithm.set(initialThresholdAlgorithm.clone());
+                allThreadThresholdAlgorithms.put(Thread.currentThread().getId(), thresholdAlgorithm.get());
                 if(initialResidualPostProcessor != null) {
                     //May be null for no post processing
                     residualPostProcessor.set(initialResidualPostProcessor.clone());
@@ -328,5 +335,35 @@ public class EncodingHandler implements MessageHandler {
         }
         DecimalFormat df = formatter.get();
         return df.format(d).replace('E','e');
+    }
+
+    /**
+     * This should ONLY be called once all training threads have completed
+     * @return
+     */
+    public ThresholdAlgorithm getAverageThresholdAlgorithm(){
+        Collection<ThresholdAlgorithm> c = this.allThreadThresholdAlgorithms.values();
+        if(c.isEmpty()){
+            return null;
+        }
+        if(c.size() == 1){
+            return c.iterator().next();
+        }
+        Iterator<ThresholdAlgorithm> iter = c.iterator();
+        ThresholdAlgorithmReducer r = null;
+        while(iter.hasNext()){
+            ThresholdAlgorithm ta = iter.next();
+            if(r == null){
+                r = ta.newReducer();
+            }
+            r.add(ta);
+        }
+        ThresholdAlgorithm ta = r.getFinalResult();
+
+        //Remove the old instances in preparation for use in next epoch, if required
+        thresholdAlgorithm = new ThreadLocal<>();
+        allThreadThresholdAlgorithms.clear();
+
+        return ta;
     }
 }

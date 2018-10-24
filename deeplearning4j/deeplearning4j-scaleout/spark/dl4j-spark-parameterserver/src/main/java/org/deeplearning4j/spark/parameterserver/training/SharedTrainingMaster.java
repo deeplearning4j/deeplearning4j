@@ -113,7 +113,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected boolean collectTrainingStats;
     protected int rddDataSetNumExamples;
     protected long debugLongerIterations = 0L;
-    protected boolean logMinibatchesPerWorker = true;
+    protected boolean logMinibatchesPerWorker = false;
     protected boolean encodingDebugMode = false;
 
     protected ThresholdAlgorithm thresholdAlgorithm;

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.optimize.solvers.accumulation;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -57,6 +58,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
     protected ThreadLocal<INDArray> accumulator = new ThreadLocal<>();
 
     protected int parties;
+    @Getter
     protected MessageHandler handler;
     protected List<BlockingQueue<INDArray>> messages = new ArrayList<>();
     protected List<MemoryWorkspace> workspaces = new ArrayList<>();

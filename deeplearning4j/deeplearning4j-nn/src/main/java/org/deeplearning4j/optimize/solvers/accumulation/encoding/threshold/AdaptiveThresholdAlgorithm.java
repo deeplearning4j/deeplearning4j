@@ -17,6 +17,7 @@
 package org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
@@ -66,7 +67,9 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
     private final double maxTargetSparsity;
     private final double decayRate;
 
+    @Getter
     private double lastThreshold = Double.NaN;
+    @Getter
     private double lastSparsity = Double.NaN;
 
     /**

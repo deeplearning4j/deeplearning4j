@@ -31,6 +31,9 @@ import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
+import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
+import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
@@ -502,12 +505,19 @@ public class SharedTrainingWrapper {
                 updaterState = ((MultiLayerNetwork) originalModel).getUpdater().getStateViewArray();
             }
 
+            //Get threshold algorithm instances from each thread, and average them - they may have state that needs
+            // to be averaged and persisted, to avoid starting threshold adaption from scratch
+            EncodedGradientsAccumulator accum = (EncodedGradientsAccumulator) wrapper.getGradientsAccumulator();
+            EncodingHandler mh = (EncodingHandler) accum.getHandler();
+            ThresholdAlgorithm taAveraged = mh.getAverageThresholdAlgorithm();
+
             // FIXME: fill stats here
             return SharedTrainingResult.builder().aggregationsCount(1).scoreSum(originalModel.score())
                             .updaterStateArray(updaterState).listenerMetaData(new ArrayList<>())
                             .listenerStaticInfo(new ArrayList<>()).listenerUpdates(new ArrayList<>())
                             .minibatchesPerExecutor(Collections.singletonMap(SparkUtils.getSparkExecutorId(), iteratorDataSetCount.get().get()))
-                    .build();
+                            .thresholdAlgorithm(taAveraged)
+                            .build();
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {
