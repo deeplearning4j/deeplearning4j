@@ -16,11 +16,13 @@
 
 package org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold;
 
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+@EqualsAndHashCode(exclude = {"lastThreshold", "lastSparsity"})
 public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
 
     private final double initialThreshold;
@@ -38,7 +40,7 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
                 "sparsities must be > 0. Got minTargetSparsity=%s, maxTargetSparsity=%s", minTargetSparsity, maxTargetSparsity );
         Preconditions.checkArgument(minTargetSparsity <= maxTargetSparsity, "Min target sparsity must be less than or equal " +
                 "to max target sparsity. Got minTargetSparsity=%s, maxTargetSparsity=%s", minTargetSparsity, maxTargetSparsity );
-        Preconditions.checkArgument(decayRate > 0 && decayRate <= 0.5, "Decay rate must be a number in range 0 (exclusive) to 0.5 (inclusive). " +
+        Preconditions.checkArgument(decayRate >= 0.5 && decayRate < 1.0, "Decay rate must be a number in range 0.5 (inclusive) to 1.0 (exclusive). " +
                 "Usually decay rate is in range 0.95 to 0.999. Got decay rate: %s", decayRate);
 
         this.initialThreshold = initialThreshold;
@@ -71,7 +73,6 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
 
 
         this.lastSparsity = prevSparsity;
-        this.lastThreshold = adaptFromThreshold;
 
         if(prevSparsity >= minTargetSparsity && prevSparsity <= maxTargetSparsity){
             //OK: keep the last threshold unchanged
@@ -82,14 +83,13 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
             //Sparsity ratio was too small (too sparse) - decrease threshold to increase number of values communicated
 
             double retThreshold = decayRate * adaptFromThreshold;
-            lastThreshold = adaptFromThreshold;
+            this.lastThreshold = retThreshold;
             return retThreshold;
         }
 
         if(prevSparsity > maxTargetSparsity){
             //Sparsity ratio was too high (too dense) - increase threshold to decrease number of values communicated
             double retThreshold = 1.0/decayRate * adaptFromThreshold;
-            this.lastSparsity = prevSparsity;
             this.lastThreshold = retThreshold;
             return retThreshold;
         }
@@ -103,7 +103,7 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
     }
 
     @Override
-    public ThresholdAlgorithm clone() {
+    public AdaptiveThresholdAlgorithm clone() {
         AdaptiveThresholdAlgorithm ret = new AdaptiveThresholdAlgorithm(initialThreshold, minTargetSparsity, maxTargetSparsity, decayRate);
         ret.lastThreshold = lastThreshold;
         ret.lastSparsity = lastSparsity;
