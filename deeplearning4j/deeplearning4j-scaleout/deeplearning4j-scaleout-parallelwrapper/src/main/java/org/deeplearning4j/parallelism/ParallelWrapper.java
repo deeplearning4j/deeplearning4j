@@ -906,11 +906,21 @@ public class ParallelWrapper implements AutoCloseable {
             return this;
         }
 
+        /**
+         * Set the threshold algorithm. Not used for single machine training (only for PW used in a distributed setting),
+         * and should not be set by users in most cases.
+         * @param thresholdAlgorithm Threshold algorithm to use
+         */
         public Builder thresholdAlgorithm(ThresholdAlgorithm thresholdAlgorithm){
             this.thresholdAlgorithm = thresholdAlgorithm;
             return this;
         }
 
+        /**
+         * Set the residual post processor algorithm. Not used for single machine training (only for PW used in a
+         * distributed setting), and should not be set by users in most cases.
+         * @param residualPostProcessor Residual post processor to use
+         */
         public Builder residualPostProcessor(ResidualPostProcessor residualPostProcessor){
             this.residualPostProcessor = residualPostProcessor;
             return this;

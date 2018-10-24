@@ -23,6 +23,13 @@ import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgori
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+/**
+ * A simple fixed threshold algorithm, not adaptive in any way.
+ * An adaptive threshold algorithm such as {@link AdaptiveThresholdAlgorithm} should be preferred for better performance
+ * in most cases.
+ *
+ * @author Alex Black
+ */
 @AllArgsConstructor
 @Data
 public class FixedThresholdAlgorithm implements ThresholdAlgorithm {

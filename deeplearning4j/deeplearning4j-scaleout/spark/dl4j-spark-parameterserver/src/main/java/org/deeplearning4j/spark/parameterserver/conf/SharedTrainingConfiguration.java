@@ -21,8 +21,6 @@ import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
-import org.deeplearning4j.optimize.solvers.accumulation.encoding.residual.NoOpResidualClippingPostProcessor;
-import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
 import java.io.Serializable;

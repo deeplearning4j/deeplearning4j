@@ -41,7 +41,6 @@ import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostPro
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.residual.ResidualClippingPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.AdaptiveThresholdAlgorithm;
-import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
@@ -915,7 +914,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
          * @param rddDataSetNumExamples When fitting from an {@code RDD<DataSet>} how many examples are in each dataset?
          */
         public Builder(int rddDataSetNumExamples) {
-            this(new FixedThresholdAlgorithm(1e-3), rddDataSetNumExamples);
+            this(new AdaptiveThresholdAlgorithm(), rddDataSetNumExamples);
         }
 
         /**
@@ -924,7 +923,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
          * @param rddDataSetNumExamples When fitting from an {@code RDD<DataSet>} how many examples are in each dataset?
          */
         public Builder(@NonNull VoidConfiguration voidConfiguration, int rddDataSetNumExamples) {
-            this(voidConfiguration, new FixedThresholdAlgorithm(1e-3), rddDataSetNumExamples);
+            this(voidConfiguration, new AdaptiveThresholdAlgorithm(), rddDataSetNumExamples);
         }
 
         /**
