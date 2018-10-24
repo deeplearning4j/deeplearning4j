@@ -35,7 +35,7 @@ namespace functions {
         public:
 #ifdef __CUDACC__
             template<typename OpClass>
-            __device__ inline static void execCuda(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays,  T *realArguments, int numRealArguments) {
+            __device__ inline static void execCuda(X **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays,  X *realArguments, int numRealArguments) {
                 OpClass::executeAggregateCuda(arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
             }
 #endif

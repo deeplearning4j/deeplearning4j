@@ -1477,7 +1477,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
             target = this;
 
         if (target->dataType() != this->dataType())
-            throw std::runtime_error("NDArray::applyTransform SameOps: target array must the same data type as original array");
+            throw std::runtime_error("NDArray::applyTransform SameOps: target array must have the same data type as original array");
 
         NativeOpExcutioner::execTransformSame(op, this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
     }
