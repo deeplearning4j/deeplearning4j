@@ -26,7 +26,26 @@ import java.io.Serializable;
  */
 public interface ThresholdAlgorithm extends Serializable {
 
-    double calculateThreshold(int iteration, int epoch, Double lastThreshold, INDArray updatesPlusResidual);
+    /**
+     *
+     * @param iteration           Current neural network training iteration
+     * @param epoch               Current neural network training epoch
+     * @param lastThreshold       The encoding threshold used in the last iteration - if available. May be null for first
+     *                            iteration in an epoch (where no 'last iteration' value is available)
+     * @param lastWasDense        Whether the last encoding was dense (true) or sparse (false). May be null for the first
+     *                            iteration in an epoch (where no 'last iteration' value is available)
+     * @param lastSparsityRatio   The sparsity ratio of the last iteration. Sparsity ratio is defined as
+     *                            numElements(encoded)/length(updates). A sparsity ratio of 1.0 would mean all entries
+     *                            present in encoded representation; a sparsity ratio of 0.0 would mean the encoded vector
+     *                            did not contain any values.
+     *                            Note: when the last encoding was dense, lastSparsityRatio is always null - this means
+     *                            that the sparsity ratio is larger than 1/16 = 0.0625
+     * @param updatesPlusResidual The actual array (updates plus residual) that will be encoded using the threshold
+     *                            calculated/returned by this method
+     * @return
+     */
+    double calculateThreshold(int iteration, int epoch, Double lastThreshold, Boolean lastWasDense, Double lastSparsityRatio,
+                              INDArray updatesPlusResidual);
 
     ThresholdAlgorithmReducer newReducer();
 

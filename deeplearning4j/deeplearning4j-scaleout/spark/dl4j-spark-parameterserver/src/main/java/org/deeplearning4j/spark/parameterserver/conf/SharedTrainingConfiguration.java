@@ -57,17 +57,8 @@ public class SharedTrainingConfiguration implements Serializable {
     @Builder.Default
     protected int bufferSize = 0;
 
-//    // TODO: decide, if we abstract this one out, or not
-//    @Builder.Default protected double threshold = 1e-3;
-//    @Builder.Default protected double thresholdStep = 1e-5;
-//    @Builder.Default protected double minThreshold = 1e-5;
-//    @Builder.Default protected double stepTrigger = 0.0;
-//    @Builder.Default protected int stepDelay = 3;
-//    @Builder.Default protected int shakeFrequency = 0;
-    @Builder.Default
-    protected ThresholdAlgorithm thresholdAlgorithm = new FixedThresholdAlgorithm(1e-3);
-    @Builder.Default
-    protected ResidualPostProcessor residualPostProcessor = new NoOpResidualClippingPostProcessor();
+    protected ThresholdAlgorithm thresholdAlgorithm;
+    protected ResidualPostProcessor residualPostProcessor;
     protected String messageHandlerClass;
 
 

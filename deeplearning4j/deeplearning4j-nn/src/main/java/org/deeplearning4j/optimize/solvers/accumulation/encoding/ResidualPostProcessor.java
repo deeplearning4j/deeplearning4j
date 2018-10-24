@@ -29,7 +29,7 @@ import java.io.Serializable;
  *
  * @author Alex Black
  */
-public interface ResidualPostProcessor extends Serializable {
+public interface ResidualPostProcessor extends Serializable, Cloneable {
 
     /**
      * @param iteration      Current iteration

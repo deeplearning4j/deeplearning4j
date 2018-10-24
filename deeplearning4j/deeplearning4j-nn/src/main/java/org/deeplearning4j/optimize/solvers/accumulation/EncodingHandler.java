@@ -19,6 +19,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -46,7 +47,8 @@ public class EncodingHandler implements MessageHandler {
     protected transient GradientsAccumulator accumulator;
     protected ThresholdAlgorithm initialThresholdAlgorithm;
     protected ThreadLocal<ThresholdAlgorithm> thresholdAlgorithm;
-//    protected ThreadLocal<ResidualPostProcessor> residualPostProcessor;
+    protected ResidualPostProcessor initialResidualPostProcessor;
+    protected ThreadLocal<ResidualPostProcessor> residualPostProcessor;
     protected Double boundary = null;
     protected boolean encodingDebugMode;
     protected NDArrayCompressor compressor;
@@ -55,6 +57,7 @@ public class EncodingHandler implements MessageHandler {
     protected ThreadLocal<AtomicLong> iterations = new ThreadLocal<>();
     protected ThreadLocal<AtomicLong> lastStep = new ThreadLocal<>();
     protected ThreadLocal<AtomicDouble> lastThreshold = new ThreadLocal<>();
+    protected ThreadLocal<AtomicDouble> lastSparsityRatio = new ThreadLocal<>();
     protected ThreadLocal<AtomicDouble> currentThreshold = new ThreadLocal<>();
     protected ThreadLocal<AtomicBoolean> bitmapMode = new ThreadLocal<>();
 
@@ -89,12 +92,19 @@ public class EncodingHandler implements MessageHandler {
         }
 
         Double lastThr = null;
+        Boolean lastWasDense = null;
+        Double lastSparsity = null;
         if(lastThreshold.get() != null){
+            //Null on first iteration in an epoch
             lastThr = lastThreshold.get().get();
+            lastWasDense = bitmapMode.get().get();
+            lastSparsity = lastWasDense ? null : lastSparsityRatio.get().get();
         }
 
+
+
         //Determine current threshold to use:
-        double currThreshold = thresholdAlgorithm.get().calculateThreshold(iteration, epoch, lastThr, updates);
+        double currThreshold = thresholdAlgorithm.get().calculateThreshold(iteration, epoch, lastThr, lastWasDense, lastSparsity, updates);
         if (bitmapMode.get() == null) { //Initialize values for this thread
             bitmapMode.set(new AtomicBoolean(true));
             currentThreshold.set(new AtomicDouble(currThreshold));
@@ -102,6 +112,7 @@ public class EncodingHandler implements MessageHandler {
             lastStep.set(new AtomicLong(0));
 
             lastThreshold.set(new AtomicDouble(currThreshold));
+
         }
 
         if(lastThreshold.get() == null) {
@@ -144,6 +155,7 @@ public class EncodingHandler implements MessageHandler {
 
                 Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
 
+                applyPostProcessor(iteration, epoch, currThreshold, updates);
                 return encoded;
             }
         } else {
@@ -163,7 +175,23 @@ public class EncodingHandler implements MessageHandler {
         //log.info("Encoded length: {}, Original/encoded ratio: {}", encoded.data().length(), String.format("%.3f", encoded.data().length() * 100.0 / updates.lengthLong()));
         //log.info("Thread: {}; Encoded length: {}", Thread.currentThread().getId(), Arrays.toString(encoded.data().asInt()));
 
+        applyPostProcessor(iteration, epoch, currThreshold, updates);
         return encoded;
+    }
+
+    public void applyPostProcessor(int iteration, int epoch, Double lastThreshold, INDArray residuals){
+        if(initialResidualPostProcessor == null)
+            return; //No op
+
+        if(residualPostProcessor.get() == null){
+            synchronized (this){
+                //Synchronized in case residual post processor has INDArrays and we're running on GPU - don't want race condition for shifting devices
+                residualPostProcessor.set(initialResidualPostProcessor.clone());
+            }
+        }
+
+        residualPostProcessor.get().processResidual(iteration, epoch, lastThreshold, residuals);
+        log.info("Applied post processor: {}", residualPostProcessor.get());
     }
 
     @Deprecated

@@ -30,7 +30,7 @@ public class FixedThresholdAlgorithm implements ThresholdAlgorithm {
     private final double threshold;
 
     @Override
-    public double calculateThreshold(int iteration, int epoch, Double lastThreshold, INDArray updatesPlusResidual) {
+    public double calculateThreshold(int iteration, int epoch, Double lastThreshold, Boolean lastWasDense, Double lastSparsityRatio, INDArray updatesPlusResidual) {
         return threshold;
     }
 
