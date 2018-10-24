@@ -241,7 +241,7 @@ public class SmartFancyBlockingQueueTest {
 
     @Test
     public void testSFBQ_5() throws Exception {
-        final val queue = new SmartFancyBlockingQueue(277893232, Nd4j.create(5, 5));
+        final val queue = new SmartFancyBlockingQueue(16, Nd4j.create(5, 5));
         final val barrier = new CyclicBarrier(4);
 
         // writers are just spamming updates every X ms
@@ -253,11 +253,13 @@ public class SmartFancyBlockingQueueTest {
                     while (true) {
                         try {
                             val n = RandomUtils.nextInt(8, 64);
-                            for (int i = 0; i < n; i++) {
-                                queue.put(Nd4j.createUninitialized(5, 5).assign(n));
+                            for (int i = 1; i < n+1; i++) {
+                                val arr = Nd4j.createUninitialized(5, 5).assign(i);
+                                Nd4j.getExecutioner().commit();
+                                queue.put(arr);
                             }
 
-                            ThreadUtils.uncheckedSleep(5);
+                            ThreadUtils.uncheckedSleep(10);
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
                         }
@@ -282,22 +284,27 @@ public class SmartFancyBlockingQueueTest {
                 public void run() {
                     try {
                         int cnt = 0;
-                        while (cnt < 250) {
+                        int fnt = 0;
+                        while (cnt < 1500) {
 
                             if (!queue.isEmpty()) {
                                 while (!queue.isEmpty()) {
                                     val m = queue.poll();
 
                                     val arr = m.unsafeDuplication(true);
-                                    means[f] += arr.meanNumber().longValue();
+                                    val mean = arr.meanNumber().longValue();
+                                    assertNotEquals(0, mean);
+                                    means[f] += mean;
+
+                                    cnt++;
                                 }
-                                cnt++;
                             }
 
                             barrier.await();
 
-                            if (f == 0)
+                            if (f == 0) {
                                 queue.registerConsumers(4);
+                            }
 
                             barrier.await();
                         }

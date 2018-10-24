@@ -100,12 +100,10 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
             smartLock.writeLock().acquire();
 
             if (backingQueue.size() > decompressionThreshold || collapsedMode.get()) {
-                collapsedMode.set(true);
-
                 log.info("Collapsing updates...");
 
                 // if we're already in collapsed mode - we'll just poll back our single collapsed array and update it
-                INDArray params = smartDecompress(array, backingQueue.size() == 1 ? backingQueue.poll() : null);
+                INDArray params = smartDecompress(array, (collapsedMode.get() && backingQueue.size() == 1) ? backingQueue.poll() : null);
                 while (!backingQueue.isEmpty()) {
                     val arr = backingQueue.poll();
                     smartDecompress(arr, params);
@@ -113,6 +111,7 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
 
                 numElementsDrained.set(0);
                 numElementsReady.set(1);
+                collapsedMode.set(true);
 
                 // now just put single array back
                 super.put(params);
