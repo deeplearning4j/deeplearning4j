@@ -116,6 +116,7 @@ public class EncodingHandler implements MessageHandler {
             lastIterWasDense.set(new AtomicBoolean());
         }
 
+        currentThreshold.get().set(currThreshold);
         lastThreshold.get().set(currThreshold);
 
         //Debug output if enabled:
@@ -196,10 +197,13 @@ public class EncodingHandler implements MessageHandler {
     }
 
     public void applyPostProcessor(int iteration, int epoch, Double lastThreshold, INDArray residuals){
-        if(initialResidualPostProcessor == null)
+        if(initialResidualPostProcessor == null) {
+            log.info("No residual post processor to apply - iter {}, epoch {}", iteration, epoch);
             return; //No op
+        }
 
         residualPostProcessor.get().processResidual(iteration, epoch, lastThreshold, residuals);
+        log.info("Applied residual post processor at - iter {}, epoch {}", iteration, epoch);
     }
 
     @Deprecated
