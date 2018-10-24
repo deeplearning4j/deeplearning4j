@@ -60,6 +60,9 @@
 
 #define no_op_exec_special_cuda
 #define no_op_exec_special_accumulation_cuda
+#define no_op_exec_special_bool_cuda
+#define no_op_exec_special_same_cuda
+
 #endif
 
 
