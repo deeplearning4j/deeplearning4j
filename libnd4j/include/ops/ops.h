@@ -44,7 +44,9 @@
 #define no_op_exec_special_accumulation_same 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
 #ifdef __CUDACC__
 #include <helpers/sharedmem.h>
-#define no_op_exec_special_cuda static __device__ void execSpecialCuda(T *dx, Nd4jLong *xShapeBuffer,T *result, Nd4jLong *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_bool_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer,Z *result, Nd4jLong *resultShapeBuffer,Z *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_same_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer,Z *result, Nd4jLong *resultShapeBuffer,Z *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer,Z *result, Nd4jLong *resultShapeBuffer,Z *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_accumulation_cuda 	static inline __device__ void execSpecialCuda(T *dx, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {}
 #else
 // hacky fix for isnan/being being out of scope
@@ -511,6 +513,7 @@ namespace simdOps {
 	class And {
 	public:
 		no_op_exec_special_bool
+		no_op_exec_special_bool_cuda
 
 		op_def static Z op(X d1, X d2) {
 			return d2 + d1;
@@ -542,6 +545,7 @@ namespace simdOps {
 	class Or {
 	public:
 		no_op_exec_special_bool
+		no_op_exec_special_bool_cuda
 
 		op_def static Z op(X d1, X d2) {
 			return d2 + d1;
@@ -573,7 +577,9 @@ namespace simdOps {
 	template <typename X, typename Z>
 	class Xor {
 	public:
+		
 		no_op_exec_special_bool
+		no_op_exec_special_bool_cuda
 
 		op_def static Z op(X d1, X d2) {
 			return d2 + d1;
@@ -602,7 +608,7 @@ namespace simdOps {
 	class Not {
 	public:
 		no_op_exec_special_bool
-		no_op_exec_special_cuda
+		no_op_exec_special_bool_cuda
 
 		op_def static Z op(X d1, X d2) {
             return static_cast<Z>(0);
