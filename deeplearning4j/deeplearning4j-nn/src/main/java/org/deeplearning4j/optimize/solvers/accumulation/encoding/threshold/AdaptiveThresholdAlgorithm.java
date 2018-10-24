@@ -17,6 +17,7 @@
 package org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold;
 
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
 import org.nd4j.base.Preconditions;
@@ -51,6 +52,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * If the previous
  * @author Alex Black
  */
+@Slf4j
 @EqualsAndHashCode(exclude = {"lastThreshold", "lastSparsity"})
 public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
     public static final double DEFAULT_INITIAL_THRESHOLD = 1e-3;
@@ -138,14 +140,16 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
 
         if(prevSparsity >= minTargetSparsity && prevSparsity <= maxTargetSparsity){
             //OK: keep the last threshold unchanged
+            log.info("AdaptiveThresholdAlgorithm: iter {} epoch {}: prev sparsity {}, keeping existing threshold of {}", iteration, epoch, prevSparsity, adaptFromThreshold);
             return adaptFromThreshold;
         }
 
         if(prevSparsity < minTargetSparsity ){
             //Sparsity ratio was too small (too sparse) - decrease threshold to increase number of values communicated
-
             double retThreshold = decayRate * adaptFromThreshold;
             this.lastThreshold = retThreshold;
+            log.info("AdaptiveThresholdAlgorithm: iter {} epoch {}: prev sparsity {} < min sparsity {}, reducing threshold from {} to  {}",
+                    iteration, epoch, prevSparsity, minTargetSparsity, adaptFromThreshold, retThreshold);
             return retThreshold;
         }
 
@@ -153,6 +157,8 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
             //Sparsity ratio was too high (too dense) - increase threshold to decrease number of values communicated
             double retThreshold = 1.0/decayRate * adaptFromThreshold;
             this.lastThreshold = retThreshold;
+            log.info("AdaptiveThresholdAlgorithm: iter {} epoch {}: prev sparsity {} > max sparsity {}, reducing threshold from {} to  {}",
+                    iteration, epoch, prevSparsity, maxTargetSparsity, adaptFromThreshold, retThreshold);
             return retThreshold;
         }
 

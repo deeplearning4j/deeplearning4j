@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.optimize.solvers.accumulation.encoding.residual;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,6 +40,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
  *
  * @author Alex Black
  */
+@Slf4j
 public class ResidualClippingPostProcessor implements ResidualPostProcessor {
 
     private final double thresholdMultipleClipValue;
@@ -65,6 +67,9 @@ public class ResidualClippingPostProcessor implements ResidualPostProcessor {
             //TODO replace with single op once we have GPU version
             BooleanIndexing.replaceWhere(residualVector, currClip, Conditions.greaterThan(currClip));
             BooleanIndexing.replaceWhere(residualVector, -currClip, Conditions.lessThan(-currClip));
+            log.info("Applied residual clipping: iter={}, epoch={}, lastThreshold={}, multiple={}, clipValue={}", iteration, epoch, lastThreshold, thresholdMultipleClipValue, currClip);
+        } else {
+            log.info("SKIPPED applying residual clipping: iter={}, epoch={}, lastThreshold={}, multiple={}", iteration, epoch, lastThreshold, thresholdMultipleClipValue);
         }
     }
 
