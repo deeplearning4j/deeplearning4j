@@ -114,6 +114,7 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
 
         //handle first iteration - use initial threshold
         if(lastThreshold == null && Double.isNaN(this.lastThreshold)){
+            this.lastThreshold = initialThreshold;
             return initialThreshold;
         }
 
