@@ -56,32 +56,32 @@ namespace functions {
 #ifdef __CUDACC__
 
             __host__
-            static void executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, T *x, Nd4jLong xStride, T *result, Nd4jLong resultStride, T scalar, T *extraParams, Nd4jLong n);
+            static void executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void* scalar, void *extraParams, Nd4jLong n);
 
             __host__
-            static void executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams);
+            static void executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void* scalar, void *extraParams);
 
             __host__
-            static void executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, T *x, Nd4jLong *xShapeInfo, T *z, Nd4jLong *zShapeInfo, T *scalars, T *extraParams, int *dimension, int dimensionLength);
+            static void executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength);
 
 
             template<typename OpType>
             __device__
-            static void transformCuda(T *x, Nd4jLong *xShapeInfo, T *extraParams, T *z, Nd4jLong *zShapeInfo, T *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static void transformCuda(void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
             template<typename OpType>
             __device__
-            static void transformCuda(T scalar, T *dy, Nd4jLong *shapeInfo, T *params, T *result,Nd4jLong *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
-
-
-            template<typename OpType>
-            __device__
-            static void transform(Nd4jLong n, T scalar, T *dy, T *params, T *result, Nd4jLong *indexes, int *allocationBuffer, UnifiedSharedMemory *manager);
+            static void transformCuda(void* scalar, void *dy, Nd4jLong *shapeInfo, void *params, void *result,Nd4jLong *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
 
 
             template<typename OpType>
             __device__
-	        static void transformCuda(Nd4jLong n, T dx, T *dy, Nd4jLong incy, T *params, T *result, Nd4jLong resultStride, int *allocationBuffer, UnifiedSharedMemory *manager);
+            static void transform(Nd4jLong n, void* scalar, void *dy, void *params, void *result, Nd4jLong *indexes, int *allocationBuffer, UnifiedSharedMemory *manager);
+
+
+            template<typename OpType>
+            __device__
+	        static void transformCuda(Nd4jLong n, void* dx, void *dy, Nd4jLong incy, void *params, void *result, Nd4jLong resultStride, int *allocationBuffer, UnifiedSharedMemory *manager);
 
 /*
 #include "cuda/scalar_temp.cu"
