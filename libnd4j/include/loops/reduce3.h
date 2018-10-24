@@ -67,7 +67,7 @@ namespace functions {
 #ifdef __CUDACC__
             virtual __device__
 
-			inline Y opAtomic(X d1, X d2, Y *extraParamsRef) = 0;
+			inline T opAtomic(T d1, T d2, T *extraParamsRef) = 0;
 #endif
 
 #ifdef __CUDACC__
@@ -78,11 +78,11 @@ namespace functions {
      * @param extraParams
      */
 template<typename OpType>
-			static __inline__ __device__ void aggregatePartials(X **sPartialsRef, Nd4jLong tid, Nd4jLong numItems, X *extraParamsRef) {
+			static __inline__ __device__ void aggregatePartials(T **sPartialsRef, Nd4jLong tid, Nd4jLong numItems, T *extraParamsRef) {
 				// start the shared memory loop on the next power of 2 less
 				// than the block size.  If block size is not a power of 2,
 				// accumulate the intermediate sums in the remainder range.
-				X *sPartials = *sPartialsRef;
+				T *sPartials = *sPartialsRef;
 				Nd4jLong floorPow2 = numItems;
 
 				if (floorPow2 & (floorPow2 - 1)) {
@@ -113,22 +113,22 @@ template<typename OpType>
                      @param result where to store the result of the reduction
              */
 			virtual __inline__ __device__ void transformNoElementWiseStride(
-					X *dx,
+					T *dx,
 					Nd4jLong *xShapeInfo,
-					X *dy,
+					T *dy,
 					Nd4jLong *yShapeInfo,
-					X *extraParams,
-					Y *result,
+					T *extraParams,
+					T *result,
 					Nd4jLong *resultShapeInfo,
 					int postProcessOrNot, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo) {
 				Nd4jLong n = shape::length(xShapeInfo);
 				int rank = shape::rank(xShapeInfo);
 
-				X* sPartials = (X *) manager->getSharedReductionBuffer(); //val.getPointer();
-				X startingVal = this->startingValue(dx);
+				T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
+				T startingVal = this->startingValue(dx);
 
 				// FIXME: this ugly fast fix.
-				__shared__ X extraZ[2];
+				__shared__ T extraZ[2];
 				if (threadIdx.x == 0) {
 					extraZ[0] = (T) 0.0;
 					extraZ[1] = (T) 0.0;
@@ -146,7 +146,7 @@ template<typename OpType>
 					sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], extraZ), extraZ);
 				}
 
-				X **sPartialsRef = (X **) &sPartials;
+				T **sPartialsRef = (T **) &sPartials;
 				aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), extraZ);
 				/**
                  * Look at something that uses the extra params
@@ -172,32 +172,32 @@ template<typename OpType>
              */
 template<typename OpType>
 			static inline __device__ void execScalarCuda(
-					X *dx,
+					T *dx,
 					Nd4jLong *xShapeInfo,
-					X *dy,
+					T *dy,
 					Nd4jLong *yShapeInfo,
-					X *extraParams,
-					Y *result,
-					Nd4jLong *resultShapeInfo, int *allocationPointer, X *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo) {
+					T *extraParams,
+					T *result,
+					Nd4jLong *resultShapeInfo, int *allocationPointer, T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo) {
 
 
 //		SharedMemory <T> val;
-				X *sPartials = (X *) manager->getSharedReductionBuffer(); // val.getPointer();
+				T *sPartials = (T *) manager->getSharedReductionBuffer(); // val.getPointer();
 
 				// FIXME: this ugly fast fix.
-				__shared__ X extraZ[3];
+				__shared__ T extraZ[3];
 				if (threadIdx.x == 0) {
 					extraZ[0] = (T) 0.0f;
 					extraZ[1] = (T) 0.0f;
 
 					if (extraParams != NULL) {
                         extraZ[2] = extraParams[0];
-                    } else extraZ[2] = (X) 0.0f;
+                    } else extraZ[2] = (T) 0.0f;
 				}
 
 				__syncthreads();
 
-				X startingVal = OpType::startingValue(dx);
+				T startingVal = OpType::startingValue(dx);
 				Nd4jLong length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
@@ -233,9 +233,9 @@ template<typename OpType>
 					    rank = shape::rank(xShapeInfo);
 					}
 					__syncthreads();
-					X startingVal = OpType::startingValue(dx);
+					T startingVal = OpType::startingValue(dx);
 
-					X *sPartials = (X *) manager->getSharedReductionBuffer();
+					T *sPartials = (T *) manager->getSharedReductionBuffer();
 
 					Nd4jLong xCoords[MAX_RANK];
 					Nd4jLong yCoords[MAX_RANK];
@@ -255,7 +255,7 @@ template<typename OpType>
 
 				__syncthreads();
 
-				X **sPartialsRef = (X **) &sPartials;
+				T **sPartialsRef = (T **) &sPartials;
 				aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), extraZ);
 
 				__syncthreads();
@@ -264,7 +264,7 @@ template<typename OpType>
 					__shared__ bool amLast;
 					int rank = shape::rank(xShapeInfo);
 					tid = threadIdx.x;
-					X *extraBuffer = (X *) allocationPointer;
+					T *extraBuffer = (T *) allocationPointer;
 					if (threadIdx.x == 0) {
 						reductionBuffer[blockIdx.x] = sPartials[0];
 						extraBuffer[blockIdx.x] = extraZ[0];
@@ -325,12 +325,12 @@ template<typename OpType>
 			template<typename OpType>
 			__device__
 			static inline void transformAll(
-					X *dx,
+					T *dx,
 					Nd4jLong *xShapeInfo,
-					X *dy,
+					T *dy,
 					Nd4jLong *yShapeInfo,
-					X *extraParams,
-					Y *result,
+					T *extraParams,
+					T *result,
 					Nd4jLong *resultShapeInfo,
 					int *dimension,
 					int dimensionLength,
@@ -343,14 +343,14 @@ template<typename OpType>
 					Nd4jLong *yOffsets) {
 
                         // initialize partials first
-                        X *sPartials = (X *) manager->getSharedReductionBuffer();
-                        X startingVal = OpType::startingValue(dx);
+                        T *sPartials = (T *) manager->getSharedReductionBuffer();
+                        T startingVal = OpType::startingValue(dx);
 				        sPartials[threadIdx.x] = startingVal;
-				        X *tempX = sPartials + blockDim.x;
+				        T *tempX = sPartials + blockDim.x;
 
                         const int maxBlock = blockDim.x;
 
-				        __shared__ X extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
+				        __shared__ T extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
 
                         __shared__ int xTadLength;
                         __shared__ int yTadLength;
@@ -384,8 +384,10 @@ template<typename OpType>
                         }
                         __syncthreads();
 
+
                         Nd4jLong xCoord[MAX_RANK];
                         Nd4jLong yCoord[MAX_RANK];
+
 
                         int limit = xTadLength / maxBlock;
 				        if (xTadLength % maxBlock > 0)
@@ -393,7 +395,7 @@ template<typename OpType>
 
 
                         for (int r = blockIdx.x; r < xTads; r += blockDim.x * gridDim.x) {
-                            X *x = dx + xOffsets[r];
+                            T *x = dx + xOffsets[r];
 
                             if (threadIdx.x < xTadLength && threadIdx.x < maxBlock) {
                                 if (shape::order(xTadShapeInfo) == 'c') {
@@ -408,13 +410,13 @@ template<typename OpType>
                             }
 
                             for (int g = 0; g < yTads; g++) {
-                                X *y = dy + yOffsets[g];
+                                T *y = dy + yOffsets[g];
 
                                 int ri = (r * yTads) + g;
 
                                 sPartials[threadIdx.x] = startingVal;
                                 if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) {
-					                extraZ[threadIdx.x] = (X) startingVal;
+					                extraZ[threadIdx.x] = (T) startingVal;
 				                }
 				                __syncthreads();
 
@@ -452,7 +454,7 @@ template<typename OpType>
 							        __syncthreads();
                                 }
 
-                                X **sPartialsRef = (X **) &sPartials;
+                                T **sPartialsRef = (T **) &sPartials;
 				                aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, xTadLength), extraZ);
 
                                 __syncthreads();
@@ -478,12 +480,12 @@ template<typename OpType>
 template<typename OpType>
 			__device__
 			static inline void transform(
-					X *dx,
+					T *dx,
 					Nd4jLong *xShapeInfo,
-					X *dy,
+					T *dy,
 					Nd4jLong *yShapeInfo,
-					X *extraParams,
-					Y *result,
+					T *extraParams,
+					T *result,
 					Nd4jLong *resultShapeInfo,
 					int *dimension,
 					int dimensionLength,
@@ -505,11 +507,11 @@ template<typename OpType>
 				__shared__ int yElementWiseStride;
 				//shared memory space for storing intermediate results
 				//SharedMemory <T> val;
-				X *sPartials = (X *) manager->getSharedReductionBuffer(); //val.getPointer();
-				X init = OpType::startingValue(dx);
+				T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
+				T init = OpType::startingValue(dx);
 				sPartials[threadIdx.x] = init;
 
-				__shared__ X extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
+				__shared__ T extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
 
 				//length for the tad
 
@@ -519,9 +521,9 @@ template<typename OpType>
 				__shared__ int tadElementWiseStride;
 				__shared__ int yTadElementWiseStride;
 
-			    X startingVal = OpType::startingValue(dx);
+			    T startingVal = OpType::startingValue(dx);
 
-				X reduction = OpType::startingValue(dx);
+				T reduction = OpType::startingValue(dx);
 				if (threadIdx.x == 0) {
 					if (resultShapeInfo != nullptr)
 						resultLength = shape::length(resultShapeInfo);
@@ -568,7 +570,7 @@ template<typename OpType>
 					    int xOffsetForTad = tadOffsets[i];
 
 					    if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) {
-					            extraZ[threadIdx.x] = (X) startingVal;
+					            extraZ[threadIdx.x] = (T) startingVal;
 				        }
 				        __syncthreads();
 
@@ -583,7 +585,7 @@ template<typename OpType>
 						}
 						__syncthreads();
 
-                        X **sPartialsRef = (X **) &sPartials;
+                        T **sPartialsRef = (T **) &sPartials;
 				        aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
 
                         __syncthreads();
@@ -599,7 +601,7 @@ template<typename OpType>
 							int yOffsetForTad = yTadOffsets[i];
 
 							if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) {
-					            extraZ[threadIdx.x] = (X) startingVal;
+					            extraZ[threadIdx.x] = (T) startingVal;
 				            }
 				            __syncthreads();
 
@@ -611,7 +613,7 @@ template<typename OpType>
 							}
 							__syncthreads();
 
-                            X **sPartialsRef = (X **) &sPartials;
+                            T **sPartialsRef = (T **) &sPartials;
 				            aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
 
                             __syncthreads();
@@ -671,7 +673,7 @@ template<typename OpType>
 							auto yOffsetForTad = yTadOffsets[i];
 
 							if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) {
-					            extraZ[threadIdx.x] = (X) startingVal;
+					            extraZ[threadIdx.x] = (T) startingVal;
 				            }
 				            __syncthreads();
 
@@ -686,7 +688,7 @@ template<typename OpType>
 							}
 							__syncthreads();
 
-                            X **sPartialsRef = (X **) &sPartials;
+                            T **sPartialsRef = (T **) &sPartials;
 				            aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
 
                             __syncthreads();
@@ -710,12 +712,12 @@ template<typename OpType>
             __device__
 			static inline void exec(
 				const int opNum,
-				X *dx,
+				T *dx,
 				Nd4jLong *xShapeInfo,
-				X *dy,
+				T *dy,
 				Nd4jLong *yShapeInfo,
-				X *extraParams,
-				Y *result,
+				T *extraParams,
+				T *result,
 				Nd4jLong *resultShapeInfo,
 				int *dimension,
 				int dimensionLength,
@@ -732,12 +734,12 @@ template<typename OpType>
             __device__
 			static inline void execAllCuda(
 				const int opNum,
-				X *dx,
+				T *dx,
 				Nd4jLong *xShapeInfo,
-				X *dy,
+				T *dy,
 				Nd4jLong *yShapeInfo,
-				X *extraParams,
-				Y *result,
+				T *extraParams,
+				T *result,
 				Nd4jLong *resultShapeInfo,
 				int *dimension,
 				int dimensionLength,
@@ -755,15 +757,15 @@ template<typename OpType>
 			__device__
 			static inline void execScalarCuda(
 				const int opNum,
-				X *dx,
+				T *dx,
 				Nd4jLong *xShapeInfo,
-				X *dy,
+				T *dy,
 				Nd4jLong *yShapeInfo,
-				X *extraParams,
-				Y *result,
+				T *extraParams,
+				T *result,
 				Nd4jLong *resultShapeInfo,
 				int * allocationPointer,
-				X *reductionBuffer,
+				T *reductionBuffer,
 				UnifiedSharedMemory *manager,
 				Nd4jLong *tadOnlyShapeInfo) {
                             DISPATCH_BY_OPNUM_T(execScalarCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, reductionBuffer, manager, tadOnlyShapeInfo), REDUCE3_OPS);
