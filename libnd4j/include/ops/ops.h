@@ -3103,11 +3103,11 @@ namespace simdOps {
 
 #ifdef __CUDACC__
         __device__
-		static inline X opAtomic(X d1, Y d2, X *extraParams) {
+		static inline Y opAtomic(X d1, X d2, Y *extraParams) {
 			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0],num(d1, d2));
 			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1], denom(d1, d2));
 
-			return static_cast<X>(0.0f);
+			return static_cast<Y>(0.0f);
 		}
 #endif
 
@@ -3154,7 +3154,7 @@ namespace simdOps {
 
 #ifdef __CUDACC__
         __device__
-		static inline X opAtomic(X d1, Y d2, X *extraParams) {
+		static inline Y opAtomic(X d1, X d2, Y *extraParams) {
 			return op(d1, d2, extraParams);
 		}
 #endif
@@ -3254,7 +3254,7 @@ namespace simdOps {
 
 #ifdef __CUDACC__
 		__device__
-		static inline X opAtomic(X d1, Y d2, X *extraParamsRef) {
+		static inline Y opAtomic(X d1, X d2, Y *extraParamsRef) {
 			return op(d1, d2, extraParamsRef);
 		}
 #endif
@@ -3315,7 +3315,7 @@ namespace simdOps {
 
 #ifdef __CUDACC__
         __device__
-		static inline X opAtomic(X d1, Y d2, X *extraParamsRef) {
+		static inline Y opAtomic(X d1, X d2, Y *extraParamsRef) {
 			return op(d1, d2, extraParamsRef);
 		}
 #endif
@@ -3362,7 +3362,7 @@ namespace simdOps {
 
 #ifdef __CUDACC__
 			__device__
-			static  inline X opAtomic(X d1, Y d2, X *extraParamsRef) {
+			static  inline Y opAtomic(X d1, X d2, Y *extraParamsRef) {
 			return op(d1, d2, extraParamsRef);
 		}
 #endif
