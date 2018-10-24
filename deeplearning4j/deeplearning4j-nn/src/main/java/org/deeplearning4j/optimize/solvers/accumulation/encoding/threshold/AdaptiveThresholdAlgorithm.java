@@ -128,7 +128,9 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
         } else if(!Double.isNaN(this.lastSparsity)){
             prevSparsity = this.lastSparsity;
         } else {
-            throw new IllegalStateException("Unexpected state: not first iteration but no last sparsity value is available");
+            throw new IllegalStateException("Unexpected state: not first iteration but no last sparsity value is available: iteration=" +
+                    iteration + ", epoch=" + epoch + ", lastThreshold=" + lastThreshold + ", lastWasDense=" + lastWasDense +
+                    ", lastSparsityRatio=" + lastSparsityRatio + ", this.lastSparsity=" + this.lastSparsity);
         }
 
 
