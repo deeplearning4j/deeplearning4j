@@ -304,14 +304,14 @@ namespace functions {
                 auto x = reinterpret_cast<X *>(vx);
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-                auto startingVal = OpType::startingValue(x);
+                Z startingVal = OpType::startingValue(x);
                 if (xElementWiseStride == 1) {
                     if (length < ELEMENT_THRESHOLD) {
-                        auto local = OpType::startingValue(x);
+                        Z local = OpType::startingValue(x);
 
 // FIXME: proper reduction to be used here
                         for (Nd4jLong i = 0; i < length; i++) {
-                            auto curr = OpType::op(x[i], extraParams);
+                            Z curr = OpType::op(x[i], extraParams);
                             local = OpType::update(local, curr, extraParams);
 
                         }
@@ -319,7 +319,7 @@ namespace functions {
                     }
 
                     else {
-                        auto finalVal = startingVal;
+                        Z finalVal = startingVal;
                         BlockInformation info(length, ELEMENT_THRESHOLD);
                         auto blocks = new X[info.threads];
 
