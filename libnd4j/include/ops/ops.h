@@ -46,8 +46,11 @@
 #include <helpers/sharedmem.h>
 #define no_op_exec_special_bool_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer,Z *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_same_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, X *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, X *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer,Z *result, Nd4jLong *resultShapeBuffer,Z *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_accumulation_cuda 	static inline __device__ void execSpecialCuda(T *dx, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer,Z *result, Nd4jLong *resultShapeBuffer,Z *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}																							    
+#define no_op_exec_special_accumulation_same_cuda static inline __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, X *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_accumulation_long_cuda static inline __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeInfo, X *extraParams, Z *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Z *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_accumulation_cuda static inline __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeInfo, Z *extraParams, Z *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Z *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {}
+
 #else
 // hacky fix for isnan/being being out of scope
 //#ifdef IOS
@@ -2235,7 +2238,7 @@ namespace simdOps {
 	class Sum {
 	public:
         no_op_exec_special_accumulation_same
-        no_op_exec_special_accumulation_cuda
+        no_op_exec_special_accumulation_same_cuda
 
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0.0f);
@@ -2349,7 +2352,7 @@ namespace simdOps {
     class ASum {
     public:
         no_op_exec_special_accumulation_same
-        no_op_exec_special_accumulation_cuda
+        no_op_exec_special_accumulation_same_cuda
 
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
@@ -2432,7 +2435,7 @@ namespace simdOps {
 	class Prod {
 	public:
         no_op_exec_special_accumulation_same
-        no_op_exec_special_accumulation_cuda
+        no_op_exec_special_accumulation_same_cuda
 
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(1);
@@ -2570,7 +2573,7 @@ namespace simdOps {
 	class Max {
 	public:
         no_op_exec_special_accumulation_same
-        no_op_exec_special_accumulation_cuda
+        no_op_exec_special_accumulation_same_cuda
 
 		op_def static X startingValue(const X *input) {
 			return input[0];
@@ -2657,7 +2660,7 @@ namespace simdOps {
     class AMax {
     public:
         no_op_exec_special_accumulation_same
-        no_op_exec_special_accumulation_cuda
+        no_op_exec_special_accumulation_same_cuda
 
         op_def static X startingValue(const X *input) {
             return input[0];
@@ -2694,7 +2697,7 @@ namespace simdOps {
 	class AMin {
 	public:
         no_op_exec_special_accumulation_same
-        no_op_exec_special_accumulation_cuda
+        no_op_exec_special_accumulation_same_cuda
 
 		op_def static X startingValue(const X *input) {
 			return input[0];
@@ -2730,7 +2733,7 @@ namespace simdOps {
     class Min {
     public:
         no_op_exec_special_accumulation_same
-        no_op_exec_special_accumulation_cuda
+        no_op_exec_special_accumulation_same_cuda
 
         op_def static X startingValue(const X *input) {
             return input[0];
@@ -3037,11 +3040,11 @@ namespace simdOps {
 		}
 
 #ifdef __CUDACC__
-		static _CUDA_D inline X opAtomic(X d1, Y d2, T *extraParams) {
-			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0],static_cast<X>(d1 * d1));
-			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1],static_cast<X>(d2 * d2));
+		static _CUDA_D inline Y opAtomic(X d1, X d2, Y *extraParams) {
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0],static_cast<Y>(d1 * d1));
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1],static_cast<Y>(d2 * d2));
 
-			return (d1 * d2);
+			return static_cast<Y>(d1 * d2);
 		}
 #endif
 
@@ -3200,8 +3203,8 @@ namespace simdOps {
         }
 
 #ifdef __CUDACC__
-	static _CUDA_D inline X opAtomic(X d1, Y d2, T *extraParams) {
-			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0], nd4j::math::nd4j_abs<X>(d1) * nd4j::math::nd4j_abs<X>(d1));
+	static _CUDA_D inline Y opAtomic(X d1, X d2, Y *extraParams) {
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0], nd4j::math::nd4j_abs<Y>(d1) * nd4j::math::nd4j_abs<Y>(d1));
 			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1], nd4j::math::nd4j_abs<Y>(d2) * nd4j::math::nd4j_abs<Y>(d2));
 
 			return (d1 * d2);
@@ -3412,7 +3415,7 @@ namespace simdOps {
 
 #ifdef __CUDACC__
 		__device__
-		static inline T opAtomic(T d1, T d2, T *extraParamsRef) {
+		static inline Y opAtomic(X d1, X d2, Y *extraParamsRef) {
 			return op(d1, d2, extraParamsRef);
 		}
 #endif
