@@ -241,7 +241,7 @@ public class SmartFancyBlockingQueueTest {
 
     @Test
     public void testSFBQ_5() throws Exception {
-        final val queue = new SmartFancyBlockingQueue(16, Nd4j.create(5, 5));
+        final val queue = new SmartFancyBlockingQueue(277893232, Nd4j.create(5, 5));
         final val barrier = new CyclicBarrier(4);
 
         // writers are just spamming updates every X ms
@@ -284,11 +284,6 @@ public class SmartFancyBlockingQueueTest {
                         int cnt = 0;
                         while (cnt < 250) {
 
-                            if (f == 0)
-                                queue.registerConsumers(4);
-
-                            barrier.await();
-
                             if (!queue.isEmpty()) {
                                 while (!queue.isEmpty()) {
                                     val m = queue.poll();
@@ -298,6 +293,11 @@ public class SmartFancyBlockingQueueTest {
                                 }
                                 cnt++;
                             }
+
+                            barrier.await();
+
+                            if (f == 0)
+                                queue.registerConsumers(4);
 
                             barrier.await();
                         }
