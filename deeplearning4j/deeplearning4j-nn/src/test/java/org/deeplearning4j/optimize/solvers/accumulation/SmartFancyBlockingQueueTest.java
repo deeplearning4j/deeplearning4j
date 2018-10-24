@@ -285,7 +285,7 @@ public class SmartFancyBlockingQueueTest {
                     try {
                         int cnt = 0;
                         int fnt = 0;
-                        while (cnt < 1500) {
+                        while (cnt < 1000) {
 
                             if (!queue.isEmpty()) {
                                 while (!queue.isEmpty()) {
@@ -293,16 +293,18 @@ public class SmartFancyBlockingQueueTest {
 
                                     val arr = m.unsafeDuplication(true);
                                     val mean = arr.meanNumber().longValue();
-                                    assertNotEquals(0, mean);
+                                    assertNotEquals("Failed at cycle: " + cnt,0, mean);
                                     means[f] += mean;
 
                                     cnt++;
                                 }
+                                barrier.await();
                             }
 
                             barrier.await();
 
                             if (f == 0) {
+                                log.info("Read cycle finished");
                                 queue.registerConsumers(4);
                             }
 

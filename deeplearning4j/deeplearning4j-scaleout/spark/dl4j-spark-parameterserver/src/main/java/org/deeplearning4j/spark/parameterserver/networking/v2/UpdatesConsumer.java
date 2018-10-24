@@ -90,7 +90,7 @@ public class UpdatesConsumer implements UpdatesHandler {
         if (updatesBuffer == null && accumulator != null) {
             synchronized (this) {
                 if (updatesBuffer == null) {
-                    updatesBuffer = new SmartFancyBlockingQueue(2560000, params);
+                    updatesBuffer = new SmartFancyBlockingQueue(32, params);
                 }
             }
         }
@@ -103,7 +103,7 @@ public class UpdatesConsumer implements UpdatesHandler {
         if (updatesBuffer == null && accumulator != null) {
             synchronized (this) {
                 if (updatesBuffer == null) {
-                    updatesBuffer = new SmartFancyBlockingQueue(2560000, params);
+                    updatesBuffer = new SmartFancyBlockingQueue(32, params);
                 }
             }
         }

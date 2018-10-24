@@ -82,10 +82,25 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
     }
 
     @Override
+    public void registerConsumers(int consumers) {
+        try {
+            smartLock.writeLock().acquire();
+
+            super.registerConsumers(consumers);
+        } catch (InterruptedException e) {
+            smartLock.writeLock().release();
+        }
+    }
+
+    @Override
     public boolean isEmpty() {
         try {
             // we use this lock to make
             smartLock.readLock().acquire();
+
+            if (currentConsumers.get() > 0)
+                synchronize(currentConsumers.get());
+
             return super.isEmpty();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
