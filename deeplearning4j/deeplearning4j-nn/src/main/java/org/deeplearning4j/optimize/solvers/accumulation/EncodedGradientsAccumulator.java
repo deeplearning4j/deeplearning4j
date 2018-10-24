@@ -22,6 +22,7 @@ import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.util.ThreadUtils;
 import org.nd4j.base.Preconditions;
@@ -92,8 +93,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
                     .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
 
-    public EncodedGradientsAccumulator(int parties, ThresholdAlgorithm thresholdAlgorithm, boolean encodingDebugMode) {
-        this(parties, new EncodingHandler(thresholdAlgorithm, 1.0, encodingDebugMode), 100 * 1024 * 1024L, 10, 1.0, encodingDebugMode);
+    public EncodedGradientsAccumulator(int parties, ThresholdAlgorithm thresholdAlgorithm, ResidualPostProcessor residualPostProcessor, boolean encodingDebugMode) {
+        this(parties, new EncodingHandler(thresholdAlgorithm, residualPostProcessor, 1.0, encodingDebugMode), DEFAULT_INITIAL_MEMORY, 10, 1.0, encodingDebugMode);
     }
 
     protected EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory,
@@ -593,9 +594,9 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     public static class Builder {
         protected int parties;
-//        protected double threshold = 1e-3;
         protected ThresholdAlgorithm thresholdAlgorithm;
-        protected long initialMemory = 100 * 1024 * 1024L;
+        protected ResidualPostProcessor residualPostProcessor;
+        protected long initialMemory = DEFAULT_INITIAL_MEMORY;
         protected int queueSize = 5;
         protected MessageHandler handler;
         protected Double boundary = null;
@@ -631,6 +632,14 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
          */
         public Builder thresholdAlgorithm(ThresholdAlgorithm thresholdAlgorithm) {
             this.thresholdAlgorithm = thresholdAlgorithm;
+            return this;
+        }
+
+        /**
+         * Set the residual post processor
+         */
+        public Builder residualPostProcessor(ResidualPostProcessor residualPostProcessor){
+            this.residualPostProcessor = residualPostProcessor;
             return this;
         }
 
@@ -675,7 +684,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         public EncodedGradientsAccumulator build() {
             if (handler == null) {
                 Preconditions.checkNotNull(thresholdAlgorithm, "Both threshold algorithm and handler are null - one or the other must be set");
-                handler = new EncodingHandler(thresholdAlgorithm, boundary, encodingDebugMode);
+                handler = new EncodingHandler(thresholdAlgorithm, residualPostProcessor, boundary, encodingDebugMode);
             }
 
             EncodedGradientsAccumulator accumulator = new EncodedGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary, encodingDebugMode);

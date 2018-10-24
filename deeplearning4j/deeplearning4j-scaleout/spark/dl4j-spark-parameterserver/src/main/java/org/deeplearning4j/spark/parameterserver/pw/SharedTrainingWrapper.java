@@ -273,6 +273,7 @@ public class SharedTrainingWrapper {
 
                     accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
                             .thresholdAlgorithm(trainingConfiguration.getThresholdAlgorithm())
+                            .residualPostProcessor(trainingConfiguration.getResidualPostProcessor())
                             .memoryParameters(bufferSize, queueSize)
                             .encodingDebugMode(trainingConfiguration.isEncodingDebugMode())
                             .build();

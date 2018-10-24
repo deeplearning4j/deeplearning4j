@@ -46,14 +46,15 @@ import java.util.concurrent.atomic.AtomicLong;
 public class EncodingHandler implements MessageHandler {
     protected transient GradientsAccumulator accumulator;
     protected ThresholdAlgorithm initialThresholdAlgorithm;
-    protected ThreadLocal<ThresholdAlgorithm> thresholdAlgorithm;
     protected ResidualPostProcessor initialResidualPostProcessor;
-    protected ThreadLocal<ResidualPostProcessor> residualPostProcessor;
+
     protected Double boundary = null;
     protected boolean encodingDebugMode;
     protected NDArrayCompressor compressor;
     protected AtomicInteger atomicBoundary = new AtomicInteger(-1);
 
+    protected ThreadLocal<ThresholdAlgorithm> thresholdAlgorithm = new ThreadLocal<>();
+    protected ThreadLocal<ResidualPostProcessor> residualPostProcessor = new ThreadLocal<>();
     protected ThreadLocal<AtomicLong> iterations = new ThreadLocal<>();
     protected ThreadLocal<AtomicLong> lastStep = new ThreadLocal<>();
     protected ThreadLocal<AtomicDouble> lastThreshold = new ThreadLocal<>();
@@ -61,10 +62,10 @@ public class EncodingHandler implements MessageHandler {
     protected ThreadLocal<AtomicDouble> currentThreshold = new ThreadLocal<>();
     protected ThreadLocal<AtomicBoolean> bitmapMode = new ThreadLocal<>();
 
-    public EncodingHandler(final ThresholdAlgorithm thresholdAlgorithm, Double boundary, boolean encodingDebugMode){
+    public EncodingHandler(final ThresholdAlgorithm thresholdAlgorithm, final ResidualPostProcessor residualPostProcessor,
+                           Double boundary, boolean encodingDebugMode){
         this.initialThresholdAlgorithm = thresholdAlgorithm;
-        this.thresholdAlgorithm = new ThreadLocal<>();
-//        this.residualPostProcessor = (residualPostProcessor == null ? null : ThreadLocal.withInitial(residualPostProcessor.clone()));
+        this.initialResidualPostProcessor = residualPostProcessor;
         this.boundary = boundary;
         this.encodingDebugMode = encodingDebugMode;
     }
@@ -76,18 +77,17 @@ public class EncodingHandler implements MessageHandler {
         compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
         if (compressor == null)
             throw new ND4JIllegalStateException("Can't find Threshold compressor implementation!");
-
-        //compressor.configure(threshold);      //TODO
     }
 
     public INDArray encodeUpdates(int iteration, int epoch, INDArray updates) {
-        // getting statistics
-        //log.info("Residual: {amean: {}; amax: {}; 50%: {}; 95%: {}; 99%: {};  99.9%: {}}; Current Threshold: [{}]", updates.ameanNumber().doubleValue(), updates.amaxNumber().doubleValue(), Transforms.abs(updates, true).percentileNumber(50).doubleValue(), Transforms.abs(updates, true).percentileNumber(90).doubleValue(), Transforms.abs(updates, true).percentileNumber(99).doubleValue(), Transforms.abs(updates, true).percentileNumber(99.9).doubleValue(), currentThreshold.get());
-
         if(thresholdAlgorithm.get() == null){
             synchronized (this){
                 //Synchronized in case threshold algorithm has INDArrays and we're running on GPU - don't want race condition for shifting devices
                 thresholdAlgorithm.set(initialThresholdAlgorithm.clone());
+                if(initialResidualPostProcessor != null) {
+                    //May be null for no post processing
+                    residualPostProcessor.set(initialResidualPostProcessor.clone());
+                }
             }
         }
 
@@ -98,7 +98,7 @@ public class EncodingHandler implements MessageHandler {
             //Null on first iteration in an epoch
             lastThr = lastThreshold.get().get();
             lastWasDense = bitmapMode.get().get();
-            lastSparsity = lastWasDense ? null : lastSparsityRatio.get().get();
+            lastSparsity = lastWasDense || lastSparsityRatio.get() == null ? null : lastSparsityRatio.get().get();
         }
 
 
@@ -112,14 +112,9 @@ public class EncodingHandler implements MessageHandler {
             lastStep.set(new AtomicLong(0));
 
             lastThreshold.set(new AtomicDouble(currThreshold));
-
         }
 
-        if(lastThreshold.get() == null) {
-            lastThreshold.set(new AtomicDouble(currThreshold));
-        } else {
-            lastThreshold.get().set(currThreshold);
-        }
+        lastThreshold.get().set(currThreshold);
 
         //Debug output if enabled:
         residualDebugOutputIfRequired(updates);
@@ -129,7 +124,7 @@ public class EncodingHandler implements MessageHandler {
         if (boundary != null && atomicBoundary.get() < 0)
             atomicBoundary.compareAndSet(-1, (int) (updates.lengthLong() * boundary));
 
-        INDArray encoded = null;
+        INDArray encoded;
 
         if (!bitmapMode.get().get()) {
             //Sparse updates
@@ -138,12 +133,16 @@ public class EncodingHandler implements MessageHandler {
 
             // updates were TOO sparse, nothing to share here
             if (encoded == null) {
+                bitmapMode.get().set(false);
+                if(lastSparsityRatio.get() == null)
+                    lastSparsityRatio.set(new AtomicDouble(0.0));
+                else
+                    lastSparsityRatio.get().set(0.0);
                 return null;
             }
 
 
             double encLen = encoded.data().getInt(0);
-            double encodingRatio = encLen * 100.0 / updates.length();
 
             // if updates are too dense - we fallback to bitmap encoding
             if (encLen >= (updates.lengthLong() / 16)) {
@@ -156,7 +155,15 @@ public class EncodingHandler implements MessageHandler {
                 Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
 
                 applyPostProcessor(iteration, epoch, currThreshold, updates);
+                lastSparsityRatio.set(null);
                 return encoded;
+            } else {
+                double sparsityRatio = encLen / (double)updates.length();
+                if(lastSparsityRatio.get() == null){
+                    lastSparsityRatio.set(new AtomicDouble(sparsityRatio));
+                } else {
+                    lastSparsityRatio.get().set(sparsityRatio);
+                }
             }
         } else {
             //Dense bitmap updates
@@ -169,6 +176,8 @@ public class EncodingHandler implements MessageHandler {
                 bitmapMode.get().set(false);
                 log.debug("Switched to threshold encoding: iteration {}, epoch {}, threshold {}, number of values {}", iteration, epoch, currThreshold, values);
             }
+
+            lastSparsityRatio.set(null);
         }
 
         //if (encoded != null)
@@ -183,15 +192,7 @@ public class EncodingHandler implements MessageHandler {
         if(initialResidualPostProcessor == null)
             return; //No op
 
-        if(residualPostProcessor.get() == null){
-            synchronized (this){
-                //Synchronized in case residual post processor has INDArrays and we're running on GPU - don't want race condition for shifting devices
-                residualPostProcessor.set(initialResidualPostProcessor.clone());
-            }
-        }
-
         residualPostProcessor.get().processResidual(iteration, epoch, lastThreshold, residuals);
-        log.info("Applied post processor: {}", residualPostProcessor.get());
     }
 
     @Deprecated
