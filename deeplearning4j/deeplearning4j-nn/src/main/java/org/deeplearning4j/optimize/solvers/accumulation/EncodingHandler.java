@@ -44,11 +44,12 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public class EncodingHandler implements MessageHandler {
+    public static final long THRESHOLD_LOG_FREQ_MS = 10000; //Every 10 sec max by default
     protected transient GradientsAccumulator accumulator;
     protected ThresholdAlgorithm initialThresholdAlgorithm;
     protected ResidualPostProcessor initialResidualPostProcessor;
 
-    protected Double boundary = null;
+    protected Double boundary;
     protected boolean encodingDebugMode;
     protected NDArrayCompressor compressor;
     protected AtomicInteger atomicBoundary = new AtomicInteger(-1);
@@ -62,6 +63,8 @@ public class EncodingHandler implements MessageHandler {
     protected ThreadLocal<AtomicDouble> currentThreshold = new ThreadLocal<>();
     protected ThreadLocal<AtomicBoolean> bitmapMode = new ThreadLocal<>();
     protected ThreadLocal<AtomicBoolean> lastIterWasDense = new ThreadLocal<>();    //Same as bitmapMode but lagging by 1 iter
+
+    protected AtomicLong lastThresholdLogTime = new AtomicLong();
 
     public EncodingHandler(final ThresholdAlgorithm thresholdAlgorithm, final ResidualPostProcessor residualPostProcessor,
                            Double boundary, boolean encodingDebugMode){
@@ -142,6 +145,7 @@ public class EncodingHandler implements MessageHandler {
                 else
                     lastSparsityRatio.get().set(0.0);
                 lastIterWasDense.get().set(false);
+                logThresholdIfReq(false, iteration, epoch);
                 return null;
             }
 
@@ -161,6 +165,7 @@ public class EncodingHandler implements MessageHandler {
                 applyPostProcessor(iteration, epoch, currThreshold, updates);
                 lastSparsityRatio.set(null);
                 lastIterWasDense.get().set(true);
+                logThresholdIfReq(true, iteration, epoch);
                 return encoded;
             } else {
                 //Record sparsity for use in calculation
@@ -193,6 +198,7 @@ public class EncodingHandler implements MessageHandler {
         //log.info("Thread: {}; Encoded length: {}", Thread.currentThread().getId(), Arrays.toString(encoded.data().asInt()));
 
         applyPostProcessor(iteration, epoch, currThreshold, updates);
+        logThresholdIfReq(lastIterWasDense.get().get(), iteration, epoch);
         return encoded;
     }
 
@@ -233,6 +239,29 @@ public class EncodingHandler implements MessageHandler {
             return true;
         } else
             return false;
+    }
+
+    protected void logThresholdIfReq(boolean denseUpdates, int iter, int epoch){
+        long now = System.currentTimeMillis();
+        long lastLog = lastThresholdLogTime.get();
+        if(lastLog + THRESHOLD_LOG_FREQ_MS <= now ){
+            if (lastThresholdLogTime.compareAndSet(lastLog, now)) { //Avoid RC for logging between multiple threads
+                String lastThresholdStr = format(lastThreshold.get().get());
+                if(denseUpdates){
+                    log.info("Threshold at iter {}, epoch {} [thread {}]: {}, DENSE updates", iter, epoch,
+                            Thread.currentThread().getId(), lastThresholdStr);
+                } else {
+                    AtomicDouble d = lastSparsityRatio.get();
+                    String lastSparsityStr;
+                    if(d == null)
+                        lastSparsityStr = "-";
+                    else
+                        lastSparsityStr = format(d.get());
+                    log.info("Threshold at iter {}, epoch {}: {}, SPARSE updates, last sparsity ratio: {}", iter, epoch,
+                            Thread.currentThread().getId(), lastThresholdStr, lastSparsityStr);
+                }
+            }
+        }
     }
 
     protected void residualDebugOutputIfRequired(INDArray residual){
