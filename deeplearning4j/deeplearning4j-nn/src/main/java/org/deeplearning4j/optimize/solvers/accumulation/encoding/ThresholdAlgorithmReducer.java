@@ -16,7 +16,9 @@
 
 package org.deeplearning4j.optimize.solvers.accumulation.encoding;
 
-public interface ThresholdAlgorithmReducer {
+import java.io.Serializable;
+
+public interface ThresholdAlgorithmReducer extends Serializable {
 
     void add(ThresholdAlgorithm instance);
 

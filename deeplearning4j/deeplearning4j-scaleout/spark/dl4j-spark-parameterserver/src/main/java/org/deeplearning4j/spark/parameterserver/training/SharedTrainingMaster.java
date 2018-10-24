@@ -40,6 +40,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.residual.ResidualClippingPostProcessor;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.AdaptiveThresholdAlgorithm;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -53,7 +54,10 @@ import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccum
 import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccumulationTuple;
 import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAggregateFunction;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
-import org.deeplearning4j.spark.parameterserver.functions.*;
+import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapDataSet;
+import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapMultiDataSet;
+import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapPaths;
+import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapPathsMDS;
 import org.deeplearning4j.spark.parameterserver.networking.v1.SilentTrainingDriver;
 import org.deeplearning4j.spark.parameterserver.networking.v2.UpdatesConsumer;
 import org.deeplearning4j.spark.util.SparkUtils;
@@ -68,9 +72,6 @@ import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
-import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
-import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
@@ -714,6 +715,15 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             }
         }
 
+        if(finalResult.getThresholdAlgorithmReducer() != null){
+            //Store the final threshold algorithm after aggregation
+            //Some threshold algorithms contain state/history, used to adapt the threshold algorithm
+            //The idea is we want to keep this history/state for next epoch, rather than simply throwing it away
+            // and starting the threshold adaption process from scratch on each epoch
+            ThresholdAlgorithm ta = finalResult.getThresholdAlgorithmReducer().getFinalResult();
+            this.thresholdAlgorithm = ta;
+        }
+
         Nd4j.getExecutioner().commit();
     }
 
@@ -876,7 +886,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
 
     public static class Builder {
-        protected ThresholdAlgorithm thresholdAlgorithm = new FixedThresholdAlgorithm(1e-3);
+        protected ThresholdAlgorithm thresholdAlgorithm = new AdaptiveThresholdAlgorithm();
         protected ResidualPostProcessor residualPostProcessor = new ResidualClippingPostProcessor(5.0, 5);
         protected int rddDataSetNumExamples = 1;
         @Deprecated
@@ -1063,16 +1073,24 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
          * Values that are too low may also impact network convergence. If convergence problems are observed, try increasing
          * or decreasing this by a factor of 10 - say 1e-4 and 1e-2.<br>
          * For technical details, see the paper <a href="https://s3-us-west-2.amazonaws.com/amazon.jobs-public-documents/strom_interspeech2015.pdf">
-         * Scalable Distributed DNN Training Using Commodity GPU Cloud Computing</a>
-         * Default: {@code FixedThresholdAlgorithm(1e-3)}
-         * @param thresholdAlgorithm
-         * @return
+         * Scalable Distributed DNN Training Using Commodity GPU Cloud Computing</a><br>
+         * See also {@link ThresholdAlgorithm}<br><br>
+         * Default: {@link AdaptiveThresholdAlgorithm} with default parameters
+         * @param thresholdAlgorithm Threshold algorithm to use to determine encoding threshold
          */
         public Builder thresholdAlgorithm(ThresholdAlgorithm thresholdAlgorithm){
             this.thresholdAlgorithm = thresholdAlgorithm;
             return this;
         }
 
+        /**
+         * Residual post processor. See {@link ResidualPostProcessor} for details.
+         *
+         * Default: {@code new ResidualClippingPostProcessor(5.0, 5)} - i.e., a {@link ResidualClippingPostProcessor}
+         * that clips the residual to +/- 5x current threshold, every 5 iterations.
+         *
+         * @param residualPostProcessor Residual post processor to use
+         */
         public Builder residualPostProcessor(ResidualPostProcessor residualPostProcessor){
             this.residualPostProcessor = residualPostProcessor;
             return this;

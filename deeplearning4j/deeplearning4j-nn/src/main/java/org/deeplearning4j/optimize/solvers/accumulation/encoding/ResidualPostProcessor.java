@@ -25,7 +25,7 @@ import java.io.Serializable;
  * sharing implementation. The motivation for post processing the residual vector is to avoid it getting too large:
  * a large residual can take many steps to communicate, which may lead to stale gradient issues.
  * Thus most ResidualPostProcessor implementations will simply decay or clip the residual vector to keep values from
- * getting too large relative to the threshold.
+ * getting too large relative to the current threshold.
  *
  * @author Alex Black
  */
