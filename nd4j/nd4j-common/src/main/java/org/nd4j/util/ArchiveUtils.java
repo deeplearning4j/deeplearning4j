@@ -71,7 +71,7 @@ public class ArchiveUtils {
                     String canonicalDestinationFile = newFile.getCanonicalPath();
 
                     if (!canonicalDestinationFile.startsWith(canonicalDestinationDirPath + File.separator)) {
-                        log.debug("Attempt to trigger ZipSlip vulnerability");
+                        log.debug("Attempt to unzip entry is outside of the target dir");
                         throw new IOException("Entry is outside of the target dir: ");
                     }
 
