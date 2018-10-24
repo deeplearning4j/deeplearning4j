@@ -891,7 +891,7 @@ namespace simdOps {
 	class Abs {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_abs<X>(d1);
@@ -903,7 +903,7 @@ namespace simdOps {
 	class Ceiling {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_ceil<X,X>(d1);
@@ -939,7 +939,7 @@ namespace simdOps {
 	class HardTanhDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return ((d1 >= static_cast<X>(-1.f) && d1 <= static_cast<X>(1.f)) ? static_cast<X>(1.f) : static_cast<X>(0.f));
@@ -969,7 +969,7 @@ namespace simdOps {
 	class Floor {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_floor<X,X>(d1);
@@ -1012,7 +1012,7 @@ namespace simdOps {
     class StabilizeFP16 {
     public:
         no_op_exec_special_same
-        no_op_exec_special_cuda
+        no_op_exec_special_same_cuda
 
         op_def static X op(X d1, X *params) {
             if (d1 <= static_cast<X>(0))
@@ -1038,7 +1038,7 @@ namespace simdOps {
 	class SpecialDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return d1 * (static_cast<X>(1.f) - d1);
@@ -1050,7 +1050,7 @@ namespace simdOps {
 	class Neg {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return -d1;
@@ -1084,7 +1084,7 @@ namespace simdOps {
 	class Reciprocal {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 //		op_def static T op(T d1) {
 //			return (T(1.0f) / d1);
 //		}
@@ -1223,7 +1223,7 @@ namespace simdOps {
 	class Round {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_round<X,X>(d1);
@@ -1408,7 +1408,7 @@ namespace simdOps {
 	class ClipByValue {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			if (d1 > params[1])
@@ -1451,7 +1451,7 @@ namespace simdOps {
 	class SwishDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			X ex = nd4j::math::nd4j_pow<X, X, X>(static_cast<X>(M_E), d1);
@@ -1475,7 +1475,7 @@ namespace simdOps {
 	class LogSigmoidDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			X ex = nd4j::math::nd4j_pow<X, X, X>(M_E, d1);
@@ -1498,7 +1498,7 @@ namespace simdOps {
 	class SigmoidDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_sigmoidderivative<X, X>(d1);
@@ -1521,7 +1521,7 @@ namespace simdOps {
     class HardSigmoidDerivative {
     public:
         no_op_exec_special_same
-        no_op_exec_special_cuda
+        no_op_exec_special_same_cuda
 
         op_def static X op(X d1, X *params) {
             return d1 < static_cast<X>(-2.5f) || d1 > static_cast<X>(2.5f) ? static_cast<X>(0.f) : static_cast<X>(0.2f);
@@ -1568,7 +1568,7 @@ namespace simdOps {
 	class Square {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return d1 * d1;
@@ -1625,7 +1625,7 @@ namespace simdOps {
 	class Sign {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return (d1 > static_cast<X>(0)) - (d1 < static_cast<X>(0));
@@ -1637,7 +1637,7 @@ namespace simdOps {
 	class TimesOneMinus {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return d1 * (static_cast<X>(1) - d1);
@@ -1664,7 +1664,7 @@ namespace simdOps {
 	class RationalTanhDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			auto dis = (static_cast<X>(2.f) / static_cast<X>(3.f)) * d1;
@@ -1703,7 +1703,7 @@ namespace simdOps {
     class RectifiedTanhDerivative {
     public:
         no_op_exec_special_same
-        no_op_exec_special_cuda
+        no_op_exec_special_same_cuda
 
         op_def static X op(X d1, X *params) {
             return d1 > static_cast<X>(0.f) ? nd4j::math::nd4j_tanhderivative<X,X>(d1) : static_cast<X>(0.f);
@@ -1725,7 +1725,7 @@ namespace simdOps {
 	class TanhDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_tanhderivative<X,X>(d1);
@@ -1736,7 +1736,7 @@ namespace simdOps {
 	class Cube {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return d1 * d1 * d1;
@@ -1748,7 +1748,7 @@ namespace simdOps {
 	class CubeDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 			op_def static X op(X d1, X *params) {
 			return 3 * d1 * d1;
@@ -1781,7 +1781,7 @@ namespace simdOps {
 	class ASinhDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return static_cast<X>(1.f) / (nd4j::math::nd4j_sqrt<X, X>(nd4j::math::nd4j_pow<X, X, X>(d1, static_cast<X>(2.f)) + static_cast<X>(1.f)));
@@ -1804,7 +1804,7 @@ namespace simdOps {
 	class ACoshDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return static_cast<X>(1.f) / (nd4j::math::nd4j_sqrt<X, X>(d1 - static_cast<X>(1.f)) * nd4j::math::nd4j_sqrt<X, X>(d1 + static_cast<X>(1.f)));
@@ -1817,7 +1817,7 @@ namespace simdOps {
 	class Ones {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return static_cast<X>(1.0f);
@@ -1842,7 +1842,7 @@ namespace simdOps {
 	class SoftSignDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_softsignderivative<X,X>(d1);
@@ -1853,7 +1853,7 @@ namespace simdOps {
     class MatchConditionBool {
     public:
         no_op_exec_special_bool
-        no_op_exec_special_cuda
+        no_op_exec_special_bool_cuda
 
         // this op return 1.0 if condition met, 0.0 otherwise
         op_def static Z op(X d1, X *extraParams) {
@@ -1986,7 +1986,7 @@ namespace simdOps {
 	class ELUDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_eluderivative<X,X>(d1);
@@ -1998,7 +1998,7 @@ namespace simdOps {
 	class RELU {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static Z op(X d1, Y d2, Z *params) {
 			auto xt = static_cast<Z>(d1);
@@ -2019,6 +2019,7 @@ namespace simdOps {
 	class RELU6 {
 	public:
 	    no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
 		op_def static Z op(X d1, Y d2, Z *params) {
 			auto relu = simdOps::RELU<X,Y,Z>::op(d1, d2, params);
@@ -2052,7 +2053,7 @@ namespace simdOps {
     class SELUDerivative {
     public:
         no_op_exec_special_same
-        no_op_exec_special_cuda
+        no_op_exec_special_same_cuda
 
         op_def static X op(X d1, X *params) {
             return d1 > static_cast<X>(0.f) ? static_cast<X>(SELU_LAMBDA) : static_cast<X>(SELU_ALPHA) * static_cast<X>(SELU_LAMBDA) * nd4j::math::nd4j_exp<X, X>(d1);
@@ -2100,7 +2101,7 @@ namespace simdOps {
 	class SinhDerivative {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_cosh<X, X>(d1);
@@ -2134,7 +2135,7 @@ namespace simdOps {
     class TanDerivative {
     public:
         no_op_exec_special_same
-        no_op_exec_special_cuda
+        no_op_exec_special_same_cuda
 
         op_def static X op(X d1, X *params) {
             return  static_cast<X>(1.f) / nd4j::math::nd4j_pow<X, X, X>(nd4j::math::nd4j_cos<X, X>(d1), static_cast<X>(2.0f));
@@ -2177,7 +2178,7 @@ namespace simdOps {
 	class Identity {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return d1;
@@ -2189,7 +2190,7 @@ namespace simdOps {
 	class Stabilize {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			X k = params[0];
@@ -2207,7 +2208,7 @@ namespace simdOps {
 	class Step {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static Z op(X d1, Y d2, Z *params) {
 			return (d1 > static_cast<X>(d2) ? static_cast<Z>(1) : static_cast<Z>(0));
@@ -2220,7 +2221,7 @@ namespace simdOps {
 	class OneMinus {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
 			return static_cast<X>(1) - d1;
@@ -3944,7 +3945,7 @@ namespace simdOps {
 	class DropOut {
 	public:
 		no_op_exec_special_same
-		no_op_exec_special_cuda
+		no_op_exec_special_same_cuda
 
 		inline _CUDA_D static X op(X d1, X *params) {
 			X prob = params[0];
@@ -4169,7 +4170,8 @@ namespace simdOps {
 	template <typename X>
 	class CompareAndSetTransform {
 	public:
-		no_op_exec_special_same;
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
 
         // op definition for Transform
