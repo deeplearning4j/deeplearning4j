@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
@@ -863,7 +864,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats && repartition != Repartition.Never)
             stats.logRepartitionEnd();
 
-        SerializableHadoopConfig config = new SerializableHadoopConfig(network.getSparkContext().hadoopConfiguration());
+        JavaSparkContext sc = (network != null ? network.getSparkContext() : graph.getSparkContext());
+        SerializableHadoopConfig config = new SerializableHadoopConfig(sc.hadoopConfiguration());
         FlatMapFunction<Iterator<String>, SharedTrainingResult> function;
         if(dsLoader != null){
             function = new SharedFlatMapPaths<>(
