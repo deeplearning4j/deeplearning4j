@@ -932,7 +932,7 @@ public class IntegrationTestRunner {
                 long pSoFar = 0;
                 String pName = null;
                 for(org.deeplearning4j.nn.api.Layer l : layers){
-                    int n = l.numParams();
+                    long n = l.numParams();
                     if(pSoFar + n < i){
                         pSoFar += n;
                     } else {
