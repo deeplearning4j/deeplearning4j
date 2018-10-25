@@ -35,6 +35,10 @@ public class RemoteFileSourceFactory implements SourceFactory {
         this.conf = (configuration == null ? null : new SerializableHadoopConfig(configuration));
     }
 
+    public RemoteFileSourceFactory(SerializableHadoopConfig configuration){
+        this.conf = configuration;
+    }
+
     @Override
     public Source getSource(String path) {
         if(fileSystem == null){

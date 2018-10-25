@@ -17,9 +17,11 @@
 package org.deeplearning4j.spark.impl.graph.evaluation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
@@ -52,8 +54,9 @@ public class IEvaluateMDSPathsFlatMapFunction
                 extends BaseFlatMapFunctionAdaptee<Iterator<String>, IEvaluation[]> {
 
     public IEvaluateMDSPathsFlatMapFunction(Broadcast<String> json, Broadcast<byte[]> params, int evalNumWorkers, int evalBatchSize,
-                                            DataSetLoader dsLoader, MultiDataSetLoader mdsLoader, IEvaluation... evaluations) {
-        super(new IEvaluateMDSPathsFlatMapFunctionAdapter(json, params, evalNumWorkers, evalBatchSize, dsLoader, mdsLoader, evaluations));
+                                            DataSetLoader dsLoader, MultiDataSetLoader mdsLoader,
+                                            Configuration configuration, IEvaluation... evaluations) {
+        super(new IEvaluateMDSPathsFlatMapFunctionAdapter(json, params, evalNumWorkers, evalBatchSize, dsLoader, mdsLoader, configuration, evaluations));
     }
 }
 
@@ -74,6 +77,7 @@ class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<
     protected int evalBatchSize;
     protected DataSetLoader dsLoader;
     protected MultiDataSetLoader mdsLoader;
+    protected SerializableHadoopConfig conf;
     protected IEvaluation[] evaluations;
 
     /**
@@ -84,13 +88,14 @@ class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<
      * @param evaluations Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
     public IEvaluateMDSPathsFlatMapFunctionAdapter(Broadcast<String> json, Broadcast<byte[]> params, int evalNumWorkers, int evalBatchSize,
-                                                   DataSetLoader dsLoader, MultiDataSetLoader mdsLoader, IEvaluation[] evaluations) {
+                                                   DataSetLoader dsLoader, MultiDataSetLoader mdsLoader, Configuration configuration, IEvaluation[] evaluations) {
         this.json = json;
         this.params = params;
         this.evalNumWorkers = evalNumWorkers;
         this.evalBatchSize = evalBatchSize;
         this.dsLoader = dsLoader;
         this.mdsLoader = mdsLoader;
+        this.conf = (configuration == null ? null : new SerializableHadoopConfig(configuration));
         this.evaluations = evaluations;
     }
 
@@ -102,10 +107,10 @@ class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<
 
         MultiDataSetIterator iter;
         if(dsLoader != null){
-            DataSetIterator dsIter = new DataSetLoaderIterator(paths, dsLoader, new RemoteFileSourceFactory());
+            DataSetIterator dsIter = new DataSetLoaderIterator(paths, dsLoader, new RemoteFileSourceFactory(conf));
             iter = new MultiDataSetIteratorAdapter(dsIter);
         } else {
-            iter = new MultiDataSetLoaderIterator(paths, mdsLoader, new RemoteFileSourceFactory());
+            iter = new MultiDataSetLoaderIterator(paths, mdsLoader, new RemoteFileSourceFactory(conf));
         }
 
         Future<IEvaluation[]> f = EvaluationRunner.getInstance().execute(evaluations, evalNumWorkers, evalBatchSize, null, iter, true, json, params);

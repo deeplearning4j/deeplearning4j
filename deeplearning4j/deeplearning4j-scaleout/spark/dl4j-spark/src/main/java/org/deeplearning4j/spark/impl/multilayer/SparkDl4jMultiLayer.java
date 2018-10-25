@@ -17,6 +17,7 @@
 package org.deeplearning4j.spark.impl.multilayer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -534,7 +535,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
             throw new RuntimeException("Error listing paths in directory", e);
         }
 
-        JavaRDD<DataSet> rdd = paths.map(new LoadDataSetFunction(loader, new RemoteFileSourceFactory()));
+        JavaRDD<DataSet> rdd = paths.map(new LoadDataSetFunction(loader, new RemoteFileSourceFactory(sc.hadoopConfiguration())));
         return doEvaluation(rdd, batchSize, new Evaluation())[0];
     }
 
@@ -765,8 +766,9 @@ public class SparkDl4jMultiLayer extends SparkListenable {
     }
 
     protected IEvaluation[] doEvaluation(JavaRDD<String> data, int evalNumWorkers, int evalBatchSize, DataSetLoader loader, MultiDataSetLoader mdsLoader, IEvaluation... emptyEvaluations){
+        Configuration config = sc.hadoopConfiguration();
         IEvaluateMDSPathsFlatMapFunction evalFn = new IEvaluateMDSPathsFlatMapFunction(sc.broadcast(conf.toJson()),
-                SparkUtils.asByteArrayBroadcast(sc, network.params()), evalNumWorkers, evalBatchSize, loader, mdsLoader, emptyEvaluations);
+                SparkUtils.asByteArrayBroadcast(sc, network.params()), evalNumWorkers, evalBatchSize, loader, mdsLoader, config, emptyEvaluations);
         Preconditions.checkArgument(evalNumWorkers > 0, "Invalid number of evaulation workers: require at least 1 - got %s", evalNumWorkers);
         JavaRDD<IEvaluation[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<>(), new IEvaluateAggregateFunction<>());
