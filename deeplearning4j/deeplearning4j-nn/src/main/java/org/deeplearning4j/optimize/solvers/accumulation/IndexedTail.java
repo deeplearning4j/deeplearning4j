@@ -38,8 +38,7 @@ public class IndexedTail {
      * @param update
      */
     public void put(@NonNull INDArray update) {
-        val idx = updatesCounter.getAndIncrement();
-        updates.put(idx, update);
+        updates.put(updatesCounter.getAndIncrement(), update);
     }
 
     /**
@@ -73,14 +72,17 @@ public class IndexedTail {
         // we're finding out, how many arrays we should provide
         val delta =  updatesCounter.get() - threadPosition.get();
 
+        // now we decompress all arrays within delta into provided array
         for (long e = threadPosition.get(); e < threadPosition.get() + delta; e++) {
             val update = updates.get(e);
 
             smartDecompress(update, array);
         }
 
+        // and shifting stuff by one
         threadPosition.addAndGet(delta);
 
+        // TODO: this call should be either synchronized, or called from outside
         maintenance();
 
         return delta > 0;
@@ -108,10 +110,15 @@ public class IndexedTail {
                 updates.remove(e);
             }
 
+            // now, making sure we won't try to delete stuff twice
             lastDeletedIndex.set(minIdx);
         }
     }
 
+    /**
+     * This method returns actual number of updates stored within tail
+     * @return
+     */
     protected int updatesSize() {
         return updates.size();
     }
