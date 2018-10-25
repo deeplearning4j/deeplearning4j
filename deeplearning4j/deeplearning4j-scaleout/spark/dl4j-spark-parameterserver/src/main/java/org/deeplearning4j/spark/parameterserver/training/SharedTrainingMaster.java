@@ -22,9 +22,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.api.loader.impl.SerializedDataSetLoader;
@@ -862,13 +864,15 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats && repartition != Repartition.Never)
             stats.logRepartitionEnd();
 
+        JavaSparkContext sc = (network != null ? network.getSparkContext() : graph.getSparkContext());
+        SerializableHadoopConfig config = new SerializableHadoopConfig(sc.hadoopConfiguration());
         FlatMapFunction<Iterator<String>, SharedTrainingResult> function;
         if(dsLoader != null){
             function = new SharedFlatMapPaths<>(
-                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), dsLoader);
+                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), dsLoader, config);
         } else {
             function = new SharedFlatMapPathsMDS<>(
-                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), mdsLoader);
+                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), mdsLoader, config);
         }
 
 

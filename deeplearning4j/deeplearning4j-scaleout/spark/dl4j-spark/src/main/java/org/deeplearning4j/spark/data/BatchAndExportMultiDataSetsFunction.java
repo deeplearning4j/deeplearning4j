@@ -21,6 +21,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.function.Function2;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.primitives.Pair;
@@ -44,20 +45,30 @@ import java.util.*;
 public class BatchAndExportMultiDataSetsFunction
                 implements Function2<Integer, Iterator<MultiDataSet>, Iterator<String>> {
 
-    private static final Configuration conf = new Configuration();
     private final int minibatchSize;
     private final String exportBaseDirectory;
     private final String jvmuid;
+    private final SerializableHadoopConfig conf;
 
     /**
      * @param minibatchSize       Minibatch size to combine examples to (if necessary)
      * @param exportBaseDirectory Base directory for exporting
      */
     public BatchAndExportMultiDataSetsFunction(int minibatchSize, String exportBaseDirectory) {
+        this(minibatchSize, exportBaseDirectory, null);
+    }
+
+    /**
+     * @param minibatchSize       Minibatch size to combine examples to (if necessary)
+     * @param exportBaseDirectory Base directory for exporting
+     * @param configuration       Hadoop Configuration
+     */
+    public BatchAndExportMultiDataSetsFunction(int minibatchSize, String exportBaseDirectory, Configuration configuration) {
         this.minibatchSize = minibatchSize;
         this.exportBaseDirectory = exportBaseDirectory;
         String fullUID = UIDProvider.getJVMUID();
         this.jvmuid = (fullUID.length() <= 8 ? fullUID : fullUID.substring(0, 8));
+        this.conf = (configuration == null ? null : new SerializableHadoopConfig(configuration));
     }
 
     @Override
@@ -138,7 +149,10 @@ public class BatchAndExportMultiDataSetsFunction
         URI uri = new URI(exportBaseDirectory
                         + (exportBaseDirectory.endsWith("/") || exportBaseDirectory.endsWith("\\") ? "" : "/")
                         + filename);
-        FileSystem file = FileSystem.get(uri, conf);
+
+        Configuration c = (conf != null ? conf.getConfiguration() : new Configuration());
+
+        FileSystem file = FileSystem.get(uri, c);
         try (FSDataOutputStream out = file.create(new Path(uri))) {
             dataSet.save(out);
         }

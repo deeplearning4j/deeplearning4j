@@ -26,6 +26,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.split.StringSplit;
 import org.datavec.api.writable.Writable;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.dataset.DataSet;
@@ -43,7 +44,7 @@ import java.util.List;
  */
 public class StringToDataSetExportFunction implements VoidFunction<Iterator<String>> {
 
-    private static final Configuration conf = new Configuration();
+    private final SerializableHadoopConfig conf;
 
     private final URI outputDir;
     private final RecordReader recordReader;
@@ -57,12 +58,18 @@ public class StringToDataSetExportFunction implements VoidFunction<Iterator<Stri
 
     public StringToDataSetExportFunction(URI outputDir, RecordReader recordReader, int batchSize, boolean regression,
                     int labelIndex, int numPossibleLabels) {
+        this(outputDir, recordReader, batchSize, regression, labelIndex, numPossibleLabels, null);
+    }
+
+    public StringToDataSetExportFunction(URI outputDir, RecordReader recordReader, int batchSize, boolean regression,
+                                         int labelIndex, int numPossibleLabels, Configuration configuration) {
         this.outputDir = outputDir;
         this.recordReader = recordReader;
         this.batchSize = batchSize;
         this.regression = regression;
         this.labelIndex = labelIndex;
         this.numPossibleLabels = numPossibleLabels;
+        this.conf = (configuration == null ? null : new SerializableHadoopConfig(configuration));
     }
 
     @Override
@@ -95,7 +102,8 @@ public class StringToDataSetExportFunction implements VoidFunction<Iterator<Stri
         String filename = "dataset_" + uid + "_" + (outputCount++) + ".bin";
 
         URI uri = new URI(outputDir.getPath() + "/" + filename);
-        FileSystem file = FileSystem.get(uri, conf);
+        Configuration c = (conf != null ? conf.getConfiguration() : new Configuration());
+        FileSystem file = FileSystem.get(uri, c);
         try (FSDataOutputStream out = file.create(new Path(uri))) {
             ds.save(out);
         }
