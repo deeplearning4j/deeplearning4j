@@ -1100,17 +1100,52 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
 
         const auto leftSide  = paddings.e<Nd4jLong>(0);
         const auto rightSide = paddings.e<Nd4jLong>(1);
-
+        if (mode == 0) {// REFLECT
+            for(int i = 0; i < outLen; ++i) {
+                if (i < leftSide) {
+                    // put
+                    output.p(i, input.e<T>(inLen - leftSide + i));
+                }
+                else if (i > outLen - rightSide - 1) {
+                    output.p(i, input.e<T>(i - inLen - leftSide));
+                }
+                else
+                    output.p(i, input.e<T>(i - leftSide));
+            }
+        }
+        else {
+            for(int i = 0; i < outLen; ++i) {
+                if (i < leftSide) {
+                    // put
+                    output.p(i, input.e<T>(leftSide - i - 1));
+                }
+                else if (i > outLen - rightSide - 1) {
+                    output.p(i, input.e<T>(inLen + outLen - i - rightSide - 1)); //
+                }
+                else
+                    output.p(i, input.e<T>(i - leftSide));
+            }
+        }
+        /*
 //#pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(int i = 0; i < outLen; ++i) {
             
-            for(int j = 0; j < leftSide; ++j)
-                output.p(j, input.e<T>(inLen - leftSide + symmBorder - j - 1));
+            for(int j = 0; j < leftSide; ++j) {
+                Nd4jLong iindex = inLen - leftSide + symmBorder + j;
+                if (iindex >= inLen ) iindex = inLen - 1;
+                if (iindex < 0) iindex = 0;
+                output.p(j, input.e<T>(iindex));
+            }
             for(int j = 0; j < inLen; ++j)
                 output.p(j + leftSide, input.e<T>(j));
-            for(int j = 0; j < rightSide; ++j)
-                output.p(leftSide + inLen + j, input.e<T>(inLen - 1 - symmBorder - j));
-        }  
+            for(int j = 0; j < rightSide; ++j) {
+                Nd4jLong iindex = inLen - 1 - symmBorder - j;
+                if (iindex < 0) iindex = 0;
+                if (iindex >= inLen) iindex = inLen - 1;
+                output.p(leftSide + inLen + j, input.e<T>(iindex));
+            }
+        }
+         */
     }
     else {
 

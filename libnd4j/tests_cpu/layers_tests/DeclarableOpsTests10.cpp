@@ -184,7 +184,7 @@ TEST_F(DeclarableOpsTests10, MirrorPad_SGO_Test_1) {
     auto pad = NDArrayFactory::create<int>('c', {1, 2}, {1, 1});
 //    auto value(10.0);
 
-    auto exp = NDArrayFactory::create<double>({5., 1., 2., 3., 4., 5., 4.});
+    auto exp = NDArrayFactory::create<double>({5., 1., 2., 3., 4., 5., 1.});
 
     nd4j::ops::mirror_pad op;
 
