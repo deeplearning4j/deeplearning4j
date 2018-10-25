@@ -206,9 +206,8 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
     BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-
-
-void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue ) {
+template<typename T>
+void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
 
     const int rank = output.rankOf();
     std::vector<int> dimsToExclude(rank);
@@ -259,10 +258,10 @@ void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray&
         else {                                                              // REFLECT or SYMMETRIC
 
             for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e)     // fill left side
-                outSubArr1.p(k, inSubArr.e(e));
+                outSubArr1.t<T>(k) = inSubArr.t<T>(e);
 
             for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side
-                outSubArr1.p(k, inSubArr.e(e));
+                outSubArr1.t<T>(k) = inSubArr.t<T>(e);
         }
     }
 
@@ -305,12 +304,12 @@ void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray&
 
                 if(numLeft != 0) {
                     NDArray tempO = outSubArr(outIdxOuter);
-                    tempO.assign(padValue.e<double>(0));                              // assign left
+                    tempO.assign(padValue);                              // assign left
                 }
 
                 if(numRight != 0) {
                     NDArray tempI = outSubArr(outIdxInner);
-                    tempI.assign(padValue.e<double>(0));                              // assign right
+                    tempI.assign(padValue);                              // assign right
                 }
             }
             else {                                                              // REFLECT or SYMMETRIC
@@ -339,7 +338,11 @@ void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray&
     }
 }
 
+void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), pad_, (mode, input, paddings, output, padValue), LIBND4J_TYPES);
+}
 
+BUILD_SINGLE_TEMPLATE(template void pad_, (const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 /*// initial values of inIdx, outIdx, dim must be equal to zero
