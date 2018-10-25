@@ -1479,7 +1479,7 @@ public class SameDiff {
                 if (!initializedTraining)
                     initializeTraining();
 
-                int i = trainingConfig.getIterationCount();
+                int iteration = trainingConfig.getIterationCount();
                 int e = trainingConfig.getEpochCount();
                 for (String s : trainingConfig.getTrainableParams()) {
                     INDArray param = variableMap.get(s).getArr();
@@ -1492,7 +1492,7 @@ public class SameDiff {
                     Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", s);
                     GradientUpdater u = updaterMap.get(s);
                     try {
-                        u.applyUpdater(reshapedView, i, e);
+                        u.applyUpdater(reshapedView, iteration, e);
                     } catch (Throwable t) {
                         throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + s
                                 + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
@@ -1518,11 +1518,16 @@ public class SameDiff {
                         param.addi(grad);
                     }
                 }
+
+                trainingConfig.incrementIterationCount();
             }
 
             if(i < numEpochs-1){
                 iter.reset();
             }
+
+            if(incrementEpochCount)
+                trainingConfig.incrementEpochCount();
         }
 
 
@@ -1533,12 +1538,6 @@ public class SameDiff {
 
 
         //Clear arrays that are for non-trainable params?
-
-
-        trainingConfig.incrementIterationCount();
-        if(incrementEpochCount)
-            trainingConfig.incrementEpochCount();
-
     }
 
     protected void initializeTraining(){
