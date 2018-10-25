@@ -100,8 +100,8 @@ DECLARE_SHAPE_FN(sruCell) {
     hShapeInfo[1] = cShapeInfo[1] = bS;
     hShapeInfo[2] = cShapeInfo[2] = inSize;
     
-    shape::updateStrides(hShapeInfo, shape::order(ct_1ShapeInfo));
-    shape::updateStrides(cShapeInfo, shape::order(ct_1ShapeInfo));
+    ShapeUtils::updateStridesAndType(hShapeInfo, ct_1ShapeInfo, shape::order(ct_1ShapeInfo));
+    ShapeUtils::updateStridesAndType(cShapeInfo, ct_1ShapeInfo, shape::order(ct_1ShapeInfo));
          
     return SHAPELIST(hShapeInfo, cShapeInfo);
 }   
