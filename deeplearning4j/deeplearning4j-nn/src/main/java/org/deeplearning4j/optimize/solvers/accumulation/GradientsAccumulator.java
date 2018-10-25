@@ -34,6 +34,9 @@ public interface GradientsAccumulator extends Serializable {
      */
     void setExternalSource(Queue<INDArray> source);
 
+
+    Queue<INDArray> getExternalSource();
+
     /**
      * This method applies accumulated updates via given StepFunction
      *

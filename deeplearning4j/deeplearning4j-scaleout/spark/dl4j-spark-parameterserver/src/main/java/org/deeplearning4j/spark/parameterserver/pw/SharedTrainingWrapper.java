@@ -32,6 +32,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
+import org.deeplearning4j.optimize.solvers.accumulation.SmartFancyBlockingQueue;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
@@ -394,6 +395,8 @@ public class SharedTrainingWrapper {
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
                     //log.info("Params at PW:  {mean: [{}]; stdev: [{}]}", originalModel.params().meanNumber().doubleValue(), originalModel.params().stdNumber().doubleValue());
+
+                    ((SmartFancyBlockingQueue) accumulator.getExternalSource()).registerConsumers(numWorkers);
 
                     wrapper = new ParallelWrapper.Builder<>(originalModel)
                                     .workers(numWorkers)

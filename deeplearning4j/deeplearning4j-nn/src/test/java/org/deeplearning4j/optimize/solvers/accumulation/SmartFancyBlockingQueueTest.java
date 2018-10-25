@@ -55,6 +55,7 @@ public class SmartFancyBlockingQueueTest {
     @Test
     public void testSFBQ_2() throws Exception {
         final val queue = new SmartFancyBlockingQueue(1285601, Nd4j.create(5, 5));
+        final val barrier = new CyclicBarrier(4);
 
         val threads = new ArrayList<Thread>();
         for (int e = 0; e< 4; e++) {
@@ -77,6 +78,20 @@ public class SmartFancyBlockingQueueTest {
                                 assertEquals(cnt, local.meanNumber().intValue());
                                 cnt++;
                             }
+
+
+                            try {
+                                barrier.await();
+
+                                if (f == 0)
+                                    queue.registerConsumers(4);
+
+                                barrier.await();
+                            } catch (InterruptedException e1) {
+                                e1.printStackTrace();
+                            } catch (BrokenBarrierException e1) {
+                                e1.printStackTrace();
+                            }
                         }
                         break;
                     }
@@ -84,13 +99,14 @@ public class SmartFancyBlockingQueueTest {
 
                 }
             });
+            t.setName("reader thread " + f);
             t.start();
             threads.add(t);
         }
 
         for (int e = 0; e < 1000; e++) {
             queue.put(Nd4j.create(5, 5).assign(e));
-            queue.registerConsumers(4);
+            Nd4j.getExecutioner().commit();
         }
 
 

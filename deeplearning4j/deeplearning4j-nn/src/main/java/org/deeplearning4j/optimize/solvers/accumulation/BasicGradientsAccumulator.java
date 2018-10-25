@@ -91,6 +91,11 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
         barrier = new CyclicBarrier(parties);
     }
 
+    @Override
+    public Queue<INDArray> getExternalSource() {
+        return gradients;
+    }
+
     /**
      * This method applies accumulated updates via given StepFunction
      *
