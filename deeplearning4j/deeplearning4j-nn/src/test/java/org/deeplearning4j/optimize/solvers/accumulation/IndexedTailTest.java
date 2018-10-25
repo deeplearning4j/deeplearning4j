@@ -175,7 +175,7 @@ public class IndexedTailTest {
             tail.put(array);
         }
         // just wait till everything consumed
-        Thread.sleep(1000);
+        Thread.sleep(2000);
         tail.notifyDead();
 
 
@@ -185,6 +185,80 @@ public class IndexedTailTest {
 
         for (int e = 0; e < numReaders; e++)
             assertEquals("Failed for reader [" + e + "]",sum, sums[e]);
+
+
+        assertEquals(0, tail.updatesSize());
+    }
+
+    @Test
+    public void testMultiThreaded_2() throws Exception {
+        val numReaders = 4;
+        val numWriters = 4;
+        final val tail = new IndexedTail(numReaders);
+
+        val sums = new long[numReaders];
+        val readers = new ArrayList<Thread>();
+        for (int e = 0; e < numReaders; e++) {
+            val f = e;
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    sums[f] = 0;
+                    while (!tail.isDead()) {
+                        while (tail.hasAynthing()) {
+                            val updates = Nd4j.create(5, 5);
+                            tail.drainTo(updates);
+                            val mean = (int) updates.getDouble(0);
+                            sums[f] += mean;
+                        }
+                    }
+                }
+            });
+
+            t.setName("reader thread " + f);
+            t.start();
+            readers.add(t);
+        }
+
+        val writers = new ArrayList<Thread>();
+        for (int e = 0; e < numWriters; e++) {
+            val f = e;
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    int sum = 0;
+                    for (int e = 0; e < 1000; e++) {
+                        val array = Nd4j.create(5, 5).assign(e+1);
+                        Nd4j.getExecutioner().commit();
+
+                        sum += (e+1);
+                        tail.put(array);
+                    }
+                }
+            });
+
+            t.setName("writer thread " + f);
+            t.start();
+            writers.add(t);
+        }
+
+
+
+        for (val t:writers)
+            t.join();
+
+        // just wait till everything consumed
+        Thread.sleep(2000);
+        tail.notifyDead();
+
+
+
+        for (val t:readers)
+            t.join();
+
+
+        for (int e = 0; e < numReaders; e++)
+            assertEquals("Failed for reader [" + e + "]",500500 * numWriters, sums[e]);
 
 
         assertEquals(0, tail.updatesSize());
