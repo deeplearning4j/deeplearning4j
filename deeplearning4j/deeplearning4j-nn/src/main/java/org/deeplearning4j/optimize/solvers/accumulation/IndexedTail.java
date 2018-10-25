@@ -41,12 +41,15 @@ public class IndexedTail {
         updates.put(updatesCounter.getAndIncrement(), update);
     }
 
+    public boolean hasAynthing() {
+        return hasAynthing(Thread.currentThread().getId());
+    }
+
     /**
      *
      * @return
      */
-    public boolean hasAynthing() {
-        val threadId = Thread.currentThread().getId();
+    public boolean hasAynthing(long threadId) {
         var threadPosition = positions.get(threadId);
 
         // will be instantiated on first call from any given thread
@@ -60,7 +63,10 @@ public class IndexedTail {
     }
 
     public boolean drainTo(@NonNull INDArray array) {
-        val threadId = Thread.currentThread().getId();
+        return drainTo(Thread.currentThread().getId(), array);
+    }
+
+    public boolean drainTo(long threadId, @NonNull INDArray array) {
         var threadPosition = positions.get(threadId);
 
         // will be instantiated on first call from any given thread

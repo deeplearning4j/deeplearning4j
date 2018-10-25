@@ -59,4 +59,30 @@ public class IndexedTailTest {
 
         assertEquals(0, tail.updatesSize());
     }
+
+
+    @Test
+    public void testPseudoMultiThreaded_1() throws Exception {
+        val tail = new IndexedTail(2);
+
+        for (int e = 0; e < 100; e++) {
+            // putting in one thread
+            val orig = Nd4j.create(5, 5).assign(e);
+            tail.put(orig);
+            Nd4j.getExecutioner().commit();
+
+            for (int t = 0; t < 2; t++) {
+                assertTrue(tail.hasAynthing(t));
+
+                val temp = Nd4j.create(5, 5);
+                val status = tail.drainTo(t, temp);
+
+                assertTrue(status);
+                assertArrayEquals(orig.shape(), temp.shape());
+                assertEquals(orig, temp);
+            }
+        }
+
+        assertEquals(0, tail.updatesSize());
+    }
 }
