@@ -228,16 +228,23 @@ public class VersionCheck {
 
             try {
                 URI uri = u.toURI();
-                Path myPath = Paths.get(uri);
-                Collection<File> list = FileUtils.listFiles(myPath.toFile(), new String[]{PROPERTIES_FILE_SUFFIX}, true);
-                if(list != null && !list.isEmpty()){
-                    for(File f : list){
-                        String s = f.getPath();
-                        if(s.endsWith(GIT_PROPERTY_FILE_SUFFIX)){
-                            out.add(f.toURI());
+                try (FileSystem fileSystem = (uri.getScheme().equals("jar") ? FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap()) : null)) {
+                    Path myPath = Paths.get(uri);
+                    Files.walkFileTree(myPath, new SimpleFileVisitor<Path>() {
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                            URI fileUri = file.toUri();
+                            String s = fileUri.toString();
+                            if (s.endsWith(GIT_PROPERTY_FILE_SUFFIX)) {
+                                out.add(fileUri);
+                            }
+                            return FileVisitResult.CONTINUE;
                         }
-                    }
+                    });
                 }
+            } catch (NoClassDefFoundError e){
+                //Should only happen on Android 7.0 or earlier - silently ignore
+                //https://github.com/deeplearning4j/deeplearning4j/issues/6609
             } catch (Throwable e){
                 //log and skip
                 log.debug("Error finding/loading version check resources", e);
