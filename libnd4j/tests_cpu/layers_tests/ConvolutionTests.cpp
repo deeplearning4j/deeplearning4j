@@ -56,7 +56,6 @@ TYPED_TEST(TypedConvolutionTests, TestConv2D_1) {
     Nd4jLong _expS[]{4, 1, 3, 5, 4, 60, 20, 4, 1, 8192, 1, 99};
     auto input = NDArrayFactory::create_<TypeParam>('c', {bS, iC, iH, iW});
     auto weights = NDArrayFactory::create_<TypeParam>('c', {oC, iC, kH, kW});
-
     for (int e = 0; e < input->lengthOf(); e++)
         input->p(e, e + 1);
 
@@ -64,6 +63,7 @@ TYPED_TEST(TypedConvolutionTests, TestConv2D_1) {
         weights->p(e, e + 1);
     weights->permutei({2,3,1,0});
 
+    ArrayOptions::setDataType(_expS, input->dataType());
     auto exp = new NDArray(_expB, _expS);
     exp->triggerAllocationFlag(false, false);
 

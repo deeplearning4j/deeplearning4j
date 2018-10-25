@@ -1707,6 +1707,8 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
         if (rowFlag)
             printBuffer(msg, limit);
         else {
+            if (msg)
+            printf("%s:\n", msg);
             std::unique_ptr<ResultSet> lastDimVectors(this->allTensorsAlongDimension({rank - 1}));
             for (size_t i = 0; i < lastDimVectors->size(); i++)
                 lastDimVectors->at(i)->printBuffer();

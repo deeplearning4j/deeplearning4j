@@ -68,7 +68,7 @@ namespace helpers {
                     }
                 }
                 else {
-                    idx = indices->e<int>(i);
+                    idx = indices->e<Nd4jLong>(i);
                     maxT = listOfOutTensors->at(idx);
                     maxT->assign(listOfTensors->at(i));
                 }
@@ -712,8 +712,8 @@ namespace helpers {
 
     // segmen min
     int segmentMinFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
-        auto tempRes = gradOut->dup();
-        segmentMinFunctor(input, indices, tempRes);
+        std::unique_ptr<NDArray> tempRes(gradOut->dup());
+        segmentMinFunctor(input, indices, tempRes.get());
         if (input->isVector()) {
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
@@ -734,7 +734,7 @@ namespace helpers {
 
             //int numOfClasses = tempRes->sizeAt(0); // number of classes
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
-
+            output->assign(0.);
             int pos = 0;
 #pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
@@ -743,12 +743,11 @@ namespace helpers {
                 NDArray* currentOut = listOfOutTensors->at(i);
                 NDArray* currentGradOut = listOfGradOuts->at(classNum);
                 for (int e = 0; e < current->lengthOf(); e++) {
-                    if (nd4j::math::nd4j_abs(listOfBPTensors->at(classNum)->e<double>(e) - current->e<double>(e) < 1.e-5))
+                    if (nd4j::math::nd4j_abs(listOfBPTensors->at(classNum)->e<double>(e) - current->e<double>(e)) < 1.e-5)
                         currentOut->p(e, currentGradOut->e<double>(e));
                 }
             }
         }
-        delete tempRes;
         return ND4J_STATUS_OK;
     }
 
@@ -864,9 +863,9 @@ namespace helpers {
                 NDArray* current = listOfTensors->at(i);
                 NDArray* currentOut = listOfOutTensors->at(i);
                 NDArray* currentGradOut = listOfGradOuts->at(classNum);
-                auto currentFFOut = listOfBPTensors->at(classNum);
+                NDArray* currentFFOut = listOfBPTensors->at(classNum);
 
-                (*currentOut) = (*currentFFOut) * (*currentGradOut) / (*current);
+                currentOut->assign((*currentFFOut) * (*currentGradOut) / (*current));
             }
         }
         delete tempRes;

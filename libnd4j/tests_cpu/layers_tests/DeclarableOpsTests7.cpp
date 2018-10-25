@@ -916,7 +916,7 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMinBP_2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentMin_2) {
     auto x = NDArrayFactory::create<double>('c', {4, 4}, {1.8, 2.5,  4.,  9.,2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.});
-    auto idx = NDArrayFactory::create<double>({0.0, 0.0, 1.0, 2.0});
+    auto idx = NDArrayFactory::create<int>({0, 0, 1, 2});
     auto exp = NDArrayFactory::create<double>('c', {3, 4}, {1.8, 2.4, 3. , 9.,2.1, 2.1, 0.7, 0.1,3. , 4.2, 2.2, 1.});
 
     //{ 2.1, 2.5,  4.,  9., 2.1, 2.1, 0.7, 0.1, 3.,  4.2, 2.2, 1.}
@@ -936,7 +936,7 @@ TEST_F(DeclarableOpsTests7, TestSegmentMin_2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentMinBP_2) {
     auto x = NDArrayFactory::create<double>('c', {4, 4}, {1.8, 2.5,  4.,  9.,2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.});
-    auto idx = NDArrayFactory::create<double>({0.0, 0.0, 1.0, 2.0});
+    auto idx = NDArrayFactory::create<Nd4jLong>({0, 0, 1, 2});
     auto eps = NDArrayFactory::create<double>('c', {3, 4}, {1., 2., 3. , 4., 5., 6., 7., 8., 9., 10., 11., 12.});
     auto exp = NDArrayFactory::create<double>('c', {4, 4}, {1., 0.,  0.,  4., 0., 2.,  3.,  4., 5., 6., 7., 8., 9., 10., 11., 12.});
 
@@ -947,9 +947,8 @@ TEST_F(DeclarableOpsTests7, TestSegmentMinBP_2) {
     auto result = op.execute({&x, &idx, &eps}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
     ASSERT_EQ(result->size(), 2);
-//    exp.printIndexedBuffer("Expect");
-//    result->at(0)->printIndexedBuffer("Output");
-//    exp.printShapeInfo("Exp Shape");
+    exp.printIndexedBuffer("Expect");
+    result->at(0)->printIndexedBuffer("Output");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
     delete result;
@@ -964,7 +963,7 @@ TEST_F(DeclarableOpsTests7, TestSegmentMin_3) {
 
 // ----------------------------------------------------------------
 
-    auto idx = NDArrayFactory::create<double>({0.0, 1.0, 1.0, 2.0});
+    auto idx = NDArrayFactory::create<int>({0, 1, 1, 2});
     auto exp = NDArrayFactory::create<double>('c', {3, 4, 4}, {91. ,  82. ,  37. ,  64. ,55.1,  46.4,  73. ,  28. ,119.1,  12.1, 112.7,  13.1,14. , 114.2,  16.2, 117. ,31. ,  22. ,  67. ,  24. ,
                  15.1,  46.4,  73. ,  28. ,109.1,  12.1,  12.7,  13.1,14. ,  14.2,  16.2,  11. ,91. ,  82. ,  37. ,  64. ,55.1,  46.4,  73. ,  28. ,119.1,  12.1, 112.7,  13.1,14. , 114.2,  16.2, 117. });
 
