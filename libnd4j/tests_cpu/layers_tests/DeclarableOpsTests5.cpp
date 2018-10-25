@@ -1602,7 +1602,7 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_1) {
     // y.printIndexedBuffer("y buffer");
 
     nd4j::ops::embedding_lookup op;
-    auto result = op.execute({&x, &y}, {}, {0});
+    auto result = op.execute({&x, &y}, {}, {0}, false, nd4j::DataType::DOUBLE);
     auto output = result->at(0);
     // x.printShapeInfo("Input");
     // output->printShapeInfo("Output");
@@ -1638,7 +1638,7 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_2) {
     // y.printIndexedBuffer("y buffer");
 
     nd4j::ops::embedding_lookup op;
-    auto result = op.execute({&x, &y}, {}, {0});
+    auto result = op.execute({&x, &y}, {}, {0}, false, nd4j::DataType::DOUBLE);
     auto output = result->at(0);
     // x.printShapeInfo("Input");
     // output->printShapeInfo("Output");
@@ -1656,7 +1656,7 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_2) {
 TEST_F(DeclarableOpsTests5, EmbeddingLookup_3) {
 
 
-    auto y = NDArrayFactory::create<double>('c', {3,2}, {5.f, 4.f, 4.f, 5.f, 3.f, 3.f});
+    auto y = NDArrayFactory::create<Nd4jLong>('c', {3,2}, {5, 4, 4, 5, 3, 3});
     auto exp = NDArrayFactory::create<double>('c', {6, 3, 3}, {
                 6, 20, 11,    21, 12, 22,    13, 23, 14,
                 5, 20, 11,    21, 12, 22,    13, 23, 14,
@@ -1679,7 +1679,7 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_3) {
 //    res = tf.nn.embedding_lookup((p1, p2, p3, p4, p5, p6, p7), ids, 'mod')
 
     nd4j::ops::embedding_lookup op;
-    auto result = op.execute({&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &y}, {}, {1});
+    auto result = op.execute({&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &y}, {}, {1}, false, nd4j::DataType::DOUBLE);
     auto output = result->at(0);
     // x.printShapeInfo("Input");
     // output->printIndexedBuffer("Output");

@@ -871,7 +871,7 @@ TEST_F(DeclarableOpsTests4, Test_TileToShape_1) {
     x.linspace(1.f);
 
     nd4j::ops::tile_to_shape op;
-    auto result = op.execute({&x},{}, {2, 4, 3});
+    auto result = op.execute({&x},{}, {2, 4, 3}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(Status::OK(), result->status());
 

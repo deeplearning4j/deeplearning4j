@@ -179,18 +179,18 @@ TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, MirrorPad_SGO_Test_1) {
 
-    auto in = NDArrayFactory::create<double>({1., 1., 1., 1., 1.});
+    auto in = NDArrayFactory::create<double>({1., 2., 3., 4., 5.});
 //    auto pad('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new long[]{1, 2});
     auto pad = NDArrayFactory::create<int>('c', {1, 2}, {1, 1});
 //    auto value(10.0);
 
-    auto exp = NDArrayFactory::create<double>({1., 1., 1., 1., 1., 1., 1.});
+    auto exp = NDArrayFactory::create<double>({5., 1., 2., 3., 4., 5., 4.});
 
     nd4j::ops::mirror_pad op;
 
     auto res = op.execute({&in, &pad}, {10.0}, {0}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    //res->at(0)->printIndexedBuffer("Mirror pad:");
+    res->at(0)->printIndexedBuffer("Mirror pad:");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;
 }
@@ -310,7 +310,7 @@ TEST_F(DeclarableOpsTests10, Where_SGO_Test_3) {
 TEST_F(DeclarableOpsTests10, Where_SGO_Test_4) {
     auto input = NDArrayFactory::create<bool>('c', {5, 1}, {false, false, false, false, false});
     //auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
-    auto exp = NDArrayFactory::create<int>('c', {4, 2}, {0, 0, 2, 0, 3, 0, 4, 0});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {4, 2}, {0, 0, 2, 0, 3, 0, 4, 0});
 
     nd4j::ops::Where op;
     auto res = op.execute({&input}, {}, {});
@@ -327,9 +327,9 @@ TEST_F(DeclarableOpsTests10, Where_SGO_Test_4) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_4) {
-    auto input = NDArrayFactory::create<double>('c', {5, 1}, {0., 0., 0., 0., 0.});
+    auto input = NDArrayFactory::create<bool>('c', {5, 1}, {false, false, false, false, false});
     //auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
-    auto exp = NDArrayFactory::create<double>('c', {4, 2}, {0., 0., 2., 0., 3., 0., 4., 0.});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {4, 2}, {0, 0, 2, 0, 3, 0, 4, 0});
 
     nd4j::ops::where_np op;
     auto res = op.execute({&input}, {}, {});
@@ -783,8 +783,8 @@ TEST_F(DeclarableOpsTests10, split_test5) {
 TEST_F(DeclarableOpsTests10, histogram_fixed_width_test1) {
 
     auto input = NDArrayFactory::create<double>('c', {2,3},{-1.f, 0.f, 1.5f, 2.f, 5.f, 15.f});
-    auto range = NDArrayFactory::create<double>('c', {2}, {0.f, 5.f});
-    auto exp = NDArrayFactory::create<double>('c', {5}, {2.f, 1.f, 1.f, 0.f, 2.f});
+    auto range = NDArrayFactory::create<double>('c', {2}, {0, 5});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {5}, {2, 1, 1, 0, 2});
 
     nd4j::ops::histogram_fixed_width op;
     auto results = op.execute({&input, &range}, {}, {5});
@@ -803,8 +803,8 @@ TEST_F(DeclarableOpsTests10, histogram_fixed_width_test1) {
 TEST_F(DeclarableOpsTests10, histogram_fixed_width_test2) {
 
     auto input = NDArrayFactory::create<double>('c', {2,3,4},{0.f, 5.f, 2.f, 1.f, -1.f, 2.f, 5.f, 3.f, 2.f, 3.f, -1.f, 5.f, 3.f, 2.f, 1.f, 4.f, 2.f, 5.f, 5.f, 5.f, 6.f, 6.f, -1.f, 0.f});
-    auto range = NDArrayFactory::create<double>('c', {2}, {0.f, 5.f});
-    auto exp = NDArrayFactory::create<double>('c', {5}, {5.f, 2.f, 5.f, 3.f, 9.f});
+    auto range = NDArrayFactory::create<double>('c', {2}, {0, 5});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {5}, {5, 2, 5, 3, 9});
 
     nd4j::ops::histogram_fixed_width op;
     auto results = op.execute({&input, &range}, {}, {5});
@@ -823,8 +823,8 @@ TEST_F(DeclarableOpsTests10, histogram_fixed_width_test2) {
 TEST_F(DeclarableOpsTests10, histogram_fixed_width_test3) {
 
     auto input = NDArrayFactory::create<double>('c', {2,3,1,4,1},{0.f, 5.f, 2.001f, 1.f, -1.f, 2.f, 5.f, 3.f, 2.999f, 3.00001f, -1.f, 3.99999f, 3.f, 2.f, 1.f, 4.f, 2.f, 5.f, 5.f, 5.f, 6.f, 6.f, -1.f, 0.00001f});
-    auto range = NDArrayFactory::create<double>('c', {1,2,1}, {0.f, 5.f});
-    auto exp = NDArrayFactory::create<double>('c', {5}, {5.f, 2.f, 5.f, 4.f, 8.f});
+    auto range = NDArrayFactory::create<double>('c', {1,2,1}, {0, 5});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {5}, {5, 2, 5, 4, 8});
 
     nd4j::ops::histogram_fixed_width op;
     auto results = op.execute({&input, &range}, {}, {5});
@@ -848,8 +848,8 @@ TEST_F(DeclarableOpsTests10, histogram_fixed_width_test4) {
                                       26.8108f,36.2937f,31.6442f,29.7221f,8.7445f,33.3301f,4.0939f,13.078f,45.1481f,29.0172f,21.6548f,35.408f,27.1861f,2.2576f,40.6804f,36.2201f,29.7352f,
                                       29.1244f,38.7444f,5.8721f,33.5983f,48.2694f,34.4161f,19.7148f,13.8085f,13.6075f,22.5042f,37.8002f,50.0543f,48.5314f,20.3694f,28.5042f,-0.4679f,4.4245f,
                                       18.9837f,40.7724f,2.7611f,44.0431f,37.186f,27.7361f,14.6001f,9.1721f,14.6087f,21.4072f,49.3344f,11.4668f,14.6171f,15.2502f,5.244f});
-    auto range = NDArrayFactory::create<double>('c', {1,2}, {0.00001f, 50.00001f});
-    auto exp = NDArrayFactory::create<double>('c', {5}, {22.f, 17.f, 24.f, 19.f, 18.f});
+    auto range = NDArrayFactory::create<double>('c', {1,2}, {0, 50});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {5}, {22, 17, 24, 19, 18});
 
     nd4j::ops::histogram_fixed_width op;
     auto results = op.execute({&input, &range}, {}, {5});
@@ -873,8 +873,9 @@ TEST_F(DeclarableOpsTests10, histogram_fixed_width_test5) {
                                       26.8108f,36.2937f,31.6442f,29.7221f,8.7445f,33.3301f,4.0939f,13.078f,45.1481f,29.0172f,21.6548f,35.408f,27.1861f,2.2576f,40.6804f,36.2201f,29.7352f,
                                       29.1244f,38.7444f,5.8721f,33.5983f,48.2694f,34.4161f,19.7148f,13.8085f,13.6075f,22.5042f,37.8002f,50.0543f,48.5314f,20.3694f,28.5042f,-0.4679f,4.4245f,
                                       18.9837f,40.7724f,2.7611f,44.0431f,37.186f,27.7361f,14.6001f,9.1721f,14.6087f,21.4072f,49.3344f,11.4668f,14.6171f,15.2502f,5.244f});
-    auto range = NDArrayFactory::create<double>('c', {1,2}, {0.00001f, 50.00001f});
-    auto exp = NDArrayFactory::create<double>('c', {5}, {23.f, 19.f, 20.f, 23.f, 15.f});
+    auto range = NDArrayFactory::create<double>('c', {1,2}, {0, 50});
+//    auto exp = NDArrayFactory::create<Nd4jLong>('c', {5}, {23, 19, 20, 23, 15}); // 23, 15, 24, 17, 21
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {5}, {23, 15, 24, 17, 21});
 
     nd4j::ops::histogram_fixed_width op;
     auto results = op.execute({&input, &range}, {}, {5});
@@ -884,6 +885,7 @@ TEST_F(DeclarableOpsTests10, histogram_fixed_width_test5) {
     auto *out = results->at(0);
 
     ASSERT_TRUE(exp.isSameShape(out));
+    out->printBuffer("5HIST");
     ASSERT_TRUE(exp.equalsTo(out));
 
     delete results;
@@ -892,9 +894,9 @@ TEST_F(DeclarableOpsTests10, histogram_fixed_width_test5) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, broadcast_to_test1) {
 
-    auto input = NDArrayFactory::create<double>('c', {3});
-    auto shape = NDArrayFactory::create<double>('c', {2}, {3.f, 3.f});
-    auto exp = NDArrayFactory::create<double>('c', {3,3}, {1.f, 2.f, 3.f,1.f, 2.f, 3.f,1.f, 2.f, 3.f});
+    auto input = NDArrayFactory::create<Nd4jLong>('c', {3});
+    auto shape = NDArrayFactory::create<int>('c', {2}, {3, 3});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {3,3}, {1, 2, 3,1, 2, 3, 1, 2, 3});
 
     input.linspace(1.f);
 

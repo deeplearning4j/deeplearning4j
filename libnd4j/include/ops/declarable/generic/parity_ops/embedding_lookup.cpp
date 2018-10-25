@@ -76,8 +76,7 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
 
 DECLARE_TYPES(embedding_lookup) {
     getOpDescriptor()
-            ->setAllowedInputTypes(0, nd4j::DataType::ANY)
-            ->setAllowedInputTypes(1, {ALL_INTS})
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
             ->setAllowedOutputTypes(nd4j::DataType::ANY);
 }
 
