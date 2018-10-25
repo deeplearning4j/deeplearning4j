@@ -3343,7 +3343,8 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test5) {
     nd4j::ops::mirror_pad op;
     auto result = op.execute({&input, &paddings}, {}, {0});
     auto output = result->at(0);
-
+    output->printBuffer("Output");
+    exp.printBuffer("Expected");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 

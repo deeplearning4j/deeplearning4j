@@ -1107,10 +1107,10 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
             for(int i = 0; i < outLen; ++i) {
                 if (i < leftSide) {
                     // put
-                    output.p(i, input.e<T>(inLen - leftSide + i));
+                    output.p(i, input.e<T>(inLen - i  - 1));
                 }
                 else if (i > outLen - rightSide - 1) {
-                    output.p(i, input.e<T>(i - inLen - leftSide));
+                    output.p(i, input.e<T>(leftSide - i + outLen - rightSide - 1));
                 }
                 else
                     output.p(i, input.e<T>(i - leftSide));
