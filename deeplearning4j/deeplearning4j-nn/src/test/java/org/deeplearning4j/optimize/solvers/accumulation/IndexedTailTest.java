@@ -60,6 +60,42 @@ public class IndexedTailTest {
 
 
     @Test
+    public void testMaxAppliedIndex_1() {
+        val tail = new IndexedTail(3);
+
+        // "registering" 3 consumers
+        assertFalse(tail.hasAynthing(11));
+        assertFalse(tail.hasAynthing(22));
+        assertFalse(tail.hasAynthing(33));
+
+        // putting 10 updates in
+        for (int e = 0; e < 10; e++) {
+            tail.put(Nd4j.create(5, 5));
+        }
+
+        assertEquals(10, tail.updatesSize());
+
+        assertEquals(0, tail.maxAppliedIndexEverywhere());
+
+        // 2 consumers consumed 2 elements, and 1 consumer consumed 3 elements
+        tail.positions.get(11L).set(2);
+        tail.positions.get(22L).set(2);
+        tail.positions.get(33L).set(3);
+
+        // all elements including this index are safe to remove, because they were consumed everywhere
+        assertEquals(2, tail.maxAppliedIndexEverywhere());
+
+        // only updates starting from 4 are safe to collapse, because 3 was consumed by one consumer
+        assertEquals(4, tail.firstNotAppliedIndexEverywhere());
+
+        // truncating stuff
+        tail.maintenance();
+
+        assertEquals(8, tail.updatesSize());
+    }
+
+
+    @Test
     public void testSingleThreaded_1() throws Exception {
         val tail = new IndexedTail(1);
 

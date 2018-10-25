@@ -55,11 +55,7 @@ public class IndexedTail {
                 val lastUpdate = updates.get(lastUpdateIndex);
 
                 // looking for max common non-applied update
-                long maxIdx = -1;
-                for (val v:positions.values()) {
-                    if (v.get() > maxIdx)
-                        maxIdx = v.get();
-                }
+                long maxIdx = firstNotAppliedIndexEverywhere();
 
                 val delta = lastUpdateIndex - maxIdx;
                 if (delta > 10) {
@@ -71,6 +67,26 @@ public class IndexedTail {
         } finally {
             lock.writeLock().unlock();
         }
+    }
+
+    protected long firstNotAppliedIndexEverywhere() {
+        long maxIdx = Long.MIN_VALUE;
+        for (val v:positions.values()) {
+            if (v.get() > maxIdx)
+                maxIdx = v.get();
+        }
+
+        return maxIdx + 1;
+    }
+
+    protected long maxAppliedIndexEverywhere() {
+        long maxIdx = Long.MAX_VALUE;
+        for (val v:positions.values()) {
+            if (v.get() < maxIdx)
+                maxIdx = v.get();
+        }
+
+        return maxIdx;
     }
 
     public boolean hasAynthing() {
@@ -196,11 +212,7 @@ public class IndexedTail {
             return;
 
         // now we should get minimal id of consumed update
-        long minIdx = Long.MAX_VALUE;
-        for (val v:positions.values()) {
-            if (v.get() < minIdx)
-                minIdx = v.get();
-        }
+        long minIdx = maxAppliedIndexEverywhere();
 
         // now we're checking, if there are undeleted updates between
         if (minIdx > lastDeletedIndex.get()) {
