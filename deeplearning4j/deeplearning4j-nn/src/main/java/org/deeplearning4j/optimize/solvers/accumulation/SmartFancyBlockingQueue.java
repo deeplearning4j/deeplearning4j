@@ -80,7 +80,7 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
 
         return result;
     }
-
+/*
     @Override
     public void registerConsumers(int consumers) {
         try {
@@ -91,7 +91,7 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
             smartLock.writeLock().release();
         }
     }
-
+*/
     @Override
     public boolean isEmpty() {
         try {
