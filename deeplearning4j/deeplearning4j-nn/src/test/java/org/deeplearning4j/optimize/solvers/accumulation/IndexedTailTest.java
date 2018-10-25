@@ -175,10 +175,15 @@ public class IndexedTailTest {
         for (int e = 0; e < 64; e++) {
             sum += (e+1);
             tail.put(Nd4j.createUninitialized(5,5).assign(e+1));
+            Nd4j.getExecutioner().commit();
         }
 
         assertTrue(tail.collapsedMode.get());
         assertEquals(1, tail.updatesSize());
+
+        val array = tail.updates.get(32L);
+        assertNotNull(array);
+        assertEquals(sum, (int) array.getDouble(0));
     }
 
 

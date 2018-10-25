@@ -100,6 +100,9 @@ public class IndexedTail {
                         updates.remove(e);
                     }
 
+                    // decode latest update
+                    smartDecompress(update, array);
+
                     // putting collapsed array back at last index
                     updates.put(lastUpdateIndex, array);
 
