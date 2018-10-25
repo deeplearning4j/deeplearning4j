@@ -4,6 +4,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
@@ -39,15 +40,24 @@ public class IndexedTail {
 
     protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
+    // fields required for collapser
     protected final boolean allowCollapse;
+    protected final long[] shape;
+    protected final int collapseThreshold = 32;
+    protected AtomicBoolean collapsedMode = new AtomicBoolean(false);
 
     public IndexedTail(int expectedConsumers) {
-        this(expectedConsumers, false);
+        this(expectedConsumers, false, null);
     }
 
-    public IndexedTail(int expectedConsumers, boolean allowCollapse) {
+    public IndexedTail(int expectedConsumers, boolean allowCollapse, long[] shape) {
         this.expectedConsumers = expectedConsumers;
         this.allowCollapse = allowCollapse;
+
+        if (allowCollapse)
+            Preconditions.checkArgument(shape != null, "shape can't be null if collapse is allowed");
+
+        this.shape = shape;
     }
 
     /**
@@ -58,29 +68,60 @@ public class IndexedTail {
         try {
             lock.writeLock().lock();
 
-            // collapser only can work if all consumers are already introduced
-            if (positions.size() >= expectedConsumers) {
-                // getting last added update
+            //if we're already in collapsed mode - we just insta-decompress
+            if (collapsedMode.get()) {
                 val lastUpdateIndex = updatesCounter.get();
                 val lastUpdate = updates.get(lastUpdateIndex);
 
+                Preconditions.checkArgument(!lastUpdate.isCompressed(), "lastUpdate should NOT be compressed during collapse mode");
+
+                smartDecompress(update, lastUpdate);
+
+                // collapser only can work if all consumers are already introduced
+            } else if (allowCollapse && positions.size() >= expectedConsumers) {
+                // getting last added update
+                val lastUpdateIndex = updatesCounter.get();
+
                 // looking for max common non-applied update
                 long maxIdx = firstNotAppliedIndexEverywhere();
+                val array = Nd4j.create(shape);
 
                 val delta = lastUpdateIndex - maxIdx;
-                if (delta > 10) {
-                    log.info("Max delta to collapse: {}", delta);
-                }
-            }
+                if (delta >= collapseThreshold) {
+                    log.info("Max delta to collapse: {}; Range: <{}...{}>", delta, maxIdx, lastUpdateIndex);
+                    for (long e = maxIdx; e < lastUpdateIndex; e++) {
+                        val u = updates.get(e);
+                        //if (u == null)
+                           // continue;
 
-            updates.put(updatesCounter.getAndIncrement(), update);
+                        smartDecompress(u, array);
+
+                        // removing updates array
+                        updates.remove(e);
+                    }
+
+                    // putting collapsed array back at last index
+                    updates.put(lastUpdateIndex, array);
+
+                    // we're saying that right now all updates within some range are collapsed into 1 update
+                    collapsedMode.set(true);
+                } else {
+                    updates.put(updatesCounter.getAndIncrement(), update);
+                }
+            } else
+                updates.put(updatesCounter.getAndIncrement(), update);
         } finally {
             lock.writeLock().unlock();
         }
     }
 
     protected long firstNotAppliedIndexEverywhere() {
-        long maxIdx = Long.MIN_VALUE;
+        long maxIdx = -1;
+
+        // if there's no updates posted yet - just return negative value
+        if (updatesCounter.get() == 0)
+            return maxIdx;
+
         for (val v:positions.values()) {
             if (v.get() > maxIdx)
                 maxIdx = v.get();
@@ -108,16 +149,9 @@ public class IndexedTail {
      * @return
      */
     public boolean hasAynthing(long threadId) {
-        var threadPosition = positions.get(threadId);
+        var threadPosition = getLocalPosition(threadId);
 
-        // will be instantiated on first call from any given thread
-        if (threadPosition == null) {
-            threadPosition = new AtomicLong(0);
-            positions.put(threadId, threadPosition);
-        }
-
-
-        return threadPosition.get() < updatesCounter.get();
+        return threadPosition < updatesCounter.get();
     }
 
     public boolean drainTo(@NonNull INDArray array) {
@@ -151,11 +185,11 @@ public class IndexedTail {
 
         // will be instantiated on first call from any given thread
         if (threadPosition == null) {
-            threadPosition = new AtomicLong(0);
+            threadPosition = new AtomicLong(-1);
             positions.put(threadId, threadPosition);
         }
 
-        return threadPosition.get();
+        return threadPosition.get() < 0 ? 0 : threadPosition.get();
     }
 
     public boolean drainTo(long threadId, @NonNull INDArray array) {
@@ -163,7 +197,7 @@ public class IndexedTail {
 
         // will be instantiated on first call from any given thread
         if (threadPosition == null) {
-            threadPosition = new AtomicLong(0);
+            threadPosition = new AtomicLong(-1);
             positions.put(threadId, threadPosition);
         }
 
@@ -175,8 +209,11 @@ public class IndexedTail {
         try {
             lock.readLock().lock();
 
+            // since drain fetches all existing updates for a given consumer
+            collapsedMode.set(false);
+
             globalPos = updatesCounter.get();
-            localPos = threadPosition.get();
+            localPos = getLocalPosition(threadId);
 
             // we're finding out, how many arrays we should provide
             delta = getDelta(threadId);
@@ -184,6 +221,9 @@ public class IndexedTail {
             // within read lock we only move references and tag updates as applied
             for (long e = localPos; e < localPos + delta; e++) {
                 val update = updates.get(e);
+
+                if (allowCollapse && update == null)
+                    continue;
 
                 // FIXME: just continue here, probably it just means that collapser was working in this position
                 if (update == null) {
@@ -195,7 +235,7 @@ public class IndexedTail {
             }
 
             // and shifting stuff by one
-            threadPosition.addAndGet(delta);
+            threadPosition.set(globalPos);
         } finally {
             lock.readLock().unlock();
         }

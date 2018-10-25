@@ -75,7 +75,7 @@ public class IndexedTailTest {
 
         assertEquals(10, tail.updatesSize());
 
-        assertEquals(0, tail.maxAppliedIndexEverywhere());
+        assertEquals(-1, tail.maxAppliedIndexEverywhere());
 
         // 2 consumers consumed 2 elements, and 1 consumer consumed 3 elements
         tail.positions.get(11L).set(2);
@@ -92,6 +92,27 @@ public class IndexedTailTest {
         tail.maintenance();
 
         assertEquals(8, tail.updatesSize());
+    }
+
+    @Test
+    public void testFirstNotApplied_1() {
+        val tail = new IndexedTail(1);
+        tail.hasAynthing();
+
+        assertEquals(-1, tail.firstNotAppliedIndexEverywhere());
+
+        tail.put(Nd4j.createUninitialized(5,5));
+
+        assertEquals(0, tail.firstNotAppliedIndexEverywhere());
+
+        tail.put(Nd4j.createUninitialized(5,5));
+        tail.put(Nd4j.createUninitialized(5,5));
+
+        assertEquals(0, tail.firstNotAppliedIndexEverywhere());
+
+        assertTrue(tail.drainTo(Nd4j.create(5, 5)));
+
+        assertEquals(4, tail.firstNotAppliedIndexEverywhere());
     }
 
 
@@ -142,6 +163,22 @@ public class IndexedTailTest {
         }
 
         assertEquals(0, tail.updatesSize());
+    }
+
+    @Test
+    public void testSingleThreaded_3() throws Exception {
+        val tail = new IndexedTail(2, true, new long[]{5, 5});
+        assertFalse(tail.hasAynthing());
+        assertFalse(tail.hasAynthing(11));
+
+        int sum = 0;
+        for (int e = 0; e < 64; e++) {
+            sum += (e+1);
+            tail.put(Nd4j.createUninitialized(5,5).assign(e+1));
+        }
+
+        assertTrue(tail.collapsedMode.get());
+        assertEquals(1, tail.updatesSize());
     }
 
 
