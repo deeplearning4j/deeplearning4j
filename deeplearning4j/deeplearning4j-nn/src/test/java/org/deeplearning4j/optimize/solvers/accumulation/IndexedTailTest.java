@@ -380,7 +380,7 @@ public class IndexedTailTest {
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    for (int i = 0; i < 128; i++) {
+                    for (int i = 0; i < 256; i++) {
 
                         val array = Nd4j.create(5, 5).assign(i+1);
                         Nd4j.getExecutioner().commit();
@@ -401,7 +401,7 @@ public class IndexedTailTest {
             t.join();
 
         // just wait till everything consumed
-        Thread.sleep(10000);
+        Thread.sleep(3000);
         tail.notifyDead();
 
         for (val t:readers)
