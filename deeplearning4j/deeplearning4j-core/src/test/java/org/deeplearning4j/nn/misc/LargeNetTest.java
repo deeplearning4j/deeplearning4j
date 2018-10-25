@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -32,8 +33,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+@Ignore //Ignored due to very large memory requirements
 public class LargeNetTest {
 
+    @Ignore
     @Test
     public void testLargeMultiLayerNetwork(){
         Nd4j.setDataType(DataBuffer.Type.FLOAT);
@@ -65,6 +68,7 @@ public class LargeNetTest {
         assertArrayEquals(expB1, net.getParam("1_b").shape());
     }
 
+    @Ignore
     @Test
     public void testLargeCompGraph(){
         Nd4j.setDataType(DataBuffer.Type.FLOAT);
