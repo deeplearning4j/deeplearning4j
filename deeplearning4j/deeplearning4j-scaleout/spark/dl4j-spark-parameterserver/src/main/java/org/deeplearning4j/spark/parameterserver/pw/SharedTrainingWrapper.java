@@ -478,7 +478,12 @@ public class SharedTrainingWrapper {
 
 
             // conditionally shutdown & reset ParallelWrapper
-            EncodedGradientsAccumulator accum = (EncodedGradientsAccumulator) wrapper.getGradientsAccumulator();        //Store before possible shutdown for below
+            EncodedGradientsAccumulator accum;
+            if(wrapper != null){
+                accum = (EncodedGradientsAccumulator) wrapper.getGradientsAccumulator();        //Store before possible shutdown for below
+            } else {
+                accum = accumulator;
+            }
             if (trainingConfiguration.isEpochReset()) {
                 wrapper.shutdown();
                 wrapper = null;
