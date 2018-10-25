@@ -636,8 +636,6 @@ public class BarnesHutTsne implements Model {
 
                 sb.append(",");
                 sb.append(word);
-                sb.append(" ");
-
                 sb.append("\n");
                 write.write(sb.toString());
 
