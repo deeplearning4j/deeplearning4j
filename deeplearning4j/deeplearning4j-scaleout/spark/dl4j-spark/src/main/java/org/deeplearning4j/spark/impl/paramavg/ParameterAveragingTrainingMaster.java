@@ -26,6 +26,7 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.storage.StorageLevel;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.api.loader.impl.SerializedDataSetLoader;
@@ -582,18 +583,19 @@ public class ParameterAveragingTrainingMaster
         if (collectTrainingStats && repartition != Repartition.Never)
             stats.logRepartitionEnd();
 
+        SerializableHadoopConfig config = new SerializableHadoopConfig(network.getSparkContext().hadoopConfiguration());
         FlatMapFunction<Iterator<String>, ParameterAveragingTrainingResult> function;
         if (network != null) {
             if(dsLoader != null){
-                function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(network), dsLoader);
+                function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(network), dsLoader, config);
             } else {
-                function = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(network), mdsLoader);
+                function = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(network), mdsLoader, config);
             }
         } else {
             if(dsLoader != null){
-                function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(graph), dsLoader);
+                function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(graph), dsLoader, config);
             } else {
-                function = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(graph), mdsLoader);
+                function = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(graph), mdsLoader, config);
             }
         }
 
