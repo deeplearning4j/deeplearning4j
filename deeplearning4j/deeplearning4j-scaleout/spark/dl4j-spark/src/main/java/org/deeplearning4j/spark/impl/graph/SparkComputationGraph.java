@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.impl.graph;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -904,8 +905,9 @@ public class SparkComputationGraph extends SparkListenable {
     }
 
     protected IEvaluation[] doEvaluation(JavaRDD<String> data, int evalNumWorkers, int evalBatchSize, DataSetLoader loader, MultiDataSetLoader mdsLoader, IEvaluation... emptyEvaluations){
+        Configuration config = sc.hadoopConfiguration();
         IEvaluateMDSPathsFlatMapFunction evalFn = new IEvaluateMDSPathsFlatMapFunction(sc.broadcast(conf.toJson()),
-                SparkUtils.asByteArrayBroadcast(sc, network.params()), evalNumWorkers, evalBatchSize, loader, mdsLoader, emptyEvaluations);
+                SparkUtils.asByteArrayBroadcast(sc, network.params()), evalNumWorkers, evalBatchSize, loader, mdsLoader, config, emptyEvaluations);
         Preconditions.checkArgument(evalNumWorkers > 0, "Invalid number of evaulation workers: require at least 1 - got %s", evalNumWorkers);
         JavaRDD<IEvaluation[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<>(), new IEvaluateAggregateFunction<>());

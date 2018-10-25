@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.util;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -568,8 +569,24 @@ public class SparkUtils {
      * @throws IOException If error occurs getting directory contents
      */
     public static JavaRDD<String> listPaths(JavaSparkContext sc, String path, boolean recursive, Set<String> allowedExtensions) throws IOException {
+        return listPaths(sc, path, recursive, allowedExtensions, sc.hadoopConfiguration());
+    }
+
+    /**
+     * List of the files in the given directory (path), as a {@code JavaRDD<String>}
+     *
+     * @param sc                Spark context
+     * @param path              Path to list files in
+     * @param recursive         Whether to walk the directory tree recursively (i.e., include subdirectories)
+     * @param allowedExtensions If null: all files will be accepted. If non-null: only files with the specified extension will be allowed.
+     *                          Exclude the extension separator - i.e., use "txt" not ".txt" here.
+     * @param config            Hadoop configuration to use. Must not be null.
+     * @return Paths in the directory
+     * @throws IOException If error occurs getting directory contents
+     */
+    public static JavaRDD<String> listPaths(@NonNull JavaSparkContext sc, String path, boolean recursive,
+                                            Set<String> allowedExtensions, @NonNull Configuration config) throws IOException {
         List<String> paths = new ArrayList<>();
-        Configuration config = new Configuration();
         FileSystem hdfs = FileSystem.get(URI.create(path), config);
         RemoteIterator<LocatedFileStatus> fileIter = hdfs.listFiles(new org.apache.hadoop.fs.Path(path), recursive);
 

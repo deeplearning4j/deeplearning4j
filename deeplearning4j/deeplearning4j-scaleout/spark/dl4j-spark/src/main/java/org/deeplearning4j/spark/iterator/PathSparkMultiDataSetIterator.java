@@ -20,6 +20,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.spark.data.loader.RemoteFileSource;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -48,17 +49,20 @@ public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
     private Iterator<String> iter;
     private FileSystem fileSystem;
     private final MultiDataSetLoader loader;
+    private final SerializableHadoopConfig hadoopConfig;
 
-    public PathSparkMultiDataSetIterator(Iterator<String> iter, MultiDataSetLoader loader) {
+    public PathSparkMultiDataSetIterator(Iterator<String> iter, MultiDataSetLoader loader, SerializableHadoopConfig hadoopConfig) {
         this.dataSetStreams = null;
         this.iter = iter;
         this.loader = loader;
+        this.hadoopConfig = hadoopConfig;
     }
 
-    public PathSparkMultiDataSetIterator(Collection<String> dataSetStreams, MultiDataSetLoader loader) {
+    public PathSparkMultiDataSetIterator(Collection<String> dataSetStreams, MultiDataSetLoader loader, SerializableHadoopConfig hadoopConfig) {
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
         this.loader = loader;
+        this.hadoopConfig = hadoopConfig;
     }
 
     @Override
@@ -116,7 +120,8 @@ public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
     private synchronized MultiDataSet load(String path) {
         if (fileSystem == null) {
             try {
-                fileSystem = FileSystem.get(new URI(path), new Configuration());
+                Configuration c = hadoopConfig == null ? new Configuration() : hadoopConfig.getConfiguration();
+                fileSystem = FileSystem.get(new URI(path), c);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

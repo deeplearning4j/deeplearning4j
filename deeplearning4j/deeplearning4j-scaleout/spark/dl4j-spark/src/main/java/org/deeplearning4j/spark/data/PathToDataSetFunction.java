@@ -21,6 +21,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.function.Function;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.IOException;
@@ -35,13 +36,23 @@ import java.net.URI;
 public class PathToDataSetFunction implements Function<String, DataSet> {
     public static final int BUFFER_SIZE = 4194304; //4 MB
 
-    private FileSystem fileSystem;
+    private transient FileSystem fileSystem;
+    private final SerializableHadoopConfig conf;
+
+    public PathToDataSetFunction(){
+        this(null);
+    }
+
+    public PathToDataSetFunction(Configuration configuration){
+        this.conf = (configuration == null ? null : new SerializableHadoopConfig(configuration));
+    }
 
     @Override
     public DataSet call(String path) throws Exception {
         if (fileSystem == null) {
+            Configuration c = (conf != null ? conf.getConfiguration() : new Configuration());
             try {
-                fileSystem = FileSystem.get(new URI(path), new Configuration());
+                fileSystem = FileSystem.get(new URI(path), c);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
