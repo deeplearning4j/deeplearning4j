@@ -28,16 +28,26 @@ public class IndexedTail {
     // simple counter for new updates
     protected AtomicLong updatesCounter = new AtomicLong(0);
 
+    // index of last deleted element. used for maintenance, and removal of useless updates
     protected AtomicLong lastDeletedIndex = new AtomicLong(-1);
 
+    // this value is used as max number of possible consumers.
     protected final int expectedConsumers;
 
+    // flag useful for debugging only
     protected AtomicBoolean dead = new AtomicBoolean(false);
 
     protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
+    protected final boolean allowCollapse;
+
     public IndexedTail(int expectedConsumers) {
+        this(expectedConsumers, false);
+    }
+
+    public IndexedTail(int expectedConsumers, boolean allowCollapse) {
         this.expectedConsumers = expectedConsumers;
+        this.allowCollapse = allowCollapse;
     }
 
     /**
@@ -175,6 +185,7 @@ public class IndexedTail {
             for (long e = localPos; e < localPos + delta; e++) {
                 val update = updates.get(e);
 
+                // FIXME: just continue here, probably it just means that collapser was working in this position
                 if (update == null) {
                     log.info("Global: [{}]; Local: [{}]", globalPos, localPos);
                     throw new RuntimeException("Element [" + e + "] is absent");
