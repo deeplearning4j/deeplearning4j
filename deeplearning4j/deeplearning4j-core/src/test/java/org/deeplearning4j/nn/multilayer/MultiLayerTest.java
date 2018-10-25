@@ -717,7 +717,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         assertTrue(aePre.conf().isPretrain()); // check on the network
         assertTrue(aePre.getLayer(0).conf().isPretrain()); // check pretrain layer
         assertFalse(aePre.getLayer(1).conf().isPretrain()); // check none pretrain layer
-        int actualNP = aePre.numParams();
+        int actualNP = (int)aePre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
         INDArray params = aePre.params();
         assertEquals(params.length(), actualNP); // check num params
@@ -733,7 +733,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         assertFalse(aeNoPre.conf().isPretrain());
         assertFalse(aeNoPre.getLayer(0).conf().isPretrain());
         assertFalse(aePre.getLayer(1).conf().isPretrain());
-        actualNP = aeNoPre.numParams();
+        actualNP = (int)aeNoPre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
         params = aeNoPre.params();
         assertEquals(params.length(), actualNP);

@@ -82,9 +82,8 @@ public class LayerVertex extends GraphVertex {
     }
 
     @Override
-    public int numParams(boolean backprop) {
-        // FIXME: int cast
-        return (int) layerConf.getLayer().initializer().numParams(layerConf);
+    public long numParams(boolean backprop) {
+        return layerConf.getLayer().initializer().numParams(layerConf);
     }
 
     @Override

@@ -2215,6 +2215,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.create(data, newShape, newStrides, offset, ordering);
     }
 
+    protected INDArray create(DataBuffer data, long[] newShape, long[] newStrides, long offset, char ordering) {
+        return Nd4j.create(data, newShape, newStrides, offset, ordering);
+    }
+
     protected INDArray create(DataBuffer data, int[] newShape, int[] newStrides, long offset) {
         return Nd4j.create(data, newShape, newStrides, offset);
     }
@@ -2597,8 +2601,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray subArray(ShapeOffsetResolution resolution) {
         Nd4j.getCompressor().autoDecompress(this);
         long[] offsets = resolution.getOffsets();
-        int[] shape = LongUtils.toInts(resolution.getShapes());
-        int[] stride = LongUtils.toInts(resolution.getStrides());
+        long[] shape = resolution.getShapes();
+        long[] stride = resolution.getStrides();
 
         //        if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
         //            throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
@@ -5238,8 +5242,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public long offset() {
-        if (data().offset() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Offset of buffer can not be >= Integer.MAX_VALUE");
+//        if (data().offset() >= Integer.MAX_VALUE)
+//            throw new IllegalArgumentException("Offset of buffer can not be >= Integer.MAX_VALUE");
         //  return Shape.offset(shapeInfo());
         return data().offset();
     }

@@ -35,7 +35,7 @@ public interface Trainable {
     /**
      * @return Number of parameters
      */
-    int numParams();
+    long numParams();
 
     /**
      * @return 1d parameter vector

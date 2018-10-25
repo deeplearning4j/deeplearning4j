@@ -101,7 +101,7 @@ public interface Model {
      * @return the number of parameters for the model
      *
      */
-    int numParams();
+    long numParams();
 
 
     /**
@@ -109,7 +109,7 @@ public interface Model {
      * @return the number of parameters for the model
      *
      */
-    int numParams(boolean backwards);
+    long numParams(boolean backwards);
 
     /**
      * Set the parameters for this model.

@@ -74,7 +74,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
     public void testSingleMinLineSearch() throws Exception {
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100,
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-        int nParams = layer.numParams();
+        int nParams = (int)layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
@@ -92,7 +92,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100,
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-        int nParams = layer.numParams();
+        int nParams = (int)layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
@@ -113,7 +113,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100,
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-        int nParams = layer.numParams();
+        int nParams = (int)layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
@@ -141,7 +141,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         irisData.normalizeZeroMeanZeroUnitVariance();
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.MCXENT);
-        int nParams = layer.numParams();
+        int nParams = (int)layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());

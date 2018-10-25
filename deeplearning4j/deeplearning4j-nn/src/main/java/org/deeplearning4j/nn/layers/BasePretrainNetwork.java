@@ -91,7 +91,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         return super.numParams(backwards);
     }
 
@@ -144,7 +144,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     /**The number of parameters for the model, for backprop (i.e., excluding visible bias)
      * @return the number of parameters for the model (ex. visible bias)
      */
-    public int numParams() {
+    public long numParams() {
         int ret = 0;
         for (Map.Entry<String, INDArray> entry : params.entrySet()) {
             ret += entry.getValue().length();

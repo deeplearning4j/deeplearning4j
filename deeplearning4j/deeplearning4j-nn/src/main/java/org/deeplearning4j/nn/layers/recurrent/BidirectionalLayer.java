@@ -272,12 +272,12 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return fwd.numParams() + bwd.numParams();
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         return fwd.numParams(backwards) + bwd.numParams(backwards);
     }
 
