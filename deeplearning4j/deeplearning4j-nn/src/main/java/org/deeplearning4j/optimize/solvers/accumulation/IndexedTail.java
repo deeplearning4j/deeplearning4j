@@ -22,7 +22,10 @@ public class IndexedTail {
     // here we store individual updates
     protected Map<Long, INDArray> updates = new ConcurrentHashMap<>();
 
+    // simple counter for new updates
     protected AtomicLong updatesCounter = new AtomicLong(0);
+
+    protected AtomicLong lastDeletedIndex = new AtomicLong(-1);
 
     protected final int expectedConsumers;
 
@@ -78,7 +81,39 @@ public class IndexedTail {
 
         threadPosition.addAndGet(delta);
 
+        maintenance();
+
         return delta > 0;
+    }
+
+    /**
+     * This method does maintenance of updates within
+     */
+    protected void maintenance() {
+        // first of all we're checking, if all consumers were already registered. if not - just no-op.
+        if (positions.size() < expectedConsumers)
+            return;
+
+        // now we should get minimal id of consumed update
+        long minIdx = Long.MAX_VALUE;
+        for (val v:positions.values()) {
+            if (v.get() < minIdx)
+                minIdx = v.get();
+        }
+
+        // now we're checking, if there are undeleted updates between
+        if (minIdx > lastDeletedIndex.get()) {
+            // delete everything between them
+            for (long e = lastDeletedIndex.get(); e < minIdx; e++) {
+                updates.remove(e);
+            }
+
+            lastDeletedIndex.set(minIdx);
+        }
+    }
+
+    protected int updatesSize() {
+        return updates.size();
     }
 
     protected INDArray smartDecompress(INDArray encoded, @NonNull INDArray target) {

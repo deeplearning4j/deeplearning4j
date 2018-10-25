@@ -28,5 +28,7 @@ public class IndexedTailTest {
             assertArrayEquals(orig.shape(), temp.shape());
             assertEquals(orig, temp);
         }
+
+        assertEquals(0, tail.updatesSize());
     }
 }
