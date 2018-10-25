@@ -45,6 +45,7 @@ public class IndexedTail {
     protected final long[] shape;
     protected final int collapseThreshold = 32;
     protected AtomicBoolean collapsedMode = new AtomicBoolean(false);
+    protected AtomicLong collapsedIndex = new AtomicLong(-1);
 
     public IndexedTail(int expectedConsumers) {
         this(expectedConsumers, false, null);
@@ -70,7 +71,7 @@ public class IndexedTail {
 
             //if we're already in collapsed mode - we just insta-decompress
             if (collapsedMode.get()) {
-                val lastUpdateIndex = updatesCounter.get();
+                val lastUpdateIndex = collapsedIndex.get();
                 val lastUpdate = updates.get(lastUpdateIndex);
 
                 Preconditions.checkArgument(!lastUpdate.isCompressed(), "lastUpdate should NOT be compressed during collapse mode");
@@ -91,7 +92,8 @@ public class IndexedTail {
                     log.info("Max delta to collapse: {}; Range: <{}...{}>", delta, maxIdx, lastUpdateIndex);
                     for (long e = maxIdx; e < lastUpdateIndex; e++) {
                         val u = updates.get(e);
-                        //if (u == null)
+                        if (u == null)
+                            log.error("Failed on index {}", e);
                            // continue;
 
                         smartDecompress(u, array);
@@ -105,14 +107,19 @@ public class IndexedTail {
 
                     // putting collapsed array back at last index
                     updates.put(lastUpdateIndex, array);
+                    collapsedIndex.set(lastUpdateIndex);
+
+                    // shift counter by 1
+                    updatesCounter.getAndIncrement();
 
                     // we're saying that right now all updates within some range are collapsed into 1 update
                     collapsedMode.set(true);
                 } else {
                     updates.put(updatesCounter.getAndIncrement(), update);
                 }
-            } else
+            } else {
                 updates.put(updatesCounter.getAndIncrement(), update);
+            }
         } finally {
             lock.writeLock().unlock();
         }
