@@ -11,6 +11,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,6 +47,25 @@ public class IndexedTail {
     public void put(@NonNull INDArray update) {
         try {
             lock.writeLock().lock();
+
+            // collapser only can work if all consumers are already introduced
+            if (positions.size() >= expectedConsumers) {
+                // getting last added update
+                val lastUpdateIndex = updatesCounter.get();
+                val lastUpdate = updates.get(lastUpdateIndex);
+
+                // looking for max common non-applied update
+                long maxIdx = -1;
+                for (val v:positions.values()) {
+                    if (v.get() > maxIdx)
+                        maxIdx = v.get();
+                }
+
+                val delta = lastUpdateIndex - maxIdx;
+                if (delta > 10) {
+                    log.info("Max delta to collapse: {}", delta);
+                }
+            }
 
             updates.put(updatesCounter.getAndIncrement(), update);
         } finally {
@@ -122,33 +142,44 @@ public class IndexedTail {
         }
 
         long globalPos = 0;
+        long localPos = 0;
+        long delta = 0;
+        val sessionUpdates = new ArrayList<INDArray>();
 
         try {
             lock.readLock().lock();
 
             globalPos = updatesCounter.get();
+            localPos = threadPosition.get();
+
+            // we're finding out, how many arrays we should provide
+            delta = getDelta(threadId);
+
+            // within read lock we only move references and tag updates as applied
+            for (long e = localPos; e < localPos + delta; e++) {
+                val update = updates.get(e);
+
+                if (update == null) {
+                    log.info("Global: [{}]; Local: [{}]", globalPos, localPos);
+                    throw new RuntimeException("Element [" + e + "] is absent");
+                }
+
+                sessionUpdates.add(update);
+            }
+
+            // and shifting stuff by one
+            threadPosition.addAndGet(delta);
         } finally {
             lock.readLock().unlock();
         }
-        val localPos = threadPosition.get();
 
-        // we're finding out, how many arrays we should provide
-        val delta = getDelta(threadId);
 
         // now we decompress all arrays within delta into provided array
-        for (long e = localPos; e < localPos + delta; e++) {
-            val update = updates.get(e);
-
-            if (update == null) {
-                log.info("Global: [{}]; Local: [{}]", globalPos, localPos);
-                throw new RuntimeException("Element [" + e + "] is absent");
-            }
-
-            smartDecompress(update.unsafeDuplication(true), array);
+        for (val u:sessionUpdates) {
+            smartDecompress(u.unsafeDuplication(true), array);
         }
 
-        // and shifting stuff by one
-        threadPosition.addAndGet(delta);
+
 
         // TODO: this call should be either synchronized, or called from outside
         maintenance();
