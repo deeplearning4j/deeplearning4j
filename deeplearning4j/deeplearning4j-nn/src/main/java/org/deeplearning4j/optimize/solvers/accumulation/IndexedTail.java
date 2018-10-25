@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.AtomicBoolean;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +29,8 @@ public class IndexedTail {
     protected AtomicLong lastDeletedIndex = new AtomicLong(-1);
 
     protected final int expectedConsumers;
+
+    protected AtomicBoolean dead = new AtomicBoolean(false);
 
     public IndexedTail(int expectedConsumers) {
         this.expectedConsumers = expectedConsumers;
@@ -145,5 +148,13 @@ public class IndexedTail {
         }
 
         return result;
+    }
+
+    protected boolean isDead() {
+        return dead.get();
+    }
+
+    protected void notifyDead() {
+        dead.set(true);
     }
 }
