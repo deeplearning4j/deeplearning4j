@@ -267,11 +267,18 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::memory::Work
     else
         setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, workspace));
 
-    ALLOCATE(_buffer, workspace, _length * DataTypeUtils::sizeOfElement(_dataType) , int8_t);
+    if (ArrayOptions::hasPropertyBitSet(shapeInfo, ARRAY_EMPTY)) {
+        _buffer = nullptr;
+        _length = 0;
+        triggerAllocationFlag(false, true);
+    }
+    else {
+        ALLOCATE(_buffer, workspace, _length * DataTypeUtils::sizeOfElement(_dataType), int8_t);
 
-    memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(_dataType));
+        memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(_dataType));
 
-    triggerAllocationFlag(true, true);
+        triggerAllocationFlag(true, true);
+    }
     _workspace = workspace;
 }
 
@@ -317,7 +324,7 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
     void NDArray::templatedAssign(void *xBuffer, Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const {
         auto x = reinterpret_cast<T *>(xBuffer);
         const auto y = reinterpret_cast<const T*>(yBuffer);
-
+        if (xBuffer != nullptr && yBuffer != nullptr)
         x[xOffset] = y[yOffset];
     }
     BUILD_SINGLE_TEMPLATE(template void NDArray::templatedAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES);
@@ -945,7 +952,16 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
         if (other.isScalar()) {
             if(this->isScalar()) {
-                BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign, (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
+                if (!this->isEmpty() && !other.isEmpty()) {
+                    BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign,
+                                          (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
+                }
+                else if (this->isEmpty() != other.isEmpty()) { // need assign non-empty scalar to empty
+                    if (other.isEmpty())
+                        ArrayOptions::setPropertyBit(this->_shapeInfo, ARRAY_EMPTY);
+                    else
+                        *this = other;
+                }
             }
             else {
                 NativeOpExcutioner::execScalar(scalar::Copy, _buffer, _shapeInfo, _buffer, _shapeInfo, other._buffer, other._shapeInfo, nullptr);

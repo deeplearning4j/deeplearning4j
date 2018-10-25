@@ -30,6 +30,8 @@ namespace nd4j {
         CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
             auto condition = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
+            if (z->isEmpty())
+                return ND4J_STATUS_OK;
 
             if (block.width() == 3) {
                 auto x = INPUT_VARIABLE(1);
@@ -124,7 +126,7 @@ namespace nd4j {
                     ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
                 }
 
-                    return SHAPELIST(newShape);
+                return SHAPELIST(newShape);
             }
         }
 
