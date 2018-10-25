@@ -54,6 +54,7 @@ namespace nd4j {
         FORCEINLINE static T eps();
 
         FORCEINLINE static size_t sizeOf(DataType type);
+        FORCEINLINE static size_t sizeOf(const Nd4jLong* shapeInfo);
 
         FORCEINLINE static bool isR(nd4j::DataType dataType);
 
@@ -154,6 +155,11 @@ FORCEINLINE nd4j::DataType DataTypeUtils::pickPairwiseResultType(const Nd4jLong*
 ///////////////////////////////////////////////////////////////////
 FORCEINLINE size_t DataTypeUtils::sizeOf(DataType type) {
     return sizeOfElement(type);
+}
+
+///////////////////////////////////////////////////////////////////
+FORCEINLINE size_t DataTypeUtils::sizeOf(const Nd4jLong* shapeInfo) {
+    return sizeOfElement(ArrayOptions::dataType(shapeInfo));
 }
 
 // returns the smallest finite value of the given type
