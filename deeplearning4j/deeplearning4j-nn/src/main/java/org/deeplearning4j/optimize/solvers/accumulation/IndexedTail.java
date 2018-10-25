@@ -14,6 +14,7 @@ import org.nd4j.linalg.primitives.AtomicBoolean;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Slf4j
 public class IndexedTail {
@@ -32,6 +33,8 @@ public class IndexedTail {
 
     protected AtomicBoolean dead = new AtomicBoolean(false);
 
+    protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
     public IndexedTail(int expectedConsumers) {
         this.expectedConsumers = expectedConsumers;
     }
@@ -41,7 +44,13 @@ public class IndexedTail {
      * @param update
      */
     public void put(@NonNull INDArray update) {
-        updates.put(updatesCounter.getAndIncrement(), update);
+        try {
+            lock.writeLock().lock();
+
+            updates.put(updatesCounter.getAndIncrement(), update);
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     public boolean hasAynthing() {
@@ -69,6 +78,40 @@ public class IndexedTail {
         return drainTo(Thread.currentThread().getId(), array);
     }
 
+    protected long getGlobalPosition() {
+        try {
+            lock.readLock().lock();
+
+            return updatesCounter.get();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    protected long getLocalPosition() {
+        return getLocalPosition(Thread.currentThread().getId());
+    }
+
+    protected long getDelta() {
+        return getDelta(Thread.currentThread().getId());
+    }
+
+    protected long getDelta(long threadId) {
+        return getGlobalPosition() - getLocalPosition(threadId);
+    }
+
+    protected long getLocalPosition(long threadId) {
+        var threadPosition = positions.get(threadId);
+
+        // will be instantiated on first call from any given thread
+        if (threadPosition == null) {
+            threadPosition = new AtomicLong(0);
+            positions.put(threadId, threadPosition);
+        }
+
+        return threadPosition.get();
+    }
+
     public boolean drainTo(long threadId, @NonNull INDArray array) {
         var threadPosition = positions.get(threadId);
 
@@ -78,14 +121,30 @@ public class IndexedTail {
             positions.put(threadId, threadPosition);
         }
 
+        long globalPos = 0;
+
+        try {
+            lock.readLock().lock();
+
+            globalPos = updatesCounter.get();
+        } finally {
+            lock.readLock().unlock();
+        }
+        val localPos = threadPosition.get();
+
         // we're finding out, how many arrays we should provide
-        val delta =  updatesCounter.get() - threadPosition.get();
+        val delta = getDelta(threadId);
 
         // now we decompress all arrays within delta into provided array
-        for (long e = threadPosition.get(); e < threadPosition.get() + delta; e++) {
+        for (long e = localPos; e < localPos + delta; e++) {
             val update = updates.get(e);
 
-            smartDecompress(update, array);
+            if (update == null) {
+                log.info("Global: [{}]; Local: [{}]", globalPos, localPos);
+                throw new RuntimeException("Element [" + e + "] is absent");
+            }
+
+            smartDecompress(update.unsafeDuplication(true), array);
         }
 
         // and shifting stuff by one
@@ -100,7 +159,7 @@ public class IndexedTail {
     /**
      * This method does maintenance of updates within
      */
-    protected void maintenance() {
+    protected synchronized void maintenance() {
         // first of all we're checking, if all consumers were already registered. if not - just no-op.
         if (positions.size() < expectedConsumers)
             return;

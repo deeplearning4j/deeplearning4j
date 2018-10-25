@@ -14,6 +14,52 @@ import static org.junit.Assert.*;
 public class IndexedTailTest {
 
     @Test
+    public void testDeltas_1() throws Exception {
+        val tail = new IndexedTail(2);
+
+        assertFalse(tail.hasAynthing(11));
+        assertFalse(tail.hasAynthing(22));
+
+        // 3 updates in queue
+        tail.put(Nd4j.create(5, 5));
+        tail.put(Nd4j.create(5, 5));
+        tail.put(Nd4j.create(5, 5));
+
+        assertEquals(3, tail.getDelta(11));
+        assertEquals(3, tail.getDelta(22));
+
+
+        tail.drainTo(22, Nd4j.create(5, 5));
+
+        assertEquals(3, tail.getDelta(11));
+        assertEquals(0, tail.getDelta(22));
+
+        tail.put(Nd4j.create(5, 5));
+
+        assertEquals(4, tail.getDelta(11));
+        assertEquals(1, tail.getDelta(22));
+
+        tail.drainTo(22, Nd4j.create(5, 5));
+        tail.drainTo(11, Nd4j.create(5, 5));
+
+        assertEquals(0, tail.getDelta(11));
+        assertEquals(0, tail.getDelta(22));
+
+
+        tail.put(Nd4j.create(5, 5));
+        tail.put(Nd4j.create(5, 5));
+
+        assertEquals(2, tail.getDelta(11));
+        assertEquals(2, tail.getDelta(22));
+
+        tail.drainTo(22, Nd4j.create(5, 5));
+
+        assertEquals(2, tail.getDelta(11));
+        assertEquals(0, tail.getDelta(22));
+    }
+
+
+    @Test
     public void testSingleThreaded_1() throws Exception {
         val tail = new IndexedTail(1);
 
@@ -107,7 +153,7 @@ public class IndexedTailTest {
                         while (tail.hasAynthing()) {
                             val updates = Nd4j.create(5, 5);
                             tail.drainTo(updates);
-                            val mean = updates.meanNumber().longValue();
+                            val mean = (int) updates.getDouble(0);
                             sums[f] += mean;
                         }
                     }
@@ -121,13 +167,15 @@ public class IndexedTailTest {
 
 
         int sum = 0;
-        for (int e = 0; e < 1000; e++) {
+        for (int e = 0; e < 10000; e++) {
             val array = Nd4j.create(5, 5).assign(e+1);
             Nd4j.getExecutioner().commit();
 
             sum += (e+1);
             tail.put(array);
         }
+        // just wait till everything consumed
+        Thread.sleep(1000);
         tail.notifyDead();
 
 
@@ -136,7 +184,7 @@ public class IndexedTailTest {
 
 
         for (int e = 0; e < numReaders; e++)
-            assertEquals("Failed for reader [" + e + "]",sums[0], sums[e]);
+            assertEquals("Failed for reader [" + e + "]",sum, sums[e]);
 
 
         assertEquals(0, tail.updatesSize());
