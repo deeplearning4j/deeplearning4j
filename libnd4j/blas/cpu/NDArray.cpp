@@ -1705,11 +1705,17 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
             else
                 printf("Empty\n");
         }
-        else if (arr->rankOf() == 0)
+        else if (arr->rankOf() == 0) {
             if (msg)
-                printf("%s: %f\n", msg, arr->e<float>(0));
-            else
-                printf("%f\n", arr->e<float>(0));
+                if (arr->isR())
+                    printf("%s: %f\n", msg, arr->e<float>(0));
+
+            else {
+                    if (arr->isR())
+                        printf("%f\n", arr->e<float>(0));
+            }
+
+        }
         else if (arr->rankOf() == 1)
             arr->printBuffer(msg, limit);
         else if (arr->rankOf() == 2) {
@@ -1734,7 +1740,12 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
                 for (Nd4jLong col = 0; col < cols; ++col) {
                     if (col)
                         printf(" ");
-                    printf("%f", arr->e<float>(row, col));
+                    if (arr->isR())
+                        printf("%f", arr->e<float>(row, col));
+                    else if (arr->isZ())
+                        printf("%lld", arr->e<Nd4jLong>(row, col));
+                    if (arr->isB())
+                        printf("%s", arr->e<bool>(row, col)?"true":"false");
                 }
                 if (row < rows - 1)
                     printf("]\n");
