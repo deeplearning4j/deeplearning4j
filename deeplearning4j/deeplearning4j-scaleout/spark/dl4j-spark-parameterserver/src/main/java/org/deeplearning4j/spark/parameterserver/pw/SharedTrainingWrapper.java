@@ -321,6 +321,7 @@ public class SharedTrainingWrapper {
                                     "No Transport implementation was defined for this training session!");
 
                         consumer = UpdatesConsumer.builder()
+                                .numWorkers(numWorkers)
                                 .accumulator(accumulator)
                                 .params(model.params())
                                 .build();
@@ -395,8 +396,6 @@ public class SharedTrainingWrapper {
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
                     //log.info("Params at PW:  {mean: [{}]; stdev: [{}]}", originalModel.params().meanNumber().doubleValue(), originalModel.params().stdNumber().doubleValue());
-
-                    ((SmartFancyBlockingQueue) accumulator.getExternalSource()).registerConsumers(numWorkers);
 
                     wrapper = new ParallelWrapper.Builder<>(originalModel)
                                     .workers(numWorkers)

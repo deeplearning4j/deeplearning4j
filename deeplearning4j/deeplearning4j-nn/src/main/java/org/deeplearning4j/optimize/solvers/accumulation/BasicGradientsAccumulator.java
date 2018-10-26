@@ -44,7 +44,7 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
     protected MessageHandler handler;
 
     // here we'll store messages coming from "somewhere else"
-    protected transient Queue<INDArray> gradients;
+    protected transient IndexedTail gradients;
 
     // this field stores current accumulated
     protected transient INDArray storage;
@@ -83,7 +83,7 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
      * @param handler MessageHandler instance that'll be used for communication purposes
      */
     public BasicGradientsAccumulator(int parties, @NonNull MessageHandler handler) {
-        this.gradients = new LinkedTransferQueue<>();
+        this.gradients = new IndexedTail(parties);
         this.handler = handler;
 
         this.handler.initialize(this);
@@ -92,7 +92,7 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
     }
 
     @Override
-    public Queue<INDArray> getExternalSource() {
+    public IndexedTail getExternalSource() {
         return gradients;
     }
 
@@ -296,9 +296,8 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
     }
 
     @Override
-    public void setExternalSource(Queue<INDArray> source) {
-        // TODO: to be implemented
-        throw new UnsupportedOperationException();
+    public void setExternalSource(IndexedTail source) {
+        gradients = source;
     }
 
 
