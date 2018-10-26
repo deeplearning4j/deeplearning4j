@@ -1,13 +1,10 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.Test;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
-import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
-import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.learning.config.Adam;
