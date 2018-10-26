@@ -45,7 +45,9 @@ __device__ inline int getDevicePosition(Nd4jLong *xShapeInfo, int index) {
 
 template<typename T>
 __device__
- void bitonic_sort_step(T *x, Nd4jLong *xShapeInfo, int j, int k, int length, bool descending) {
+ void bitonic_sort_step(void *vx, Nd4jLong *xShapeInfo, int j, int k, int length, bool descending) {
+
+    auto x = static_cast<T*>(vx);
 
     unsigned int i, ixj; /* Sorting partners: i and ixj */
     i = threadIdx.x + blockDim.x * blockIdx.x;
@@ -82,7 +84,10 @@ __device__
 
 template<typename T>
 __device__
- void bitonic_arbitrary_step(T *x, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending) {
+ void bitonic_arbitrary_step(void *vx, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending) {
+
+    auto x = static_cast<T*>(vx);
+
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
     int half = window>>1;
 
@@ -156,7 +161,10 @@ __device__
 
 template<typename T>
 __device__
-void oes_tad(T *x, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
+void oes_tad(void *vx, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
+
+    auto x = static_cast<T*>(vx);
+    
     __shared__ int xLength;
     __shared__ int xTadLength;
     __shared__ int numTads;
