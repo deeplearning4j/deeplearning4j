@@ -7,10 +7,8 @@ import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
-import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.learning.config.IUpdater;
-import org.nd4j.linalg.learning.config.Nesterovs;
-import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.*;
 import org.nd4j.weightinit.impl.XavierInitScheme;
 
 import java.util.Collections;
@@ -32,6 +30,7 @@ public class SameDiffTrainingTest {
         iter.setPreProcessor(std);
 
         for (String u : new String[]{"sgd", "adam", "nesterov", "adamax", "amsgrad"}) {
+            Nd4j.getRandom().setSeed(12345);
             log.info("Starting: " + u);
             SameDiff sd = SameDiff.create();
 
@@ -57,15 +56,20 @@ public class SameDiffTrainingTest {
             IUpdater updater;
             switch (u) {
                 case "sgd":
-                    updater = new Sgd(1e-1);
+                    updater = new Sgd(3e-1);
                     break;
                 case "adam":
                     updater = new Adam(1e-2);
                     break;
                 case "nesterov":
-                    updater = new Nesterovs(1e-3);
+                    updater = new Nesterovs(1e-1);
                     break;
-
+                case "adamax":
+                    updater = new AdaMax(1e-2);
+                    break;
+                case "amsgrad":
+                    updater = new AMSGrad(1e-2);
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -90,7 +94,7 @@ public class SameDiffTrainingTest {
             System.out.println(e.stats());
 
             double acc = e.accuracy();
-            assertTrue(String.valueOf(acc), acc > 0.8);
+            assertTrue(u + " - " + acc, acc >= 0.8);
         }
     }
 }
