@@ -339,4 +339,8 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
         return sb.toString();
     }
+
+    public static ROCBinary fromJson(String json){
+        return fromJson(json, ROCBinary.class);
+    }
 }

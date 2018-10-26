@@ -559,4 +559,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
                 throw new IllegalStateException("Unknown metric: " + metric);
         }
     }
+
+    public static RegressionEvaluation fromJson(String json){
+        return fromJson(json, RegressionEvaluation.class);
+    }
 }

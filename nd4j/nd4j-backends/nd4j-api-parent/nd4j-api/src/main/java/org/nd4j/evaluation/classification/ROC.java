@@ -741,4 +741,8 @@ public class ROC extends BaseEvaluation<ROC> {
             return new CountsForThreshold(threshold, countTruePositive, countFalsePositive);
         }
     }
+
+    public static ROC fromJson(String json){
+        return fromJson(json, ROC.class);
+    }
 }

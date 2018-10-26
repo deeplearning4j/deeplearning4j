@@ -18,7 +18,8 @@ package org.nd4j.evaluation;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.*;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.AtomicDouble;
@@ -165,9 +166,66 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     public static <T extends IEvaluation> T fromJson(String json, Class<T> clazz) {
         try {
             return objectMapper.readValue(json, clazz);
+        } catch (IllegalArgumentException e){
+            if(e.getMessage().contains("Invalid type id")){
+                try{
+                    return (T)attempFromLegacyFromJson(json, e);
+                } catch (Throwable t){
+                    throw new RuntimeException("Cannot deserialize from JSON - JSON is invalid?", t);
+                }
+            }
+            throw e;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected static <T extends IEvaluation> T attempFromLegacyFromJson(String json, IllegalArgumentException originalException){
+        if(json.contains("org.deeplearning4j.eval.Evaluation")){
+            String newJson = json.replaceAll("org.deeplearning4j.eval.Evaluation", "org.nd4j.evaluation.classification.Evaluation");
+            return (T) fromJson(newJson, Evaluation.class);
+        }
+
+        if(json.contains("org.deeplearning4j.eval.EvaluationBinary")){
+            String newJson = json.replaceAll("org.deeplearning4j.eval.EvaluationBinary", "org.nd4j.evaluation.classification.EvaluationBinary")
+                    .replaceAll("org.deeplearning4j.eval.ROC", "org.nd4j.evaluation.classification.ROC")
+                    .replaceAll("org.deeplearning4j.eval.curves.", "org.nd4j.evaluation.curves.");
+            return (T) fromJson(newJson, EvaluationBinary.class);
+        }
+
+        if(json.contains("org.deeplearning4j.eval.EvaluationCalibration")){
+            String newJson = json.replaceAll("org.deeplearning4j.eval.EvaluationCalibration", "org.nd4j.evaluation.classification.EvaluationCalibration")
+                    .replaceAll("org.deeplearning4j.eval.curves.", "org.nd4j.evaluation.curves.");
+            return (T) fromJson(newJson, EvaluationCalibration.class);
+        }
+
+        if(json.contains("org.deeplearning4j.eval.ROCBinary")){
+            String newJson = json.replaceAll("org.deeplearning4j.eval.ROCBinary", "org.nd4j.evaluation.classification.ROCBinary")
+                    .replaceAll("org.deeplearning4j.eval.ROC", "org.nd4j.evaluation.classification.ROC")   //Nested ROC instances internally
+                    .replaceAll("org.deeplearning4j.eval.curves.", "org.nd4j.evaluation.curves.");
+
+            return (T) fromJson(newJson, ROCBinary.class);
+        }
+
+        if(json.contains("org.deeplearning4j.eval.ROCMultiClass")){
+            String newJson = json.replaceAll("org.deeplearning4j.eval.ROCMultiClass", "org.nd4j.evaluation.classification.ROCMultiClass")
+                    .replaceAll("org.deeplearning4j.eval.ROC", "org.nd4j.evaluation.classification.ROC")   //Nested ROC instances internally
+                    .replaceAll("org.deeplearning4j.eval.curves.", "org.nd4j.evaluation.curves.");
+            return (T) fromJson(newJson, ROCMultiClass.class);
+        }
+
+        if(json.contains("org.deeplearning4j.eval.ROC")){       //Has to be checked after ROCBinary/ROCMultiClass due to it being a prefix
+            String newJson = json.replaceAll("org.deeplearning4j.eval.ROC", "org.nd4j.evaluation.classification.ROC")
+                    .replaceAll("org.deeplearning4j.eval.curves.", "org.nd4j.evaluation.curves.");
+            return (T) fromJson(newJson, ROC.class);
+        }
+
+        if(json.contains("org.deeplearning4j.eval.RegressionEvaluation")){
+            String newJson = json.replaceAll("org.deeplearning4j.eval.RegressionEvaluation", "org.nd4j.evaluation.regression.RegressionEvaluation");
+            return (T) fromJson(newJson, RegressionEvaluation.class);
+        }
+
+        throw originalException;
     }
 
     @Override

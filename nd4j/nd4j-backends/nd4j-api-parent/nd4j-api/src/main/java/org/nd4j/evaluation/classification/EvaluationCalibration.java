@@ -426,4 +426,8 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         int[] counts = probHistogramByLabelClass.getColumn(labelClassIdx).dup().data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
     }
+
+    public static EvaluationCalibration fromJson(String json){
+        return fromJson(json, EvaluationCalibration.class);
+    }
 }

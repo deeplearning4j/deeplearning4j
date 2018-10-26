@@ -298,4 +298,8 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
                             + "): must be in range 0 to numClasses = " + underlying.length);
         }
     }
+
+    public static ROCMultiClass fromJson(String json){
+        return fromJson(json, ROCMultiClass.class);
+    }
 }
