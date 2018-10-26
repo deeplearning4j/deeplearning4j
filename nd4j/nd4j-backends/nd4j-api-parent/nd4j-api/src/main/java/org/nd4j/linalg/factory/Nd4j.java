@@ -2329,6 +2329,8 @@ public class Nd4j {
                             e.printStackTrace();
                         }
                     } else {
+                        Preconditions.checkState(entries.length == theShape[rank-1], "Invalid number of entries - format does not match expected shape." +
+                                "Expected %s values per line, got %s at line %s", theShape[rank-1], entries.length, lineNum );
                         for (int i = 0; i < theShape[rank - 1]; i++) {
                             try {
                                 BigDecimal number = (BigDecimal) format.parse(entries[i]);

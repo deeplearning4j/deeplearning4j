@@ -454,11 +454,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         OneTimeLogger.info(log, "Starting ComputationGraph with WorkspaceModes set to [training: {}; inference: {}], cacheMode set to [{}]",
                 configuration.getTrainingWorkspaceMode(), configuration.getInferenceWorkspaceMode(), configuration.getCacheMode());
 
-        //TODO
-//        if (configuration.getCacheMode() == CacheMode.HOST) {
-//            workspaceConfigurationCache.setPolicyMirroring(MirroringPolicy.HOST_ONLY);
-//        }
-
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
         GraphIndices indices = calculateIndices();
         topologicalOrder = indices.getTopologicalSortOrder();
@@ -485,8 +480,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         //Go through layers, and work out total number of parameters. Then allocate full parameters array
-        int numParams = 0;
-        int[] numParamsForVertex = new int[topologicalOrder.length];
+        long numParams = 0;
+        long[] numParamsForVertex = new long[topologicalOrder.length];
         int i = 0;
         for (; i < configuration.getNetworkInputs().size(); i++) {
             numParamsForVertex[i] = 0; //No parameters for input vertices
@@ -528,10 +523,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Given the topological ordering: work out the subset of the parameters array used for each layer
         // Then extract out for use when initializing the Layers
         INDArray[] paramsViewForVertex = new INDArray[topologicalOrder.length];
-        int paramOffsetSoFar = 0;
+        long paramOffsetSoFar = 0;
         i = 0;
         for (int vertexIdx : topologicalOrder) {
-            int nParamsThisVertex = numParamsForVertex[vertexIdx];
+            long nParamsThisVertex = numParamsForVertex[vertexIdx];
             if (nParamsThisVertex != 0) {
                 paramsViewForVertex[vertexIdx] = flattenedParams.get(NDArrayIndex.point(0),
                         NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
@@ -737,8 +732,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             GraphIndices indices = calculateIndices();
 
             //Go through layers, and work out total number of parameters. Then allocate full parameters array
-            int numParams = 0;
-            int[] numParamsForVertex = new int[topologicalOrder.length];
+            long numParams = 0;
+            long[] numParamsForVertex = new long[topologicalOrder.length];
             int i = 0;
             for (; i < configuration.getNetworkInputs().size(); i++) {
                 numParamsForVertex[i] = 0; //No parameters for input vertices
@@ -756,10 +751,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
 
             //Given the topological ordering: work out the subset of the gradient array used for each layer, and set it
-            int paramOffsetSoFar = 0;
+            long paramOffsetSoFar = 0;
             i = 0;
             for (int vertexIdx : topologicalOrder) {
-                int nParamsThisVertex = numParamsForVertex[vertexIdx];
+                long nParamsThisVertex = numParamsForVertex[vertexIdx];
                 if (nParamsThisVertex != 0) {
                     INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0),
                             NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
@@ -3168,12 +3163,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return numParams(true);
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         int nParams = 0;
         for (Layer layer : layers) {
             nParams += layer.numParams(backwards);
@@ -3197,7 +3192,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 continue;
 
             Layer layer = vertices[topologicalOrder[i]].getLayer();
-            int range = layer.numParams();
+            long range = layer.numParams();
             if (range <= 0)
                 continue; //Some layers: no parameters (subsampling etc)
             INDArray get = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(idx, range + idx));
@@ -3224,7 +3219,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 continue;
 
             Layer layer = vertices[topologicalOrder[i]].getLayer();
-            int range = layer.numParams();
+            long range = layer.numParams();
             if (range <= 0)
                 continue; //Some layers: no parameters (subsampling etc)
             layer.setBackpropGradientsViewArray(gradient.get(NDArrayIndex.point(0),

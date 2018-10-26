@@ -131,12 +131,12 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return underlying.numParams();
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         return underlying.numParams();
     }
 

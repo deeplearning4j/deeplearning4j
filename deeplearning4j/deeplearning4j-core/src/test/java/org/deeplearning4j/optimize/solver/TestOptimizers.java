@@ -350,7 +350,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public int numParams(boolean backwards) {
+        public long numParams(boolean backwards) {
             return 0;
         }
 
@@ -433,7 +433,7 @@ public class TestOptimizers extends BaseDL4JTest {
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RastriginFunctionModel(10, conf);
-            int nParams = m.numParams();
+            int nParams = (int)m.numParams();
             if (i == 0) {
                 m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[0] = m.score(); //Before optimization
@@ -538,7 +538,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public int numParams(boolean backwards) {
+        public long numParams(boolean backwards) {
             return 0;
         }
 
@@ -738,7 +738,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public int numParams(boolean backwards) {
+        public long numParams(boolean backwards) {
             return 0;
         }
 
@@ -896,7 +896,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public int numParams() {
+        public long numParams() {
             // FIXME: int cast
             return (int) parameters.length();
         }

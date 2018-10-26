@@ -99,7 +99,7 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
     }
 
     @Override
-    public int numParams(boolean backprop) {
+    public long numParams(boolean backprop) {
         SDLayerParams params = getVertexParams();
         long count = 0;
         for(long[] l : params.getParamShapes().values()){
