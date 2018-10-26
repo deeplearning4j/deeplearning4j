@@ -34,8 +34,8 @@ public class IndexedTailTest {
     public void testDeltas_1() throws Exception {
         val tail = new IndexedTail(2);
 
-        assertFalse(tail.hasAynthing(11));
-        assertFalse(tail.hasAynthing(22));
+        assertFalse(tail.hasAnything(11));
+        assertFalse(tail.hasAnything(22));
 
         // 3 updates in queue
         tail.put(Nd4j.create(5, 5));
@@ -81,9 +81,9 @@ public class IndexedTailTest {
         val tail = new IndexedTail(3);
 
         // "registering" 3 consumers
-        assertFalse(tail.hasAynthing(11));
-        assertFalse(tail.hasAynthing(22));
-        assertFalse(tail.hasAynthing(33));
+        assertFalse(tail.hasAnything(11));
+        assertFalse(tail.hasAnything(22));
+        assertFalse(tail.hasAnything(33));
 
         // putting 10 updates in
         for (int e = 0; e < 10; e++) {
@@ -114,7 +114,7 @@ public class IndexedTailTest {
     @Test
     public void testFirstNotApplied_1() {
         val tail = new IndexedTail(1);
-        tail.hasAynthing();
+        tail.hasAnything();
 
         assertEquals(-1, tail.firstNotAppliedIndexEverywhere());
 
@@ -142,7 +142,7 @@ public class IndexedTailTest {
             tail.put(orig);
             Nd4j.getExecutioner().commit();
 
-            assertTrue(tail.hasAynthing());
+            assertTrue(tail.hasAnything());
 
             val temp = Nd4j.create(5, 5);
             val status = tail.drainTo(temp);
@@ -170,7 +170,7 @@ public class IndexedTailTest {
             }
             Nd4j.getExecutioner().commit();
 
-            assertTrue(tail.hasAynthing());
+            assertTrue(tail.hasAnything());
 
             val temp = Nd4j.create(5, 5);
             val status = tail.drainTo(temp);
@@ -185,8 +185,8 @@ public class IndexedTailTest {
     @Test
     public void testSingleThreaded_3() throws Exception {
         val tail = new IndexedTail(2, true, new long[]{5, 5});
-        assertFalse(tail.hasAynthing());
-        assertFalse(tail.hasAynthing(11));
+        assertFalse(tail.hasAnything());
+        assertFalse(tail.hasAnything(11));
 
         int sum = 0;
         for (int e = 0; e < 64; e++) {
@@ -215,7 +215,7 @@ public class IndexedTailTest {
             Nd4j.getExecutioner().commit();
 
             for (int t = 0; t < 2; t++) {
-                assertTrue(tail.hasAynthing(t));
+                assertTrue(tail.hasAnything(t));
 
                 val temp = Nd4j.create(5, 5);
                 val status = tail.drainTo(t, temp);
@@ -245,7 +245,7 @@ public class IndexedTailTest {
                 public void run() {
                     sums[f] = 0;
                     while (!tail.isDead()) {
-                        while (tail.hasAynthing()) {
+                        while (tail.hasAnything()) {
                             val updates = Nd4j.create(5, 5);
                             tail.drainTo(updates);
                             val mean = (int) updates.getDouble(0);
@@ -300,7 +300,7 @@ public class IndexedTailTest {
                 public void run() {
                     sums[f] = 0;
                     while (!tail.isDead()) {
-                        while (tail.hasAynthing()) {
+                        while (tail.hasAnything()) {
                             val updates = Nd4j.create(5, 5);
                             tail.drainTo(updates);
                             val mean = (int) updates.getDouble(0);
@@ -374,7 +374,7 @@ public class IndexedTailTest {
                 public void run() {
                     sums[f] = 0;
                     while (!tail.isDead()) {
-                        while (tail.hasAynthing()) {
+                        while (tail.hasAnything()) {
                             val updates = Nd4j.create(5, 5);
                             tail.drainTo(updates);
                             val mean = (int) updates.getDouble(0);

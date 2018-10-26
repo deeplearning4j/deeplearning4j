@@ -172,15 +172,15 @@ public class IndexedTail {
         return maxIdx;
     }
 
-    public boolean hasAynthing() {
-        return hasAynthing(Thread.currentThread().getId());
+    public boolean hasAnything() {
+        return hasAnything(Thread.currentThread().getId());
     }
 
     /**
      *
      * @return
      */
-    public boolean hasAynthing(long threadId) {
+    public boolean hasAnything(long threadId) {
         var threadPosition = getLocalPosition(threadId);
 
         return threadPosition < updatesCounter.get();
