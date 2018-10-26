@@ -1798,7 +1798,10 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
         if (rowFlag)
             printBuffer(msg, limit);
         else {
-            printFormatted(this, msg, limit);
+            if (msg)
+                printf("%s: \n", msg);
+            printFormatted(this, "\0\n", limit);
+            printf("\n");
         }
         fflush(stdout);
     }
