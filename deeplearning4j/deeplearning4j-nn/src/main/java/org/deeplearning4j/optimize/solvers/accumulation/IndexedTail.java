@@ -183,7 +183,10 @@ public class IndexedTail {
     public boolean hasAnything(long threadId) {
         var threadPosition = getLocalPosition(threadId);
 
-        return threadPosition < updatesCounter.get();
+        val r = threadPosition < updatesCounter.get();
+        log.info("hasAnything({}): {}; position: {}; updates: {}", threadId, r, threadPosition, updatesCounter.get());
+
+        return r;
     }
 
     public boolean drainTo(@NonNull INDArray array) {
