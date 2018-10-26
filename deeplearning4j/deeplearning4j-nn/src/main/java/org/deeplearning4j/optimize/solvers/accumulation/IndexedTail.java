@@ -354,4 +354,13 @@ public class IndexedTail {
     protected void notifyDead() {
         dead.set(true);
     }
+
+    public void purge() {
+        positions.clear();
+        updates.clear();
+        updatesCounter.set(0);
+        lastDeletedIndex.set(-1);
+        collapsedMode.set(false);
+        collapsedIndex.set(-1);
+    }
 }

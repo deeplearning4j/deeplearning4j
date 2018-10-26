@@ -469,6 +469,8 @@ public class SharedTrainingWrapper {
                             }
                         }
                     }
+
+                    consumer.getUpdatesQueue().purge();
                 }
             } catch (Throwable t){
                 log.warn("Exception encountered during fit operation", t);
