@@ -291,8 +291,10 @@ public class IndexedTail {
      */
     protected synchronized void maintenance() {
         // first of all we're checking, if all consumers were already registered. if not - just no-op.
-        if (positions.size() < expectedConsumers)
+        if (positions.size() < expectedConsumers) {
+            log.info("Skipping maintanance due to not all expected consumers shown up: [{}] vs [{}]", positions.size(), expectedConsumers);
             return;
+        }
 
         // now we should get minimal id of consumed update
         long minIdx = maxAppliedIndexEverywhere();
