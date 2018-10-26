@@ -33,7 +33,6 @@ import java.util.Scanner;
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCpu",
                 value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
-                                              "NativeOps.h",
                                               "array/DataType.h",
                                               "types/utf8string.h",
                                               "NativeOps.h",

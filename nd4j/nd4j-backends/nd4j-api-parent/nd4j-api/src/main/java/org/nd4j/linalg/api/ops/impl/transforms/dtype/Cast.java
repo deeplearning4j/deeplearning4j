@@ -58,7 +58,7 @@ public class Cast extends BaseDynamicTransformOp {
         addArgs();
     }
 
-
+/*
     @Override
     public void setValueFor(Field target, Object value) {
         if(value == null) {
@@ -75,6 +75,7 @@ public class Cast extends BaseDynamicTransformOp {
             e.printStackTrace();
         }
     }
+    */
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -122,7 +123,7 @@ public class Cast extends BaseDynamicTransformOp {
     @Override
     public void setValueFor(Field target, Object value) {
         //This is a hack around a property mapping issue - TF datatype DT_DOUBLE return attribute.getType() of DT_DOUBLE which doesn't make sense
-        if(value == null || value instanceof String || value instanceof DataBuffer.Type){
+        if(value == null || value instanceof String || value instanceof DataType){
             super.setValueFor(target, value);
         }
     }

@@ -5,10 +5,6 @@ package org.nd4j.autodiff.samediff.serde;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.impl.*;
-import org.nd4j.linalg.api.ops.impl.accum.*;
-import org.nd4j.linalg.api.ops.impl.accum.Max;
-import org.nd4j.linalg.api.ops.impl.accum.Min;
-import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMax;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMin;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMax;
@@ -17,16 +13,48 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.IsInf;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.IsNaN;
+import org.nd4j.linalg.api.ops.impl.reduce.custom.LogSumExp;
+import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.reduce.same.*;
+import org.nd4j.linalg.api.ops.impl.reduce.same.AMax;
+import org.nd4j.linalg.api.ops.impl.reduce.same.AMin;
+import org.nd4j.linalg.api.ops.impl.reduce.same.Max;
+import org.nd4j.linalg.api.ops.impl.reduce.same.Min;
+import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
+import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
+import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.IsFinite;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryMinimalRelativeError;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryRelativeError;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.RelativeError;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
+import org.nd4j.linalg.api.ops.impl.transforms.same.*;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.random.impl.*;
 
 /**
@@ -42,13 +70,13 @@ public class LegacyOpMapper {
         switch (opType){
             case SCALAR:
                 return scalarOpClass(opNum);
-            case TRANSFORM:
+            case TRANSFORM_SAME:
                 return transformOpClass(opNum);
             case PAIRWISE:
                 return pairwiseOpClass(opNum);
             case BROADCAST:
                 return broadcastOpClass(opNum);
-            case REDUCE:
+            case REDUCE_SAME:
                 return reduceOpClass(opNum);
             case INDEXREDUCE:
                 return indexReduceClass(opNum);

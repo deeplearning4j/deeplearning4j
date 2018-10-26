@@ -73,7 +73,7 @@ public class Entropy extends BaseReduceFloatOp {
 
     @Override
     public Type getOpType() {
-        return Type.REDUCE;
+        return Type.REDUCE_FLOAT;
     }
 
     @Override
