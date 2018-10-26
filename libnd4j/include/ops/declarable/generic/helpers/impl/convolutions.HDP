@@ -838,7 +838,7 @@ void ConvolutionUtils<T>::conv2d(const std::vector<NDArray<T>*>& inArrs, NDArray
 using namespace mkldnn;
 
 template <typename T>
-void ConvolutionUtils<T>::mkldnn_conv2d(MKLDNNStream<T> &stream, const std::vector<NDArray<T>*>& inArrs, NDArray<T>* output, const std::vector<int>& intArgs) {
+void ConvolutionUtils<T>::mkldnn_conv2d(MKLDNNStream &stream, const std::vector<NDArray*>& inArrs, NDArray* output, const std::vector<int>& intArgs) {
 
     NDArray<T> *input   = inArrs[0];                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     NDArray<T> *weights = inArrs[1];                                    // [kH, kW, iC, oC] always

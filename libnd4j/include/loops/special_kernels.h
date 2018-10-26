@@ -157,10 +157,11 @@ __device__ void concatKernelGeneric(int dimension,
 									int numArrays,
 									Nd4jPointer *data,
 									Nd4jPointer *inputShapeInfos,
-									T *result,
+									void *vresult,
 									Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, Nd4jLong *zTadShape, Nd4jLong *zOffsets) {
+	
+	auto result = static_cast<T*>(vresult);
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
-
 	int zRank = shape::rank(resultShapeInfo);
 
 	T **dataT = (T **) data;
@@ -373,9 +374,10 @@ __device__ void concatKernelScalarGeneric(int dimension,
 									int numArrays,
 									Nd4jPointer *data,
 									Nd4jPointer *inputShapeInfos,
-									T *result,
+									void *vresult,
 									Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
+    auto result = static_cast<T*>(vresult);
     Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
     T **input = (T **) data;
 
@@ -388,7 +390,7 @@ extern "C" __global__ void concatKernelScalarFloat(int dimension,
 											  int numArrays,
 											  Nd4jPointer *data,
 											  Nd4jPointer *inputShapeInfo,
-											  float *result,
+											  void *result,
 											  Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
     concatKernelScalarGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
@@ -420,10 +422,11 @@ __device__ void concatKernelHStackGeneric(int dimension,
 									int numArrays,
 									Nd4jPointer *data,
 									Nd4jPointer *inputShapeInfos,
-									T *result,
+									void *vresult,
 									Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
     // we expect all data coming in as vectors, and result as 2D matrix
     // the only significant difference here is the fact that input lengths might be different
+    auto result = static_cast<T*>(vresult);
     auto inputShapes = (Nd4jLong**) inputShapeInfos;
      T **input = (T **) data;
 
@@ -467,7 +470,7 @@ extern "C" __global__ void concatKernelHStackFloat(int dimension,
 											  int numArrays,
 											  Nd4jPointer *data,
 											  Nd4jPointer *inputShapeInfo,
-											  float *result,
+											  void *result,
 											  Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
     concatKernelHStackGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
@@ -499,13 +502,15 @@ __device__ void concatKernelVStackGeneric(int dimension,
 									int numArrays,
 									Nd4jPointer *data,
 									Nd4jPointer *inputShapeInfos,
-									T *result,
+									void *vresult,
 									Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
     /*
      this is special case for concat: we group bunch of vectors into 2D matrix
      also: we expect each inputShapeInfo to have EWS, be a vector, and have equal size
      */
+
+	 auto result = static_cast<T*>(vresult);
 
      auto inputShapes = (Nd4jLong**) inputShapeInfos;
      T **input = (T **) data;
@@ -536,7 +541,7 @@ extern "C" __global__ void concatKernelVStackFloat(int dimension,
 											  int numArrays,
 											  Nd4jPointer *data,
 											  Nd4jPointer *inputShapeInfo,
-											  float *result,
+											  void *result,
 											  Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
     concatKernelVStackGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers);
@@ -576,7 +581,7 @@ extern "C" __global__ void concatKernelFloat(int dimension,
 											 int numArrays,
 											 Nd4jPointer *data,
 											 Nd4jPointer *inputShapeInfo,
-											 float *result,
+											 void *result,
 											 Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, Nd4jLong *zTadShape, Nd4jLong *zOffsets) {
 	concatKernelGeneric<float>(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
 }
@@ -592,9 +597,9 @@ extern "C" __global__ void concatKernelHalf(int dimension,
 
 
 template <typename T>
-__device__ void pullRowsKernelGeneric(T *x,
+__device__ void pullRowsKernelGeneric(void *vx,
                                      Nd4jLong *xShapeInfo,
-                                     T *z,
+                                     void *vz,
                                      Nd4jLong *zShapeInfo,
                                      Nd4jLong n,
                                      Nd4jLong *indexes,
@@ -603,7 +608,8 @@ __device__ void pullRowsKernelGeneric(T *x,
                                      Nd4jLong *zTadShapeInfo,
                                      Nd4jLong *zTadOffsets) {
 
-
+	auto x = static_cast<T*>(vx);
+	auto z = static_cast<T*>(vz);
     auto xEWS = shape::elementWiseStride(tadShapeInfo);
     auto zEWS = shape::elementWiseStride(zTadShapeInfo);
     auto tadLength = shape::length(tadShapeInfo);
@@ -724,7 +730,11 @@ extern "C" __global__ void kernelHalfsToFloats(half *dx, Nd4jLong n, float *dz) 
  * @param length
  */
 template<typename T>
-__device__ void accumulateKernelGeneric(T **x, T *z, int n, const Nd4jLong length) {
+__device__ void accumulateKernelGeneric(void **vx, void *vz, int n, const Nd4jLong length) {
+
+	auto x = static_cast<void**>(vx);
+	auto z = static_cast<void*>(vz);
+
     __shared__ T *shmem;
 
     if (threadIdx.x == 0) {
@@ -757,21 +767,24 @@ __device__ void accumulateKernelGeneric(T **x, T *z, int n, const Nd4jLong lengt
 }
 
 
-extern "C" __global__ void accumulateKernelHalf(float16 **dx, float16 *dz, int n, Nd4jLong length) {
+extern "C" __global__ void accumulateKernelHalf(void **dx, void *dz, int n, Nd4jLong length) {
     accumulateKernelGeneric<float16>(dx, dz, n, length);
 }
 
-extern "C" __global__ void accumulateKernelFloat(float **dx, float *dz, int n, Nd4jLong length) {
+extern "C" __global__ void accumulateKernelFloat(void **dx, void *dz, int n, Nd4jLong length) {
     accumulateKernelGeneric<float>(dx, dz, n, length);
 }
 
-extern "C" __global__ void accumulateKernelDouble(double **dx, double *dz, int n, Nd4jLong length) {
+extern "C" __global__ void accumulateKernelDouble(void **dx, void *dz, int n, Nd4jLong length) {
     accumulateKernelGeneric<double>(dx, dz, n, length);
 }
 
 
 template <typename T>
-__device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jLong length, bool propagate) {
+__device__ void averagingKernelGeneric(void **vdx, void *vdz, int n, Nd4jLong length, bool propagate) {
+
+	auto dx = static_cast<T**>(vdx);
+	auto dz = static_cast<T*>(vdz);
 
     __shared__ T *shmem;
 
@@ -824,20 +837,22 @@ __device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jLong length, bo
 }
 
 
-extern "C" __global__ void averagingKernelHalf(float16 **dx, float16 *dz, int n, Nd4jLong length, bool propagate) {
+extern "C" __global__ void averagingKernelHalf(void **dx, void *dz, int n, Nd4jLong length, bool propagate) {
     averagingKernelGeneric<float16>(dx, dz, n, length, propagate);
 }
 
-extern "C" __global__ void averagingKernelFloat(float **dx, float *dz, int n, Nd4jLong length, bool propagate) {
+extern "C" __global__ void averagingKernelFloat(void **dx, void *dz, int n, Nd4jLong length, bool propagate) {
     averagingKernelGeneric<float>(dx, dz, n, length, propagate);
 }
 
-extern "C" __global__ void averagingKernelDouble(double **dx, double *dz, int n, Nd4jLong length, bool propagate) {
+extern "C" __global__ void averagingKernelDouble(void **dx, void *dz, int n, Nd4jLong length, bool propagate) {
     averagingKernelGeneric<double>(dx, dz, n, length, propagate);
 }
 
 template<typename T>
-__device__ void tearKernelGeneric(T *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+__device__ void tearKernelGeneric(void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
+	auto x = static_cast<T*>(vx);
 
     __shared__ Nd4jLong tadLength;
     __shared__ int tadEWS;
@@ -889,23 +904,26 @@ __device__ void tearKernelGeneric(T *x, Nd4jLong *xShapeInfo, Nd4jPointer *targe
     }
 }
 
-extern "C" __global__ void tearKernelDouble(double *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+extern "C" __global__ void tearKernelDouble(void *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
     tearKernelGeneric<double>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
 }
 
-extern "C" __global__ void tearKernelFloat(float *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+extern "C" __global__ void tearKernelFloat(void *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
     tearKernelGeneric<float>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
 }
 
-extern "C" __global__ void tearKernelHalf(float16 *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+extern "C" __global__ void tearKernelHalf(void *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
     tearKernelGeneric<float16>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
 }
 
 
 template<typename T>
-__device__ void shuffleKernelGeneric(T **dX, Nd4jLong **xShapeInfo, T **dZ, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
+__device__ void shuffleKernelGeneric(void **vdX, Nd4jLong **xShapeInfo, void **vdZ, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
 
             // we assume that shuffle map for each X contains pair TAD Y
+
+			auto dX = static_cast<T**>(vdX);
+			auto dZ = static_cast<T**>(vdZ);
 
             __shared__ int tadLength;
             __shared__ int tadEWS;
@@ -983,15 +1001,15 @@ __device__ void shuffleKernelGeneric(T **dX, Nd4jLong **xShapeInfo, T **dZ, Nd4j
 }
 
 
-extern "C" __global__ void shuffleKernelDouble(double **x, Nd4jLong **xShapeInfo, double **z, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
+extern "C" __global__ void shuffleKernelDouble(void **x, Nd4jLong **xShapeInfo, void **z, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
     shuffleKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
 
-extern "C" __global__ void shuffleKernelFloat(float **x, Nd4jLong **xShapeInfo, float **z, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
+extern "C" __global__ void shuffleKernelFloat(void **x, Nd4jLong **xShapeInfo, void **z, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
     shuffleKernelGeneric<float>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
 
-extern "C" __global__ void shuffleKernelHalf(float16 **x, Nd4jLong **xShapeInfo, float16 **z, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
+extern "C" __global__ void shuffleKernelHalf(void **x, Nd4jLong **xShapeInfo, void **z, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
     shuffleKernelGeneric<float16>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
 

@@ -33,7 +33,15 @@
 
 template <typename T>
 __device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
-                                                        Nd4jLong N, T *dx, Nd4jLong *xShapeInfo, T *dy, Nd4jLong *yShapeInfo, T *dz, Nd4jLong *zShapeInfo, T *extraA, T *extraB, T scalarA, T scalarB) {
+                                                        Nd4jLong N, void *vdx, Nd4jLong *xShapeInfo, void *vdy, Nd4jLong *yShapeInfo, void *vdz, Nd4jLong *zShapeInfo, 
+                                                        void *vextraA, void *vextraB, double scalarA, double scalarB) {
+
+    auto dx = static_cast<T*>(vdx);
+    auto dy = static_cast<T*>(vdy);
+    auto dz = static_cast<T*>(vdz);
+    auto extraA = static_cast<T*>(vextraA);
+    auto extraB = static_cast<T*>(vextraB);
+
     __shared__ Nd4jPointer params[2];
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
@@ -60,7 +68,16 @@ __device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const
 }
 
 template<typename T, typename OpClass>
-__device__ static inline void invertedMetaPairwiseShapedGeneric(const int opTypeA, const int opTypeB, Nd4jLong N, T *dx, Nd4jLong *xShapeInfo, T *dy, Nd4jLong *yShapeInfo, T *dz, Nd4jLong *zShapeInfo, T *extraA, T *extraB, T scalarA, T scalarB) {
+__device__ static inline void invertedMetaPairwiseShapedGeneric(const int opTypeA, const int opTypeB, Nd4jLong N, void *vdx, 
+                                                               Nd4jLong *xShapeInfo, void *vdy, Nd4jLong *yShapeInfo, void *vdz, Nd4jLong *zShapeInfo, 
+                                                               void *vextraA, void *vextraB, double scalarA, double scalarB) {
+
+    auto dx = static_cast<T*>(vdx);
+    auto dy = static_cast<T*>(vdy);
+    auto dz = static_cast<T*>(vdz);
+    auto extraA = static_cast<T*>(vextraA);
+    auto extraB = static_cast<T*>(vextraB);
+
     __shared__ Nd4jPointer params[2];
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
@@ -82,7 +99,16 @@ __device__ static inline void invertedMetaPairwiseShapedGeneric(const int opType
 };
 
 template<typename T, typename OpClass>
-__device__ static inline void invertedMetaPairwiseShapedGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, T *dx, Nd4jLong *xShapeInfo, T *dy, Nd4jLong *yShapeInfo, T *dz, Nd4jLong *zShapeInfo, T *extraA, T *extraB, T scalarA, T scalarB) {
+__device__ static inline void invertedMetaPairwiseShapedGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, 
+                                                                Nd4jLong N, void *vdx, Nd4jLong *xShapeInfo, void *vdy, Nd4jLong *yShapeInfo, void *vdz, 
+                                                                Nd4jLong *zShapeInfo, void *vextraA, void *vextraB, double scalarA, double scalarB) {
+
+    auto dx = static_cast<T*>(vdx);
+    auto dy = static_cast<T*>(vdy);
+    auto dz = static_cast<T*>(vdz);
+    auto extraA = static_cast<T*>(vextraA);
+    auto extraB = static_cast<T*>(vextraB);
+
     __shared__ Nd4jPointer params[2];
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
@@ -104,7 +130,16 @@ __device__ static inline void invertedMetaPairwiseShapedGeneric(const int opType
 };
 
 template<typename T>
-__device__ static inline void invertedMetaPairwiseShapedNumericGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, T *dx, Nd4jLong *xShapeInfo, T *dy, Nd4jLong *yShapeInfo, T *dz, Nd4jLong *zShapeInfo, T *extraA, T *extraB, T scalarA, T scalarB) {
+__device__ static inline void invertedMetaPairwiseShapedNumericGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, 
+                                                                        Nd4jLong N, void *vdx, Nd4jLong *xShapeInfo, void *vdy, Nd4jLong *yShapeInfo, void *vdz,
+                                                                        Nd4jLong *zShapeInfo, void *vextraA, void *vextraB, double scalarA, double scalarB) {
+
+    auto dx = static_cast<T*>(vdx);
+    auto dy = static_cast<T*>(vdy);
+    auto dz = static_cast<T*>(vdz);
+    auto extraA = static_cast<T*>(vextraA);
+    auto extraB = static_cast<T*>(vextraB);    
+
     __shared__ Nd4jPointer params[2];
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
@@ -127,15 +162,15 @@ __device__ static inline void invertedMetaPairwiseShapedNumericGeneric(const int
 };
 
 
-extern "C" __global__ void invertedMetaPairwiseShapedNumericFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, float *dx, Nd4jLong *xShapeInfo, float *dy, Nd4jLong *yShapeInfo, float *dz, Nd4jLong *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
+extern "C" __global__ void invertedMetaPairwiseShapedNumericFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, void *dx, Nd4jLong *xShapeInfo, void *dy, Nd4jLong *yShapeInfo, void *dz, Nd4jLong *zShapeInfo, void *extraA, void *extraB, double scalarA, double scalarB) {
     invertedMetaPairwiseShapedNumericGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 }
 
-extern "C" __global__ void invertedMetaPairwiseShapedNumericDouble(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, double *dx, Nd4jLong *xShapeInfo, double *dy, Nd4jLong *yShapeInfo, double *dz, Nd4jLong *zShapeInfo, double *extraA, double *extraB, double scalarA, double scalarB) {
+extern "C" __global__ void invertedMetaPairwiseShapedNumericDouble(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, void *dx, Nd4jLong *xShapeInfo, void *dy, Nd4jLong *yShapeInfo, void *dz, Nd4jLong *zShapeInfo, void *extraA, void *extraB, double scalarA, double scalarB) {
     invertedMetaPairwiseShapedNumericGeneric<double>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 }
 
-extern "C" __global__ void invertedMetaPairwiseShapedNumericHalf(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, float16 *dx, Nd4jLong *xShapeInfo, float16 *dy, Nd4jLong *yShapeInfo, float16 *dz, Nd4jLong *zShapeInfo, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB) {
+extern "C" __global__ void invertedMetaPairwiseShapedNumericHalf(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, void *dx, Nd4jLong *xShapeInfo, void *dy, Nd4jLong *yShapeInfo, void *dz, Nd4jLong *zShapeInfo, void *extraA, void *extraB, double scalarA, double scalarB) {
     invertedMetaPairwiseShapedNumericGeneric<float16>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 }
 
