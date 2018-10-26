@@ -285,7 +285,7 @@ public class ParallelWrapper implements AutoCloseable {
                 zoo[pos].waitTillRunning();
             }
 
-            Nd4j.getMemoryManager().invokeGcOccasionally();
+            //Nd4j.getMemoryManager().invokeGcOccasionally();
 
             // optional averaging
             if (zoo[0].averagingRequired() && iterationsCounter.get() % averagingFrequency == 0 ) {

@@ -317,7 +317,7 @@ public class IndexedTail {
 
             // now, making sure we won't try to delete stuff twice
             lastDeletedIndex.set(minIdx);
-            System.gc();
+            //System.gc();
         }
     }
 
