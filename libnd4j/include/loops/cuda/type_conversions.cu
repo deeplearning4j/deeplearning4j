@@ -448,6 +448,8 @@ namespace nd4j {
 
             if (i < N)
                 dx[i] = vals[threadIdx.x];
+
+            __syncthreads();
         }
         __syncthreads();
 
