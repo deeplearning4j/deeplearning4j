@@ -124,11 +124,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class SameDiff {
 
-    private TrainingConfig trainingConfig;
-    private boolean initializedTraining;
-    private INDArray updaterState;
-    private Map<String,INDArray> updaterViews;
-    private Map<String,GradientUpdater> updaterMap;
+    private TrainingConfig trainingConfig;                          //Configuration for training. Must be set for training/evaluation, but not for other operations
+    private boolean initializedTraining;                            //True if training setup has been done
+    private INDArray updaterState;                                  //Updater state array (1d, length equal to number of trainable parameters)
+    private Map<String,INDArray> updaterViews;                      //Views of updaterState array for each trainable parameter
+    private Map<String,GradientUpdater> updaterMap;                 //GradientUpdater instance for each trainable parameter
 
     private Map<String, String[]> incomingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as inputs to that function
     private Map<String, String[]> outgoingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as outputs from that function
@@ -1429,22 +1429,51 @@ public class SameDiff {
         return new ArrayList<>(variableMap.values());
     }
 
-
-
-
-
+    /**
+     * Set the training configuration ({@link TrainingConfig}) for the SameDiff instance.
+     * A TrainingConfig must be set before the SameDiff instance can be trained via the fit methods
+     * @param trainingConfig Training configuration
+     */
     public void setTrainingConfig(TrainingConfig trainingConfig){
         this.trainingConfig = trainingConfig;
     }
 
+    /**
+     * Fit the SameDiff instance based on a single DataSet (i.e., a single minibatch for one iteration).<br>
+     * This method can only be used for singe input, single output SameDiff instances as DataSet only supports a
+     * single input and a single output.<br>
+     * Note that a {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before training can
+     * be performed.
+     *
+     * @param dataSet The DataSet (single minibatch) to peform training on
+     */
     public void fit(DataSet dataSet){
         fit(new SingletonMultiDataSetIterator(dataSet.toMultiDataSet()), 1, false);
     }
 
-    public void fit(DataSetIterator iter, int numEpochs){
+    /**
+     * Fit the SameDiff instance based on DataSetIterator for the specified number of epochs.<br>
+     * This method can only be used for singe input, single output SameDiff instances as DataSet only supports a
+     * single input and a single output.<br>
+     * Note that a {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before training can
+     * be performed.
+     *
+     * @param iter      The iterator to train the SameDiff instance with
+     * @param numEpochs The number of epochs for training. Must be > 0
+     */
+    public void fit(DataSetIterator iter, int numEpochs) {
         fit(new MultiDataSetIteratorAdapter(iter), numEpochs, true);
     }
 
+    /**
+     * Fit the SameDiff instance based on MultiDataSetIterator for the specified number of epochs.<br>
+     * This method can both singe input, single output and multi-input, multi-output SameDiff instances<br>
+     * Note that a {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before training can
+     * be performed.
+     *
+     * @param iter      The iterator to train the SameDiff instance with
+     * @param numEpochs The number of epochs for training. Must be > 0
+     */
     public void fit(MultiDataSetIterator iter, int numEpochs){
         fit(iter, numEpochs, true);
     }
@@ -1460,10 +1489,21 @@ public class SameDiff {
         if(!iter.hasNext() && iter.resetSupported())
             iter.reset();
 
+        boolean performedValidation = false;
+
         for(int i=0; i<numEpochs; i++ ) {
             while (iter.hasNext()) {
                 org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
-                //TODO: validate number of arrays + masks vs. config number of features/labels mappings
+                if(!performedValidation){
+                    Preconditions.checkState(trainingConfig.getDataSetFeatureMapping().size() == ds.numFeatureArrays(),
+                            "The number of dataset feature mapping variables set in the training configuration (%s) must match" +
+                                    " the number of dataset feature arrays (%s)", trainingConfig.getDataSetFeatureMapping().size(), ds.numFeatureArrays());
+                    Preconditions.checkState(trainingConfig.getDataSetLabelMapping().size() == ds.numLabelsArrays(),
+                            "The number of dataset label mapping variables set in the training configuration (%s) must match" +
+                                    " the number of dataset label arrays (%s)", trainingConfig.getDataSetLabelMapping().size(), ds.numLabelsArrays());
+
+                    performedValidation = true;
+                }
 
                 //Create placeholder variable map
                 Map<String, INDArray> placeholders = toPlaceholderMap(ds);
@@ -1535,11 +1575,13 @@ public class SameDiff {
         for(String s : placeHolderVarNames){
             variableNameToArr.remove(s);
         }
-
-
-        //Clear arrays that are for non-trainable params?
     }
 
+    /**
+     * Perform setup for training. Does the following:
+     * 1. Infer the set of trainable parameters - unless specified manually by the user
+     * 2. Set up the updaters
+     */
     protected void initializeTraining(){
         if(!initializedTraining){
             //First: infer the variables to be optimized if required
@@ -1596,6 +1638,13 @@ public class SameDiff {
         }
     }
 
+    /**
+     * Convert the MultiDataSet to a {@code Map<String,INDArray>} based on the TrainingConfig settings.
+     * The key is the placeholder/variable that the value INDArray should be associated with.
+     *
+     * @param ds MultiDataSet - source of the features/labels
+     * @return MultiDataSet converted to a Map, based on TrainingConfig
+     */
     private Map<String,INDArray> toPlaceholderMap(org.nd4j.linalg.dataset.api.MultiDataSet ds){
         Map<String,INDArray> placeholders = new HashMap<>();
         int count = 0;
