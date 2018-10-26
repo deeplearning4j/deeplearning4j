@@ -585,7 +585,7 @@ public class ParallelWrapper implements AutoCloseable {
              * update it & notify about number of threads in this training round then
              */
             if (gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
-                ((Registerable) gradientsAccumulator).registerConsumers(workers);
+                ((Registerable) gradientsAccumulator).registerConsumers(dataSets.length);
             }
 
 
