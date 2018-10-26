@@ -1698,6 +1698,86 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
         printf("]\n");
         fflush(stdout);
     }
+    static void printFormatted(NDArray const* arr, char const* msg = nullptr, int limit = -1) {
+        if (arr->isEmpty()) {
+            if (msg)
+                printf("%s: Empty\n", msg);
+            else
+                printf("Empty\n");
+        }
+        else if (arr->rankOf() == 0)
+            if (msg)
+                printf("%s: %f\n", msg, arr->e<float>(0));
+            else
+                printf("%f\n", arr->e<float>(0));
+        else if (arr->rankOf() == 1)
+            arr->printBuffer(msg, limit);
+        else if (arr->rankOf() == 2) {
+            Nd4jLong rows = arr->rows();
+            Nd4jLong cols = arr->columns();
+            char* padding = 0;
+            if (msg) {
+                if (msg[0])
+                    printf("%s: [", msg);
+                else {
+                    padding = new char[limit];
+                    memset(padding, ' ', limit - 1);
+                    padding[limit - 1] = 0;
+                    printf("[");
+                }
+            }
+            else printf("[");
+            for (Nd4jLong row = 0; row < rows; ++row) {
+                if (row && padding)
+                    printf("%s", padding);
+                printf("[");
+                for (Nd4jLong col = 0; col < cols; ++col) {
+                    if (col)
+                        printf(" ");
+                    printf("%f", arr->e<float>(row, col));
+                }
+                if (row < rows - 1)
+                    printf("]\n");
+                else
+                    printf("]");
+            }
+            printf("]");
+            if (msg)
+                if (*msg)
+                    printf("\n");
+
+            if (padding)
+                delete [] padding;
+        }
+        else {
+            //std::unique_ptr<ResultSet> arrs(arr->allTensorsAlongDimension({0}));
+            size_t restCount = 2;
+
+            if (msg && msg[0]) printf("%s:\n[", msg);
+            else               printf("[");
+
+            restCount = ShapeUtils::getNumOfSubArrs(arr->getShapeInfo(), {0});
+            for (size_t arrIndex = 0; arrIndex < restCount; ++arrIndex) {
+                NDArray subArr = (*arr)(arrIndex, {0});
+                printFormatted(&subArr, "\0\0", arr->rankOf() - 1);
+                if (arrIndex < restCount - 1) {
+
+                    for (Nd4jLong i = 1; i < arr->rankOf(); ++i)
+                        printf("\n");
+
+                    for (Nd4jLong i = 1; i < arr->rankOf() - 2; ++i)
+                        printf(" ");
+
+                }
+
+            }
+
+            printf("]");
+            if (msg)
+                if (*msg)
+                    printf("\n");
+        }
+    }
 
     void NDArray::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
         if (limit == -1)
@@ -1707,11 +1787,7 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
         if (rowFlag)
             printBuffer(msg, limit);
         else {
-            if (msg)
-            printf("%s:\n", msg);
-            std::unique_ptr<ResultSet> lastDimVectors(this->allTensorsAlongDimension({rank - 1}));
-            for (size_t i = 0; i < lastDimVectors->size(); i++)
-                lastDimVectors->at(i)->printBuffer();
+            printFormatted(this, msg, limit);
         }
         fflush(stdout);
     }
