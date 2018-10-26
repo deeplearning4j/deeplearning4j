@@ -59,7 +59,7 @@ namespace nd4j {
 
             std::vector<nd4j::DataType> _dataTypes;
 #ifdef HAVE_MKLDNN
-            MKLDNNStream<T>* _mkldnnStream = nullptr;
+            MKLDNNStream* _mkldnnStream = nullptr;
 #endif
         public:
             // TODO: maybe override new here as well?
@@ -120,8 +120,8 @@ namespace nd4j {
 
 #ifdef HAVE_MKLDNN
 #ifndef __JAVACPP_HACK__
-            MKLDNNStream<T> *getMKLDNNStream() { return _mkldnnStream; }
-            void setMKLDNNStream(MKLDNNStream<T> *mkldnnStream) { _mkldnnStream = mkldnnStream; }
+            MKLDNNStream *getMKLDNNStream() { return _mkldnnStream; }
+            void setMKLDNNStream(MKLDNNStream *mkldnnStream) { _mkldnnStream = mkldnnStream; }
 #endif
 #endif
             /**

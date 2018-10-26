@@ -59,7 +59,7 @@ namespace nd4j {
 
             static void conv2d(const std::vector<NDArray*>& inArrs, NDArray* output, const std::vector<int>& intArgs);
 #ifdef HAVE_MKLDNN
-            static void mkldnn_conv2d(MKLDNNStream<T> &stream, const std::vector<NDArray*>& inArrs, NDArray* output, const std::vector<int>& intArgs);
+            static void mkldnn_conv2d(MKLDNNStream &stream, const std::vector<NDArray*>& inArrs, NDArray* output, const std::vector<int>& intArgs);
 #endif
             static void conv2dBP(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const std::vector<int>& intArgs);
 
