@@ -300,7 +300,13 @@ public class IndexedTail {
         }
 
         // now we should get minimal id of consumed update
-        long minIdx = maxAppliedIndexEverywhere();
+        val minIdx = maxAppliedIndexEverywhere();
+        val allPositions = new long[positions.size()];
+        int cnt = 0;
+        for (val p:positions.values())
+            allPositions[cnt++] = p.get();
+
+        log.info("Min idx: {}; last deleted index: {}; stored updates: {}; positions: {}", minIdx, lastDeletedIndex.get(), updates.size(), allPositions);
 
         // now we're checking, if there are undeleted updates between
         if (minIdx > lastDeletedIndex.get()) {
@@ -311,6 +317,7 @@ public class IndexedTail {
 
             // now, making sure we won't try to delete stuff twice
             lastDeletedIndex.set(minIdx);
+            System.gc();
         }
     }
 
