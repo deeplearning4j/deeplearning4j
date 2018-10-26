@@ -10939,7 +10939,7 @@ public class SameDiff {
                 0,
                 0,
                 -1,
-                0.0f, 0, 0, 0);
+                0.0f, 0, 0, 0,0);
 
         return flatNode;
     }
@@ -11063,7 +11063,7 @@ public class SameDiff {
         }
 
         int[] dims;
-        if(node.opType() == Op.Type.REDUCE || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3){
+        if(node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_LONG || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3){
             dims = node.getDimensions();
             if(dims == null)
                 dims = new int[0];
@@ -11115,7 +11115,7 @@ public class SameDiff {
                 integerArgs,
                 dimensions,
                 -1,
-                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().floatValue() : 0.0f, 0, scopeName,
+                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().getFloat(0) : 0.0f, 0, scopeName,
                 outVarNamesOffset,
                 opNameOffset);
 
@@ -11561,30 +11561,7 @@ public class SameDiff {
     }
 
 
-    /**
-     * This method checks the order of ops defined in the current SameDiff instance, and shuffles them if required
-     * such that the order is valid for execution. An example of an invalid order is the graph "A -> B" but B is scheduled
-     * for execution before A. The order of a graph directly after importing it may not be valid in all cases.<br>
-     * This method generally shouldn't be used by users (i.e., isn't necessary).
-     * It is useful for situations such as graph import
-     */
-    public void validateExecutionOrder(){
-        //First: check order. SameDiff.exec() iterates over functionInstancesById (a linked hash map)
-        Set<String> seen = new HashSet<>();
-        boolean valid = true;
-        for(Map.Entry<String,DifferentialFunction> e : functionInstancesById.entrySet()){
-            String[] inputs = incomingArgsReverse.get(e.getKey());
-            if(inputs != null) {
-                for (String s : inputs) {
-                    if(!seen.contains(s)){
-                        valid = false;
-                        break;
-                    }
-                }
-            }
-            if(!valid){
-                break;
-            }
+
     public static org.nd4j.linalg.api.buffer.DataType getDataTypeFromByte(byte val) {
         if (val == DataType.FLOAT)
             return org.nd4j.linalg.api.buffer.DataType.FLOAT;
@@ -11604,12 +11581,9 @@ public class SameDiff {
             return org.nd4j.linalg.api.buffer.DataType.UBYTE;
         else if (val == DataType.INT16)
             return org.nd4j.linalg.api.buffer.DataType.SHORT;
-
-            String[] outputs = outgoingArgsReverse.get(e.getKey());
-            if(outputs != null){
-                Collections.addAll(seen, outputs);
-            }
-        }
+        else
+            throw new RuntimeException("Unknown datatype: " + val);
+    }
 
     /**
      * This method converts enums for DataType
@@ -11634,50 +11608,7 @@ public class SameDiff {
         }
     }
 
-        if(!valid){
-            //Need to re-order
-            //Algorithm here: add all ops to a queue. Take the first one for
-            // this keeps the current order as much as possible
-            // O(n) best case, O(n^2) worst case
-            LinkedList<Map.Entry<String,DifferentialFunction>> queue = new LinkedList<>();
-            for(Map.Entry<String,DifferentialFunction> e : functionInstancesById.entrySet()){
-                queue.add(e);
-            }
 
-            Map<String,DifferentialFunction> newMap = new LinkedHashMap<>();
-            seen.clear();
-            //Add all placeholders and constants - these are available at the start of execution
-            seen.addAll(placeHolderVarNames);
-            if(importedConstants != null){
-                seen.addAll(importedConstants);
-            }
-
-            while(!queue.isEmpty()) {
-                Iterator<Map.Entry<String, DifferentialFunction>> iterator = queue.iterator();
-                boolean anySeen = false;
-                while (iterator.hasNext()) {
-                    Map.Entry<String, DifferentialFunction> e = iterator.next();
-                    boolean allSeen = true;
-                    for (String in : incomingArgsReverse.get(e.getKey())) {
-                        if (!seen.contains(in)) {
-                            allSeen = false;
-                            break;
-                        }
-                    }
-
-                    if (allSeen){
-                        newMap.put(e.getKey(), e.getValue());
-                        anySeen = true;
-                        iterator.remove();
-                        SDVariable[] outputVars = e.getValue().outputVariables();
-//                        String[] outputs = outgoingArgsReverse.get(e.getKey());
-//                        Collections.addAll(seen, outputs);
-                        for(SDVariable s : outputVars){
-                            seen.add(s.getVarName());
-                        }
-                        break;  //Restart loop over remaining queue elements
-                    }
-                }
 
     /**
      * This method converts enums for Op.Type
@@ -11727,32 +11658,7 @@ public class SameDiff {
                 throw new UnsupportedOperationException("Unknown op type passed in: " + type);
         }
     }
-                if(!anySeen){
-                    iterator = queue.iterator();
-                    while (iterator.hasNext()) {
-                        Map.Entry<String, DifferentialFunction> e = iterator.next();
-                        boolean allSeen = true;
-                        StringBuilder sb = new StringBuilder();
-                        sb.append(e.getKey()).append(" - missing: ");
-                        boolean first = true;
-                        for (String in : incomingArgsReverse.get(e.getKey())) {
-                            if (!seen.contains(in)) {
-                                sb.append(in);
-                                if(!first){
-                                    sb.append(", ");
-                                }
-                                first = false;
-                            }
-                        }
-                        log.info(sb.toString());
-                    }
-                }
 
-                Preconditions.checkState(anySeen, "No ops available with all inputs previously calculated." +
-                        " Graph structure is invalid?");
-            }
-
-            functionInstancesById = newMap;
     /**
      * This method converts an Op.Type to it's corresponding byte value
      *
@@ -11809,6 +11715,112 @@ public class SameDiff {
                 return OpType.SUMMARYSTATS;
             default:
                 throw new UnsupportedOperationException("Unknown op type passed in: " + type);
+        }
+    }
+
+    /**
+     * This method checks the order of ops defined in the current SameDiff instance, and shuffles them if required
+     * such that the order is valid for execution. An example of an invalid order is the graph "A -> B" but B is scheduled
+     * for execution before A. The order of a graph directly after importing it may not be valid in all cases.<br>
+     * This method generally shouldn't be used by users (i.e., isn't necessary).
+     * It is useful for situations such as graph import
+     */
+    public void validateExecutionOrder(){
+        //First: check order. SameDiff.exec() iterates over functionInstancesById (a linked hash map)
+        Set<String> seen = new HashSet<>();
+        boolean valid = true;
+        for(Map.Entry<String,DifferentialFunction> e : functionInstancesById.entrySet()){
+            String[] inputs = incomingArgsReverse.get(e.getKey());
+            if(inputs != null) {
+                for (String s : inputs) {
+                    if(!seen.contains(s)){
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+            if(!valid){
+                break;
+            }
+
+            String[] outputs = outgoingArgsReverse.get(e.getKey());
+            if(outputs != null){
+                Collections.addAll(seen, outputs);
+            }
+        }
+
+
+        if(!valid){
+            //Need to re-order
+            //Algorithm here: add all ops to a queue. Take the first one for
+            // this keeps the current order as much as possible
+            // O(n) best case, O(n^2) worst case
+            LinkedList<Map.Entry<String,DifferentialFunction>> queue = new LinkedList<>();
+            for(Map.Entry<String,DifferentialFunction> e : functionInstancesById.entrySet()){
+                queue.add(e);
+            }
+
+            Map<String,DifferentialFunction> newMap = new LinkedHashMap<>();
+            seen.clear();
+            //Add all placeholders and constants - these are available at the start of execution
+            seen.addAll(placeHolderVarNames);
+            if(importedConstants != null){
+                seen.addAll(importedConstants);
+            }
+
+            while(!queue.isEmpty()) {
+                Iterator<Map.Entry<String, DifferentialFunction>> iterator = queue.iterator();
+                boolean anySeen = false;
+                while (iterator.hasNext()) {
+                    Map.Entry<String, DifferentialFunction> e = iterator.next();
+                    boolean allSeen = true;
+                    for (String in : incomingArgsReverse.get(e.getKey())) {
+                        if (!seen.contains(in)) {
+                            allSeen = false;
+                            break;
+                        }
+                    }
+
+                    if (allSeen){
+                        newMap.put(e.getKey(), e.getValue());
+                        anySeen = true;
+                        iterator.remove();
+                        SDVariable[] outputVars = e.getValue().outputVariables();
+//                        String[] outputs = outgoingArgsReverse.get(e.getKey());
+//                        Collections.addAll(seen, outputs);
+                        for(SDVariable s : outputVars){
+                            seen.add(s.getVarName());
+                        }
+                        break;  //Restart loop over remaining queue elements
+                    }
+                }
+
+                if(!anySeen){
+                    iterator = queue.iterator();
+                    while (iterator.hasNext()) {
+                        Map.Entry<String, DifferentialFunction> e = iterator.next();
+                        boolean allSeen = true;
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(e.getKey()).append(" - missing: ");
+                        boolean first = true;
+                        for (String in : incomingArgsReverse.get(e.getKey())) {
+                            if (!seen.contains(in)) {
+                                sb.append(in);
+                                if(!first){
+                                    sb.append(", ");
+                                }
+                                first = false;
+                            }
+                        }
+                        log.info(sb.toString());
+                    }
+                }
+
+                Preconditions.checkState(anySeen, "No ops available with all inputs previously calculated." +
+                        " Graph structure is invalid?");
+            }
+
+            functionInstancesById = newMap;
         }
     }
 

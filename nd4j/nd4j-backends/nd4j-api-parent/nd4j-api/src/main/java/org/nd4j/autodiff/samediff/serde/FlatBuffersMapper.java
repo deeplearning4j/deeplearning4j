@@ -3,13 +3,14 @@ package org.nd4j.autodiff.samediff.serde;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.impl.accum.BaseReduction;
+
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -28,21 +29,8 @@ public class FlatBuffersMapper {
      * @param type
      * @return
      */
-    public static byte getDataTypeAsByte(DataBuffer.Type type) {
-        switch (type) {
-            case FLOAT:
-                return DataType.FLOAT;
-            case DOUBLE:
-                return DataType.DOUBLE;
-            case HALF:
-                return DataType.HALF;
-            case INT:
-                return DataType.INT32;
-            case LONG:
-                return DataType.INT64;
-            default:
-                throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
-        }
+    public static byte getDataTypeAsByte(org.nd4j.linalg.api.buffer.DataType type) {
+        return SameDiff.getDataTypeAsByte(type);
     }
 
     /**
@@ -51,15 +39,8 @@ public class FlatBuffersMapper {
      * @param val
      * @return
      */
-    public static DataBuffer.Type getDataTypeFromByte(byte val) {
-        if (val == DataType.FLOAT)
-            return DataBuffer.Type.FLOAT;
-        else if (val == DataType.DOUBLE)
-            return DataBuffer.Type.DOUBLE;
-        else if (val == DataType.HALF)
-            return DataBuffer.Type.HALF;
-
-        throw new UnsupportedOperationException("Unsupported DataType: [" + val + "]");
+    public static org.nd4j.linalg.api.buffer.DataType getDataTypeFromByte(byte val) {
+        return SameDiff.getDataTypeFromByte(val);
     }
 
 
@@ -115,34 +96,7 @@ public class FlatBuffersMapper {
      * @return Op type
      */
     public static Op.Type getTypeFromByte(byte type) {
-        switch (type) {
-            case OpType.SCALAR:
-                return Op.Type.SCALAR;
-            case OpType.BROADCAST:
-                return Op.Type.BROADCAST;
-            case OpType.TRANSFORM:
-                return Op.Type.TRANSFORM;
-            case OpType.ACCUMULATION:
-                return Op.Type.REDUCE;
-            case OpType.ACCUMULATION3:
-                return Op.Type.REDUCE3;
-            case OpType.INDEX_ACCUMULATION:
-                return Op.Type.INDEXREDUCE;
-            case OpType.RANDOM:
-                return Op.Type.RANDOM;
-            case OpType.LOGIC:
-                return Op.Type.META;
-            case OpType.CUSTOM:
-                return Op.Type.CUSTOM;
-            case OpType.SHAPE:
-                return Op.Type.SHAPE;
-            case OpType.PAIRWISE:
-                return Op.Type.PAIRWISE;
-            case OpType.SUMMARYSTATS:
-                return Op.Type.SUMMARYSTATS;
-            default:
-                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
-        }
+        return SameDiff.getTypeFromByte(type);
     }
 
     /**
@@ -152,45 +106,7 @@ public class FlatBuffersMapper {
      * @return Byte representing the op type
      */
     public static byte getFlatOpType(Op.Type type) {
-        switch (type) {
-            case SCALAR:
-                return OpType.SCALAR;
-            case BROADCAST:
-                return OpType.BROADCAST;
-            case TRANSFORM:
-            case SPECIAL:
-                return OpType.TRANSFORM;
-            case REDUCE:
-                return OpType.ACCUMULATION;
-            case REDUCE3:
-                return OpType.ACCUMULATION3;
-            case INDEXREDUCE:
-                return OpType.INDEX_ACCUMULATION;
-            case RANDOM:
-                return OpType.RANDOM;
-            case VARIANCE:
-                return OpType.SUMMARYSTATS;
-            case MERGE:
-            case CONDITIONAL:
-            case LOOP:
-            case RETURN:
-            case ENTER:
-            case EXIT:
-            case NEXT_ITERATION:
-            case LOOP_COND:
-            case IF:
-                return OpType.LOGIC;
-            case CUSTOM:
-                return OpType.CUSTOM;
-            case SHAPE:
-                return OpType.SHAPE;
-            case PAIRWISE:
-                return OpType.PAIRWISE;
-            case SUMMARYSTATS:
-                return OpType.SUMMARYSTATS;
-            default:
-                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
-        }
+        return SameDiff.getFlatOpType(type);
     }
 
 
