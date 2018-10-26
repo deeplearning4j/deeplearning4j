@@ -30,6 +30,7 @@ Below you'll find a list of resources. The sections are roughly organized in the
 
 The math involved with deep learning is basically linear algebra, calculus and probility, and if you have studied those at the undergraduate level, you will be able to understand most of the ideas and notation in deep-learning papers. If haven't studied those in college, never fear. There are many free resources available (and some on this website).
 
+* [Calculus Made Easy, by Silvanus P. Thompson](http://www.gutenberg.org/ebooks/33283?msg=welcome_stranger)
 * [Seeing Theory: A Visual Introduction to Probability and Statistics](http://students.brown.edu/seeing-theory/)
 * [Andrew Ng's 6-Part Review of Linear Algebra](https://www.youtube.com/playlist?list=PLnnr1O8OWc6boN4WHeuisJWmeQHH9D_Vg)
 * [Khan Academy's Linear Algebra Course](https://www.khanacademy.org/math/linear-algebra)
