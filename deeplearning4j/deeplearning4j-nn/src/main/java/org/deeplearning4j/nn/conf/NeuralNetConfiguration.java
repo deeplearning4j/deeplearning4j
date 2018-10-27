@@ -272,7 +272,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
                             .trainingWorkspaceMode(wsmTrain).cacheMode(globalConfig.cacheMode)
-                            .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig).build();
+                            .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig)
+                            .legacyBatchScaledL2(legacyBatchScaledL2).build();
         }
 
         /** Helper class for setting input types */
@@ -504,6 +505,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected List<LayerConstraint> allParamConstraints;
         protected List<LayerConstraint> weightConstraints;
         protected List<LayerConstraint> biasConstraints;
+        protected boolean legacyBatchScaledL2 = false;
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.ENABLED;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
@@ -1029,6 +1031,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        public Builder legacyBatchScaledL2(boolean legacyBatchScaledL2){
+            this.legacyBatchScaledL2 = legacyBatchScaledL2;
+            return this;
+        }
+
         /**
          * Return a configuration based on this builder
          *
@@ -1163,6 +1170,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 ActivationLayer al = (ActivationLayer)layer;
                 if(al.getActivationFn() == null)
                     al.setActivationFn(activationFn);
+            }
+
+            if(layer instanceof BaseOutputLayer){
+                BaseOutputLayer bol = (BaseOutputLayer)layer;
+                bol.setLegacyBatchScaledL2(legacyBatchScaledL2);
             }
         }
     }

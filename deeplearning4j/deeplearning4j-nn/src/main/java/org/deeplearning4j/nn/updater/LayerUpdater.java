@@ -33,11 +33,11 @@ import java.util.HashMap;
 public class LayerUpdater extends BaseMultiLayerUpdater<Layer> {
 
     public LayerUpdater(Layer layer) {
-        this(layer, null);
+        this(layer, null, false);
     }
 
-    public LayerUpdater(Layer layer, INDArray updaterState) {
-        super(layer, updaterState);
+    public LayerUpdater(Layer layer, INDArray updaterState, boolean legacyBatchScaledL2) {
+        super(layer, updaterState, legacyBatchScaledL2);
         if (layer instanceof MultiLayerNetwork) {
             throw new UnsupportedOperationException("Cannot use LayerUpdater for a MultiLayerNetwork");
         }
