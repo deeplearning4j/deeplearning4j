@@ -1031,6 +1031,15 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * Not recommended for use. Disabled by default, provided for backward compatibility for mainining same
+         * behaviour as nets trained in 1.0.0-beta2 and earlier.<br>
+         * When disabled (default): Use {@code loss = average(example_loss) + lambda * l2(weights) )<br>
+         * When enabled: Use {@code loss = average(example_loss) + 1/N * lambda * l2(weights) ) where N is minibatch size<br>
+         * Impacts how both L1 and L2 regularization is applied
+         * @param legacyBatchScaledL2 True: use
+         * @return
+         */
         public Builder legacyBatchScaledL2(boolean legacyBatchScaledL2){
             this.legacyBatchScaledL2 = legacyBatchScaledL2;
             return this;
