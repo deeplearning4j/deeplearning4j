@@ -265,6 +265,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
         conf.cacheMode = this.cacheMode;
         conf.defaultConfiguration.cacheMode = this.cacheMode;
+        conf.legacyBatchScaledL2 = this.legacyBatchScaledL2;
 
         return conf;
     }

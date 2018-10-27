@@ -3429,7 +3429,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
-        Evaluation e = new Evaluation(labelsList, topN);
+        Evaluation e = new org.deeplearning4j.eval.Evaluation(labelsList, topN);
         doEvaluation(iterator, e);
 
         return e;

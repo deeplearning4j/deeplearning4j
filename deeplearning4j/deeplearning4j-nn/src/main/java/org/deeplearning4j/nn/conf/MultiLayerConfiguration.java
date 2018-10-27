@@ -317,6 +317,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;
             clone.trainingWorkspaceMode = this.trainingWorkspaceMode;
             clone.cacheMode = this.cacheMode;
+            clone.legacyBatchScaledL2 = legacyBatchScaledL2;
 
             return clone;
 
