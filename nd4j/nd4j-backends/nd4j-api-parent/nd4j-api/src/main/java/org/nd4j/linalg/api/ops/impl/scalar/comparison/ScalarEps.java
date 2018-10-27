@@ -93,12 +93,12 @@ public class ScalarEps extends BaseScalarBoolOp {
 
     @Override
     public String onnxName() {
-        return "Equal";
+        return "ScalarEps";
     }
 
     @Override
     public String tensorflowName() {
-        return "equal";
+        return "ScalarEps";
     }
 
 

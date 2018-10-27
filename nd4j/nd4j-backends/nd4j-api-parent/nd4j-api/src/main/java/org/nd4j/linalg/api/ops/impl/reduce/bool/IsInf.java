@@ -62,12 +62,12 @@ public class IsInf extends BaseReduceBoolOp {
 
     @Override
     public String onnxName() {
-        return "IsInf";
+        return "HasInf";
     }
 
     @Override
     public String tensorflowName() {
-        return "IsInf";
+        return "HasInf";
     }
 
 
