@@ -302,6 +302,21 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             preApply(layer, layerGradients.get(layerName), iteration);
         }
 
+        //Divide by minibatch size if necessary
+        if (isMiniBatch()) {
+            //OK even with pretrain layers: their gradients will get modified during next backprop iteration
+            if (isExternal) {
+                gradient.gradient().divi(batchSize);
+            } else {
+                //Standard case
+                INDArray grad = getFlattenedGradientsView();
+                if(grad != null) {
+                    //May be null for nets with no parameters
+                    grad.divi(batchSize);
+                }
+            }
+        }
+
 
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
         if(getClass() != LayerUpdater.class){
@@ -325,20 +340,20 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             }
         }
 
-        //Divide by minibatch size if necessary
-        if (isMiniBatch()) {
-            //OK even with pretrain layers: their gradients will get modified during next backprop iteration
-            if (isExternal) {
-                gradient.gradient().divi(batchSize);
-            } else {
-                //Standard case
-                INDArray grad = getFlattenedGradientsView();
-                if(grad != null) {
-                    //May be null for nets with no parameters
-                    grad.divi(batchSize);
-                }
-            }
-        }
+//        //Divide by minibatch size if necessary
+//        if (isMiniBatch()) {
+//            //OK even with pretrain layers: their gradients will get modified during next backprop iteration
+//            if (isExternal) {
+//                gradient.gradient().divi(batchSize);
+//            } else {
+//                //Standard case
+//                INDArray grad = getFlattenedGradientsView();
+//                if(grad != null) {
+//                    //May be null for nets with no parameters
+//                    grad.divi(batchSize);
+//                }
+//            }
+//        }
     }
 
     protected boolean isSingleLayerUpdater() {

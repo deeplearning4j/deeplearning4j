@@ -205,6 +205,7 @@ public class CompareTrainingImplementations {
                 net = new MultiLayerNetwork(mlc);
                 net.init();
                 net.setParamTable(oldParams);
+                INDArray w0Before = oldParams.get("0_W");
 
                 System.out.println("0_W before:\n" + oldParams.get("0_W"));
                 System.out.println("0_W grad:\n" + grads.get("0_W"));
@@ -215,6 +216,13 @@ public class CompareTrainingImplementations {
                     sd.fit(ds);
 
                     String s = testName + " - " + j;
+
+                    INDArray sd0WUpdate = w0.getArr().sub(w0Before);
+                    System.out.println("----");
+                    System.out.println(sd0WUpdate);
+                    System.out.println("----");
+                    System.out.println("dl4j update:");
+                    System.out.println(net.getParam("0_W").sub(w0Before));
                     assertEquals(s, net.getParam("0_W"), w0.getArr());
                     assertEquals(s, net.getParam("0_b"), b0.getArr());
                     assertEquals(s, net.getParam("1_W"), w1.getArr());
