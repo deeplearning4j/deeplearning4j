@@ -1735,9 +1735,42 @@ public class SameDiff {
     }
 
     /**
+     * Evaluate the performance of a single variable's prediction.<br>
+     * For example, if the variable to evaluatate was called "softmax" you would use:
+     * <pre>
+     * {@code Evaluation e = new Evaluation();
+     * sameDiff.evaluate(iterator, "softmax", e);}
+     * </pre>
+     *
+     * @param iterator       Iterator as source of data to evaluate
+     * @param outputVariable The variable to evaluate
+     * @param evaluations    The evaluations to perform
+     */
+    public void evaluate(DataSetIterator iterator, String outputVariable, IEvaluation... evaluations){
+        Preconditions.checkArgument(evaluations != null && evaluations.length > 0, "No evaluations were passed to the evaluate method");
+        evaluate(new MultiDataSetIteratorAdapter(iterator), Collections.singletonMap(outputVariable, Arrays.asList(evaluations)),
+                Collections.singletonMap(outputVariable, 0));
+    }
+
+    /**
+     * Evaluation for multiple-output networks.<br>
      * See {@link #evaluate(MultiDataSetIterator, Map, Map)}
      */
-    public void evaluate(DataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals){
+    public void evaluate(DataSetIterator iterator, Map<String,IEvaluation> variableEvals){
+        Map<String,Integer> map = new HashMap<>();
+        Map<String,List<IEvaluation>> variableEvalsList = new HashMap<>();
+        for(String s : variableEvals.keySet()){
+            map.put(s, 0);  //Only 1 possible output here with DataSetIterator
+            variableEvalsList.put(s, Collections.singletonList(variableEvals.get(s)));
+        }
+        evaluate(new MultiDataSetIteratorAdapter(iterator), variableEvalsList, map);
+    }
+
+    /**
+     * Evaluation for multiple output networks - one ore more
+     * See {@link #evaluate(MultiDataSetIterator, Map, Map)}
+     */
+    public void evaluateMultiple(DataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals){
         Map<String,Integer> map = new HashMap<>();
         for(String s : variableEvals.keySet()){
             map.put(s, 0);  //Only 1 possible output here with DataSetIterator
@@ -1791,7 +1824,6 @@ public class SameDiff {
                 }
             }
         }
-
     }
 
 
