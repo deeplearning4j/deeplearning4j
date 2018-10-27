@@ -27,6 +27,7 @@ import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.rdd.RDD;
+import org.datavec.spark.util.BroadcastHadoopConfigHolder;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.api.loader.impl.SerializedDataSetLoader;
@@ -535,7 +536,8 @@ public class SparkDl4jMultiLayer extends SparkListenable {
             throw new RuntimeException("Error listing paths in directory", e);
         }
 
-        JavaRDD<DataSet> rdd = paths.map(new LoadDataSetFunction(loader, new RemoteFileSourceFactory(sc.hadoopConfiguration())));
+
+        JavaRDD<DataSet> rdd = paths.map(new LoadDataSetFunction(loader, new RemoteFileSourceFactory(BroadcastHadoopConfigHolder.get(sc))));
         return doEvaluation(rdd, batchSize, new Evaluation())[0];
     }
 
@@ -768,7 +770,8 @@ public class SparkDl4jMultiLayer extends SparkListenable {
     protected IEvaluation[] doEvaluation(JavaRDD<String> data, int evalNumWorkers, int evalBatchSize, DataSetLoader loader, MultiDataSetLoader mdsLoader, IEvaluation... emptyEvaluations){
         Configuration config = sc.hadoopConfiguration();
         IEvaluateMDSPathsFlatMapFunction evalFn = new IEvaluateMDSPathsFlatMapFunction(sc.broadcast(conf.toJson()),
-                SparkUtils.asByteArrayBroadcast(sc, network.params()), evalNumWorkers, evalBatchSize, loader, mdsLoader, config, emptyEvaluations);
+                SparkUtils.asByteArrayBroadcast(sc, network.params()), evalNumWorkers, evalBatchSize, loader, mdsLoader,
+                BroadcastHadoopConfigHolder.get(sc), emptyEvaluations);
         Preconditions.checkArgument(evalNumWorkers > 0, "Invalid number of evaulation workers: require at least 1 - got %s", evalNumWorkers);
         JavaRDD<IEvaluation[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<>(), new IEvaluateAggregateFunction<>());

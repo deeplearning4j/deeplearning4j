@@ -21,6 +21,8 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.util.DefaultHadoopConfig;
 import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -48,7 +50,7 @@ public class BatchAndExportMultiDataSetsFunction
     private final int minibatchSize;
     private final String exportBaseDirectory;
     private final String jvmuid;
-    private final SerializableHadoopConfig conf;
+    private final Broadcast<SerializableHadoopConfig> conf;
 
     /**
      * @param minibatchSize       Minibatch size to combine examples to (if necessary)
@@ -63,12 +65,12 @@ public class BatchAndExportMultiDataSetsFunction
      * @param exportBaseDirectory Base directory for exporting
      * @param configuration       Hadoop Configuration
      */
-    public BatchAndExportMultiDataSetsFunction(int minibatchSize, String exportBaseDirectory, Configuration configuration) {
+    public BatchAndExportMultiDataSetsFunction(int minibatchSize, String exportBaseDirectory, Broadcast<SerializableHadoopConfig> configuration) {
         this.minibatchSize = minibatchSize;
         this.exportBaseDirectory = exportBaseDirectory;
         String fullUID = UIDProvider.getJVMUID();
         this.jvmuid = (fullUID.length() <= 8 ? fullUID : fullUID.substring(0, 8));
-        this.conf = (configuration == null ? null : new SerializableHadoopConfig(configuration));
+        this.conf = configuration;
     }
 
     @Override
@@ -150,7 +152,7 @@ public class BatchAndExportMultiDataSetsFunction
                         + (exportBaseDirectory.endsWith("/") || exportBaseDirectory.endsWith("\\") ? "" : "/")
                         + filename);
 
-        Configuration c = (conf != null ? conf.getConfiguration() : new Configuration());
+        Configuration c = conf == null ? DefaultHadoopConfig.get() : conf.getValue().getConfiguration();
 
         FileSystem file = FileSystem.get(uri, c);
         try (FSDataOutputStream out = file.create(new Path(uri))) {
