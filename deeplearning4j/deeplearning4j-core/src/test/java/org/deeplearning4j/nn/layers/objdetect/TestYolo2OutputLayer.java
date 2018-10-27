@@ -495,7 +495,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .convolutionMode(ConvolutionMode.Same)
-                .updater(new Adam(1e-3))
+                .updater(new Adam(2e-3))
                 .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                 .gradientNormalizationThreshold(3)
                 .activation(Activation.LEAKYRELU)
