@@ -70,11 +70,11 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testStdevDEBUG() throws Exception {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
 
         List<String> errors = new ArrayList<>();
 
-        for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345)) {
+        for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345, DataType.DOUBLE)) {
             for (boolean biasCorrected : new boolean[]{false, true}) {
                 SameDiff sd = SameDiff.create();
                 SDVariable var = sd.var("in", p.getFirst());
@@ -108,10 +108,10 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testStdevDEBUG2() {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         List<String> errors = new ArrayList<>();
 
-        Pair<INDArray, String> p = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345).get(0);
+        Pair<INDArray, String> p = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345, DataType.DOUBLE).get(0);
 
         for (boolean biasCorrected : new boolean[]{false, true}) {
             SameDiff sd = SameDiff.create();

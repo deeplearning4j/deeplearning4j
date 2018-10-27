@@ -1,5 +1,6 @@
 package org.nd4j.imports.TFGraphs;
 
+import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -25,9 +26,9 @@ public class TestPad {
                 .addIntegerArguments(0) //constant mode, with no constant specified
                 .build();
 
-        List<long[]> outShape = Nd4j.getExecutioner().calculateOutputShape(op);
+        val outShape = Nd4j.getExecutioner().calculateOutputShape(op);
         assertEquals(1, outShape.size());
-        assertArrayEquals(new long[]{1, 29, 29, 264}, outShape.get(0));
+        assertArrayEquals(new long[]{1, 29, 29, 264}, outShape.get(0).getShape());
 
         Nd4j.getExecutioner().exec(op); //Crash here
     }
