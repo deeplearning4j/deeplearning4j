@@ -180,6 +180,13 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
         }
     }
 
+    /**
+     * Attempt to load DL4J IEvaluation JSON from 1.0.0-beta2 or earlier.
+     * Given IEvaluation classes were moved to ND4J with no major changes, a simple "find and replace" for the class
+     * names is used.
+     * @param json              JSON to attempt to deserialize
+     * @param originalException Original exception to be re-thrown if it isn't legacy JSON
+     */
     protected static <T extends IEvaluation> T attempFromLegacyFromJson(String json, IllegalArgumentException originalException){
         if(json.contains("org.deeplearning4j.eval.Evaluation")){
             String newJson = json.replaceAll("org.deeplearning4j.eval.Evaluation", "org.nd4j.evaluation.classification.Evaluation");
