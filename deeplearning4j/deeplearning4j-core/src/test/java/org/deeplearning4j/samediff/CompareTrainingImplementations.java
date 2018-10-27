@@ -64,13 +64,10 @@ public class CompareTrainingImplementations {
         INDArray f = ds.getFeatures();
         INDArray l = ds.getLabels();
 
-//        double[] l1 = new double[]{0.0, 0.0, 0.01, 0.01};
-//        double[] l2 = new double[]{0.0, 0.02, 0.00, 0.02};
-        double[] l1 = new double[]{0.0};
-        double[] l2 = new double[]{0.0};
+        double[] l1 = new double[]{0.0, 0.0, 0.01, 0.01};
+        double[] l2 = new double[]{0.0, 0.02, 0.00, 0.02};
 
-//        for (String u : new String[]{"sgd", "adam", "nesterov", "adamax", "amsgrad"}) {
-        for (String u : new String[]{"adam"}) {
+        for (String u : new String[]{"sgd", "adam", "nesterov", "adamax", "amsgrad"}) {
             for(int i=0; i<l1.length; i++ ) {
                 Nd4j.getRandom().setSeed(12345);
                 double l1Val = l1[i];
@@ -142,6 +139,7 @@ public class CompareTrainingImplementations {
                 MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder()
                         .weightInit(WeightInit.XAVIER).seed(12345)
                         .l1(l1Val).l2(l2Val)
+                        .l1Bias(l1Val).l2Bias(l2Val)
                         .updater(new Sgd(1.0))
                         .list()
                         .layer(new DenseLayer.Builder().nIn(4).nOut(10).activation(Activation.TANH).build())
@@ -176,27 +174,37 @@ public class CompareTrainingImplementations {
 
                 //Check score
                 double scoreDl4j = net.score();
-                double scoreSd = lossMse.getArr().getDouble(0);
+                double scoreSd = lossMse.getArr().getDouble(0) + sd.calculateL1Loss() + sd.calculateL2Loss();
                 assertEquals(testName, scoreDl4j, scoreSd, 1e-6);
+
+                double l1Sd = sd.calculateL1Loss();
+                double l2Sd = sd.calculateL2Loss();
+
+                double l1Dl4j = net.calcL1(true);
+                double l2Dl4j = net.calcL2(true);
+
+                assertEquals(l1Dl4j, l1Sd, 1e-6);
+                assertEquals(l2Dl4j, l2Sd, 1e-6);
 
                 //Check gradients (before updater applied)
                 Map<String,INDArray> grads = net.gradient().gradientForVariable();
                 sd.execBackwards();
 
-                assertEquals(testName, grads.get("1_b"), b1.getGradient().getArr());
-                assertEquals(testName, grads.get("1_W"), w1.getGradient().getArr());
-                assertEquals(testName, grads.get("0_b"), b0.getGradient().getArr());
-                assertEquals(testName, grads.get("0_W"), w0.getGradient().getArr());
-
-
-
-
+                //Note that the SameDiff gradients don't include the L1/L2 terms at present just from execBackwards()... these are added later
+                //We can check correctness though with training param checks later
+                if(l1Val == 0 && l2Val == 0) {
+                    assertEquals(testName, grads.get("1_b"), b1.getGradient().getArr());
+                    assertEquals(testName, grads.get("1_W"), w1.getGradient().getArr());
+                    assertEquals(testName, grads.get("0_b"), b0.getGradient().getArr());
+                    assertEquals(testName, grads.get("0_W"), w0.getGradient().getArr());
+                }
 
 
                 //Check training with updater
                 mlc = new NeuralNetConfiguration.Builder()
                         .weightInit(WeightInit.XAVIER).seed(12345)
                         .l1(l1Val).l2(l2Val)
+                        .l1Bias(l1Val).l2Bias(l2Val)
                         .updater(updater.clone())
                         .list()
                         .layer(new DenseLayer.Builder().nIn(4).nOut(10).activation(Activation.TANH).build())
@@ -205,44 +213,21 @@ public class CompareTrainingImplementations {
                 net = new MultiLayerNetwork(mlc);
                 net.init();
                 net.setParamTable(oldParams);
-                INDArray w0Before = oldParams.get("0_W");
 
-                System.out.println("0_W before:\n" + oldParams.get("0_W"));
-                System.out.println("0_W grad:\n" + grads.get("0_W"));
+//                System.out.println("0_W before:\n" + oldParams.get("0_W"));
+//                System.out.println("0_W grad:\n" + grads.get("0_W"));
 
                 for( int j=0; j<3; j++ ) {
                     net.fit(ds);
-                    Map<String,INDArray> updatesMap = net.gradient().gradientForVariable();
                     sd.fit(ds);
 
                     String s = testName + " - " + j;
-
-                    INDArray sd0WUpdate = w0.getArr().sub(w0Before);
-                    System.out.println("----");
-                    System.out.println(sd0WUpdate);
-                    System.out.println("----");
-                    System.out.println("dl4j update:");
-                    System.out.println(net.getParam("0_W").sub(w0Before));
                     assertEquals(s, net.getParam("0_W"), w0.getArr());
                     assertEquals(s, net.getParam("0_b"), b0.getArr());
                     assertEquals(s, net.getParam("1_W"), w1.getArr());
                     assertEquals(s, net.getParam("1_b"), b1.getArr());
                 }
 
-
-
-//                sd.fit(iter, 100);
-//
-//                Evaluation e = new Evaluation();
-//                Map<String, List<IEvaluation>> evalMap = new HashMap<>();
-//                evalMap.put("prediction", Collections.<>singletonList(e));
-//
-//                sd.evaluate(iter, evalMap);
-//
-//                System.out.println(e.stats());
-//
-//                double acc = e.accuracy();
-//                assertTrue(u + " - " + acc, acc >= 0.8);
                 System.out.println("---------------------------------");
             }
         }

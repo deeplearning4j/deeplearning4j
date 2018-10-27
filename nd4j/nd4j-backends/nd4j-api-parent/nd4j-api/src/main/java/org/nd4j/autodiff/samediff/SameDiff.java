@@ -1578,6 +1578,62 @@ public class SameDiff {
     }
 
     /**
+     * Calculate the L2 regularization component of the loss: {@code 0.5 * sum_i (weights_i)}<br>
+     * Note that the training configuration must be set (via {@link #setTrainingConfig(TrainingConfig)}) before this
+     * method can be called
+     *
+     * @return The L2 regularization component of the score
+     */
+    public double calculateL2Loss(){
+        Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
+                "be set before calculating the L2 loss. Use setTrainingConfig(TrainingConfig)");
+
+        if(trainingConfig.getL2() == 0){
+            return 0.0;
+        }
+
+        if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().isEmpty())
+            initializeTraining();
+
+        double l2 = trainingConfig.getL2();
+        double l2Loss = 0.0;
+        for (String s : trainingConfig.getTrainableParams()) {
+            //L2: loss += 0.5 * lambda * sum_i param_i^2
+            double norm2 = variableNameToArr.get(s).norm2Number().doubleValue();
+            l2Loss += 0.5 * l2 * norm2 * norm2;
+        }
+        return l2Loss;
+    }
+
+    /**
+     * Calculate the L1 regularization component of the loss: {@code 0sum_i (abs(weights_i))}<br>
+     * Note that the training configuration must be set (via {@link #setTrainingConfig(TrainingConfig)}) before this
+     * method can be called
+     *
+     * @return The L1 regularization component of the score
+     */
+    public double calculateL1Loss(){
+        Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
+                "be set before calculating the L1 loss. Use setTrainingConfig(TrainingConfig)");
+
+        if(trainingConfig.getL1() == 0){
+            return 0.0;
+        }
+
+        if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().isEmpty())
+            initializeTraining();
+
+        double l1 = trainingConfig.getL1();
+        double l1Loss = 0.0;
+        for (String s : trainingConfig.getTrainableParams()) {
+            //L1: loss += lambda * sum_i |param_i|
+            double norm1 = variableNameToArr.get(s).norm1Number().doubleValue();
+            l1Loss += l1 * norm1;
+        }
+        return l1Loss;
+    }
+
+    /**
      * Perform setup for training. Does the following:
      * 1. Infer the set of trainable parameters - unless specified manually by the user
      * 2. Set up the updaters
