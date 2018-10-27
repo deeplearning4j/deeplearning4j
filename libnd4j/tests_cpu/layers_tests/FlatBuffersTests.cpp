@@ -564,6 +564,7 @@ TEST_F(FlatBuffersTest, ReduceDim_1) {
 
     auto result = variableSpace->getVariable(3)->getNDArray();
 
+    result->printShapeInfo("z");
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
