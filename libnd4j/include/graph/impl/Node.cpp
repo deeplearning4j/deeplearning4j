@@ -400,12 +400,9 @@ namespace nd4j {
             if (node->scope_name() != nullptr && node->scope_name()->size() > 0)
                 this->_scope_name = node->scope_name()->str();
 
-
-            _scalar = node->scalar();
-
             if (node != nullptr) {
                 this->_id = node->id();
-                this->_dataType = DataTypeUtils::fromFlatDataType(node->dataType());
+                //this->_dataType = DataTypeUtils::fromFlatDataType(node->dataType());
                 this->_opNum = node->opNum();
                 this->_opType = node->opType();
 
