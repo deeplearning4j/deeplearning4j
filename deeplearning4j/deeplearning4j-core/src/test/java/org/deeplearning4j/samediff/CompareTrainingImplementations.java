@@ -31,6 +31,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -92,7 +93,7 @@ public class CompareTrainingImplementations {
                 SDVariable z0 = in.mmul(w0).add(b0);
                 SDVariable a0 = sd.tanh(z0);
                 SDVariable z1 = a0.mmul(w1).add("prediction", b1);
-                SDVariable a1 = sd.softmax(z1);
+                SDVariable a1 = sd.softmax("softmax", z1);
 
                 SDVariable diff = sd.f().squaredDifference(a1, label);
                 SDVariable lossMse = diff.mean();
@@ -227,6 +228,17 @@ public class CompareTrainingImplementations {
                     assertEquals(s, net.getParam("1_W"), w1.getArr());
                     assertEquals(s, net.getParam("1_b"), b1.getArr());
                 }
+
+                //Compare evaluations
+                Evaluation evalDl4j = net.doEvaluation(iter, new Evaluation())[0];
+                Evaluation evalSd = new Evaluation();
+                sd.evaluate(iter, "softmax", evalSd);
+                assertEquals(evalDl4j, evalSd);
+
+                RegressionEvaluation rEvalDl4j = net.doEvaluation(iter, new RegressionEvaluation())[0];
+                RegressionEvaluation rEvalSd = new RegressionEvaluation();
+                sd.evaluate(iter, "softmax", rEvalSd);
+                assertEquals(rEvalDl4j, rEvalSd);
 
                 System.out.println("---------------------------------");
             }
