@@ -50,7 +50,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * <br>
  * A sparsity ratio of 1.0 means all values are present in the encoded update vector.<br>
  * A sparsity ratio of 0.0 means all values were excluded from the encoded update vector.<br>
- * If the previous
+ *
  * @author Alex Black
  */
 @Slf4j
