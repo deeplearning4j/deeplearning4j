@@ -1470,6 +1470,7 @@
 
 #define INT_ARG(INDEX)     block.getIArguments()->at(INDEX)
 #define T_ARG(INDEX)     block.getTArguments()->at(INDEX)
+#define B_ARG(INDEX)     block.getBArguments()->at(INDEX)
 
 
 #define COPY_SHAPE(SRC, TGT)    ALLOCATE(TGT, block.getWorkspace(), shape::shapeInfoLength(SRC), Nd4jLong);\

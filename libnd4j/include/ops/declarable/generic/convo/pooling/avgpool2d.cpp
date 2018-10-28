@@ -96,7 +96,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
     auto shapeOf = shape::shapeOf(inShape);
 
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-    std::vector<int> argI = *(block.getIArguments());
+    auto argI = *(block.getIArguments());
     const int kH = INT_ARG(0);
     const int kW = INT_ARG(1);
     const int sH = INT_ARG(2);

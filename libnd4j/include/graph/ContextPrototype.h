@@ -36,7 +36,8 @@ namespace nd4j {
             std::vector<std::pair<int, int>> _inputs;
             int _nodeId;
             std::vector<double> _tArgs;
-            std::vector<int> _iArgs;            
+            std::vector<int> _iArgs;
+            std::vector<bool> _bArgs;
 			nd4j::DataType _dataType = nd4j::DataType::FLOAT32;
 			bool _isInplace;
 
@@ -75,9 +76,11 @@ namespace nd4j {
 
             std::vector<double>* getTArguments();
             std::vector<int>* getIArguments();
+            std::vector<bool>* getBArguments();
 
-            int numT();
-            int numI();
+            size_t numT();
+            size_t numI();
+            size_t numB();
 
             std::pair<int, int>* input(int idx);
 

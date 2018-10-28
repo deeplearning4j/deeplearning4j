@@ -71,6 +71,9 @@ namespace nd4j {
         FORCEINLINE static nd4j::DataType pickPairwiseResultType(const Nd4jLong* shapeInfo1, const Nd4jLong* shapeInfo2);
 
         FORCEINLINE static nd4j::DataType pickFloatingType(nd4j::DataType typeX);
+
+        template <typename T1, typename T2>
+        FORCEINLINE static std::vector<T2> convertVector(const std::vector<T1> &vector);
     };
 
 
@@ -284,6 +287,16 @@ FORCEINLINE T DataTypeUtils::eps() {
             return 0;
 }
 
+
+    template <typename T1, typename T2>
+    FORCEINLINE std::vector<T2> DataTypeUtils::convertVector(const std::vector<T1> &vector) {
+        std::vector<T2> result(vector.size());
+
+        for (Nd4jLong e = 0; e < vector.size(); e++)
+            result[e] = static_cast<T2>(vector[e]);
+
+        return result;
+    }
 
 }
 

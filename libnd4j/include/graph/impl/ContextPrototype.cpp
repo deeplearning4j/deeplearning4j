@@ -74,6 +74,10 @@ namespace nd4j {
             return &(this->_iArgs);
         }
 
+        std::vector<bool>* ContextPrototype::getBArguments() {
+            return &(this->_bArgs);
+        }
+
         void ContextPrototype::pickInput(int input) {
             std::pair<int, int> pair(input, 0);
             this->_inputs.emplace_back(pair);
@@ -106,12 +110,16 @@ namespace nd4j {
             _dataType = type;
         }
 
-        int ContextPrototype::numT() {
+        size_t ContextPrototype::numT() {
             return (int) _tArgs.size();
         }
 
-        int ContextPrototype::numI() {
+        size_t ContextPrototype::numI() {
             return (int) _iArgs.size();
+        }
+
+        size_t ContextPrototype::numB() {
+            return (int) _bArgs.size();
         }
 
         int ContextPrototype::getNodeId() {
