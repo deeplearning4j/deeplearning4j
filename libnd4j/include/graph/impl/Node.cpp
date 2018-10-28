@@ -340,12 +340,13 @@ namespace nd4j {
                     _isInplace = true;
                 }
                 _opClass = OpClass_TRANSFORM;
-            } else if (opType == OpType_REDUCE_SAME || opType == OpType_REDUCE_FLOAT || opType == OpType_SUMMARYSTATS) {
+            } else if (opType == OpType_REDUCE_SAME || opType == OpType_REDUCE_FLOAT || opType == OpType_REDUCE_BOOL || opType == OpType_REDUCE_LONG || opType == OpType_SUMMARYSTATS) {
                 _opClass = OpClass_REDUCTION;
             }
 
 
             if (opType == OpType_BROADCAST ||
+                    opType == OpType_BROADCAST_BOOL ||
                     opType == OpType_INDEX_REDUCE ||
                     opType == OpType_SUMMARYSTATS ||
                     opType == OpType_REDUCE_BOOL ||
@@ -358,6 +359,8 @@ namespace nd4j {
                     opType == OpType_TRANSFORM_BOOL ||
                     opType == OpType_RANDOM ||
                     opType == OpType_PAIRWISE ||
+                    opType == OpType_PAIRWISE_BOOL ||
+                    opType == OpType_SCALAR_BOOL ||
                     opType == OpType_SCALAR) {
 
                 this->_isDeductable = true;
@@ -377,6 +380,9 @@ namespace nd4j {
                 this->setCustomOp(Node::buildOpByType(opType, (int) input.size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), opNum, scalar));
             } else if (opType == OpType_CUSTOM) {
                 auto block = new ContextPrototype(this->id(), false);
+
+                for (auto v: dimensions)
+                    block->getAxis()->emplace_back(v);
 
                 for (auto v: iArgs)
                     block->getIArguments()->emplace_back(v);
@@ -452,7 +458,7 @@ namespace nd4j {
                 if (node->dimensions() != nullptr && node->dimensions()->size() > 0) {
                     _dim = new int[node->dimensions()->size()];
                     for (int e = 0; e < (int) node->dimensions()->size(); e++) {
-                        _dimensions.push_back(node->dimensions()->Get(e));
+                        _dimensions.emplace_back(node->dimensions()->Get(e));
                         _dim[e] = node->dimensions()->Get(e);
                     }
                 }
@@ -468,7 +474,24 @@ namespace nd4j {
 
 
                 // these ops allow in-place execution by design
-                if (this->_opType == OpType_TRANSFORM_SAME || this->_opType == OpType_SCALAR || this->_opType == OpType_BROADCAST || this->_opType == OpType_RANDOM || this->_opType == OpType_REDUCE_SAME || this->_opType == OpType_REDUCE_3 || this->_opType == OpType_PAIRWISE || this->_opType == OpType_SUMMARYSTATS || this->_opType == OpType_INDEX_REDUCE) {
+                if (_opType == OpType_BROADCAST ||
+                    _opType == OpType_BROADCAST_BOOL ||
+                        _opType == OpType_INDEX_REDUCE ||
+                        _opType == OpType_SUMMARYSTATS ||
+                        _opType == OpType_REDUCE_BOOL ||
+                        _opType == OpType_REDUCE_SAME ||
+                        _opType == OpType_REDUCE_FLOAT ||
+                        _opType == OpType_REDUCE_3 ||
+                        _opType == OpType_TRANSFORM_STRICT ||
+                        _opType == OpType_TRANSFORM_SAME ||
+                        _opType == OpType_TRANSFORM_FLOAT ||
+                        _opType == OpType_TRANSFORM_BOOL ||
+                        _opType == OpType_RANDOM ||
+                        _opType == OpType_PAIRWISE ||
+                        _opType == OpType_PAIRWISE_BOOL ||
+                        _opType == OpType_SCALAR_BOOL ||
+                        _opType == OpType_SCALAR) {
+
                     if (_output.size() <= 1) {
                         _isInplace = true;
                     }
@@ -478,13 +501,23 @@ namespace nd4j {
 
                         auto block = new ContextPrototype(this->id(), false);
 
-                        // there's no other IArgs in legacy options, actually
+
                         for (auto v: _dimensions)
-                            block->getIArguments()->emplace_back(v);
+                            block->getAxis()->emplace_back(v);
 
                         if (node->extraParams() != nullptr && node->extraParams()->size() > 0)
                             for (int e = 0; e < (int) node->extraParams()->size(); e++) {
                                 block->getTArguments()->emplace_back(static_cast<double>(node->extraParams()->Get(e)));
+                            }
+
+                        if (node->extraBools() != nullptr && node->extraBools()->size() > 0)
+                            for (int e = 0; e < (int) node->extraBools()->size(); e++) {
+                                block->getBArguments()->emplace_back(node->extraBools()->Get(e));
+                            }
+
+                        if (node->extraInteger() != nullptr && node->extraInteger()->size() > 0)
+                            for (int e = 0; e < (int) node->extraInteger()->size(); e++) {
+                                block->getIArguments()->emplace_back(node->extraInteger()->Get(e));
                             }
 
                         this->setContextPrototype(block);
@@ -500,11 +533,21 @@ namespace nd4j {
 
                         // there's no other IArgs in legacy options, actually
                         for (auto v: _dimensions)
-                            block->getIArguments()->emplace_back(v);
+                            block->getAxis()->emplace_back(v);
 
                         if (node->extraParams() != nullptr && node->extraParams()->size() > 0)
                             for (int e = 0; e < (int) node->extraParams()->size(); e++) {
                                 block->getTArguments()->emplace_back(static_cast<double>(node->extraParams()->Get(e)));
+                            }
+
+                        if (node->extraBools() != nullptr && node->extraBools()->size() > 0)
+                            for (int e = 0; e < (int) node->extraBools()->size(); e++) {
+                                block->getBArguments()->emplace_back(node->extraBools()->Get(e));
+                            }
+
+                        if (node->extraInteger() != nullptr && node->extraInteger()->size() > 0)
+                            for (int e = 0; e < (int) node->extraInteger()->size(); e++) {
+                                block->getIArguments()->emplace_back(node->extraInteger()->Get(e));
                             }
 
                         this->setContextPrototype(block);
@@ -535,8 +578,15 @@ namespace nd4j {
                             for (uint32_t e = 0; e < node->extraParams()->size(); e++)
                                 block->getTArguments()->emplace_back(static_cast<double>(node->extraParams()->Get(e)));
 
-                        this->setContextPrototype(block);
+                        if (node->extraBools() != nullptr && node->extraBools()->size() > 0)
+                            for (int e = 0; e < (int) node->extraBools()->size(); e++) {
+                                block->getBArguments()->emplace_back(node->extraBools()->Get(e));
+                            }
 
+                        for (auto v: _dimensions)
+                            block->getAxis()->emplace_back(v);
+
+                        this->setContextPrototype(block);
                         this->setCustomOp(op);
                 }
             } else {
