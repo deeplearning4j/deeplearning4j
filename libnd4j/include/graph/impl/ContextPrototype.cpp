@@ -78,6 +78,10 @@ namespace nd4j {
             return &(this->_bArgs);
         }
 
+        std::vector<int>* ContextPrototype::getAxis() {
+            return &(this->_axis);
+        }
+
         void ContextPrototype::pickInput(int input) {
             std::pair<int, int> pair(input, 0);
             this->_inputs.emplace_back(pair);

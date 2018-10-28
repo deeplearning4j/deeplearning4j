@@ -348,11 +348,14 @@ namespace nd4j {
             if (opType == OpType_BROADCAST ||
                     opType == OpType_INDEX_REDUCE ||
                     opType == OpType_SUMMARYSTATS ||
+                    opType == OpType_REDUCE_BOOL ||
                     opType == OpType_REDUCE_SAME ||
                     opType == OpType_REDUCE_FLOAT ||
                     opType == OpType_REDUCE_3 ||
+                    opType == OpType_TRANSFORM_STRICT ||
                     opType == OpType_TRANSFORM_SAME ||
                     opType == OpType_TRANSFORM_FLOAT ||
+                    opType == OpType_TRANSFORM_BOOL ||
                     opType == OpType_RANDOM ||
                     opType == OpType_PAIRWISE ||
                     opType == OpType_SCALAR) {
@@ -361,9 +364,8 @@ namespace nd4j {
 
                 auto block = new ContextPrototype(this->id(), false);
 
-                // there's no other IArgs in legacy options, actually
                 for (auto v: dimensions)
-                    block->getIArguments()->emplace_back(v);
+                    block->getAxis()->emplace_back(v);
 
                 for (auto v: iArgs)
                     block->getIArguments()->emplace_back(v);
