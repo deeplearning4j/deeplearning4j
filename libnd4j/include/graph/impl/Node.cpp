@@ -32,6 +32,8 @@
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 #include <ops/declarable/LegacyRandomOp.h>
 #include <ops/declarable/LegacyOp.h>
+#include <ops/declarable/LegacyReduceLongOp.h>
+#include <ops/declarable/LegacyReduceBoolOp.h>
 
 namespace nd4j {
     namespace graph {
@@ -656,6 +658,10 @@ namespace nd4j {
                     return new nd4j::ops::LegacyReduceSameOp(opNum);
                 case OpType_REDUCE_FLOAT:
                     return new nd4j::ops::LegacyReduceFloatOp(opNum);
+                case OpType_REDUCE_LONG:
+                    return new nd4j::ops::LegacyReduceLongOp(opNum);
+                case OpType_REDUCE_BOOL:
+                    return new nd4j::ops::LegacyReduceBoolOp(opNum);
                 case OpType_INDEX_REDUCE:
                     return new nd4j::ops::LegacyIndexReduceOp(opNum);
                 case OpType_SUMMARYSTATS:
