@@ -23,7 +23,7 @@
 #include <NativeOpExcutioner.h>
 #include <NDArrayFactory.h>
 #include <Status.h>
-
+#include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
     namespace ops {
@@ -86,7 +86,7 @@ namespace nd4j {
 
                     auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillUniform(block.getRNG(), z, from, to);
+                    RandomLauncher::fillUniform(block.randomGenerator(), z, from, to);
 
                     // FIXME:
                     OVERWRITE_RESULT(z);
@@ -110,12 +110,14 @@ namespace nd4j {
                     if (!block.isInplace())
                         z->assign(input);
 
-                    RandomLauncher::applyDropOut(block.getRNG(), z, prob);
+                    RandomLauncher::applyDropOut(block.randomGenerator(), z, prob);
                 }
                     break;
                 case 2: {
                     auto z = OUTPUT_VARIABLE(0);
-
+                    nd4j::ops::dropout op;
+                    return op.execute(&block);
+                    /*
                     T prob;
                     if (block.width() > 1) {
                         auto arg = INPUT_VARIABLE(1);
@@ -131,7 +133,8 @@ namespace nd4j {
                     if (!block.isInplace())
                         z->assign(input);
 
-                    RandomLauncher::applyInvertedDropOut(block.getRNG(), z, prob);
+                    RandomLauncher::applyInvertedDropOut(block.randomGenerator(), z, prob);
+                     */
                 }
                     break;
                 case 6: {
@@ -160,7 +163,7 @@ namespace nd4j {
 
                     auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillGaussian(block.getRNG(), z, mean, stdev);
+                    RandomLauncher::fillGaussian(block.randomGenerator(), z, mean, stdev);
 
                     // FIXME: !!
                     OVERWRITE_RESULT(z);
@@ -188,7 +191,7 @@ namespace nd4j {
 
                     auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillBernoulli(block.getRNG(), z, prob);
+                    RandomLauncher::fillBernoulli(block.randomGenerator(), z, prob);
 
                     // FIXME:
                     OVERWRITE_RESULT(z);
@@ -221,7 +224,7 @@ namespace nd4j {
 
                     auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillBinomial(block.getRNG(), z, trials, prob);
+                    RandomLauncher::fillBinomial(block.randomGenerator(), z, trials, prob);
 
                     // FIXME: !!!
                     OVERWRITE_RESULT(z);
@@ -253,7 +256,7 @@ namespace nd4j {
 
                     auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillLogNormal(block.getRNG(), z, mean, stdev);
+                    RandomLauncher::fillLogNormal(block.randomGenerator(), z, mean, stdev);
 
                     // FIXME: !!
                     OVERWRITE_RESULT(z);
@@ -285,7 +288,7 @@ namespace nd4j {
 
                     auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillTruncatedNormal(block.getRNG(), z, mean, stdev);
+                    RandomLauncher::fillTruncatedNormal(block.randomGenerator(), z, mean, stdev);
 
                     // FIXME: !!!
                     OVERWRITE_RESULT(z);
@@ -321,7 +324,7 @@ namespace nd4j {
                     if (!block.isInplace())
                         z->assign(input);
 
-                    RandomLauncher::applyAlphaDropOut(block.getRNG(), z, prob, a, b, pa);
+                    RandomLauncher::applyAlphaDropOut(block.randomGenerator(), z, prob, a, b, pa);
                 }
                     break;
                 default: {
@@ -334,7 +337,7 @@ namespace nd4j {
         }
 
         Nd4jStatus LegacyRandomOp::validateAndExecute(Context &block) {
-            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be provided for LegacyRandomOp, but got NULL instead at node_%i", block.nodeId())
+//            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be provided for LegacyRandomOp, but got NULL instead at node_%i", block.nodeId())
 
             auto z = OUTPUT_VARIABLE(0);
             BUILD_SINGLE_SELECTOR(z->dataType(), return validateAndExecute_, (block), FLOAT_TYPES);
@@ -358,14 +361,14 @@ namespace nd4j {
             return DeclarableOp::execute(block);
         }
 
-        nd4j::ResultSet*  LegacyRandomOp::execute(nd4j::random::RandomBuffer* rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace) {
+        nd4j::ResultSet*  LegacyRandomOp::execute(nd4j::graph::RandomGenerator& rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace) {
             std::vector<NDArray*> ins(inputs);
             std::vector<double> tas(tArgs);
             std::vector<int> ias(iArgs);
             return this->execute(rng, ins, tas, ias, isInplace);
         }
 
-        nd4j::ResultSet*  LegacyRandomOp::execute(nd4j::random::RandomBuffer* rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace) {
+        nd4j::ResultSet*  LegacyRandomOp::execute(nd4j::graph::RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace) {
             VariableSpace variableSpace;
             auto arrayList = new ResultSet();
             //ResultSet arrayList;
@@ -386,7 +389,8 @@ namespace nd4j {
             }
 
             Context block(1, &variableSpace, false);
-            block.setRNG(rng);
+            // FIX ME: implement setRng method
+            //block.setRng(rng);
             block.fillInputs(in);
             block.markInplace(isInplace);
 

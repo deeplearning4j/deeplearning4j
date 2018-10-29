@@ -20,24 +20,25 @@
 
 #include <NDArray.h>
 #include <helpers/helper_random.h>
+#include <graph/RandomGenerator.h>
 
 namespace nd4j {
     class RandomLauncher {
     public:
-        static void applyDropOut(nd4j::random::RandomBuffer* buffer, NDArray *array, double retainProb, NDArray* z = nullptr);
-        static void applyInvertedDropOut(nd4j::random::RandomBuffer* buffer, NDArray *array, double retainProb, NDArray* z = nullptr);
-        static void applyAlphaDropOut(nd4j::random::RandomBuffer* buffer, NDArray *array, double retainProb, double alpha, double beta, double alphaPrime, NDArray* z = nullptr);
+        static void applyDropOut(nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, NDArray* z = nullptr);
+        static void applyInvertedDropOut(nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, NDArray* z = nullptr);
+        static void applyAlphaDropOut(nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, double alpha, double beta, double alphaPrime, NDArray* z = nullptr);
 
-        static void fillUniform(nd4j::random::RandomBuffer* buffer, NDArray* array, double from, double to);
+        static void fillUniform(nd4j::graph::RandomGenerator& rng, NDArray* array, double from, double to);
 
-        static void fillGaussian(nd4j::random::RandomBuffer* buffer, NDArray* array, double mean, double stdev);
+        static void fillGaussian(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev);
 
-        static void fillLogNormal(nd4j::random::RandomBuffer* buffer, NDArray* array, double mean, double stdev);
+        static void fillLogNormal(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev);
 
-        static void fillTruncatedNormal(nd4j::random::RandomBuffer* buffer, NDArray* array, double mean, double stdev);
+        static void fillTruncatedNormal(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev);
 
-        static void fillBinomial(nd4j::random::RandomBuffer* buffer, NDArray* array, int trials, double prob);
+        static void fillBinomial(nd4j::graph::RandomGenerator& rng, NDArray* array, int trials, double prob);
 
-        static void fillBernoulli(nd4j::random::RandomBuffer* buffer, NDArray* array, double prob);
+        static void fillBernoulli(nd4j::graph::RandomGenerator& rng, NDArray* array, double prob);
     };
 }

@@ -21,75 +21,79 @@
 #include <types/float16.h>
 #include <dll.h>
 #include <helpers/RandomLauncher.h>
+#include <graph/RandomGenerator.h>
 
 namespace nd4j {
     // FIXME: implement this
 
-    void RandomLauncher::applyDropOut(nd4j::random::RandomBuffer* buffer, NDArray *array, double retainProb, NDArray* z) {
+    void RandomLauncher::applyDropOut(nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, NDArray* z) {
         if (z == nullptr)
             z = array;
 
         //array->template applyRandom<randomOps::DropOut<T>>(buffer, nullptr, z, &retainProb);
-        NativeOpExcutioner::execRandom(random::DropOut, buffer, z->buffer(), z->shapeInfo(), &retainProb);
+        NativeOpExcutioner::execRandom(random::DropOut, &rng, z->buffer(), z->shapeInfo(), &retainProb);
     }
 
-    void RandomLauncher::applyInvertedDropOut(nd4j::random::RandomBuffer* buffer, NDArray *array, double retainProb, NDArray* z) {
+    void RandomLauncher::applyInvertedDropOut(nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, NDArray* z) {
         if (z == nullptr)
             z = array;
 
         //array->template applyRandom<randomOps::DropOutInverted<T>>(buffer, nullptr, z, &retainProb);
-        NativeOpExcutioner::execRandom(random::DropOutInverted, buffer, z->buffer(), z->shapeInfo(), &retainProb);
+        NativeOpExcutioner::execRandom(random::DropOutInverted, &rng, z->buffer(), z->shapeInfo(), &retainProb);
     }
 
-    void RandomLauncher::applyAlphaDropOut(nd4j::random::RandomBuffer* buffer, NDArray *array, double retainProb, double alpha, double beta, double alphaPrime, NDArray* z) {
+    void RandomLauncher::applyAlphaDropOut(nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, double alpha, double beta, double alphaPrime, NDArray* z) {
         if (z == nullptr)
             z = array;
 
         //  FIXME: this isn't portable code :(
         //T args[] = {retainProb, alpha, beta, alphaPrime};
-
+        nd4j::ops::alpha_dropout op;
         //array->template applyRandom<randomOps::AlphaDropOut<T>>(buffer, nullptr, z, args);
-        NativeOpExcutioner::execRandom(random::AlphaDropOut, buffer, z->buffer(), z->shapeInfo(), &retainProb);
+        NativeOpExcutioner::execRandom(random::AlphaDropOut, &rng, z->buffer(), z->shapeInfo(), &retainProb);
     }
 
-    void RandomLauncher::fillBernoulli(nd4j::random::RandomBuffer* buffer, NDArray* array, double prob) {
+    void RandomLauncher::fillBernoulli(nd4j::graph::RandomGenerator& rng, NDArray* array, double prob) {
         //array->template applyRandom<randomOps::BernoulliDistribution<T>>(buffer, nullptr, array, &prob);
-        NativeOpExcutioner::execRandom(random::BernoulliDistribution, buffer, array->buffer(), array->shapeInfo(), &prob);
+        NativeOpExcutioner::execRandom(random::BernoulliDistribution, &rng, array->buffer(), array->shapeInfo(), &prob);
     }
 
-    void RandomLauncher::fillUniform(nd4j::random::RandomBuffer* buffer, NDArray* array, double from, double to) {
+    void RandomLauncher::fillUniform(nd4j::graph::RandomGenerator& rng, NDArray* array, double from, double to) {
         //T args[] = {from, to};
 
         //array->template applyRandom<randomOps::UniformDistribution<T>>(buffer, nullptr, nullptr, args);
-        NativeOpExcutioner::execRandom(random::UniformDistribution, buffer, array->buffer(), array->shapeInfo(), nullptr);
+        for (Nd4jLong e = 0; e < array->lengthOf(); ++e) {
+            array->p(e, rng.relativeT<double>(e, from, to));
+        }
+        //NativeOpExcutioner::execRandom(random::UniformDistribution, &rng, array->buffer(), array->shapeInfo(), nullptr);
     }
 
-    void RandomLauncher::fillGaussian(nd4j::random::RandomBuffer* buffer, NDArray* array, double mean, double stdev) {
+    void RandomLauncher::fillGaussian(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
         //T args[] = {mean, stdev};
 
         //array->template applyRandom<randomOps::GaussianDistribution<T>>(buffer, array, array, args);
-        NativeOpExcutioner::execRandom(random::GaussianDistribution, buffer, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
+        NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
     }
 
-    void RandomLauncher::fillLogNormal(nd4j::random::RandomBuffer* buffer, NDArray* array, double mean, double stdev) {
+    void RandomLauncher::fillLogNormal(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
         //T args[] = {mean, stdev};
 
         //array->template applyRandom<randomOps::LogNormalDistribution<T>>(buffer, array, array, args);
-        NativeOpExcutioner::execRandom(random::GaussianDistribution, buffer, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
+        NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
     }
 
-    void RandomLauncher::fillTruncatedNormal(nd4j::random::RandomBuffer* buffer, NDArray* array, double mean, double stdev) {
+    void RandomLauncher::fillTruncatedNormal(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
         //T args[] = {mean, stdev};
 
         //array->template applyRandom<randomOps::TruncatedNormalDistribution<T>>(buffer, array, array, args);
-        NativeOpExcutioner::execRandom(random::GaussianDistribution, buffer, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
+        NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
     }
 
-    void RandomLauncher::fillBinomial(nd4j::random::RandomBuffer* buffer, NDArray* array, int trials, double prob) {
+    void RandomLauncher::fillBinomial(nd4j::graph::RandomGenerator& rng, NDArray* array, int trials, double prob) {
         //T args[] = {(T) trials, prob};
 
         //array->template applyRandom<randomOps::BinomialDistributionEx<T>>(buffer, array, array, args);
-        NativeOpExcutioner::execRandom(random::BinomialDistributionEx, buffer, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
+        NativeOpExcutioner::execRandom(random::BinomialDistributionEx, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
     }
 
 }
