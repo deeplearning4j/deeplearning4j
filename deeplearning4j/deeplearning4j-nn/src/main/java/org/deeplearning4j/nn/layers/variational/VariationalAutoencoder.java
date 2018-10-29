@@ -245,7 +245,7 @@ public class VariationalAutoencoder implements Layer {
                 INDArray temp = meanZ.mul(meanZ).addi(pzxSigmaSquared).negi();
                 temp.addi(logStdev2Z).addi(1.0);
                 double scorePt1 = -0.5 / minibatch * temp.sumNumber().doubleValue();
-                this.score = scorePt1 + (calcL1(false) + calcL2(false)) / minibatch;
+                this.score = scorePt1 + (calcL1(false) + calcL2(false));
             }
 
             INDArray pxzDistributionPreOut = current.mmul(pxzw).addiRowVector(pxzb);

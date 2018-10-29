@@ -55,6 +55,7 @@ import java.util.Random;
 
 import static org.deeplearning4j.gradientcheck.GradientCheckUtil.checkGradients;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -631,6 +632,115 @@ public class GradientCheckTests extends BaseDL4JTest {
                 }
             }
         }
+    }
 
+
+    @Test
+    public void testGradientLegacyL2() {
+
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.THRESHOLDEDRELU};
+        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
+
+        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
+
+        DataNormalization scaler = new NormalizerMinMaxScaler();
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        scaler.fit(iter);
+        iter.setPreProcessor(scaler);
+        DataSet ds = iter.next();
+
+        INDArray input = ds.getFeatures();
+        INDArray labels = ds.getLabels();
+
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
+
+        for (Activation afn : activFns) {
+                for (int i = 0; i < lossFunctions.length; i++) {
+                    for (int k = 0; k < l2vals.length; k++) {
+                        LossFunction lf = lossFunctions[i];
+                        Activation outputActivation = outputActivations[i];
+                        double l2 = l2vals[k];
+                        double l1 = l1vals[k];
+
+                        MultiLayerConfiguration conf =
+                                new NeuralNetConfiguration.Builder().l2(l2).l1(l1)
+                                        .l2Bias(biasL2[k]).l1Bias(biasL1[k])
+                                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                        .seed(12345L)
+                                        .legacyBatchScaledL2(false)
+                                        .list().layer(0,
+                                        new DenseLayer.Builder().nIn(4).nOut(3)
+                                                .weightInit(WeightInit.DISTRIBUTION)
+                                                .dist(new NormalDistribution(0,
+                                                        1))
+                                                .updater(new NoOp())
+                                                .activation(afn).build())
+                                        .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
+                                                .weightInit(WeightInit.DISTRIBUTION)
+                                                .dist(new NormalDistribution(0, 1))
+                                                .updater(new NoOp())
+                                                .activation(outputActivation).build())
+                                        .build();
+
+                        MultiLayerConfiguration conf2 =
+                                new NeuralNetConfiguration.Builder().l2(l2).l1(l1)
+                                        .l2Bias(biasL2[k]).l1Bias(biasL1[k])
+                                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                        .seed(12345L)
+                                        .legacyBatchScaledL2(true)
+                                        .list().layer(0,
+                                        new DenseLayer.Builder().nIn(4).nOut(3)
+                                                .weightInit(WeightInit.DISTRIBUTION)
+                                                .dist(new NormalDistribution(0,
+                                                        1))
+                                                .updater(new NoOp())
+                                                .activation(afn).build())
+                                        .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
+                                                .weightInit(WeightInit.DISTRIBUTION)
+                                                .dist(new NormalDistribution(0, 1))
+                                                .updater(new NoOp())
+                                                .activation(outputActivation).build())
+                                        .build();
+
+                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                        mln.init();
+
+                        MultiLayerNetwork mlnLegacy = new MultiLayerNetwork(conf2);
+                        mlnLegacy.init();
+
+                        mlnLegacy.params().assign(mln.params());
+
+                        boolean gradOK1 = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                        boolean gradOKLegacy = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                        String msg = "testGradientLegacyL2() - activationFn=" + afn + ", lossFn=" + lf
+                                + ", outputActivation=" + outputActivation + ", l2=" + l2 + ", l1=" + l1;
+                        assertTrue(msg, gradOK1);
+
+                        assertTrue(msg, gradOKLegacy);
+
+                        TestUtils.testModelSerialization(mln);
+                        TestUtils.testModelSerialization(mlnLegacy);
+
+                        double score = mln.score(new DataSet(input, labels));
+                        double scoreLegacy = mlnLegacy.score(new DataSet(input, labels));
+                        if(l1 > 0 || l2 > 0){
+                            //If l1/l2 are non-zero, scores should be different for the 2 models
+                            assertNotEquals(score, scoreLegacy, 1e-6);
+                            assertTrue(score > scoreLegacy);    //Legacy L1/L2 component is divided by minibatch
+                        } else {
+                            assertEquals(score, scoreLegacy, 1e-6);
+                        }
+                    }
+                }
+        }
     }
 }

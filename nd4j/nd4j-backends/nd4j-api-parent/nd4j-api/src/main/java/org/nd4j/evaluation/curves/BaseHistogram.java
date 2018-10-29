@@ -14,9 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.eval.curves;
+package org.nd4j.evaluation.curves;
 
-import org.deeplearning4j.eval.BaseEvaluation;
+import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 

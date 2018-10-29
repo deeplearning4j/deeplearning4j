@@ -14,9 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.eval.serde;
+package org.nd4j.evaluation.serde;
 
-import org.deeplearning4j.eval.ROC;
+import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.shade.jackson.core.JsonGenerator;
 import org.nd4j.shade.jackson.databind.JsonSerializer;
 import org.nd4j.shade.jackson.databind.SerializerProvider;

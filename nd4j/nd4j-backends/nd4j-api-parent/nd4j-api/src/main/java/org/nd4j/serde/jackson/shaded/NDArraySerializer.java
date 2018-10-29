@@ -14,34 +14,27 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.eval.serde;
+package org.nd4j.serde.jackson.shaded;
 
-import org.deeplearning4j.eval.ROC;
+
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.serde.base64.Nd4jBase64;
 import org.nd4j.shade.jackson.core.JsonGenerator;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.JsonSerializer;
 import org.nd4j.shade.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 
 /**
- * Custom Jackson serializer for ROC[]. Simply delegates to {@link ROCSerializer} internally.
- *
- * @author Alex Black
+ * @author Adam Gibson
  */
-public class ROCArraySerializer extends JsonSerializer<ROC[]> {
-    private static final ROCSerializer serializer = new ROCSerializer();
-
+public class NDArraySerializer extends JsonSerializer<INDArray> {
     @Override
-    public void serialize(ROC[] rocs, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-                    throws IOException, JsonProcessingException {
-        jsonGenerator.writeStartArray();
-        for (ROC r : rocs) {
-            jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField("@class", ROC.class.getName());
-            serializer.serialize(r, jsonGenerator, serializerProvider);
-            jsonGenerator.writeEndObject();
-        }
-        jsonGenerator.writeEndArray();
+    public void serialize(INDArray indArray, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+                    throws IOException {
+        String toBase64 = Nd4jBase64.base64String(indArray);
+        jsonGenerator.writeStartObject();
+        jsonGenerator.writeStringField("array", toBase64);
+        jsonGenerator.writeEndObject();
     }
 }

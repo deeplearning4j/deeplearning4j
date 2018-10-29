@@ -60,9 +60,10 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     protected Map<String, Trainable> layersByName;
     protected final List<UpdaterBlock> updaterBlocks;
     protected INDArray updaterStateViewArray;
+    protected boolean legacyBatchScaledL2;
 
-    public BaseMultiLayerUpdater(T network) {
-        this(network, null);
+    public BaseMultiLayerUpdater(T network, boolean legacyBatchScaledL2) {
+        this(network, null, legacyBatchScaledL2);
     }
 
     /**
@@ -70,8 +71,9 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @param network      Network to create the updater for
      * @param updaterState The updater state to use. Note: This array is used *directly* and isn't copied/cloned
      */
-    public BaseMultiLayerUpdater(T network, INDArray updaterState) {
+    public BaseMultiLayerUpdater(T network, INDArray updaterState, boolean legacyBatchScaledL2) {
         this.network = network;
+        this.legacyBatchScaledL2 = legacyBatchScaledL2;
         Trainable[] layers = getOrderedLayers();    //May also include vertices
 
         int updaterStateSize = 0;
@@ -294,6 +296,10 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             }
         }
 
+        if(!legacyBatchScaledL2 && isMiniBatch()){
+            divideByMinibatch(isExternal, gradient, batchSize);
+        }
+
         //PRE apply (gradient clipping, etc): done on a per-layer basis
         for (Map.Entry<String, Gradient> entry : layerGradients.entrySet()) {
             String layerName = entry.getKey();
@@ -301,7 +307,6 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
             preApply(layer, layerGradients.get(layerName), iteration);
         }
-
 
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
         if(getClass() != LayerUpdater.class){
@@ -325,18 +330,21 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             }
         }
 
-        //Divide by minibatch size if necessary
-        if (isMiniBatch()) {
-            //OK even with pretrain layers: their gradients will get modified during next backprop iteration
-            if (isExternal) {
-                gradient.gradient().divi(batchSize);
-            } else {
-                //Standard case
-                INDArray grad = getFlattenedGradientsView();
-                if(grad != null) {
-                    //May be null for nets with no parameters
-                    grad.divi(batchSize);
-                }
+        if(legacyBatchScaledL2 && isMiniBatch()){
+            divideByMinibatch(isExternal, gradient, batchSize);
+        }
+    }
+
+    protected void divideByMinibatch(boolean isExternal, Gradient gradient, int batchSize){
+        //OK even with pretrain layers: their gradients will get modified during next backprop iteration
+        if (isExternal) {
+            gradient.gradient().divi(batchSize);
+        } else {
+            //Standard case
+            INDArray grad = getFlattenedGradientsView();
+            if (grad != null) {
+                //May be null for nets with no parameters
+                grad.divi(batchSize);
             }
         }
     }

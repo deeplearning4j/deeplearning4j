@@ -89,9 +89,18 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
                 layerConf().getActivationFn(), maskArray,false);
-        score += fullNetworkL1 + fullNetworkL2;
+
+        boolean legacy = layerConf().isLegacyBatchScaledL2();
+        if(legacy){
+            score += fullNetworkL1 + fullNetworkL2;
+        }
+
         if(conf().isMiniBatch())
             score /= getInputMiniBatchSize();
+
+        if(!legacy){
+            score += fullNetworkL1 + fullNetworkL2;
+        }
 
         this.score = score;
 

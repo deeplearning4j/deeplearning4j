@@ -428,7 +428,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     public SDVariable mmul(SDVariable other){
-        return sameDiff.mmul(this, other);
+        return mmul(null, other);
+    }
+
+    public SDVariable mmul(String name, SDVariable other){
+        return sameDiff.mmul(name, this, other);
     }
 
     //scalars
