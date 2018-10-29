@@ -11009,6 +11009,14 @@ public class SameDiff {
         } else
             extraBits = new long[]{};
 
+        if (node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_LONG) {
+            val op = (ReduceOp) node;
+
+            boolArgs = new boolean[2];
+            boolArgs[0] = op.isKeepDims();
+            boolArgs[1] = true; // always new format
+        }
+
         val inPaired = new ArrayList<Integer>();
 
         int[] outputIds = null;
