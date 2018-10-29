@@ -34,6 +34,9 @@
 #include <ops/declarable/LegacyOp.h>
 #include <ops/declarable/LegacyReduceLongOp.h>
 #include <ops/declarable/LegacyReduceBoolOp.h>
+#include <ops/declarable/LegacyBroadcastBoolOp.h>
+#include <ops/declarable/LegacyScalarBoolOp.h>
+#include <ops/declarable/LegacyPairwiseTransformBoolOp.h>
 
 namespace nd4j {
     namespace graph {
@@ -646,12 +649,16 @@ namespace nd4j {
             switch (opType) {
                 case OpType_PAIRWISE:
                     return new nd4j::ops::LegacyPairwiseTransformOp(opNum);
+                case OpType_PAIRWISE_BOOL:
+                    return new nd4j::ops::LegacyPairwiseTransformBoolOp(opNum);
                 case OpType_TRANSFORM_SAME:
                     return new nd4j::ops::LegacyTransformSameOp(opNum);
                 case OpType_TRANSFORM_FLOAT:
                     return new nd4j::ops::LegacyTransformFloatOp(opNum);
                 case OpType_SCALAR:
                     return new nd4j::ops::LegacyScalarOp(opNum, scalar);
+                case OpType_SCALAR_BOOL:
+                    return new nd4j::ops::LegacyScalarBoolOp(opNum, scalar);
                 case OpType_REDUCE_3:
                     return new nd4j::ops::LegacyReduce3Op(opNum);
                 case OpType_REDUCE_SAME:
@@ -670,6 +677,8 @@ namespace nd4j {
                     return new nd4j::ops::LegacyRandomOp(opNum);
                 case OpType_BROADCAST:
                     return new nd4j::ops::LegacyBroadcastOp(opNum);
+                case OpType_BROADCAST_BOOL:
+                    return new nd4j::ops::LegacyBroadcastBoolOp(opNum);
                 default:
                     throw std::runtime_error("Bad opType passed in");
             }
