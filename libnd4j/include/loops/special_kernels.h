@@ -732,8 +732,8 @@ extern "C" __global__ void kernelHalfsToFloats(half *dx, Nd4jLong n, float *dz) 
 template<typename T>
 __device__ void accumulateKernelGeneric(void **vx, void *vz, int n, const Nd4jLong length) {
 
-	auto x = static_cast<void**>(vx);
-	auto z = static_cast<void*>(vz);
+	auto x = reinterpret_cast<T**>(vx);
+	auto z = reinterpret_cast<T*>(vz);
 
     __shared__ T *shmem;
 
@@ -783,8 +783,8 @@ extern "C" __global__ void accumulateKernelDouble(void **dx, void *dz, int n, Nd
 template <typename T>
 __device__ void averagingKernelGeneric(void **vdx, void *vdz, int n, Nd4jLong length, bool propagate) {
 
-	auto dx = static_cast<T**>(vdx);
-	auto dz = static_cast<T*>(vdz);
+	auto dx = reinterpret_cast<T**>(vdx);
+	auto dz = reinterpret_cast<T*>(vdz);
 
     __shared__ T *shmem;
 
@@ -922,8 +922,8 @@ __device__ void shuffleKernelGeneric(void **vdX, Nd4jLong **xShapeInfo, void **v
 
             // we assume that shuffle map for each X contains pair TAD Y
 
-			auto dX = static_cast<T**>(vdX);
-			auto dZ = static_cast<T**>(vdZ);
+			auto dX = reinterpret_cast<T**>(vdX);
+			auto dZ = reinterpret_cast<T**>(vdZ);
 
             __shared__ int tadLength;
             __shared__ int tadEWS;

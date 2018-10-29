@@ -357,7 +357,7 @@ template<typename OpType>
                         Y *sPartials = (Y *) manager->getSharedReductionBuffer();
                         Y startingVal = OpType::startingValue(dx);
 				        sPartials[threadIdx.x] = startingVal;
-				        X *tempX = (Y*)sPartials + blockDim.x;
+				        X *tempX = reinterpret_cast<X*>(sPartials) + blockDim.x;
 
                         const int maxBlock = blockDim.x;
 
