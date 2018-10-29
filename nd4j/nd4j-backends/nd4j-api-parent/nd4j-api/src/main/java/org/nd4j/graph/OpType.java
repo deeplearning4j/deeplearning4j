@@ -14,17 +14,24 @@ public final class OpType {
   public static final byte REDUCE_BOOL = 7;
   public static final byte INDEX_REDUCE = 8;
   public static final byte SCALAR = 9;
-  public static final byte BROADCAST = 10;
-  public static final byte PAIRWISE = 11;
-  public static final byte REDUCE_3 = 12;
-  public static final byte SUMMARYSTATS = 13;
-  public static final byte SHAPE = 14;
-  public static final byte AGGREGATION = 15;
-  public static final byte RANDOM = 16;
-  public static final byte CUSTOM = 17;
-  public static final byte GRAPH = 18;
+  public static final byte SCALAR_BOOL = 10;
+  public static final byte BROADCAST = 11;
+  public static final byte BROADCAST_BOOL = 12;
+  public static final byte PAIRWISE = 13;
+  public static final byte PAIRWISE_BOOL = 14;
+  public static final byte REDUCE_3 = 15;
+  public static final byte SUMMARYSTATS = 16;
+  public static final byte SHAPE = 17;
+  public static final byte AGGREGATION = 18;
+  public static final byte RANDOM = 19;
+  public static final byte CUSTOM = 20;
+  public static final byte GRAPH = 21;
   public static final byte VARIABLE = 30;
   public static final byte BOOLEAN = 40;
   public static final byte LOGIC = 119;
+
+  public static final String[] names = { "TRANSFORM_FLOAT", "TRANSFORM_SAME", "TRANSFORM_BOOL", "TRANSFORM_STRICT", "REDUCE_FLOAT", "REDUCE_SAME", "REDUCE_LONG", "REDUCE_BOOL", "INDEX_REDUCE", "SCALAR", "SCALAR_BOOL", "BROADCAST", "BROADCAST_BOOL", "PAIRWISE", "PAIRWISE_BOOL", "REDUCE_3", "SUMMARYSTATS", "SHAPE", "AGGREGATION", "RANDOM", "CUSTOM", "GRAPH", "", "", "", "", "", "", "", "", "VARIABLE", "", "", "", "", "", "", "", "", "", "BOOLEAN", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "LOGIC", };
+
+  public static String name(int e) { return names[e]; }
 }
 
