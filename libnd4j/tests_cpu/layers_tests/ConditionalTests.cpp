@@ -146,7 +146,7 @@ TEST_F(ConditionalTests, Flat_Test_2) {
     auto varSpace = graph->getVariableSpace();
     varSpace->getVariable(1)->getNDArray()->assign(-1.0);
 
-    //graph->printOut();
+    graph->printOut();
 
     auto status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);

@@ -11620,6 +11620,10 @@ public class SameDiff {
                 return DataType.INT32;
             case LONG:
                 return DataType.INT64;
+            case BOOL:
+                return DataType.BOOL;
+            case SHORT:
+                return DataType.INT16;
             default:
                 throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
         }
@@ -11637,8 +11641,12 @@ public class SameDiff {
         switch (type) {
             case OpType.SCALAR:
                 return Op.Type.SCALAR;
+            case OpType.SCALAR_BOOL:
+                return Op.Type.SCALAR_BOOL;
             case OpType.BROADCAST:
                 return Op.Type.BROADCAST;
+            case OpType.BROADCAST_BOOL:
+                return Op.Type.BROADCAST_BOOL;
             case OpType.TRANSFORM_BOOL:
                 return Op.Type.TRANSFORM_BOOL;
             case OpType.TRANSFORM_FLOAT:
@@ -11669,6 +11677,8 @@ public class SameDiff {
                 return Op.Type.SHAPE;
             case OpType.PAIRWISE:
                 return Op.Type.PAIRWISE;
+            case OpType.PAIRWISE_BOOL:
+                return Op.Type.PAIRWISE_BOOL;
             case OpType.SUMMARYSTATS:
                 return Op.Type.SUMMARYSTATS;
             default:

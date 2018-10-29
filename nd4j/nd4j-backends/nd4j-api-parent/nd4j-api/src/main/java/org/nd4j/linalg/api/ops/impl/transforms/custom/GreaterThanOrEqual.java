@@ -18,10 +18,13 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -65,5 +68,10 @@ public class GreaterThanOrEqual extends BaseDynamicTransformOp {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //2 inputs, not continuously differentiable but 0s almost everywhere
         return Arrays.asList(sameDiff.zerosLike(args()[0]), sameDiff.zerosLike(args()[1]));
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], DataType.BOOL));
     }
 }

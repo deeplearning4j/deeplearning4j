@@ -16,10 +16,7 @@
 
 package org.nd4j.linalg.api.shape;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.val;
+import lombok.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
@@ -137,12 +134,13 @@ public class LongShapeDescriptor {
         return new LongShapeDescriptor(ArrayUtil.toLongArray(descriptor.getShape()), ArrayUtil.toLongArray(descriptor.getStride()), descriptor.getOffset(), descriptor.getEws(), descriptor.getOrder(), descriptor.getExtras());
     }
 
-    public static LongShapeDescriptor fromShape(int[] shape, DataType dataType) {
+    public static LongShapeDescriptor fromShape(int[] shape, @NonNull DataType dataType) {
         return fromShape(ArrayUtil.toLongArray(shape), dataType);
     }
 
-    public static LongShapeDescriptor fromShape(long[] shape, DataType dataType) {
-        val extras = ArrayOptionsHelper.setOptionBit(0L, dataType);
+    public static LongShapeDescriptor fromShape(long[] shape, @NonNull DataType dataType) {
+        var extras = 0L;
+        extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
         val desc = new LongShapeDescriptor(shape, Nd4j.getStrides(shape, Nd4j.order()), 0, 1, Nd4j.order(), extras);
         return desc;
     }

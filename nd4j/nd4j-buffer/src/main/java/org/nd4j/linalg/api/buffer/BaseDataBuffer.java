@@ -1258,14 +1258,23 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public int getInt(long i) {
-        if (dataType() == DataType.DOUBLE) {
-            return (int) ((DoubleIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.INT) {
-            return ((IntIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.LONG) {
-            return (int) ((LongIndexer) indexer).get(offset() + i);
-        } else {
-            return (int) ((FloatIndexer) indexer).get(offset() + i);
+        switch (dataType()) {
+            case DOUBLE:
+                return (int) ((DoubleIndexer) indexer).get(offset() + i);
+            case BOOL:
+                return ((BooleanIndexer) indexer).get(offset() + i) ? 1 : 0;
+            case INT:
+                return ((IntIndexer) indexer).get(offset() + i);
+            case SHORT:
+                return ((ShortIndexer) indexer).get(offset() + i);
+            case BYTE:
+                return ((ByteIndexer) indexer).get(offset() + i);
+            case LONG:
+                return (int) ((LongIndexer) indexer).get(offset() + i);
+            case FLOAT:
+                return (int) ((FloatIndexer) indexer).get(offset() + i);
+            default:
+                throw new UnsupportedOperationException();
         }
     }
 
