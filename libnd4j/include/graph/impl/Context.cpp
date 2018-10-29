@@ -42,6 +42,14 @@ namespace nd4j {
                     this->_iArgs.push_back(v);
                 }
 
+                for (const auto &v: *(prototype->getBArguments())) {
+                    this->_bArgs.push_back(v);
+                }
+
+                for (const auto &v: *(prototype->getAxis())) {
+                    this->_axis.push_back(v);
+                }
+
                 this->_opNum = prototype->opNum();
                 this->_isInplace = prototype->isInplace();
                 this->_nodeId = prototype->nodeId();
