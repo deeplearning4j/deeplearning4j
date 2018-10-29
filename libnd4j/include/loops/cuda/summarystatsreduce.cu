@@ -51,9 +51,9 @@ namespace functions {
  * @param dimensionLength the length of the dimension
  * @param postProcessOrNot whether to post process or not
  */
-        template <typename T>
-        _CUDA_D void SummaryStatsReduce<T>::summaryStatsReduceGeneric(const int op, T *dx, Nd4jLong *xShapeInfo, int xRank, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, T *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-
+        template <typename X, typename Z>
+        _CUDA_D void SummaryStatsReduce<X,Z>::summaryStatsReduceGeneric(const int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *vextraParams, void *vresult, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+    
             __shared__ UnifiedSharedMemory *manager;
 
             if (threadIdx.x == 0) {
@@ -63,7 +63,7 @@ namespace functions {
             }
             __syncthreads();
 
-            functions::summarystats::SummaryStatsReduce<T>::transform(
+            functions::summarystats::SummaryStatsReduce<X,Z>::transform(
                     op,
                     dx,
                     xShapeInfo,
@@ -81,7 +81,7 @@ namespace functions {
         }
 
         _CUDA_G void summaryStatsReduceDouble(int op, double *dx, Nd4jLong *xShapeInfo, int xRank, double *extraParams, double *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, bool biasCorrected, int *allocationBuffer, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            SummaryStatsReduce<double>::summaryStatsReduceGeneric(
+            SummaryStatsReduce<double, double>::summaryStatsReduceGeneric(
                     op,
                     dx,
                     xShapeInfo, xRank,
@@ -95,7 +95,7 @@ namespace functions {
         }
 
         _CUDA_G void summaryStatsReduceFloat(int op, float *dx, Nd4jLong *xShapeInfo, int xRank, float *extraParams, float *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            SummaryStatsReduce<float>::summaryStatsReduceGeneric(
+            SummaryStatsReduce<float,float>::summaryStatsReduceGeneric(
                     op,
                     dx,
                     xShapeInfo, xRank,
@@ -109,7 +109,7 @@ namespace functions {
         }
 
         _CUDA_G void summaryStatsReduceHalf(int op, float16 *dx, Nd4jLong *xShapeInfo, int xRank, float16 *extraParams, float16 *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            SummaryStatsReduce<float16>::summaryStatsReduceGeneric(
+            SummaryStatsReduce<float16,float16>::summaryStatsReduceGeneric(
                     op,
                     dx,
                     xShapeInfo, xRank,
@@ -146,13 +146,14 @@ namespace functions {
 		 * @param tid
 		 * @param extraParams
 		 */
-        template<typename T>
+        template<typename X, typename Z>
         template<typename OpType>
-        _CUDA_D void SummaryStatsReduce<T>::aggregatePartials(SummaryStatsData<T> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements, T *extraParams) {
+        _CUDA_D void SummaryStatsReduce<X,Z>::aggregatePartials(SummaryStatsData<X> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *vextraParams) {
             // start the shared memory loop on the next power of 2 less
             // than the block size.  If block size is not a power of 2,
             // accumulate the intermediate sums in the remainder range.
-            SummaryStatsData<T> *sPartials = *sPartialsRef;
+            Z* extraParams = static_cast<Y*>(vextraParams);
+            SummaryStatsData<X> *sPartials = *sPartialsRef;
             Nd4jLong floorPow2 = blockDim.x;
 
             if (floorPow2 & (floorPow2 - 1)) {
@@ -196,9 +197,9 @@ namespace functions {
 			 *                          0 is the number of elements per vector
 			 *                          1 is the number of vectors
 			 */
-        template<typename T>
+        template<typename X, typename Y>
         template<typename OpType>
-        _CUDA_D void SummaryStatsReduce<T>::transform(T *dx, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        _CUDA_D void SummaryStatsReduce<X,Y>::transform(void *vdx, Nd4jLong *xShapeInfo, void *vextraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
             /**
              * Gpu information for the problem
@@ -447,16 +448,19 @@ namespace functions {
         };
 
 
-        template <typename T>
-        _CUDA_D void SummaryStatsReduce<T>::transform(const int opNum, T *dx, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        template <typename X, typename Z>
+        _CUDA_D void SummaryStatsReduce<X,Z>::transform(const int opNum, void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
             DISPATCH_BY_OPNUM(transform, PARAMS(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets), SUMMARY_STATS_OPS);
         };
 
 
-        template <>
-        _CUDA_H double SummaryStatsReduce<double>::execSummaryStatsReduceScalar(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *x, Nd4jLong *xShapeInfo, double *extraParams, bool biasCorrected) {
-            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+        template <typename X, typename Z>
+        _CUDA_H Z SummaryStatsReduce<X,Z>::execSummaryStatsReduceScalar(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vextraParams, bool biasCorrected) {
+            
+            auto x = static_cast<X*>(vx);
+            auto extraParams = static_cast<Z*>(vextraParams);
 
+            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
             auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
 
             auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
