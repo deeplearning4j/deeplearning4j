@@ -151,8 +151,8 @@ template<typename OpType>
 					sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], extraZ), extraZ);
 				}
 
-				Y **sPartialsRef =  &sPartials;
-				aggregatePartials(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), extraZ);
+				Y **sPartialsRef =  &sPartials;				
+				aggregatePartials<OpType>(reinterpret_cast<void**>(sPartialsRef), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), extraZ);
 				/**
                  * Look at something that uses the extra params
                  * and aggregates the extra values propelry.
@@ -198,7 +198,7 @@ template<typename OpType>
 					extraZ[1] = (Y) 0.0f;
 
 					if (extraParams != nullptr) {
-                        extraZ[2] = (Y)extraParams[0];
+                        extraZ[2] = *(static_cast<Y*>(extraParams));
                     } else extraZ[2] = (Y) 0.0f;
 				}
 
@@ -263,7 +263,7 @@ template<typename OpType>
 				__syncthreads();
 
 				Y **sPartialsRef = &sPartials;
-				aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), extraZ);
+				aggregatePartials<OpType>(reinterpret_cast<void**>(sPartialsRef), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), extraZ);
 
 				__syncthreads();
 				if (gridDim.x > 1) {
@@ -273,7 +273,7 @@ template<typename OpType>
 					tid = threadIdx.x;
 					Y *extraBuffer = (Y *) allocationPointer;
 					if (threadIdx.x == 0) {
-						reductionBuffer[blockIdx.x] = sPartials[0];
+						static_cast<Y*>(reductionBuffer)[blockIdx.x] = sPartials[0];
 						extraBuffer[blockIdx.x] = extraZ[0];
 						extraBuffer[gridDim.x + blockIdx.x] = extraZ[1];
 					}
@@ -294,7 +294,7 @@ template<typename OpType>
 						sPartials[threadIdx.x] = OpType::startingValue(dx);
 
                         // TODO: later probably replace this. Right now we need extraZ sync for CosineSimilarity ONLY
-						if (tid == 0 && extraZ[0] != (T) 0.0 && extraZ[1] != (T) 0.0) {
+						if (tid == 0 && extraZ[0] != static_cast<Y>(0) && extraZ[1] != static_cast<Y>(0)) {
 						    extraZ[0] = 0.0;
 						    extraZ[1] = 0.0;
                             for (int i = 0; i < gridDim.x; i++) {
@@ -304,11 +304,11 @@ template<typename OpType>
 						}
 
 						for (Nd4jLong i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
-							sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraZ);
+							sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], static_cast<Y*>(reductionBuffer)[i], extraZ);
 						}
 						__syncthreads();
-
-						aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraZ);
+						
+						aggregatePartials<OpType>(reinterpret_cast<void**>(sPartialsRef), threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraZ);
 
 						__syncthreads();
 						if (threadIdx.x == 0) {
@@ -466,7 +466,7 @@ template<typename OpType>
                                 }
 
                                 Y **sPartialsRef = &sPartials;
-				                aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, xTadLength), extraZ);
+				                aggregatePartials<OpType>(reinterpret_cast<void**>(sPartialsRef), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, xTadLength), extraZ);
 
                                 __syncthreads();
 
@@ -601,7 +601,7 @@ template<typename OpType>
 						__syncthreads();
 
                         Y **sPartialsRef = &sPartials;
-				        aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
+				        aggregatePartials<OpType>(reinterpret_cast<void**>(sPartialsRef), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
 
                         __syncthreads();
                         if (threadIdx.x == 0)
@@ -629,7 +629,7 @@ template<typename OpType>
 							__syncthreads();
 
                             Y **sPartialsRef = &sPartials;
-				            aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
+				            aggregatePartials<OpType>(reinterpret_cast<void**>(sPartialsRef), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
 
                             __syncthreads();
                             if (threadIdx.x == 0)
@@ -704,7 +704,7 @@ template<typename OpType>
 							__syncthreads();
 
                             Y **sPartialsRef = &sPartials;
-				            aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
+							aggregatePartials<OpType>(reinterpret_cast<void**>(sPartialsRef), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
 
                             __syncthreads();
                             if (threadIdx.x == 0)
@@ -743,7 +743,7 @@ template<typename OpType>
 				Nd4jLong *tadOffsets,
 				Nd4jLong *yTadOnlyShapeInfo,
 				Nd4jLong *yTadOffsets) {
-                            DISPATCH_BY_OPNUM_T(transform, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
+                            DISPATCH_BY_OPNUM_TT(transform, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 			}
 
             __device__
@@ -765,7 +765,7 @@ template<typename OpType>
 				Nd4jLong *tadOffsets,
 				Nd4jLong *yTadOnlyShapeInfo,
 				Nd4jLong *yTadOffsets) {
-                            DISPATCH_BY_OPNUM_T(transformAll, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
+                            DISPATCH_BY_OPNUM_TT(transformAll, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 			}
 
 
@@ -783,7 +783,7 @@ template<typename OpType>
 				void *reductionBuffer,
 				UnifiedSharedMemory *manager,
 				Nd4jLong *tadOnlyShapeInfo) {
-                            DISPATCH_BY_OPNUM_T(execScalarCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, reductionBuffer, manager, tadOnlyShapeInfo), REDUCE3_OPS);
+                            DISPATCH_BY_OPNUM_TT(execScalarCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, reductionBuffer, manager, tadOnlyShapeInfo), REDUCE3_OPS);
 			}
 #endif
 
@@ -1440,7 +1440,7 @@ __device__ void reduce3Generic(
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
 		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<X,Y>), sizeof(shape::TAD), shape::rank(xShapeInfo));
 
 	}
 	__syncthreads();
@@ -1489,7 +1489,7 @@ __device__ void reduce3AllGeneric(
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
 		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<X,Y>), sizeof(shape::TAD), shape::rank(xShapeInfo));
 
 	}
 	__syncthreads();
@@ -1531,7 +1531,7 @@ __device__ void reduce3ScalarGeneric(
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
 		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<T>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<X,Y>), sizeof(shape::TAD), shape::rank(xShapeInfo));
 	}
 	__syncthreads();
 
@@ -1590,7 +1590,6 @@ __global__ void reduce3Double(
 			dimension,
 			dimensionLength,
 			postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
-
 }
 
 extern "C"
