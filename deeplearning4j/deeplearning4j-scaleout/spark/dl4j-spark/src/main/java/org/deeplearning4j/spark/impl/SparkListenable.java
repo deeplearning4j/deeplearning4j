@@ -38,6 +38,7 @@ public class SparkListenable {
     protected TrainingMaster trainingMaster;
     private List<TrainingListener> listeners = new ArrayList<>();
 
+
     /**
      * This method allows you to specify trainingListeners for this model.
      *

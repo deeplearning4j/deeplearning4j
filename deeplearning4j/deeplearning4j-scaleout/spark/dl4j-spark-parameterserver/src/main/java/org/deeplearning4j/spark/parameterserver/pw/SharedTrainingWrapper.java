@@ -34,6 +34,7 @@ import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumula
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
 import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.SmartFancyBlockingQueue;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
@@ -320,6 +321,7 @@ public class SharedTrainingWrapper {
                                     "No Transport implementation was defined for this training session!");
 
                         consumer = UpdatesConsumer.builder()
+                                .numWorkers(numWorkers)
                                 .accumulator(accumulator)
                                 .params(model.params())
                                 .build();
@@ -469,6 +471,8 @@ public class SharedTrainingWrapper {
                             }
                         }
                     }
+
+                    consumer.getUpdatesQueue().purge();
                 }
             } catch (Throwable t){
                 log.warn("Exception encountered during fit operation", t);

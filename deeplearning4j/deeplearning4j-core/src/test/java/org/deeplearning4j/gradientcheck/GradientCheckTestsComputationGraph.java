@@ -87,8 +87,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         graph.init();
 
         Nd4j.getRandom().setSeed(12345);
-        int nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(1, nParams);
+        long nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
         graph.setParams(newParams);
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
@@ -138,8 +138,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         assertEquals(numParams, graph.numParams());
 
         Nd4j.getRandom().setSeed(12345);
-        int nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(1, nParams);
+        long nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
         graph.setParams(newParams);
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
@@ -195,8 +195,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             assertEquals(numParams, graph.numParams());
 
             Nd4j.getRandom().setSeed(12345);
-            int nParams = graph.numParams();
-            INDArray newParams = Nd4j.rand(1, nParams);
+            long nParams = graph.numParams();
+            INDArray newParams = Nd4j.rand(new long[]{1, nParams});
             graph.setParams(newParams);
 
             DataSet ds = new IrisDataSetIterator(150, 150).next();
@@ -255,8 +255,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             assertEquals(numParams, graph.numParams());
 
             Nd4j.getRandom().setSeed(12345);
-            int nParams = graph.numParams();
-            INDArray newParams = Nd4j.rand(1, nParams);
+            long nParams = graph.numParams();
+            INDArray newParams = Nd4j.rand(new long[]{1, nParams});
             graph.setParams(newParams);
 
             DataSet ds = new IrisDataSetIterator(150, 150).next();
@@ -813,8 +813,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         assertEquals(numParams, graph.numParams());
 
         Nd4j.getRandom().setSeed(12345);
-        int nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(1, nParams);
+        long nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
         graph.setParams(newParams);
 
         INDArray pos = Nd4j.rand(150, 4);
@@ -994,8 +994,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
 
         Nd4j.getRandom().setSeed(12345);
-        int nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(1, nParams);
+        long nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
         graph.setParams(newParams);
 
         int[] mbSizes = new int[] {1, 3, 10};
@@ -1051,8 +1051,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
 
         Nd4j.getRandom().setSeed(12345);
-        int nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(1, nParams);
+        long nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
         graph.setParams(newParams);
 
         int[] mbSizes = new int[] {1, 3, 10};
@@ -1109,8 +1109,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
 
         Nd4j.getRandom().setSeed(12345);
-        int nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(1, nParams);
+        long nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
         graph.setParams(newParams);
 
         int[] mbSizes = new int[] {1, 3, 10};
@@ -1168,8 +1168,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
 
         Nd4j.getRandom().setSeed(12345);
-        int nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(1, nParams);
+        long nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
         graph.setParams(newParams);
 
         int[] mbSizes = new int[] {1, 3, 10};
@@ -1232,8 +1232,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
 
         Nd4j.getRandom().setSeed(12345);
-        int nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(1, nParams);
+        long nParams = graph.numParams();
+        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
         graph.setParams(newParams);
 
         int[] mbSizes = new int[] {1, 3, 10};

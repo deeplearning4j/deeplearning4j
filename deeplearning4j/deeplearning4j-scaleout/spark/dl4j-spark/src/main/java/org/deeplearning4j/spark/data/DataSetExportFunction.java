@@ -21,6 +21,8 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.util.DefaultHadoopConfig;
 import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.dataset.DataSet;
@@ -38,7 +40,7 @@ import java.util.Iterator;
 public class DataSetExportFunction implements VoidFunction<Iterator<DataSet>> {
 
     private final URI outputDir;
-    private final SerializableHadoopConfig conf;
+    private final Broadcast<SerializableHadoopConfig> conf;
     private String uid = null;
 
     private int outputCount;
@@ -47,9 +49,9 @@ public class DataSetExportFunction implements VoidFunction<Iterator<DataSet>> {
         this(outputDir, null);
     }
 
-    public DataSetExportFunction(URI outputDir, Configuration configuration) {
+    public DataSetExportFunction(URI outputDir, Broadcast<SerializableHadoopConfig> configuration) {
         this.outputDir = outputDir;
-        this.conf = (configuration == null ? null : new SerializableHadoopConfig(configuration));
+        this.conf = configuration;
     }
 
     @Override
@@ -57,7 +59,7 @@ public class DataSetExportFunction implements VoidFunction<Iterator<DataSet>> {
         String jvmuid = UIDProvider.getJVMUID();
         uid = Thread.currentThread().getId() + jvmuid.substring(0, Math.min(8, jvmuid.length()));
 
-        Configuration c = (conf != null ? conf.getConfiguration() : new Configuration());
+        Configuration c = conf == null ? DefaultHadoopConfig.get() : conf.getValue().getConfiguration();
 
         while (iter.hasNext()) {
             DataSet next = iter.next();

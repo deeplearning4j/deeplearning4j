@@ -173,7 +173,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
     }
 
     @Override
-    public int numParams(){
+    public long numParams(){
         return params == null ? 0 : (int)params.length();
     }
 

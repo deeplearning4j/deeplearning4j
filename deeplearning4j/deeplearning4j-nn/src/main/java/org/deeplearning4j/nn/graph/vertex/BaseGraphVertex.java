@@ -196,8 +196,8 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
-    public int numParams(){
-        return params() == null ? 0 : (int)params().length();
+    public long numParams(){
+        return params() == null ? 0 : params().length();
     }
 
     @Override

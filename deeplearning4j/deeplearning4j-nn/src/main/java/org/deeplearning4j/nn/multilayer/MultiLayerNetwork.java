@@ -27,7 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
-import org.deeplearning4j.eval.*;
+import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.*;
@@ -57,6 +57,10 @@ import org.deeplearning4j.util.CrashReportingUtil;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.base.Preconditions;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.ROC;
+import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -582,8 +586,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if (this.layers == null)
                 this.layers = new Layer[nLayers];
 
-            //First: Work out total length of (backprop) params
-            int paramLength = 0;
+            //First: Work out total length of params
+            long paramLength = 0;
             val nParamsPerLayer = new long[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
@@ -621,7 +625,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
 
             // construct multi-layer
-            int paramCountSoFar = 0;
+            long paramCountSoFar = 0;
             for (int i = 0; i < nLayers; i++) {
                 INDArray paramsView;
                 if (nParamsPerLayer[i] > 0) {
@@ -703,7 +707,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             int nLayers = layers.length;
 
             //First: Work out total length of params
-            int paramLength = 0;
+            long paramLength = 0;
             val nParamsPerLayer = new long[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
@@ -712,17 +716,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
 
             if(paramLength > 0) {
-                flattenedGradients = Nd4j.zeros(new int[]{1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
+                flattenedGradients = Nd4j.zeros(new long[]{1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
             }
 
-            int backpropParamsSoFar = 0;
+            long paramsSoFar = 0;
             for (int i = 0; i < layers.length; i++) {
                 if (nParamsPerLayer[i] == 0)
                     continue; //This layer doesn't have any parameters...
                 INDArray thisLayerGradView = flattenedGradients.get(NDArrayIndex.point(0),
-                        NDArrayIndex.interval(backpropParamsSoFar, backpropParamsSoFar + nParamsPerLayer[i]));
+                        NDArrayIndex.interval(paramsSoFar, paramsSoFar + nParamsPerLayer[i]));
                 layers[i].setBackpropGradientsViewArray(thisLayerGradView);
-                backpropParamsSoFar += nParamsPerLayer[i];
+                paramsSoFar += nParamsPerLayer[i];
             }
         }
     }
@@ -1406,7 +1410,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             int idx = 0;
             for (int i = 0; i < getLayers().length; i++) {
                 Layer layer = getLayer(i);
-                int range = layer.numParams();
+                long range = layer.numParams();
                 if (range <= 0)
                     continue; //Some layers: no parameters (subsampling, etc)
                 INDArray get = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(idx, range + idx));
@@ -1451,7 +1455,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return the params for this neural net
      */
     @Override
-    public int numParams() {
+    public long numParams() {
         if (isInitCalled())
             return numParams(false);
         else
@@ -1460,7 +1464,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         int length = 0;
         for (int i = 0; i < layers.length; i++)
             length += layers[i].numParams(backwards);
@@ -3177,8 +3181,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param iterator Iterator to evaluate on
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
-    public Evaluation evaluate(DataSetIterator iterator) {
-        return evaluate(iterator, null);
+    public <T extends Evaluation> T evaluate(DataSetIterator iterator) {
+        return (T)evaluate(iterator, null);
     }
 
     /**
@@ -3186,8 +3190,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param iterator Data to evaluate on
      * @return
      */
-    public RegressionEvaluation evaluateRegression(DataSetIterator iterator) {
-        return doEvaluation(iterator, new RegressionEvaluation(iterator.totalOutcomes()))[0];
+    public <T extends RegressionEvaluation> T evaluateRegression(DataSetIterator iterator) {
+        return (T)doEvaluation(iterator, new RegressionEvaluation(iterator.totalOutcomes()))[0];
     }
 
     /**
@@ -3197,7 +3201,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param iterator          Data to evaluate on
      * @return ROC evaluation on the given dataset
      */
-    public ROC evaluateROC(DataSetIterator iterator){
+    public <T extends ROC> T evaluateROC(DataSetIterator iterator){
         return evaluateROC(iterator, 0);
     }
 
@@ -3208,8 +3212,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param rocThresholdSteps Number of threshold steps to use with {@link ROC}
      * @return ROC evaluation on the given dataset
      */
-    public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROC(rocThresholdSteps))[0];
+    public <T extends ROC> T evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
+        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -3219,7 +3223,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param iterator          Data to evaluate on
      * @return Multi-class ROC evaluation on the given dataset
      */
-    public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator) {
+    public <T extends ROCMultiClass> T evaluateROCMultiClass(DataSetIterator iterator) {
         return evaluateROCMultiClass(iterator, 0);
     }
 
@@ -3230,8 +3234,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param rocThresholdSteps Number of threshold steps to use with {@link ROCMultiClass}
      * @return Multi-class ROC evaluation on the given dataset
      */
-    public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
+    public <T extends ROCMultiClass> T evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
+        return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**
@@ -3425,7 +3429,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
-        Evaluation e = new Evaluation(labelsList, topN);
+        Evaluation e = new org.deeplearning4j.eval.Evaluation(labelsList, topN);
         doEvaluation(iterator, e);
 
         return e;

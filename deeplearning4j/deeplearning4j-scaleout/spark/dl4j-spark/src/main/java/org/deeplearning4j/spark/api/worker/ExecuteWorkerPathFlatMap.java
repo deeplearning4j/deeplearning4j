@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.api.worker;
 
+import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.datavec.spark.util.SerializableHadoopConfig;
@@ -40,7 +41,7 @@ import java.util.List;
 public class ExecuteWorkerPathFlatMap<R extends TrainingResult>
                 extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
-    public ExecuteWorkerPathFlatMap(TrainingWorker<R> worker, DataSetLoader loader, SerializableHadoopConfig hadoopConfig) {
+    public ExecuteWorkerPathFlatMap(TrainingWorker<R> worker, DataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
         super(new ExecuteWorkerPathFlatMapAdapter<>(worker, loader, hadoopConfig));
     }
 }
@@ -57,9 +58,9 @@ class ExecuteWorkerPathFlatMapAdapter<R extends TrainingResult> implements FlatM
     private final FlatMapFunctionAdapter<Iterator<DataSet>, R> workerFlatMap;
     private final DataSetLoader dataSetLoader;
     private final int maxDataSetObjects;
-    private final SerializableHadoopConfig hadoopConfig;
+    private final Broadcast<SerializableHadoopConfig> hadoopConfig;
 
-    public ExecuteWorkerPathFlatMapAdapter(TrainingWorker<R> worker, DataSetLoader dataSetLoader, SerializableHadoopConfig hadoopConfig) {
+    public ExecuteWorkerPathFlatMapAdapter(TrainingWorker<R> worker, DataSetLoader dataSetLoader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
         this.workerFlatMap = new ExecuteWorkerFlatMapAdapter<>(worker);
         this.dataSetLoader = dataSetLoader;
         this.hadoopConfig = hadoopConfig;

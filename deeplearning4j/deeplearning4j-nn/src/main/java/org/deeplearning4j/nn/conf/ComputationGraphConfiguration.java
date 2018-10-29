@@ -105,8 +105,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected int[] topologicalOrder;
     protected List<String> topologicalOrderStr;
 
+    @Getter @Setter
+    protected boolean legacyBatchScaledL2 = true;   //Default to legacy for pre 1.0.0-beta3 networks on deserialization
+
     /**
-     * @return JSON representation of configuration
+     * @return YAML representation of configuration
      */
     public String toYaml() {
         ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
@@ -120,9 +123,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     }
 
     /**
-     * Create a neural net configuration from json
+     * Create a neural net configuration from YAML
      *
-     * @param json the neural net configuration from json
+     * @param json the neural net configuration from YAML
      * @return {@link ComputationGraphConfiguration}
      */
     public static ComputationGraphConfiguration fromYaml(String json) {
@@ -262,6 +265,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
         conf.cacheMode = this.cacheMode;
         conf.defaultConfiguration.cacheMode = this.cacheMode;
+        conf.legacyBatchScaledL2 = this.legacyBatchScaledL2;
 
         return conf;
     }
@@ -1033,6 +1037,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             conf.defaultConfiguration = globalConfiguration.build();
             conf.getDefaultConfiguration().setPretrain(pretrain);
+            conf.setLegacyBatchScaledL2(globalConfiguration.isLegacyBatchScaledL2());
 
             //Add preprocessors that were defined separately to the Layers to which they belong
             for (Map.Entry<String, InputPreProcessor> entry : inputPreProcessors.entrySet()) {

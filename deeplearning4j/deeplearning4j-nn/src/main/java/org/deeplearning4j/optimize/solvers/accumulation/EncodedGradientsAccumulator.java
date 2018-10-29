@@ -39,6 +39,7 @@ import org.nd4j.linalg.util.AtomicThrowable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -71,7 +72,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
     protected Double boundary = 1.0;
     protected boolean encodingDebugMode;
 
-    protected Queue<INDArray> externalSource;
+    protected IndexedTail externalSource;
 
     protected AtomicBoolean isFirst = new AtomicBoolean(false);
     protected AtomicBoolean isDone = new AtomicBoolean(true);
@@ -198,13 +199,18 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
         // we're passing number of consumers for current session to externalSource, if applicable
         if (externalSource != null && externalSource instanceof Registerable) {
-            externalUpdatesAvailable.set(!externalSource.isEmpty());
+            //externalUpdatesAvailable.set(!externalSource.isEmpty());
 
             ((Registerable) externalSource).registerConsumers(numConsumers);
         }
 
         currentConsumers.set(numConsumers);
         registered.set(true);
+    }
+
+    @Override
+    public IndexedTail getExternalSource() {
+        return externalSource;
     }
 
     @Override
@@ -299,45 +305,9 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
             if (externalSource != null) {
                 int ent = 0;
-                while (!externalSource.isEmpty()) {
-                    INDArray compressed = externalSource.poll();
+                if (externalSource.hasAnything()) {
+                    externalSource.drainTo(updates);
 
-                    // just for safety safety
-                    if (compressed == null)
-                        continue;
-
-                    // if we have multiple devices without p2p support - just duplicate messages right from host side
-                    if (relocatable) {
-                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                                        .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
-                            if (compressed.isCompressed() || compressed.data().dataType() == DataBuffer.Type.INT) {
-                                INDArray compressed_copy = compressed.unsafeDuplication(true);
-
-                                int encoding = compressed.data().getInt(3);
-                                if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                                    Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
-                                else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                                    Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
-                                else
-                                    throw new DL4JInvalidConfigException(
-                                            "Unknown compression header received: " + encoding);
-                            } else {
-                                updates.addi(compressed);
-                            }
-                        }
-                    } else {
-                        if (compressed.isCompressed() || compressed.data().dataType() == DataBuffer.Type.INT) {
-                            int encoding = compressed.data().getInt(3);
-                            if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                                Nd4j.getExecutioner().thresholdDecode(compressed, updates);
-                            else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                                Nd4j.getExecutioner().bitmapDecode(compressed, updates);
-                            else
-                                throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
-                        } else {
-                            updates.addi(compressed);
-                        }
-                    }
                     cnt++;
                     ent++;
                 }
@@ -400,33 +370,9 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
             if (externalSource != null) {
                 int ent = 0;
-                while (!externalSource.isEmpty()) {
-                    INDArray compressed = externalSource.poll();
+                if (externalSource.hasAnything()) {
+                    externalSource.drainTo(updates);
 
-
-                    // if we have multiple devices without p2p support - just duplicate messages right from host side
-                    if (relocatable) {
-                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                                        .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
-                            INDArray compressed_copy = compressed.unsafeDuplication(true);
-                            int encoding = compressed.data().getInt(3);
-                            if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                                Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
-                            else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                                Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
-                            else
-                                throw new DL4JInvalidConfigException(
-                                                "Unknown compression header received: " + encoding);
-                        }
-                    } else {
-                        int encoding = compressed.data().getInt(3);
-                        if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                            Nd4j.getExecutioner().thresholdDecode(compressed, updates);
-                        else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                            Nd4j.getExecutioner().bitmapDecode(compressed, updates);
-                        else
-                            throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
-                    }
                     cnt++;
                     ent++;
                 }
@@ -453,7 +399,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
      * @param source
      */
     @Override
-    public void setExternalSource(Queue<INDArray> source) {
+    public void setExternalSource(IndexedTail source) {
         this.externalSource = source;
     }
 
@@ -591,7 +537,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     @Override
     public boolean hasAnything() {
-        return externalUpdatesAvailable.get();
+        return externalSource != null && externalSource.hasAnything(); //externalUpdatesAvailable.get();
     }
 
     public static class Builder {

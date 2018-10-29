@@ -17,6 +17,7 @@
 package org.deeplearning4j.spark.parameterserver.functions;
 
 import org.apache.commons.io.LineIterator;
+import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.datavec.spark.util.SerializableHadoopConfig;
@@ -38,7 +39,7 @@ import java.util.Iterator;
  */
 public class SharedFlatMapPathsMDS<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
-    public SharedFlatMapPathsMDS(TrainingWorker<R> worker, MultiDataSetLoader loader, SerializableHadoopConfig hadoopConfig) {
+    public SharedFlatMapPathsMDS(TrainingWorker<R> worker, MultiDataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
         super(new SharedFlatMapPathsMDSAdapter<R>(worker, loader, hadoopConfig));
     }
 }
@@ -48,9 +49,9 @@ class SharedFlatMapPathsMDSAdapter<R extends TrainingResult> implements FlatMapF
 
     protected final SharedTrainingWorker worker;
     protected final MultiDataSetLoader loader;
-    protected final SerializableHadoopConfig hadoopConfig;
+    protected final Broadcast<SerializableHadoopConfig> hadoopConfig;
 
-    public SharedFlatMapPathsMDSAdapter(TrainingWorker<R> worker, MultiDataSetLoader loader, SerializableHadoopConfig hadoopConfig) {
+    public SharedFlatMapPathsMDSAdapter(TrainingWorker<R> worker, MultiDataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
         // we're not going to have anything but Shared classes here ever
         this.worker = (SharedTrainingWorker) worker;
         this.loader = loader;

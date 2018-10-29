@@ -55,7 +55,7 @@ public class FrozenVertex extends GraphVertex {
     }
 
     @Override
-    public int numParams(boolean backprop) {
+    public long numParams(boolean backprop) {
         return underlying.numParams(backprop);
     }
 

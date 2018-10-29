@@ -26,6 +26,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
+import org.datavec.spark.util.BroadcastHadoopConfigHolder;
 import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
@@ -865,14 +866,13 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             stats.logRepartitionEnd();
 
         JavaSparkContext sc = (network != null ? network.getSparkContext() : graph.getSparkContext());
-        SerializableHadoopConfig config = new SerializableHadoopConfig(sc.hadoopConfiguration());
         FlatMapFunction<Iterator<String>, SharedTrainingResult> function;
         if(dsLoader != null){
             function = new SharedFlatMapPaths<>(
-                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), dsLoader, config);
+                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), dsLoader, BroadcastHadoopConfigHolder.get(sc));
         } else {
             function = new SharedFlatMapPathsMDS<>(
-                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), mdsLoader, config);
+                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), mdsLoader, BroadcastHadoopConfigHolder.get(sc));
         }
 
 
