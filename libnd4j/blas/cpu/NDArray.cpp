@@ -403,7 +403,14 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
             limit = this->lengthOf();
 
         for (Nd4jLong e = 0; e < limit; e++) {
-            os << toStringValue(_buffer[e]);
+            if (this->isR())
+                os << toStringValue(this->e<float>(e));
+            else if (this->isZ())
+                os << toStringValue(this->e<Nd4jLong>(e));
+            else if (this->isB())
+                os << toStringValue(this->e<bool>(e));
+            else if (this->isS())
+                os << this->e<std::string>(e);
 
             if (e < limit - 1)
                 os << ", ";
