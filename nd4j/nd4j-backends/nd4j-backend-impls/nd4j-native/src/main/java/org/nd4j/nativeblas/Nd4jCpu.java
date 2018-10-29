@@ -5947,9 +5947,12 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             public native @StdVector DoublePointer getTArguments();
             public native @StdVector IntPointer getIArguments();
+            public native @Cast("bool*") @StdVector BoolPointer getBArguments();
+            public native @StdVector IntPointer getAxis();
 
-            public native int numT();
-            public native int numI();
+            public native @Cast("size_t") long numT();
+            public native @Cast("size_t") long numI();
+            public native @Cast("size_t") long numB();
 
             public native IntIntPair input(int idx);
 
@@ -10279,6 +10282,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #define INT_ARG(INDEX)     block.getIArguments()->at(INDEX)
 // #define T_ARG(INDEX)     block.getTArguments()->at(INDEX)
+// #define B_ARG(INDEX)     block.getBArguments()->at(INDEX)
 
 
 // #define COPY_SHAPE(SRC, TGT)    ALLOCATE(TGT, block.getWorkspace(), shape::shapeInfoLength(SRC), Nd4jLong);

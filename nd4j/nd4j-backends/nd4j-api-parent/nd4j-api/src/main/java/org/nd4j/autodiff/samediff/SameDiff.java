@@ -10939,7 +10939,7 @@ public class SameDiff {
                 0,
                 0,
                 -1,
-                0.0f, 0, 0, 0,0);
+                0, 0, 0, 0,0);
 
         return flatNode;
     }
@@ -11115,7 +11115,7 @@ public class SameDiff {
                 integerArgs,
                 dimensions,
                 -1,
-                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ? node.getScalarValue().getFloat(0) : 0.0f, 0, scopeName,
+                0, 0, scopeName,
                 outVarNamesOffset,
                 opNameOffset);
 

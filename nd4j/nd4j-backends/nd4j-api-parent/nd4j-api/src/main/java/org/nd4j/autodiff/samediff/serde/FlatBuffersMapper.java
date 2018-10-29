@@ -165,7 +165,7 @@ public class FlatBuffersMapper {
         for( int i=0; i<dimensions.length; i++ ){
             dimensions[i] = fn.dimensions(i);
         }
-        float scalar = fn.scalar();
+        //float scalar = fn.scalar();
 
         FlatProperties[] flatProperties = new FlatProperties[fn.propertiesLength()];
         for( int i=0; i<flatProperties.length; i++ ){
@@ -216,7 +216,7 @@ public class FlatBuffersMapper {
             }
             if(opType == Op.Type.SCALAR){
                 ScalarOp sOp = (ScalarOp)op;
-                sOp.setScalar(scalar);
+                //sOp.setScalar(scalar);
             } else if(opType == Op.Type.REDUCE_FLOAT || opType == Op.Type.REDUCE3 || opType == Op.Type.SUMMARYSTATS || opType == Op.Type.VARIANCE) {
                 val ba = (BaseReduceFloatOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
