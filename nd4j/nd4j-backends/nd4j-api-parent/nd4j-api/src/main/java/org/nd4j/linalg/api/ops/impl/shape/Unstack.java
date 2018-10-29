@@ -39,14 +39,14 @@ public class Unstack extends DynamicCustomOp {
 
     // TODO: libnd4j currently doesn't support "num", number of outputs is inferred.
     private int num = -1;
-    private int axis;
+    private int jaxis;
 
     public Unstack() {
     }
 
     public Unstack(SameDiff sameDiff, SDVariable value, int axis) {
         super(null, sameDiff, new SDVariable[]{value}, false);
-        this.axis = axis;
+        this.jaxis = axis;
         if (value.getShape() != null){
             if (value.getShape()[axis] != -1){
                 num = (int)value.getShape()[axis];
@@ -60,19 +60,19 @@ public class Unstack extends DynamicCustomOp {
 
     public Unstack(SameDiff sameDiff, SDVariable value, int axis, int num) {
         super(null, sameDiff, new SDVariable[]{value}, false);
-        this.axis = axis;
+        this.jaxis = axis;
         this.num = num;
         addArgs();
     }
 
     public Unstack(INDArray in, INDArray[] out, int axis){
         super(null, new INDArray[]{in}, out, null, (int[])null);
-        this.axis = axis;
+        this.jaxis = axis;
         addArgs();
     }
 
     public void addArgs() {
-        addIArgument(axis);
+        addIArgument(jaxis);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class Unstack extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val attrAxis = nodeDef.getAttrOrThrow("axis");
         int axis = (int) attrAxis.getI();
-        this.axis = axis;
+        this.jaxis = axis;
         val attrNum = nodeDef.getAttrOrDefault("num", null);
         if(attrNum != null){
             this.num = (int) attrNum.getI();
@@ -134,7 +134,7 @@ public class Unstack extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(sameDiff.stack(axis, f1.toArray(new SDVariable[f1.size()])));
+        return Collections.singletonList(sameDiff.stack(jaxis, f1.toArray(new SDVariable[f1.size()])));
     }
 
 }

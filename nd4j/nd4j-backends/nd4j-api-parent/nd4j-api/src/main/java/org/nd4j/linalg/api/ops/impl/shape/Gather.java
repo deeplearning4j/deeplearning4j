@@ -44,7 +44,7 @@ import java.util.Map;
 public class Gather extends DynamicCustomOp {
 
     protected int[] indices;
-    protected int axis = 0;
+    protected int jaxis = 0;
 
 
     public Gather(SameDiff sameDiff, SDVariable input, int[] indices, int axis, boolean inPlace) {
@@ -52,14 +52,14 @@ public class Gather extends DynamicCustomOp {
 
         addIArgument(axis);
         addIArgument(indices);
-        this.axis = axis;
+        this.jaxis = axis;
         this.indices = indices;
     }
 
     public Gather(SameDiff sameDiff, SDVariable input, SDVariable indices, int axis, boolean inPlace) {
         super(null, sameDiff, new SDVariable[] {input, indices}, inPlace);
         addIArgument(axis);
-        this.axis = axis;
+        this.jaxis = axis;
     }
 
     @Override
@@ -104,7 +104,7 @@ public class Gather extends DynamicCustomOp {
         }
 
         if (numIArguments() < 1) {
-            addIArgument(axis);
+            addIArgument(jaxis);
         }
 
         if (numOutputArguments() < getDescriptor().getNumOutputs()) {
@@ -168,7 +168,7 @@ public class Gather extends DynamicCustomOp {
         SDVariable inputGrad = sameDiff.zerosLike(arg(0));
 
         int ndim = arg(0).getShape().length;
-        int a = axis;
+        int a = jaxis;
         if(a < 0){
             a += ndim;
         }

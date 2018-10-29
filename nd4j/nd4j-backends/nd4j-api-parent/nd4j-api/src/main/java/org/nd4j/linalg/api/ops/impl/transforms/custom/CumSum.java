@@ -42,7 +42,7 @@ public class CumSum extends DynamicCustomOp {
 
     protected boolean exclusive = false;
     protected boolean reverse = false;
-    protected int[] axis = new int[0];
+    protected int[] jaxis = new int[0];
 
     public CumSum() {
     }
@@ -57,7 +57,7 @@ public class CumSum extends DynamicCustomOp {
         this.sameDiff = sameDiff;
         this.exclusive = exclusive;
         this.reverse = reverse;
-        this.axis = axis;
+        this.jaxis = axis;
         addArgs();
     }
 
@@ -65,7 +65,7 @@ public class CumSum extends DynamicCustomOp {
         super(null, new INDArray[]{in}, new INDArray[]{result}, null, (List<Integer>)null);
         this.exclusive = exclusive;
         this.reverse = reverse;
-        this.axis = axis;
+        this.jaxis = axis;
         addArgs();
     }
 
@@ -126,8 +126,8 @@ public class CumSum extends DynamicCustomOp {
 
     protected void addArgs() {
         addIArgument(exclusive ? 1 : 0, reverse ? 1 : 0);
-        for (val a: axis)
-            addIArgument(axis);
+        for (val a: jaxis)
+            addIArgument(jaxis);
     }
 
     @Override
@@ -137,7 +137,7 @@ public class CumSum extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(f().cumsumBp(arg(0), grad.get(0), exclusive, reverse, axis));
+        return Collections.singletonList(f().cumsumBp(arg(0), grad.get(0), exclusive, reverse, jaxis));
     }
 
 }

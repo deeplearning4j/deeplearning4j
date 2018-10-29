@@ -209,6 +209,11 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public boolean[] bArgs() {
+        return new boolean[0];
+    }
+
+    @Override
     public void addIArgument(int... arg) {
 
     }
@@ -219,8 +224,18 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public void addBArgument(boolean... arg) {
+
+    }
+
+    @Override
     public void removeIArgument(Integer arg) {
 
+    }
+
+    @Override
+    public Boolean getBArgument(int index) {
+        return null;
     }
 
     @Override

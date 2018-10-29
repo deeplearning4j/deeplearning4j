@@ -35,7 +35,7 @@ import java.util.*;
 public class CumProd extends DynamicCustomOp {
     protected boolean exclusive = false;
     protected boolean reverse = false;
-    protected int[] axis = new int[0];
+    protected int[] jaxis = new int[0];
 
     public CumProd() {
     }
@@ -49,7 +49,7 @@ public class CumProd extends DynamicCustomOp {
         this.sameDiff = sameDiff;
         this.exclusive = exclusive;
         this.reverse = reverse;
-        this.axis = axis;
+        this.jaxis = axis;
 
         tArguments.clear();
         iArguments.clear();
@@ -60,7 +60,7 @@ public class CumProd extends DynamicCustomOp {
         super(null, new INDArray[]{in}, new INDArray[]{result}, null, (List<Integer>)null);
         this.exclusive = exclusive;
         this.reverse = reverse;
-        this.axis = axis;
+        this.jaxis = axis;
 
         tArguments.clear();
         iArguments.clear();
@@ -136,6 +136,6 @@ public class CumProd extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(f().cumprodBp(arg(0), grad.get(0), exclusive, reverse, axis));
+        return Collections.singletonList(f().cumprodBp(arg(0), grad.get(0), exclusive, reverse, jaxis));
     }
 }

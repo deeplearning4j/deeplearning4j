@@ -10993,10 +10993,12 @@ public class SameDiff {
             }
         }
 
+        boolean[] boolArgs = null;
         long[] extraBits = null;
         if (node.opType() == Op.Type.CUSTOM) {
             DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) node;
             extraBits = dynamicCustomOp.iArgs();
+            boolArgs = dynamicCustomOp.bArgs();
         } else if (node instanceof Enter) {
             // in case of Enter node we'll be storing unique frame reference
             val frameName = ((Enter) node).getFrameName();
@@ -11079,6 +11081,7 @@ public class SameDiff {
         int nodesOut = FlatNode.createOutputVector(bufferBuilder, outputIds);
         int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
         int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
+        int bArgs = FlatNode.createExtraBoolsVector(bufferBuilder, boolArgs != null ? boolArgs : new boolean[0]);
         int dimensions = FlatNode.createDimensionsVector(bufferBuilder, dims);
         int fname = bufferBuilder.createString(
                 outputVertexId == null ||
@@ -11109,10 +11112,10 @@ public class SameDiff {
                 propIdx,
                 nodesIn,
                 nodesInPaired,
-                (byte) 0,
                 nodesOut,
                 extraz,
                 integerArgs,
+                bArgs,
                 dimensions,
                 -1,
                 0, 0, scopeName,
@@ -11142,7 +11145,7 @@ public class SameDiff {
      */
     public ByteBuffer asFlatBuffers(long graphId, @NonNull ExecutorConfiguration configuration) {
         Nd4j.getExecutioner().commit();
-        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(1024);
+        val bufferBuilder = new FlatBufferBuilder(1024);
         val idCounter = new AtomicInteger(0);
 
         val flatVariables = new ArrayList<Integer>();
@@ -11150,13 +11153,13 @@ public class SameDiff {
         val flatNodes = new ArrayList<Integer>();
 
         // first of all we build VariableSpace dump
-        List<SDVariable> variableList = new ArrayList<>(variables());
+        val variableList = new ArrayList<SDVariable>(variables());
         val reverseMap = new LinkedHashMap<String, Integer>();
         val forwardMap = new LinkedHashMap<String, Integer>();
         val framesMap = new LinkedHashMap<String, Integer>();
 
         int idx = 0;
-        Map<DifferentialFunction,Integer> idxForOps = new IdentityHashMap<>();
+        val idxForOps = new IdentityHashMap<DifferentialFunction,Integer>();
         for (val variable : variables()) {
             log.debug("Exporting variable: [{}]", variable.getVarName());
             if (variable.getArr() == null || variable.getShape() == null) {
