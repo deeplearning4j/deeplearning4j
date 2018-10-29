@@ -22,6 +22,7 @@
 #include <dll.h>
 #include <helpers/RandomLauncher.h>
 #include <graph/RandomGenerator.h>
+#include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
     // FIXME: implement this
@@ -48,7 +49,7 @@ namespace nd4j {
 
         //  FIXME: this isn't portable code :(
         //T args[] = {retainProb, alpha, beta, alphaPrime};
-        nd4j::ops::alpha_dropout op;
+        //nd4j::ops::alpha_dropout_bp op;
         //array->template applyRandom<randomOps::AlphaDropOut<T>>(buffer, nullptr, z, args);
         NativeOpExcutioner::execRandom(random::AlphaDropOut, &rng, z->buffer(), z->shapeInfo(), &retainProb);
     }
