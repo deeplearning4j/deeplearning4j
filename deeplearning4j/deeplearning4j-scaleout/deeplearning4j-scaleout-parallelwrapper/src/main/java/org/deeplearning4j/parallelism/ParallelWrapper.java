@@ -37,11 +37,14 @@ import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.Registerable;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
 import org.deeplearning4j.parallelism.factory.SymmetricTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 import org.jetbrains.annotations.NotNull;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -683,6 +686,8 @@ public class ParallelWrapper implements AutoCloseable {
         protected WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
         protected Supplier<INDArray> modelParamsSupplier;
         protected Supplier<INDArray> updaterParamsSupplier;
+        protected ThresholdAlgorithm thresholdAlgorithm;
+        protected ResidualPostProcessor residualPostProcessor;
 
         protected GradientsAccumulator accumulator;
 
@@ -858,6 +863,26 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         /**
+         * Set the threshold algorithm. Not used for single machine training (only for PW used in a distributed setting),
+         * and should not be set by users in most cases.
+         * @param thresholdAlgorithm Threshold algorithm to use
+         */
+        public Builder thresholdAlgorithm(ThresholdAlgorithm thresholdAlgorithm){
+            this.thresholdAlgorithm = thresholdAlgorithm;
+            return this;
+        }
+
+        /**
+         * Set the residual post processor algorithm. Not used for single machine training (only for PW used in a
+         * distributed setting), and should not be set by users in most cases.
+         * @param residualPostProcessor Residual post processor to use
+         */
+        public Builder residualPostProcessor(ResidualPostProcessor residualPostProcessor){
+            this.residualPostProcessor = residualPostProcessor;
+            return this;
+        }
+
+        /**
          * This method returns ParallelWrapper instance
          *
          * @return
@@ -882,10 +907,11 @@ public class ParallelWrapper implements AutoCloseable {
                 }
                     break;
                 case SHARED_GRADIENTS: {
+                    Preconditions.checkState(thresholdAlgorithm != null, "Cannot use SHARED_GRADIENTS training mode without setting a threshold algorithm");
                     this.trainerContext = new SymmetricTrainerContext();
                     if (this.accumulator == null) {
                         log.info("Creating new GradientsAccumulator instance with threshold of [5e-4");
-                        this.accumulator = new EncodedGradientsAccumulator(workers, 5e-4, false);
+                        this.accumulator = new EncodedGradientsAccumulator(workers, thresholdAlgorithm, residualPostProcessor,  false);
                     }
                 }
                     break;
