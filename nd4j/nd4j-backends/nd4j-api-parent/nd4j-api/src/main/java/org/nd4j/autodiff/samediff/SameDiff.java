@@ -11015,6 +11015,12 @@ public class SameDiff {
             boolArgs = new boolean[2];
             boolArgs[0] = op.isKeepDims();
             boolArgs[1] = true; // always new format
+        } else if (node.opType() == Op.Type.INDEXREDUCE) {
+            val op = (IndexAccumulation) node;
+
+            boolArgs = new boolean[2];
+            boolArgs[0] = op.isKeepDims();
+            boolArgs[1] = true; // always new format
         }
 
         val inPaired = new ArrayList<Integer>();

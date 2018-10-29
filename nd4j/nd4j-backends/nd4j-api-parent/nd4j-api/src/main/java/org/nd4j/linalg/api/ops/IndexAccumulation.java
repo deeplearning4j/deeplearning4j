@@ -72,4 +72,10 @@ public interface IndexAccumulation extends Op {
 
     boolean validateDataTypes();
 
+    /**
+     * This method returns TRUE if we're going to keep axis, FALSE otherwise
+     *
+     * @return
+     */
+    boolean isKeepDims();
 }
