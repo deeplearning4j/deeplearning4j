@@ -56,7 +56,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @Slf4j
 @EqualsAndHashCode(exclude = {"lastThreshold", "lastSparsity"})
 public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
-    public static final double DEFAULT_INITIAL_THRESHOLD = 1e-3;
+    public static final double DEFAULT_INITIAL_THRESHOLD = 1e-4;
     public static final double DEFAULT_MIN_SPARSITY_TARGET = 1e-4;
     public static final double DEFAULT_MAX_SPARSITY_TARGET = 1e-2;
     public static final double DEFAULT_DECAY_RATE = Math.pow(0.5, (1/20.0));        //Corresponds to increase/decrease by factor of 2 in 20 iterations

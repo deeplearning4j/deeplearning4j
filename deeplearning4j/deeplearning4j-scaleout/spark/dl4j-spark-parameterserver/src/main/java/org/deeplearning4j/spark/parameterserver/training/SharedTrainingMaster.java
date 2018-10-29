@@ -934,31 +934,29 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
          */
         public Builder(ThresholdAlgorithm thresholdAlgorithm, int rddDataSetNumExamples) {
             this(VoidConfiguration.builder().executionMode(ExecutionMode.MANAGED).forcedRole(NodeRole.SHARD)
-
                             // we're setting controller to Spark Master, if it's null - that's ok for now.
-                            .controllerAddress(System.getenv("SPARK_PUBLIC_DNS")).build(), null, thresholdAlgorithm,
+                            .controllerAddress(System.getenv("SPARK_PUBLIC_DNS")).build(), thresholdAlgorithm,
                             rddDataSetNumExamples);
         }
 
         /**
-         * Create a SharedTrainingMaster with defaults other than the RDD number of examples
          * @param voidConfiguration     Configuration bean for the SharedTrainingMaster parameter server
-         * @param thresholdAlgorithm    Threshold algorithm for the sparse update encoding
+         * @param numWorkers            No longer used/required
+         * @param threshold             Encoding threshold
          * @param rddDataSetNumExamples When fitting from an {@code RDD<DataSet>} how many examples are in each dataset?
+         * @deprecated This constructor is deprecated - use {@link #Builder(VoidConfiguration, int)} or {@link #Builder(VoidConfiguration, ThresholdAlgorithm, int)}
          */
-        public Builder(@NonNull VoidConfiguration voidConfiguration, ThresholdAlgorithm thresholdAlgorithm, int rddDataSetNumExamples) {
-            this(voidConfiguration, null, thresholdAlgorithm, rddDataSetNumExamples);
+        @Deprecated
+        public Builder(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, double threshold, int rddDataSetNumExamples) {
+            this(voidConfiguration, new AdaptiveThresholdAlgorithm(threshold), rddDataSetNumExamples);
         }
 
         /**
-         *
          * @param voidConfiguration     Configuration bean for the SharedTrainingMaster parameter server
-         * @param numWorkers
-         * @param thresholdAlgorithm Update sharing threshold algorithm
+         * @param thresholdAlgorithm    Update sharing threshold algorithm
          * @param rddDataSetNumExamples
          */
-        public Builder(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, ThresholdAlgorithm thresholdAlgorithm,
-                        int rddDataSetNumExamples) {
+        public Builder(@NonNull VoidConfiguration voidConfiguration, ThresholdAlgorithm thresholdAlgorithm, int rddDataSetNumExamples) {
             this.thresholdAlgorithm = thresholdAlgorithm;
             this.voidConfiguration = voidConfiguration;
             this.rddDataSetNumExamples = rddDataSetNumExamples;
@@ -1065,6 +1063,14 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         public Builder rngSeed(long rngSeed) {
             this.rngSeed = rngSeed;
             return this;
+        }
+
+        /**
+         * @deprecated Use {@link #thresholdAlgorithm(ThresholdAlgorithm)} with (for example) {@link AdaptiveThresholdAlgorithm}
+         */
+        @Deprecated
+        public Builder updatesThreshold(double updatesThreshold){
+            return thresholdAlgorithm(new AdaptiveThresholdAlgorithm(updatesThreshold));
         }
 
         /**
