@@ -40,25 +40,25 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 public class Stack extends DynamicCustomOp {
-    protected int axis;
+    protected int jaxis;
 
     public Stack() {
     }
 
     public Stack(INDArray[] inputs, INDArray output, int axis){
         super(null, inputs, output == null ? null : new INDArray[]{output}, null, (List<Integer>)null);
-        this.axis = axis;
+        this.jaxis = axis;
         addArgs();
     }
 
     public Stack(SameDiff sameDiff, SDVariable[] values, int axis) {
         super(null, sameDiff, values, false);
-        this.axis = axis;
+        this.jaxis = axis;
         addArgs();
     }
 
     public void addArgs() {
-        addIArgument(axis);
+        addIArgument(jaxis);
     }
 
     @Override
@@ -120,7 +120,7 @@ public class Stack extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList(f().unstack(f1.get(0), axis, args().length));
+        return Arrays.asList(f().unstack(f1.get(0), jaxis, args().length));
     }
 
 }

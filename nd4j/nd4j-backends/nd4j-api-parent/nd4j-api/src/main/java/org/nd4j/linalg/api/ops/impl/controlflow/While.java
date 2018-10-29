@@ -570,6 +570,21 @@ public class While extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public boolean[] bArgs() {
+        return new boolean[0];
+    }
+
+    @Override
+    public void addBArgument(boolean... arg) {
+
+    }
+
+    @Override
+    public Boolean getBArgument(int index) {
+        return null;
+    }
+
+    @Override
     public INDArray getInputArgument(int index) {
         return null;
     }

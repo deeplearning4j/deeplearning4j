@@ -125,6 +125,11 @@ public class ScatterUpdate implements CustomOp {
     }
 
     @Override
+    public boolean[] bArgs() {
+        return op.bArgs();
+    }
+
+    @Override
     public void addIArgument(int... arg) {
         op.addIArgument(arg);
     }
@@ -135,8 +140,18 @@ public class ScatterUpdate implements CustomOp {
     }
 
     @Override
+    public void addBArgument(boolean... arg) {
+        op.addBArgument(arg);
+    }
+
+    @Override
     public void removeIArgument(Integer arg) {
         op.removeIArgument(arg);
+    }
+
+    @Override
+    public Boolean getBArgument(int index) {
+        return op.getBArgument(index);
     }
 
     @Override
