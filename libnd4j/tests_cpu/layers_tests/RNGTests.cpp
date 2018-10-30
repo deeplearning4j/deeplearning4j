@@ -35,18 +35,20 @@ private:
 
 public:
     long _seed = 119L;
-    nd4j::random::RandomBuffer *_rngA;
-    nd4j::random::RandomBuffer *_rngB;
+    //nd4j::random::RandomBuffer *_rngA;
+    //nd4j::random::RandomBuffer *_rngB;
+    nd4j::graph::RandomGenerator _rngA;
+    nd4j::graph::RandomGenerator _rngB;
 
     NDArray* nexp0 = NDArrayFactory::create_<float>('c', {10, 10});
     NDArray* nexp1 = NDArrayFactory::create_<float>('c', {10, 10});
     NDArray* nexp2 = NDArrayFactory::create_<float>('c', {10, 10});
 
     RNGTests() {
-        _bufferA = new Nd4jLong[100000];
-        _bufferB = new Nd4jLong[100000];
-        _rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
-        _rngB = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferB);
+        //_bufferA = new Nd4jLong[100000];
+        //_bufferB = new Nd4jLong[100000];
+        //_rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
+        //_rngB = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferB);
 
         nexp0->assign(-1.0f);
         nexp1->assign(-2.0f);
@@ -54,8 +56,8 @@ public:
     }
 
     ~RNGTests() {
-        nativeOps.destroyRandom(_rngA);
-        nativeOps.destroyRandom(_rngB);
+        //nativeOps.destroyRandom(_rngA);
+        //nativeOps.destroyRandom(_rngB);
         delete[] _bufferA;
         delete[] _bufferB;
 
