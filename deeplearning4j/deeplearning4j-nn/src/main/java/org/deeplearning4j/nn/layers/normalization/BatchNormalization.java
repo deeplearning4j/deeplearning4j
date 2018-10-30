@@ -297,8 +297,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
         dGlobalVarView.muli(1-layerConf().getDecay());
 
-        System.out.println("Global mean, current: " + globalMean);
-        System.out.println("Change in global mean: " + dGlobalMeanView);
         retGradient.setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
         retGradient.setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
 
