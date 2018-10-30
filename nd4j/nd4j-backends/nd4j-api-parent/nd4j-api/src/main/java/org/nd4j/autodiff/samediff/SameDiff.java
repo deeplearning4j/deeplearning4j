@@ -11063,7 +11063,12 @@ public class SameDiff {
         }
 
         int[] dims;
-        if(node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_LONG || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3){
+        if(node.opType() == Op.Type.REDUCE_FLOAT
+                || node.opType() == Op.Type.REDUCE_SAME
+                || node.opType() == Op.Type.REDUCE_BOOL
+                || node.opType() == Op.Type.REDUCE_LONG
+                || node.opType() == Op.Type.INDEXREDUCE
+                || node.opType() == Op.Type.REDUCE3){
             dims = node.getDimensions();
             if(dims == null)
                 dims = new int[0];
@@ -11079,6 +11084,7 @@ public class SameDiff {
         int nodesOut = FlatNode.createOutputVector(bufferBuilder, outputIds);
         int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
         int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
+        int booleanArgs = FlatNode.createExtraBoolsVector(bufferBuilder, new boolean[0]);
         int dimensions = FlatNode.createDimensionsVector(bufferBuilder, dims);
         int fname = bufferBuilder.createString(
                 outputVertexId == null ||
@@ -11109,10 +11115,10 @@ public class SameDiff {
                 propIdx,
                 nodesIn,
                 nodesInPaired,
-                (byte) 0,
                 nodesOut,
                 extraz,
                 integerArgs,
+                booleanArgs,
                 dimensions,
                 -1,
                 0, 0, scopeName,

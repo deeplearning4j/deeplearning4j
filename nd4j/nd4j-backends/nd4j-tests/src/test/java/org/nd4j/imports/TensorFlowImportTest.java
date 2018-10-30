@@ -1010,6 +1010,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());
         assertNotNull(tg);
 
+
         tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim_false.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
     }
 
