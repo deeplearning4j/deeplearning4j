@@ -59,6 +59,7 @@ If you do not know how to program yet, you can start with Java, but you might fi
 * [A Vim Tutorial and Primer](https://danielmiessler.com/study/vim/) (Vim is an editor accessible from the command line.)
 * [Intro to Computer Science (CS50 @Harvard edX)](https://www.edx.org/course/introduction-computer-science-harvardx-cs50x)
 * [A Gentle Introduction to Machine Fundamentals](https://marijnhaverbeke.nl/turtle/)
+* [Teaching C](https://blog.regehr.org/archives/1393)
 
 If you want to jump into deep-learning from here without Java, we recommend [Theano](http://deeplearning.net/) and the various Python frameworks built atop it, including [Keras](https://github.com/fchollet/keras) and [Lasagne](https://github.com/Lasagne/Lasagne).
 
@@ -68,6 +69,8 @@ Once you have programming basics down, tackle Java, the world's most widely used
 
 * [Think Java: Interactive Web-based Dev Environment](https://books.trinket.io/thinkjava/)
 * [Learn Java The Hard Way](https://learnjavathehardway.org/)
+* [Introduction to JShell](https://docs.oracle.com/javase/10/jshell/introduction-jshell.htm#JSHEL-GUID-630F27C8-1195-4989-9F6B-2C51D46F52C8)
+* [JShell in 5 Minutes](https://dzone.com/articles/jshell-in-five-minutes)
 * [Java Resources](http://wiht.link/java-resources)
 * [Java Ranch: A Community for Java Beginners](http://javaranch.com/)
 * [Intro to Programming in Java @Princeton](http://introcs.cs.princeton.edu/java/home/)
