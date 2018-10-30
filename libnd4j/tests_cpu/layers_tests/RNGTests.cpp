@@ -35,29 +35,31 @@ private:
 
 public:
     long _seed = 119L;
-    nd4j::random::RandomBuffer *_rngA;
-    nd4j::random::RandomBuffer *_rngB;
-
+    //nd4j::random::RandomBuffer *_rngA;
+    //nd4j::random::RandomBuffer *_rngB;
+    nd4j::graph::RandomGenerator _rngA;
+    nd4j::graph::RandomGenerator _rngB;
     NDArray* nexp0 = NDArrayFactory::create_<float>('c', {10, 10});
     NDArray* nexp1 = NDArrayFactory::create_<float>('c', {10, 10});
     NDArray* nexp2 = NDArrayFactory::create_<float>('c', {10, 10});
 
     RNGTests() {
-        _bufferA = new Nd4jLong[100000];
-        _bufferB = new Nd4jLong[100000];
-        _rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
-        _rngB = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferB);
-
+        //_bufferA = new Nd4jLong[100000];
+        //_bufferB = new Nd4jLong[100000];
+        //_rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
+        //_rngB = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferB);
+        _rngA.setSeed((int)_seed);
+        _rngB.setSeed((int)_seed);
         nexp0->assign(-1.0f);
         nexp1->assign(-2.0f);
         nexp2->assign(-3.0f);
     }
 
     ~RNGTests() {
-        nativeOps.destroyRandom(_rngA);
-        nativeOps.destroyRandom(_rngB);
-        delete[] _bufferA;
-        delete[] _bufferB;
+        //nativeOps.destroyRandom(_rngA);
+        //nativeOps.destroyRandom(_rngB);
+        //delete[] _bufferA;
+        //delete[] _bufferB;
 
         delete nexp0;
         delete nexp1;
@@ -105,7 +107,7 @@ TEST_F(RNGTests, Test_DropoutInverted_1) {
     ASSERT_FALSE(x0.equalsTo(nexp2));
 }
 
-
+//#if 0
 TEST_F(RNGTests, Test_Launcher_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
@@ -653,3 +655,4 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
 
     ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
 }
+//#endif
