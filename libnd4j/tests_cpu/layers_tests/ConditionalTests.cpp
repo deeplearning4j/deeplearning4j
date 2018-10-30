@@ -140,6 +140,8 @@ TEST_F(ConditionalTests, Flat_Test_1) {
  * Condition is True
  */
 TEST_F(ConditionalTests, Flat_Test_2) {
+    Environment::getInstance()->setDebug(true);
+    Environment::getInstance()->setVerbose(true);
     nd4j::ops::identity op0;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simpleif_0.fb");
@@ -159,6 +161,7 @@ TEST_F(ConditionalTests, Flat_Test_2) {
 
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {1, 1, 1, 1});
 
+    z->printIndexedBuffer("z");
     ASSERT_TRUE(exp.equalsTo(z));
     delete graph;
 }

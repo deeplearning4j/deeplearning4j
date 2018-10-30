@@ -273,7 +273,7 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
             nd4j_debug("Step: %lld; Node: %i <%s>\n", exec_counter, node->id(), node->name()->c_str());
 
             // on first non-Exit node after loop we can rewind (if planned)
-            if (!(node->opType() == OpType_LOGIC && node->opNum() == 90L)) {
+            if (!(node->opType() == OpType_LOGIC && node->opNum() == nd4j::logic::Exit)) {
                 // VALIDATED
 
                 // if we're out of frame - let's remove it from queue
@@ -289,7 +289,7 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
 
                 // TODO: move inactivity check right here
                 bool shouldSkip = false;
-                if (node->opType() == OpType_LOGIC && node->opNum() == 60L) {
+                if (node->opType() == OpType_LOGIC && node->opNum() == nd4j::logic::Merge) {
                     // Merge node has own checkout logic
 
                     auto inputId0 = node->input()->at(0);
@@ -304,8 +304,8 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
                     for (int e = 0; e < node->input()->size(); e++) {
                         auto inputId = node->input()->at(e);
 
-                        // we're skipping external variables here
-                        if (inputId.first < 0 || __variableSpace->hasExternalVariable(inputId.first))
+                        // not a node. skipping checks
+                        if (graph->getMapped()->count(inputId.first) == 0)
                             continue;
 
                         /**
@@ -344,7 +344,7 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
 
             flowPath->markNodeActive(node->id(), true);
 
-            if (node->opType() == OpType_LOGIC && node->opNum() == 100L) {
+            if (node->opType() == OpType_LOGIC && node->opNum() == nd4j::logic::Enter) {
                 // Enter operation
                 // VALIDATED
 
@@ -363,7 +363,7 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
                 if (status != Status::OK())
                     return status;
 
-            } else if (node->opType() == OpType_LOGIC && node->opNum() == 80L) {
+            } else if (node->opType() == OpType_LOGIC && node->opNum() == nd4j::logic::NextIteration) {
                 /**
                  * NextIteration is special case: after successful execution of this op - we're changing execution position
                  */
@@ -391,7 +391,7 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
                 }
 
 
-            } else if (node->opType() == OpType_LOGIC && node->opNum() == 90L) {
+            } else if (node->opType() == OpType_LOGIC && node->opNum() == nd4j::logic::Exit) {
                 // Exit node is another special case: it can rewind executioner to specific point in graph
                 // VALIDATED
 

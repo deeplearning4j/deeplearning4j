@@ -25,9 +25,10 @@
 
 namespace nd4j {
     namespace graph {
-        ContextPrototype::ContextPrototype(int nodeId, bool inPlace) {
+        ContextPrototype::ContextPrototype(nd4j::ops::OpDescriptor* opDescriptor, int nodeId, bool inPlace) {
             _nodeId = nodeId;
             _isInplace = inPlace;
+            _opDescriptor = opDescriptor;
         }
 
         void ContextPrototype::pickInput(std::pair<int, int>& p) {
@@ -144,13 +145,17 @@ namespace nd4j {
 
         template <typename N>
         ContextPrototype* ContextPrototype::asT() {
-            auto clone = new ContextPrototype(_nodeId, _isInplace);
+            auto clone = new ContextPrototype(_opDescriptor, _nodeId, _isInplace);
 
             return clone;
         }
 
+        void ContextPrototype::setOpDescriptor(nd4j::ops::OpDescriptor* opDescriptor) {
+            _opDescriptor = opDescriptor;
+        }
+
         ContextPrototype* ContextPrototype::clone() {
-            auto clone = new ContextPrototype(_nodeId, _isInplace);
+            auto clone = new ContextPrototype(_opDescriptor, _nodeId, _isInplace);
             clone->_opNum = _opNum;
             
             for (auto v: _inputs)

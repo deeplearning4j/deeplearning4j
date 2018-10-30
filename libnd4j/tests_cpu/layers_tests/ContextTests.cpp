@@ -243,7 +243,7 @@ TEST_F(ContextTests, Basic_Test_10) {
 
 
 TEST_F(ContextTests, Prototype_Test_1) {
-    ContextPrototype prototype(119, true);
+    ContextPrototype prototype(nullptr, 119, true);
     prototype.pickInput(12, 3);
     prototype.pickInput(12, 4);
 
@@ -271,7 +271,7 @@ TEST_F(ContextTests, Prototype_Test_1) {
 
 
 TEST_F(ContextTests, Prototype_Test_2) {
-    ContextPrototype prototype(119, false);
+    ContextPrototype prototype(nullptr, 119, false);
     prototype.setOpNum(179);
 
     Context ctx(&prototype, nullptr);

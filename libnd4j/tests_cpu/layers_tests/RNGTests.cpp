@@ -30,8 +30,8 @@ using namespace nd4j;
 class RNGTests : public testing::Test {
 private:
     NativeOps nativeOps;
-    Nd4jLong *_bufferA;
-    Nd4jLong *_bufferB;
+    //Nd4jLong *_bufferA;
+    //Nd4jLong *_bufferB;
 
 public:
     long _seed = 119L;
@@ -39,6 +39,7 @@ public:
     //nd4j::random::RandomBuffer *_rngB;
     nd4j::graph::RandomGenerator _rngA;
     nd4j::graph::RandomGenerator _rngB;
+
     NDArray* nexp0 = NDArrayFactory::create_<float>('c', {10, 10});
     NDArray* nexp1 = NDArrayFactory::create_<float>('c', {10, 10});
     NDArray* nexp2 = NDArrayFactory::create_<float>('c', {10, 10});
@@ -107,7 +108,7 @@ TEST_F(RNGTests, Test_DropoutInverted_1) {
     ASSERT_FALSE(x0.equalsTo(nexp2));
 }
 
-//#if 0
+
 TEST_F(RNGTests, Test_Launcher_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
@@ -655,4 +656,3 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
 
     ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
 }
-//#endif
