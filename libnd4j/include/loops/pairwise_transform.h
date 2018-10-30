@@ -37,6 +37,7 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <helpers/sharedmem.h>
 #endif
 
 #ifndef _OPENMP

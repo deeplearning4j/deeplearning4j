@@ -30,6 +30,7 @@
 
 #include "../legacy_ops.h"
 
+// using namespace simdOps;
 
 /**
  * The api for the driver interface
@@ -48,19 +49,19 @@
  * @param blockSize the block size
  */
 
-template <typename T, typename opType>
+template<typename X, typename Y, typename Z, typename opType>
 __device__ void pairWiseTransformGeneric(
-		T *dx,
-		T *dy,
-		T *params,
-		T *result,
+		void *dx,
+		void *dy,
+		void *params,
+		void *result,
 		Nd4jLong *xShapeInfo, int xRank,
 		Nd4jLong *yShapeInfo, int yRank,
 		Nd4jLong *resultShapeInfo, int zRank, 
 		int *allocationPointer, 
 		Nd4jLong *tadOnlyShapeInfo) {
 
-	functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda<opType>(
+	functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<opType>(
 	    dx,
 	    xShapeInfo,
 	    dy,
@@ -328,18 +329,18 @@ extern "C" __global__ void pairWiseTransformHalfIndex(
  * @param incz the result stride
  * @param blockSize the block size
  */
-template<typename T, typename opType>
+template<typename X, typename Y, typename Z, typename opType>
 __device__ void pairWiseTransformStridedGeneric(
 		Nd4jLong n,
-		T *dx,
-		T *dy,
+		void *dx,
+		void *dy,
 		Nd4jLong incx,
 		Nd4jLong incy,
-		T *params,
-		T *result,
+		void *params,
+		void *result,
 		Nd4jLong incz, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo) {
 
-	functions::pairwise_transforms::PairWiseTransform<T>::template transformCuda<opType>(
+	functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<opType>(
 		n,
 		dx,
 		dy,
@@ -442,14 +443,14 @@ extern "C" __global__ void pairWiseTransformStridedHalf(
 
 
 // pwt shape
-DISPATCH_KERNEL_SIMPLE(pwtSimpleShaped_, pairWiseTransformGeneric, float, INPUT(float *dx, float *dy, float *params, float *result, Nd4jLong *xShapeInfo, int xRank, Nd4jLong *yShapeInfo, int yRank, Nd4jLong *resultShapeInfo, int zRank, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(dx, dy, params, result, xShapeInfo, xRank, yShapeInfo, yRank, resultShapeInfo, zRank, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
-DISPATCH_KERNEL_SIMPLE(pwtSimpleShaped_, pairWiseTransformGeneric, double, INPUT(double *dx, double *dy, double *params, double *result, Nd4jLong *xShapeInfo, int xRank, Nd4jLong *yShapeInfo, int yRank, Nd4jLong *resultShapeInfo, int zRank, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(dx, dy, params, result, xShapeInfo, xRank, yShapeInfo, yRank, resultShapeInfo, zRank, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
-DISPATCH_KERNEL_SIMPLE(pwtSimpleShaped_, pairWiseTransformGeneric, float16, INPUT(float16 *dx, float16 *dy, float16 *params, float16 *result, Nd4jLong *xShapeInfo, int xRank, Nd4jLong *yShapeInfo, int yRank, Nd4jLong *resultShapeInfo, int zRank, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(dx, dy, params, result, xShapeInfo, xRank, yShapeInfo, yRank, resultShapeInfo, zRank, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+// DISPATCH_KERNEL_SIMPLE(pwtSimpleShaped_, pairWiseTransformGeneric, float, INPUT(float *dx, float *dy, float *params, float *result, Nd4jLong *xShapeInfo, int xRank, Nd4jLong *yShapeInfo, int yRank, Nd4jLong *resultShapeInfo, int zRank, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(dx, dy, params, result, xShapeInfo, xRank, yShapeInfo, yRank, resultShapeInfo, zRank, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+// DISPATCH_KERNEL_SIMPLE(pwtSimpleShaped_, pairWiseTransformGeneric, double, INPUT(double *dx, double *dy, double *params, double *result, Nd4jLong *xShapeInfo, int xRank, Nd4jLong *yShapeInfo, int yRank, Nd4jLong *resultShapeInfo, int zRank, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(dx, dy, params, result, xShapeInfo, xRank, yShapeInfo, yRank, resultShapeInfo, zRank, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+// DISPATCH_KERNEL_SIMPLE(pwtSimpleShaped_, pairWiseTransformGeneric, float16, INPUT(float16 *dx, float16 *dy, float16 *params, float16 *result, Nd4jLong *xShapeInfo, int xRank, Nd4jLong *yShapeInfo, int yRank, Nd4jLong *resultShapeInfo, int zRank, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(dx, dy, params, result, xShapeInfo, xRank, yShapeInfo, yRank, resultShapeInfo, zRank, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
 // pwt strided
-DISPATCH_KERNEL_SIMPLE(pwtSimpleStrided_, pairWiseTransformStridedGeneric, float, INPUT(Nd4jLong n, float *dx, float *dy, Nd4jLong incx, Nd4jLong incy, float *params, float *result, Nd4jLong incz, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(n, dx, dy, incx, incy, params, result, incz, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
-DISPATCH_KERNEL_SIMPLE(pwtSimpleStrided_, pairWiseTransformStridedGeneric, double, INPUT(Nd4jLong n, double *dx, double *dy, Nd4jLong incx, Nd4jLong incy, double *params, double *result, Nd4jLong incz, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(n, dx, dy, incx, incy, params, result, incz, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
-DISPATCH_KERNEL_SIMPLE(pwtSimpleStrided_, pairWiseTransformStridedGeneric, float16, INPUT(Nd4jLong n, float16 *dx, float16 *dy, Nd4jLong incx, Nd4jLong incy, float16 *params, float16 *result, Nd4jLong incz, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(n, dx, dy, incx, incy, params, result, incz, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+// DISPATCH_KERNEL_SIMPLE(pwtSimpleStrided_, pairWiseTransformStridedGeneric, float, INPUT(Nd4jLong n, float *dx, float *dy, Nd4jLong incx, Nd4jLong incy, float *params, float *result, Nd4jLong incz, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(n, dx, dy, incx, incy, params, result, incz, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+// DISPATCH_KERNEL_SIMPLE(pwtSimpleStrided_, pairWiseTransformStridedGeneric, double, INPUT(Nd4jLong n, double *dx, double *dy, Nd4jLong incx, Nd4jLong incy, double *params, double *result, Nd4jLong incz, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(n, dx, dy, incx, incy, params, result, incz, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+// DISPATCH_KERNEL_SIMPLE(pwtSimpleStrided_, pairWiseTransformStridedGeneric, float16, INPUT(Nd4jLong n, float16 *dx, float16 *dy, Nd4jLong incx, Nd4jLong incy, float16 *params, float16 *result, Nd4jLong incz, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo), PARAMS(n, dx, dy, incx, incy, params, result, incz, allocationPointer, tadOnlyShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
 
 
@@ -457,8 +458,8 @@ DISPATCH_KERNEL_SIMPLE(pwtSimpleStrided_, pairWiseTransformStridedGeneric, float
 namespace functions {
     namespace pairwise_transforms {
 
-            template<>
-            __host__ void PairWiseTransform<float>::execudaCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float *dx, Nd4jLong xStride, float *y, Nd4jLong yStride, float *result, Nd4jLong resultStride, float *extraParams, Nd4jLong n) {
+            template<typename X, typename Y, typename Z>
+            __host__ void PairWiseTransform<X,Y,Z>::execudaCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *dx, Nd4jLong xStride, void *y, Nd4jLong yStride, void *result, Nd4jLong resultStride, void *extraParams, Nd4jLong n) {
                 cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	            auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
@@ -471,52 +472,52 @@ namespace functions {
 	            int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
             	//pairWiseTransformStridedFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>> ( opNum, n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo);
-            	DISPATCH_SIMPLE(pwtSimpleStrided, float, PARAMS(n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+            	// DISPATCH_SIMPLE(pwtSimpleStrided, float, PARAMS(n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
 	            DEBUG_KERNEL(stream, opNum);
             }
 
-            template<>
-            __host__ void PairWiseTransform<float16>::execudaCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *dx, Nd4jLong xStride, float16 *y, Nd4jLong yStride, float16 *result, Nd4jLong resultStride, float16 *extraParams, Nd4jLong n) {
-                cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+           //  template<>
+           //  __host__ void PairWiseTransform<float16>::execudaCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *dx, Nd4jLong xStride, float16 *y, Nd4jLong yStride, float16 *result, Nd4jLong resultStride, float16 *extraParams, Nd4jLong n) {
+           //      cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	            auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+	          //   auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
 
-	            auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+	          //   auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
-	            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		            printf("H4 opNum:[%i]\n", opNum);
+	          //   if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+		         //    printf("H4 opNum:[%i]\n", opNum);
 
-	            int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	          //   int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-            	//pairWiseTransformStridedHalf<<<launchDims.x,launchDims.y, launchDims.z, *stream>>> ( opNum, n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo);
-            	DISPATCH_SIMPLE(pwtSimpleStrided, float16, PARAMS(n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+           //  	//pairWiseTransformStridedHalf<<<launchDims.x,launchDims.y, launchDims.z, *stream>>> ( opNum, n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo);
+           //  	DISPATCH_SIMPLE(pwtSimpleStrided, float16, PARAMS(n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
-	            DEBUG_KERNEL(stream, opNum);
-            }
-
-
-           template<>
-            __host__ void PairWiseTransform<double>::execudaCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *dx, Nd4jLong xStride, double *y, Nd4jLong yStride, double *result, Nd4jLong resultStride, double *extraParams, Nd4jLong n) {
-                cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	            auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-	            auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-
-	            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		            printf("D4 opNum:[%i]\n", opNum);
-
-	            int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-            	//pairWiseTransformStridedDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>> ( opNum, n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo);
-            	DISPATCH_SIMPLE(pwtSimpleStrided, double, PARAMS(n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+	          //   DEBUG_KERNEL(stream, opNum);
+           //  }
 
 
-	            DEBUG_KERNEL(stream, opNum);
-            }
+           // template<>
+           //  __host__ void PairWiseTransform<double>::execudaCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *dx, Nd4jLong xStride, double *y, Nd4jLong yStride, double *result, Nd4jLong resultStride, double *extraParams, Nd4jLong n) {
+           //      cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            template<>
-            __host__ void PairWiseTransform<float>::execudaCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float *dx, Nd4jLong *xShapeInfo, float *y, Nd4jLong *yShapeInfo, float *result, Nd4jLong *resultShapeInfo, float *extraParams) {
+	          //   auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+	          //   auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+
+	          //   if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+		         //    printf("D4 opNum:[%i]\n", opNum);
+
+	          //   int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+           //  	//pairWiseTransformStridedDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>> ( opNum, n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo);
+           //  	DISPATCH_SIMPLE(pwtSimpleStrided, double, PARAMS(n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+
+
+	          //   DEBUG_KERNEL(stream, opNum);
+           //  }
+
+            template<typename X, typename Y, typename Z>
+            __host__ void PairWiseTransform<X,Y,Z>::execudaCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *dx, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams) {
                 cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
@@ -530,52 +531,52 @@ namespace functions {
 	            int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
 	            //pairWiseTransformFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>( opNum, dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
-                DISPATCH_SIMPLE(pwtSimpleShaped, float, PARAMS(dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+                // DISPATCH_SIMPLE(pwtSimpleShaped, float, PARAMS(dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
 	            DEBUG_KERNEL(stream, opNum);
             }
 
 
-            template<>
-            __host__ void PairWiseTransform<float16>::execudaCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *dx, Nd4jLong *xShapeInfo, float16 *y, Nd4jLong *yShapeInfo, float16 *result, Nd4jLong *resultShapeInfo, float16 *extraParams) {
-                cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+            // template<>
+            // __host__ void PairWiseTransform<float16>::execudaCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *dx, Nd4jLong *xShapeInfo, float16 *y, Nd4jLong *yShapeInfo, float16 *result, Nd4jLong *resultShapeInfo, float16 *extraParams) {
+            //     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		            printf("H6 opNum:[%i]\n", opNum);
+	           //  if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+		          //   printf("H6 opNum:[%i]\n", opNum);
 
-            	auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-	            auto hostYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
-	            auto hostZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-            	auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+            // 	auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+	           //  auto hostYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
+	           //  auto hostZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
+            // 	auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
-	            int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	           //  int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	            //pairWiseTransformHalf<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>( opNum, dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
-                DISPATCH_SIMPLE(pwtSimpleShaped, float16, PARAMS(dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+	           //  //pairWiseTransformHalf<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>( opNum, dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
+            //     DISPATCH_SIMPLE(pwtSimpleShaped, float16, PARAMS(dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
-	            DEBUG_KERNEL(stream, opNum);
-            }
+	           //  DEBUG_KERNEL(stream, opNum);
+            // }
 
 
-            template<>
-            __host__ void PairWiseTransform<double>::execudaCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *dx, Nd4jLong *xShapeInfo, double *y, Nd4jLong *yShapeInfo, double *result, Nd4jLong *resultShapeInfo, double *extraParams) {
-                cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+            // template<>
+            // __host__ void PairWiseTransform<double>::execudaCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *dx, Nd4jLong *xShapeInfo, double *y, Nd4jLong *yShapeInfo, double *result, Nd4jLong *resultShapeInfo, double *extraParams) {
+            //     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		            printf("H6 opNum:[%i]\n", opNum);
+	           //  if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+		          //   printf("H6 opNum:[%i]\n", opNum);
 
-            	auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-	            auto hostYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
-	            auto hostZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-            	auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+            // 	auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+	           //  auto hostYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
+	           //  auto hostZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
+            // 	auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
-	            int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+	           //  int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	            //pairWiseTransformDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>( opNum, dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
-                DISPATCH_SIMPLE(pwtSimpleShaped, double, PARAMS(dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
+	           //  //pairWiseTransformDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>( opNum, dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
+            //     DISPATCH_SIMPLE(pwtSimpleShaped, double, PARAMS(dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
-                DEBUG_KERNEL(stream, opNum);
-            }
+            //     DEBUG_KERNEL(stream, opNum);
+            // }
 
             /*
             template<typename T>
@@ -614,9 +615,15 @@ namespace functions {
 	        /**
 	 *
 	 */
-	    template<typename T>
+	    template<typename X, typename Y, typename Z>
         template<typename OpType>
-	    __device__ void PairWiseTransform<T>::transformCuda(T *dx, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *result, Nd4jLong *resultShapeBuffer, T *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo) {
+	    __device__ void PairWiseTransform<X,Y,Z>::transformCuda(void *vdx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vresult, Nd4jLong *resultShapeBuffer, void *vextraParams, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo) {
+
+	    	auto dx = static_cast<X*>(vdx);
+	    	auto y = static_cast<Y*>(vy);
+	    	auto result = static_cast<Z*>(vresult);
+	    	auto extraParams = static_cast<Z*>(vextraParams);
+
 		    int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 		    __shared__ int xRank;
@@ -772,19 +779,25 @@ namespace functions {
 	 * @param incz
 	 * @param blockSize
 	 */
-    template<typename T>
+    template<typename X, typename Y, typename Z>
     template<typename OpType>
-	__device__ void PairWiseTransform<T>::transformCuda(
+	__device__ void PairWiseTransform<X,Y,Z>::transformCuda(
 			Nd4jLong n,
-			T *dx,
-			T *dy,
+			void *vdx,
+			void *vdy,
 			Nd4jLong incx,
 			Nd4jLong incy,
-			T *params,
-			T *result,
+			void *vparams,
+			void *vresult,
 			Nd4jLong incz,int *allocationPointer,
 			UnifiedSharedMemory *manager,
 			Nd4jLong *tadOnlyShapeInfo) {
+
+		auto dx = static_cast<X*>(vdx);
+	    auto dy = static_cast<Y*>(vdy);
+	    auto result = static_cast<Z*>(vresult);
+	    auto params = static_cast<Z*>(vparams);
+
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 		if (incx == incy && incy == incz && incx == 1) {
