@@ -22,6 +22,7 @@
 #include <loops/broadcasting.h>
 #include <loops/legacy_ops.h>
 
+using namespace simdOps;
 
 template <typename T, typename OpClass>
 __device__ void broadcastSimpleGeneric(

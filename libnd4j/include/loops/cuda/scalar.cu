@@ -28,15 +28,15 @@
 #include <helpers/TAD.h>
 #include <types/float16.h>
 
+using namespace simdOps;
 
-
-template <typename T, typename OpType>
-__device__ void scalarAlongDimensionGeneric(T *x,
+template<typename X, typename Y, typename Z, typename OpType>
+__device__ void scalarAlongDimensionGeneric(void *x,
                                             Nd4jLong *xShapeInfo,
-                                            T *extraParams,
-                                            T *z,
+                                            void *extraParams,
+                                            void *z,
                                             Nd4jLong *zShapeInfo,
-                                            T *scalars,
+                                            void *scalars,
                                             int *dimension,
                                             int dimensionLength,
                                             Nd4jLong *tadShapeInfo,
@@ -44,18 +44,18 @@ __device__ void scalarAlongDimensionGeneric(T *x,
                                             Nd4jLong *tadShapeInfoZ,
                                             Nd4jLong *tadOffsetsZ) {
 
-    functions::scalar::ScalarTransform<T>::template transformCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+    functions::scalar::ScalarTransform<X,Y,Z>::template transformCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
 
-template <typename T, typename OpClass>
+template<typename X, typename Y, typename Z, typename OpType>
 __device__ void scalarSimpleGeneric(
         Nd4jLong n,
-        T dx,
-        T *dy,
-        Nd4jLong incy, T *params,
-        T *result, Nd4jLong resultStride, int *allocationBuffer) {
+        void* dx,
+        void *dy,
+        Nd4jLong incy, void *params,
+        void *result, Nd4jLong resultStride, int *allocationBuffer) {
 
-    functions::scalar::ScalarTransform<T>::template transformCuda<OpClass>(
+    functions::scalar::ScalarTransform<X,Y,Z>::template transformCuda<OpType>(
             n,
             dx,
             dy,
@@ -133,17 +133,17 @@ __global__ void scalarFloatIndexes(
 }
 */
 
-template <typename T, typename OpClass>
+template<typename X, typename Y, typename Z, typename OpType>
 __device__ void scalarSimpleGeneric(
-        T dx,
-        T *dy,
+        void* dx,
+        void *dy,
         Nd4jLong *xShapeInfo,
-        T *params,
-        T *result,
+        void *params,
+        void *result,
         Nd4jLong *resultShapeInfo,
         int *allocationBuffer) {
 
-    functions::scalar::ScalarTransform<T>::template transformCuda<OpClass>(
+    functions::scalar::ScalarTransform<X,Y,Z>::template transformCuda<OpType>(
             dx,
             dy,
             xShapeInfo,
@@ -156,138 +156,157 @@ __device__ void scalarSimpleGeneric(
 
 
 
-// ScalarOp Along Dimension kernels
-DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float, INPUT(float *x, Nd4jLong *xShapeInfo, float *extraParams, float *z, Nd4jLong *zShapeInfo, float *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
-DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, double, INPUT(double *x, Nd4jLong *xShapeInfo, double *extraParams, double *z, Nd4jLong *zShapeInfo, double *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
-DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float16, INPUT(float16 *x, Nd4jLong *xShapeInfo, float16 *extraParams, float16 *z, Nd4jLong *zShapeInfo, float16 *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+// // ScalarOp Along Dimension kernels
+// DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float, INPUT(float *x, Nd4jLong *xShapeInfo, float *extraParams, float *z, Nd4jLong *zShapeInfo, float *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+// DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, double, INPUT(double *x, Nd4jLong *xShapeInfo, double *extraParams, double *z, Nd4jLong *zShapeInfo, double *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+// DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float16, INPUT(float16 *x, Nd4jLong *xShapeInfo, float16 *extraParams, float16 *z, Nd4jLong *zShapeInfo, float16 *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 
-// scalar shape
-DISPATCH_KERNEL_SIMPLE(scalarSimpleShaped_, scalarSimpleGeneric, float, INPUT(float dx, float *dy, Nd4jLong *xShapeInfo, float *params, float *result, Nd4jLong *resultShapeInfo, int *allocationBuffer), PARAMS(dx, dy, xShapeInfo, params, result, resultShapeInfo, allocationBuffer), OPS_A(SCALAR_OPS))
-DISPATCH_KERNEL_SIMPLE(scalarSimpleShaped_, scalarSimpleGeneric, double, INPUT(double dx, double *dy, Nd4jLong *xShapeInfo, double *params, double *result, Nd4jLong *resultShapeInfo, int *allocationBuffer), PARAMS(dx, dy, xShapeInfo, params, result, resultShapeInfo, allocationBuffer), OPS_A(SCALAR_OPS))
-DISPATCH_KERNEL_SIMPLE(scalarSimpleShaped_, scalarSimpleGeneric, float16, INPUT(float16 dx, float16 *dy, Nd4jLong *xShapeInfo, float16 *params, float16 *result, Nd4jLong *resultShapeInfo, int *allocationBuffer), PARAMS(dx, dy, xShapeInfo, params, result, resultShapeInfo, allocationBuffer), OPS_A(SCALAR_OPS))
+// // scalar shape
+// DISPATCH_KERNEL_SIMPLE(scalarSimpleShaped_, scalarSimpleGeneric, float, INPUT(float dx, float *dy, Nd4jLong *xShapeInfo, float *params, float *result, Nd4jLong *resultShapeInfo, int *allocationBuffer), PARAMS(dx, dy, xShapeInfo, params, result, resultShapeInfo, allocationBuffer), OPS_A(SCALAR_OPS))
+// DISPATCH_KERNEL_SIMPLE(scalarSimpleShaped_, scalarSimpleGeneric, double, INPUT(double dx, double *dy, Nd4jLong *xShapeInfo, double *params, double *result, Nd4jLong *resultShapeInfo, int *allocationBuffer), PARAMS(dx, dy, xShapeInfo, params, result, resultShapeInfo, allocationBuffer), OPS_A(SCALAR_OPS))
+// DISPATCH_KERNEL_SIMPLE(scalarSimpleShaped_, scalarSimpleGeneric, float16, INPUT(float16 dx, float16 *dy, Nd4jLong *xShapeInfo, float16 *params, float16 *result, Nd4jLong *resultShapeInfo, int *allocationBuffer), PARAMS(dx, dy, xShapeInfo, params, result, resultShapeInfo, allocationBuffer), OPS_A(SCALAR_OPS))
 
-// scalar strided
-DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, float, INPUT(Nd4jLong n, float dx, float *dy, Nd4jLong incy, float *params, float *result,Nd4jLong resultStride, int *allocationBuffer), PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer), OPS_A(SCALAR_OPS))
-DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, double, INPUT(Nd4jLong n, double dx, double *dy, Nd4jLong incy, double *params, double *result,Nd4jLong resultStride, int *allocationBuffer), PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer), OPS_A(SCALAR_OPS))
-DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, float16, INPUT(Nd4jLong n, float16 dx, float16 *dy, Nd4jLong incy, float16 *params, float16 *result,Nd4jLong resultStride, int *allocationBuffer), PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer), OPS_A(SCALAR_OPS))
+// // scalar strided
+// DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, float, INPUT(Nd4jLong n, float dx, float *dy, Nd4jLong incy, float *params, float *result,Nd4jLong resultStride, int *allocationBuffer), PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer), OPS_A(SCALAR_OPS))
+// DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, double, INPUT(Nd4jLong n, double dx, double *dy, Nd4jLong incy, double *params, double *result,Nd4jLong resultStride, int *allocationBuffer), PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer), OPS_A(SCALAR_OPS))
+// DISPATCH_KERNEL_SIMPLE(scalarSimpleStrided_, scalarSimpleGeneric, float16, INPUT(Nd4jLong n, float16 dx, float16 *dy, Nd4jLong incy, float16 *params, float16 *result,Nd4jLong resultStride, int *allocationBuffer), PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer), OPS_A(SCALAR_OPS))
 
 
 namespace functions {
     namespace scalar {
 
-    template<>
-    void ScalarTransform<float>::executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float *x, Nd4jLong xStride, float *result, Nd4jLong resultStride, float scalar, float *extraParams, Nd4jLong n) {
+    template<typename X, typename Y, typename Z>
+    void ScalarTransform<X,Y,Z>::executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong xStride, void *vresult, Nd4jLong resultStride, void* vscalar, void *vextraParams, Nd4jLong n) {
+
+        auto x = static_cast<X *>(vx);
+        auto result = static_cast<Z *>(vresult);
+        auto scalar = static_cast<Y *>(vscalar)[0];
+        auto extraParams = static_cast<Z *>(vextraParams);
+
         cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		    printf("F13 opNum:[%i]\n", opNum);
 
-		int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+		int *allocPointer = static_cast<int *>(extraPointers[3]);
 
 	    // this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(scalarSimpleStrided, float, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
     }
 
 
-    template<>
-    void ScalarTransform<float16>::executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *x, Nd4jLong xStride, float16 *result, Nd4jLong resultStride, float16 scalar, float16 *extraParams, Nd4jLong n) {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+  //   template<>
+  //   void ScalarTransform<float16>::executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *x, Nd4jLong xStride, float16 *result, Nd4jLong resultStride, float16 scalar, float16 *extraParams, Nd4jLong n) {
+  //       cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		    printf("H13 opNum:[%i]\n", opNum);
+	 //    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+		//     printf("H13 opNum:[%i]\n", opNum);
 
-		int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+		// int *allocPointer = static_cast<int *>(extraPointers[3]);
 
-	    // this macro builds bunch of IF/ELSE selectors for kernel launch
-        DISPATCH_SIMPLE(scalarSimpleStrided, float16, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
-    }
-
-
-    template<>
-    void ScalarTransform<double>::executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *x, Nd4jLong xStride, double *result, Nd4jLong resultStride, double scalar, double *extraParams, Nd4jLong n) {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		    printf("D13 opNum:[%i]\n", opNum);
-
-		int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-	    // this macro builds bunch of IF/ELSE selectors for kernel launch
-        DISPATCH_SIMPLE(scalarSimpleStrided, double, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
-    }
+	 //    // this macro builds bunch of IF/ELSE selectors for kernel launch
+  //       DISPATCH_SIMPLE(scalarSimpleStrided, float16, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
+  //   }
 
 
-    template<>
-    void ScalarTransform<float16>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *x, Nd4jLong *xShapeInfo, float16 *result, Nd4jLong *resultShapeInfo, float16 scalar, float16 *extraParams) {
+  //   template<>
+  //   void ScalarTransform<double>::executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *x, Nd4jLong xStride, double *result, Nd4jLong resultStride, double scalar, double *extraParams, Nd4jLong n) {
+  //       cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	 //    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+		//     printf("D13 opNum:[%i]\n", opNum);
+
+		// int *allocPointer = static_cast<int *>(extraPointers[3]);
+
+	 //    // this macro builds bunch of IF/ELSE selectors for kernel launch
+  //       DISPATCH_SIMPLE(scalarSimpleStrided, double, PARAMS(n, scalar, x, xStride, extraParams, result, resultStride, allocPointer), OPS_A(SCALAR_OPS))
+  //   }
+
+
+    template<typename X, typename Y, typename Z>
+    void ScalarTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vresult, Nd4jLong *resultShapeInfo, void* vscalar, void *vextraParams) {
+        
+        auto x = static_cast<X *>(vx);
+        auto result = static_cast<Z *>(vresult);
+        auto scalar = static_cast<Y *>(vscalar)[0];
+        auto extraParams = static_cast<Z *>(vextraParams);
+
         cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
         if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		    printf("H14 opNum:[%i]\n", opNum);
 
-		int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+		int *allocPointer = static_cast<int *>(extraPointers[3]);
 
         DISPATCH_SIMPLE(scalarSimpleShaped, float16, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
     }
 
-    template<>
-    void ScalarTransform<float>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float *x, Nd4jLong *xShapeInfo, float *result, Nd4jLong *resultShapeInfo, float scalar, float *extraParams) {
+  //   template<>
+  //   void ScalarTransform<float>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float *x, Nd4jLong *xShapeInfo, float *result, Nd4jLong *resultShapeInfo, float scalar, float *extraParams) {
+  //       cudaStream_t *stream = static_cast<cudaStream_t *>(&extraPointers[1]);
+
+  //       if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+		//     printf("F14 opNum:[%i]\n", opNum);
+
+  //       int *allocPointer = static_cast<int *>(extraPointers[3]);
+
+  //       DISPATCH_SIMPLE(scalarSimpleShaped, float, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
+  //   }
+
+  //   template<>
+  //   void ScalarTransform<double>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *x, Nd4jLong *xShapeInfo, double *result, Nd4jLong *resultShapeInfo, double scalar, double *extraParams) {
+  //       cudaStream_t *stream = static_cast<cudaStream_t *>(&extraPointers[1]);
+
+  //       if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+		//     printf("D14 opNum:[%i]\n", opNum);
+
+		// int *allocPointer = static_cast<int *>(extraPointers[3]);
+
+  //       DISPATCH_SIMPLE(scalarSimpleShaped, double, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
+  //   }
+
+    template<typename X, typename Y, typename Z>
+    void ScalarTransform<X,Y,Z>::executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vscalars, void *vextraParams, int *dimension, int dimensionLength) {
+
+        auto x = static_cast<X *>(vx);
+        auto result = static_cast<Z *>(vz);
+        auto scalars = static_cast<Y*>(vscalars);
+        auto z = static_cast<Z*>(vz);
+        auto extraParams = static_cast<Z *>(vextraParams);
+
         cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		    printf("F14 opNum:[%i]\n", opNum);
-
-        int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-        DISPATCH_SIMPLE(scalarSimpleShaped, float, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
-    }
-
-    template<>
-    void ScalarTransform<double>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *x, Nd4jLong *xShapeInfo, double *result, Nd4jLong *resultShapeInfo, double scalar, double *extraParams) {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		    printf("D14 opNum:[%i]\n", opNum);
-
-		int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-        DISPATCH_SIMPLE(scalarSimpleShaped, double, PARAMS(scalar, x, xShapeInfo, extraParams, result, resultShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
-    }
-
-    template<>
-    void ScalarTransform<double>::executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, double *x, Nd4jLong *xShapeInfo, double *z, Nd4jLong *zShapeInfo, double *scalars, double *extraParams, int *dimension, int dimensionLength) {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-        auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-        auto tadShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
-        auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
+        auto tadShapeInfo = static_cast<Nd4jLong *>(extraPointers[10]);
+        auto tadOffsets = static_cast<Nd4jLong *>(extraPointers[11]);
+        auto tadShapeInfoZ = static_cast<Nd4jLong *>(extraPointers[12]);
+        auto tadOffsetsZ = static_cast<Nd4jLong *>(extraPointers[13]);
 
         DISPATCH_SIMPLE(scalarAlongDimension, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
     }
 
-    template<>
-    void ScalarTransform<float>::executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, float *x, Nd4jLong *xShapeInfo, float *z, Nd4jLong *zShapeInfo, float *scalars, float *extraParams, int *dimension, int dimensionLength) {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    // template<>
+    // void ScalarTransform<float>::executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, float *x, Nd4jLong *xShapeInfo, float *z, Nd4jLong *zShapeInfo, float *scalars, float *extraParams, int *dimension, int dimensionLength) {
+    //     cudaStream_t *stream = static_cast<cudaStream_t *>(&extraPointers[1]);
 
-        auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-        auto tadShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
-        auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
+    //     auto tadShapeInfo = static_cast<Nd4jLong *>(extraPointers[10]);
+    //     auto tadOffsets = static_cast<Nd4jLong *>(extraPointers[11]);
+    //     auto tadShapeInfoZ = static_cast<Nd4jLong *>(extraPointers[12]);
+    //     auto tadOffsetsZ = static_cast<Nd4jLong *>(extraPointers[13]);
 
-        DISPATCH_SIMPLE(scalarAlongDimension, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
-    }
+    //     DISPATCH_SIMPLE(scalarAlongDimension, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+    // }
 
-    template<>
-    void ScalarTransform<float16>::executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, float16 *x, Nd4jLong *xShapeInfo, float16 *z, Nd4jLong *zShapeInfo, float16 *scalars, float16 *extraParams, int *dimension, int dimensionLength) {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    // template<>
+    // void ScalarTransform<float16>::executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, float16 *x, Nd4jLong *xShapeInfo, float16 *z, Nd4jLong *zShapeInfo, float16 *scalars, float16 *extraParams, int *dimension, int dimensionLength) {
+    //     cudaStream_t *stream = static_cast<cudaStream_t *>(&extraPointers[1]);
 
-        auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-        auto tadShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
-        auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
+    //     auto tadShapeInfo = static_cast<Nd4jLong *>(extraPointers[10]);
+    //     auto tadOffsets = static_cast<Nd4jLong *>(extraPointers[11]);
+    //     auto tadShapeInfoZ = static_cast<Nd4jLong *>(extraPointers[12]);
+    //     auto tadOffsetsZ = static_cast<Nd4jLong *>(extraPointers[13]);
 
-        DISPATCH_SIMPLE(scalarAlongDimension, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
-    }
+    //     DISPATCH_SIMPLE(scalarAlongDimension, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+    // }
 
 
         /**
@@ -299,17 +318,23 @@ namespace functions {
      * @param extraParams
      * @param n
      */
-    template<typename T>
+    template<typename X, typename Y, typename Z>
     template<typename OpType>
-    __device__ void ScalarTransform<T>::transform(
+    __device__ void ScalarTransform<X,Y,Z>::transform(
             Nd4jLong n,
-            T scalar,
-            T *dy,
-            T *params,
-            T *result,
+            void* vscalar,
+            void *vdy,
+            void *vparams,
+            void *vresult,
             Nd4jLong *indexes,
             int *allocationBuffer,
             UnifiedSharedMemory *manager) {
+
+        auto scalar = static_cast<X*>(vscalar)[0];
+        auto dy = static_cast<Y*>(vdy);
+        auto params = static_cast<Z*>(vparams);
+        auto result = static_cast<Z*>(vresult);
+
         int totalThreads = gridDim.x * blockDim.x;
         int tid = threadIdx.x;
         Nd4jLong i = blockIdx.x * blockDim.x + tid;
@@ -330,17 +355,22 @@ namespace functions {
      * @param extraParams
      * @param n
      */
-     template<typename T>
+     template<typename X, typename Y, typename Z>
      template<typename OpType>
-     __device__ void ScalarTransform<T>::transformCuda(
-            T scalar,
-            T *dy,
+     __device__ void ScalarTransform<X,Y,Z>::transformCuda(
+            void* vscalar,
+            void *vdy,
             Nd4jLong *shapeInfo,
-            T *params,
-            T *result,
+            void *vparams,
+            void *vresult,
             Nd4jLong *resultShapeInfo,
             int *allocationBuffer,
             UnifiedSharedMemory *manager) {
+
+        auto scalar = static_cast<X*>(vscalar)[0];
+        auto dy = static_cast<Y*>(vdy);
+        auto params = static_cast<Z*>(vparams);
+        auto result = static_cast<Z*>(vresult);
 
         auto xShape = shape::shapeOf(shapeInfo);
         auto xStride = shape::stride(shapeInfo);
@@ -386,20 +416,25 @@ namespace functions {
 /**
   * ScalarOp along dimension
 **/
-    template<typename T>
+    template<typename X, typename Y, typename Z>
     template<typename OpType>
-    void __device__ ScalarTransform<T>::transformCuda(T *x,
+    void __device__ ScalarTransform<X,Y,Z>::transformCuda(void *vx,
                                 Nd4jLong *xShapeInfo,
-                                  T *extraParams,
-                                  T *z,
+                                  void *vextraParams,
+                                  void *vz,
                                   Nd4jLong *zShapeInfo,
-                                  T *scalars,
+                                  void *vscalars,
                                   int *dimension,
                                   int dimensionLength,
                                   Nd4jLong *tadShapeInfo,
                                   Nd4jLong *tadOffsets,
                                   Nd4jLong *tadShapeInfoZ,
                                   Nd4jLong *tadOffsetsZ) {
+
+                auto x = static_cast<X*>(vx);
+                auto extraParams = static_cast<Z*>(vextraParams);
+                auto z = static_cast<Z*>(vz);
+                auto scalars = static_cast<Y*>(vscalars);
 
 
                 if (tadShapeInfoZ == nullptr) {
@@ -418,11 +453,11 @@ namespace functions {
                 for (int r = blockIdx.x; r < numTads; r+=gridDim.x) {
                     auto offset = tadOffsets[r];
                     auto offsetZ = tadOffsetsZ[r];
-                    T scalar = scalars[r];
+                    Y scalar = scalars[r];
 
                     if (tadEWS >= 1 && zEWS >= 1) {
-                        T *oZ = z + offsetZ;
-                        T *oX = x + offset;
+                        Z *oZ = z + offsetZ;
+                        X *oX = x + offset;
 
                        for (int f = threadIdx.x; f < tadLength; f+= blockDim.x) {
                             oZ[f] = OpType::op(oX[f], scalar, extraParams);
@@ -444,19 +479,24 @@ namespace functions {
      * @param result
      * @param blockSize
      */
-        template<typename T>
+        template<typename X, typename Y, typename Z>
         template<typename OpType>
-        __device__ void ScalarTransform<T>::transformCuda(
+        __device__ void ScalarTransform<X,Y,Z>::transformCuda(
             Nd4jLong n,
-            T dx,
-            T *dy,
+            void* vdx,
+            void *vdy,
             Nd4jLong incy,
-            T *params,
-            T *result,
+            void *vparams,
+            void *vresult,
             Nd4jLong resultStride,
             int *allocationBuffer,
             UnifiedSharedMemory *manager) {
 
+        auto dx = static_cast<X*>(vdx);
+        auto dy = static_cast<Y*>(vdy);
+        auto params = static_cast<Z*>(vparams);
+        auto result = static_cast<Z*>(vresult);
+            
         int totalThreads = gridDim.x * blockDim.x;
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -517,9 +557,9 @@ namespace functions {
         }
         */
 
-        BUILD_CALL_1(template __device__ void ScalarTransform<float>::transformCuda, float, (float, float*, Nd4jLong *, float*, float*, Nd4jLong*, int*, UnifiedSharedMemory *), SCALAR_OPS)
-        BUILD_CALL_1(template __device__ void ScalarTransform<float16>::transformCuda, float16, (float16, float16*, Nd4jLong *, float16*, float16*, Nd4jLong*, int*, UnifiedSharedMemory *), SCALAR_OPS)
-        BUILD_CALL_1(template __device__ void ScalarTransform<double>::transformCuda, double, (double, double*, Nd4jLong *, double*, double*, Nd4jLong*, int*, UnifiedSharedMemory *), SCALAR_OPS)
+        // BUILD_CALL_1(template __device__ void ScalarTransform<float>::transformCuda, float, (float, float*, Nd4jLong *, float*, float*, Nd4jLong*, int*, UnifiedSharedMemory *), SCALAR_OPS)
+        // BUILD_CALL_1(template __device__ void ScalarTransform<float16>::transformCuda, float16, (float16, float16*, Nd4jLong *, float16*, float16*, Nd4jLong*, int*, UnifiedSharedMemory *), SCALAR_OPS)
+        // BUILD_CALL_1(template __device__ void ScalarTransform<double>::transformCuda, double, (double, double*, Nd4jLong *, double*, double*, Nd4jLong*, int*, UnifiedSharedMemory *), SCALAR_OPS)
     }
 }
 

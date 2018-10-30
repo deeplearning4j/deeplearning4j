@@ -25,18 +25,19 @@
 
 #include "../legacy_ops.h"
 
+using namespace simdOps;
 
 template <typename T>
 static __device__ void indexReduceGeneric(
         const int op,
-        T *dx,
+        void *dx,
         Nd4jLong *xShapeInfo, int xRank,
-        T *extraParams,
-        T *result,
+        void *extraParams,
+        Nd4jLong *result,
         Nd4jLong *resultShapeInfo, int zRank,
         int *dimension,
         int dimensionLength,
-        int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
     __shared__ UnifiedSharedMemory *manager;
 
@@ -69,7 +70,7 @@ __global__ void indexReduceDouble(
         double *dx,
         Nd4jLong *xShapeInfo, int xRank,
         double *extraParams,
-        double *result,
+        Nd4jLong *result,
         Nd4jLong *resultShapeInfo, int zRank,
         int *dimension,
         int dimensionLength,
@@ -92,7 +93,7 @@ __global__ void indexReduceFloat(
         float *dx,
         Nd4jLong *xShapeInfo, int xRank,
         float *extraParams,
-        float *result,
+        Nd4jLong *result,
         Nd4jLong *resultShapeInfo, int zRank,
         int *dimension,
         int dimensionLength,
@@ -115,7 +116,7 @@ __global__ void indexReduceHalf(
         float16 *dx,
         Nd4jLong *xShapeInfo, int xRank,
         float16 *extraParams,
-        float16 *result,
+        Nd4jLong *result,
         Nd4jLong *resultShapeInfo, int zRank,
         int *dimension,
         int dimensionLength,
@@ -137,109 +138,109 @@ __global__ void indexReduceHalf(
 namespace functions {
     namespace indexreduce {
 
-        template <>
-        _CUDA_H void IndexReduce<float>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, const int opNum, float *dx, Nd4jLong *xShapeInfo, int xRank, float *extraParams, float *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, float *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        template <typename T>
+        _CUDA_H void IndexReduce<T>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, const int opNum, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
-            indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			dx,
-			xShapeInfo, xRank,
-			extraParams,
-			result,
-			nullptr, 0,
-			nullptr,
-			1,
-			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+   //          indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+			// opNum,
+			// dx,
+			// xShapeInfo, xRank,
+			// extraParams,
+			// result,
+			// nullptr, 0,
+			// nullptr,
+			// 1,
+			// 1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
             checkCudaErrors(cudaStreamSynchronize(*stream));
             nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalarFloat(...) failed");
         }
 
-        template <>
-        _CUDA_H void IndexReduce<double>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, const int opNum, double *dx, Nd4jLong *xShapeInfo, int xRank, double *extraParams, double *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+   //      template <>
+   //      _CUDA_H void IndexReduce<double>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, const int opNum, double *dx, Nd4jLong *xShapeInfo, int xRank, double *extraParams, double *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
-            indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			dx,
-			xShapeInfo, xRank,
-			extraParams,
-			result,
-			nullptr, 0,
-			nullptr,
-			1,
-			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+   //          indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+			// opNum,
+			// dx,
+			// xShapeInfo, xRank,
+			// extraParams,
+			// result,
+			// nullptr, 0,
+			// nullptr,
+			// 1,
+			// 1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
-            nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalarDouble(...) failed");
-        }
+   //          nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalarDouble(...) failed");
+   //      }
 
-        template <>
-        _CUDA_H void IndexReduce<float16>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, const int opNum, float16 *dx, Nd4jLong *xShapeInfo, int xRank, float16 *extraParams, float16 *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+   //      template <>
+   //      _CUDA_H void IndexReduce<float16>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, const int opNum, float16 *dx, Nd4jLong *xShapeInfo, int xRank, float16 *extraParams, float16 *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
             
-            indexReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			dx,
-			xShapeInfo, xRank,
-			extraParams,
-			result,
-			nullptr, 0,
-			nullptr,
-			1,
-			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+   //          indexReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+			// opNum,
+			// dx,
+			// xShapeInfo, xRank,
+			// extraParams,
+			// result,
+			// nullptr, 0,
+			// nullptr,
+			// 1,
+			// 1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
-            nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalarHalf(...) failed");
-        }
+   //          nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalarHalf(...) failed");
+   //      }
 
 
-        template <>
-        _CUDA_H void IndexReduce<float>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, float *dx, Nd4jLong *xShapeInfo, int xRank, float *extraParams, float *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, float *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        template <typename T>
+        _CUDA_H void IndexReduce<T>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
-            indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			dx,
-			xShapeInfo, xRank,
-			extraParams,
-			result,
-			resultShapeInfo, zRank,
-			dimension,
-			dimensionLength,
-			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
-
-            DEBUG_KERNEL(stream, opNum);
-        }
-
-        template <>
-        _CUDA_H void IndexReduce<double>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, double *dx, Nd4jLong *xShapeInfo, int xRank, double *extraParams, double *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-
-            indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			dx,
-			xShapeInfo, xRank,
-			extraParams,
-			result,
-			resultShapeInfo, zRank,
-			dimension,
-			dimensionLength,
-			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+   //          indexReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+			// opNum,
+			// dx,
+			// xShapeInfo, xRank,
+			// extraParams,
+			// result,
+			// resultShapeInfo, zRank,
+			// dimension,
+			// dimensionLength,
+			// 1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
             DEBUG_KERNEL(stream, opNum);
         }
 
-        template <>
-        _CUDA_H void IndexReduce<float16>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, float16 *dx, Nd4jLong *xShapeInfo, int xRank, float16 *extraParams, float16 *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+   //      template <>
+   //      _CUDA_H void IndexReduce<double>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, double *dx, Nd4jLong *xShapeInfo, int xRank, double *extraParams, double *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+
+   //          indexReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+			// opNum,
+			// dx,
+			// xShapeInfo, xRank,
+			// extraParams,
+			// result,
+			// resultShapeInfo, zRank,
+			// dimension,
+			// dimensionLength,
+			// 1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+
+   //          DEBUG_KERNEL(stream, opNum);
+   //      }
+
+   //      template <>
+   //      _CUDA_H void IndexReduce<float16>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, float16 *dx, Nd4jLong *xShapeInfo, int xRank, float16 *extraParams, float16 *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
             
-            indexReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			opNum,
-			dx,
-			xShapeInfo, xRank,
-			extraParams,
-			result,
-			resultShapeInfo, zRank,
-			dimension,
-			dimensionLength,
-			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+   //          indexReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+			// opNum,
+			// dx,
+			// xShapeInfo, xRank,
+			// extraParams,
+			// result,
+			// resultShapeInfo, zRank,
+			// dimension,
+			// dimensionLength,
+			// 1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
-            DEBUG_KERNEL(stream, opNum);
-        }
+   //          DEBUG_KERNEL(stream, opNum);
+   //      }
 
 
         // This is the un-specialized struct.  Note that we prevent instantiation of this
@@ -279,10 +280,11 @@ namespace functions {
 
         template <typename T>
         template <typename OpType>
-        __device__ void IndexReduce<T>::aggregatePartials(IndexValue<T> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements,T *extraParams) {
+        __device__ void IndexReduce<T>::aggregatePartials(IndexValue<T> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *vextraParams) {
             // start the shared memory loop on the next power of 2 less
             // than the block size.  If block size is not a power of 2,
             // accumulate the intermediate sums in the remainder range.
+            auto extraParams = static_cast<T*>(vextraParams);
             IndexValue<T> *sPartials = *sPartialsRef;
             Nd4jLong floorPow2 = blockDim.x;
 
@@ -312,42 +314,46 @@ namespace functions {
         template <typename T>
         __device__ void IndexReduce<T>::transform(
                 const int opNum,
-                T *x,
+                void *x,
                 Nd4jLong *xShapeInfo,
-                T *extraParams,
-                T *result,
+                void *extraParams,
+                Nd4jLong *result,
                 Nd4jLong *resultShapeInfo,
                 int *dimension,
                 int dimensionLength,
                 int postProcessOrNot,
                 int *allocationBuffer,
-                T *reductionBuffer,
+                void *reductionBuffer,
                 UnifiedSharedMemory *manager,
                 Nd4jLong *tadShapeInfo,
                 Nd4jLong *tadOffset) {
-            DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
+            // DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
         }
 
 
         template <typename T>
         template <typename OpType>
         __device__ void IndexReduce<T>::transform(
-                T *dx,
+                void *vdx,
                 Nd4jLong *xShapeInfo,
-                T *extraParams,
-                T *result,
+                void *vextraParams,
+                Nd4jLong *result,
                 Nd4jLong *resultShapeInfo,
                 int *dimension,
                 int dimensionLength,
                 int postProcessOrNot,
                 int *allocationBuffer,
-                T *reductionBuffer,
+                void *vreductionBuffer,
                 UnifiedSharedMemory *manager,
                 Nd4jLong *tadOnlyShapeInfo,
                 Nd4jLong *tadOffsets){
             /**int
              * Gpu information for the problem
              */
+            auto dx = static_cast<T*>(vdx);
+            auto extraParams = static_cast<T*>(vextraParams);
+            auto reductionBuffer = static_cast<T*>(vreductionBuffer);
+
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
             __shared__ volatile int resultScalar;
 
