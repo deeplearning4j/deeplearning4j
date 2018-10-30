@@ -36,27 +36,27 @@ namespace nd4j {
     namespace graph {
         Nd4jStatus LogicExecutor::processNode(Graph *graph, Node *node) {
             switch (node->opNum()) {
-                case 0:
+                case nd4j::logic::While:
                     return LogicWhile::processNode(graph, node);
-                case 10:
+                case nd4j::logic::Scope:
                     return LogicScope::processNode(graph, node);
-                case 20:
+                case nd4j::logic::Conditional:
                     return LogicConditional::processNode(graph, node);
-                case 30:
+                case nd4j::logic::Switch:
                     return LogicSwitch::processNode(graph, node);
-                case 40:
+                case nd4j::logic::Return:
                     return LogicReturn::processNode(graph, node);
-                case 50:
+                case nd4j::logic::Expose:
                     return LogicExpose::processNode(graph, node);
-                case 60:
+                case nd4j::logic::Merge:
                     return LogicMerge::processNode(graph, node);
-                case 70:
+                case nd4j::logic::LoopCond:
                     return LogicLoopCond::processNode(graph, node);
-                case 80:
+                case nd4j::logic::NextIteration:
                     return LogicNextIeration::processNode(graph, node);
-                case 90:
+                case nd4j::logic::Exit:
                     return LogicExit::processNode(graph, node);
-                case 100:
+                case nd4j::logic::Enter:
                     return LogicEnter::processNode(graph, node);
             }
 

@@ -421,7 +421,8 @@ namespace nd4j {
         }
 
         void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array) {
-            block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array);
+            throw std::runtime_error("Overwrite result used!");
+            //block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array);
             /*
             auto varSpace = block.getVariableSpace();
             if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
@@ -439,7 +440,8 @@ namespace nd4j {
         }
 
         void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArrayList *list) {
-            block.pushNDArrayListToVariableSpace(block.nodeId(), outputIdx, list);
+            throw std::runtime_error("Overwrite result used!");
+            //block.pushNDArrayListToVariableSpace(block.nodeId(), outputIdx, list);
             /*
             auto varSpace = block.getVariableSpace();
             if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {

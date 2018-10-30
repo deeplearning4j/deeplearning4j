@@ -108,7 +108,7 @@ namespace nd4j {
 
         ContextPrototype * nd4j::graph::Node::getContextPrototype() {
             if (_protoContext == nullptr)
-                _protoContext = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id());
+                _protoContext = new ContextPrototype(this->getCustomOp() != nullptr ? this->getCustomOp()->getOpDescriptor() : nullptr, this->id());
             if (_protoContext->inputs()->empty()) {
                 for (int e = 0; e < this->input()->size(); e++) {
                     _protoContext->inputs()->emplace_back(this->input()->at(e));
