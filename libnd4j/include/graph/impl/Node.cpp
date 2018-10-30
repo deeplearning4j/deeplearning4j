@@ -108,7 +108,7 @@ namespace nd4j {
 
         ContextPrototype * nd4j::graph::Node::getContextPrototype() {
             if (_protoContext == nullptr)
-                _protoContext = new ContextPrototype(this->id());
+                _protoContext = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id());
             if (_protoContext->inputs()->empty()) {
                 for (int e = 0; e < this->input()->size(); e++) {
                     _protoContext->inputs()->emplace_back(this->input()->at(e));
@@ -370,7 +370,7 @@ namespace nd4j {
 
                 this->_isDeductable = true;
 
-                auto block = new ContextPrototype(this->id(), false);
+                auto block = new ContextPrototype(nullptr, this->id(), false);
 
                 for (auto v: dimensions)
                     block->getAxis()->emplace_back(v);
@@ -383,8 +383,9 @@ namespace nd4j {
 
                 this->setContextPrototype(block);
                 this->setCustomOp(Node::buildOpByType(opType, (int) input.size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), opNum, scalar));
+                block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
             } else if (opType == OpType_CUSTOM) {
-                auto block = new ContextPrototype(this->id(), false);
+                auto block = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id(), false);
 
                 for (auto v: dimensions)
                     block->getAxis()->emplace_back(v);
@@ -504,7 +505,7 @@ namespace nd4j {
                     if (node->input() != nullptr && node->input()->size() > 0) {
                         this->_isDeductable = true;
 
-                        auto block = new ContextPrototype(this->id(), false);
+                        auto block = new ContextPrototype(nullptr, this->id(), false);
 
 
                         for (auto v: _dimensions)
@@ -527,10 +528,11 @@ namespace nd4j {
 
                         this->setContextPrototype(block);
                         this->setCustomOp(Node::buildOpByType(_opType, (int) node->input()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, _scalar));
+                        block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                     } else if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
                         this->_isDeductable = true;
 
-                        auto block = new ContextPrototype(this->id(), false);
+                        auto block = new ContextPrototype(nullptr, this->id(), false);
 
                         for (int e = 0; e < this->input()->size(); e++) {
                             block->inputs()->emplace_back(this->input()->at(e));
@@ -558,6 +560,7 @@ namespace nd4j {
                         this->setContextPrototype(block);
 
                         this->setCustomOp(Node::buildOpByType(_opType, (int) node->inputPaired()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, _scalar));
+                        block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                     }
                 } else if (this->_opType == OpType_CUSTOM) {
                         auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(this->opNum());
@@ -566,7 +569,7 @@ namespace nd4j {
                             throw std::runtime_error("Can't find requested operation");
                         }
 
-                        auto block = new ContextPrototype(this->id());
+                        auto block = new ContextPrototype(nullptr, this->id());
 
                         for (int e = 0; e < this->input()->size(); e++) {
                             block->inputs()->emplace_back(this->input()->at(e));
@@ -593,6 +596,7 @@ namespace nd4j {
 
                         this->setContextPrototype(block);
                         this->setCustomOp(op);
+                        block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                 }
             } else {
                 // empty dynamic node, tests probably

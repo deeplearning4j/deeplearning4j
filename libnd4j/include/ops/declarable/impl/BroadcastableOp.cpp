@@ -37,13 +37,13 @@ namespace nd4j {
             auto shapeList = SHAPELIST();
             auto x = inputShape->at(0);
             auto y = inputShape->at(1);
-            nd4j::DataType dtype = block.dataType();
-            if (block.dataType() != nd4j::DataType::BOOL)
-            if (shape::length(y) > shape::length(x)) {
-                dtype = DataTypeUtils::pickPairwiseResultType(y, x);
-            } else {
-                dtype = DataTypeUtils::pickPairwiseResultType(x, y);
-            }
+            nd4j::DataType dtype = block.dataType(0);
+            if (block.dataType(0) != nd4j::DataType::BOOL)
+                if (shape::length(y) > shape::length(x)) {
+                    dtype = DataTypeUtils::pickPairwiseResultType(y, x);
+                } else {
+                    dtype = DataTypeUtils::pickPairwiseResultType(x, y);
+                }
 
             if (shape::isScalar(x) && shape::isScalar(y)) {
                 if (shape::rank(x) >= shape::rank(y)) {

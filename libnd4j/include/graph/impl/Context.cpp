@@ -61,6 +61,7 @@ namespace nd4j {
                     this->_workspace = variableSpace->workspace();
         }
         nd4j::DataType Context::dataType(int index) {
+
             return _dataType;
         }
 

@@ -339,7 +339,7 @@ namespace nd4j {
                 ContextPrototype* block = nullptr;
 
                 if (!node->hasBlockAttached()) {
-                    block = new ContextPrototype(node->id());
+                    block = new ContextPrototype(node->getCustomOp()->getOpDescriptor(), node->id());
                     node->setContextPrototype(block);
                 } else
                     block = node->getContextPrototype();
@@ -551,7 +551,7 @@ namespace nd4j {
                                 ContextPrototype* block = nullptr;
 
                                 if (!node->hasBlockAttached()) {
-                                    block = new ContextPrototype(node->id());
+                                    block = new ContextPrototype(node->getCustomOp()->getOpDescriptor(), node->id());
                                     node->setContextPrototype(block);
                                 } else
                                     block = node->getContextPrototype();
@@ -580,7 +580,7 @@ namespace nd4j {
                                 ContextPrototype* block = nullptr;
 
                                 if (!node->hasBlockAttached()) {
-                                    block = new ContextPrototype(node->id());
+                                    block = new ContextPrototype(node->getCustomOp()->getOpDescriptor(), node->id());
                                     node->setContextPrototype(block);
                                 } else
                                     block = node->getContextPrototype();
@@ -645,7 +645,7 @@ namespace nd4j {
                             ContextPrototype* block = nullptr;
 
                             if (!node->hasBlockAttached()) {
-                                block = new ContextPrototype(node->id());
+                                block = new ContextPrototype(node->getCustomOp()->getOpDescriptor(), node->id());
                                 node->setContextPrototype(block);
                             } else
                                 block = node->getContextPrototype();
