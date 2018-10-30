@@ -109,7 +109,9 @@ namespace nd4j {
             ContextPrototype* asT();
 
             RandomGenerator& randomGenerator() {return _randomGenerator;}
-            RandomGenerator const& getRng() const { return _randomGenerator; }
+            RandomGenerator const& getRng()const { return _randomGenerator; }
+            void setRng(RandomGenerator const& anotherRng) { _randomGenerator = anotherRng; }
+            void setRandomGenerator(RandomGenerator const& anotherRng) { _randomGenerator = anotherRng; }
             uint64_t randomSeed() const { return _rootSeed; }
             void setRandomSeed(uint64_t seed) { _rootSeed = seed; }
         };
