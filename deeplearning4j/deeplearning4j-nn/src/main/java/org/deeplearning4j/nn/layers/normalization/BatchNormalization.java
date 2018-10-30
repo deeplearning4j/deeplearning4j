@@ -297,6 +297,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
         dGlobalVarView.muli(1-layerConf().getDecay());
 
+        System.out.println("Global mean, current: " + globalMean);
+        System.out.println("Change in global mean: " + dGlobalMeanView);
         retGradient.setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
         retGradient.setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
 
@@ -523,6 +525,15 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             return new long[] {1, wDim * hdim};
         } else
             throw new IllegalStateException("Unable to process input of rank " + x.rank() + " " + layerId());
+    }
+
+    @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        //Majority of params's gradients should be... Exception: batch norm mean/variance estimate
+        if(BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(paramName) || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(paramName)){
+            return false;
+        }
+        return true;
     }
 
 }

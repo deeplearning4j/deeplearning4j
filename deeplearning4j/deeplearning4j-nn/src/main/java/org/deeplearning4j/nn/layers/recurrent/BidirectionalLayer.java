@@ -381,6 +381,16 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        String sub = paramName.substring(1);
+        if(paramName.startsWith(BidirectionalParamInitializer.FORWARD_PREFIX)){
+            return fwd.updaterDivideByMinibatch(paramName);
+        } else {
+            return bwd.updaterDivideByMinibatch(paramName);
+        }
+    }
+
+    @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
         for(Map.Entry<String,INDArray> e : paramTable.entrySet()){
             setParam(e.getKey(), e.getValue());

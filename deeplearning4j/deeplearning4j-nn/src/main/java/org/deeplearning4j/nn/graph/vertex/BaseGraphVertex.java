@@ -214,4 +214,12 @@ public abstract class BaseGraphVertex implements GraphVertex {
     public INDArray getGradientsViewArray() {
         return null;
     }
+
+    @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        if(hasLayer()){
+            return getLayer().updaterDivideByMinibatch(paramName);
+        }
+        return true;
+    }
 }

@@ -429,4 +429,10 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         //Layers with helpers should override this method!
         return null;
     }
+
+    @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        //Majority of params's gradients should be... Exception: batch norm mean/variance estimate
+        return true;
+    }
 }

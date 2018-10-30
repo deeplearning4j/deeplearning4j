@@ -594,6 +594,11 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        return true;
+    }
+
+    @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
         this.params = paramTable;
     }

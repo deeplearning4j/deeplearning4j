@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
@@ -987,5 +988,58 @@ public class TestUpdaters extends BaseDL4JTest {
             actParams.add(vs.getParamName());
         }
         assertEquals(expParams, actParams);
+    }
+
+
+    @Test
+    public void testDivisionByMinibatch1(){
+        //No batch norm - should be single INDArray equal to flattened gradient view
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        net.fit(Nd4j.create(1,10), Nd4j.create(1,10));
+
+        BaseMultiLayerUpdater u = (BaseMultiLayerUpdater) net.getUpdater();
+        List<INDArray> l = u.getGradientsForMinibatchDivision();
+        assertNotNull(l);
+        assertEquals(1, l.size());
+
+        INDArray arr = l.get(0);
+        assertEquals(3 * (10 * 10 + 10), arr.length());
+        assertEquals(net.getFlattenedGradients(), arr);
+    }
+
+    @Test
+    public void testDivisionByMinibatch2(){
+        //With batch norm - should be multiple 'division by minibatch' array segments
+        //i.e., exclude batch norm mean/variance
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new BatchNormalization.Builder().nOut(10).build())
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new BatchNormalization.Builder().nOut(10).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        net.fit(Nd4j.create(1,10), Nd4j.create(1,10));
+
+        BaseMultiLayerUpdater u = (BaseMultiLayerUpdater) net.getUpdater();
+        List<INDArray> l = u.getGradientsForMinibatchDivision();
+        assertNotNull(l);
+        assertEquals(3, l.size());  //3 segments
+
     }
 }

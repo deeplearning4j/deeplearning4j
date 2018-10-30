@@ -213,7 +213,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
 
-
     /**
      * Sets the input and labels and returns a score for the prediction
      * wrt true labels

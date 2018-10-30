@@ -21,7 +21,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.base.Preconditions;
@@ -36,10 +35,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.learning.config.IUpdater;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * BaseMultiLayerUpdater - core functionality for applying updaters to MultiLayerNetwork and ComputationGraph.
@@ -61,6 +57,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     protected final List<UpdaterBlock> updaterBlocks;
     protected INDArray updaterStateViewArray;
     protected boolean legacyBatchScaledL2;
+    protected boolean initializedMinibatchDivision;
+    protected List<INDArray> gradientsForMinibatchDivision;
 
     public BaseMultiLayerUpdater(T network, boolean legacyBatchScaledL2) {
         this(network, null, legacyBatchScaledL2);
@@ -336,17 +334,66 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     }
 
     protected void divideByMinibatch(boolean isExternal, Gradient gradient, int batchSize){
-        //OK even with pretrain layers: their gradients will get modified during next backprop iteration
-        if (isExternal) {
-            gradient.gradient().divi(batchSize);
+        //Challenge here: most gradients are actual gradients, and should be divided by the minibatch to get the average
+        //However, some 'gradients' are actually updates - an example being BatchNorm mean/variance estimates... these
+        // shouldn't be modified
+
+        if(!initializedMinibatchDivision){
+            Trainable[] tr = getOrderedLayers();
+            gradientsForMinibatchDivision = new ArrayList<>();
+            INDArray gradFlattened = getFlattenedGradientsView();
+
+            long paramsSoFar = 0;
+            long currentStart = 0;
+            long currentEnd = 0;
+            for(Trainable t : tr){
+                Set<String> layerParams = t.paramTable(false).keySet();
+                Map<String,INDArray> paramTable = t.paramTable(false);
+                for(String s : layerParams) {
+                    if(t.updaterDivideByMinibatch(s)){
+                        currentEnd += paramTable.get(s).length();
+                    } else {
+                        //This param/gradient subset should be excluded
+                        if(currentEnd > currentStart){
+                            INDArray subset = gradFlattened.get(NDArrayIndex.point(0), NDArrayIndex.interval(currentStart, currentEnd));
+                            gradientsForMinibatchDivision.add(subset);
+                        }
+                        currentStart += paramsSoFar + paramTable.get(s).length();
+                        currentEnd = currentStart;
+                    }
+                    paramsSoFar += paramTable.get(s).length();
+                }
+            }
+
+            if(currentEnd > currentStart && currentStart < gradFlattened.length()){
+                //Process last part of the gradient view array
+                INDArray subset = gradFlattened.get(NDArrayIndex.point(0), NDArrayIndex.interval(currentStart, currentEnd));
+                gradientsForMinibatchDivision.add(subset);
+            }
+
+            initializedMinibatchDivision = true;
+        }
+
+        if(isExternal){
+            throw new UnsupportedOperationException("Not yet re-implemented");
         } else {
-            //Standard case
-            INDArray grad = getFlattenedGradientsView();
-            if (grad != null) {
-                //May be null for nets with no parameters
-                grad.divi(batchSize);
+            for(INDArray arr : gradientsForMinibatchDivision){
+                arr.divi(batchSize);
             }
         }
+
+
+//        //OK even with pretrain layers: their gradients will get modified during next backprop iteration
+//        if (isExternal) {
+//            gradient.gradient().divi(batchSize);
+//        } else {
+//            //Standard case
+//            INDArray grad = getFlattenedGradientsView();
+//            if (grad != null) {
+//                //May be null for nets with no parameters
+//                grad.divi(batchSize);
+//            }
+//        }
     }
 
     protected boolean isSingleLayerUpdater() {
