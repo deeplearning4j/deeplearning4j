@@ -89,7 +89,7 @@ public class SameDiffTrainingTest {
             Map<String, List<IEvaluation>> evalMap = new HashMap<>();
             evalMap.put("prediction", Collections.singletonList(e));
 
-            //sd.evaluate(iter, evalMap);
+            sd.evaluateMultiple(iter, evalMap);
 
             System.out.println(e.stats());
 

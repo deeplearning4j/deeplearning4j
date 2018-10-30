@@ -90,7 +90,7 @@ public class Conv3D extends DynamicCustomOp {
                 getConfig().getDH(),
                 getConfig().getDW(),
 
-                getConfig().isValidMode() ? 0 : 1,
+                getConfig().isSameMode() ? 1 : 0,
                 getConfig().isNCDHW() ? 0 : 1
         );
     }
@@ -112,7 +112,7 @@ public class Conv3D extends DynamicCustomOp {
                     .dD(iArguments.get(9))
                     .dH(iArguments.get(10))
                     .dW(iArguments.get(11))
-                    .isValidMode(iArguments.get(12) == 0)
+                    .isSameMode(iArguments.get(12) == 1)
                     .dataFormat(iArguments.get(13) == 1 ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                     .build();
         }

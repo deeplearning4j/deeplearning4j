@@ -76,7 +76,7 @@ public class Conv3DConfig extends BaseConvolutionConfig {
 
     @Builder.Default
     private boolean biasUsed = false;
-    private boolean isValidMode;
+    private boolean isSameMode;
 
     @Builder.Default
     private String dataFormat = NDHWC;
@@ -114,7 +114,7 @@ public class Conv3DConfig extends BaseConvolutionConfig {
         ret.put("aH", aH);
         ret.put("biasUsed", biasUsed);
         ret.put("dataFormat", dataFormat);
-        ret.put("isValidMode", isValidMode);
+        ret.put("isSameMode", isSameMode);
 
         return ret;
     }
