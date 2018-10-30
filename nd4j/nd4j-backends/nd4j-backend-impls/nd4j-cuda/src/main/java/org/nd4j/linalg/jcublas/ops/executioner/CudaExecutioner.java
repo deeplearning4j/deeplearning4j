@@ -297,6 +297,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer dimensionPointer = AtomicAllocator.getInstance()
                 .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
 
+        //log.info("Reduce Device: {}; Op.X address: {};", Nd4j.getAffinityManager().getDeviceForCurrentThread(), x.address());
+
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
@@ -1123,6 +1125,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         */
         op.setZ(ret);
 
+        log.info("Op.X address: {};", x.address());
+
         if (op.z().isScalar()) {
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if (op instanceof Variance) {
@@ -1390,6 +1394,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
                 hostYShapeInfo, hostZShapeInfo, null, null);
+
+        //log.info("Scalar Device: {}; Op.X address: {};", Nd4j.getAffinityManager().getDeviceForCurrentThread(), x.address());
 
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op.x().elementWiseStride() >= 1 && op.z().ordering() == op.x().ordering()) {
