@@ -304,8 +304,8 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
                     for (int e = 0; e < node->input()->size(); e++) {
                         auto inputId = node->input()->at(e);
 
-                        // we're skipping external variables here
-                        if (inputId.first < 0 || __variableSpace->hasExternalVariable(inputId.first))
+                        // not a node. skipping checks
+                        if (graph->getMapped()->count(inputId.first) == 0)
                             continue;
 
                         /**

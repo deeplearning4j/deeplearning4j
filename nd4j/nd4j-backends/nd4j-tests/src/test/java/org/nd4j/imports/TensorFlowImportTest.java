@@ -956,7 +956,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    //@Ignore
     public void testCrash_119_simpleif_0() throws Exception {
         Nd4j.create(1);
 
@@ -969,7 +969,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         tg.associateArrayWithVariable(input0, tg.getVariable("input_0"));
         tg.associateArrayWithVariable(input1, tg.getVariable("input_1"));
 
-        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
     }
 
     @Test
