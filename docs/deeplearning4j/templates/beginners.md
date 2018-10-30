@@ -54,6 +54,7 @@ If you do not know how to program yet, you can start with Java, but you might fi
 * [Pyret: A Python Learning Environment](https://www.pyret.org/)
 * [Scratch: A Visual Programming Environment From MIT](https://scratch.mit.edu/)
 * [Learn to Program (Ruby)](https://pine.fm/LearnToProgram/)
+* [Grasshopper: A Mobile App to Learn Basic Coding](https://grasshopper.codes/)
 * [Intro to the Command Line](http://cli.learncodethehardway.org/book/)
 * [Additional command-line tutorial](http://www.learnenough.com/command-line)
 * [A Vim Tutorial and Primer](https://danielmiessler.com/study/vim/) (Vim is an editor accessible from the command line.)
