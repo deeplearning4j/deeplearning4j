@@ -37,18 +37,7 @@ namespace nd4j {
         * Output shape of any BooleanOp is ALWAYS scalar
         */
         ShapeList *BooleanOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
-            Nd4jLong *shapeNew;
-            ALLOCATE(shapeNew, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-            shapeNew[0] = 2;
-            shapeNew[1] = 1;
-            shapeNew[2] = 1;
-            shapeNew[3] = 1;
-            shapeNew[4] = 1;
-            shapeNew[5] = 0;
-            shapeNew[6] = 1;
-            shapeNew[7] = 99;
-
-            return SHAPELIST(shapeNew);
+            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(DataType::BOOL, block.getWorkspace()));
         }
 
         bool BooleanOp::evaluate(nd4j::graph::Context &block) {

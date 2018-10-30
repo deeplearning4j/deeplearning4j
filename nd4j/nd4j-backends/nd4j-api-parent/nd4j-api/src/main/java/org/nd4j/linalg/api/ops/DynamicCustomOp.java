@@ -56,8 +56,16 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Builder.Default
     protected List<Double> tArguments = new ArrayList<>();
+
     @Builder.Default
     protected List<Long> iArguments = new ArrayList<>();
+
+    @Builder.Default
+    protected List<Boolean> bArguments = new ArrayList<>();
+
+    @Builder.Default
+    protected List<Integer> axis = new ArrayList<>();
+
     @Getter
     @Setter
     protected boolean inplaceCall;
@@ -701,6 +709,26 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         return opName();
     }
 
+    @Override
+    public boolean[] bArgs() {
+        val result = new boolean[bArguments.size()];
+
+        for (int e = 0; e < result.length; e++)
+            result[e] = bArguments.get(e);
+
+        return result;
+    }
+
+    @Override
+    public void addBArgument(boolean... arg) {
+        for (val b: arg)
+        bArguments.add(b);
+    }
+
+    @Override
+    public Boolean getBArgument(int index) {
+        return bArguments.get(index);
+    }
 
     public static class SameDiffBuilder extends DynamicCustomOpsBuilder {
         private SameDiff sameDiff;

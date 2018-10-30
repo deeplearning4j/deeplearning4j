@@ -36,7 +36,7 @@ import java.util.*;
 public class OneHot extends DynamicCustomOp {
 
     private int depth;
-    private int axis = -1;
+    private int jaxis = -1;
     private double on;
     private double off;
 
@@ -51,7 +51,7 @@ public class OneHot extends DynamicCustomOp {
     public OneHot(SameDiff sameDiff, SDVariable indices, int depth, int axis, double on, double off) {
         super(null, sameDiff,  new SDVariable[] {indices}, false);
         this.depth = depth;
-        this.axis = axis;
+        this.jaxis = axis;
         this.on = on;
         this.off = off;
         addArgs();
@@ -64,7 +64,7 @@ public class OneHot extends DynamicCustomOp {
     public OneHot(INDArray indices, INDArray output, int depth, int axis, double on, double off) {
         super(null, indices, output, null, null);
         this.depth = depth;
-        this.axis = axis;
+        this.jaxis = axis;
         this.on = on;
         this.off = off;
         addArgs();
@@ -74,7 +74,7 @@ public class OneHot extends DynamicCustomOp {
 
 
     protected void addArgs() {
-        addIArgument(axis);
+        addIArgument(jaxis);
         addIArgument(depth);
         addTArgument(on);
         addTArgument(off);

@@ -18,32 +18,25 @@
 // Created by raver119 on 16.10.2017.
 //
 
-#ifndef LIBND4J_LEGACYRANDOMOP_H
-#define LIBND4J_LEGACYRANDOMOP_H
+#ifndef LIBND4J_LEGACYSCALAR_BOOL_OP_H
+#define LIBND4J_LEGACYSCALAR_BOOL_OP_H
 
-
-#include <helpers/helper_random.h>
 #include <ops/declarable/LegacyOp.h>
 
 namespace nd4j {
     namespace ops {
         /**
-        *   This class provides wrapper for Random operations (i.e. linspace or Uniform)
+        *   This class provides wrapper for scalar transform operations, i.e. a + b = c, where either a or b is scalar primitive and other operand is NDArray
         */
-        class ND4J_EXPORT LegacyRandomOp : public LegacyOp {
+        class ND4J_EXPORT LegacyScalarBoolOp : public LegacyOp {
         protected:
             Nd4jStatus validateAndExecute(Context& block);
+
+            double _scalar;
         public:
-            LegacyRandomOp();
-            LegacyRandomOp(int opNum);
-            ~LegacyRandomOp() = default;
-
-            template <typename T>
-            Nd4jStatus validateAndExecute_(Context &block);
-
-            nd4j::ResultSet*  execute(nd4j::graph::RandomGenerator& rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
-            nd4j::ResultSet*  execute(nd4j::graph::RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
-            Nd4jStatus execute(Context* block);
+            LegacyScalarBoolOp();
+            LegacyScalarBoolOp(int opNum);
+            LegacyScalarBoolOp(int opNum, double scalar);
 
             ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block);
             virtual LegacyOp* clone();
@@ -52,4 +45,4 @@ namespace nd4j {
 }
 
 
-#endif //LIBND4J_LEGACYTRANSFORMOP_H
+#endif //LIBND4J_LEGACYSCALAROP_H

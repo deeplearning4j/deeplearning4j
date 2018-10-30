@@ -58,12 +58,17 @@ public interface CustomOp {
 
     double[] tArgs();
 
+    boolean[] bArgs();
+
     void addIArgument(int... arg);
 
     void addIArgument(long... arg);
 
+    void addBArgument(boolean... arg);
 
     void removeIArgument(Integer arg);
+
+    Boolean getBArgument(int index);
 
     Long getIArgument(int index);
 

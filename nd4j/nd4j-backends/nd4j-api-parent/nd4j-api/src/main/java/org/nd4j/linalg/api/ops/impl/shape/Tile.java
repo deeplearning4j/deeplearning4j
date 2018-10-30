@@ -40,18 +40,18 @@ import java.util.*;
  */
 public class Tile extends DynamicCustomOp {
 
-    private int[] axis;
+    private int[] jaxis;
     private boolean is_static_reps = false;
 
     public Tile(SameDiff sameDiff, SDVariable i_v, int[] axis) {
         super(null,sameDiff, new SDVariable[]{i_v}, false);
-        this.axis = axis;
+        this.jaxis = axis;
         addArguments();
     }
 
     public Tile(INDArray[] inputs, INDArray[] outputs, int[] axis, boolean is_static_reps) {
         super(null, inputs, outputs);
-        this.axis = axis;
+        this.jaxis = axis;
         this.is_static_reps = is_static_reps;
         addArguments();
     }
@@ -66,7 +66,7 @@ public class Tile extends DynamicCustomOp {
 
     private void addArguments() {
         this.is_static_reps = true;
-        addIArgument(axis);
+        addIArgument(jaxis);
     }
 
     @Override
@@ -74,7 +74,7 @@ public class Tile extends DynamicCustomOp {
         val lastNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,nodeDef.getInput(nodeDef.getInputCount() - 1));
         val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",lastNode,graph);
         if(arr != null) {
-            this.axis = arr.data().asInt();
+            this.jaxis = arr.data().asInt();
             addArguments();
         }
     }
@@ -151,7 +151,7 @@ public class Tile extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(f().tileBp(arg(), i_v.get(0), axis));
+        return Collections.singletonList(f().tileBp(arg(), i_v.get(0), jaxis));
     }
 
 }

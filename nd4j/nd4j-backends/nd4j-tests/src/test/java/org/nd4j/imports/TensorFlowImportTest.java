@@ -764,7 +764,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         val input = Nd4j.create(2, 2).assign(-1);
         tg.associateArrayWithVariable(input, tg.getVariable("input_0"));
-        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
 
         //log.info("{}", tg.asFlatPrint());
         val array = tg.execAndEndResult();

@@ -26,6 +26,7 @@
 #include <array/DataType.h>
 #include <dll.h>
 #include <RandomGenerator.h>
+#include <ops/declarable/OpDescriptor.h>
 
 namespace nd4j {
     namespace graph {
@@ -49,10 +50,11 @@ namespace nd4j {
 
             std::vector<nd4j::DataType> _dataTypes;
 
+            nd4j::ops::OpDescriptor* _opDescriptor;
             bool _useMKLDNN = nd4j::Environment::getInstance()->isUseMKLDNN();
 
         public:
-            explicit ContextPrototype(int nodeId = 1, bool inPlace = false);
+            explicit ContextPrototype(nd4j::ops::OpDescriptor* opDescriptor = nullptr, int nodeId = 1, bool inPlace = false);
             ~ContextPrototype() = default;
 
             int getNodeId();
@@ -60,6 +62,8 @@ namespace nd4j {
 
             // this method returns true, if inputs are defined
             bool hasVariablesFilled();
+
+            void setOpDescriptor(nd4j::ops::OpDescriptor* opDescriptor);
 
             virtual nd4j::DataType dataType();
             virtual nd4j::DataType dataType(int index);
@@ -105,7 +109,9 @@ namespace nd4j {
             ContextPrototype* asT();
 
             RandomGenerator& randomGenerator() {return _randomGenerator;}
-            RandomGenerator const& getRng() const { return _randomGenerator; }
+            RandomGenerator const& getRng()const { return _randomGenerator; }
+            void setRng(RandomGenerator const& anotherRng) { _randomGenerator = anotherRng; }
+            void setRandomGenerator(RandomGenerator const& anotherRng) { _randomGenerator = anotherRng; }
             uint64_t randomSeed() const { return _rootSeed; }
             void setRandomSeed(uint64_t seed) { _rootSeed = seed; }
         };

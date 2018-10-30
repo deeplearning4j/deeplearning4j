@@ -15,33 +15,31 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com
+// Created by raver119 on 16.10.2017.
 //
 
-#include <ops/declarable/CustomOperations.h>
+#ifndef LIBND4J_LEGACYPAIRWISETRANSFORM_BOOL_OP_H
+#define LIBND4J_LEGACYPAIRWISETRANSFORM_BOOL_OP_H
+
+#include <ops/declarable/LegacyOp.h>
 
 namespace nd4j {
     namespace ops {
-        BROADCASTABLE_OP_IMPL(less, 0, 0) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+        /**
+        *   This class provides wrapper for Pairwise transform operations
+        */
+        class ND4J_EXPORT LegacyPairwiseTransformBoolOp: public LegacyOp {
+        protected:
+            Nd4jStatus validateAndExecute(Context& block);
+        public:
+            LegacyPairwiseTransformBoolOp();
+            LegacyPairwiseTransformBoolOp(int opNum);
 
-            auto tZ = BroadcastHelper::broadcastApply(BROADCAST_BOOL(LessThan), x, y, z);
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z) {
-                OVERWRITE_RESULT(tZ);
-            }
-
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(less) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, DataType::ANY)
-                    ->setAllowedOutputTypes(0, DataType::BOOL);
-        }
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block);
+            virtual LegacyOp* clone();
+        };
     }
 }
+
+
+#endif //LIBND4J_LEGACYPAIRWISETRANSFORMOP_H

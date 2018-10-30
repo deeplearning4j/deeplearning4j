@@ -403,7 +403,14 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
             limit = this->lengthOf();
 
         for (Nd4jLong e = 0; e < limit; e++) {
-            os << toStringValue(_buffer[e]);
+            if (this->isR())
+                os << toStringValue(this->e<float>(e));
+            else if (this->isZ())
+                os << toStringValue(this->e<Nd4jLong>(e));
+            else if (this->isB())
+                os << toStringValue(this->e<bool>(e));
+            else if (this->isS())
+                os << this->e<std::string>(e);
 
             if (e < limit - 1)
                 os << ", ";
@@ -1698,46 +1705,20 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
         printf("]\n");
         fflush(stdout);
     }
-    static void printFormatted(NDArray const* arr, char const* msg = nullptr, int limit = -1) {
-        if (arr->isEmpty()) {
-            if (msg)
-                printf("%s: Empty\n", msg);
-            else
-                printf("Empty\n");
-        }
-        else if (arr->rankOf() == 0) {
-            if (msg)
-                if (arr->isR())
-                    printf("%s: %f\n", msg, arr->e<float>(0));
-
-            else {
-                    if (arr->isR())
-                        printf("%f\n", arr->e<float>(0));
-            }
-
-        }
-        else if (arr->rankOf() == 1)
-            arr->printBuffer(msg, limit);
-        else if (arr->rankOf() == 2) {
+    static void printFormatted(NDArray const* arr, int depth, int limit) {
+        if (arr->rankOf() == 2) {
             Nd4jLong rows = arr->rows();
             Nd4jLong cols = arr->columns();
-            char* padding = 0;
-            if (msg) {
-                if (msg[0])
-                    printf("%s: [", msg);
-                else {
-                    padding = new char[limit];
-                    memset(padding, ' ', limit - 1);
-                    padding[limit - 1] = 0;
-                    printf("[");
-                }
-            }
-            else printf("[");
+            char* padding = new char[depth + 1];
+            memset(padding, ' ', depth);
+            padding[depth] = 0;
+            printf("[");
             for (Nd4jLong row = 0; row < rows; ++row) {
-                if (row && padding)
+                if (row && depth > 0)
                     printf("%s", padding);
                 printf("[");
-                for (Nd4jLong col = 0; col < cols; ++col) {
+                Nd4jLong colLimit = cols > limit?cols:limit;
+                for (Nd4jLong col = 0; col < colLimit; ++col) {
                     if (col)
                         printf(" ");
                     if (arr->isR())
@@ -1753,9 +1734,6 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
                     printf("]");
             }
             printf("]");
-            if (msg)
-                if (*msg)
-                    printf("\n");
 
             if (padding)
                 delete [] padding;
@@ -1764,19 +1742,18 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
             //std::unique_ptr<ResultSet> arrs(arr->allTensorsAlongDimension({0}));
             size_t restCount = 2;
 
-            if (msg && msg[0]) printf("%s:\n[", msg);
-            else               printf("[");
+            printf("[");
 
             restCount = ShapeUtils::getNumOfSubArrs(arr->getShapeInfo(), {0});
             for (size_t arrIndex = 0; arrIndex < restCount; ++arrIndex) {
                 NDArray subArr = (*arr)(arrIndex, {0});
-                printFormatted(&subArr, "\0\0", arr->rankOf() - 1);
+                printFormatted(&subArr, depth + 1, limit);
                 if (arrIndex < restCount - 1) {
 
                     for (Nd4jLong i = 1; i < arr->rankOf(); ++i)
                         printf("\n");
 
-                    for (Nd4jLong i = 1; i < arr->rankOf() - 2; ++i)
+                    for (Nd4jLong i = 0; i < depth - 2; ++i)
                         printf(" ");
 
                 }
@@ -1784,23 +1761,33 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
             }
 
             printf("]");
-            if (msg)
-                if (*msg)
-                    printf("\n");
         }
     }
 
     void NDArray::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
-        if (limit == -1)
-            limit = (int) this->lengthOf();
-        int rank = this->rankOf();
+        Nd4jLong rank = this->rankOf();
+
         bool rowFlag = (rank < 2) || (rank == 2 && this->sizeAt(0) == 1);
-        if (rowFlag)
+
+        if (this->isEmpty()) {
+            printf("Empty\n");
+        }
+        else if (this->rankOf() == 0) {
+            if (this->isZ())
+                printf("%lld\n", this->e<Nd4jLong>(0));
+            else if (this->isR())
+                printf("%f\n", this->e<float>(0));
+            else if (this->isB()) {
+                printf("%s\n", this->e<bool>(0)?"true":"false");
+            }
+
+        }
+        else if (rowFlag)
             printBuffer(msg, limit);
         else {
             if (msg)
                 printf("%s: \n", msg);
-            printFormatted(this, "\0\n", limit);
+            printFormatted(this, 1, limit);
             printf("\n");
         }
         fflush(stdout);

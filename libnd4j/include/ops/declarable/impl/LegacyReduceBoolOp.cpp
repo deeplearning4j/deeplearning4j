@@ -18,30 +18,30 @@
 // Created by raver119 on 16.10.2017.
 //
 
-#include <ops/declarable/LegacyReduceSameOp.h>
+#include <ops/declarable/LegacyReduceBoolOp.h>
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
 
 namespace nd4j {
     namespace ops {
-        LegacyReduceSameOp::LegacyReduceSameOp() : LegacyOp::LegacyOp(1) {
+        LegacyReduceBoolOp::LegacyReduceBoolOp() : LegacyOp::LegacyOp(1) {
             //
         }
 
-        LegacyReduceSameOp::LegacyReduceSameOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
+        LegacyReduceBoolOp::LegacyReduceBoolOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
             //this->_opNum = opNum;
         }
 
-        LegacyOp* LegacyReduceSameOp::clone() {
-            return new LegacyReduceSameOp(this->_opNum);
+        LegacyOp* LegacyReduceBoolOp::clone() {
+            return new LegacyReduceBoolOp(this->_opNum);
         }
 
-        Nd4jStatus LegacyReduceSameOp::validateAndExecute(Context &block) {
+        Nd4jStatus LegacyReduceBoolOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
 
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
-            nd4j_debug("Executing LegacyReduceSameOp: [%i]\n", opNum);
+            nd4j_debug("Executing LegacyReduceFloatOp: [%i]\n", opNum);
 
             bool allAxes = false;
 
@@ -54,7 +54,7 @@ namespace nd4j {
                 if ((block.getIArguments()->size() == 0) ||
                     (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                     // scalar
-                    NativeOpExcutioner::execReduceSameScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
+                    NativeOpExcutioner::execReduceFloatScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
                     std::vector<int> dims(*block.getIArguments());
@@ -71,7 +71,7 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExcutioner::execReduceSame(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
 
                 STORE_RESULT(*z);
@@ -99,7 +99,7 @@ namespace nd4j {
                     //x->printIndexedBuffer("x");
 
                     // scalar
-                    NativeOpExcutioner::execReduceSameScalar(opNum, b, s, e, z->buffer(), z->shapeInfo());
+                    NativeOpExcutioner::execReduceFloatScalar(opNum, b, s, e, z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
                     if (indices->lengthOf() > 1)
@@ -111,9 +111,27 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    auto z = OUTPUT_VARIABLE(0);
+                    auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
+                    auto z = new NDArray(newShape, x->getWorkspace());
 
-                    NativeOpExcutioner::execReduceSame(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+
+                    RELEASE(newShape, x->getWorkspace());
+
+
+                    // keepDims processing, for TF compatibility
+                    if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
+                        // z->printShapeInfo("z shape before");
+                        std::vector<Nd4jLong> newshape(z->getShapeAsVector());
+                        for (int e = 0; e < axis.size(); e++) {
+                            auto a = axis.at(e);
+                            newshape.insert(newshape.begin() + a, 1);
+                        }
+                        z->reshapei(z->ordering(), newshape);
+                        // z->printShapeInfo("z shape after");
+                    }
+
+                    OVERWRITE_RESULT(z);
                 }
             }
 
@@ -124,7 +142,7 @@ namespace nd4j {
         *   For all reductions rules are simple: either you return scalar, or you return reduced NDArray.
         *   It solely depends on input shape, and requested dimensions
         */
-        ShapeList *LegacyReduceSameOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *LegacyReduceBoolOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;
@@ -143,6 +161,7 @@ namespace nd4j {
             auto array = new NDArray(nullptr, inShape, block.getWorkspace());
             array->triggerAllocationFlag(false, false);
             newShape = ShapeUtils::evalReduceShapeInfo(shape::order(inShape), axis, *array, keepDims, !newFormat, block.workspace());
+            ArrayOptions::setDataType(newShape, DataType::BOOL);
             delete array;
 
             return SHAPELIST(newShape);

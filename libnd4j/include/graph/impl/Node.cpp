@@ -32,6 +32,11 @@
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 #include <ops/declarable/LegacyRandomOp.h>
 #include <ops/declarable/LegacyOp.h>
+#include <ops/declarable/LegacyReduceLongOp.h>
+#include <ops/declarable/LegacyReduceBoolOp.h>
+#include <ops/declarable/LegacyBroadcastBoolOp.h>
+#include <ops/declarable/LegacyScalarBoolOp.h>
+#include <ops/declarable/LegacyPairwiseTransformBoolOp.h>
 
 namespace nd4j {
     namespace graph {
@@ -103,7 +108,7 @@ namespace nd4j {
 
         ContextPrototype * nd4j::graph::Node::getContextPrototype() {
             if (_protoContext == nullptr)
-                _protoContext = new ContextPrototype(this->id());
+                _protoContext = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id());
             if (_protoContext->inputs()->empty()) {
                 for (int e = 0; e < this->input()->size(); e++) {
                     _protoContext->inputs()->emplace_back(this->input()->at(e));
@@ -365,7 +370,7 @@ namespace nd4j {
 
                 this->_isDeductable = true;
 
-                auto block = new ContextPrototype(this->id(), false);
+                auto block = new ContextPrototype(nullptr, this->id(), false);
 
                 for (auto v: dimensions)
                     block->getAxis()->emplace_back(v);
@@ -378,8 +383,9 @@ namespace nd4j {
 
                 this->setContextPrototype(block);
                 this->setCustomOp(Node::buildOpByType(opType, (int) input.size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), opNum, scalar));
+                block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
             } else if (opType == OpType_CUSTOM) {
-                auto block = new ContextPrototype(this->id(), false);
+                auto block = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id(), false);
 
                 for (auto v: dimensions)
                     block->getAxis()->emplace_back(v);
@@ -499,7 +505,7 @@ namespace nd4j {
                     if (node->input() != nullptr && node->input()->size() > 0) {
                         this->_isDeductable = true;
 
-                        auto block = new ContextPrototype(this->id(), false);
+                        auto block = new ContextPrototype(nullptr, this->id(), false);
 
 
                         for (auto v: _dimensions)
@@ -522,10 +528,11 @@ namespace nd4j {
 
                         this->setContextPrototype(block);
                         this->setCustomOp(Node::buildOpByType(_opType, (int) node->input()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, _scalar));
+                        block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                     } else if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
                         this->_isDeductable = true;
 
-                        auto block = new ContextPrototype(this->id(), false);
+                        auto block = new ContextPrototype(nullptr, this->id(), false);
 
                         for (int e = 0; e < this->input()->size(); e++) {
                             block->inputs()->emplace_back(this->input()->at(e));
@@ -553,6 +560,7 @@ namespace nd4j {
                         this->setContextPrototype(block);
 
                         this->setCustomOp(Node::buildOpByType(_opType, (int) node->inputPaired()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, _scalar));
+                        block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                     }
                 } else if (this->_opType == OpType_CUSTOM) {
                         auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(this->opNum());
@@ -561,7 +569,7 @@ namespace nd4j {
                             throw std::runtime_error("Can't find requested operation");
                         }
 
-                        auto block = new ContextPrototype(this->id());
+                        auto block = new ContextPrototype(nullptr, this->id());
 
                         for (int e = 0; e < this->input()->size(); e++) {
                             block->inputs()->emplace_back(this->input()->at(e));
@@ -588,6 +596,7 @@ namespace nd4j {
 
                         this->setContextPrototype(block);
                         this->setCustomOp(op);
+                        block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                 }
             } else {
                 // empty dynamic node, tests probably
@@ -644,18 +653,26 @@ namespace nd4j {
             switch (opType) {
                 case OpType_PAIRWISE:
                     return new nd4j::ops::LegacyPairwiseTransformOp(opNum);
+                case OpType_PAIRWISE_BOOL:
+                    return new nd4j::ops::LegacyPairwiseTransformBoolOp(opNum);
                 case OpType_TRANSFORM_SAME:
                     return new nd4j::ops::LegacyTransformSameOp(opNum);
                 case OpType_TRANSFORM_FLOAT:
                     return new nd4j::ops::LegacyTransformFloatOp(opNum);
                 case OpType_SCALAR:
                     return new nd4j::ops::LegacyScalarOp(opNum, scalar);
+                case OpType_SCALAR_BOOL:
+                    return new nd4j::ops::LegacyScalarBoolOp(opNum, scalar);
                 case OpType_REDUCE_3:
                     return new nd4j::ops::LegacyReduce3Op(opNum);
                 case OpType_REDUCE_SAME:
                     return new nd4j::ops::LegacyReduceSameOp(opNum);
                 case OpType_REDUCE_FLOAT:
                     return new nd4j::ops::LegacyReduceFloatOp(opNum);
+                case OpType_REDUCE_LONG:
+                    return new nd4j::ops::LegacyReduceLongOp(opNum);
+                case OpType_REDUCE_BOOL:
+                    return new nd4j::ops::LegacyReduceBoolOp(opNum);
                 case OpType_INDEX_REDUCE:
                     return new nd4j::ops::LegacyIndexReduceOp(opNum);
                 case OpType_SUMMARYSTATS:
@@ -664,6 +681,8 @@ namespace nd4j {
                     return new nd4j::ops::LegacyRandomOp(opNum);
                 case OpType_BROADCAST:
                     return new nd4j::ops::LegacyBroadcastOp(opNum);
+                case OpType_BROADCAST_BOOL:
+                    return new nd4j::ops::LegacyBroadcastBoolOp(opNum);
                 default:
                     throw std::runtime_error("Bad opType passed in");
             }

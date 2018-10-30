@@ -66,9 +66,17 @@ namespace nd4j {
             bool canKeep = (isBe && order == ByteOrder::BE) || (!isBe && order == ByteOrder::LE);
 
             switch (dataType) {
-                case INT32: {
-                    DataTypeConversions<T>::template rconv<int>(isBe, canKeep, buffer, length, src);
+                case BOOL: {
+                        DataTypeConversions<T>::template rconv<bool>(isBe, canKeep, buffer, length, src);
+                    }
+                    break;
+                case INT16: {
+                    DataTypeConversions<T>::template rconv<int16_t>(isBe, canKeep, buffer, length, src);
                 }
+                    break;
+                case INT32: {
+                        DataTypeConversions<T>::template rconv<int>(isBe, canKeep, buffer, length, src);
+                    }
                     break;
                 case INT64: {
                     DataTypeConversions<T>::template rconv<Nd4jLong>(isBe, canKeep, buffer, length, src);

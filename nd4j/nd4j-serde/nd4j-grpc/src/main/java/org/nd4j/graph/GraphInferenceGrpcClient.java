@@ -145,7 +145,7 @@ public class GraphInferenceGrpcClient {
             val nameOff = id.getName() != null ? builder.createString(id.getName()) : 0;
 
             val arrOff = array.toFlatArray(builder);
-            val varOff = FlatVariable.createFlatVariable(builder, idPair, nameOff, SameDiff.getDataTypeAsByte(array.dataType()), 0, arrOff, 0);
+            val varOff = FlatVariable.createFlatVariable(builder, idPair, nameOff, SameDiff.getDataTypeAsByte(array.dataType()),0,  arrOff, -1);
             ins[cnt++] = varOff;
         }
 

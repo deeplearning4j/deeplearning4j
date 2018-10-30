@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.Op;
@@ -38,7 +39,10 @@ public class Switch extends BaseCompatOp {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         if(args()[0].getArr() != null) {
-            return Arrays.asList(LongShapeDescriptor.fromShape(args()[0].getShape(), args()[0].dataType()),LongShapeDescriptor.fromShape(args()[0].getShape(), args()[0].dataType()));
+            val arg0 = args()[0];
+            val arr0 = arg0.getArr();
+            val dtype = arr0.dataType();
+            return Arrays.asList(LongShapeDescriptor.fromShape(arg0.getShape(), dtype),LongShapeDescriptor.fromShape(arg0.getShape(), dtype));
         }
         else
             return Collections.emptyList();

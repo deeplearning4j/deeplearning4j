@@ -10993,10 +10993,12 @@ public class SameDiff {
             }
         }
 
+        boolean[] boolArgs = null;
         long[] extraBits = null;
         if (node.opType() == Op.Type.CUSTOM) {
             DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) node;
             extraBits = dynamicCustomOp.iArgs();
+            boolArgs = dynamicCustomOp.bArgs();
         } else if (node instanceof Enter) {
             // in case of Enter node we'll be storing unique frame reference
             val frameName = ((Enter) node).getFrameName();
@@ -11006,6 +11008,20 @@ public class SameDiff {
             extraBits = new long[]{framesMap.get(frameName).intValue()};
         } else
             extraBits = new long[]{};
+
+        if (node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_LONG) {
+            val op = (ReduceOp) node;
+
+            boolArgs = new boolean[2];
+            boolArgs[0] = op.isKeepDims();
+            boolArgs[1] = true; // always new format
+        } else if (node.opType() == Op.Type.INDEXREDUCE) {
+            val op = (IndexAccumulation) node;
+
+            boolArgs = new boolean[2];
+            boolArgs[0] = op.isKeepDims();
+            boolArgs[1] = true; // always new format
+        }
 
         val inPaired = new ArrayList<Integer>();
 
@@ -11063,12 +11079,7 @@ public class SameDiff {
         }
 
         int[] dims;
-        if(node.opType() == Op.Type.REDUCE_FLOAT
-                || node.opType() == Op.Type.REDUCE_SAME
-                || node.opType() == Op.Type.REDUCE_BOOL
-                || node.opType() == Op.Type.REDUCE_LONG
-                || node.opType() == Op.Type.INDEXREDUCE
-                || node.opType() == Op.Type.REDUCE3){
+        if(node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_LONG || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3){
             dims = node.getDimensions();
             if(dims == null)
                 dims = new int[0];
@@ -11084,7 +11095,7 @@ public class SameDiff {
         int nodesOut = FlatNode.createOutputVector(bufferBuilder, outputIds);
         int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
         int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
-        int booleanArgs = FlatNode.createExtraBoolsVector(bufferBuilder, new boolean[0]);
+        int bArgs = FlatNode.createExtraBoolsVector(bufferBuilder, boolArgs != null ? boolArgs : new boolean[0]);
         int dimensions = FlatNode.createDimensionsVector(bufferBuilder, dims);
         int fname = bufferBuilder.createString(
                 outputVertexId == null ||
@@ -11118,7 +11129,7 @@ public class SameDiff {
                 nodesOut,
                 extraz,
                 integerArgs,
-                booleanArgs,
+                bArgs,
                 dimensions,
                 -1,
                 0, 0, scopeName,
@@ -11148,7 +11159,7 @@ public class SameDiff {
      */
     public ByteBuffer asFlatBuffers(long graphId, @NonNull ExecutorConfiguration configuration) {
         Nd4j.getExecutioner().commit();
-        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(1024);
+        val bufferBuilder = new FlatBufferBuilder(1024);
         val idCounter = new AtomicInteger(0);
 
         val flatVariables = new ArrayList<Integer>();
@@ -11156,13 +11167,13 @@ public class SameDiff {
         val flatNodes = new ArrayList<Integer>();
 
         // first of all we build VariableSpace dump
-        List<SDVariable> variableList = new ArrayList<>(variables());
+        val variableList = new ArrayList<SDVariable>(variables());
         val reverseMap = new LinkedHashMap<String, Integer>();
         val forwardMap = new LinkedHashMap<String, Integer>();
         val framesMap = new LinkedHashMap<String, Integer>();
 
         int idx = 0;
-        Map<DifferentialFunction,Integer> idxForOps = new IdentityHashMap<>();
+        val idxForOps = new IdentityHashMap<DifferentialFunction,Integer>();
         for (val variable : variables()) {
             log.debug("Exporting variable: [{}]", variable.getVarName());
             if (variable.getArr() == null || variable.getShape() == null) {
@@ -11609,6 +11620,10 @@ public class SameDiff {
                 return DataType.INT32;
             case LONG:
                 return DataType.INT64;
+            case BOOL:
+                return DataType.BOOL;
+            case SHORT:
+                return DataType.INT16;
             default:
                 throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
         }
@@ -11626,8 +11641,12 @@ public class SameDiff {
         switch (type) {
             case OpType.SCALAR:
                 return Op.Type.SCALAR;
+            case OpType.SCALAR_BOOL:
+                return Op.Type.SCALAR_BOOL;
             case OpType.BROADCAST:
                 return Op.Type.BROADCAST;
+            case OpType.BROADCAST_BOOL:
+                return Op.Type.BROADCAST_BOOL;
             case OpType.TRANSFORM_BOOL:
                 return Op.Type.TRANSFORM_BOOL;
             case OpType.TRANSFORM_FLOAT:
@@ -11658,6 +11677,8 @@ public class SameDiff {
                 return Op.Type.SHAPE;
             case OpType.PAIRWISE:
                 return Op.Type.PAIRWISE;
+            case OpType.PAIRWISE_BOOL:
+                return Op.Type.PAIRWISE_BOOL;
             case OpType.SUMMARYSTATS:
                 return Op.Type.SUMMARYSTATS;
             default:
