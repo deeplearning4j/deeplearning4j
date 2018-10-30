@@ -274,9 +274,11 @@ namespace nd4j {
         
         nd4j::graph::Variable::~Variable() {
             //nd4j_printf("Removing variable [%i:%i]\n", _id, _index);
-            if (_variableType == VariableType::NDARRAY)
-                if (_ndarray != nullptr && _removable)
+            if (_variableType == VariableType::NDARRAY) {
+                nd4j_debug("Removing variable <%i:%i>\n", _id, _index);
+                if (_ndarray != nullptr && _removable && !_readOnly)
                     delete _ndarray;
+            }
         }
 
         

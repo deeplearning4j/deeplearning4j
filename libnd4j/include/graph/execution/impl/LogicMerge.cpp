@@ -106,7 +106,7 @@ namespace nd4j {
 
                     if (__variableSpace->hasVariable(inputAddr)) {
                         auto var = __variableSpace->getVariable(inputAddr);
-                        if (!var->hasNDArray())
+                        if (!var->hasNDArray() || !__flowPath->isNodeActive(inputAddr.first))
                             continue;
 
                         Variable *lvar = nullptr;
