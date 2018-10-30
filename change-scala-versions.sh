@@ -89,5 +89,16 @@ find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
 #Scala maven plugin, <scalaVersion>2.10</scalaVersion>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(scalaVersion>\)'$FROM_VERSION'<\/scalaVersion>/\1'$TO_VERSION'<\/scalaVersion>/g' {}" \;
+  
+#Edge case for Korean NLP artifact not following conventions:	https://github.com/deeplearning4j/deeplearning4j/issues/6306
+#https://github.com/deeplearning4j/deeplearning4j/issues/6306
+if [[ $TO_VERSION == 2.11* ]]; then
+  sed_i 's/<artifactId>korean-text-scala-2.10<\/artifactId>/<artifactId>korean-text<\/artifactId>/g' deeplearning4j/deeplearning4j-nlp-parent/deeplearning4j-nlp-korean/pom.xml
+  sed_i 's/<version>4.2.0<\/version>/<version>4.4<\/version>/g' deeplearning4j/deeplearning4j-nlp-parent/deeplearning4j-nlp-korean/pom.xml
+else
+  sed_i 's/<artifactId>korean-text<\/artifactId>/<artifactId>korean-text-scala-2.10<\/artifactId>/g' deeplearning4j/deeplearning4j-nlp-parent/deeplearning4j-nlp-korean/pom.xml
+  sed_i 's/<version>4.4<\/version>/<version>4.2.0<\/version>/g' deeplearning4j/deeplearning4j-nlp-parent/deeplearning4j-nlp-korean/pom.xml
+fi
+
 
 echo "Done updating Scala versions.";
