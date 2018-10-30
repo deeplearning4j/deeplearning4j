@@ -965,6 +965,16 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             this.voidConfiguration.setExecutionMode(ExecutionMode.MANAGED);
         }
 
+        public Builder(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, ThresholdAlgorithm thresholdAlgorithm, int rddDataSetNumExamples) {
+            this.thresholdAlgorithm = thresholdAlgorithm;
+            this.voidConfiguration = voidConfiguration;
+            this.rddDataSetNumExamples = rddDataSetNumExamples;
+            this.numWorkers = numWorkers;
+
+            // we're enforcing managed mode in all cases here
+            this.voidConfiguration.setExecutionMode(ExecutionMode.MANAGED);
+        }
+
         /**
          * Enable/disable collection of training statistics
          * @param enable Enable
