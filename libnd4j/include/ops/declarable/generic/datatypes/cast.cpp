@@ -62,7 +62,7 @@ namespace nd4j {
         DECLARE_TYPES(cast) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(nd4j::DataType::AUTO);
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
         }
     }
 }
