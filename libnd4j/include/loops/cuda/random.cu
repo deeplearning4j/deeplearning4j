@@ -124,10 +124,10 @@ namespace functions {
                 __shared__ int yEWS;
                 __shared__ int zEWS;
 
-                __shared__ nd4j::random::RandomBuffer *buffer;
+                nd4j::graph::RandomGenerator *buffer;
                 __shared__ unsigned char *cB;
                 __shared__ unsigned char *dB;
-                __shared__ nd4j::random::RandomBuffer *devBuffer;
+                nd4j::graph::RandomGenerator *devBuffer;
                 if (threadIdx.x == 0) {
                     length = shape::length(zShapeBuffer);
                     xEWS = shape::elementWiseStride(xShapeBuffer);
@@ -135,15 +135,15 @@ namespace functions {
                     zEWS = shape::elementWiseStride(zShapeBuffer);
 
                     extern __shared__ unsigned char shmem[];
-                    buffer = (nd4j::random::RandomBuffer *) shmem;
+                    buffer = (nd4j::graph::RandomGenerator *) shmem;
                     cB = shmem;
-                    devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                    devBuffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (state);
                     dB = reinterpret_cast<unsigned char *> (state);
                 }
                 __syncthreads();
 
                 // using this loop instead of memcpy
-                for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
                     cB[e] = dB[e];
                 }
                 __syncthreads();
@@ -153,7 +153,7 @@ namespace functions {
 
                 if (xEWS >= 1 && yEWS >= 1 && zEWS >= 1) {
                     for (Nd4jLong e = tid; e < length; e += blockDim.x * gridDim.x) {
-                        z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, buffer, extraArguments);
+                        z[e * zEWS];// = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, buffer, extraArguments);
                     }
                 } else {
                     // negative ews
@@ -182,12 +182,12 @@ namespace functions {
                         auto yOffset2 = shape::getOffset(0, yShape, yStride, yCoord, yRank);
                         auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
-                        z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, buffer, extraArguments);
+                        z[zOffset2];// = OpClass::op(x[xOffset2], y[yOffset2], i, length, buffer, extraArguments);
                     }
                 }
 
                 __syncthreads();
-                devBuffer->rewind(length);
+                // devBuffer->rewindH(length);
                 }
             };
 
@@ -204,15 +204,15 @@ namespace functions {
                 __shared__ int xEWS;
                 __shared__ int zEWS;
 
-                __shared__ nd4j::random::RandomBuffer *buffer;
+                __shared__ nd4j::graph::RandomGenerator *buffer;
                 __shared__ unsigned char *cB;
                 __shared__ unsigned char *dB;
-                __shared__ nd4j::random::RandomBuffer *devBuffer;
+                __shared__ nd4j::graph::RandomGenerator *devBuffer;
                 if (threadIdx.x == 0) {
                     extern __shared__ unsigned char shmem[];
-                    buffer = (nd4j::random::RandomBuffer *) shmem;
+                    buffer = (nd4j::graph::RandomGenerator *) shmem;
                     cB = shmem;
-                    devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                    devBuffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (state);
                     dB = reinterpret_cast<unsigned char *> (state);
 
                     length = shape::length(zShapeBuffer);
@@ -222,7 +222,7 @@ namespace functions {
                 __syncthreads();
 
                 // using this loop instead of memcpy
-                for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
                     cB[e] = dB[e];
                 }
                 __syncthreads();
@@ -230,7 +230,7 @@ namespace functions {
 
                 if (xEWS >= 1 && zEWS >= 1) {
                     for (Nd4jLong e = blockIdx.x * blockDim.x + threadIdx.x; e < length; e += blockDim.x * gridDim.x) {
-                        z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, buffer, extraArguments);
+                        z[e * zEWS];// = OpClass::op(x[e * xEWS], e, length, buffer, extraArguments);
                     }
                 } else {
                     // ind2sub branch
@@ -253,12 +253,12 @@ namespace functions {
                         auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                         auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
-                        z[zOffset2] = OpClass::op(x[xOffset2], i, length, buffer, extraArguments);
+                        z[zOffset2];// = OpClass::op(x[xOffset2], i, length, buffer, extraArguments);
                     }
                 }
 
                 __syncthreads();
-                devBuffer->rewind(length);
+                // devBuffer->rewindH(length);
             }
 
 
@@ -272,21 +272,21 @@ namespace functions {
                 Nd4jLong length = shape::length(zShapeBuffer);
                 int ews = shape::elementWiseStride(zShapeBuffer);
 
-                __shared__ nd4j::random::RandomBuffer *buffer;
+                __shared__ nd4j::graph::RandomGenerator *buffer;
                 __shared__ unsigned char *cB;
                 __shared__ unsigned char *dB;
-                __shared__ nd4j::random::RandomBuffer *devBuffer;
+                __shared__ nd4j::graph::RandomGenerator *devBuffer;
                 if (threadIdx.x == 0) {
                     extern __shared__ unsigned char shmem[];
-                    buffer = (nd4j::random::RandomBuffer *) shmem;
+                    buffer = (nd4j::graph::RandomGenerator *) shmem;
                     cB = shmem;
-                    devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                    devBuffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (state);
                     dB = reinterpret_cast<unsigned char *> (state);
                 }
                 __syncthreads();
 
                 // using this loop instead of memcpy
-                for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
                     cB[e] = dB[e];
                 }
                 __syncthreads();
@@ -295,7 +295,7 @@ namespace functions {
 
                 if (ews >= 1) {
                     for (Nd4jLong x = tid; x < length; x += blockDim.x * gridDim.x) {
-                        z[x * ews] = OpClass::op(x, length, buffer, extraArguments);
+                        z[x * ews];// = OpClass::op(x, length, buffer, extraArguments);
                     }
                 } else {
                     // ind2sub branch
@@ -310,12 +310,12 @@ namespace functions {
 
                         auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
-                        z[zOffset2] = OpClass::op(i, length, buffer,  extraArguments);
+                        z[zOffset2];// = OpClass::op(i, length, buffer,  extraArguments);
                     }
                 }
 
                 __syncthreads();
-                devBuffer->rewind(length);
+                // devBuffer->rewindH(length);
             }
 
         template <>
@@ -326,8 +326,8 @@ namespace functions {
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
-            Nd4jPointer state = buffer->getDevicePointer();
+            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
+            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomSingle, float, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -343,8 +343,8 @@ namespace functions {
             
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
-            Nd4jPointer state = buffer->getDevicePointer();
+            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
+            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomSingle, float16, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -360,8 +360,8 @@ namespace functions {
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
-            Nd4jPointer state = buffer->getDevicePointer();
+            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
+            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomSingle, double, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -378,8 +378,8 @@ namespace functions {
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
-            Nd4jPointer state = buffer->getDevicePointer();
+            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
+            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomDouble, float, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -397,8 +397,8 @@ namespace functions {
             
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
-            Nd4jPointer state = buffer->getDevicePointer();
+            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
+            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomDouble, float16, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -415,8 +415,8 @@ namespace functions {
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
-            Nd4jPointer state = buffer->getDevicePointer();
+            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
+            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomDouble, double, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -435,8 +435,8 @@ namespace functions {
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
-            Nd4jPointer state = buffer->getDevicePointer();
+            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
+            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomTriple, float, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -454,8 +454,8 @@ namespace functions {
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
-            Nd4jPointer state = buffer->getDevicePointer();
+            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
+            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomTriple, float16, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -475,8 +475,8 @@ namespace functions {
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (stateHost);
-            Nd4jPointer state = buffer->getDevicePointer();
+            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
+            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomTriple, double, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
