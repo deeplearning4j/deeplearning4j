@@ -329,4 +329,9 @@ public abstract class BaseWrapperLayer implements Layer {
     public TrainingConfig getConfig() {
         return underlying.getConfig();
     }
+
+    @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        return underlying.updaterDivideByMinibatch(paramName);
+    }
 }

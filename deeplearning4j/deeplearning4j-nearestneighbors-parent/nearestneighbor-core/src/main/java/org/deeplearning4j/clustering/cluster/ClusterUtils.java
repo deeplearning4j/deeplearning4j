@@ -18,6 +18,7 @@ package org.deeplearning4j.clustering.cluster;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.info.ClusterInfo;
 import org.deeplearning4j.clustering.info.ClusterSetInfo;
@@ -36,8 +37,8 @@ import java.util.concurrent.ExecutorService;
  * Basic cluster utilities
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public class ClusterUtils {
-
 
     /** Classify the set of points base on cluster centers. This also adds each point to the ClusterSet */
     public static ClusterSetInfo classifyPoints(final ClusterSet clusterSet, List<Point> points,
@@ -54,8 +55,8 @@ public class ClusterUtils {
                             clusterSetInfo.getPointLocationChange().incrementAndGet();
                         clusterSetInfo.getClusterInfo(result.getCluster().getId()).getPointDistancesFromCenter()
                                         .put(point.getId(), result.getDistanceFromCenter());
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    } catch (Throwable t) {
+                        log.warn("Error classifying point", t);
                     }
                 }
             });
@@ -80,9 +81,8 @@ public class ClusterUtils {
                         final ClusterInfo clusterInfo = clusterSetInfo.getClusterInfo(cluster.getId());
                         refreshClusterCenter(cluster, clusterInfo);
                         deriveClusterInfoDistanceStatistics(clusterInfo);
-                    } catch (Exception e) {
-
-                        e.printStackTrace();
+                    } catch (Throwable t) {
+                        log.warn("Error refreshing cluster centers", t);
                     }
                 }
             });
@@ -144,10 +144,14 @@ public class ClusterUtils {
             final int i2 = i;
             tasks.add(new Runnable() {
                 public void run() {
-                    Point point = points.get(i2);
-                    double dist = clusterSet.isInverse() ? newCluster.getDistanceToCenter(point)
-                                    : Math.pow(newCluster.getDistanceToCenter(point), 2);
-                    dxs.putScalar(i2, clusterSet.isInverse() ? dist : dist);
+                    try {
+                        Point point = points.get(i2);
+                        double dist = clusterSet.isInverse() ? newCluster.getDistanceToCenter(point)
+                                : Math.pow(newCluster.getDistanceToCenter(point), 2);
+                        dxs.putScalar(i2, clusterSet.isInverse() ? dist : dist);
+                    } catch (Throwable t) {
+                        log.warn("Error computing squared distance from nearest cluster", t);
+                    }
                 }
             });
 
@@ -188,8 +192,12 @@ public class ClusterUtils {
             final Cluster cluster = clusterSet.getClusters().get(i);
             tasks.add(new Runnable() {
                 public void run() {
-                    info.getClustersInfos().put(cluster.getId(),
-                                    computeClusterInfos(cluster, clusterSet.getDistanceFunction()));
+                    try {
+                        info.getClustersInfos().put(cluster.getId(),
+                                computeClusterInfos(cluster, clusterSet.getDistanceFunction()));
+                    } catch (Throwable t) {
+                        log.warn("Error computing cluster set info", t);
+                    }
                 }
             });
         }
@@ -215,9 +223,8 @@ public class ClusterUtils {
                             info.getDistancesBetweenClustersCenters().put(fromCluster.getId(), toCluster.getId(),
                                             distance);
                         }
-                    } catch (Exception e) {
-
-                        e.printStackTrace();
+                    } catch (Throwable t) {
+                        log.warn("Error computing distances", t);
                     }
                 }
             });
@@ -439,9 +446,8 @@ public class ClusterUtils {
                         String pointId = fartherPoints.get(random.nextInt(rank));
                         Point point = cluster.removePoint(pointId);
                         clusterSet.addNewClusterWithCenter(point);
-                    } catch (Exception e) {
-
-                        e.printStackTrace();
+                    } catch (Throwable t) {
+                        log.warn("Error splitting clusters", t);
                     }
                 }
             });
@@ -463,8 +469,12 @@ public class ClusterUtils {
         for (final Cluster cluster : clusters) {
             tasks.add(new Runnable() {
                 public void run() {
-                    Point point = cluster.getPoints().remove(random.nextInt(cluster.getPoints().size()));
-                    clusterSet.addNewClusterWithCenter(point);
+                    try {
+                        Point point = cluster.getPoints().remove(random.nextInt(cluster.getPoints().size()));
+                        clusterSet.addNewClusterWithCenter(point);
+                    } catch (Throwable t) {
+                        log.warn("Error Splitting clusters (2)", t);
+                    }
                 }
             });
         }

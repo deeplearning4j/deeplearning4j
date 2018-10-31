@@ -222,33 +222,35 @@ public class KerasModelBuilder implements Cloneable, Closeable {
     public KerasModelBuilder modelHdf5Filename(String modelHdf5Filename)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException, IOException {
         checkForExistence(modelHdf5Filename);
-        try {
-            this.weightsArchive = this.trainingArchive = new Hdf5Archive(modelHdf5Filename);
-            this.weightsRoot = config.getTrainingWeightsRoot();
-            if (!this.weightsArchive.hasAttribute(config.getTrainingModelConfigAttribute()))
-                throw new InvalidKerasConfigurationException(
-                        "Model configuration attribute missing from " + modelHdf5Filename + " archive.");
-            String initialModelJson = this.weightsArchive.readAttributeAsJson(
-                    config.getTrainingModelConfigAttribute());
+        synchronized (Hdf5Archive.LOCK_OBJECT) {
+            try {
+                this.weightsArchive = this.trainingArchive = new Hdf5Archive(modelHdf5Filename);
+                this.weightsRoot = config.getTrainingWeightsRoot();
+                if (!this.weightsArchive.hasAttribute(config.getTrainingModelConfigAttribute()))
+                    throw new InvalidKerasConfigurationException(
+                            "Model configuration attribute missing from " + modelHdf5Filename + " archive.");
+                String initialModelJson = this.weightsArchive.readAttributeAsJson(
+                        config.getTrainingModelConfigAttribute());
 
-            String kerasVersion = this.weightsArchive.readAttributeAsFixedLengthString(
-                    config.getFieldKerasVersion(), 5);
-            Map<String, Object> modelMapper = KerasModelUtils.parseJsonString(initialModelJson);
-            modelMapper.put(config.getFieldKerasVersion(), kerasVersion);
+                String kerasVersion = this.weightsArchive.readAttributeAsFixedLengthString(
+                        config.getFieldKerasVersion(), 5);
+                Map<String, Object> modelMapper = KerasModelUtils.parseJsonString(initialModelJson);
+                modelMapper.put(config.getFieldKerasVersion(), kerasVersion);
 
-            int majorKerasVersion = Character.getNumericValue(kerasVersion.charAt(0));
-            if (majorKerasVersion == 2) {
-                String backend = this.weightsArchive.readAttributeAsString(config.getFieldBackend());
-                modelMapper.put(config.getFieldBackend(), backend);
+                int majorKerasVersion = Character.getNumericValue(kerasVersion.charAt(0));
+                if (majorKerasVersion == 2) {
+                    String backend = this.weightsArchive.readAttributeAsString(config.getFieldBackend());
+                    modelMapper.put(config.getFieldBackend(), backend);
+                }
+
+                this.modelJson = new ObjectMapper().writeValueAsString(modelMapper);
+                if (this.trainingArchive.hasAttribute(config.getTrainingTrainingConfigAttribute()))
+                    this.trainingJson = this.trainingArchive
+                            .readAttributeAsJson(config.getTrainingTrainingConfigAttribute());
+            } catch (Throwable t) {
+                close();
+                throw t;
             }
-
-            this.modelJson = new ObjectMapper().writeValueAsString(modelMapper);
-            if (this.trainingArchive.hasAttribute(config.getTrainingTrainingConfigAttribute()))
-                this.trainingJson = this.trainingArchive
-                        .readAttributeAsJson(config.getTrainingTrainingConfigAttribute());
-        } catch (Throwable t) {
-            close();
-            throw t;
         }
         return this;
     }

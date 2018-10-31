@@ -32,6 +32,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -272,13 +273,17 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
             if(meanCache == null || meanCache.length() < mean.length()){
                 meanCache = Nd4j.createUninitializedDetached((int)mean.length());
                 if(Nd4j.dataType() == DataBuffer.Type.HALF){
-                    meanCache = meanCache.convertToFloats();
+                    try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        meanCache = meanCache.convertToFloats();
+                    }
                 }
             }
             if(varCache == null || varCache.length() < mean.length()){
                 varCache = Nd4j.createUninitializedDetached((int)mean.length());
                 if(Nd4j.dataType() == DataBuffer.Type.HALF){
-                    varCache = varCache.convertToFloats();
+                    try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        varCache = varCache.convertToFloats();
+                    }
                 }
             }
             Pointer meanCacheData = allocator.getPointer(meanCache, context);
@@ -327,7 +332,13 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
     @Override
     public INDArray getVarCache() {
-        INDArray ret = varCache.mul(varCache).rdivi(1.0).subi(eps);
+        INDArray ret;
+        if(Nd4j.dataType() == DataBuffer.Type.HALF){
+            INDArray vc = varCache.convertToHalfs();
+            ret = vc.mul(vc).rdivi(1.0).subi(eps);
+        } else {
+            ret = varCache.mul(varCache).rdivi(1.0).subi(eps);
+        }
         if(Nd4j.dataType() == DataBuffer.Type.HALF){
             //Buffer is FP32
             return ret.convertToHalfs();

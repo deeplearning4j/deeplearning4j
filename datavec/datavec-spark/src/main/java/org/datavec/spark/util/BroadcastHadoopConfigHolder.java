@@ -26,6 +26,9 @@ public class BroadcastHadoopConfigHolder {
     private BroadcastHadoopConfigHolder(){ }
 
     public static Broadcast<SerializableHadoopConfig> get(JavaSparkContext sc){
+        if(config != null && !config.isValid() ){
+            config = null;
+        }
         if(config != null){
             return config;
         }
@@ -36,5 +39,4 @@ public class BroadcastHadoopConfigHolder {
         }
         return config;
     }
-
 }

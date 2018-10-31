@@ -485,6 +485,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        int idx = paramName.indexOf('_');
+        int layerIdx = Integer.parseInt(paramName.substring(0, idx));
+        String subName = paramName.substring(idx+1);
+        return getLayer(layerIdx).updaterDivideByMinibatch(subName);
+    }
+
+    @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
         Map<String, INDArray> currParamTable = paramTable();
         if (!currParamTable.keySet().equals(paramTable.keySet())) {

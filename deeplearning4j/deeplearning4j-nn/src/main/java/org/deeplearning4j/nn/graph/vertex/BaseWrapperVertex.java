@@ -200,4 +200,10 @@ public abstract class BaseWrapperVertex implements GraphVertex {
     public long numParams() {
         return underlying.numParams();
     }
+
+
+    @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        return underlying.updaterDivideByMinibatch(paramName);
+    }
 }

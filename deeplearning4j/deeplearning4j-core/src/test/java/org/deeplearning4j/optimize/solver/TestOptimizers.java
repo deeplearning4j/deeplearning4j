@@ -1060,5 +1060,10 @@ public class TestOptimizers extends BaseDL4JTest {
         public LayerHelper getHelper() {
             return null;
         }
+
+        @Override
+        public boolean updaterDivideByMinibatch(String paramName) {
+            return true;
+        }
     }
 }
