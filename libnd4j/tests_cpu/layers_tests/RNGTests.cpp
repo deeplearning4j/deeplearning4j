@@ -276,7 +276,7 @@ TEST_F(RNGTests, Test_Gaussian_2) {
 
     RandomLauncher::fillGaussian(_rngB, &x1, 1.0f, 2.0f);
 
-    auto op = new nd4j::ops::LegacyRandomOp(6);
+    auto op = new nd4j::ops::LegacyRandomOp(random::GaussianDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -296,7 +296,7 @@ TEST_F(RNGTests, Test_LogNorm_2) {
 
     RandomLauncher::fillLogNormal(_rngB, &x1, 1.0f, 2.0f);
 
-    auto op = new nd4j::ops::LegacyRandomOp(10);
+    auto op = new nd4j::ops::LegacyRandomOp(random::LogNormalDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -316,7 +316,7 @@ TEST_F(RNGTests, Test_TruncatedNorm_2) {
 
     RandomLauncher::fillTruncatedNormal(_rngB, &x1, 1.0f, 2.0f);
 
-    auto op = new nd4j::ops::LegacyRandomOp(11);
+    auto op = new nd4j::ops::LegacyRandomOp(random::TruncatedNormalDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -337,7 +337,7 @@ TEST_F(RNGTests, Test_Binomial_2) {
 
     RandomLauncher::fillBinomial(_rngB, &x1, 3, 0.5f);
 
-    auto op = new nd4j::ops::LegacyRandomOp(9);
+    auto op = new nd4j::ops::LegacyRandomOp(random::BinomialDistribution);
     auto result = op->execute(_rngA, {&input}, {0.5f}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -358,7 +358,7 @@ TEST_F(RNGTests, Test_Bernoulli_2) {
 
     RandomLauncher::fillBernoulli(_rngB, &x1, 0.5f);
 
-    auto op = new nd4j::ops::LegacyRandomOp(7);
+    auto op = new nd4j::ops::LegacyRandomOp(random::BernoulliDistribution);
     auto result = op->execute(_rngA, {&input}, {0.5f}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
