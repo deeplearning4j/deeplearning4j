@@ -2106,8 +2106,10 @@ void NDArray::applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, ND
             throw std::runtime_error("NDArray::applyScalarArr BoolOps: you can't use this method on String array!");
     if (target == nullptr || !target->isB())
         throw std::invalid_argument("NDArray::applyScalarArr bool method: target is nullptr or has not bool type!");
-    if (_dataType != scalar->_dataType)
+    if (_dataType != scalar->_dataType) {
+        nd4j_printf("This dtype: [%i]; scalar dtype: [%i]\n", this->_dataType, scalar->_dataType);
         throw std::invalid_argument("NDArray::applyScalarArr bool method: this and scalar arrays must have the same type!");
+    }
     NativeOpExcutioner::execScalarBool(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, scalar->_buffer, scalar->_shapeInfo, extraParams);
 }
 

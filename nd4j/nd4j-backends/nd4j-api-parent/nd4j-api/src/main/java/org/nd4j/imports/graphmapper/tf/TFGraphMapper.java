@@ -910,7 +910,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             if (tfTensor.getFloatValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
                 if(tfTensor.getFloatValCount() < 1)
-                    return Nd4j.scalar(0.0);
+                    return Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.FLOAT, 0.0f);
 
 
                 float val = tfTensor.getFloatVal(0);

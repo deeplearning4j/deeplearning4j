@@ -31,10 +31,15 @@ public class DataTypeAdapter implements AttributeAdapter {
         on.setValueFor(fieldFor,dtypeConv((DataType) inputAttributeValue));
     }
 
-    protected org.nd4j.linalg.api.buffer.DataType dtypeConv(DataType dataType) {
+    public static org.nd4j.linalg.api.buffer.DataType dtypeConv(DataType dataType) {
         val x = dataType.getNumber();
 
-        switch (x) {
+        return dtypeConv(x);
+    };
+
+
+    public static org.nd4j.linalg.api.buffer.DataType dtypeConv(int dataType) {
+        switch (dataType) {
             case 1: return org.nd4j.linalg.api.buffer.DataType.FLOAT;
             case 2: return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
             case 3: return org.nd4j.linalg.api.buffer.DataType.INT;
@@ -45,7 +50,7 @@ public class DataTypeAdapter implements AttributeAdapter {
             case 9: return org.nd4j.linalg.api.buffer.DataType.LONG;
             case 10: return org.nd4j.linalg.api.buffer.DataType.BOOL;
             case 19: return org.nd4j.linalg.api.buffer.DataType.HALF;
-            default: throw new UnsupportedOperationException("DataType isn't supported: " + dataType.name());
+            default: throw new UnsupportedOperationException("DataType isn't supported: " + dataType);
         }
     };
 }
