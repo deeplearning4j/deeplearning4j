@@ -84,49 +84,49 @@ void NativeOps::setTADThreshold(int num) {
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
+ * @param hX
+ * @param hXShapeInfo
  * @param extraParams
  */
 void NativeOps::execIndexReduceScalar(Nd4jPointer *extraPointers,
                                                 int opNum,
-                                                void *x,
-                                                Nd4jLong *xShapeInfo,
+                                                void *hX, Nd4jLong *hXShapeInfo,
+                                                void *dX, Nd4jLong *dXShapeInfo,
                                                 void *extraParams,
-                                                void *z,
-                                                Nd4jLong *zShapeInfo) {
-    NativeOpExcutioner::execIndexReduceScalar(opNum, x, xShapeInfo, extraParams, z, zShapeInfo);
+                                                void *hZ, Nd4jLong *hZShapeInfo,
+                                                void *dZ, Nd4jLong *dZShapeInfo) {
+    NativeOpExcutioner::execIndexReduceScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo);
 }
 
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
+ * @param hX
+ * @param hXShapeInfo
  * @param extraParams
- * @param result
- * @param resultShapeInfo
+ * @param hZ
+ * @param hZShapeInfo
  * @param dimension
  * @param dimensionLength
  */
 void  NativeOps::execIndexReduce(Nd4jPointer *extraPointers,int opNum,
-                                        void *x,
-                                        Nd4jLong *xShapeInfo,
+                                        void *hX, Nd4jLong *hXShapeInfo,
+                                        void *dX, Nd4jLong *dXShapeInfo,
                                         void *extraParams,
-                                        void *vresult,
-                                        Nd4jLong *resultShapeInfo,
+                                        void *hZ, Nd4jLong *hZShapeInfo,
+                                        void *dZ, Nd4jLong *dZShapeInfo,
                                         int *dimension,
                                         int dimensionLength) {
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    auto result = reinterpret_cast<Nd4jLong*>(vresult);
+    auto hz = reinterpret_cast<Nd4jLong*>(hZ);
 
     NativeOpExcutioner::execIndexReduce(opNum,
-            x,
-            xShapeInfo,
+            hX,
+            hXShapeInfo,
             extraParams,
-            result,
-            resultShapeInfo,
+            hz,
+            hZShapeInfo,
             dimension,
             dimensionLength,
             tadShapeInfo,
@@ -137,59 +137,61 @@ void  NativeOps::execIndexReduce(Nd4jPointer *extraPointers,int opNum,
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
- * @param y
- * @param yShapeInfo
- * @param result
- * @param resultShapeInfo
+ * @param hX
+ * @param hXShapeInfo
+ * @param hY
+ * @param hYShapeInfo
+ * @param hZ
+ * @param hZShapeInfo
  * @param dimension
  * @param dimensionLength
  */
 void NativeOps::execBroadcast(Nd4jPointer *extraPointers,
                                       int opNum,
-                                      void *x,
-                                      Nd4jLong *xShapeInfo,
-                                      void *y,
-                                      Nd4jLong *yShapeInfo,
-                                      void *result,
-                                      Nd4jLong *resultShape,
+                                      void *hX, Nd4jLong *hXShapeInfo,
+                                      void *dX, Nd4jLong *dXShapeInfo,
+                                      void *hY, Nd4jLong *hYShapeInfo,
+                                      void *dY, Nd4jLong *dYShapeInfo,
+                                      void *hZ, Nd4jLong *hZShapeInfo,
+                                      void *dZ, Nd4jLong *dZShapeInfo,
                                       int *dimension, int dimensionLength) {
+
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
     auto tadShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
     auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
     NativeOpExcutioner::execBroadcast(
             opNum,
-            x,
-            xShapeInfo,
-            y,
-            yShapeInfo,
-            result, resultShape,
+            hX,
+            hXShapeInfo,
+            hY,
+            hYShapeInfo,
+            hZ, hZShapeInfo,
             dimension,
             dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
 
 void NativeOps::execBroadcastBool(Nd4jPointer *extraPointers,
                               int opNum,
-                              void *x,
-                              Nd4jLong *xShapeInfo,
-                              void *y,
-                              Nd4jLong *yShapeInfo,
-                              void *result,
-                              Nd4jLong *resultShape,
+                              void *hX, Nd4jLong *hXShapeInfo,
+                              void *dX, Nd4jLong *dXShapeInfo,
+                              void *hY, Nd4jLong *hYShapeInfo,
+                              void *dY, Nd4jLong *dYShapeInfo,
+                              void *hZ, Nd4jLong *hZShapeInfo,
+                              void *dZ, Nd4jLong *dZShapeInfo,
                               int *dimension, int dimensionLength) {
+
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
     auto tadShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
     auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
     NativeOpExcutioner::execBroadcastBool(
             opNum,
-            x,
-            xShapeInfo,
-            y,
-            yShapeInfo,
-            result, resultShape,
+            hX,
+            hXShapeInfo,
+            hY,
+            hYShapeInfo,
+            hZ, hZShapeInfo,
             dimension,
             dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
@@ -197,164 +199,164 @@ void NativeOps::execBroadcastBool(Nd4jPointer *extraPointers,
 /**
  *
  * @param opNum
- * @param dx
- * @param xShapeInfo
- * @param y
- * @param yShapeInfo
- * @param result
- * @param resultShapeInfo
+ * @param hX
+ * @param hXShapeInfo
+ * @param hY
+ * @param hYShapeInfo
+ * @param hZ
+ * @param hZShapeInfo
  * @param extraParams
  * @param n
  */
 void NativeOps::execPairwiseTransform(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *dx,
-        Nd4jLong *xShapeInfo,
-        void *y,
-        Nd4jLong *yShapeInfo,
-        void *result,
-        Nd4jLong *resultShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hY, Nd4jLong *hYShapeInfo,
+        void *dY, Nd4jLong *dYShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
     NativeOpExcutioner::execPairwiseTransform(
             opNum,
-            dx,
-            xShapeInfo,
-            y,
-            yShapeInfo,
-            result,
-            resultShapeInfo,
+            hX,
+            hXShapeInfo,
+            hY,
+            hYShapeInfo,
+            hZ,
+            hZShapeInfo,
             extraParams);
 }
 
 void NativeOps::execPairwiseTransformBool(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *dx,
-        Nd4jLong *xShapeInfo,
-        void *y,
-        Nd4jLong *yShapeInfo,
-        void *result,
-        Nd4jLong *resultShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hY, Nd4jLong *hYShapeInfo,
+        void *dY, Nd4jLong *dYShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
     NativeOpExcutioner::execPairwiseBoolTransform(
             opNum,
-            dx,
-            xShapeInfo,
-            y,
-            yShapeInfo,
-            result,
-            resultShapeInfo,
+            hX,
+            hXShapeInfo,
+            hY,
+            hYShapeInfo,
+            hZ,
+            hZShapeInfo,
             extraParams);
 }
 
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
+ * @param hX
+ * @param hXShapeInfo
  * @param extraParams
- * @param result
- * @param resultShapeInfo
+ * @param hZ
+ * @param hZShapeInfo
  */
 void NativeOps::execReduceFloat(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *x,
-        Nd4jLong *xShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
         void *extraParams,
-        void *result,
-        Nd4jLong *resultShapeInfo) {
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo) {
     NativeOpExcutioner::execReduceFloatScalar(
             opNum,
-            x,
-            xShapeInfo,
+            hX,
+            hXShapeInfo,
             extraParams,
-            result,
-            resultShapeInfo);
+            hZ,
+            hZShapeInfo);
 
 }
 
 void NativeOps::execReduceSame(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *x,
-        Nd4jLong *xShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
         void *extraParams,
-        void *result,
-        Nd4jLong *resultShapeInfo) {
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo) {
     NativeOpExcutioner::execReduceSameScalar(
             opNum,
-            x,
-            xShapeInfo,
+            hX,
+            hXShapeInfo,
             extraParams,
-            result,
-            resultShapeInfo);
+            hZ,
+            hZShapeInfo);
 
 }
 
 void NativeOps::execReduceBool(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *x,
-        Nd4jLong *xShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
         void *extraParams,
-        void *result,
-        Nd4jLong *resultShapeInfo) {
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo) {
     NativeOpExcutioner::execReduceBoolScalar(
             opNum,
-            x,
-            xShapeInfo,
+            hX,
+            hXShapeInfo,
             extraParams,
-            result,
-            resultShapeInfo);
+            hZ,
+            hZShapeInfo);
 
 }
 
 void NativeOps::execReduceLong(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *x,
-        Nd4jLong *xShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
         void *extraParams,
-        void *result,
-        Nd4jLong *resultShapeInfo) {
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo) {
     NativeOpExcutioner::execReduceLongScalar(
             opNum,
-            x,
-            xShapeInfo,
+            hX,
+            hXShapeInfo,
             extraParams,
-            result,
-            resultShapeInfo);
+            hZ,
+            hZShapeInfo);
 
 }
 
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
+ * @param hX
+ * @param hXShapeInfo
  * @param extraParams
- * @param result
- * @param resultShapeInfo
+ * @param hZ
+ * @param hZShapeInfo
  */
 void NativeOps::execReduceFloat(Nd4jPointer *extraPointers,
                                    int opNum,
-                                   void *x,
-                                   Nd4jLong *xShapeInfo,
+                                   void *hX, Nd4jLong *hXShapeInfo,
+                                   void *dX, Nd4jLong *dXShapeInfo,
                                    void *extraParams,
-                                   void *result,
-                                   Nd4jLong *resultShapeInfo,
+                                   void *hZ, Nd4jLong *hZShapeInfo,
+                                   void *dZ, Nd4jLong *dZShapeInfo,
                                    int *dimension,
                                    int dimensionLength) {
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
     NativeOpExcutioner::execReduceFloat(opNum,
-                                           x,
-                                           xShapeInfo,
+                                           hX,
+                                           hXShapeInfo,
                                            extraParams,
-                                           result,
-                                           resultShapeInfo,
+                                           hZ,
+                                           hZShapeInfo,
                                            dimension,
                                            dimensionLength,
                                            tadShapeInfo,
@@ -363,21 +365,22 @@ void NativeOps::execReduceFloat(Nd4jPointer *extraPointers,
 
 void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
                                 int opNum,
-                                void *x,
-                                Nd4jLong *xShapeInfo,
+                                void *hX, Nd4jLong *hXShapeInfo,
+                                void *dX, Nd4jLong *dXShapeInfo,
                                 void *extraParams,
-                                void *result,
-                                Nd4jLong *resultShapeInfo,
+                                void *hZ, Nd4jLong *hZShapeInfo,
+                                void *dZ, Nd4jLong *dZShapeInfo,
                                 int *dimension,
                                 int dimensionLength) {
+    
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
     NativeOpExcutioner::execReduceBool(opNum,
-                                        x,
-                                        xShapeInfo,
+                                        hX,
+                                        hXShapeInfo,
                                         extraParams,
-                                        result,
-                                        resultShapeInfo,
+                                        hZ,
+                                        hZShapeInfo,
                                         dimension,
                                         dimensionLength,
                                         tadShapeInfo,
@@ -386,21 +389,22 @@ void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
 
 void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
                                 int opNum,
-                                void *x,
-                                Nd4jLong *xShapeInfo,
+                                void *hX, Nd4jLong *hXShapeInfo,
+                                void *dX, Nd4jLong *dXShapeInfo,
                                 void *extraParams,
-                                void *result,
-                                Nd4jLong *resultShapeInfo,
+                                void *hZ, Nd4jLong *hZShapeInfo,
+                                void *dZ, Nd4jLong *dZShapeInfo,
                                 int *dimension,
                                 int dimensionLength) {
+
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
     NativeOpExcutioner::execReduceSame(opNum,
-                                        x,
-                                        xShapeInfo,
+                                        hX,
+                                        hXShapeInfo,
                                         extraParams,
-                                        result,
-                                        resultShapeInfo,
+                                        hZ,
+                                        hZShapeInfo,
                                         dimension,
                                         dimensionLength,
                                         tadShapeInfo,
@@ -409,21 +413,21 @@ void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
 
 void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
                                 int opNum,
-                                void *x,
-                                Nd4jLong *xShapeInfo,
+                                void *hX, Nd4jLong *hXShapeInfo,
+                                void *dX, Nd4jLong *dXShapeInfo,
                                 void *extraParams,
-                                void *result,
-                                Nd4jLong *resultShapeInfo,
+                                void *hZ, Nd4jLong *hZShapeInfo,
+                                void *dZ, Nd4jLong *dZShapeInfo,
                                 int *dimension,
                                 int dimensionLength) {
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
     NativeOpExcutioner::execReduceLong(opNum,
-                                        x,
-                                        xShapeInfo,
+                                        hX,
+                                        hXShapeInfo,
                                         extraParams,
-                                        result,
-                                        resultShapeInfo,
+                                        hZ,
+                                        hZShapeInfo,
                                         dimension,
                                         dimensionLength,
                                         tadShapeInfo,
@@ -433,78 +437,80 @@ void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
+ * @param hX
+ * @param hXShapeInfo
  * @param extraParamsVals
- * @param y
- * @param yShapeInfo
- * @param result
- * @param resultShapeInfo
+ * @param hY
+ * @param hYShapeInfo
+ * @param hZ
+ * @param hZShapeInfo
  */
 void NativeOps::execReduce3(Nd4jPointer *extraPointers,
                                     int opNum,
-                                    void *x,
-                                    Nd4jLong *xShapeInfo,
+                                    void *hX, Nd4jLong *hXShapeInfo,
+                                    void *dX, Nd4jLong *dXShapeInfo,
                                     void *extraParams,
-                                    void *y,
-                                    Nd4jLong *yShapeInfo,
-                                    void *result,
-                                    Nd4jLong *resultShapeInfo) {
-    NativeOpExcutioner::execReduce3(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo);
+                                    void *hY, Nd4jLong *hYShapeInfo,
+                                    void *dY, Nd4jLong *dYShapeInfo,
+                                    void *hZ, Nd4jLong *hZShapeInfo,
+                                    void *dZ, Nd4jLong *dZShapeInfo) {
+
+    NativeOpExcutioner::execReduce3(opNum, hX, hXShapeInfo, extraParams, hY, hYShapeInfo, hZ, hZShapeInfo);
 }
 
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
+ * @param hX
+ * @param hXShapeInfo
  * @param extraParamsVals
- * @param y
- * @param yShapeInfo
+ * @param hY
+ * @param hYShapeInfo
  */
 void NativeOps::execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
-                                            void *x,
-                                            Nd4jLong *xShapeInfo,
+                                            void *hX, Nd4jLong *hXShapeInfo,
+                                            void *dX, Nd4jLong *dXShapeInfo,
                                             void *extraParams,
-                                            void *y,
-                                            Nd4jLong *yShapeInfo,
-                                            void *z,
-                                            Nd4jLong *zShapeInfo) {
-    NativeOpExcutioner::execReduce3Scalar(opNum,x,xShapeInfo,extraParams,y,yShapeInfo, z, zShapeInfo);
+                                            void *hY, Nd4jLong *hYShapeInfo,
+                                            void *dY, Nd4jLong *dYShapeInfo,
+                                            void *hZ, Nd4jLong *hZShapeInfo,
+                                            void *dZ, Nd4jLong *dZShapeInfo) {
+
+    NativeOpExcutioner::execReduce3Scalar(opNum,hX,hXShapeInfo,extraParams,hY,hYShapeInfo, hZ, hZShapeInfo);
 }
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
+ * @param hX
+ * @param hXShapeInfo
  * @param extraParamsVals
- * @param y
- * @param yShapeInfo
- * @param result
- * @param resultShapeInfo
+ * @param hY
+ * @param hYShapeInfo
+ * @param hZ
+ * @param hZShapeInfo
  * @param dimension
  * @param dimensionLength
  */
 void NativeOps::execReduce3(Nd4jPointer *extraPointers,
                                     int opNum,
-                                    void *x,
-                                    Nd4jLong *xShapeInfo,
+                                    void *hX, Nd4jLong *hXShapeInfo,
+                                    void *dX, Nd4jLong *dXShapeInfo,
                                     void *extraParams,
-                                    void *y,
-                                    Nd4jLong *yShapeInfo,
-                                    void *result,
-                                    Nd4jLong *resultShapeInfo,
+                                    void *hY, Nd4jLong *hYShapeInfo,
+                                    void *dY, Nd4jLong *dYShapeInfo,
+                                    void *hZ, Nd4jLong *hZShapeInfo,
+                                    void *dZ, Nd4jLong *dZShapeInfo,
                                     int *dimension,
                                     int dimensionLength) {
 
     if (extraPointers == nullptr || extraPointers[2] == 0) {
-        NativeOpExcutioner::execReduce3(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength);
+        NativeOpExcutioner::execReduce3(opNum, hX, hXShapeInfo, extraParams, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength);
     } else {
         // going tad-way
         auto tadShapeInfo = reinterpret_cast<Nd4jLong *> (extraPointers[0]);
         auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
 
-        NativeOpExcutioner::execReduce3TAD(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets);
+        NativeOpExcutioner::execReduce3TAD(opNum, hX, hXShapeInfo, extraParams, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets);
     }
 
 }
@@ -512,134 +518,134 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
- * @param result
- * @param resultShapeInfo
- * @param scalar
+ * @param hX
+ * @param hXShapeInfo
+ * @param hZ
+ * @param hZShapeInfo
+ * @param hScalar
  * @param extraParams
  * @param n
  */
 void NativeOps::execScalar(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *x,
-        Nd4jLong *xShapeInfo,
-        void *result,
-        Nd4jLong *resultShapeInfo,
-        void *scalar,
-        Nd4jLong *scalarShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
+        void *hScalar, Nd4jLong *hScalarShapeInfo,
+        void *dScalar, Nd4jLong *dScalarShapeInfo,
         void *extraParams) {
     NativeOpExcutioner::execScalar(
             opNum,
-            x,
-            xShapeInfo,
-            result,
-            resultShapeInfo,
-            scalar,
-            scalarShapeInfo,
+            hX,
+            hXShapeInfo,
+            hZ,
+            hZShapeInfo,
+            hScalar,
+            hScalarShapeInfo,
             extraParams);
 }
 
 void NativeOps::execScalarBool(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *x,
-        Nd4jLong *xShapeInfo,
-        void *result,
-        Nd4jLong *resultShapeInfo,
-        void *scalar,
-        Nd4jLong *scalarShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
+        void *hScalar, Nd4jLong *hScalarShapeInfo,
+        void *dScalar, Nd4jLong *dScalarShapeInfo,
         void *extraParams) {
     NativeOpExcutioner::execScalarBool(
             opNum,
-            x,
-            xShapeInfo,
-            result,
-            resultShapeInfo,
-            scalar,
-            scalarShapeInfo,
+            hX,
+            hXShapeInfo,
+            hZ,
+            hZShapeInfo,
+            hScalar,
+            hScalarShapeInfo,
             extraParams);
 }
 
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
+ * @param hX
+ * @param hXShapeInfo
  * @param extraParams
  */
 void NativeOps::execSummaryStatsScalar(Nd4jPointer *extraPointers,
         int opNum,
-        void *x,
-        Nd4jLong *xShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
         void *extraParams,
-        void *result,
-        Nd4jLong *resultShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
         bool biasCorrected) {
     NativeOpExcutioner::execSummaryStatsScalar(
             opNum,
-            x,
-            xShapeInfo,
+            hX,
+            hXShapeInfo,
             extraParams,
-            result,
-            resultShapeInfo,
+            hZ,
+            hZShapeInfo,
             biasCorrected);
 }
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
+ * @param hX
+ * @param hXShapeInfo
  * @param extraParams
- * @param result
- * @param resultShapeInfo
+ * @param hZ
+ * @param hZShapeInfo
  */
 void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
                                          int opNum,
-                                         void *x,
-                                         Nd4jLong *xShapeInfo,
+                                         void *hX, Nd4jLong *hXShapeInfo,
+                                         void *dX, Nd4jLong *dXShapeInfo,
                                          void *extraParams,
-                                         void *result,
-                                         Nd4jLong *resultShapeInfo,
+                                         void *hZ, Nd4jLong *hZShapeInfo,
+                                         void *dZ, Nd4jLong *dZShapeInfo,
                                          bool biasCorrected) {
     NativeOpExcutioner::execSummaryStats(
             opNum,
-            x,
-            xShapeInfo,
+            hX,
+            hXShapeInfo,
             extraParams,
-            result,
-            resultShapeInfo,
+            hZ,
+            hZShapeInfo,
             biasCorrected);
 }
 /**
  *
  * @param opNum
- * @param x
- * @param xShapeInfo
+ * @param hX
+ * @param hXShapeInfo
  * @param extraParams
- * @param result
- * @param resultShapeInfo
+ * @param hZ
+ * @param hZShapeInfo
  * @param dimension
  * @param dimensionLength
  */
 void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
                                          int opNum,
-                                         void *x,
-                                         Nd4jLong *xShapeInfo,
+                                         void *hX, Nd4jLong *hXShapeInfo,
+                                         void *dX, Nd4jLong *dXShapeInfo,
                                          void *extraParams,
-                                         void *result,
-                                         Nd4jLong *resultShapeInfo,
+                                         void *hZ, Nd4jLong *hZShapeInfo,
+                                         void *dZ, Nd4jLong *dZShapeInfo,
                                          int *dimension,
                                          int dimensionLength,
                                          bool biasCorrected) {
     NativeOpExcutioner::execSummaryStats(
             opNum,
-            x,
-            xShapeInfo,
+            hX,
+            hXShapeInfo,
             extraParams,
-            result,
-            resultShapeInfo,
+            hZ,
+            hZShapeInfo,
             dimension,
             dimensionLength,
             biasCorrected);
@@ -649,30 +655,30 @@ void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
 /**
  *
  * @param opNum
- * @param dx
- * @param xShapeInfo
- * @param result
- * @param resultShapeInfo
+ * @param hX
+ * @param hXShapeInfo
+ * @param hZ
+ * @param hZShapeInfo
  * @param extraParams
  * @param n
  */
 void NativeOps::execTransformFloat(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *dx,
-        Nd4jLong *xShapeInfo,
-        void *result,
-        Nd4jLong *resultShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformFloat(
             opNum,
-            dx,
-            xShapeInfo,
-            result,
-            resultShapeInfo,
+            hX,
+            hXShapeInfo,
+            hZ,
+            hZShapeInfo,
             extraParams,
             tadShapeInfo,
             tadOffsets);
@@ -681,20 +687,20 @@ void NativeOps::execTransformFloat(
 void NativeOps::execTransformSame(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *dx,
-        Nd4jLong *xShapeInfo,
-        void *result,
-        Nd4jLong *resultShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformSame(
             opNum,
-            dx,
-            xShapeInfo,
-            result,
-            resultShapeInfo,
+            hX,
+            hXShapeInfo,
+            hZ,
+            hZShapeInfo,
             extraParams,
             tadShapeInfo,
             tadOffsets);
@@ -703,20 +709,20 @@ void NativeOps::execTransformSame(
 void NativeOps::execTransformBool(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *dx,
-        Nd4jLong *xShapeInfo,
-        void *result,
-        Nd4jLong *resultShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformBool(
             opNum,
-            dx,
-            xShapeInfo,
-            result,
-            resultShapeInfo,
+            hX,
+            hXShapeInfo,
+            hZ,
+            hZShapeInfo,
             extraParams,
             tadShapeInfo,
             tadOffsets);
@@ -725,20 +731,20 @@ void NativeOps::execTransformBool(
 void NativeOps::execTransformStrict(
         Nd4jPointer *extraPointers,
         int opNum,
-        void *dx,
-        Nd4jLong *xShapeInfo,
-        void *result,
-        Nd4jLong *resultShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformStrict(
             opNum,
-            dx,
-            xShapeInfo,
-            result,
-            resultShapeInfo,
+            hX,
+            hXShapeInfo,
+            hZ,
+            hZShapeInfo,
             extraParams,
             tadShapeInfo,
             tadOffsets);
@@ -746,13 +752,13 @@ void NativeOps::execTransformStrict(
 
 void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
                                      int opNum,
-                                     void *x,
-                                     Nd4jLong *xInfo,
+                                     void *hX, Nd4jLong *hXShapeInfo,
+                                     void *dX, Nd4jLong *dXShapeInfo,
                                      void *extraParamsVals,
-                                     void *y,
-                                     Nd4jLong *yInfo,
-                                     void *result,
-                                     Nd4jLong *resultShapeInfoBuffer,
+                                     void *hY, Nd4jLong *hYShapeInfo,
+                                     void *dY, Nd4jLong *dYShapeInfo,
+                                     void *hZ, Nd4jLong *hZShapeInfo,
+                                     void *dZ, Nd4jLong *dZShapeInfo,
                                      int *dimension,
                                      int dimensionLength,
                                      Nd4jLong *xTadShapeInfo,
@@ -760,7 +766,7 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
                                      Nd4jLong *yTadShapeInfo,
                                      Nd4jLong *yOffsets) {
 
-    NativeOpExcutioner::execReduce3All(opNum, x, xInfo, extraParamsVals, y, yInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+    NativeOpExcutioner::execReduce3All(opNum, hX, hXShapeInfo, extraParamsVals, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
 }
 
 
@@ -769,11 +775,11 @@ void flattenGeneric(Nd4jPointer *extraPointers,
                     int offset,
                     char order,
                     void *vresult,
-                    Nd4jLong *resultShapeInfo,
+                    Nd4jLong *hZShapeInfo,
                     void *vinput,
                     Nd4jLong *inputShapeInfo) {
 
-    auto result = reinterpret_cast<T *>(vresult);
+    auto hZ = reinterpret_cast<T *>(vresult);
     auto input = reinterpret_cast<T *>(vinput);
 
     int numOnes = 0;
@@ -787,10 +793,10 @@ void flattenGeneric(Nd4jPointer *extraPointers,
 
 
     //start at the given offset
-    result += offset;
+    hZ += offset;
     char inputOrder = shape::order(inputShapeInfo);
     auto len = shape::length(inputShapeInfo);
-    auto resultEleStride = shape::elementWiseStride(resultShapeInfo);
+    auto resultEleStride = shape::elementWiseStride(hZShapeInfo);
     auto inputEleStride = shape::elementWiseStride(inputShapeInfo);
     Nd4jLong numTads, stride;
     int dimension, dimensionLength;
@@ -816,19 +822,19 @@ void flattenGeneric(Nd4jPointer *extraPointers,
 
     if (inputOrder == order) {
         if (resultEleStride == 1 && inputEleStride == 1) {
-            memcpy(result, input, len* sizeof(T));
+            memcpy(hZ, input, len* sizeof(T));
         }
         else if (resultEleStride >= 1 && inputEleStride >= 1) {
             if (len < ELEMENT_THRESHOLD) {
 #pragma omp simd
                 for (int i = 0; i < len; i++) {
-                    result[i * resultEleStride] = input[i * inputEleStride];
+                    hZ[i * resultEleStride] = input[i * inputEleStride];
                 }
             }
             else {
 #pragma omp parallel for simd
                 for (int i = 0; i < len; i++) {
-                    result[i * resultEleStride] = input[i * inputEleStride];
+                    hZ[i * resultEleStride] = input[i * inputEleStride];
                 }
             }
         }
@@ -836,12 +842,12 @@ void flattenGeneric(Nd4jPointer *extraPointers,
             int idx = 0;
             Nd4jLong coord[MAX_RANK];
 
-            // FIXME: result[idx++] is bad idea, because of possible negative EWS
+            // FIXME: hZ[idx++] is bad idea, because of possible negative EWS
             if(order == 'f') {
                 for(int i = 0; i < len; i++) {
                     shape::ind2sub(rank, xShape, i, coord);
                     auto offset = shape::getOffset(0,xShape,xStride,coord,rank);
-                    result[idx++] = input[offset];
+                    hZ[idx++] = input[offset];
 
                 }
             }
@@ -849,7 +855,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
                 for(int i = 0; i < len; i++) {
                     shape::ind2subC(rank, xShape, i, coord);
                     auto offset = shape::getOffset(0,xShape,xStride,coord,rank);
-                    result[idx++] = input[offset];
+                    hZ[idx++] = input[offset];
 
                 }
             }
@@ -896,7 +902,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
             for( int j = 0; j < tadShape; j++) {
 
                 // TAD are returned in C ordering always
-                result[resultOffset + j] = input[tadOffset + j * stride];
+                hZ[resultOffset + j] = input[tadOffset + j * stride];
 
             }
         }
@@ -914,13 +920,13 @@ void NativeOps::concat(
         int numArrays,
         Nd4jPointer *data,
         Nd4jPointer *inputShapeInfo,
-        void *result,
-        Nd4jLong *resultShapeInfo,
+        void *hZ,
+        Nd4jLong *hZShapeInfo,
         Nd4jPointer *tadPointers,
         Nd4jPointer *offsetPointers) {
-    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(zType, nd4j::SpecialMethods, ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(zType, nd4j::SpecialMethods, ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, hZ, hZShapeInfo), LIBND4J_TYPES);
 }
 
 /**
@@ -933,14 +939,14 @@ void NativeOps::specialConcat(
         int numArrays,
         Nd4jPointer *data,
         Nd4jPointer *inputShapeInfo,
-        void *result,
-        Nd4jLong *resultShapeInfo,
+        void *hZ,
+        Nd4jLong *hZShapeInfo,
         Nd4jPointer *tadPointers,
         Nd4jPointer *offsetPointers) {
 
-    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(zType, nd4j::SpecialMethods, ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, result, resultShapeInfo), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(zType, nd4j::SpecialMethods, ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, hZ, hZShapeInfo), LIBND4J_TYPES);
 }
 
 /**
@@ -949,8 +955,8 @@ void NativeOps::specialConcat(
 * in a particular order
 * @param offset the offset of the array to start at
 * @param order the order
-* @param result the result array
-* @param resultShapeInfo the shape info for te array
+* @param hZ the hZ array
+* @param hZShapeInfo the shape info for te array
 * @param input the input for the array
 * @param inputShapeInfo the shape information for that array
 */
@@ -958,13 +964,13 @@ void NativeOps::flatten(
         Nd4jPointer *extraPointers,
         int offset,
         char order,
-        void *result,
-        Nd4jLong *resultShapeInfo,
+        void *hZ,
+        Nd4jLong *hZShapeInfo,
         void *input,
         Nd4jLong *inputShapeInfo) {
     auto xType = nd4j::ArrayOptions::dataType(inputShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, flattenGeneric, (extraPointers, offset, order, result, resultShapeInfo, input, inputShapeInfo), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, flattenGeneric, (extraPointers, offset, order, hZ, hZShapeInfo, input, inputShapeInfo), LIBND4J_TYPES);
 }
 
 /**
@@ -1134,9 +1140,9 @@ void NativeOps::setGridLimit(int gridSize) {
     // no-op
 }
 
-void NativeOps::tadOnlyShapeInfo(Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *target, Nd4jLong *offsets) {
+void NativeOps::tadOnlyShapeInfo(Nd4jLong *hXShapeInfo, int *dimension, int dimensionLength, Nd4jLong *target, Nd4jLong *offsets) {
     shape::TAD tad;
-    tad.init(xShapeInfo, dimension, dimensionLength);
+    tad.init(hXShapeInfo, dimension, dimensionLength);
     //tad->setOutputBuffer(target);
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
@@ -1158,17 +1164,17 @@ Nd4jPointer NativeOps::getConstantSpace() {
 
 template<typename T>
 void pullRowsGeneric(void *vx,
-                     Nd4jLong *xShapeInfo,
+                     Nd4jLong *hXShapeInfo,
                      void *vz,
-                     Nd4jLong *zShapeInfo,
+                     Nd4jLong *hZShapeInfo,
                      const int n,
                      Nd4jLong *indexes,
                      Nd4jLong *tadShapeInfo,
                      Nd4jLong *tadOffsets,
                      Nd4jLong *zTadShapeInfo,
                      Nd4jLong *zTadOffsets) {
-    auto x = reinterpret_cast<T *>(vx);
-    auto z = reinterpret_cast<T *>(vz);
+    auto hX = reinterpret_cast<T *>(vx);
+    auto hZ = reinterpret_cast<T *>(vz);
 
     const auto xEWS = shape::elementWiseStride(tadShapeInfo);
     const auto zEWS = shape::elementWiseStride(zTadShapeInfo);
@@ -1183,8 +1189,8 @@ void pullRowsGeneric(void *vx,
         auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
         auto zTadOffsetForBlock = zTadOffsets[idx];
 
-        auto rX = x + xTadOffsetForBlock;
-        auto rZ = z + zTadOffsetForBlock;
+        auto rX = hX + xTadOffsetForBlock;
+        auto rZ = hZ + zTadOffsetForBlock;
 
         if (xEWS == 1 && zEWS == 1) {
 
@@ -1215,63 +1221,63 @@ void pullRowsGeneric(void *vx,
 
                 auto xOffset = shape::getOffset(xTadOffsetForBlock, xShape, xStride, xCoord, tadRank);
                 auto zOffset = shape::getOffset(zTadOffsetForBlock, zShape, zStride, zCoord, zRank);
-                z[zOffset] = x[xOffset];
+                hZ[zOffset] = hX[xOffset];
             }
         }
     }
 }
 
 void NativeOps::pullRows(Nd4jPointer *extraPointers,
-        void *x,
-        Nd4jLong *xShapeInfo,
-        void *z,
-        Nd4jLong *zShapeInfo,
+        void *hX,
+        Nd4jLong *hXShapeInfo,
+        void *hZ,
+        Nd4jLong *hZShapeInfo,
         Nd4jLong n,
         Nd4jLong *indexes,
         Nd4jLong *tadShapeInfo,
         Nd4jLong *tadOffsets,
         Nd4jLong *zTadShapeInfo,
         Nd4jLong *zTadOffsets) {
-    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, pullRowsGeneric, (x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, pullRowsGeneric, (hX, hXShapeInfo, hZ, hZShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets), LIBND4J_TYPES);
 }
 
 template<typename T>
 void tearGeneric(void *vx,
-        Nd4jLong *xShapeInfo,
+        Nd4jLong *hXShapeInfo,
         Nd4jPointer *targets,
-        Nd4jLong *zShapeInfo,
+        Nd4jLong *hZShapeInfo,
         Nd4jLong *tadShapeInfo,
         Nd4jLong *tadOffsets) {
 
-    auto x = reinterpret_cast<T *>(vx);
+    auto hX = reinterpret_cast<T *>(vx);
 
     const auto tadLength = shape::length(tadShapeInfo);
     auto tadEWS = shape::elementWiseStride(tadShapeInfo);
-    auto zEWS = shape::elementWiseStride(zShapeInfo);
+    auto zEWS = shape::elementWiseStride(hZShapeInfo);
     auto tadRank = shape::rank(tadShapeInfo);
-    auto zRank = shape::rank(zShapeInfo);
+    auto zRank = shape::rank(hZShapeInfo);
     auto tadShape = shape::shapeOf(tadShapeInfo);
     auto tadStride = shape::stride(tadShapeInfo);
-    auto zShape = shape::shapeOf(zShapeInfo);
-    auto zStride = shape::stride(zShapeInfo);
-    auto numTads = shape::length(xShapeInfo) / tadLength;
+    auto zShape = shape::shapeOf(hZShapeInfo);
+    auto zStride = shape::stride(hZShapeInfo);
+    auto numTads = shape::length(hXShapeInfo) / tadLength;
 
 #pragma omp parallel for schedule(guided) default(shared)
     for (Nd4jLong i = 0; i < numTads; i++) {
-        auto z = reinterpret_cast<T *>(targets[i]);
-        auto s = x + tadOffsets[i];
+        auto hZ = reinterpret_cast<T *>(targets[i]);
+        auto s = hX + tadOffsets[i];
 
         if (zEWS == 1 && tadEWS == 1) {
 #pragma omp simd
             for (Nd4jLong j = 0; j < tadLength; j++) {
-                z[j] = s[j];
+                hZ[j] = s[j];
             }
         } else if (zEWS > 0 && tadEWS > 0) {
 #pragma omp simd
             for (Nd4jLong j = 0; j < tadLength; j++) {
-                z[j * zEWS] = s[j * tadEWS];
+                hZ[j * zEWS] = s[j * tadEWS];
             }
         } else {
             Nd4jLong xCoord[MAX_RANK];
@@ -1284,49 +1290,49 @@ void tearGeneric(void *vx,
                 auto xOffset = shape::getOffset(0, tadShape, tadStride, xCoord, tadRank);
                 auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
-                z[zOffset] = s[xOffset];
+                hZ[zOffset] = s[xOffset];
             }
         }
     }
 }
 
 void NativeOps::tear(Nd4jPointer *extraPointers,
-        void *x,
-        Nd4jLong *xShapeInfo,
+        void *hX,
+        Nd4jLong *hXShapeInfo,
         Nd4jPointer *targets,
-        Nd4jLong *zShapeInfo,
+        Nd4jLong *hZShapeInfo,
         Nd4jLong *tadShapeInfo,
         Nd4jLong *tadOffsets) {
-    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, tearGeneric, (x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, tearGeneric, (hX, hXShapeInfo, targets, hZShapeInfo, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
 }
 
 
 void NativeOps::average(Nd4jPointer *extras,
-        Nd4jPointer *dx,
-        Nd4jLong *xShapeInfo,
+        Nd4jPointer *hX,
+        Nd4jLong *hXShapeInfo,
         void *dz,
-        Nd4jLong *zShapeInfo,
+        Nd4jLong *hZShapeInfo,
         int n,
         Nd4jLong length,
         bool propagate) {
-    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(dx, dz, zShapeInfo, n, length, propagate), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(hX, dz, hZShapeInfo, n, length, propagate), LIBND4J_TYPES);
 }
 
 void NativeOps::accumulate(Nd4jPointer *extras,
-        Nd4jPointer *dx,
-        Nd4jLong *xShapeInfo,
+        Nd4jPointer *hX,
+        Nd4jLong *hXShapeInfo,
         void *dz,
-        Nd4jLong *zShapeInfo,
+        Nd4jLong *hZShapeInfo,
         int n,
         Nd4jLong length) {
 
-    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(dx, dz, zShapeInfo, n, length), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(hX, dz, hZShapeInfo, n, length), LIBND4J_TYPES);
 }
 
 void NativeOps::enableP2P(bool enable) {
@@ -1335,23 +1341,23 @@ void NativeOps::enableP2P(bool enable) {
 
 
 
-void NativeOps::encodeThresholdP1(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
+void NativeOps::encodeThresholdP1(Nd4jPointer *extraPointers, void *hX, Nd4jLong *hXShapeInfo, Nd4jLong N, int *dz, float threshold) {
     // TODO: to be implemented
 }
 
 
-void NativeOps::encodeThresholdP2Int(Nd4jPointer *extraPointers, int *dx, Nd4jLong N, int *dz) {
+void NativeOps::encodeThresholdP2Int(Nd4jPointer *extraPointers, int *hX, Nd4jLong N, int *dz) {
     // TODO: to be implemented
 }
 
 
-void NativeOps::encodeThresholdP3(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, int *offsets, Nd4jLong N, int *dz){
+void NativeOps::encodeThresholdP3(Nd4jPointer *extraPointers, void *hX, Nd4jLong *hXShapeInfo, int *offsets, Nd4jLong N, int *dz){
     // offsets won't be used here
 
     // TODO: to be implemented
 }
 
-void NativeOps::decodeThreshold(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo){
+void NativeOps::decodeThreshold(Nd4jPointer *extraPointers, void *hX, Nd4jLong N, void *dz, Nd4jLong *hZShapeInfo){
     // TODO: to be implemented
 }
 
@@ -1364,20 +1370,20 @@ void NativeOps::checkP2P() {
     // no-op
 }
 
-void NativeOps::decodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo) {
-    NativeOpExcutioner::decodeBitmap(dx, N, dz, zShapeInfo);
+void NativeOps::decodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong N, void *dz, Nd4jLong *hZShapeInfo) {
+    NativeOpExcutioner::decodeBitmap(hX, N, dz, hZShapeInfo);
 }
 
 template<typename T>
-void shuffleGeneric(void **dx, Nd4jLong **xShapeInfo, void **dz, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
+void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
 
-    auto dX = reinterpret_cast<T **>(dx);
+    auto dX = reinterpret_cast<T **>(hX);
     auto dZ = reinterpret_cast<T **>(dz);
 
 #pragma omp parallel for if (N > 1) default(shared)
     for (int f = 0; f < N; f++) {
-        auto x = reinterpret_cast<T *>(dX[f]);
-        //auto z = reinterpret_cast<T *>(dZ[f]);
+        auto hX = reinterpret_cast<T *>(dX[f]);
+        //auto hZ = reinterpret_cast<T *>(dZ[f]);
 
         auto tadOffset = reinterpret_cast<Nd4jLong *>(tadOffsets[f]);
 
@@ -1385,7 +1391,7 @@ void shuffleGeneric(void **dx, Nd4jLong **xShapeInfo, void **dz, Nd4jLong **zSha
         const auto tadLength = shape::length(tadOnlyShapeInfo[f]);
         auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
         auto tadRank = shape::rank(tadOnlyShapeInfo[f]);
-        auto numTads = shape::length(xShapeInfo[f]) / tadLength;
+        auto numTads = shape::length(hXShapeInfo[f]) / tadLength;
 
         auto tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
         auto tadStride = shape::stride(tadOnlyShapeInfo[f]);
@@ -1399,8 +1405,8 @@ void shuffleGeneric(void **dx, Nd4jLong **xShapeInfo, void **dz, Nd4jLong **zSha
             auto oldOffset = tadOffset[r];
             auto newOffset = tadOffset[shuffleMap[r]];
 
-            auto rX = x + oldOffset;
-            auto rY = x + newOffset;
+            auto rX = hX + oldOffset;
+            auto rY = hX + newOffset;
 
             if (tadEWS == 1) {
 
@@ -1422,7 +1428,7 @@ void shuffleGeneric(void **dx, Nd4jLong **xShapeInfo, void **dz, Nd4jLong **zSha
                     auto xOffset = shape::getOffset(oldOffset, tadShape, tadStride, xCoord, tadRank);
                     auto yOffset = shape::getOffset(newOffset, tadShape, tadStride, yCoord, tadRank);
 
-                    nd4j::math::nd4j_swap<T>(x[xOffset], x[yOffset]);
+                    nd4j::math::nd4j_swap<T>(hX[xOffset], hX[yOffset]);
                 }
 
             }
@@ -1433,22 +1439,22 @@ void shuffleGeneric(void **dx, Nd4jLong **xShapeInfo, void **dz, Nd4jLong **zSha
 }
 
 void NativeOps::shuffle(Nd4jPointer *extras,
-                              Nd4jPointer *dx,
-                              Nd4jPointer *xShapeInfo,
+                              Nd4jPointer *hX,
+                              Nd4jPointer *hXShapeInfo,
                               Nd4jPointer *dz,
-                              Nd4jPointer *zShapeInfo,
+                              Nd4jPointer *hZShapeInfo,
                               int N,
                               int *shuffleMap,
                               Nd4jPointer *tadShapeInfo,
                               Nd4jPointer *tadOffsets) {
-    auto xShape = reinterpret_cast<Nd4jLong **>(xShapeInfo);
-    auto zShape = reinterpret_cast<Nd4jLong **>(zShapeInfo);
+    auto xShape = reinterpret_cast<Nd4jLong **>(hXShapeInfo);
+    auto zShape = reinterpret_cast<Nd4jLong **>(hZShapeInfo);
     auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong **>(tadShapeInfo);
     auto tadOffset = reinterpret_cast<Nd4jLong **>(tadOffsets);
 
     auto xType = nd4j::ArrayOptions::dataType(xShape[0]);
 
-    BUILD_SINGLE_SELECTOR(xType, shuffleGeneric, (dx, xShape, dz, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, shuffleGeneric, (hX, xShape, dz, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
 }
 
 
@@ -1462,7 +1468,22 @@ void NativeOps::setOmpMinThreads(int threads) {
 }
 
 
-void NativeOps::execMetaPredicateShape(Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jLong N, void *dx, Nd4jLong *xShapeInfo, void *dy, Nd4jLong *yShapeInfo, void *dz, Nd4jLong *zShapeInfo, void *extraA, void *extraB, double scalarA, double scalarB) {
+void NativeOps::execMetaPredicateShape(Nd4jPointer *extras, 
+                                        const int opTypeA, 
+                                        const int opNumA, 
+                                        const int opTypeB, 
+                                        const int opNumB, 
+                                        Nd4jLong N, 
+                                        void *hX, Nd4jLong *hXShapeInfo,
+                                        void *dX, Nd4jLong *dXShapeInfo,
+                                        void *hY, Nd4jLong *hYShapeInfo,
+                                        void *dY, Nd4jLong *dYShapeInfo,
+                                        void *hZ, Nd4jLong *hZShapeInfo,
+                                        void *dZ, Nd4jLong *dZShapeInfo,
+                                        void *extraA, 
+                                        void *extraB, 
+                                        double scalarA, 
+                                        double scalarB) {    
     // no-op;
 }
 
@@ -1472,12 +1493,12 @@ int NativeOps::getDevice() {
 
 void NativeOps::execScalar(Nd4jPointer *extraPointers,
                                  int opNum,
-                                 void *x,
-                                 Nd4jLong *xShapeInfo,
-                                 void *z,
-                                 Nd4jLong *zShapeInfo,
-                                 void *scalars,
-                                 Nd4jLong *scalarShapeInfo,
+                                 void *hX, Nd4jLong *hXShapeInfo,
+                                 void *dX, Nd4jLong *dXShapeInfo,
+                                 void *hZ, Nd4jLong *hZShapeInfo,
+                                 void *dZ, Nd4jLong *dZShapeInfo,
+                                 void *hScalars, Nd4jLong *hScalarShapeInfo,
+                                 void *dScalars, Nd4jLong *dScalarShapeInfo,
                                  void *extraParams,
                                  int *dimension,
                                  int dimensionLength) {
@@ -1488,13 +1509,13 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
 
     NativeOpExcutioner::execScalar(
             opNum,
-            x,
-            xShapeInfo,
+            hX,
+            hXShapeInfo,
             extraParams,
-            z,
-            zShapeInfo,
-            scalars,
-            scalarShapeInfo,
+            hZ,
+            hZShapeInfo,
+            hScalars,
+            hScalarShapeInfo,
             dimension,
             dimensionLength,
             tadShapeInfo,
@@ -1505,12 +1526,12 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
 
 void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
                            int opNum,
-                           void *x,
-                           Nd4jLong *xShapeInfo,
-                           void *z,
-                           Nd4jLong *zShapeInfo,
-                           void *scalars,
-                           Nd4jLong *scalarShapeInfo,
+                           void *hX, Nd4jLong *hXShapeInfo,
+                           void *dX, Nd4jLong *dXShapeInfo,
+                           void *hZ, Nd4jLong *hZShapeInfo,
+                           void *dZ, Nd4jLong *dZShapeInfo,
+                           void *hScalars, Nd4jLong *hScalarShapeInfo,
+                           void *dScalars, Nd4jLong *dScalarShapeInfo,
                            void *extraParams,
                            int *dimension,
                            int dimensionLength) {
@@ -1521,13 +1542,13 @@ void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
 
     NativeOpExcutioner::execScalarBool(
             opNum,
-            x,
-            xShapeInfo,
+            hX,
+            hXShapeInfo,
             extraParams,
-            z,
-            zShapeInfo,
-            scalars,
-            scalarShapeInfo,
+            hZ,
+            hZShapeInfo,
+            hScalars,
+            hScalarShapeInfo,
             dimension,
             dimensionLength,
             tadShapeInfo,
@@ -1646,34 +1667,34 @@ void NativeOps::execAggregateBatch(Nd4jPointer *extraPointers,
 void NativeOps::execRandom(Nd4jPointer *extraPointers,
                                  int opNum,
                                  Nd4jPointer state,
-                                 void *z,
-                                 Nd4jLong *zShapeBuffer,
+                                 void *hZ, Nd4jLong *hZShapeInfo,
+                                 void *dZ, Nd4jLong *dZShapeInfo,
                                  void *extraArguments) {
-    NativeOpExcutioner::execRandom(opNum, state, z, zShapeBuffer, extraArguments);
+    NativeOpExcutioner::execRandom(opNum, state, hZ, hZShapeInfo, extraArguments);
 }
 
 void NativeOps::execRandom(Nd4jPointer *extraPointers,
                                  int opNum,
                                  Nd4jPointer state,
-                                 void *x,
-                                 Nd4jLong *xShapeBuffer,
-                                 void *y,
-                                 Nd4jLong *yShapeBuffer,
-                                 void *z,
-                                 Nd4jLong *zShapeBuffer,
+                                 void *hX, Nd4jLong *hXShapeInfo,
+                                 void *dX, Nd4jLong *dXShapeInfo,
+                                 void *hY, Nd4jLong *hYShapeInfo,
+                                 void *dY, Nd4jLong *dYShapeInfo,
+                                 void *hZ, Nd4jLong *hZShapeInfo,
+                                 void *dZ, Nd4jLong *dZShapeInfo,
                                  void *extraArguments) {
-    NativeOpExcutioner::execRandom(opNum, state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
+    NativeOpExcutioner::execRandom(opNum, state, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraArguments);
 }
 
 void NativeOps::execRandom(Nd4jPointer *extraPointers,
                                  int opNum,
                                  Nd4jPointer state,
-                                 void *x,
-                                 Nd4jLong *xShapeBuffer,
-                                 void *z,
-                                 Nd4jLong *zShapeBuffer,
+                                 void *hX, Nd4jLong *hXShapeInfo,
+                                 void *dX, Nd4jLong *dXShapeInfo,
+                                 void *hZ, Nd4jLong *hZShapeInfo,
+                                 void *dZ, Nd4jLong *dZShapeInfo,
                                  void *extraArguments) {
-    NativeOpExcutioner::execRandom(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
+    NativeOpExcutioner::execRandom(opNum, state, hX, hXShapeInfo, hZ, hZShapeInfo, extraArguments);
 }
 
 Nd4jPointer NativeOps::initRandom(Nd4jPointer *extraPointers, long seed, long bufferSize, Nd4jPointer ptrToBuffer) {
@@ -1734,21 +1755,21 @@ Nd4jPointer NativeOps::pointerForAddress(Nd4jLong address) {
 }
 
 void NativeOps::sort(Nd4jPointer *extraPointers,
-        void *x,
-        Nd4jLong *xShapeInfo,
+        void *hX,
+        Nd4jLong *hXShapeInfo,
         bool descending) {
-    NativeOpExcutioner::execSort(x, xShapeInfo, descending);
+    NativeOpExcutioner::execSort(hX, hXShapeInfo, descending);
 }
 
 void NativeOps::sortTad(Nd4jPointer *extraPointers,
-            void *x,
-            Nd4jLong *xShapeInfo,
+            void *hX,
+            Nd4jLong *hXShapeInfo,
             int *dimension,
             int dimensionLength,
             Nd4jLong *tadShapeInfo,
             Nd4jLong *tadOffsets,
             bool descending) {
-    NativeOpExcutioner::execSort(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+    NativeOpExcutioner::execSort(hX, hXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }
 
 void NativeOps::sortCooIndices(Nd4jPointer *extraPointers,
@@ -1759,17 +1780,17 @@ void NativeOps::sortCooIndices(Nd4jPointer *extraPointers,
     NativeOpExcutioner::execSortCooIndices(indices, values, length, rank);
 }
 
-Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
-    return NativeOpExcutioner::encodeBitmap(dx, xShapeInfo, N, dz, threshold);
+Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong *hXShapeInfo, Nd4jLong N, int *dz, float threshold) {
+    return NativeOpExcutioner::encodeBitmap(hX, hXShapeInfo, N, dz, threshold);
 }
 
 
 
 Nd4jLong* NativeOps::mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length) {
-    auto result = new Nd4jLong[2];errno = 0;
+    auto hZ = new Nd4jLong[2];errno = 0;
 
 #if defined(_WIN32) || defined(_WIN64)
-    _mmap(result, static_cast<size_t>(length), fileName);
+    _mmap(hZ, static_cast<size_t>(length), fileName);
 #else
     int fd = open(fileName, O_RDWR, 0);// checking for failed fopen
     if (fd < 0) {
@@ -1782,12 +1803,12 @@ Nd4jLong* NativeOps::mmapFile(Nd4jPointer *extraPointers, const char *fileName, 
     if (ptr == MAP_FAILED)
         return nullptr;
 
-    result[0] = (Nd4jLong) ptr;
-    result[1] = fd;
+    hZ[0] = (Nd4jLong) ptr;
+    hZ[1] = fd;
 
 #endif
 
-    return result;
+    return hZ;
 
 }
 
@@ -1811,8 +1832,8 @@ const char* NativeOps::getAllCustomOps() {
 }
 
 template <typename T>
-FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer x, int N, T threshold) {
-    auto buffer = reinterpret_cast<T *>(x);
+FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer hX, int N, T threshold) {
+    auto buffer = reinterpret_cast<T *>(hX);
 
     int span = (N / 6) + 8;
     int cnt = 0;
@@ -1837,9 +1858,9 @@ FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer
 }
 
 
-int NativeOps::estimateThreshold(Nd4jPointer *extraPointers, Nd4jPointer x, Nd4jLong *xShapeInfo, int N, float threshold) {
-    auto xType = ArrayOptions::dataType(xShapeInfo);
-    BUILD_SINGLE_SELECTOR(xType, return estimateThresholdGeneric, (extraPointers, x, N, threshold), FLOAT_TYPES);
+int NativeOps::estimateThreshold(Nd4jPointer *extraPointers, Nd4jPointer hX, Nd4jLong *hXShapeInfo, int N, float threshold) {
+    auto xType = ArrayOptions::dataType(hXShapeInfo);
+    BUILD_SINGLE_SELECTOR(xType, return estimateThresholdGeneric, (extraPointers, hX, N, threshold), FLOAT_TYPES);
 }
 
 
@@ -1959,8 +1980,8 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
 
 
     // hypothetically at this point we have everything filled
-    auto result = op->execute(inputs, outputs, ttArgs, iiArgs, isInplace);
-    //auto result = op->execute(inputs, ttArgs, iiArgs, isInplace);
+    auto hZ = op->execute(inputs, outputs, ttArgs, iiArgs, isInplace);
+    //auto hZ = op->execute(inputs, ttArgs, iiArgs, isInplace);
 
 
 
@@ -1977,7 +1998,7 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
 
 /*
     if (!isInplace) {
-        if (result->size() != numOutputs) {
+        if (hZ->size() != numOutputs) {
             return ND4J_STATUS_BAD_OUTPUT;
         }
 
@@ -1986,20 +2007,20 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
             auto shape = (int *) outputShapes[e];
             nd4j::NDArray<T> tmp(buffer, shape);
 
-            if (tmp.lengthOf() != result->at(e)->lengthOf()) {
-                nd4j_printf("Provided output array for [%s] has length of %i, but actual result has length of %i\n", op->getOpName()->c_str(), tmp.lengthOf(), result->at(e)->lengthOf());
+            if (tmp.lengthOf() != hZ->at(e)->lengthOf()) {
+                nd4j_printf("Provided output array for [%s] has length of %i, but actual hZ has length of %i\n", op->getOpName()->c_str(), tmp.lengthOf(), hZ->at(e)->lengthOf());
                 return ND4J_STATUS_BAD_OUTPUT;
             }
 
-            tmp.assign(result->at(e));
+            tmp.assign(hZ->at(e));
         }
     } else {
         // if op is inplace, our ResultSet holds pointers
-        result->purge();
+        hZ->purge();
     }
 
 
-    delete result;
+    delete hZ;
 
 */
 
@@ -2009,7 +2030,7 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
     for (auto v: outputs)
         delete v;
 
-    return result;
+    return hZ;
 }
 
 
@@ -2050,10 +2071,10 @@ static VariablesSet* executeStoredGraphT(Nd4jPointer *extraPointers, Nd4jLong gr
             varSpace->putVariable(idx, array);
     }
 
-    auto result = nd4j::graph::GraphExecutioner::execute(graph, varSpace);
-    auto varSet = new nd4j::graph::VariablesSet(result);
+    auto hZ = nd4j::graph::GraphExecutioner::execute(graph, varSpace);
+    auto varSet = new nd4j::graph::VariablesSet(hZ);
 
-    if (result == ND4J_STATUS_OK) {
+    if (hZ == ND4J_STATUS_OK) {
         // pull back results, and provide them
         auto outputs = graph->fetchOutputs();
         for (int e = 0; e < outputs->size(); e++) {
@@ -2159,9 +2180,9 @@ Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphS
         node.pickInput(scopeId, 0);
     }
 
-    auto result = LogicExecutor::processNode(graph, &node);
-    if (result != Status::OK())
-        return result;
+    auto hZ = LogicExecutor::processNode(graph, &node);
+    if (hZ != Status::OK())
+        return hZ;
 
     // mapping outputs
 
@@ -2200,121 +2221,121 @@ void NativeOps::deleteResultWrapper(Nd4jPointer ptr) {
 
 /*
  * TypeDef:
- *     void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);
+ *     void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer hX, long N, int dstType, Nd4jPointer hZ);
  */
-void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd4jLong N, int dstType, Nd4jPointer z) {
-    auto dx = reinterpret_cast<void *>(x);
-    auto dz = reinterpret_cast<void *>(z);
+void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer hX, Nd4jLong N, int dstType, Nd4jPointer hZ) {
+    auto hx = reinterpret_cast<void *>(hX);
+    auto hz = reinterpret_cast<void *>(hZ);
 
     if (srcType == ND4J_FLOAT8) {
         if (dstType == ND4J_FLOAT8) {
-            // convertGeneric<double, nd4j::float8>(dx, N, dz);
+            // convertGeneric<double, nd4j::float8>(hx, N, hz);
         } else if (dstType == ND4J_INT8) {
-            //nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::int8>(nullptr, dx, N, dz);
+            //nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::int8>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT8) {
-            //nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::uint8>(nullptr, dx, N, dz);
+            //nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::uint8>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT16) {
-            //nd4j::TypeCast::convertGeneric<nd4j::float8, float16>(nullptr, dx, N, dz);
+            //nd4j::TypeCast::convertGeneric<nd4j::float8, float16>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT16) {
-            //nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::int16>(nullptr, dx, N, dz);
+            //nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::int16>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT16) {
-            //nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::uint16>(nullptr, dx, N, dz);
+            //nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::uint16>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT24) {
 
         } else if (dstType == ND4J_FLOAT32) {
-            //nd4j::TypeCast::convertGeneric<nd4j::float8, float>(nullptr, dx, N, dz);
+            //nd4j::TypeCast::convertGeneric<nd4j::float8, float>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_DOUBLE) {
-            //nd4j::TypeCast::convertGeneric<nd4j::float8, double>(nullptr, dx, N, dz);
+            //nd4j::TypeCast::convertGeneric<nd4j::float8, double>(nullptr, hx, N, hz);
         } else {
             //nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
     } else if (srcType == ND4J_INT8) {
         if (dstType == ND4J_FLOAT8) {
-            //nd4j::TypeCast::convertGeneric<nd4j::int8, nd4j::float8>(nullptr, dx, N, dz);
+            //nd4j::TypeCast::convertGeneric<nd4j::int8, nd4j::float8>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT8) {
-            //convertGeneric<nd4j::int8, nd4j::int8>(dx, N, dz);
+            //convertGeneric<nd4j::int8, nd4j::int8>(hx, N, hz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneric<int8_t, uint8_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<int8_t, uint8_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneric<int8_t, float16>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<int8_t, float16>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneric<int8_t, int16_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<int8_t, int16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT16) {
-            //nd4j::TypeCast::convertGeneric<int8_t, uint16_t>(nullptr, dx, N, dz);
+            //nd4j::TypeCast::convertGeneric<int8_t, uint16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO: eventually we might want to add it
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGeneric<int8_t, float>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<int8_t, float>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGeneric<int8_t, double>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<int8_t, double>(nullptr, hx, N, hz);
         } else {
             nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
     } else if (srcType == ND4J_UINT8) {
         if (dstType == ND4J_FLOAT8) {
-        //    nd4j::TypeCast::convertGeneric<uint8_t, nd4j::float8>(nullptr, dx, N, dz);
+        //    nd4j::TypeCast::convertGeneric<uint8_t, nd4j::float8>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGeneric<uint8_t, int8_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<uint8_t, int8_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneric<uint8_t, uint8_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<uint8_t, uint8_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneric<uint8_t, float16>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<uint8_t, float16>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneric<uint8_t, int16_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<uint8_t, int16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT16) {
-     //       nd4j::TypeCast::convertGeneric<uint8_t, uint16_t>(nullptr, dx, N, dz);
+     //       nd4j::TypeCast::convertGeneric<uint8_t, uint16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO: still might want to add
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGeneric<uint8_t, float>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<uint8_t, float>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGeneric<uint8_t, double>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<uint8_t, double>(nullptr, hx, N, hz);
         } else {
             nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
     } else if (srcType == ND4J_FLOAT16) {
         if (dstType == ND4J_FLOAT8) {
-        //    nd4j::TypeCast::convertGeneric<float16, nd4j::float8>(nullptr, dx, N, dz);
+        //    nd4j::TypeCast::convertGeneric<float16, nd4j::float8>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGeneric<float16, int8_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<float16, int8_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneric<float16, uint8_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<float16, uint8_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneric<float16, float16>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<float16, float16>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneric<float16, int16_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<float16, int16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT16) {
-//            nd4j::TypeCast::convertGeneric<float16, uint16_t>(nullptr, dx, N, dz);
+//            nd4j::TypeCast::convertGeneric<float16, uint16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO: .... ^^^
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGeneric<float16, float>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<float16, float>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGeneric<float16, double>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<float16, double>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_THRESHOLD) {
-            nd4j::TypeCast::convertToThreshold<float16>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertToThreshold<float16>(nullptr, hx, N, hz);
         } else {
             nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
     } else if (srcType == ND4J_INT16) {
         if (dstType == ND4J_FLOAT8) {
-         //   nd4j::TypeCast::convertGeneric<int16_t, nd4j::float8>(nullptr, dx, N, dz);
+         //   nd4j::TypeCast::convertGeneric<int16_t, nd4j::float8>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGeneric<int16_t, int8_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<int16_t, int8_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneric<int16_t, uint8_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<int16_t, uint8_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneric<int16_t, float16>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<int16_t, float16>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT16) {
-            //nd4j::TypeCast::convertGeneric<int16_t, int16_t>(nullptr, dx, N, dz);
+            //nd4j::TypeCast::convertGeneric<int16_t, int16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT16) {
-//            nd4j::TypeCast::convertGeneric<int16_t, uint16_t>(nullptr, dx, N, dz);
+//            nd4j::TypeCast::convertGeneric<int16_t, uint16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO...
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGeneric<int16_t, float>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<int16_t, float>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGeneric<int16_t, double>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<int16_t, double>(nullptr, hx, N, hz);
         } else {
             printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
@@ -2322,57 +2343,57 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
 
     } else if (srcType == ND4J_FLOAT32) {
         if (dstType == ND4J_FLOAT8) {
-        //    nd4j::TypeCast::convertGeneric<float, nd4j::float8>(nullptr, dx, N, dz);
+        //    nd4j::TypeCast::convertGeneric<float, nd4j::float8>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGeneric<float, int8_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<float, int8_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneric<float, uint8_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<float, uint8_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneric<float, float16>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<float, float16>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneric<float, int16_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<float, int16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT16) {
-//            nd4j::TypeCast::convertGeneric<float, uint16_t>(nullptr, dx, N, dz);
+//            nd4j::TypeCast::convertGeneric<float, uint16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT24) {
 
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGeneric<float, double>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<float, double>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_THRESHOLD) {
-            nd4j::TypeCast::convertToThreshold<float>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertToThreshold<float>(nullptr, hx, N, hz);
         } else {
             nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
     } else if (srcType == ND4J_DOUBLE) {
         if (dstType == ND4J_FLOAT8) {
-         //   nd4j::TypeCast::convertGeneric<double, nd4j::float8>(nullptr, dx, N, dz);
+         //   nd4j::TypeCast::convertGeneric<double, nd4j::float8>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGeneric<double, int8_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<double, int8_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneric<double, uint8_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<double, uint8_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneric<double, float16>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<double, float16>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneric<double, int16_t>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<double, int16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_UINT16) {
-//            nd4j::TypeCast::convertGeneric<double, uint16_t>(nullptr, dx, N, dz);
+//            nd4j::TypeCast::convertGeneric<double, uint16_t>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT24) {
 
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGeneric<double, float>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertGeneric<double, float>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_DOUBLE) {
             //
         } else if (dstType == ND4J_THRESHOLD) {
-            nd4j::TypeCast::convertToThreshold<double>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertToThreshold<double>(nullptr, hx, N, hz);
         } else {
             nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
     } else if (srcType == ND4J_THRESHOLD) {
         if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertFromThreshold<float16>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertFromThreshold<float16>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertFromThreshold<float>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertFromThreshold<float>(nullptr, hx, N, hz);
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertFromThreshold<double>(nullptr, dx, N, dz);
+            nd4j::TypeCast::convertFromThreshold<double>(nullptr, hx, N, hz);
         } else {
             nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
@@ -2383,9 +2404,9 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
 
 /*
 void NativeOps::fillUtf8String(Nd4jPointer *extraPointers, const char **strings, int numStrings, Nd4jPointer buffer) {
-    auto z = reinterpret_cast<nd4j::utf8string**>(buffer);
+    auto hZ = reinterpret_cast<nd4j::utf8string**>(buffer);
     for (int e = 0; e < numStrings; e++) {
-        z[e] = reinterpret_cast<nd4j::utf8string*>(createUtf8String(extraPointers, strings[e]));
+        hZ[e] = reinterpret_cast<nd4j::utf8string*>(createUtf8String(extraPointers, strings[e]));
     }
 }
  */
