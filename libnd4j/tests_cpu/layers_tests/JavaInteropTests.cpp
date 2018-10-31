@@ -668,7 +668,10 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
     std::vector<int> dims = {0, 1};
 
     NativeOps nativeOps;
-    nativeOps.execReduce3(nullptr, 2, x.buffer(), x.shapeInfo(), nullptr, y.buffer(), y.shapeInfo(), z.buffer(), z.shapeInfo(), dims.data(), (int) dims.size());
+    nativeOps.execReduce3(nullptr, 2, x.buffer(), x.shapeInfo(), nullptr, nullptr, nullptr, 
+                        y.buffer(), y.shapeInfo(), nullptr, nullptr,
+                        z.buffer(), z.shapeInfo(), nullptr, nullptr,
+                        dims.data(), (int) dims.size());
 }
 /*
 TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
@@ -746,7 +749,11 @@ TEST_F(JavaInteropTests, Test_Mixed_Add_1) {
     auto arrayE = NDArrayFactory::create<double>({2, 4, 6, 8});
 
     NativeOps ops;
-    ops.execPairwiseTransform(nullptr, pairwise::Add, arrayX.buffer(), arrayX.shapeInfo(), arrayY.buffer(), arrayY.shapeInfo(), arrayZ.buffer(), arrayZ.shapeInfo(), nullptr);
+    ops.execPairwiseTransform(nullptr, pairwise::Add, 
+                              arrayX.buffer(), arrayX.shapeInfo(), nullptr, nullptr,
+                              arrayY.buffer(), arrayY.shapeInfo(), nullptr, nullptr,
+                              arrayZ.buffer(), arrayZ.shapeInfo(), nullptr, nullptr,
+                              nullptr);
 
     ASSERT_EQ(arrayE, arrayZ);
 }
@@ -757,7 +764,10 @@ TEST_F(JavaInteropTests, Test_Is_Max_1) {
     auto arrayE = NDArrayFactory::create<bool>({false, true, false, false});
 
     NativeOps ops;
-    ops.execTransformBool(nullptr, transform::IsMax, arrayX.buffer(), arrayX.shapeInfo(), arrayZ.buffer(), arrayZ.shapeInfo(), nullptr);
+    ops.execTransformBool(nullptr, transform::IsMax, 
+                          arrayX.buffer(), arrayX.shapeInfo(), nullptr, nullptr,
+                          arrayZ.buffer(), arrayZ.shapeInfo(), nullptr, nullptr,
+                          nullptr);
 
     ASSERT_EQ(arrayE, arrayZ);
 }
@@ -771,7 +781,10 @@ TEST_F(JavaInteropTests, Test_Is_Max_2) {
     float ea[] = {2, 1, 2};
 
     NativeOps ops;
-    ops.execTransformBool(reinterpret_cast<void **>(ex), transform::IsMax, arrayX.buffer(), arrayX.shapeInfo(), arrayZ.buffer(), arrayZ.shapeInfo(), ea);
+    ops.execTransformBool(reinterpret_cast<void **>(ex), transform::IsMax, 
+                          arrayX.buffer(), arrayX.shapeInfo(), nullptr, nullptr,
+                          arrayZ.buffer(), arrayZ.shapeInfo(), nullptr, nullptr,
+                          ea);
 }
 
 TEST_F(JavaInteropTests, Test_IAMax_1) {
