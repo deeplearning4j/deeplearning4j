@@ -28,5 +28,21 @@ public enum DataType {
     BOOL,
     UTF8,
     COMPRESSED,
-    UNKNOWN
+    UNKNOWN;
+
+
+    public static DataType fromInt(int type) {
+        switch (type) {
+            case 1: return BOOL;
+            case 3: return HALF;
+            case  5: return FLOAT;
+            case 6: return DOUBLE;
+            case 7: return BYTE;
+            case 8: return SHORT;
+            case 9: return INT;
+            case 10: return LONG;
+            case 11: return UBYTE;
+            default: throw new UnsupportedOperationException("Unknown data type: [" + type + "]");
+        }
+    }
 }

@@ -1095,6 +1095,14 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertEquals(exp, array);
     }
 
+    @Test
+    public void testLossImport_1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/losses/log_loss_rank2_axis1_SUM_OVER_BATCH_SIZE/frozen_model.pb").getInputStream());
+
+        tg.execAndEndResult();
+    }
+
     @Test(expected = ND4JIllegalStateException.class)
     public void testNonFrozenGraph1() throws Exception {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/unfrozen_simple_ae.pb").getInputStream());

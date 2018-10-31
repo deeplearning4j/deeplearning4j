@@ -5175,7 +5175,7 @@ public class Nd4j {
 
     public static INDArray valueArrayOf(long[] shape, double value, DataType type) {
         if (shape.length == 0)
-            return trueScalar(value);
+            return scalar(type, value);
 
         checkShapeValues(shape);
 
@@ -5187,7 +5187,7 @@ public class Nd4j {
 
     public static INDArray valueArrayOf(long[] shape, long value, DataType type) {
         if (shape.length == 0)
-            return trueScalar(value);
+            return scalar(type, value);
 
         checkShapeValues(shape);
 

@@ -31,6 +31,8 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -118,6 +120,19 @@ public class Cast extends BaseDynamicTransformOp {
         ret.put(tensorflowName(),map);
 
         return ret;
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        if (arg() != null && (arg().getArr() != null || arg().getShape() != null)) {
+            if (arg().getArr() != null) {
+                return Collections.singletonList(LongShapeDescriptor.fromShape(arg().getArr().shape(), DataType.fromInt(iArguments.get(0).intValue())));
+            } else {
+                return Collections.singletonList(LongShapeDescriptor.fromShape(arg().getShape(), DataType.fromInt(iArguments.get(0).intValue())));
+            }
+        }
+
+        return Collections.emptyList();
     }
 
     @Override
