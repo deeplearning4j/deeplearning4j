@@ -143,5 +143,9 @@ namespace nd4j {
         template float RandomGenerator::relativeT(Nd4jLong, float, float);
         template double RandomGenerator::relativeT(Nd4jLong, double, double);
         template Nd4jLong RandomGenerator::relativeT(Nd4jLong, Nd4jLong, Nd4jLong);
+
+        template float16 RandomGenerator::relativeT(Nd4jLong);
+        template float RandomGenerator::relativeT(Nd4jLong);
+        template double RandomGenerator::relativeT(Nd4jLong);
     }
 }
