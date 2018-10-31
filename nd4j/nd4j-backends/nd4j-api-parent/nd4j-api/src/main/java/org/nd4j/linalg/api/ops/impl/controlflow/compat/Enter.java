@@ -38,7 +38,7 @@ public class Enter extends BaseCompatOp {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         if(arg().getArr() != null) {
-            return Collections.singletonList(LongShapeDescriptor.fromShape(arg().getShape(), arg().dataType()));
+            return Collections.singletonList(LongShapeDescriptor.fromShape(arg().getShape(), arg().getArr().dataType()));
         }
         else
             return Collections.emptyList();
