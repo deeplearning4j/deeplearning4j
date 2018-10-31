@@ -213,13 +213,14 @@ namespace nd4j {
             if (Environment::getInstance()->isDebugAndVerbose() && v != nullptr &&  v->getNDArray() != nullptr) {
                 auto array = v->getNDArray();
                 std::string shape_ = ShapeUtils::shapeAsString(array);
-
+                auto type = DataTypeUtils::asString(array->dataType());
                 float m = std::numeric_limits<float>::quiet_NaN();
                 if (!array->isEmpty()) {
                     auto values = array->asIndexedString(16);
-                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; first values: %s\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), values.c_str());
+
+                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%i]; dtype: [%s]; first values: %s\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), type.c_str(), values.c_str());
                 } else {
-                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), m);
+                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%i]; dtype: [%s]; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), type.c_str(), m);
                 }
             }
 
