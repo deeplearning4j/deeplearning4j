@@ -1640,6 +1640,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val name = op.opName().toLowerCase();
         val hash = op.opHash();
 
+        if (name.equals("noop")) {
+            return;
+        }
 
         val inputShapes = getInputShapes(op.numInputArguments());
         val inputBuffers = getInputBuffers(op.numInputArguments());
@@ -1696,7 +1699,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             OpStatus status = OpStatus.ND4J_STATUS_OK;
             try {
-                status = OpStatus.byNumber(loop.execCustomOp(
+                val code = loop.execCustomOp(
                         null,
                         hash,
                         inputBuffers,
@@ -1707,10 +1710,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.numOutputArguments(),
                         tArgs, op.numTArguments(),
                         iArgs, op.numIArguments(),
-                        op.isInplaceCall()));
+                        op.isInplaceCall());
+
+                status = OpStatus.byNumber(code);
 
                 if (status != OpStatus.ND4J_STATUS_OK)
-                    throw new RuntimeException();
+                    throw new ND4JIllegalStateException("Failed to execute op [" + name + "] with error code [" + status +"]");
             }catch(Exception e) {
                 log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
                                 String.valueOf(op.numInputArguments()) + " inputs, " +

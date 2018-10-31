@@ -43,7 +43,7 @@ namespace nd4j {
         DECLARE_TYPES(rank) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(DataType::INT32);
+                    ->setAllowedOutputTypes({ALL_INTS});
         }
     }
 }

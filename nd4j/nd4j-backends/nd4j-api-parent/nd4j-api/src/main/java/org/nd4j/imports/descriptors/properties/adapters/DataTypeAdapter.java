@@ -38,7 +38,12 @@ public class DataTypeAdapter implements AttributeAdapter {
             case 1: return org.nd4j.linalg.api.buffer.DataType.FLOAT;
             case 2: return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
             case 3: return org.nd4j.linalg.api.buffer.DataType.INT;
+            case 4: return org.nd4j.linalg.api.buffer.DataType.UBYTE;
+            case 5: return org.nd4j.linalg.api.buffer.DataType.SHORT;
+            case 6: return org.nd4j.linalg.api.buffer.DataType.BYTE;
+            case 7: return org.nd4j.linalg.api.buffer.DataType.UTF8;
             case 9: return org.nd4j.linalg.api.buffer.DataType.LONG;
+            case 10: return org.nd4j.linalg.api.buffer.DataType.BOOL;
             case 19: return org.nd4j.linalg.api.buffer.DataType.HALF;
             default: throw new UnsupportedOperationException("DataType isn't supported: " + dataType.name());
         }
