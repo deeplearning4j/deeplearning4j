@@ -1879,6 +1879,7 @@ public class SameDiff {
                 .sameDiff(this)
                 .shape(arr.shape())
                 .varName(name)
+                .dataType(arr.dataType())
                 .weightInitScheme(new NDArraySupplierInitScheme(new NDArraySupplierInitScheme.NDArraySupplier() {
                     @Override
                     /**
