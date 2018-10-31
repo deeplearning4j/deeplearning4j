@@ -839,40 +839,6 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testDeconvolution2DUnsupportedSameModeLayer() {
-        /*
-         * When setting border mode same on layer directly, we can catch
-         * it in the builder
-         */
-        Deconvolution2D.Builder deconv = new Deconvolution2D.Builder();
-        deconv.convolutionMode(Same);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testDeconvolution2DUnsupportedSameModeNetwork() {
-        /*
-         * When convolution mode Same is set for the network and a deconvolution layer is added
-         * then only layer activation will fail. Suboptimal, but I don't think we want special
-         * logic for NNC in this case.
-         */
-        NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
-                .updater(new NoOp())
-                .activation(Activation.SIGMOID)
-                .convolutionMode(Same)
-                .list()
-                .layer(new Deconvolution2D.Builder().name("deconvolution")
-                        .nIn(3).nOut(2).build());
-
-        MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                .activation(Activation.SOFTMAX).nOut(2).build())
-                .setInputType(InputType.convolutionalFlat(7, 7, 3)).build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-        net.getLayer(0).activate(Nd4j.rand(10, 7 * 7 * 3), false, LayerWorkspaceMgr.noWorkspaces());
-    }
-
     @Test
     public void testDeconvolution2D() {
         int nOut = 2;
