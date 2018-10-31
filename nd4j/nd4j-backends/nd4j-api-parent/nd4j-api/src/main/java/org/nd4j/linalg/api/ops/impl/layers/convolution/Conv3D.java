@@ -148,7 +148,7 @@ public class Conv3D extends DynamicCustomOp {
         tfAdapters.put("pW", new IntArrayIntIndexAdpater(3));
 
 
-        tfAdapters.put("isValidMode", new StringEqualsAdapter("VALID"));
+        tfAdapters.put("isSameMode", new StringNotEqualsAdapter("VALID"));
 
         ret.put(tensorflowName(), tfAdapters);
 
@@ -195,7 +195,7 @@ public class Conv3D extends DynamicCustomOp {
 
         val sameMode = PropertyMapping.builder()
                 .onnxAttrName("auto_pad")
-                .propertyNames(new String[]{"isValidMode"})
+                .propertyNames(new String[]{"isSameMode"})
                 .tfAttrName("padding")
                 .build();
 
