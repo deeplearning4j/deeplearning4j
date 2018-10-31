@@ -107,10 +107,10 @@ public class Stack extends DynamicCustomOp {
         val axisMapping = PropertyMapping.builder()
                 .onnxAttrName("axis")
                 .tfAttrName("axis")
-                .propertyNames(new String[]{"axis"})
+                .propertyNames(new String[]{"jaxis"})
                 .build();
 
-        map.put("axis", axisMapping);
+        map.put("jaxis", axisMapping);
 
         for (val name : tensorflowNames())
             ret.put(name, map);

@@ -5907,6 +5907,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <array/DataType.h>
 // #include <dll.h>
 // #include <RandomGenerator.h>
+// #include <ops/declarable/OpDescriptor.h>
 
         @Namespace("nd4j::graph") @NoOffset public static class ContextPrototype extends Pointer {
             static { Loader.load(); }
@@ -5919,8 +5920,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
                 return (ContextPrototype)super.position(position);
             }
         
-            public ContextPrototype(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/) { super((Pointer)null); allocate(nodeId, inPlace); }
-            private native void allocate(int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/);
+            public ContextPrototype(OpDescriptor opDescriptor/*=nullptr*/, int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/) { super((Pointer)null); allocate(opDescriptor, nodeId, inPlace); }
+            private native void allocate(OpDescriptor opDescriptor/*=nullptr*/, int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/);
             public ContextPrototype() { super((Pointer)null); allocate(); }
             private native void allocate();
 
@@ -5929,6 +5930,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             // this method returns true, if inputs are defined
             public native @Cast("bool") boolean hasVariablesFilled();
+
+            public native void setOpDescriptor(OpDescriptor opDescriptor);
 
             public native @Cast("nd4j::DataType") int dataType();
             public native @Cast("nd4j::DataType") int dataType(int index);
@@ -5973,6 +5976,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             public native @ByRef RandomGenerator randomGenerator();
             public native @Const @ByRef RandomGenerator getRng();
+            public native void setRng(@Const @ByRef RandomGenerator anotherRng);
+            public native void setRandomGenerator(@Const @ByRef RandomGenerator anotherRng);
             public native @Cast("uint64_t") long randomSeed();
             public native void setRandomSeed(@Cast("uint64_t") long seed);
         }
