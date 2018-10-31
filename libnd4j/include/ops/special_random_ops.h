@@ -89,7 +89,7 @@ namespace randomOps {
 
             if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
                 for (Nd4jLong e = tid; e < zLength; e+=blockDim.x * gridDim.x) {
-                    T prob = buffer->relativeT<T>(e);
+                    T prob = rng->relativeT<T>(e);
                     T cumProb = (T) 0.0f;
                     for (Nd4jLong f = 0; f < yLength; f++) {
                         T relProb = y[f * yEWS];
@@ -164,7 +164,7 @@ namespace randomOps {
             }
 
             __syncthreads();
-            devBuffer->rewind(zLength);
+            devRng->rewind(zLength);
         }
 #endif
 
