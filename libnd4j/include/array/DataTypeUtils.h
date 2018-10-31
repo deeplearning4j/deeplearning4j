@@ -36,6 +36,7 @@ namespace nd4j {
         static int asInt(DataType type);
         static DataType fromInt(int dtype);
         static DataType fromFlatDataType(nd4j::graph::DataType dtype);
+        FORCEINLINE static std::string  asString(DataType dataType);
 
         template <typename T>
         static DataType fromT();
@@ -271,6 +272,33 @@ FORCEINLINE _CUDA_HD double DataTypeUtils::max<double>() {
 template <>
 FORCEINLINE _CUDA_HD float16 DataTypeUtils::max<float16>() {       
     return static_cast<float16>(65504.f);
+}
+
+FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
+    switch(dataType) {
+        case INT8:
+            return std::string("INT8");
+        case INT16:
+            return std::string("INT16");
+        case INT32:
+            return std::string("INT32");
+        case INT64:
+            return std::string("INT64");
+        case FLOAT32:
+            return std::string("FLOAT");
+        case DOUBLE:
+            return std::string("DOUBLE");
+        case HALF:
+            return std::string("HALF");
+        case BOOL:
+            return std::string("BOOL");
+        case UINT8:
+            return std::string("UINT8");
+        case UTF8:
+            return std::string("UTF8");
+        default:
+            throw new std::runtime_error("Unknown data type used");
+    }
 }
 
 ///////////////////////////////////////////////////////////////////
