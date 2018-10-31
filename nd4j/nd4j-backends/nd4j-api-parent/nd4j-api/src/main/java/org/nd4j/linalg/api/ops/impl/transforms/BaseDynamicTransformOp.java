@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -29,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
 
     public BaseDynamicTransformOp() {}
@@ -64,7 +66,11 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
         }
 
         if(Arrays.equals(firstArgShape, secondArgShape)){
-            return Collections.singletonList(LongShapeDescriptor.fromShape(firstArgShape, args[0].dataType()));
+            try {
+                return Collections.singletonList(LongShapeDescriptor.fromShape(firstArgShape, args[0].dataType()));
+            } catch (Throwable e) {
+                throw new RuntimeException("calculateOutputShape() failed for [" + this.opName() + "]", e);
+            }
         }
         //Handle broadcast shape: [1,4]+[3,1] = [3,4]
         Shape.assertBroadcastable(firstArgShape, secondArgShape, this.getClass());

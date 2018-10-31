@@ -2322,7 +2322,19 @@ public class Nd4j {
     private static float[] readSplit(String[] split) {
         float[] ret = new float[split.length];
         for (int i = 0; i < split.length; i++) {
-            ret[i] = Float.parseFloat(split[i]);
+            try {
+                ret[i] = Float.parseFloat(split[i]);
+            } catch (NumberFormatException e) {
+                if (split[i].equalsIgnoreCase("inf")) {
+                    ret[i] = Float.POSITIVE_INFINITY;
+                } else if (split[i].equalsIgnoreCase("-inf")) {
+                    ret[i] = Float.NEGATIVE_INFINITY;
+                } else if (split[i].equalsIgnoreCase("nan")) {
+                    ret[i] = Float.NaN;
+                } else
+                    throw new RuntimeException(e);
+
+            }
         }
         return ret;
     }
