@@ -79,9 +79,10 @@ TEST_F(RNGTests, Test_Dropout_1) {
 
     //x0.applyRandom(random::DropOut, _rngA, nullptr, &x0, prob);
     //x1.applyRandom(random::DropOut, _rngB, nullptr, &x1, prob);
-
+    RandomLauncher::applyDropOut(_rngA, &x0, 0.5);
+    RandomLauncher::applyDropOut(_rngB, &x1, 0.5);
     ASSERT_TRUE(x0.equalsTo(&x1));
-
+    x0.printIndexedBuffer("Dropout");
     // this check is required to ensure we're calling wrong signature
     ASSERT_FALSE(x0.equalsTo(nexp0));
     ASSERT_FALSE(x0.equalsTo(nexp1));
@@ -99,9 +100,10 @@ TEST_F(RNGTests, Test_DropoutInverted_1) {
 
     //x0.template applyRandom<randomOps::DropOutInverted<float>>(_rngA, nullptr, &x0, prob);
     //x1.template applyRandom<randomOps::DropOutInverted<float>>(_rngB, nullptr, &x1, prob);
-
+    RandomLauncher::applyInvertedDropOut(_rngA, &x0, 0.5);
+    RandomLauncher::applyInvertedDropOut(_rngB, &x1, 0.5);
     ASSERT_TRUE(x0.equalsTo(&x1));
-
+    x0.printIndexedBuffer("DropoutInverted");
     // this check is required to ensure we're calling wrong signature
     ASSERT_FALSE(x0.equalsTo(nexp0));
     ASSERT_FALSE(x0.equalsTo(nexp1));

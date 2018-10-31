@@ -53,7 +53,8 @@ namespace functions {
             auto yEWS = shape::elementWiseStride(yShapeBuffer);
             auto zEWS = shape::elementWiseStride(zShapeBuffer);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+//            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
 
             int elementsPerThread = length / ELEMENT_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
@@ -63,13 +64,13 @@ namespace functions {
                 if (xEWS == 1 && yEWS == 1 && zEWS == 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                     for (Nd4jLong e = 0; e < length; e++) {
-                        z[e] = OpClass::op(x[e], y[e], e, length, buffer, extraArguments);
+                        z[e] = OpClass::op(x[e], y[e], e, length, rng, extraArguments);
                     }
 
                 } else {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                     for (Nd4jLong e = 0; e < length; e++) {
-                        z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, buffer, extraArguments);
+                        z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, rng, extraArguments);
                     }
                 }
             } else {
@@ -101,12 +102,12 @@ namespace functions {
                     auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
 
-                    z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, buffer, extraArguments);
+                    z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, rng, extraArguments);
                 }
             }
 
             // update rng state
-            buffer->rewindH(length);
+            rng->rewindH(length);
         };
 
 
@@ -127,8 +128,8 @@ namespace functions {
             auto xEWS = shape::elementWiseStride(xShapeBuffer);
             auto zEWS = shape::elementWiseStride(zShapeBuffer);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-
+            //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
             Nd4jLong elementsPerThread = length / ELEMENT_THRESHOLD;
             Nd4jLong _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
@@ -137,13 +138,13 @@ namespace functions {
                 if (xEWS == 1 && zEWS == 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                     for (Nd4jLong e = 0; e < length; e++) {
-                        z[e] = OpClass::op(x[e], e, length,  buffer, extraArguments);
+                        z[e] = OpClass::op(x[e], e, length,  rng, extraArguments);
                     }
 
                 } else {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                     for (Nd4jLong e = 0; e < length; e++) {
-                        z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, buffer, extraArguments);
+                        z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, rng, extraArguments);
                     }
                 }
             } else {
@@ -168,12 +169,12 @@ namespace functions {
                     auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                     auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
-                    z[zOffset2] = OpClass::op(x[xOffset2], i, length, buffer, extraArguments);
+                    z[zOffset2] = OpClass::op(x[xOffset2], i, length, rng, extraArguments);
                 }
             }
 
             // update rng state
-            buffer->rewindH(length);
+            rng->rewindH(length);
         }
 
 
@@ -189,8 +190,8 @@ namespace functions {
             auto length = shape::length(zShapeBuffer);
             auto ews = shape::elementWiseStride(zShapeBuffer);
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-
+            //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
             Nd4jLong elementsPerThread = length / ELEMENT_THRESHOLD;
             Nd4jLong _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
@@ -199,13 +200,13 @@ namespace functions {
                 if (ews == 1) {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                     for (Nd4jLong x = 0; x < length; x++) {
-                        z[x] = OpClass::op(x, length, buffer, extraArguments);
+                        z[x] = OpClass::op(x, length, rng, extraArguments);
                     }
 
                 } else {
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                     for (Nd4jLong x = 0; x < length; x++) {
-                        z[x * ews] = OpClass::op(x, length, buffer, extraArguments);
+                        z[x * ews] = OpClass::op(x, length, rng, extraArguments);
                     }
                 }
             } else {
@@ -221,12 +222,12 @@ namespace functions {
                     shape::ind2sub(zRank, zShape, i, length, zCoord);
 
                     auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-                    z[zOffset2] = OpClass::op(i, length, buffer,  extraArguments);
+                    z[zOffset2] = OpClass::op(i, length, rng,  extraArguments);
                 }
             }
 
             // update rng state
-            buffer->rewindH(length);
+            rng->rewindH(length);
         }
 
         template<typename X>
