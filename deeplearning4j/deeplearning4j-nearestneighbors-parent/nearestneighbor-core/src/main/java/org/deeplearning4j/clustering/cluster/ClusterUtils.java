@@ -40,7 +40,6 @@ import java.util.concurrent.ExecutorService;
 @Slf4j
 public class ClusterUtils {
 
-
     /** Classify the set of points base on cluster centers. This also adds each point to the ClusterSet */
     public static ClusterSetInfo classifyPoints(final ClusterSet clusterSet, List<Point> points,
                     ExecutorService executorService) {
