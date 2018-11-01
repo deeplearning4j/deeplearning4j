@@ -32,10 +32,10 @@ public:
 class LabelTest : public testing::Test {
 public:
     float labels[450] = {1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0};
-    Nd4jLong shapeInfo[8] = {2,150,3,1,150,0,1,102};
+    Nd4jLong shapeInfo[8] = {2,150,3,1,150,16384,1,102};
     int dimension[1] = {1};
     int dimensionLength = 1;
-    Nd4jLong tadShapeInfoAssert[8] = {2,1,3,1,150,0,150,99};
+    Nd4jLong tadShapeInfoAssert[8] = {2,1,3,1,150,16384,150,99};
 };
 class ThreeDTest : public testing::Test {
 public:
@@ -190,12 +190,12 @@ public:
 
 class LeadingOnes : public testing::Test {
 public:
-    Nd4jLong shapeBufferF[16] = {4,1,1,4,4,1,1,1,4,0,1,102};
-    Nd4jLong shapeBufferC[16] = {4,1,1,4,4,16,16,4,1,0,1,99};
+    Nd4jLong shapeBufferF[16] = {4,1,1,4,4,1,1,1,4,16384,1,102}; // shapes with data type DOUBLE
+    Nd4jLong shapeBufferC[16] = {4,1,1,4,4,16,16,4,1,16384,1,99};
     int dimensionLength = 2;
     int dimension[2] = {2,3};
-    Nd4jLong tadAssertionC[10] = {3,4,4,1,4,1,16,0,-1,99};
-    Nd4jLong tadCAssertionF[10] = {3,4,4,1,1,4,1,0,-1,99};
+    Nd4jLong tadAssertionC[10] = {3,4,4,1,4,1,16,16384,-1,99};
+    Nd4jLong tadCAssertionF[10] = {3,4,4,1,1,4,1,16384,-1,99};
 };
 
 
@@ -216,13 +216,13 @@ TEST_F(LeadingOnes,OnesTest) {
 
 class NormalThreeFourFive : public testing::Test {
 public:
-    Nd4jLong assertionBuffer[8] = {2, 3, 4, 20, 5, 0, -1, 99};
-    Nd4jLong inputShapeBuffer[10] = {3,3,4,5,20,5,1,0,1,99};
+    Nd4jLong assertionBuffer[8] = {2, 3, 4, 20, 5, 16384, -1, 99};
+    Nd4jLong inputShapeBuffer[10] = {3,3,4,5,20,5,1,16384,1,99};
     int dimensionLength = 2;
     int dimension[2] = {0,1};
 };
 
-/*
+
 TEST_F(NormalThreeFourFive,DimensionTest) {
     shape::TAD *tad = new shape::TAD(1,inputShapeBuffer,dimension,dimensionLength);
     tad->createTadOnlyShapeInfo();
@@ -232,7 +232,6 @@ TEST_F(NormalThreeFourFive,DimensionTest) {
     delete tad;
 }
 
-*/
 class DimensionWarning : public testing::Test {
 public:
     int dimensionLength = 2;
@@ -293,8 +292,8 @@ public:
 
 class BeginOneTadTest : public testing::Test {
 public:
-    Nd4jLong assertionShapeBuffer[8] = {2,3,5,1,3,0,-1,102};
-    Nd4jLong inputShapeBuffer[10] = {3,1,3,5,1,1,3,0,1,102};
+    Nd4jLong assertionShapeBuffer[8] = {2,3,5,1,3,16384,-1,102};
+    Nd4jLong inputShapeBuffer[10] = {3,1,3,5,1,1,3,16384,1,102};
     int dimensionLength = 2;
     int dimension[2] = {1,2};
     //error: [2,1,1,1,1,0,1,97]
@@ -355,9 +354,9 @@ TEST_F(FourDTest,ThreeDFourDTest) {
 
 class RowVectorOnesTest : public testing::Test {
 public:
-    Nd4jLong shapeBuffer[12] = {4,4,3,1,1,3,1,1,1,0,1,99};
+    Nd4jLong shapeBuffer[12] = {4,4,3,1,1,3,1,1,1,8192,1,99}; // float32 type of shape
     float data[12] = {1,2,3,4,5,6,7,8,9,10,11,12};
-    Nd4jLong assertionBuffer[10] = {3,4,1,1,3,1,1,0,-1,99};
+    Nd4jLong assertionBuffer[10] = {3,4,1,1,3,1,1,8192,-1,99};
     int dimensionLength = 3;
     int dimension[3] = {0,2,3};
 };
@@ -374,10 +373,10 @@ public:
 
 class SixDTest : public testing::Test {
 public:
-    Nd4jLong inputShapeBuffer[16] = {6,1,1,4,4,4,4,1,1,1,4,16,64,0,1,102};
+    Nd4jLong inputShapeBuffer[16] = {6,1,1,4,4,4,4,1,1,1,4,16,64,16384,1,102}; // shape with double data type
     int dimensionLength = 2;
     int dimension[2] = {2,3};
-    Nd4jLong assertionShapeBuffer[8] = {2,4,4,1,4,0,-1,102};
+    Nd4jLong assertionShapeBuffer[8] = {2,4,4,1,4,16384,-1,102}; // also double typed shape
 };
 
 TEST_F(SixDTest,SixDWithOnes) {
@@ -391,10 +390,10 @@ TEST_F(SixDTest,SixDWithOnes) {
 
 class TrailingTest : public testing::Test {
 public:
-    Nd4jLong inputShapeBuffer[12] = {4,5,5,5,1,1,5,25,125,0,1,102};
+    Nd4jLong inputShapeBuffer[12] = {4,5,5,5,1,1,5,25,125,16384,1,102};
     int dimensionLength = 1;
     int dimension[1] = {0};
-    Nd4jLong assertionShapeBuffer[8] = {2,1,5,125,1,0,-1,99};
+    Nd4jLong assertionShapeBuffer[8] = {2,1,5,125,1,16384,-1,99};
 };
 
 TEST_F(TrailingTest,TrailingTest2) {
@@ -409,10 +408,10 @@ TEST_F(TrailingTest,TrailingTest2) {
 
 class ScalarTest : public testing::Test {
 public:
-    Nd4jLong inputShapeBuffer[12] = {3,2,3,4,12,4,1,0,1,99};
+    Nd4jLong inputShapeBuffer[12] = {3,2,3,4,12,4,1,16384,1,99};
     int dimensionLength = 1;
     int dimension[1] = {1};
-    Nd4jLong assertionShapeBuffer[8] = {2,1,1,1,1,0,1,99};
+    Nd4jLong assertionShapeBuffer[8] = {2,1,1,1,1,16384,1,99};
 };
 /*
 TEST_F(ScalarTest,ScalarTest2) {
@@ -429,10 +428,10 @@ TEST_F(ScalarTest,ScalarTest2) {
 
 class ThreeTest : public testing::Test {
 public:
-    Nd4jLong inputShapeBuffer[10] = {3,4,3,2,6,2,1,0,1,99};
+    Nd4jLong inputShapeBuffer[10] = {3,4,3,2,6,2,1,16384,1,99};
     int dimensionLength = 1;
     int dimension[1] = {0};
-    Nd4jLong assertionShapeBuffer[8] = {2,1,4,1,6,0,6,99};
+    Nd4jLong assertionShapeBuffer[8] = {2,1,4,1,6,16384,6,99};
 };
 
 TEST_F(ThreeTest,ThreeTest ) {
