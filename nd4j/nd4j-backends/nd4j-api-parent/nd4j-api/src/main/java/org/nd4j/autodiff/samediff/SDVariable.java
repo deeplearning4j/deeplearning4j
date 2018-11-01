@@ -25,6 +25,7 @@ import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -69,6 +70,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     @Setter
     protected WeightInitScheme weightInitScheme;
 
+    private int outputIndex = 0;
+
+    private DifferentialFunction creator;
 
     // autogen_tag::sdvars::start
 
@@ -277,12 +281,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
 
-
-
-
     /**
      * Returns the shape of this variable
-     * @return
+     * @return Shape of the variable
      */
     public long[] getShape() {
         long[] initialShape =  sameDiff.getShapeForVarName(getVarName());
@@ -296,21 +297,26 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
 
-
     /**
-     *
-     * @return
+     * Create a new SDVariable, the contents of which is copied from this current variable
+     * @return The new variable
      */
     public SDVariable dup() {
         return sameDiff.var(this);
     }
 
+    /**
+     * Return a variable with equal shape to the input, but all elements set to the specified value
+     *
+     * @param value Value for returned variable
+     * @return new variable
+     */
     public SDVariable assign(Number value){
         return sameDiff.scalarSet(this, value);
     }
 
     /**
-     * Negate op
+     * Negate op - returns a new variable with the values of the current variable negated
      * @return Negated variable
      */
     public SDVariable neg(){
@@ -318,191 +324,557 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     /**
-     * Negate op
+     * Negate op - returns a new variable with the values of the current variable negated
+     * @param name Name of the new variable
      * @return Negated variable
      */
     public SDVariable neg(String name){
         return sameDiff.neg(name, this);
     }
 
+    /**
+     * See {@link #lt(String, double)}
+     */
     public SDVariable lt(double value){
         return lt(null, value);
     }
 
+    /**
+     * Less than operation: elementwise {@code this < value}<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param name  Name of the output variable
+     * @param value value argument to use in operation
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable lt(String name, double value){
         return sameDiff.lt(name, this, value);
     }
 
+    /**
+     * See {@link #lte(String, double)}
+     */
     public SDVariable lte(double value){
         return lte(null, value);
     }
 
+    /**
+     * Less than or equals operation: elementwise {@code this <= value}<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param name  Name of the output variable
+     * @param value value argument to use in operation
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable lte(String name, double value){
         return sameDiff.lte(name, this, value);
     }
 
+    /**
+     * See {@link #gt(String, double)}
+     */
     public SDVariable gt(double value){
         return gt(null, value);
     }
 
+    /**
+     * Greater than operation: elementwise {@code this > value}<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param name  Name of the output variable
+     * @param value value argument to use in operation
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable gt(String name, double value){
         return sameDiff.gt(name, this, value);
     }
 
+    /**
+     * See {@link #gte(String, double)}
+     */
     public SDVariable gte(double value){
         return gte(null, value);
     }
 
+    /**
+     * Greater than or equals operation: elementwise {@code this >= value}<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param name  Name of the output variable
+     * @param value value argument to use in operation
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable gte(String name, double value){
         return sameDiff.gte(name, this, value);
     }
 
-
+    /**
+     * See {@link #eq(String, double)}
+     */
     public SDVariable eq(double value){
         return eq(null, value);
     }
 
+    /**
+     * Equals operation: elementwise {@code this == value}<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param name  Name of the output variable
+     * @param value value argument to use in operation
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable eq(String name, double value){
         return sameDiff.eq(name, this, value);
     }
 
+    /**
+     * See {@link #neq(SDVariable)}
+     */
     public SDVariable neq(double value){
         return neq(null, value);
     }
 
+    /**
+     * Not equals operation: elementwise {@code this != value}<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param name  Name of the output variable
+     * @param value value argument to use in operation
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable neq(String name, double value){
         return sameDiff.neq(name, this, value);
     }
 
 
-
-
-
+    /**
+     * See {@link #lt(String, SDVariable)}
+     */
     public SDVariable lt(SDVariable other){
         return lt(null, other);
     }
 
+    /**
+     * Less than operation: elementwise {@code this < y}<br>
+     * If x and y arrays have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if x and y have different shapes and are broadcastable, the output shape is broadcast.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param name  Name of the output variable
+     * @param other Variable to compare values against
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable lt(String name, SDVariable other){
         return sameDiff.lt(name, this, other);
     }
 
+    /**
+     * See {@link #lte(String, SDVariable)}
+     */
     public SDVariable lte(SDVariable other){
         return lte(null, other);
     }
 
+    /**
+     * Less than or equal to operation: elementwise {@code this <= y}<br>
+     * If x and y arrays have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if x and y have different shapes and are broadcastable, the output shape is broadcast.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param name  Name of the output variable
+     * @param other Variable to compare values against
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable lte(String name, SDVariable other){
         return sameDiff.lte(name, this, other);
     }
 
+    /**
+     * See {@link #gt(String, SDVariable)}
+     */
     public SDVariable gt(SDVariable other){
         return gt(null, other);
     }
 
+    /**
+     * Greater than operation: elementwise {@code this > y}<br>
+     * If x and y arrays have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if x and y have different shapes and are broadcastable, the output shape is broadcast.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param name  Name of the output variable
+     * @param other Variable to compare values against
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable gt(String name, SDVariable other){
         return sameDiff.gt(name, this, other);
     }
 
+    /**
+     * See {@link #gte(String, SDVariable)}
+     */
     public SDVariable gte(SDVariable other){
         return gte(null, other);
     }
 
+    /**
+     * Greater than or equal to operation: elementwise {@code this >= y}<br>
+     * If x and y arrays have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if x and y have different shapes and are broadcastable, the output shape is broadcast.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param name  Name of the output variable
+     * @param other Variable to compare values against
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable gte(String name, SDVariable other){
         return sameDiff.gte(name, this, other);
     }
 
-
+    /**
+     * See {@link #eq(String, SDVariable)}
+     */
     public SDVariable eq(SDVariable other){
         return eq(null, other);
     }
 
+    /**
+     * Equal to operation: elementwise {@code this == y}<br>
+     * If x and y arrays have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if x and y have different shapes and are broadcastable, the output shape is broadcast.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param name  Name of the output variable
+     * @param other Variable to compare values against
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable eq(String name, SDVariable other){
         return sameDiff.eq(name, this, other);
     }
 
+    /**
+     * See {@link #neq(String, SDVariable)}
+     */
     public SDVariable neq(SDVariable other){
         return neq(null, other);
     }
 
+    /**
+     * Not equal to operation: elementwise {@code this != y}<br>
+     * If x and y arrays have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if x and y have different shapes and are broadcastable, the output shape is broadcast.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param name  Name of the output variable
+     * @param other Variable to compare values against
+     * @return Output SDVariable with values 0 (not satisfied) and 1 (where the condition is satisfied)
+     */
     public SDVariable neq(String name, SDVariable other){
         return sameDiff.neq(name, this, other);
     }
 
+    /**
+     * See {@link #mmul(String, SDVariable)}
+     */
     public SDVariable mmul(SDVariable other){
         return mmul(null, other);
     }
 
+    /**
+     * Matrix multiplication: out = mmul(this,other)
+     *
+     * @param name  Name of the output variable
+     * @param other Other variable to perform matrix multiplication with
+     * @return Output variable (result of mmul)
+     */
     public SDVariable mmul(String name, SDVariable other){
         return sameDiff.mmul(name, this, other);
     }
 
-    //scalars
+    /**
+     * Matrix multiplication: out = mmul(this,other)
+     *
+     * @param name          Name of the output variable
+     * @param other         Other variable to perform matrix multiplication with
+     * @param mMulTranspose Matrix transpose configuration
+     * @return Output variable (result of mmul)
+     */
+    public SDVariable mmul(String name, SDVariable other, @NonNull MMulTranspose mMulTranspose) {
+        return sameDiff.mmul(name, this, other, mMulTranspose);
+    }
+
 
     /**
-     *
-     * @param sameDiffVariable
-     * @return
+     * See {@link #add(String, double)}
      */
-    public SDVariable rsub(double sameDiffVariable) {
-        return rsub(sameDiff.generateNewVarName(RSubOp.OP_NAME,0),sameDiffVariable);
+    public SDVariable add(double scalar) {
+        return add(sameDiff.generateNewVarName(AddOp.OP_NAME,0),scalar);
     }
 
     /**
+     * Scalar addition: {@code out = this + scalar}<br>
+     * Output variable has the same shape as the input variable
      *
-     * @param sameDiffVariable
-     * @return
+     * @param varName Output variable name
+     * @param scalar  Scalar for operation
+     * @return Output variable
      */
-    public SDVariable rdiv(double sameDiffVariable) {
+    public SDVariable add(String varName, double scalar) {
+        val function = sameDiff.f().add(this,scalar);
+        return sameDiff.updateVariableNameAndReference(function,varName);
+    }
+
+    /**
+     * See {@link #add(String, SDVariable)}
+     */
+    public SDVariable add(SDVariable other) {
+        return add(sameDiff.generateNewVarName(AddOp.OP_NAME,0),other);
+    }
+
+    /**
+     * Addition operation: elementwise {@code this + x}<br>
+     * If this and x variables have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if this and x have different shapes and are broadcastable, the output shape is broadcast.
+     *
+     * @param name Name of the output variable
+     * @param x    Variable to perform operation with
+     * @return Output (result) SDVariable
+     */
+    public SDVariable add(String name, SDVariable x) {
+        val result = sameDiff.f().add(this, x);
+        return sameDiff.updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #sub(String, double)}
+     */
+    public SDVariable sub(double scalar) {
+        return sub(sameDiff.generateNewVarName(SubOp.OP_NAME,0),scalar);
+    }
+
+    /**
+     * Scalar subtraction: {@code out = this - scalar}<br>
+     * Output variable has the same shape as the input variable
+     *
+     * @param varName Output variable name
+     * @param scalar  Scalar for operation
+     * @return Output variable
+     */
+    public SDVariable sub(String varName, double scalar) {
+        val result = sameDiff.f().sub(this, scalar);
+        return sameDiff.updateVariableNameAndReference(result, varName);
+    }
+
+    /**
+     * See {@link #sub(String, SDVariable)}
+     */
+    public SDVariable sub(SDVariable x) {
+        return sub(sameDiff.generateNewVarName(SubOp.OP_NAME,0),x);
+    }
+
+    /**
+     * Subtraction operation: elementwise {@code this - x}<br>
+     * If this and x variables have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if this and x have different shapes and are broadcastable, the output shape is broadcast.
+     *
+     * @param name Name of the output variable
+     * @param x    Variable to perform operation with
+     * @return Output (result) SDVariable
+     */
+    public SDVariable sub(String name, SDVariable x) {
+        val result = sameDiff.f().sub(this,x);
+        return sameDiff.updateVariableNameAndReference(result,name);
+    }
+
+    /**
+     * See {@link #div(String,double)}
+     */
+    public SDVariable div(double scalar) {
+        return div(sameDiff.generateNewVarName(DivOp.OP_NAME,0),scalar);
+    }
+
+    /**
+     * Scalar division: {@code out = this / scalar}<br>
+     * Output variable has the same shape as the input variable
+     *
+     * @param varName Output variable name
+     * @param scalar  Scalar for operation
+     * @return Output variable
+     */
+    public SDVariable div(String varName, double scalar) {
+        val function = sameDiff.f().div(this,scalar);
+        return sameDiff.updateVariableNameAndReference(function,varName);
+    }
+
+    /**
+     * See {@link #div(String, SDVariable)}
+     */
+    public SDVariable div(SDVariable x) {
+        return div(sameDiff.generateNewVarName(DivOp.OP_NAME,0),x);
+    }
+
+    /**
+     * Division operation: elementwise {@code this / x}<br>
+     * If this and x variables have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if this and x have different shapes and are broadcastable, the output shape is broadcast.
+     *
+     * @param name Name of the output variable
+     * @param x    Variable to perform operation with
+     * @return Output (result) SDVariable
+     */
+    public SDVariable div(String name, SDVariable x) {
+        val result = sameDiff.f().div(this, x);
+        return sameDiff.updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #mul(String, double)}
+     */
+    public SDVariable mul(double scalar) {
+        return mul(sameDiff.generateNewVarName(MulOp.OP_NAME,0),scalar);
+    }
+
+    /**
+     * Scalar multiplication: {@code out = this * scalar}<br>
+     * Output variable has the same shape as the input variable
+     *
+     * @param varName Output variable name
+     * @param scalar  Scalar for operation
+     * @return Output variable
+     */
+    public SDVariable mul(String varName, double scalar) {
+        val function = sameDiff.f().mul(this, scalar);
+        return sameDiff.updateVariableNameAndReference(function,varName);
+    }
+
+
+    /**
+     * See {@link #mul(String, SDVariable)}
+     */
+    public SDVariable mul(SDVariable x) {
+        return mul(sameDiff.generateNewVarName(MulOp.OP_NAME,0),x);
+    }
+
+    /**
+     * Multiplication operation: elementwise {@code this * x}<br>
+     * If this and x variables have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if this and x have different shapes and are broadcastable, the output shape is broadcast.
+     *
+     * @param name Name of the output variable
+     * @param x    Variable to perform operation with
+     * @return Output (result) SDVariable
+     */
+    public SDVariable mul(String name, SDVariable x) {
+        val result = sameDiff.f().mul(this, x);
+        return sameDiff.updateVariableNameAndReference(result,name);
+    }
+
+    /**
+     * See {@link #pow(String, double)}
+     */
+    public SDVariable pow(double scalar) {
+        return pow(null, scalar);
+    }
+
+    /**
+     * Scalar power operation: {@code out = this ^ scalar}<br>
+     * Output variable has the same shape as the input variable
+     *
+     * @param varName Output variable name
+     * @param scalar  Scalar for operation
+     * @return Output variable
+     */
+    public SDVariable pow(String varName, double scalar) {
+        SDVariable ret = f().pow(this, scalar);
+        return sameDiff.updateVariableNameAndReference(ret, varName);
+    }
+
+    /**
+     * See {@link #rsub(String, double)}
+     */
+    public SDVariable rsub(double scalar) {
+        return rsub(sameDiff.generateNewVarName(RSubOp.OP_NAME,0),scalar);
+    }
+
+    /**
+     * Scalar reverse subtraction: {@code out = scalar - this}<br>
+     * Output variable has the same shape as the input variable
+     *
+     * @param varName Output variable name
+     * @param scalar  Scalar for operation
+     * @return Output variable
+     */
+    public SDVariable rsub(String varName, double scalar) {
+        val function = sameDiff.f().rsub(this,scalar);
+        return sameDiff.updateVariableNameAndReference(function,varName);
+    }
+
+    /**
+     * See {@link #rsub(String, SDVariable)}
+     */
+    public SDVariable rsub(SDVariable x) {
+        return rsub(sameDiff.generateNewVarName(RSubOp.OP_NAME,0),x);
+    }
+
+    /**
+     * Reverse subtraction operation: elementwise {@code x - this}<br>
+     * If this and x variables have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if this and x have different shapes and are broadcastable, the output shape is broadcast.
+     *
+     * @param name Name of the output variable
+     * @param x    Variable to perform operation with
+     * @return Output (result) SDVariable
+     */
+    public SDVariable rsub(String name, SDVariable x) {
+        val result = sameDiff.f().rsub(this,x);
+        return sameDiff.updateVariableNameAndReference(result,name);
+    }
+
+    /**
+     * See {@link #rdiv(String, double)}
+     */
+    public SDVariable rdiv(double scalar) {
+        return rdiv(sameDiff.generateNewVarName(RDivOp.OP_NAME,0),scalar);
+    }
+
+    /**
+     * Scalar reverse division: {@code out = scalar / this}<br>
+     * Output variable has the same shape as the input variable
+     *
+     * @param varName Output variable name
+     * @param scalar  Scalar for operation
+     * @return Output variable
+     */
+    public SDVariable rdiv(String varName, double scalar) {
+        val function = sameDiff.f().rdiv(this, scalar);
+        return sameDiff.updateVariableNameAndReference(function, varName);
+    }
+
+    /**
+     * See {@link #rdiv(String, SDVariable)}
+     */
+    public SDVariable rdiv(SDVariable sameDiffVariable) {
         return rdiv(sameDiff.generateNewVarName(RDivOp.OP_NAME,0),sameDiffVariable);
-
     }
 
     /**
+     * Reverse division operation: elementwise {@code x / this}<br>
+     * If this and x variables have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if this and x have different shapes and are broadcastable, the output shape is broadcast.
      *
-     * @param sameDiffVariable
-     * @return
+     * @param name Name of the output variable
+     * @param x    Variable to perform operation with
+     * @return Output (result) SDVariable
      */
-    public SDVariable add(double sameDiffVariable) {
-        return add(sameDiff.generateNewVarName(AddOp.OP_NAME,0),sameDiffVariable);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable sub(double sameDiffVariable) {
-        return sub(sameDiff.generateNewVarName(SubOp.OP_NAME,0),sameDiffVariable);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable squaredDifference(SDVariable sameDiffVariable) {
-        return squaredDifference(sameDiff.generateNewVarName(SquaredDifferenceOp.OP_NAME,0),sameDiffVariable);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable div(double sameDiffVariable) {
-        return div(sameDiff.generateNewVarName(DivOp.OP_NAME,0),sameDiffVariable);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable mul(double sameDiffVariable) {
-        return mul(sameDiff.generateNewVarName(MulOp.OP_NAME,0),sameDiffVariable);
+    public SDVariable rdiv(String name, SDVariable x) {
+        val result = sameDiff.f().rdiv(this,x);
+        return sameDiff.updateVariableNameAndReference(result,name);
 
     }
 
@@ -567,31 +939,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     }
 
-
-
-    //end scalars
-
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable rsub(SDVariable sameDiffVariable) {
-        return rsub(sameDiff.generateNewVarName(RSubOp.OP_NAME,0),sameDiffVariable);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable rdiv(SDVariable sameDiffVariable) {
-        return rdiv(sameDiff.generateNewVarName(RDivOp.OP_NAME,0),sameDiffVariable);
-
-    }
-
     /**
      *
      * @param sameDiffVariable
@@ -599,46 +946,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      */
     public SDVariable truncatedDiv(SDVariable sameDiffVariable) {
         return truncatedDiv(sameDiff.generateNewVarName(TruncateDivOp.OP_NAME,0),sameDiffVariable);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable add(SDVariable sameDiffVariable) {
-        return add(sameDiff.generateNewVarName(AddOp.OP_NAME,0),sameDiffVariable);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable sub(SDVariable sameDiffVariable) {
-        return sub(sameDiff.generateNewVarName(SubOp.OP_NAME,0),sameDiffVariable);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable div(SDVariable sameDiffVariable) {
-        return div(sameDiff.generateNewVarName(DivOp.OP_NAME,0),sameDiffVariable);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable mul(SDVariable sameDiffVariable) {
-        return mul(sameDiff.generateNewVarName(MulOp.OP_NAME,0),sameDiffVariable);
 
     }
 
@@ -670,7 +977,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      */
     public SDVariable addi(SDVariable sameDiffVariable) {
         return addi(sameDiff.generateNewVarName(AddOp.OP_NAME,0),sameDiffVariable);
-
     }
 
     /**
@@ -703,27 +1009,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     }
 
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable rsub(String varName, double sameDiffVariable) {
-        val function = sameDiff.f().rsub(this,sameDiffVariable);
-        return sameDiff.updateVariableNameAndReference(function,varName);
 
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable rdiv(String varName, double sameDiffVariable) {
-        val function = sameDiff.f().rdiv(this,sameDiffVariable);
-        return sameDiff.updateVariableNameAndReference(function,varName);
-
-    }
 
     /**
      *
@@ -734,60 +1020,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         val function = sameDiff.f().truncatedDiv(this, sameDiffVariable);
         return sameDiff.updateVariableNameAndReference(function,varName);
 
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable add(String varName, double sameDiffVariable) {
-        val function = sameDiff.f().add(this,sameDiffVariable);
-        return sameDiff.updateVariableNameAndReference(function,varName);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable sub(String varName, double sameDiffVariable) {
-        SDVariable right = this;
-        val result = sameDiff.f().sub(right,sameDiffVariable);
-        return sameDiff.updateVariableNameAndReference(result,varName);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable div(String varName, double sameDiffVariable) {
-        val function = sameDiff.f().div(this,sameDiffVariable);
-        return sameDiff.updateVariableNameAndReference(function,varName);
-
-    }
-
-    /**
-     *
-     * @param value
-     * @return
-     */
-    public SDVariable mul(String varName, double value) {
-        val function = sameDiff.f().mul(this
-                , value);
-        return sameDiff.updateVariableNameAndReference(function,varName);
-    }
-
-    public SDVariable pow(double value){
-        return pow(null, value);
-    }
-
-    public SDVariable pow(String varName, double value){
-        SDVariable ret = f().pow(this, value);
-        return sameDiff.updateVariableNameAndReference(ret, varName);
     }
 
     /**
@@ -854,108 +1086,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     public SDVariable muli(String varName, double sameDiffVariable) {
         val function = sameDiff.f().muli(this,sameDiffVariable);
         return sameDiff.updateVariableNameAndReference(function,varName);
-
     }
 
 
-
-    //end scalars
-
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable rsub(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
-        val result = sameDiff.f().rsub(this,sameDiffVariable);
-        return sameDiff.updateVariableNameAndReference(result,varName);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable rdiv(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
-        val result = sameDiff.f().rdiv(this,sameDiffVariable);
-        return sameDiff.updateVariableNameAndReference(result,varName);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable add(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
-        val result = sameDiff.f().add(this,sameDiffVariable);
-        return sameDiff.updateVariableNameAndReference(result,varName);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable sub(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
-
-        SDVariable left = this;
-        SDVariable right = sameDiffVariable;
-        val result = sameDiff.f().sub(left,right);
-        return sameDiff.updateVariableNameAndReference(result,varName);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return squared difference between variables
-     */
-    public SDVariable squaredDifference(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
-
-        SDVariable left = this;
-        SDVariable right = sameDiffVariable;
-        val result = sameDiff.f().squaredDifference(left, right);
-        return sameDiff.updateVariableNameAndReference(result, varName);
-    }
-
-        /**
-         *
-         * @param sameDiffVariable
-         * @return
-         */
-    public SDVariable div(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
-        val result = sameDiff.f().div(this,sameDiffVariable);
-        return sameDiff.updateVariableNameAndReference(result,varName);
-
-    }
-
-    /**
-     *
-     * @param sameDiffVariable
-     * @return
-     */
-    public SDVariable mul(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
-
-        SDVariable left = this;
-        SDVariable right = sameDiffVariable;
-        Preconditions.checkNotNull(left,"Left input is null!");
-        Preconditions.checkNotNull(right,"Right input is null!");
-
-        val result = sameDiff.f().mul(left,right);
-        return sameDiff.updateVariableNameAndReference(result,varName);
-
-    }
 
 
     /**
@@ -964,7 +1097,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable rsubi(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
         val result = sameDiff.f().rsubi(this,sameDiffVariable);
         return sameDiff.updateVariableNameAndReference(result,varName);
 
@@ -976,7 +1108,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable rdivi(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
         val result = sameDiff.f().rdivi(this,sameDiffVariable);
         return sameDiff.updateVariableNameAndReference(result,varName);
 
@@ -988,7 +1119,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable addi(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
         val result = sameDiff.f().addi(this,sameDiffVariable);
         return sameDiff.updateVariableNameAndReference(result,varName);
 
@@ -1005,7 +1135,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable subi(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
         SDVariable left = this;
         SDVariable right = sameDiffVariable;
         val result = sameDiff.f().subi(left,right);
@@ -1018,7 +1147,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable divi(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
         val result = sameDiff.f().divi(this,sameDiffVariable);
         result.setVarName(varName);
         return result;
@@ -1030,8 +1158,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable muli(String varName, SDVariable sameDiffVariable) {
-        assertShapeEquals(sameDiffVariable);
-
         SDVariable left = this;
         SDVariable right = sameDiffVariable;
         SDVariable result = sameDiff.f().muli(left,right);
@@ -1039,163 +1165,448 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return result;
     }
 
+    /**
+     * See {@link #squaredDifference(String, SDVariable)}
+     */
+    public SDVariable squaredDifference(SDVariable x) {
+        return squaredDifference(sameDiff.generateNewVarName(SquaredDifferenceOp.OP_NAME,0),x);
+    }
+
+    /**
+     * Squared difference operation: {@code (this - x)^2}
+     * @param x Other input variable
+     * @return squared difference between variables
+     */
+    public SDVariable squaredDifference(String name, SDVariable x) {
+        val result = sameDiff.f().squaredDifference(this, x);
+        return sameDiff.updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #sum(String, boolean, int...)}
+     */
     public SDVariable sum(int... dimensions){
         return sum(null, dimensions);
     }
 
+    /**
+     * See {@link #sum(String, boolean, int...)}
+     */
     public SDVariable sum(boolean keepDims, int... dimensions){
         return sum(null, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #sum(String, boolean, int...)}
+     */
     public SDVariable sum(String name, int... dimensions){
         return sum(name, false, dimensions);
     }
 
+    /**
+     * Sum array reduction operation, optionally along specified dimensions.<br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param name       Output variable name
+     * @param keepDims   If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions) if keepDims = false, or
+     * of rank (input rank) if keepdims = true
+     */
     public SDVariable sum(String name, boolean keepDims, int... dimensions){
         return sameDiff.sum(name, this, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #mean(String, boolean, int...)}
+     */
     public SDVariable mean(boolean keepDims, int... dimensions){
         return mean(null, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #mean(String, boolean, int...)}
+     */
     public SDVariable mean(String name, int... dimensions){
         return mean(name, false, dimensions);
     }
 
+    /**
+     * See {@link #mean(String, boolean, int...)}
+     */
     public SDVariable mean(int... dimensions){
         return mean(null, false, dimensions);
     }
 
+
+    /**
+     * Mean (average) array reduction operation, optionally along specified dimensions<br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param name       Output variable name
+     * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
+     */
     public SDVariable mean(String name, boolean keepDims, int... dimensions){
         return sameDiff.mean(name, this, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #std(String, boolean, boolean, int...)}
+     */
     public SDVariable std(boolean biasCorrected, int... dimensions){
         return std(null, biasCorrected, dimensions);
     }
 
+    /**
+     * See {@link #std(String, boolean, boolean, int...)}
+     */
     public SDVariable std(String name, boolean biasCorrected, int... dimensions){
         return sameDiff.standardDeviation(name, this, biasCorrected, dimensions);
     }
 
+    /**
+     * Stardard deviation array reduction operation, optionally along specified dimensions<br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param biasCorrected If true: divide by (N-1) (i.e., sample stdev). If false: divide by N (population stdev)
+     * @param keepDims      If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+     * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
+     */
     public SDVariable std(String name, boolean biasCorrected, boolean keepDims, int... dimensions){
         return sameDiff.standardDeviation(name, this, biasCorrected, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #prod(String, boolean, int...)}
+     */
     public SDVariable prod(int... dimensions){
         return prod(null, dimensions);
     }
 
+    /**
+     * See {@link #prod(String, boolean, int...)}
+     */
     public SDVariable prod(boolean keepDims, int... dimensions){
         return prod(null, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #prod(String, boolean, int...)}
+     */
     public SDVariable prod(String name, int... dimensions){
         return sameDiff.prod(name, this, dimensions);
     }
 
+    /**
+     * Product array reduction operation, optionally along specified dimensions<br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param name       Output variable name
+     * @param keepDims   If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
+     */
     public SDVariable prod(String name, boolean keepDims, int... dimensions){
         return sameDiff.prod(name, this, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #min(String, boolean, int...)}
+     */
     public SDVariable min(int... dimensions){
         return min(null, dimensions);
     }
 
+    /**
+     * See {@link #min(String, boolean, int...)}
+     */
     public SDVariable min(boolean keepDims, int... dimensions){
         return min(null, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #min(String, boolean, int...)}
+     */
     public SDVariable min(String name, int... dimensions){
         return min(name, false, dimensions);
     }
 
+    /**
+     * Minimum array reduction operation, optionally along specified dimensions. out = min(in)<br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param name       Output variable name
+     * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
+     */
     public SDVariable min(String name, boolean keepDims, int... dimensions){
         return sameDiff.min(name, this, keepDims, dimensions);
     }
 
-    public SDVariable max(int... dimensions){
+    /**
+     * See {@link #max(String, boolean, int...)}
+     */
+    public SDVariable max(int... dimensions) {
         return max(null, dimensions);
     }
 
-    public SDVariable max(boolean keepDims, int... dimensions){
-        return max(null, keepDims, dimensions);
-    }
-
-    public SDVariable max(String name, int... dimensions){
+    /**
+     * See {@link #max(String, boolean, int...)}
+     */
+    public SDVariable max(String name, int... dimensions) {
         return max(name, false, dimensions);
     }
 
-    public SDVariable max(String name, boolean keepDims, int... dimensions){
+    /**
+     * See {@link #max(String, boolean, int...)}
+     */
+    public SDVariable max(boolean keepDims, int... dimensions) {
+        return max(null, keepDims, dimensions);
+    }
+
+    /**
+     * Maximum array reduction operation, optionally along specified dimensions<br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param name       Output variable name
+     * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable max(String name, boolean keepDims, int... dimensions) {
         return sameDiff.max(name, this, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #norm1(String, boolean, int...)}
+     */
     public SDVariable norm1(int... dimensions){
         return norm1(null, dimensions);
     }
 
+    /**
+     * See {@link #norm1(String, boolean, int...)}
+     */
     public SDVariable norm1(boolean keepDims, int... dimensions){
         return norm1(null, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #norm1(String, boolean, int...)}
+     */
     public SDVariable norm1(String name, int... dimensions){
         return norm1(name, false, dimensions);
     }
 
-    public SDVariable norm1(String name, boolean keepDims, int... dimensions){
+    /**
+     * Norm1 (L1 norm) reduction operation: The output contains the L1 norm for each tensor/subset along the specified dimensions:<br>
+     * {@code out = sum_i abs(x[i])}<br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param name       Output variable name
+     * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+     * @param dimensions dimensions to reduce over
+     * @return Output variable
+     */
+    public SDVariable norm1(String name, boolean keepDims, int... dimensions) {
         return sameDiff.norm1(name, this, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #norm2(String, boolean, int...)}
+     */
     public SDVariable norm2(int... dimensions){
         return norm2(null, dimensions);
     }
 
+    /**
+     * See {@link #norm2(String, boolean, int...)}
+     */
     public SDVariable norm2(boolean keepDims, int... dimensions){
         return norm2(null, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #norm2(String, boolean, int...)}
+     */
     public SDVariable norm2(String name, int... dimensions){
         return norm2(name, false, dimensions);
     }
 
+    /**
+     * Norm2 (L2 norm) reduction operation: The output contains the L2 norm for each tensor/subset along the specified dimensions:<br>
+     * {@code out = sqrt(sum_i x[i]^2)}<br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param name       Output variable name
+     * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+     * @param dimensions dimensions to reduce over
+     * @return Output variable
+     */
     public SDVariable norm2(String name, boolean keepDims, int... dimensions){
         return sameDiff.norm2(name, this, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #normmax(String, boolean, int...)}
+     */
     public SDVariable normmax(int... dimensions){
         return normmax(null, dimensions);
     }
 
+    /**
+     * See {@link #normmax(String, boolean, int...)}
+     */
     public SDVariable normmax(boolean keepDims, int... dimensions){
         return normmax(null, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #normmax(String, boolean, int...)}
+     */
     public SDVariable normmax(String name, int... dimensions){
         return normmax(name, false, dimensions);
     }
 
+    /**
+     * Max norm (infinity norm) reduction operation: The output contains the max norm for each tensor/subset along the
+     * specified dimensions:<br>
+     * {@code out = max(abs(x[i]))}<br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param name       Output variable name
+     * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+     * @param dimensions dimensions to reduce over
+     * @return Output variable
+     */
     public SDVariable normmax(String name, boolean keepDims, int... dimensions){
         return sameDiff.normmax(name, this, keepDims, dimensions);
     }
 
+    /**
+     * See {@link #argmax(String, boolean, int...)}
+     */
     public SDVariable argmax(int... dimensions){
         return argmax(null, dimensions);
     }
 
+    /**
+     * See {@link #argmax(String, boolean, int...)}
+     */
     public SDVariable argmax(String name, int... dimensions){
         return sameDiff.argmax(name, this, dimensions);
     }
 
+    /**
+     * Argmax array reduction operation, optionally along specified dimensions.<br>
+     * Output values are the index of the maximum value of each slice along the specified dimension.<br>
+     * <br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param name       Name of the output variable
+     * @param keepDims   If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions) if keepDims = false, or
+     * of rank (input rank) if keepdims = true
+     */
+    public SDVariable argmax(String name, boolean keepDims, int... dimensions) {
+        return sameDiff.argmax(name, this, keepDims, dimensions);
+    }
+
+    /**
+     * See {@link #argmin(String, boolean, int...)}
+     */
     public SDVariable argmin(int... dimensions){
         return argmin(null, dimensions);
     }
 
+    /**
+     * See {@link #argmin(String, boolean, int...)}
+     */
     public SDVariable argmin(String name, int... dimensions){
         return sameDiff.argmin(name, this, dimensions);
     }
 
+    /**
+     * Argmin array reduction operation, optionally along specified dimensions.<br>
+     * Output values are the index of the minimum value of each slice along the specified dimension.<br>
+     * <br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param name       Name of the output variable
+     * @param keepDims   If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions) if keepDims = false, or
+     * of rank (input rank) if keepdims = true
+     */
+    public SDVariable argmin(String name, boolean keepDims, int... dimensions) {
+        return sameDiff.argmax(name, this, keepDims, dimensions);
+    }
 
+    /**
+     * Associate the specified array with this variable
+     * @param array Array to associate with this variable
+     * @return This variable
+     */
     public SDVariable setArray(INDArray array){
         sameDiff.associateArrayWithVariable(array, this);
         return this;
@@ -1210,22 +1621,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         sameDiff.exec();
         return getArr();
     }
-
-  private int outputIndex = 0;
-
-  private DifferentialFunction creator;
-
-
-    private void assertShapeEquals(SDVariable variable) {
-       /* val shape = sameDiff.getShapeForVarName(getVarName());
-        if(shape == null && !variable.isPlaceHolder())
-            throw new ND4JIllegalStateException("Shape not found for variable " + getVarName());
-
-        if(!Arrays.equals(shape,variable.getShape()) && ArrayUtil.prod(variable.getShape()) != 1 && Shape.broadcastOutputShape(shape,variable.getShape()) == null) {
-            throw new IllegalArgumentException("Input shape must be the same as this shape " + Arrays.toString(shape) + " and shape was " + Arrays.toString(variable.getShape()));
-        }*/
-    }
-
 
 
     @Override
@@ -1263,70 +1658,71 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-   public SDVariable get(SDIndex... indices){
-       int ndims = indices.length;
-       long[] begin = new long[ndims];
-       long[] end = new long[ndims];
-       long[] strides = new long[ndims];
-       int[] begin_mask_arr = new int[ndims];
-       int[] end_mask_arr = new int[ndims];
-       int[] shrink_axis_mask_arr = new int[ndims];
-       for(int i=0; i<ndims; i++){
-           strides[i] = 1;
-           SDIndex index = indices[i];
-           SDIndex.IndexType indexType = index.getIndexType();
-           if(indexType == SDIndex.IndexType.ALL){
-               begin_mask_arr[i] = 1;
-               end_mask_arr[i] = 1;
-           }
-           else if(indexType == SDIndex.IndexType.POINT){
-                   long pointIndex = index.getPointIndex();
-                   begin[i] = pointIndex;
-                   end[i] = pointIndex + 1;
-                   shrink_axis_mask_arr[i] = 1;
-           }
-           else if(indexType == SDIndex.IndexType.INTERVAL){
-               if(index.getIntervalBegin() == null){
-                   begin_mask_arr[i] = 1;
-               }
-               else{
-                   begin[i] = index.getIntervalBegin();
-               }
-               if(index.getIntervalEnd() == null){
-                   end_mask_arr[i] = 1;
-               }
-               else{
-                   end[i] = index.getIntervalEnd();
-               }
-               if(index.getIntervalStrides() == null){
-                   strides[i] = 1;
-               }
-               else{
-                   strides[i] = index.getIntervalStrides();
-               }
-           }
-       }
+    /**
+     * Get a variable with content equal to a specified sub-array of this variable.<br>
+     * Can be used (for example) to get rows, columns, sub-matrices, etc.
+     * @param indices Indices to get
+     * @return Sub-array variable
+     */
+    public SDVariable get(SDIndex... indices) {
+        int ndims = indices.length;
+        long[] begin = new long[ndims];
+        long[] end = new long[ndims];
+        long[] strides = new long[ndims];
+        int[] begin_mask_arr = new int[ndims];
+        int[] end_mask_arr = new int[ndims];
+        int[] shrink_axis_mask_arr = new int[ndims];
+        for (int i = 0; i < ndims; i++) {
+            strides[i] = 1;
+            SDIndex index = indices[i];
+            SDIndex.IndexType indexType = index.getIndexType();
+            if (indexType == SDIndex.IndexType.ALL) {
+                begin_mask_arr[i] = 1;
+                end_mask_arr[i] = 1;
+            } else if (indexType == SDIndex.IndexType.POINT) {
+                long pointIndex = index.getPointIndex();
+                begin[i] = pointIndex;
+                end[i] = pointIndex + 1;
+                shrink_axis_mask_arr[i] = 1;
+            } else if (indexType == SDIndex.IndexType.INTERVAL) {
+                if (index.getIntervalBegin() == null) {
+                    begin_mask_arr[i] = 1;
+                } else {
+                    begin[i] = index.getIntervalBegin();
+                }
+                if (index.getIntervalEnd() == null) {
+                    end_mask_arr[i] = 1;
+                } else {
+                    end[i] = index.getIntervalEnd();
+                }
+                if (index.getIntervalStrides() == null) {
+                    strides[i] = 1;
+                } else {
+                    strides[i] = index.getIntervalStrides();
+                }
+            }
+        }
 
-       // convert binary int[] to int
+        // convert binary int[] to int
         int begin_mask = binArrToInt(begin_mask_arr);
-       int end_mask = binArrToInt(end_mask_arr);
-       int shrink_axis = binArrToInt(shrink_axis_mask_arr);
+        int end_mask = binArrToInt(end_mask_arr);
+        int shrink_axis = binArrToInt(shrink_axis_mask_arr);
 
-       return this.sameDiff.stridedSlice(this, begin, end, strides,
-               begin_mask, end_mask, 0, 0, shrink_axis);
-   }
+        return this.sameDiff.stridedSlice(this, begin, end, strides,
+                begin_mask, end_mask, 0, 0, shrink_axis);
+    }
 
 
-   private static int binArrToInt(int[] arr){
+    private static int binArrToInt(int[] arr) {
         int x = 0;
         int m = 1;
-        for(int i = 0; i < arr.length; i++){
-            if(arr[i] == 1){
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == 1) {
                 x += m;
             }
             m *= 2;
         }
         return x;
-   }
+    }
    
 }

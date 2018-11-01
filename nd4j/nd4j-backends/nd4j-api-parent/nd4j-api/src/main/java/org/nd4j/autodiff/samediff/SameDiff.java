@@ -6775,7 +6775,7 @@ public class SameDiff {
     }
 
     /**
-     * Return an arary with equal shape to the input, but all elements set to value 'set'
+     * Return a variable with equal shape to the input, but all elements set to value 'set'
      *
      * @param name Name of the output variable
      * @param in   Input variable
@@ -8248,7 +8248,6 @@ public class SameDiff {
     public SDVariable mmul(String name, SDVariable x, SDVariable y, MMulTranspose transpose) {
         SDVariable result = functionFactory.mmul(x, y, transpose);
         return updateVariableNameAndReference(result, name);
-
     }
 
     /**
