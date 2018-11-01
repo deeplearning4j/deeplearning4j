@@ -143,7 +143,9 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
 
         if(prevSparsity >= minTargetSparsity && prevSparsity <= maxTargetSparsity){
             //OK: keep the last threshold unchanged
-            log.info("AdaptiveThresholdAlgorithm: iter {} epoch {}: prev sparsity {}, keeping existing threshold of {}", iteration, epoch, prevSparsity, adaptFromThreshold);
+            if(log.isDebugEnabled()) {
+                log.debug("AdaptiveThresholdAlgorithm: iter {} epoch {}: prev sparsity {}, keeping existing threshold of {}", iteration, epoch, prevSparsity, adaptFromThreshold);
+            }
             return adaptFromThreshold;
         }
 
@@ -151,8 +153,10 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
             //Sparsity ratio was too small (too sparse) - decrease threshold to increase number of values communicated
             double retThreshold = decayRate * adaptFromThreshold;
             this.lastThreshold = retThreshold;
-            log.info("AdaptiveThresholdAlgorithm: iter {} epoch {}: prev sparsity {} < min sparsity {}, reducing threshold from {} to  {}",
-                    iteration, epoch, prevSparsity, minTargetSparsity, adaptFromThreshold, retThreshold);
+            if(log.isDebugEnabled()) {
+                log.debug("AdaptiveThresholdAlgorithm: iter {} epoch {}: prev sparsity {} < min sparsity {}, reducing threshold from {} to  {}",
+                        iteration, epoch, prevSparsity, minTargetSparsity, adaptFromThreshold, retThreshold);
+            }
             return retThreshold;
         }
 
@@ -160,8 +164,10 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
             //Sparsity ratio was too high (too dense) - increase threshold to decrease number of values communicated
             double retThreshold = 1.0/decayRate * adaptFromThreshold;
             this.lastThreshold = retThreshold;
-            log.info("AdaptiveThresholdAlgorithm: iter {} epoch {}: prev sparsity {} > max sparsity {}, increasing threshold from {} to  {}",
-                    iteration, epoch, prevSparsity, maxTargetSparsity, adaptFromThreshold, retThreshold);
+            if(log.isDebugEnabled()) {
+                log.debug("AdaptiveThresholdAlgorithm: iter {} epoch {}: prev sparsity {} > max sparsity {}, increasing threshold from {} to  {}",
+                        iteration, epoch, prevSparsity, maxTargetSparsity, adaptFromThreshold, retThreshold);
+            }
             return retThreshold;
         }
 
