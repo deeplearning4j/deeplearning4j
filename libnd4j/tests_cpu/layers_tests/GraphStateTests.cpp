@@ -60,7 +60,7 @@ TEST_F(GraphStateTests, Basic_Tests_1) {
     state->registerScope(119);
 
     nd4j::ops::add opA;
-    nd4j::ops::LegacyTransformOp opB(6); // simdOps::Neg
+    nd4j::ops::LegacyTransformSameOp opB(transform::Neg); // simdOps::Neg
 
     ArgumentsList argsA;
     ArgumentsList argsB;
@@ -86,7 +86,7 @@ TEST_F(GraphStateTests, Basic_Tests_2) {
     state->registerScope(119);
 
     nd4j::ops::add opA;
-    nd4j::ops::LegacyTransformOp opB(6); // simdOps::Neg
+    nd4j::ops::LegacyTransformSameOp opB(transform::Neg); // simdOps::Neg
 
     ArgumentsList argsA;
     ArgumentsList argsB;

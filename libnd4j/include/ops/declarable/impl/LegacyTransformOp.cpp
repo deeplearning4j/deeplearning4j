@@ -22,7 +22,7 @@
 
 #include <NativeOpExcutioner.h>
 
-
+#ifdef ONLY_SAME_TRANSFORM
 namespace nd4j {
     namespace ops {
         LegacyTransformOp::LegacyTransformOp() : LegacyOp::LegacyOp(1) {
@@ -65,3 +65,4 @@ namespace nd4j {
         }
     }
 }
+#endif

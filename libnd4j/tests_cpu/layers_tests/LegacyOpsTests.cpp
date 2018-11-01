@@ -43,7 +43,7 @@ TEST_F(LegacyOpsTests, TransformTests_1) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(-1.0);
 
-    nd4j::ops::LegacyTransformOp op(transform::Neg); // Neg
+    nd4j::ops::LegacyTransformSameOp op(transform::Neg); // Neg
     auto status = op.execute({&x}, {&z}, {}, {});
     ASSERT_EQ(status, ND4J_STATUS_OK);
     //z.printIndexedBuffer("Output NEG");
@@ -57,7 +57,7 @@ TEST_F(LegacyOpsTests, TransformTests_2) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(-1.0);
 
-    nd4j::ops::LegacyTransformOp op(transform::Neg); // Neg
+    nd4j::ops::LegacyTransformSameOp op(transform::Neg); // Neg
     auto result = op.execute({&x}, {}, {});
 
     ASSERT_EQ(1, result->size());
@@ -76,7 +76,7 @@ TEST_F(LegacyOpsTests,  Reciprocal_1) {
     auto ethalon = NDArrayFactory::create<float>('c', {5, 5});
     ethalon.assign(0.5f);
 
-    nd4j::ops::LegacyTransformOp op(transform::Reciprocal); // Reciprocal
+    nd4j::ops::LegacyTransformSameOp op(transform::Reciprocal); // Reciprocal
     Nd4jStatus status = op.execute({&x}, {&x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);

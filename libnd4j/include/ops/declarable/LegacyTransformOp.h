@@ -22,8 +22,8 @@
 #define LIBND4J__LEGACY_TRANSFORM_OP__H
 
 
-#include <ops/declarable/LegacyOp.h>
-
+//#include <ops/declarable/LegacyOp.h>
+#ifdef ONLY_SAME_TRANSFORM
 namespace nd4j {
     namespace ops {
         /**
@@ -41,6 +41,12 @@ namespace nd4j {
         };
     }
 }
+#endif
+
+#include <ops/declarable/LegacyTransformFloatOp.h>
+#include <ops/declarable/LegacyTransformSameOp.h>
+#include <ops/declarable/LegacyTransformBoolOp.h>
+#include <ops/declarable/LegacyTransformStrictOp.h>
 
 
 #endif //LIBND4J__LEGACY_TRANSFORM_OP__H

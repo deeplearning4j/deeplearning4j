@@ -66,16 +66,16 @@ TEST_F(ConditionalTests, BasicTests_1) {
     auto scopeTrue = new Node(OpType_LOGIC, 10, 3);
     scopeTrue->setName("scopeTrue");
 
-    auto nodeF = new Node(OpType_PAIRWISE, 0, 5, {-1, -2});
+    auto nodeF = new Node(OpType_PAIRWISE, pairwise::Add, 5, {-1, -2});
     nodeF->setScopeInfo(2, "scopeFalse");
 
-    auto nodeT = new Node(OpType_PAIRWISE, 1, 6, {-1, -2});
+    auto nodeT = new Node(OpType_PAIRWISE, pairwise::Copy, 6, {-1, -2});
     nodeT->setScopeInfo(3, "scopeTrue");
 
-    auto nodeC0 = new Node(OpType_REDUCE_SAME, 1, 7, {-1});
+    auto nodeC0 = new Node(OpType_REDUCE_SAME, reduce::Sum, 7, {-1});
     nodeC0->setScopeInfo(1, "scopeCondition");
 
-    auto nodeC1 = new Node(OpType_BOOLEAN, 0, 8, {7, -4});
+    auto nodeC1 = new Node(OpType_BOOLEAN, pairwise::And, 8, {7, -4});
     nd4j::ops::eq_scalar op;
     nodeC1->setCustomOp(&op);
     nodeC1->setScopeInfo(1, "scopeCondition");
@@ -106,7 +106,7 @@ TEST_F(ConditionalTests, BasicTests_1) {
 
     ASSERT_NEAR(6.0, conditionalResult->meanNumber().e<double>(0), 1e-5);
 }
-
+#ifdef GRAPH_FILES_OK
 /**
  * Condition is False
  */
@@ -331,3 +331,4 @@ TEST_F(ConditionalTests, Flat_Test_8) {
 
     delete graph;
 }
+#endif
