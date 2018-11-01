@@ -73,10 +73,11 @@ namespace nd4j {
                     STORE_RESULT(output);
                     delete result;
                 } else {
-                    auto output = x->dup();
+                    auto output = OUTPUT_VARIABLE(0); //->dup();
+                    output->assign(x);
                     output->permutei(*arguments);
                     
-                    OVERWRITE_RESULT(output);
+                    //OVERWRITE_RESULT(output);
                 }           
             }
         return Status::OK();
