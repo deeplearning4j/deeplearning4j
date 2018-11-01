@@ -21,8 +21,8 @@
 #ifndef LIBND4J_LEGACYREDUCEOP_H
 #define LIBND4J_LEGACYREDUCEOP_H
 
-#include <ops/declarable/LegacyOp.h>
-
+//#include <ops/declarable/LegacyOp.h>
+/*
 namespace nd4j {
     namespace ops {
         class ND4J_EXPORT LegacyReduceOp : public LegacyOp {
@@ -37,6 +37,11 @@ namespace nd4j {
         };
     }
 }
+*/
+#include <ops/declarable/LegacyReduceFloatOp.h>
+#include <ops/declarable/LegacyReduceSameOp.h>
+#include <ops/declarable/LegacyReduceBoolOp.h>
+#include <ops/declarable/LegacyReduceLongOp.h>
 
 
 #endif //LIBND4J_LEGACYREDUCEOP_H

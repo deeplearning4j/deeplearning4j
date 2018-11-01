@@ -21,7 +21,7 @@
 #include <ops/declarable/LegacyReduceOp.h>
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
-
+#ifdef LEGACY_REDUCE_SAME_ONLY
 namespace nd4j {
     namespace ops {
         LegacyReduceOp::LegacyReduceOp() : LegacyOp::LegacyOp(1) {
@@ -187,3 +187,4 @@ namespace nd4j {
         }
     }
 }
+#endif

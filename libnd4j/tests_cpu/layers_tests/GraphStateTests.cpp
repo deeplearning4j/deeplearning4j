@@ -157,7 +157,7 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     // conditional scope
     state->registerScope(22);
 
-    nd4j::ops::LegacyReduceOp op1(1);
+    nd4j::ops::LegacyReduceSameOp op1(reduce::Sum);
     nd4j::ops::lt_scalar op2;
 
     // while sum(var0) < var1
@@ -242,7 +242,7 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     // conditional scope
     state->registerScope(22);
 
-    nd4j::ops::LegacyReduceOp op1(1);
+    nd4j::ops::LegacyReduceSameOp op1(reduce::Sum);
     nd4j::ops::lt_scalar op2;
 
     // if sum(var0) < var1
@@ -320,7 +320,7 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     // conditional scope
     state->registerScope(22);
 
-    nd4j::ops::LegacyReduceOp op1(1);
+    nd4j::ops::LegacyReduceSameOp op1(reduce::Sum);
     nd4j::ops::gt_scalar op2;
 
     // if sum(var0) < var1
