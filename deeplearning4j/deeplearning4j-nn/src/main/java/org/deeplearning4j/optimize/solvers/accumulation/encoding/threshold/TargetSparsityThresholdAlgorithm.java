@@ -102,8 +102,10 @@ public class TargetSparsityThresholdAlgorithm implements ThresholdAlgorithm {
             //Sparsity ratio was too small (too sparse) - decrease threshold to increase number of values communicated
             double retThreshold = decayRate * adaptFromThreshold;
             this.lastThreshold = retThreshold;
-            log.info("TargetSparsityThresholdAlgorithm: iter {} epoch {}: prev sparsity {} < target sparsity {}, reducing threshold from {} to  {}",
-                    iteration, epoch, prevSparsity, sparsityTarget, adaptFromThreshold, retThreshold);
+            if(log.isDebugEnabled()) {
+                log.debug("TargetSparsityThresholdAlgorithm: iter {} epoch {}: prev sparsity {} < target sparsity {}, reducing threshold from {} to  {}",
+                        iteration, epoch, prevSparsity, sparsityTarget, adaptFromThreshold, retThreshold);
+            }
             return retThreshold;
         }
 
@@ -111,13 +113,17 @@ public class TargetSparsityThresholdAlgorithm implements ThresholdAlgorithm {
             //Sparsity ratio was too high (too dense) - increase threshold to decrease number of values communicated
             double retThreshold = 1.0/decayRate * adaptFromThreshold;
             this.lastThreshold = retThreshold;
-            log.info("TargetSparsityThresholdAlgorithm: iter {} epoch {}: prev sparsity {} > max sparsity {}, increasing threshold from {} to  {}",
-                    iteration, epoch, prevSparsity, sparsityTarget, adaptFromThreshold, retThreshold);
+            if(log.isDebugEnabled()) {
+                log.debug("TargetSparsityThresholdAlgorithm: iter {} epoch {}: prev sparsity {} > max sparsity {}, increasing threshold from {} to  {}",
+                        iteration, epoch, prevSparsity, sparsityTarget, adaptFromThreshold, retThreshold);
+            }
             return retThreshold;
         }
 
         //Must be exactly equal
-        log.info("TargetSparsityThresholdAlgorithm: keeping existing threshold of {}, previous sparsity {}, target sparsity {}", adaptFromThreshold, prevSparsity, sparsityTarget);
+        if(log.isDebugEnabled()) {
+            log.debug("TargetSparsityThresholdAlgorithm: keeping existing threshold of {}, previous sparsity {}, target sparsity {}", adaptFromThreshold, prevSparsity, sparsityTarget);
+        }
         this.lastThreshold = adaptFromThreshold;
         return adaptFromThreshold;
     }

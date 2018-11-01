@@ -143,7 +143,9 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
 
         if(prevSparsity >= minTargetSparsity && prevSparsity <= maxTargetSparsity){
             //OK: keep the last threshold unchanged
-            log.info("AdaptiveThresholdAlgorithm: iter {} epoch {}: prev sparsity {}, keeping existing threshold of {}", iteration, epoch, prevSparsity, adaptFromThreshold);
+            if(log.isDebugEnabled()) {
+                log.debug("AdaptiveThresholdAlgorithm: iter {} epoch {}: prev sparsity {}, keeping existing threshold of {}", iteration, epoch, prevSparsity, adaptFromThreshold);
+            }
             return adaptFromThreshold;
         }
 
