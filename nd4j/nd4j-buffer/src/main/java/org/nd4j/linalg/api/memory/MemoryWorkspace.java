@@ -220,4 +220,10 @@ public interface MemoryWorkspace extends AutoCloseable {
      *                        when this workspace is closed.
      */
     void setPreviousWorkspace(MemoryWorkspace memoryWorkspace);
+
+    /**
+     * This mehtod returns current offset within buffer
+     * @return
+     */
+    long getCurrentOffset();
 }

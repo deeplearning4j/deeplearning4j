@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.parallelism;
 
+import lombok.val;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -63,6 +64,11 @@ public class ParallelWrapperTest {
         DataSetIterator mnistTrain = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(batchSize, true, 12345), 100);
         DataSetIterator mnistTest = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(batchSize, false, 12345), 10);
 
+        assertTrue(mnistTrain.hasNext());
+        val t0 = mnistTrain.next();
+
+        log.info("F: {}; L: {};", t0.getFeatures().shape(), t0.getLabels().shape());
+
         log.info("Build model....");
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .l2(0.0005)
@@ -91,7 +97,7 @@ public class ParallelWrapperTest {
         // ParallelWrapper will take care of load balancing between GPUs.
         ParallelWrapper wrapper = new ParallelWrapper.Builder(model)
                         // DataSets prefetching options. Set this value with respect to number of actual devices
-                        .prefetchBuffer(24)
+                        .prefetchBuffer(12)
 
                         // set number of workers equal or higher then number of available devices. x1-x2 are good values to start with
                         .workers(2)
