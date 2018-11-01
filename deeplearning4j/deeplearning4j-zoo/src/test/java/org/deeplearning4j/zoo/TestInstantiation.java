@@ -308,27 +308,28 @@ public class TestInstantiation extends BaseDL4JTest {
     }
 
     @Test
-    public void testInitNotPretrained(){
-        //Sanity check on the non-pretrained versions:
+    public void testInitNotPretrained() throws Exception {
+        // Sanity check on the non-pretrained versions:
         ZooModel[] models = new ZooModel[]{
                 VGG16.builder().numClasses(10).build(),
                 VGG19.builder().numClasses(10).build(),
-                FaceNetNN4Small2.builder().embeddingSize(100).numClasses(10).build()
+                FaceNetNN4Small2.builder().embeddingSize(100).numClasses(10).build(),
+                UNet.builder().build()
         };
 
         int[][] inputSizes = new int[][]{
                 {1,3,224,224},
                 {1,3,224,224},
-                {1,3,64,64}
+                {1,3,64,64},
+                {1,3,512,512}
         };
 
-//        for(ZooModel zm : models){
-        for( int i=0; i<models.length; i++ ){
+        for (int i = 0; i < models.length; i++) {
             ZooModel zm = models[i];
             INDArray in = Nd4j.create(inputSizes[i]);
             Model m = zm.init();
 
-            if(m instanceof MultiLayerNetwork){
+            if (m instanceof MultiLayerNetwork) {
                 MultiLayerNetwork mln = (MultiLayerNetwork)m;
                 mln.output(in);
             } else {
