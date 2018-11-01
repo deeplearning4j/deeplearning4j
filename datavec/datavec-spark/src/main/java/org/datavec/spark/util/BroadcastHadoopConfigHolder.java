@@ -19,14 +19,23 @@ package org.datavec.spark.util;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 
+/**
+ * This class holds a {@code Broadcast<SerializableHadoopConfig>} for re-use across multiple places.
+ * The idea is that we often need spark configuration available for reading from (for example) HDFS directly, but Hadoop's
+ * Configuration class is not serializable (hence using {@link SerializableHadoopConfig}; we also don't want to have
+ * multiple copies of this in memory on each worker (Hadoop Configuration is immutable).
+ *
+ * @author Alex Black
+ */
 public class BroadcastHadoopConfigHolder {
 
     private static Broadcast<SerializableHadoopConfig> config;
+    private static long sparkContextStartTime = -1; //Used to determine if spark context has changed - usually only use multiple spark contexts in tests etc
 
     private BroadcastHadoopConfigHolder(){ }
 
     public static Broadcast<SerializableHadoopConfig> get(JavaSparkContext sc){
-        if(config != null && !config.isValid() ){
+        if(config != null && (!config.isValid() || sc.startTime() != sparkContextStartTime) ){
             config = null;
         }
         if(config != null){
@@ -35,6 +44,7 @@ public class BroadcastHadoopConfigHolder {
         synchronized (BroadcastHadoopConfigHolder.class){
             if(config == null){
                 config = sc.broadcast(new SerializableHadoopConfig(sc.hadoopConfiguration()));
+                sparkContextStartTime = sc.startTime();
             }
         }
         return config;
