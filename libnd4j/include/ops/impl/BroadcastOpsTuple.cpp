@@ -30,7 +30,7 @@ namespace nd4j {
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Assign() {
-        return custom(nd4j::scalar::Copy, nd4j::pairwise::Copy, nd4j::broadcast::Copy);
+        return custom(nd4j::scalar::CopyPws, nd4j::pairwise::CopyPws, nd4j::broadcast::CopyPws);
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Divide() {

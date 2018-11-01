@@ -459,7 +459,7 @@ namespace simdOps {
 	};
 
 	template <typename X, typename Y, typename Z>
-	class Copy {
+	class CopyPws {
 	public:
 		op_def static Z op(X d1, Y d2) {
 			return d2;
@@ -478,6 +478,18 @@ namespace simdOps {
 			return params[0];
 		}
 	};
+
+	template <typename X>
+	class Copy {
+	public:
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
+
+		op_def static X op(X d1, X *params) {
+			return d1;
+		}
+	};
+
 
 	template <typename X, typename Y, typename Z>
 	class Copy2 {

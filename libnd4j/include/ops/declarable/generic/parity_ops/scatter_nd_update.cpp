@@ -54,7 +54,7 @@ OP_IMPL(scatter_nd_update, 3, 1, true) {
     if (!block.isInplace())
         output->assign(input);
     
-    ScatterHelper::scatterND(pairwise::Copy, *indices, *updates, *output);
+    ScatterHelper::scatterND(pairwise::CopyPws, *indices, *updates, *output);
 
     return Status::OK();
 }

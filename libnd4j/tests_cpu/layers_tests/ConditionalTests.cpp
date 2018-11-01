@@ -69,7 +69,7 @@ TEST_F(ConditionalTests, BasicTests_1) {
     auto nodeF = new Node(OpType_PAIRWISE, pairwise::Add, 5, {-1, -2});
     nodeF->setScopeInfo(2, "scopeFalse");
 
-    auto nodeT = new Node(OpType_PAIRWISE, pairwise::Copy, 6, {-1, -2});
+    auto nodeT = new Node(OpType_PAIRWISE, pairwise::CopyPws, 6, {-1, -2});
     nodeT->setScopeInfo(3, "scopeTrue");
 
     auto nodeC0 = new Node(OpType_REDUCE_SAME, reduce::Sum, 7, {-1});

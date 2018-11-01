@@ -738,7 +738,7 @@ void scatterUpdate(NDArray& operand, NDArray& updates, const std::vector<int>* i
                 tad->applyPairwiseTransform(pairwise::ReverseDivide, tadUpdates, tad, nullptr);
                 break;
             case 6:
-                tad->applyPairwiseTransform(pairwise::Copy, tadUpdates, tad, nullptr);
+                tad->applyPairwiseTransform(pairwise::CopyPws, tadUpdates, tad, nullptr);
                 break;
             default:
                 continue;                 

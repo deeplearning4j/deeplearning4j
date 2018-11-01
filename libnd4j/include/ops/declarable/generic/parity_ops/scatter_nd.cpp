@@ -53,7 +53,7 @@ namespace ops {
         // initial zeroing of output
         *output = 0;
 
-        ScatterHelper::scatterND(pairwise::Copy, *indices, *updates, *output);
+        ScatterHelper::scatterND(pairwise::CopyPws, *indices, *updates, *output);
 
         return Status::OK();
     }

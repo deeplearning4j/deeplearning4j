@@ -50,7 +50,7 @@
        (3, Divide), \
        (4, ReverseDivide), \
        (5, ReverseSubtract), \
-       (6, Copy) ,\
+       (6, CopyPws) ,\
        (13, MinPairwise) ,\
        (14, MaxPairwise) ,\
        (15, AMinPairwise) ,\
@@ -87,7 +87,8 @@
         (17, Ceiling), \
         (18, Floor), \
         (19, ClipByValue) ,\
-        (20, Reverse)
+        (20, Reverse), \
+        (21, Copy)
 
 
 // these ops return bool
@@ -193,7 +194,7 @@
         (5, ReverseSubtract),\
         (6, MaxPairwise),\
         (13, MinPairwise),\
-        (14, Copy),\
+        (14, CopyPws),\
         (15, Mod),\
         (16, ReverseMod),\
         (17, Remainder),\
@@ -312,7 +313,7 @@
 
 #define PAIRWISE_TRANSFORM_OPS \
         (0, Add),\
-        (1, Copy),\
+        (1, CopyPws),\
         (2, Divide),\
         (3, Multiply),\
         (4, Pow),\
