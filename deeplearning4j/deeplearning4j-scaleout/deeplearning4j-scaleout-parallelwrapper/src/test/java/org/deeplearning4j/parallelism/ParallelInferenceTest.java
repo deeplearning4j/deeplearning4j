@@ -20,6 +20,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -752,14 +753,15 @@ public class ParallelInferenceTest {
             assertNotEquals(0, output.length);
         }
 
-        val modelsBefore = inf.getCurrentModelsFromWorkers();
+        Model[] modelsBefore = inf.getCurrentModelsFromWorkers();
         assertEquals(4, modelsBefore.length);
 
         boolean passed = false;
         int cnt0 = 0;
-        for (val m : modelsBefore) {
+        for (Model m : modelsBefore) {
             // model can be null for some of the workers yet, due to race condition
             if (m != null) {
+                Thread.sleep(500);
                 assertEquals("Failed at model [" + cnt0 + "]", net.params(), m.params());
                 passed = true;
             }
