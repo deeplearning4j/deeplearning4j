@@ -203,7 +203,7 @@ public class TestInstantiation extends BaseDL4JTest {
         initializedModel = (ComputationGraph) model.initPretrained();
         log.info(initializedModel.summary());
         result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 227, 227}));
-        assertArrayEquals(result[0].shape(), new long[] {1, 1000, 1, 1});
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
     }
 
 
