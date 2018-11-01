@@ -616,6 +616,7 @@ public class ParallelInferenceTest {
 
         for( InferenceMode m : InferenceMode.values()) {
             for (int w : new int[]{1, 2}) {
+                log.info("Starting: m={}, w={}", m, w);
 
                 final ParallelInference inf =
                         new ParallelInference.Builder(net)
