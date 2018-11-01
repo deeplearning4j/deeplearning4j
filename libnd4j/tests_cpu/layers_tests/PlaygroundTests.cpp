@@ -311,7 +311,7 @@ TEST_F(PlaygroundTests, Test_Profile_1) {
     // prof.printOut();
 }
 
-
+#ifdef GRAPH_FILES_OK
 TEST_F(PlaygroundTests, Test_Profile_2) {
     Environment::getInstance()->setProfiling(true);
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/ae_00.fb");
@@ -322,6 +322,7 @@ TEST_F(PlaygroundTests, Test_Profile_2) {
     delete graph;
     delete profile;
 }
+#endif
 
 TEST_F(PlaygroundTests, Test_Im2Col_1) {
     

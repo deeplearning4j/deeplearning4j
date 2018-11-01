@@ -603,7 +603,7 @@ TEST_F(FlatBuffersTest, ReduceDim_2) {
     delete graph;
 }
 
-
+#ifdef GRAPH_FILES_OK
 TEST_F(FlatBuffersTest, Ae_00) {
     nd4j::ops::rank op1;
 
@@ -812,3 +812,4 @@ TEST_F(FlatBuffersTest, ReadLoops_SimpleWhile_1) {
 }
 
  */
+#endif

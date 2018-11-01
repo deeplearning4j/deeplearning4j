@@ -218,7 +218,7 @@ TEST_F(WorkspaceTests, Test_Arrays_1) {
     // z.printIndexedBuffer("z");
 }
 
-
+#ifdef GRAPH_FILES_OK
 TEST_F(WorkspaceTests, Test_Graph_1) {
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/ae_00.fb");
     auto workspace = graph->getVariableSpace()->workspace();
@@ -228,6 +228,7 @@ TEST_F(WorkspaceTests, Test_Graph_1) {
 
     delete graph;
 }
+#endif
 
 TEST_F(WorkspaceTests, Test_Externalized_1) {
     char buffer[10000];

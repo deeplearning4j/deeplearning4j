@@ -340,7 +340,7 @@ namespace nd4j {
             }
 
             // these ops allow in-place execution by design
-            if (opType == OpType_TRANSFORM_SAME || opType == OpType_TRANSFORM_FLOAT || opType == OpType_SCALAR || opType == OpType_BROADCAST) {
+            if (opType == OpType_TRANSFORM_SAME || opType == OpType_TRANSFORM_FLOAT || opType == OpType_TRANSFORM_STRICT || opType == OpType_TRANSFORM_BOOL || opType == OpType_SCALAR || opType == OpType_BROADCAST) {
                 if (_output.size() <= 1) {
                     _isInplace = true;
                 }
@@ -385,18 +385,20 @@ namespace nd4j {
                 this->setCustomOp(Node::buildOpByType(opType, (int) input.size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), opNum, scalar));
                 block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
             } else if (opType == OpType_CUSTOM) {
-                auto block = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id(), false);
+                if (this->getCustomOp()) {
+                    auto block = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id(), false);
 
-                for (auto v: dimensions)
-                    block->getAxis()->emplace_back(v);
+                    for (auto v: dimensions)
+                        block->getAxis()->emplace_back(v);
 
-                for (auto v: iArgs)
-                    block->getIArguments()->emplace_back(v);
+                    for (auto v: iArgs)
+                        block->getIArguments()->emplace_back(v);
 
-                for (auto v: tArgs)
-                    block->getTArguments()->emplace_back(v);
+                    for (auto v: tArgs)
+                        block->getTArguments()->emplace_back(v);
 
-                this->setContextPrototype(block);
+                    this->setContextPrototype(block);
+                } else throw std::runtime_error("wrong custom operation given");
             }
         };
 
