@@ -22,11 +22,12 @@
 #if NOT_EXCLUDED(OP_random_bernoulli)
 
 #include <ops/declarable/headers/random.h>
+#include <helpers/RandomLauncher.h>
 
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(random_bernoulli, 1, 1, true, 1, 0) {
-            auto rng = block.getRNG();
+            auto rng = block.getRng();
             // FIXME: to be implemented
 /*
             if (rng == nullptr)
@@ -39,6 +40,12 @@ namespace nd4j {
 
             functions::random::RandomFunction<T>::template execTransform<randomOps::BernoulliDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), &f);
 */
+
+            auto z = OUTPUT_VARIABLE(0);
+            auto f = T_ARG(0);
+
+            RandomLauncher::fillBernoulli(rng, z, f);
+
             return Status::OK();
         }
 

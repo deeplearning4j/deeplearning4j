@@ -73,7 +73,7 @@ namespace nd4j {
         auto extra = NDArrayFactory::create(prob);
         auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
-        NativeOpExcutioner::execRandom(random::BernoulliDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), extraPtr);
+        NativeOpExcutioner::execRandom(random::BernoulliDistribution, &rng, array->buffer(), array->shapeInfo(), extraPtr);
 
         delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }

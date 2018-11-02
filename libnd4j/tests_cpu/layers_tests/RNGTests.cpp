@@ -155,7 +155,7 @@ TEST_F(RNGTests, Test_Launcher_3) {
     ASSERT_FALSE(x0.equalsTo(nexp1));
     ASSERT_FALSE(x0.equalsTo(nexp2));
 }
-#if 0
+
 TEST_F(RNGTests, Test_Uniform_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
@@ -196,6 +196,7 @@ TEST_F(RNGTests, Test_Gaussian_1) {
     RandomLauncher::fillGaussian(_rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillGaussian(_rngB, &x1, 1.0f, 2.0f);
 
+    x0.printIndexedBuffer("x0");
     x1.printIndexedBuffer("x1");
     ASSERT_TRUE(x0.equalsTo(&x1));
 
@@ -405,9 +406,8 @@ TEST_F(RNGTests, Test_BernoulliDistribution_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    ASSERT_TRUE(exp0.isSameShape(z));
-    ASSERT_FALSE(exp0.equalsTo(z));
 
+    ASSERT_FALSE(exp0.equalsTo(z));
 
     ASSERT_FALSE(nexp0->equalsTo(z));
     ASSERT_FALSE(nexp1->equalsTo(z));
@@ -464,15 +464,14 @@ TEST_F(RNGTests, Test_ExponentialDistribution_2) {
 
 namespace nd4j {
     namespace tests {
-        static void fillList(Nd4jLong seed, int numberOfArrays, std::vector<Nd4jLong> &shape, std::vector<NDArray*> &list, nd4j::random::RandomBuffer *rng) {
-            NativeOps ops;
-            ops.refreshBuffer(nullptr, seed, reinterpret_cast<Nd4jPointer>(rng));
+        static void fillList(Nd4jLong seed, int numberOfArrays, std::vector<Nd4jLong> &shape, std::vector<NDArray*> &list, nd4j::graph::RandomGenerator *rng) {
+            rng->setSeed((int) seed);
             
             for (int i = 0; i < numberOfArrays; i++) {
                 auto array = NDArrayFactory::create_<double>('c', shape);
 
                 nd4j::ops::randomuniform op;
-                op.execute(rng, {array}, {array}, {0.0, 1.0}, {}, true);
+                op.execute(*rng, {array}, {array}, {0.0, 1.0}, {}, {}, true);
 
                 list.emplace_back(array);
             }
@@ -579,18 +578,14 @@ TEST_F(RNGTests, Test_Reproducibility_1) {
     Nd4jLong seed = 123;
 
     std::vector<Nd4jLong> shape = {32, 3, 28, 28};
-    const int bufferSize = 10000;
-    int64_t buffer[bufferSize];
-
-    auto rng = (nd4j::random::RandomBuffer *) ops.initRandom(nullptr, seed, bufferSize, buffer);
-
+    nd4j::graph::RandomGenerator rng;
 
     std::vector<NDArray*> expList;
-    nd4j::tests::fillList(seed, 10, shape, expList, rng);
+    nd4j::tests::fillList(seed, 10, shape, expList, &rng);
 
     for (int e = 0; e < 2; e++) {
         std::vector<NDArray *> trialList;
-        nd4j::tests::fillList(seed, 10, shape, trialList, rng);
+        nd4j::tests::fillList(seed, 10, shape, trialList, &rng);
 
         for (int a = 0; a < expList.size(); a++) {
             auto arrayE = expList[a];
@@ -608,8 +603,6 @@ TEST_F(RNGTests, Test_Reproducibility_1) {
 
     for (auto v: expList)
             delete v;
-
-    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
 }
 
 TEST_F(RNGTests, Test_Reproducibility_2) {
@@ -617,17 +610,14 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
     Nd4jLong seed = 123;
 
     std::vector<Nd4jLong> shape = {32, 3, 64, 64};
-    const int bufferSize = 10000;
-    int64_t buffer[bufferSize];
-
-    auto rng = (nd4j::random::RandomBuffer *) ops.initRandom(nullptr, seed, bufferSize, buffer);
+    nd4j::graph::RandomGenerator rng;
 
     std::vector<NDArray*> expList;
-    nd4j::tests::fillList(seed, 10, shape, expList, rng);
+    nd4j::tests::fillList(seed, 10, shape, expList, &rng);
 
     for (int e = 0; e < 2; e++) {
         std::vector<NDArray*> trialList;
-        nd4j::tests::fillList(seed, 10, shape, trialList, rng);
+        nd4j::tests::fillList(seed, 10, shape, trialList, &rng);
 
         for (int a = 0; a < expList.size(); a++) {
             auto arrayE = expList[a];
@@ -657,7 +647,5 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
 
     for (auto v: expList)
             delete v;
-
-//    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
 }
-#endif
+
