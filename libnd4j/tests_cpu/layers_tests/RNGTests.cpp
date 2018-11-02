@@ -196,6 +196,7 @@ TEST_F(RNGTests, Test_Gaussian_1) {
     RandomLauncher::fillGaussian(_rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillGaussian(_rngB, &x1, 1.0f, 2.0f);
 
+    x1.printIndexedBuffer("x1");
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     ASSERT_FALSE(x0.equalsTo(nexp0));

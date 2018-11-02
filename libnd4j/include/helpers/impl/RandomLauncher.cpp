@@ -73,7 +73,7 @@ namespace nd4j {
         auto extra = NDArrayFactory::create(prob);
         auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
-        NativeOpExcutioner::execRandom(random::BernoulliDistribution, &rng, array->buffer(), array->shapeInfo(), extraPtr);
+        NativeOpExcutioner::execRandom(random::BernoulliDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), extraPtr);
 
         delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
@@ -92,7 +92,7 @@ namespace nd4j {
         auto extra = NDArrayFactory::create(array->dataType(), {2}, {mean, stdev});
         auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
-        NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
+        NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), extraPtr);
 
         delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
@@ -101,7 +101,7 @@ namespace nd4j {
         auto extra = NDArrayFactory::create(array->dataType(), {2}, {mean, stdev});
         auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
-        NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
+        NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), extraPtr);
 
         delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
@@ -110,14 +110,16 @@ namespace nd4j {
         auto extra = NDArrayFactory::create(array->dataType(), {2}, {mean, stdev});
         auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
-        NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
+        NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), extraPtr);
+
+        delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
 
     void RandomLauncher::fillBinomial(nd4j::graph::RandomGenerator& rng, NDArray* array, int trials, double prob) {
         auto extra = NDArrayFactory::create(array->dataType(), {2}, {(double) trials, prob});
         auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
-        NativeOpExcutioner::execRandom(random::BinomialDistributionEx, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
+        NativeOpExcutioner::execRandom(random::BinomialDistributionEx, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), extraPtr);
 
         delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
