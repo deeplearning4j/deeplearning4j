@@ -116,13 +116,13 @@ namespace nd4j {
         std::vector<NDArray*> inputs;
         std::vector<double> targs;
         std::vector<Nd4jLong> iargs({0});
-
+        std::vector<bool> bargs;
         for (int e = 0; e < _elements.load(); e++)
             inputs.emplace_back(_chunks[e]);
 
         iargs.push_back(_axis);
 
-        auto result = op.execute(inputs, targs, iargs);
+        auto result = op.execute(inputs, targs, iargs, bargs);
 
         auto array = result->at(0)->dup();
 

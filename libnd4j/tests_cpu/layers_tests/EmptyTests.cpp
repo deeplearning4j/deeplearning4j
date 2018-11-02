@@ -117,7 +117,7 @@ TEST_F(EmptyTests, Test_Reshape_2) {
     auto empty = NDArrayFactory::empty<Nd4jLong>();
 
     nd4j::ops::reshape op;
-    auto result = op.execute({&vector, empty}, {}, {}, true);
+    auto result = op.execute({&vector, empty}, {}, {}, {}, true);
 
     ASSERT_EQ(Status::OK(), result->status());
 

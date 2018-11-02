@@ -211,7 +211,7 @@ TEST_F(DeclarableOpsTests7, TEST_WHERE) {
     //greater than test
     //            Nd4jStatus execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
 
-    auto result = op.execute({&maskArr,&x,&putArr},{&resultArr}, {},{3},false);
+    auto result = op.execute({&maskArr,&x,&putArr},{&resultArr}, {},{3}, {}, false);
     ASSERT_EQ(Status::OK(), result);
     for(int i = 0; i < 4; i++)
         ASSERT_EQ(assertion[i],resultArr.e<double>(i));
@@ -244,7 +244,7 @@ TEST_F(DeclarableOpsTests7, TEST_WHERE_MASK) {
     resultArr.assign(0.0);
     ArrayOptions::setDataType(threeHundredShapePointer, nd4j::DataType::DOUBLE);
     NDArray assertArr(assertion, threeHundredShapePointer);
-    Nd4jStatus result = op.execute({&maskArr, &xArr, &putArr},{&resultArr},{},{});
+    Nd4jStatus result = op.execute({&maskArr, &xArr, &putArr},{&resultArr},{},{},{});
     ASSERT_EQ(Status::OK(),result);
     ASSERT_TRUE(assertArr.isSameShape(resultArr));
     ASSERT_TRUE (assertArr.equalsTo(resultArr));
@@ -282,7 +282,7 @@ TEST_F(DeclarableOpsTests7, TEST_WHERE_SCALAR) {
     //greater than test
     //            Nd4jStatus execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
 
-    auto result = op.execute({&maskArr,&x,&putArr},{&resultArr}, {},{3},false);
+    auto result = op.execute({&maskArr,&x,&putArr},{&resultArr}, {},{3}, {}, false);
     // ASSERT_EQ(Status::OK(), result->status());
     for(int i = 0; i < 4; i++)
         ASSERT_EQ(assertion[i],resultArr.e<double>(i));
@@ -464,7 +464,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_Prof_1) {
     auto timeStart = std::chrono::system_clock::now();
     
     for (int i = 0; i < numOfCases; i++) {
-       op.execute({&indices0, &indices1, &indices2, &data0, &data1, &data2}, {res}, {}, {});
+       op.execute({&indices0, &indices1, &indices2, &data0, &data1, &data2}, {res}, {}, {}, {});
     }
 
     auto timeEnd = std::chrono::system_clock::now();
@@ -2260,7 +2260,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 2, 4, 2}, {
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
 
-    auto result = op.execute({&x}, {}, {6}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {6}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result->status(), Status::OK());
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
@@ -2281,7 +2281,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 2, 4, 2}, {
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
 
-    auto result = op.execute({&x}, {}, {-8}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {-8}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result->status(), Status::OK());
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
@@ -2302,7 +2302,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 2, 4, 2}, {
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
 
-    auto result = op.execute({&x}, {}, {-40}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {-40}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result->status(), Status::OK());
 
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
@@ -2329,7 +2329,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 2, 4, 2}, {
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
 
-    auto result = op.execute({&x}, {}, {38}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {38}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result->status(), Status::OK());
     //result->at(0)->printIndexedBuffer("Output 4");
     //exp.printIndexedBuffer("Expect 4");
@@ -2358,7 +2358,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 2, 4, 2}, {
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
     NDArray* y = nullptr;
-    auto result = op.execute({&x}, {y}, {}, {38}, true, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {y}, {}, {38}, {}, true, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result, Status::OK());
     //x.printIndexedBuffer("Output 4 inplace");
     //exp.printIndexedBuffer("Expect 4 inplace");
@@ -2381,7 +2381,7 @@ auto exp = NDArrayFactory::create<double>('c', {3, 4}, {
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
 
-    auto result = op.execute({&x}, {}, {2, 1}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {2, 1}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result->status(), Status::OK());
 
     //result->at(0)->printIndexedBuffer("Output");
@@ -2404,7 +2404,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 3, 2}, {
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
 
-    auto result = op.execute({&x}, {}, {1, 2}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {1, 2}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result->status(), Status::OK());
 
     //result->at(0)->printIndexedBuffer("Output");
@@ -2427,7 +2427,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 3, 2}, {
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
 
-    auto result = op.execute({&x}, {}, {1, 2, 1, 0},  false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {1, 2, 1, 0}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result->status(), Status::OK());
 
     //result->at(0)->printIndexedBuffer("Output");
@@ -2450,7 +2450,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 3, 2}, {
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
     NDArray* y = nullptr;
-    auto result = op.execute({&x}, {y}, {}, {1, 2, 1, 0}, true, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {y}, {}, {1, 2, 1, 0}, {}, true, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result, Status::OK());
 
     //x.printIndexedBuffer("Output");
@@ -2473,7 +2473,7 @@ auto exp = NDArrayFactory::create<double>('c', {2, 3, 3}, {
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
     NDArray* y = nullptr;
-    auto result = op.execute({&x}, {y}, {}, {1, 1}, true, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {y}, {}, {1, 1}, {}, true, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result, Status::OK());
 
     //x.printIndexedBuffer("Output");
@@ -2655,7 +2655,7 @@ TEST_F(DeclarableOpsTests7, pnormpool2d_bp_test2) {
     gradO.linspace(0.1, 0.1);
     
     nd4j::ops::pnormpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {eps}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, pnorm, dataFormat}, false, nd4j::DataType::DOUBLE);
+    auto results = op.execute({&input, &gradO}, {eps}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, pnorm, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -3138,7 +3138,7 @@ TEST_F(DeclarableOpsTests7, clipbynorm_test3) {
     xNorm1 = x.reduceAlongDims(reduce::Norm2, {1}, true);
 
     nd4j::ops::clipbynorm op;
-    auto result = op.execute({&x}, {1.0}, {1}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {1.0}, {1}, {}, false, nd4j::DataType::DOUBLE);
     auto z = result->at(0);
 
     auto zNorm1 = z->reduceAlongDims(reduce::Norm2, {1}, true);
@@ -3169,7 +3169,7 @@ TEST_F(DeclarableOpsTests7, cumsum_test1) {
     exclusive = 0; reverse = 0;
 
     nd4j::ops::cumsum op;
-    auto result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());    
     auto z = result->at(0);    
     ASSERT_TRUE(expFF.equalsTo(z));
@@ -3178,7 +3178,7 @@ TEST_F(DeclarableOpsTests7, cumsum_test1) {
     //************************************//
     exclusive = 1; reverse = 0;
 
-    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, false, nd4j::DataType::DOUBLE);
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());    
     z = result->at(0);    
     ASSERT_TRUE(expTF.equalsTo(z));
@@ -3187,7 +3187,7 @@ TEST_F(DeclarableOpsTests7, cumsum_test1) {
     //************************************//
     exclusive = 0; reverse = 1;
 
-    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, false, nd4j::DataType::DOUBLE);
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());    
     z = result->at(0);    
     ASSERT_TRUE(expFT.equalsTo(z));
@@ -3196,7 +3196,7 @@ TEST_F(DeclarableOpsTests7, cumsum_test1) {
     //************************************//
     exclusive = 1; reverse = 1;
 
-    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, false, nd4j::DataType::DOUBLE);
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());    
     z = result->at(0);    
     ASSERT_TRUE(expTT.equalsTo(z));
@@ -3222,7 +3222,7 @@ TEST_F(DeclarableOpsTests7, cumprod_test1) {
     exclusive = 0; reverse = 0;
 
     nd4j::ops::cumprod op;
-    auto result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());
     auto z = result->at(0);    
     ASSERT_TRUE(expFF.equalsTo(z));
@@ -3231,7 +3231,7 @@ TEST_F(DeclarableOpsTests7, cumprod_test1) {
     //************************************//
     exclusive = 1; reverse = 0;
 
-    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, false, nd4j::DataType::DOUBLE);
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());    
     z = result->at(0);    
     ASSERT_TRUE(expTF.equalsTo(z));
@@ -3240,7 +3240,7 @@ TEST_F(DeclarableOpsTests7, cumprod_test1) {
     //************************************//
     exclusive = 0; reverse = 1;
 
-    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, false, nd4j::DataType::DOUBLE);
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());    
     z = result->at(0);    
     ASSERT_TRUE(expFT.equalsTo(z));
@@ -3249,7 +3249,7 @@ TEST_F(DeclarableOpsTests7, cumprod_test1) {
     //************************************//
     exclusive = 1; reverse = 1;
 
-    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, false, nd4j::DataType::DOUBLE);
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());    
     z = result->at(0);    
     ASSERT_TRUE(expTT.equalsTo(z));

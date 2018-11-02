@@ -128,7 +128,7 @@ TEST_F(ConvolutionTests, TestAvgFF_TF) {
     auto exp = NDArrayFactory::create<double>('c', {4, 4, 4, 3}, {7.97172260, 0.06878620,             2.27749538,             7.29276514,             -0.14074677,             0.65480286,             5.70313978,             -0.06546132,             0.35443667,             3.70382833,             -0.84020567,             0.63826996,             8.60301399,             -0.38236514,             1.55177069,             7.37542057,             -0.99374938,             -0.29971302,             8.84352493,             -0.67121059,             0.43132120,             4.78175592,             -1.25070143,             -1.91523600,             6.03855371,             -0.00292124,             -1.11214364,             7.90158176,             -0.57949901,             -0.96735370,             7.81192017,             -0.53255427,             -0.48009714,             3.16953635,             0.08353355,             -1.54299748,             3.74821687,             1.69396687,             0.72724354,             5.42915201,             -1.13686812,             -0.71793109,             5.78376389,             -0.72239977,             -0.60055625,             2.53636408,             0.56777251,             -2.07892323,             6.08064651,             0.68620735,             2.54017019,             5.65828180,             -0.68255502,             1.47283304,             6.10842514,             -0.39655915,             0.28380761,             1.96707797,             -1.98206317,             0.94027776,             4.71811438,             0.32104525,             -0.92409706,             8.34588146,             -1.05581069,             -0.55217457,             9.58440876,             -0.96549922,             0.45820439,             5.65453672,             -2.50953507,             -0.71441835,             8.03059578,             -0.21281289,             0.92125505,             9.26900673,             -0.35963219,             -0.70039093,             8.59924412,             -1.22358346,             0.81318003,             3.85920119,             -0.01305223,             -1.09234154,             6.33158875,             1.28094780,             -1.48926139,             4.94969177,             -0.77126902,             -1.97033751,             5.64381838,             -0.16285487,             -1.31277227,             2.39893222,             -1.32902908,             -1.39609122,             6.47572327,             -0.45267010,             1.55727172,             6.70965624,             -1.68735468,             -0.05672536,             7.25092363,             -0.64613032,             0.67050058,             3.60789680,             -2.05948973,             2.22687531,             8.15202713,             -0.70148355,             1.28314006,             8.14842319,             -1.88807654,             -1.04808438,             8.45500565,             -0.76425624,             0.94542569,             4.56179953,             -0.28786001,             -2.04502511,             8.46278095,             -0.31019822,             0.07339200,             9.34214592,             -0.61948007,             0.52481830,             8.32515621,             -1.52418160,             0.49678251,             5.11082315,             -1.09908783,             -0.52969611,             5.27806664,             0.88632923,             0.66754371,             4.75839233,             0.48928693,             -0.68036932,             6.56925392,             -0.02949905,             -2.99189186,             4.46320581,             -0.64534980,             -0.29516968,             8.60809517,             -1.13120568,             3.41720533,             5.84243155,             -1.24109328,             0.89566326,             5.99578333,             -0.42496428,             2.07076764,             3.17812920,             -0.81566459,             -0.14363396,             6.55184317,             0.39633346,             -0.43852386,             8.70214558,             -2.24613595,             0.30708700,             8.73882294,             -0.53545928,             1.54409575,             4.49452257,             -0.16509305,             0.19028664,             8.24897003,             0.44750381,             2.15448594,             8.97640514,             -0.77728152,             0.57272542,             9.03467560,             0.47173575,             -1.10807717,             3.30056310,             -0.43268481,             -0.41470885,             3.53798294,             -0.08546703,             -2.16840744,             6.18733406,             -0.17871059,             -2.59837723,             5.94218683,             -1.02990067,             -0.49760687,             3.76938033,             0.86383581,             -1.91504073});
 
     nd4j::ops::avgpool2d op;
-    auto result = op.execute({&input}, {}, {3,3,  3,3,  0,0,  1,1,1,  0,1});
+    auto result = op.execute({&input}, {}, {3,3,  3,3,  0,0,  1,1,1,  0,1}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -295,7 +295,7 @@ TEST_F(ConvolutionTests, conv2D_BP_Bias_1) {
 
     nd4j::ops::conv2d_bp op;
 
-    auto results = op.execute({&input, &weights, &bias, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1});
+    auto results = op.execute({&input, &weights, &bias, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1}, {});
 
     ASSERT_TRUE(results->size() == 3);
 
@@ -346,7 +346,7 @@ TEST_F(ConvolutionTests, conv2D_BP_NoBias_1) {
 
     nd4j::ops::conv2d_bp op;
 
-    auto results = op.execute({&input, &weights, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1});
+    auto results = op.execute({&input, &weights, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1}, {});
 
     ASSERT_TRUE(results->size() == 2);
 
@@ -395,7 +395,7 @@ TEST_F(ConvolutionTests, sconv2D_FF_NoBias_2) {
     weightsP.applyScalar(scalar::Divide, 10000.0);
 
     nd4j::ops::sconv2d op;
-    auto resultFF = op.execute({&input, &weightsD}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0});
+    auto resultFF = op.execute({&input, &weightsD}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0}, {});
 
     auto z = resultFF->at(0);
     //z->printShapeInfo("FF shape");
@@ -408,7 +408,7 @@ TEST_F(ConvolutionTests, sconv2D_FF_NoBias_2) {
 
 
     nd4j::ops::conv2d op2d;
-    auto result2D = op2d.execute({z, &weightsP}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
+    auto result2D = op2d.execute({z, &weightsP}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0}, {});
 
     auto z2d = result2D->at(0);
     //z2d->printShapeInfo("z2d shape");
@@ -444,7 +444,7 @@ TEST_F(ConvolutionTests, sconv2D_FF_pointwise_1) {
 
     nd4j::ops::sconv2d op;
 
-    auto resultFF = op.execute({&input, &weightsD, &weightsP}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
+    auto resultFF = op.execute({&input, &weightsD, &weightsP}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0}, {});
 
     auto z = resultFF->at(0);
     //z->printShapeInfo("FF shape");
@@ -498,7 +498,7 @@ TEST_F(ConvolutionTests, sconv2D_BP_pointwise_1) {
     epsilonNext.applyScalar(scalar::Divide, 100.0);
 
     nd4j::ops::sconv2d_bp op;
-    auto resultBP = op.execute({&input, &epsilonNext, &weightsD, &weightsP },{}, {5, 5, 1, 1, 0, 0, 1, 1, 0});
+    auto resultBP = op.execute({&input, &epsilonNext, &weightsD, &weightsP },{}, {5, 5, 1, 1, 0, 0, 1, 1, 0}, {});
 
     ASSERT_EQ(3, resultBP->size());
 
@@ -546,8 +546,8 @@ TEST_F(ConvolutionTests, TestSconvCrash_max_1) {
     auto expOutput = NDArrayFactory::create<double>('c', {3, 2, 8, 8});
 
     nd4j::ops::sconv2d op;
-    Nd4jStatus status = op.execute({&input, &weightsD, &weightsP, &bias}, {&output}, {},  {1, 1, 1, 1, 0, 0, 1, 1, 0});
-    auto result = op.execute({&input, &weightsD, &weightsP, &bias}, {},  {1, 1, 1, 1, 0, 0, 1, 1, 0});
+    Nd4jStatus status = op.execute({&input, &weightsD, &weightsP, &bias}, {&output}, {},  {1, 1, 1, 1, 0, 0, 1, 1, 0}, {});
+    auto result = op.execute({&input, &weightsD, &weightsP, &bias}, {},  {1, 1, 1, 1, 0, 0, 1, 1, 0}, {});
 
     auto z = result->at(0);
 
@@ -706,7 +706,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_3) {
     x.applyTransform(transform::Im2col, &im2col0, args2col.data());
 
     nd4j::ops::im2col op;
-    auto status = op.execute({&x}, {&im2col1}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+    auto status = op.execute({&x}, {&im2col1}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0}, {});
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(im2col1.isSameShape(&im2col0));

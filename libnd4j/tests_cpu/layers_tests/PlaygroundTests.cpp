@@ -341,7 +341,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     auto timeStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        auto result = op.execute({&input}, {&output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 0});
+        auto result = op.execute({&input}, {&output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 0}, {});
         ASSERT_EQ(Status::OK(), result);
     }
 
@@ -353,7 +353,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     auto permStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        auto result = op.execute({&input}, {&outputPermuted}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 0});
+        auto result = op.execute({&input}, {&outputPermuted}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 0}, {});
         ASSERT_EQ(Status::OK(), result);
     }
 
@@ -394,7 +394,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     auto javaStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputBuffers, outputShapes, 1, nullptr, 0, iArgs, 9, false);
+        nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputBuffers, outputShapes, 1, nullptr, 0, iArgs, 9, nullptr, 0, false);
     }
 
     auto javaEnd = std::chrono::system_clock::now();
@@ -408,7 +408,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
 
 
     for (int e = 0; e < iterations; e++) {
-        nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, false);
+        nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, nullptr, 0, false);
     }
 
     auto javaPermEnd = std::chrono::system_clock::now();
@@ -440,7 +440,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_2) {
 
     NativeOps nativeOps;
 
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, false);
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, nullptr, 0, false);
 }
 
 TEST_F(PlaygroundTests, Test_Col2Im_1) {
@@ -468,7 +468,7 @@ TEST_F(PlaygroundTests, Test_Col2Im_1) {
     auto timeStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        auto result = op.execute({&input}, {&output}, {}, {sH, sW, pH, pW, iH, iW, dH, dW, 0});
+        auto result = op.execute({&input}, {&output}, {}, {sH, sW, pH, pW, iH, iW, dH, dW, 0}, {});
         ASSERT_EQ(Status::OK(), result);
     }
 
@@ -478,7 +478,7 @@ TEST_F(PlaygroundTests, Test_Col2Im_1) {
     auto permStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        auto result = op.execute({&inputPermuted}, {&outputPermuted}, {}, {sH, sW, pH, pW, iH, iW, dH, dW, 0});
+        auto result = op.execute({&inputPermuted}, {&outputPermuted}, {}, {sH, sW, pH, pW, iH, iW, dH, dW, 0}, {});
         ASSERT_EQ(Status::OK(), result);
     }
 
@@ -514,7 +514,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
     auto timeStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        auto result = op.execute({&input}, {&output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 0});
+        auto result = op.execute({&input}, {&output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 0}, {});
         ASSERT_EQ(Status::OK(), result);
     }
 
@@ -524,7 +524,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
     auto permStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        auto result = op.execute({&inputPermuted}, {&outputPermuted}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 0});
+        auto result = op.execute({&inputPermuted}, {&outputPermuted}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 0}, {});
         ASSERT_EQ(Status::OK(), result);
     }
 

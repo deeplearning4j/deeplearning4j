@@ -100,7 +100,8 @@ namespace ops {
             std::vector<double> tVec(1);
             tVec[0] = (keepDims? 1.0 : 0.0);
             std::vector<NDArray*> inputVec({input});
-            std::unique_ptr<ResultSet> tmpResult(op.execute(inputVec, tVec, axes, false));
+            std::vector<bool> emptyBool;
+            std::unique_ptr<ResultSet> tmpResult(op.execute(inputVec, tVec, axes, emptyBool, false));
             if (tmpResult->status() != ND4J_STATUS_OK)
                 return tmpResult->status();
 

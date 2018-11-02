@@ -43,7 +43,7 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
     exp.applyBroadcast(broadcast::Add, {1}, &y);
 
     nd4j::ops::add op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -67,7 +67,7 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_1) {
     exp.applyBroadcast(broadcast::Multiply, {1}, &y);
 
     nd4j::ops::multiply op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -92,7 +92,7 @@ TEST_F(BroadcastableOpsTests, Test_SquaredSubtract_1) {
 
 
     nd4j::ops::squaredsubtract op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -111,7 +111,7 @@ TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_1) {
     auto exp = NDArrayFactory::create<float>('c', {1,3}, {1, 0, -1});
 
     nd4j::ops::subtract op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -130,7 +130,7 @@ TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_2) {
     auto exp = NDArrayFactory::create<float>('c', {1,3}, {1, 2, 3});
 
     nd4j::ops::add op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -149,7 +149,7 @@ TEST_F(BroadcastableOpsTests, Test_Maximum_1) {
     auto exp = NDArrayFactory::create<float>('c', {2, 3}, {2, 2, 2, 2, 3, 2});
 
     nd4j::ops::maximum op;
-    auto result = op.execute({&x, &row}, {}, {});
+    auto result = op.execute({&x, &row}, {}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -167,7 +167,7 @@ TEST_F(BroadcastableOpsTests, Test_Minimum_1) {
     auto exp = NDArrayFactory::create<float>('c', {2, 3}, {1, 2, 1, 1, 1, 1});
 
     nd4j::ops::minimum op;
-    auto result = op.execute({&x, &col}, {}, {});
+    auto result = op.execute({&x, &col}, {}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -280,7 +280,7 @@ TEST_F(BroadcastableOpsTests, Test_Scalar_Add_1) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {3, 4, 5, 6});
 
     nd4j::ops::add op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -302,7 +302,7 @@ TEST_F(BroadcastableOpsTests, Test_Inplace_Output_1) {
     e.assign(1.0f);
 
     nd4j::ops::add op;
-    auto result = op.execute({&x, &y}, {&o}, {}, {});
+    auto result = op.execute({&x, &y}, {&o}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
 
     auto buffO2 = reinterpret_cast<float *>(o.buffer());
@@ -330,7 +330,7 @@ TEST_F(BroadcastableOpsTests, Test_Subtract_2) {
     auto e = NDArrayFactory::create<float>('c', {2}, {1.0f, 0.0f});
 
     nd4j::ops::subtract op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, {});
     auto z = result->at(0);
 
     ASSERT_TRUE(e.equalsTo(z));
@@ -345,7 +345,7 @@ TEST_F(BroadcastableOpsTests, Test_Subtract_3) {
     auto e = NDArrayFactory::create<float>('c', {2}, {1.0f, 0.0f});
 
     nd4j::ops::subtract op;
-    auto result = op.execute({&x, &y}, {&z}, {}, {});
+    auto result = op.execute({&x, &y}, {&z}, {}, {}, {});
 
     ASSERT_EQ(Status::OK(), result);
     ASSERT_TRUE(e.equalsTo(z));
@@ -508,7 +508,7 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_7) {
     auto e = NDArrayFactory::create<float>('c', {1}, {8.f});
 
     nd4j::ops::multiply op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -524,7 +524,7 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_8) {
    auto e = NDArrayFactory::create<float>('c', {1, 1}, {8.f});
 
     nd4j::ops::multiply op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);

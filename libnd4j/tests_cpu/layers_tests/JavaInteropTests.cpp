@@ -150,7 +150,7 @@ TEST_F(JavaInteropTests, Test_Squeeze_1) {
 
     NativeOps nativeOps;
 
-    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_EQ(e, z);
@@ -174,7 +174,7 @@ TEST_F(JavaInteropTests, Test_RDiv_1) {
 
     NativeOps nativeOps;
 
-    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_EQ(e, z);
@@ -212,7 +212,7 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
     Nd4jLong exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0, 0};
 
     nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 4, ptrsOutBuffers, ptrsOutShapes, 1,
-                                nullptr, 0, exp, 9, false);
+                                nullptr, 0, exp, 9, nullptr, 0, false);
 
     //output.printBuffer("output");
 
@@ -246,7 +246,7 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
 
     Nd4jLong exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0};
 
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, false);
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, nullptr, 0, false);
 
     //output.printBuffer("output");
 
@@ -272,7 +272,7 @@ TEST_F(JavaInteropTests, TestMaxPooling2d_1) {
 
     NativeOps nativeOps;
 
-    Nd4jStatus status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs.data(), 9, false);
+    Nd4jStatus status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs.data(), 9, nullptr, 0, false);
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
 }
@@ -304,7 +304,7 @@ TEST_F(JavaInteropTests, TestCol2Im_1) {
 
     auto hash = op.getOpHash();
 
-    nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, false);
+    nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, nullptr, 0, false);
 
     ASSERT_TRUE(output.meanNumber().e<float>(0) > 0.0f);
 }
@@ -336,7 +336,7 @@ TEST_F(JavaInteropTests, TestPNorm_1) {
     Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
     Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
 
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 11, false);
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 11, nullptr, 0, false);
 
     ASSERT_TRUE(output.meanNumber().e<double>(0) > 0.0);
 }
@@ -357,7 +357,7 @@ TEST_F(JavaInteropTests, TestInplace_1) {
     Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
 
 
-    Nd4jStatus result = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, nullptr, nullptr, 0, extras, 2, nullptr, 0, true);
+    Nd4jStatus result = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, nullptr, nullptr, 0, extras, 2, nullptr, 0, nullptr, 0, true);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
@@ -532,7 +532,7 @@ TEST_F(JavaInteropTests, Test_Greater_1) {
 
     NativeOps nativeOps;
 
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
     o.printIndexedBuffer("Greater JIT");
     ASSERT_TRUE(exp.equalsTo(&o));
 }
@@ -557,7 +557,7 @@ TEST_F(JavaInteropTests, Test_Greater_2) {
 
     NativeOps nativeOps;
 
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
 
     ASSERT_TRUE(exp.equalsTo(&o));
 }
@@ -578,7 +578,7 @@ TEST_F(JavaInteropTests, Test_Boolean_Op_1) {
 
     NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(exp.equalsTo(&o));
@@ -601,7 +601,7 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_1) {
 
     NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(exp.isSameShape(z));
@@ -626,7 +626,7 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_2) {
 
     NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(e.isSameShape(z));
@@ -652,7 +652,7 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_3) {
 
     NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 1, false);
+    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 1, nullptr, 0, false);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(e.isSameShape(output));
@@ -708,7 +708,7 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_double) {
 
     NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, false);
+    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, nullptr, 0, false);
     ASSERT_EQ(Status::OK(), status);
 
 
@@ -734,7 +734,7 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_float) {
 
     NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, false);
+    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, nullptr, 0, false);
     ASSERT_EQ(Status::OK(), status);
 
 

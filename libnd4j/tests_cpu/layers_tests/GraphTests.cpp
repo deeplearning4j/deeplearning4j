@@ -390,8 +390,9 @@ TEST_F(GraphTests, ReductionsTest1) {
     graph->getVariableSpace()->putVariable(-1, x);
     graph->getVariableSpace()->putVariable(-2, z);
 
+//    nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
 
-    auto nodeA = new Node(OpType_REDUCE_FLOAT, reduce::Mean, 1, {-1}, {2}, {1});
+    auto nodeA = new Node(OpType_REDUCE_FLOAT, reduce::Mean, 1, {-1}, {2}, {1}, {});
     auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {-2});
 
     graph->addNode(nodeA);
@@ -1566,7 +1567,7 @@ TEST_F(GraphTests, Test_Inplace_Outputs_1) {
     auto z = NDArrayFactory::create<float>('c', {2, 3});
 
     nd4j::ops::test_output_reshape op;
-    auto result = op.execute({&x}, {&z}, {}, {});
+    auto result = op.execute({&x}, {&z}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
 
     ASSERT_TRUE(exp.isSameShape(z));
@@ -1584,7 +1585,7 @@ TEST_F(GraphTests, Test_Inplace_Outputs_2) {
     bool failed = false;
     nd4j::ops::test_output_reshape op;
     try {
-        op.execute({&x}, {&z}, {}, {});
+        op.execute({&x}, {&z}, {}, {}, {});
 
     } catch (const std::runtime_error& e) {
         failed = true;

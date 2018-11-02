@@ -36,7 +36,7 @@ TEST_F(BackpropTests, Test_Add_1) {
     auto e = NDArrayFactory::create<float>('c', {2, 3, 4});
 
     nd4j::ops::add_bp op;
-    auto result = op.execute({&x, &y, &e}, {}, {});
+    auto result = op.execute({&x, &y, &e}, {}, {}, {});
 
     ASSERT_EQ(Status::OK(), result->status());
 

@@ -394,7 +394,7 @@ TEST_F(ParityOpsTests, Test_Equals_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {1, 0, 1, 0, 1});
 
     nd4j::ops::equals op;
-    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -412,7 +412,7 @@ TEST_F(ParityOpsTests, Test_NotEquals_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {0, 1, 0, 1, 0});
 
     nd4j::ops::not_equals op;
-    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -429,7 +429,7 @@ TEST_F(ParityOpsTests, Test_Less_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {1, 1, 0, 0, 0});
 
     nd4j::ops::less op;
-    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -446,7 +446,7 @@ TEST_F(ParityOpsTests, Test_LessEquals_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {1, 1, 1, 0, 0});
 
     nd4j::ops::less_equal op;
-    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -463,7 +463,7 @@ TEST_F(ParityOpsTests, Test_GreaterEquals_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {0, 0, 1, 1, 1});
 
     nd4j::ops::greater_equal op;
-    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -480,7 +480,7 @@ TEST_F(ParityOpsTests, Test_Greater_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {0, 0, 0, 1, 1});
 
     nd4j::ops::greater op;
-    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
