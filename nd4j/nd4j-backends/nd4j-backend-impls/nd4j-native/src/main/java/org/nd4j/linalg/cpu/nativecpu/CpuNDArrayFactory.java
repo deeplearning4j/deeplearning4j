@@ -527,10 +527,12 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                 linearIndex += m.length();
             } else {
 
-                    nativeOps.flatten(dummy, linearIndex, order, ret.data().addressPointer(),
-                            (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                    nativeOps.flatten(dummy, linearIndex, order,
+                            ret.data().addressPointer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                            null, null,
                             m.data().addressPointer(),
-                            (LongPointer) m.shapeInfoDataBuffer().addressPointer());
+                            (LongPointer) m.shapeInfoDataBuffer().addressPointer(),
+                            null, null);
 
                 //Works for all cases...
 
@@ -576,10 +578,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
             nativeOps.tear(null,
-                    tensor.data().pointer(),
-                    (LongPointer) tensor.shapeInfoDataBuffer().pointer(),
-                    targets,
-                    (LongPointer) result[0].shapeInfoDataBuffer().pointer(),
+                    tensor.data().pointer(), (LongPointer) tensor.shapeInfoDataBuffer().pointer(),
+                    null, null,
+                    targets, (LongPointer) result[0].shapeInfoDataBuffer().pointer(),
                     (LongPointer) tadBuffers.getFirst().pointer(),
                     new LongPointerWrapper(tadBuffers.getSecond().pointer())
             );
@@ -646,9 +647,12 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
 
-        nativeOps.concat(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
-                    ret.data().addressPointer(),
-                    (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+        nativeOps.concat(null, dimension, toConcat.length,
+                    dataPointers, shapeInfoPointers,
+                null, null,
+                    ret.data().addressPointer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                    null, null,
+
                     //new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
                     null, null);
 
@@ -766,11 +770,15 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         val zTadOffsets = zOffsets == null ? null : zOffsets.addressPointer();
 
 
-        nativeOps.pullRows(dummy, source.data().addressPointer(),
-                    (LongPointer) source.shapeInfoDataBuffer().addressPointer(),
-                    ret.data().addressPointer(),
-                    (LongPointer) ret.shapeInfoDataBuffer().addressPointer(), indexes.length, pIndex,
-                    (LongPointer) hostTadShapeInfo, new LongPointerWrapper(hostTadOffsets), (LongPointer) zTadShapeInfo,
+        nativeOps.pullRows(dummy,
+                    source.data().addressPointer(), (LongPointer) source.shapeInfoDataBuffer().addressPointer(),
+                    null, null,
+                    ret.data().addressPointer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                    null, null,
+                    indexes.length, pIndex,
+                    (LongPointer) hostTadShapeInfo,
+                    new LongPointerWrapper(hostTadOffsets),
+                    (LongPointer) zTadShapeInfo,
                     new LongPointerWrapper(zTadOffsets));
 
 
@@ -802,7 +810,13 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
 
-        nativeOps.accumulate(null, dataPointers, (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(), (DoublePointer) target.data().addressPointer(), (LongPointer) target.shapeInfoDataBuffer().addressPointer(), arrays.length, len);
+        nativeOps.accumulate(null,
+                dataPointers, (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(),
+                null, null,
+                target.data().addressPointer(), (LongPointer) target.shapeInfoDataBuffer().addressPointer(),
+                null, null,
+                arrays.length,
+                len);
 
         return target;
     }
@@ -842,8 +856,14 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
 
-        nativeOps.average(null, dataPointers, (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(), target == null ? null : target.data().addressPointer(), target == null ? null : (LongPointer) target.shapeInfoDataBuffer().addressPointer(), arrays.length,
-                    len, true);
+        nativeOps.average(null,
+                dataPointers, (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(),
+                null, null,
+                target == null ? null : target.data().addressPointer(), target == null ? null : (LongPointer) target.shapeInfoDataBuffer().addressPointer(),
+                null, null,
+                arrays.length,
+                    len,
+                true);
 
         return target;
     }
@@ -974,7 +994,12 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
 
-        nativeOps.shuffle(dummy, dataPointers, shapePointers, dataPointers, shapePointers, arrays.size(),
+        nativeOps.shuffle(dummy,
+                    dataPointers, shapePointers,
+                null, null,
+                    dataPointers, shapePointers,
+                null, null,
+                arrays.size(),
                     ptrMap, tadPointers, offsetPointers);
 
 
@@ -1198,7 +1223,10 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             return x;
 
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sort(null, x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(), descending);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sort(null,
+                x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
+                null, null,
+                descending);
 
         return x;
     }
@@ -1213,8 +1241,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().sortTad(null,
-                    x.data().addressPointer(),
-                    (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
+                    x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
+                null, null,
                     (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.INT).addressPointer(),
                     dimension.length,
                     (LongPointer) tadBuffers.getFirst().addressPointer(),

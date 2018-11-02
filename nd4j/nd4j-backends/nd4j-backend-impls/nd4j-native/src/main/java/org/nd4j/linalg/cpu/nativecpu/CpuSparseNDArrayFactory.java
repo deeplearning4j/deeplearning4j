@@ -530,7 +530,10 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
         if (x.isScalar())
             return x;
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sort(null,  x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(), descending);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sort(null,
+                x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
+                null, null,
+                descending);
 
         return x;
     }
@@ -545,8 +548,8 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().sortTad(null,
-                    x.data().addressPointer(),
-                    (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
+                    x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
+                    null, null,
                     new IntPointer(dimension),
                     dimension.length,
                     (LongPointer) tadBuffers.getFirst().addressPointer(),

@@ -918,10 +918,10 @@ void NativeOps::concat(
         Nd4jPointer *extraPointers,
         int dimension,
         int numArrays,
-        Nd4jPointer *data,
-        Nd4jPointer *inputShapeInfo,
-        void *hZ,
-        Nd4jLong *hZShapeInfo,
+        Nd4jPointer *data, Nd4jPointer *inputShapeInfo,
+        Nd4jPointer *ddata, Nd4jPointer *dinputShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
         Nd4jPointer *tadPointers,
         Nd4jPointer *offsetPointers) {
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -964,10 +964,10 @@ void NativeOps::flatten(
         Nd4jPointer *extraPointers,
         int offset,
         char order,
-        void *hZ,
-        Nd4jLong *hZShapeInfo,
-        void *input,
-        Nd4jLong *inputShapeInfo) {
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
+        void *input, Nd4jLong *inputShapeInfo,
+        void *dinput, Nd4jLong *dinputShapeInfo) {
     auto xType = nd4j::ArrayOptions::dataType(inputShapeInfo);
 
     BUILD_SINGLE_SELECTOR(xType, flattenGeneric, (extraPointers, offset, order, hZ, hZShapeInfo, input, inputShapeInfo), LIBND4J_TYPES);
@@ -1228,10 +1228,10 @@ void pullRowsGeneric(void *vx,
 }
 
 void NativeOps::pullRows(Nd4jPointer *extraPointers,
-        void *hX,
-        Nd4jLong *hXShapeInfo,
-        void *hZ,
-        Nd4jLong *hZShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
         Nd4jLong n,
         Nd4jLong *indexes,
         Nd4jLong *tadShapeInfo,
@@ -1297,8 +1297,8 @@ void tearGeneric(void *vx,
 }
 
 void NativeOps::tear(Nd4jPointer *extraPointers,
-        void *hX,
-        Nd4jLong *hXShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
         Nd4jPointer *targets,
         Nd4jLong *hZShapeInfo,
         Nd4jLong *tadShapeInfo,
@@ -1310,10 +1310,10 @@ void NativeOps::tear(Nd4jPointer *extraPointers,
 
 
 void NativeOps::average(Nd4jPointer *extras,
-        Nd4jPointer *hX,
-        Nd4jLong *hXShapeInfo,
-        void *dz,
-        Nd4jLong *hZShapeInfo,
+        Nd4jPointer *hX, Nd4jLong *hXShapeInfo,
+        Nd4jPointer *dX, Nd4jLong *dXShapeInfo,
+        void *z, Nd4jLong *hZShapeInfo,
+        void *dz, Nd4jLong *dZShapeInfo,
         int n,
         Nd4jLong length,
         bool propagate) {
@@ -1323,10 +1323,10 @@ void NativeOps::average(Nd4jPointer *extras,
 }
 
 void NativeOps::accumulate(Nd4jPointer *extras,
-        Nd4jPointer *hX,
-        Nd4jLong *hXShapeInfo,
-        void *dz,
-        Nd4jLong *hZShapeInfo,
+        Nd4jPointer *hX, Nd4jLong *hXShapeInfo,
+        Nd4jPointer *dX, Nd4jLong *dXShapeInfo,
+        void *hz, Nd4jLong *hZShapeInfo,
+        void *dz, Nd4jLong *dZShapeInfo,
         int n,
         Nd4jLong length) {
 
@@ -1439,10 +1439,10 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
 }
 
 void NativeOps::shuffle(Nd4jPointer *extras,
-                              Nd4jPointer *hX,
-                              Nd4jPointer *hXShapeInfo,
-                              Nd4jPointer *dz,
-                              Nd4jPointer *hZShapeInfo,
+                              Nd4jPointer *hX, Nd4jPointer *hXShapeInfo,
+                              Nd4jPointer *dX, Nd4jPointer *dXShapeInfo,
+                              Nd4jPointer *hz, Nd4jPointer *hZShapeInfo,
+                              Nd4jPointer *dz, Nd4jPointer *dZShapeInfo,
                               int N,
                               int *shuffleMap,
                               Nd4jPointer *tadShapeInfo,
@@ -1454,7 +1454,7 @@ void NativeOps::shuffle(Nd4jPointer *extras,
 
     auto xType = nd4j::ArrayOptions::dataType(xShape[0]);
 
-    BUILD_SINGLE_SELECTOR(xType, shuffleGeneric, (hX, xShape, dz, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, shuffleGeneric, (hX, xShape, hz, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
 }
 
 
@@ -1755,15 +1755,15 @@ Nd4jPointer NativeOps::pointerForAddress(Nd4jLong address) {
 }
 
 void NativeOps::sort(Nd4jPointer *extraPointers,
-        void *hX,
-        Nd4jLong *hXShapeInfo,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
         bool descending) {
     NativeOpExcutioner::execSort(hX, hXShapeInfo, descending);
 }
 
 void NativeOps::sortTad(Nd4jPointer *extraPointers,
-            void *hX,
-            Nd4jLong *hXShapeInfo,
+            void *hX, Nd4jLong *hXShapeInfo,
+            void *dX, Nd4jLong *dXShapeInfo,
             int *dimension,
             int dimensionLength,
             Nd4jLong *tadShapeInfo,

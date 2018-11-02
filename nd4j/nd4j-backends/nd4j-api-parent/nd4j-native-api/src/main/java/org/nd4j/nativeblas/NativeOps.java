@@ -794,9 +794,17 @@ public abstract class NativeOps extends Pointer {
 
 
     // MetaOps
-    public abstract void execMetaPredicateShape(PointerPointer extras, int opTypeA, int opNumA, int opTypeB,
-                                                int opNumB, long N, Pointer dx, @Cast("Nd4jLong *") LongPointer xShape, Pointer dy, @Cast("Nd4jLong *") LongPointer yShape,
-                                                Pointer dz, @Cast("Nd4jLong *") LongPointer zShape, Pointer extraA, Pointer extraB, double scalarA,
+    public abstract void execMetaPredicateShape(PointerPointer extras,
+                                                int opTypeA, int opNumA,
+                                                int opTypeB, int opNumB,
+                                                long N,
+                                                Pointer x, @Cast("Nd4jLong *") LongPointer xShape,
+                                                Pointer dx, @Cast("Nd4jLong *") LongPointer dxShape,
+                                                Pointer y, @Cast("Nd4jLong *") LongPointer yShape,
+                                                Pointer dy, @Cast("Nd4jLong *") LongPointer dyShape,
+                                                Pointer z, @Cast("Nd4jLong *") LongPointer zShape,
+                                                Pointer dz, @Cast("Nd4jLong *") LongPointer dzShape,
+                                                Pointer extraA, Pointer extraB, double scalarA,
                                                 double scalarB);
 
 
@@ -995,8 +1003,7 @@ public abstract class NativeOps extends Pointer {
     public abstract void tear(PointerPointer extras,
                               Pointer tensor, @Cast("Nd4jLong *") LongPointer xShapeInfo,
                               Pointer dtensor, @Cast("Nd4jLong *") LongPointer dxShapeInfo,
-                              PointerPointer targets,
-                              @Cast("Nd4jLong *") LongPointer zShapeInfo,
+                              PointerPointer targets, @Cast("Nd4jLong *") LongPointer zShapeInfo,
                               @Cast("Nd4jLong *") LongPointer tadShapeInfo,
                               @Cast("Nd4jLong *") LongPointer tadOffsets);
 
@@ -1014,12 +1021,20 @@ public abstract class NativeOps extends Pointer {
 
     public abstract void decodeThreshold(PointerPointer extraPointers, Pointer dx, long N, Pointer dz, LongPointer zShapeInfo);
 
-    public abstract void sort(PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong *") LongPointer xShapeInfo, boolean descending);
+    public abstract void sort(PointerPointer extraPointers,
+                              Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo,
+                              Pointer dx, @Cast("Nd4jLong *") LongPointer dxShapeInfo,
+                              boolean descending);
 
 
-    public abstract void sortTad(PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong *") LongPointer xShapeInfo,
-                                 IntPointer dimension, int dimensionLength, @Cast("Nd4jLong *") LongPointer tadShapeInfo,
-                                 @Cast("Nd4jLong *") LongPointer tadOffsets, boolean descending);
+    public abstract void sortTad(PointerPointer extraPointers,
+                                 Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo,
+                                 Pointer dx, @Cast("Nd4jLong *") LongPointer dxShapeInfo,
+                                 IntPointer dimension,
+                                 int dimensionLength,
+                                 @Cast("Nd4jLong *") LongPointer tadShapeInfo,
+                                 @Cast("Nd4jLong *") LongPointer tadOffsets,
+                                 boolean descending);
 
 
     public abstract void sortCooIndices(PointerPointer extraPointers, @Cast("Nd4jLong *") LongPointer indices, Pointer values, long length, int rank);

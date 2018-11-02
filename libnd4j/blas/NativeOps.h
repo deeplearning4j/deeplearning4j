@@ -542,19 +542,19 @@ public:
             Nd4jPointer *extraPointers,
             int offset,
             char order,
-            void *result,
-            Nd4jLong *resultShapeInfo,
-            void *input,
-            Nd4jLong *inputShapeInfo);
+            void *result, Nd4jLong *resultShapeInfo,
+            void *dresult, Nd4jLong *dresultShapeInfo,
+            void *input, Nd4jLong *inputShapeInfo,
+            void *dinput, Nd4jLong *dinputShapeInfo);
 
     void concat(
             Nd4jPointer *extraPointers,
             int dimension,
             int numArrays,
-            Nd4jPointer *data,
-            Nd4jPointer *inputShapeInfo,
-            void *result,
-            Nd4jLong *resultShapeInfo,
+            Nd4jPointer *data, Nd4jPointer *inputShapeInfo,
+            Nd4jPointer *ddata, Nd4jPointer *dinputShapeInfo,
+            void *result, Nd4jLong *resultShapeInfo,
+            void *dresult, Nd4jLong *dresultShapeInfo,
             Nd4jPointer *tadPointers,
             Nd4jPointer *offsetPointers);
 
@@ -872,10 +872,10 @@ public:
      * @param zTadOffsets
      */
     void pullRows(Nd4jPointer *extraPointers,
-                        void *x,
-                        Nd4jLong *xShapeInfo,
-                        void *z,
-                        Nd4jLong *zShapeInfo,
+                        void *x, Nd4jLong *xShapeInfo,
+                        void *dx, Nd4jLong *dxShapeInfo,
+                        void *z, Nd4jLong *zShapeInfo,
+                        void *dz, Nd4jLong *dzShapeInfo,
                         Nd4jLong n,
                         Nd4jLong *indexes,
                         Nd4jLong *tadShapeInfo,
@@ -893,20 +893,20 @@ public:
      * @param propagate
      */
     void average(Nd4jPointer *extras,
-                       Nd4jPointer *dx,
-                       Nd4jLong *xShapeInfo,
-                       void *dz,
-                       Nd4jLong *zShapeInfo,
+                       Nd4jPointer *x, Nd4jLong *xShapeInfo,
+                       Nd4jPointer *dx, Nd4jLong *dxShapeInfo,
+                       void *z, Nd4jLong *zShapeInfo,
+                       void *dz, Nd4jLong *dzShapeInfo,
                        int n,
                        Nd4jLong length,
                        bool propagate);
 
 
     void accumulate(Nd4jPointer *extras,
-                       Nd4jPointer *dx,
-                       Nd4jLong *xShapeInfo,
-                       void *dz,
-                       Nd4jLong *zShapeInfo,
+                       Nd4jPointer *x, Nd4jLong *xShapeInfo,
+                       Nd4jPointer *dx, Nd4jLong *dxShapeInfo,
+                       void *z, Nd4jLong *zShapeInfo,
+                       void *dz, Nd4jLong *dzShapeInfo,
                        int n,
                        Nd4jLong length);
 
@@ -948,10 +948,10 @@ public:
      * @param tadOffsets
      */
     void shuffle(Nd4jPointer *extras,
-                       Nd4jPointer *dx,
-                       Nd4jPointer *xShapeInfo,
-                       Nd4jPointer *dz,
-                       Nd4jPointer *zShapeInfo,
+                       Nd4jPointer *x, Nd4jPointer *xShapeInfo,
+                       Nd4jPointer *dx, Nd4jPointer *dxShapeInfo,
+                       Nd4jPointer *z, Nd4jPointer *zShapeInfo,
+                       Nd4jPointer *dz, Nd4jPointer *dzShapeInfo,
                        int N,
                        int *shuffleMap,
                        Nd4jPointer *tadShapeInfo,
@@ -1426,7 +1426,12 @@ public:
      * @param zShapeInfo
      * @return
      */
-    void tear(Nd4jPointer *extraPointers, void *x, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+    void tear(Nd4jPointer *extraPointers,
+            void *x, Nd4jLong *xShapeInfo,
+            void *dx, Nd4jLong *dxShapeInfo,
+            Nd4jPointer *targets, Nd4jLong *zShapeInfo,
+            Nd4jLong *tadShapeInfo,
+            Nd4jLong *tadOffsets);
 
     Nd4jLong encodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold);
     void decodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
@@ -1440,8 +1445,19 @@ public:
     void decodeThreshold(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
 
 
-    void sort(Nd4jPointer *extraPointers, void *x, Nd4jLong *xShapeInfo, bool descending);
-    void sortTad(Nd4jPointer *extraPointers, void *x, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending);
+    void sort(Nd4jPointer *extraPointers,
+            void *x, Nd4jLong *xShapeInfo,
+            void *dx, Nd4jLong *dxShapeInfo,
+            bool descending);
+
+    void sortTad(Nd4jPointer *extraPointers,
+            void *x, Nd4jLong *xShapeInfo,
+            void *dx, Nd4jLong *dxShapeInfo,
+            int *dimension,
+            int dimensionLength,
+            Nd4jLong *tadShapeInfo,
+            Nd4jLong *tadOffsets,
+            bool descending);
 
 
     // special sort impl for sorting out COO indices and values

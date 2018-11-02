@@ -1382,55 +1382,55 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int offset,
                 char order,
-                Pointer result,
-                @Cast("Nd4jLong*") LongPointer resultShapeInfo,
-                Pointer input,
-                @Cast("Nd4jLong*") LongPointer inputShapeInfo);
+                Pointer result, @Cast("Nd4jLong*") LongPointer resultShapeInfo,
+                Pointer dresult, @Cast("Nd4jLong*") LongPointer dresultShapeInfo,
+                Pointer input, @Cast("Nd4jLong*") LongPointer inputShapeInfo,
+                Pointer dinput, @Cast("Nd4jLong*") LongPointer dinputShapeInfo);
     public native void flatten(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int offset,
                 char order,
-                Pointer result,
-                @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
-                Pointer input,
-                @Cast("Nd4jLong*") LongBuffer inputShapeInfo);
+                Pointer result, @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
+                Pointer dresult, @Cast("Nd4jLong*") LongBuffer dresultShapeInfo,
+                Pointer input, @Cast("Nd4jLong*") LongBuffer inputShapeInfo,
+                Pointer dinput, @Cast("Nd4jLong*") LongBuffer dinputShapeInfo);
     public native void flatten(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int offset,
                 char order,
-                Pointer result,
-                @Cast("Nd4jLong*") long[] resultShapeInfo,
-                Pointer input,
-                @Cast("Nd4jLong*") long[] inputShapeInfo);
+                Pointer result, @Cast("Nd4jLong*") long[] resultShapeInfo,
+                Pointer dresult, @Cast("Nd4jLong*") long[] dresultShapeInfo,
+                Pointer input, @Cast("Nd4jLong*") long[] inputShapeInfo,
+                Pointer dinput, @Cast("Nd4jLong*") long[] dinputShapeInfo);
 
     public native void concat(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int dimension,
                 int numArrays,
-                @Cast("Nd4jPointer*") PointerPointer data,
-                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-                Pointer result,
-                @Cast("Nd4jLong*") LongPointer resultShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer data, @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer ddata, @Cast("Nd4jPointer*") PointerPointer dinputShapeInfo,
+                Pointer result, @Cast("Nd4jLong*") LongPointer resultShapeInfo,
+                Pointer dresult, @Cast("Nd4jLong*") LongPointer dresultShapeInfo,
                 @Cast("Nd4jPointer*") PointerPointer tadPointers,
                 @Cast("Nd4jPointer*") PointerPointer offsetPointers);
     public native void concat(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int dimension,
                 int numArrays,
-                @Cast("Nd4jPointer*") PointerPointer data,
-                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-                Pointer result,
-                @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer data, @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer ddata, @Cast("Nd4jPointer*") PointerPointer dinputShapeInfo,
+                Pointer result, @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
+                Pointer dresult, @Cast("Nd4jLong*") LongBuffer dresultShapeInfo,
                 @Cast("Nd4jPointer*") PointerPointer tadPointers,
                 @Cast("Nd4jPointer*") PointerPointer offsetPointers);
     public native void concat(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int dimension,
                 int numArrays,
-                @Cast("Nd4jPointer*") PointerPointer data,
-                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-                Pointer result,
-                @Cast("Nd4jLong*") long[] resultShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer data, @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer ddata, @Cast("Nd4jPointer*") PointerPointer dinputShapeInfo,
+                Pointer result, @Cast("Nd4jLong*") long[] resultShapeInfo,
+                Pointer dresult, @Cast("Nd4jLong*") long[] dresultShapeInfo,
                 @Cast("Nd4jPointer*") PointerPointer tadPointers,
                 @Cast("Nd4jPointer*") PointerPointer offsetPointers);
 
@@ -1778,10 +1778,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param zTadOffsets
      */
     public native void pullRows(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                            Pointer x,
-                            @Cast("Nd4jLong*") LongPointer xShapeInfo,
-                            Pointer z,
-                            @Cast("Nd4jLong*") LongPointer zShapeInfo,
+                            Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
+                            Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+                            Pointer z, @Cast("Nd4jLong*") LongPointer zShapeInfo,
+                            Pointer dz, @Cast("Nd4jLong*") LongPointer dzShapeInfo,
                             @Cast("Nd4jLong") long n,
                             @Cast("Nd4jLong*") LongPointer indexes,
                             @Cast("Nd4jLong*") LongPointer tadShapeInfo,
@@ -1789,10 +1789,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                             @Cast("Nd4jLong*") LongPointer zTadShapeInfo,
                             @Cast("Nd4jLong*") LongPointer zTadOffsets);
     public native void pullRows(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                            Pointer x,
-                            @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-                            Pointer z,
-                            @Cast("Nd4jLong*") LongBuffer zShapeInfo,
+                            Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
+                            Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+                            Pointer z, @Cast("Nd4jLong*") LongBuffer zShapeInfo,
+                            Pointer dz, @Cast("Nd4jLong*") LongBuffer dzShapeInfo,
                             @Cast("Nd4jLong") long n,
                             @Cast("Nd4jLong*") LongBuffer indexes,
                             @Cast("Nd4jLong*") LongBuffer tadShapeInfo,
@@ -1800,10 +1800,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                             @Cast("Nd4jLong*") LongBuffer zTadShapeInfo,
                             @Cast("Nd4jLong*") LongBuffer zTadOffsets);
     public native void pullRows(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                            Pointer x,
-                            @Cast("Nd4jLong*") long[] xShapeInfo,
-                            Pointer z,
-                            @Cast("Nd4jLong*") long[] zShapeInfo,
+                            Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
+                            Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+                            Pointer z, @Cast("Nd4jLong*") long[] zShapeInfo,
+                            Pointer dz, @Cast("Nd4jLong*") long[] dzShapeInfo,
                             @Cast("Nd4jLong") long n,
                             @Cast("Nd4jLong*") long[] indexes,
                             @Cast("Nd4jLong*") long[] tadShapeInfo,
@@ -1821,50 +1821,50 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param propagate
      */
     public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
-                           @Cast("Nd4jPointer*") PointerPointer dx,
-                           @Cast("Nd4jLong*") LongPointer xShapeInfo,
-                           Pointer dz,
-                           @Cast("Nd4jLong*") LongPointer zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+                           Pointer z, @Cast("Nd4jLong*") LongPointer zShapeInfo,
+                           Pointer dz, @Cast("Nd4jLong*") LongPointer dzShapeInfo,
                            int n,
                            @Cast("Nd4jLong") long length,
                            @Cast("bool") boolean propagate);
     public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
-                           @Cast("Nd4jPointer*") PointerPointer dx,
-                           @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-                           Pointer dz,
-                           @Cast("Nd4jLong*") LongBuffer zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+                           Pointer z, @Cast("Nd4jLong*") LongBuffer zShapeInfo,
+                           Pointer dz, @Cast("Nd4jLong*") LongBuffer dzShapeInfo,
                            int n,
                            @Cast("Nd4jLong") long length,
                            @Cast("bool") boolean propagate);
     public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
-                           @Cast("Nd4jPointer*") PointerPointer dx,
-                           @Cast("Nd4jLong*") long[] xShapeInfo,
-                           Pointer dz,
-                           @Cast("Nd4jLong*") long[] zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+                           Pointer z, @Cast("Nd4jLong*") long[] zShapeInfo,
+                           Pointer dz, @Cast("Nd4jLong*") long[] dzShapeInfo,
                            int n,
                            @Cast("Nd4jLong") long length,
                            @Cast("bool") boolean propagate);
 
 
     public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
-                           @Cast("Nd4jPointer*") PointerPointer dx,
-                           @Cast("Nd4jLong*") LongPointer xShapeInfo,
-                           Pointer dz,
-                           @Cast("Nd4jLong*") LongPointer zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+                           Pointer z, @Cast("Nd4jLong*") LongPointer zShapeInfo,
+                           Pointer dz, @Cast("Nd4jLong*") LongPointer dzShapeInfo,
                            int n,
                            @Cast("Nd4jLong") long length);
     public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
-                           @Cast("Nd4jPointer*") PointerPointer dx,
-                           @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-                           Pointer dz,
-                           @Cast("Nd4jLong*") LongBuffer zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+                           Pointer z, @Cast("Nd4jLong*") LongBuffer zShapeInfo,
+                           Pointer dz, @Cast("Nd4jLong*") LongBuffer dzShapeInfo,
                            int n,
                            @Cast("Nd4jLong") long length);
     public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
-                           @Cast("Nd4jPointer*") PointerPointer dx,
-                           @Cast("Nd4jLong*") long[] xShapeInfo,
-                           Pointer dz,
-                           @Cast("Nd4jLong*") long[] zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+                           Pointer z, @Cast("Nd4jLong*") long[] zShapeInfo,
+                           Pointer dz, @Cast("Nd4jLong*") long[] dzShapeInfo,
                            int n,
                            @Cast("Nd4jLong") long length);
 
@@ -1906,28 +1906,28 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param tadOffsets
      */
     public native void shuffle(@Cast("Nd4jPointer*") PointerPointer extras,
-                           @Cast("Nd4jPointer*") PointerPointer dx,
-                           @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
-                           @Cast("Nd4jPointer*") PointerPointer dz,
-                           @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jPointer*") PointerPointer dxShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer z, @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dz, @Cast("Nd4jPointer*") PointerPointer dzShapeInfo,
                            int N,
                            IntPointer shuffleMap,
                            @Cast("Nd4jPointer*") PointerPointer tadShapeInfo,
                            @Cast("Nd4jPointer*") PointerPointer tadOffsets);
     public native void shuffle(@Cast("Nd4jPointer*") PointerPointer extras,
-                           @Cast("Nd4jPointer*") PointerPointer dx,
-                           @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
-                           @Cast("Nd4jPointer*") PointerPointer dz,
-                           @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jPointer*") PointerPointer dxShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer z, @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dz, @Cast("Nd4jPointer*") PointerPointer dzShapeInfo,
                            int N,
                            IntBuffer shuffleMap,
                            @Cast("Nd4jPointer*") PointerPointer tadShapeInfo,
                            @Cast("Nd4jPointer*") PointerPointer tadOffsets);
     public native void shuffle(@Cast("Nd4jPointer*") PointerPointer extras,
-                           @Cast("Nd4jPointer*") PointerPointer dx,
-                           @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
-                           @Cast("Nd4jPointer*") PointerPointer dz,
-                           @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jPointer*") PointerPointer dxShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer z, @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
+                           @Cast("Nd4jPointer*") PointerPointer dz, @Cast("Nd4jPointer*") PointerPointer dzShapeInfo,
                            int N,
                            int[] shuffleMap,
                            @Cast("Nd4jPointer*") PointerPointer tadShapeInfo,
@@ -2399,9 +2399,24 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param zShapeInfo
      * @return
      */
-    public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, @Cast("Nd4jLong*") LongPointer zShapeInfo, @Cast("Nd4jLong*") LongPointer tadShapeInfo, @Cast("Nd4jLong*") LongPointer tadOffsets);
-    public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, @Cast("Nd4jLong*") LongBuffer zShapeInfo, @Cast("Nd4jLong*") LongBuffer tadShapeInfo, @Cast("Nd4jLong*") LongBuffer tadOffsets);
-    public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, @Cast("Nd4jLong*") long[] zShapeInfo, @Cast("Nd4jLong*") long[] tadShapeInfo, @Cast("Nd4jLong*") long[] tadOffsets);
+    public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
+                Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer targets, @Cast("Nd4jLong*") LongPointer zShapeInfo,
+                @Cast("Nd4jLong*") LongPointer tadShapeInfo,
+                @Cast("Nd4jLong*") LongPointer tadOffsets);
+    public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
+                Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer targets, @Cast("Nd4jLong*") LongBuffer zShapeInfo,
+                @Cast("Nd4jLong*") LongBuffer tadShapeInfo,
+                @Cast("Nd4jLong*") LongBuffer tadOffsets);
+    public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
+                Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer targets, @Cast("Nd4jLong*") long[] zShapeInfo,
+                @Cast("Nd4jLong*") long[] tadShapeInfo,
+                @Cast("Nd4jLong*") long[] tadOffsets);
 
     public native @Cast("Nd4jLong") long encodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongPointer xShapeInfo, @Cast("Nd4jLong") long N, IntPointer dz, float threshold);
     public native @Cast("Nd4jLong") long encodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongBuffer xShapeInfo, @Cast("Nd4jLong") long N, IntBuffer dz, float threshold);
@@ -2427,12 +2442,43 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void decodeThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") long[] zShapeInfo);
 
 
-    public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo, @Cast("bool") boolean descending);
-    public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo, @Cast("bool") boolean descending);
-    public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo, @Cast("bool") boolean descending);
-    public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo, IntPointer dimension, int dimensionLength, @Cast("Nd4jLong*") LongPointer tadShapeInfo, @Cast("Nd4jLong*") LongPointer tadOffsets, @Cast("bool") boolean descending);
-    public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, @Cast("Nd4jLong*") LongBuffer tadShapeInfo, @Cast("Nd4jLong*") LongBuffer tadOffsets, @Cast("bool") boolean descending);
-    public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo, int[] dimension, int dimensionLength, @Cast("Nd4jLong*") long[] tadShapeInfo, @Cast("Nd4jLong*") long[] tadOffsets, @Cast("bool") boolean descending);
+    public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
+                Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+                @Cast("bool") boolean descending);
+    public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
+                Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+                @Cast("bool") boolean descending);
+    public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
+                Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+                @Cast("bool") boolean descending);
+
+    public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
+                Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+                IntPointer dimension,
+                int dimensionLength,
+                @Cast("Nd4jLong*") LongPointer tadShapeInfo,
+                @Cast("Nd4jLong*") LongPointer tadOffsets,
+                @Cast("bool") boolean descending);
+    public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
+                Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+                IntBuffer dimension,
+                int dimensionLength,
+                @Cast("Nd4jLong*") LongBuffer tadShapeInfo,
+                @Cast("Nd4jLong*") LongBuffer tadOffsets,
+                @Cast("bool") boolean descending);
+    public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
+                Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+                int[] dimension,
+                int dimensionLength,
+                @Cast("Nd4jLong*") long[] tadShapeInfo,
+                @Cast("Nd4jLong*") long[] tadOffsets,
+                @Cast("bool") boolean descending);
 
 
     // special sort impl for sorting out COO indices and values
