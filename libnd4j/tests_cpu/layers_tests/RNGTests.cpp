@@ -148,6 +148,7 @@ TEST_F(RNGTests, Test_Launcher_3) {
     RandomLauncher::applyAlphaDropOut(_rngA, &x0, 0.5f, 0.2f, 0.1f, 0.3f);
     RandomLauncher::applyAlphaDropOut(_rngB, &x1, 0.5f, 0.2f, 0.1f, 0.3f);
 
+    //x1.printIndexedBuffer("x1");
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     ASSERT_FALSE(x0.equalsTo(nexp0));
