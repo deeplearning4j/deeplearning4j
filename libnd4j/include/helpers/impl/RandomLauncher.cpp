@@ -31,16 +31,26 @@ namespace nd4j {
         if (z == nullptr)
             z = array;
 
+        auto extra = NDArrayFactory::create(retainProb);
+        auto extraPtr = extra.getBufferAsPointer(array->dataType());
+
         //array->template applyRandom<randomOps::DropOut<T>>(buffer, nullptr, z, &retainProb);
-        NativeOpExcutioner::execRandom(random::DropOut, &rng, z->buffer(), z->shapeInfo(), &retainProb);
+        NativeOpExcutioner::execRandom(random::DropOut, &rng, array->buffer(), array->shapeInfo(), z->buffer(), z->shapeInfo(), extraPtr);
+
+        delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
 
     void RandomLauncher::applyInvertedDropOut(nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, NDArray* z) {
         if (z == nullptr)
             z = array;
 
+        auto extra = NDArrayFactory::create(retainProb);
+        auto extraPtr = extra.getBufferAsPointer(array->dataType());
+
         //array->template applyRandom<randomOps::DropOutInverted<T>>(buffer, nullptr, z, &retainProb);
-        NativeOpExcutioner::execRandom(random::DropOutInverted, &rng, z->buffer(), z->shapeInfo(), &retainProb);
+        NativeOpExcutioner::execRandom(random::DropOutInverted, &rng, array->buffer(), array->shapeInfo(), z->buffer(), z->shapeInfo(), extraPtr);
+
+        delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
 
     void RandomLauncher::applyAlphaDropOut(nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, double alpha, double beta, double alphaPrime, NDArray* z) {
@@ -51,46 +61,64 @@ namespace nd4j {
         //T args[] = {retainProb, alpha, beta, alphaPrime};
         //nd4j::ops::alpha_dropout_bp op;
         //array->template applyRandom<randomOps::AlphaDropOut<T>>(buffer, nullptr, z, args);
-        NativeOpExcutioner::execRandom(random::AlphaDropOut, &rng, z->buffer(), z->shapeInfo(), &retainProb);
+        auto extra = NDArrayFactory::create(array->dataType(), {4}, {retainProb, alpha, beta, alphaPrime});
+        auto extraPtr = extra.getBufferAsPointer(array->dataType());
+
+        NativeOpExcutioner::execRandom(random::AlphaDropOut, &rng, array->buffer(), array->shapeInfo(), z->buffer(), z->shapeInfo(), extraPtr);
+
+        delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
 
     void RandomLauncher::fillBernoulli(nd4j::graph::RandomGenerator& rng, NDArray* array, double prob) {
-        //array->template applyRandom<randomOps::BernoulliDistribution<T>>(buffer, nullptr, array, &prob);
-        NativeOpExcutioner::execRandom(random::BernoulliDistribution, &rng, array->buffer(), array->shapeInfo(), &prob);
+        auto extra = NDArrayFactory::create(prob);
+        auto extraPtr = extra.getBufferAsPointer(array->dataType());
+
+        NativeOpExcutioner::execRandom(random::BernoulliDistribution, &rng, array->buffer(), array->shapeInfo(), extraPtr);
+
+        delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
 
     void RandomLauncher::fillUniform(nd4j::graph::RandomGenerator& rng, NDArray* array, double from, double to) {
-        //T args[] = {from, to};
+        auto extra = NDArrayFactory::create(array->dataType(), {2}, {from, to});
+        auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
         //array->template applyRandom<randomOps::UniformDistribution<T>>(buffer, nullptr, nullptr, args);
-        NativeOpExcutioner::execRandom(random::UniformDistribution, &rng, array->buffer(), array->shapeInfo(), nullptr);
+        NativeOpExcutioner::execRandom(random::UniformDistribution, &rng, array->buffer(), array->shapeInfo(), extraPtr);
+
+        delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
 
     void RandomLauncher::fillGaussian(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
-        //T args[] = {mean, stdev};
+        auto extra = NDArrayFactory::create(array->dataType(), {2}, {mean, stdev});
+        auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
-        //array->template applyRandom<randomOps::GaussianDistribution<T>>(buffer, array, array, args);
         NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
+
+        delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
 
     void RandomLauncher::fillLogNormal(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
-        //T args[] = {mean, stdev};
+        auto extra = NDArrayFactory::create(array->dataType(), {2}, {mean, stdev});
+        auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
-        //array->template applyRandom<randomOps::LogNormalDistribution<T>>(buffer, array, array, args);
         NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
+
+        delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
 
     void RandomLauncher::fillTruncatedNormal(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
-        //T args[] = {mean, stdev};
+        auto extra = NDArrayFactory::create(array->dataType(), {2}, {mean, stdev});
+        auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
-        //array->template applyRandom<randomOps::TruncatedNormalDistribution<T>>(buffer, array, array, args);
         NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
     }
 
     void RandomLauncher::fillBinomial(nd4j::graph::RandomGenerator& rng, NDArray* array, int trials, double prob) {
-        //T args[] = {(T) trials, prob};
+        auto extra = NDArrayFactory::create(array->dataType(), {2}, {(double) trials, prob});
+        auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
-        //array->template applyRandom<randomOps::BinomialDistributionEx<T>>(buffer, array, array, args);
         NativeOpExcutioner::execRandom(random::BinomialDistributionEx, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), nullptr);
+
+        delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
 }
