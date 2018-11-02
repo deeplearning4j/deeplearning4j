@@ -961,6 +961,15 @@ namespace shape {
   */
     ND4J_EXPORT _CUDA_HD int sub2Ind(int rank, Nd4jLong *shape, Nd4jLong *indices);
 
+   /**
+   * increment n-dimensional array by one iteration by changing coord appropriately  
+   * for example we have array with shape {2, 3}:
+   * - if input coord = {0,1}, then output coord = {0,2}
+   * - if input coord = {0,2}, then output coord = {1,0}
+   * so the aim is to produce following subsequence of coord: {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2}   
+   */
+    ND4J_EXPORT _CUDA_HD FORCEINLINE void nextIter(const int rank, const Nd4jLong *shapeInfo, Nd4jLong* coord);
+
     /**
    * Compute the real linear indices for the given shape and stride
    */
@@ -1912,6 +1921,16 @@ template <typename T>
      */
     INLINEDEF _CUDA_HD void ind2subC(int rank, Nd4jLong *shape, Nd4jLong index, Nd4jLong *out) {
         ind2subC(rank,shape, index,shape::prodLong(shape,rank),out);
+    }
+
+
+    ND4J_EXPORT _CUDA_HD FORCEINLINE void nextIter(const int rank, const Nd4jLong *shapeInfo, Nd4jLong* coord) {
+
+        for(Nd4jLong dim = rank-1; dim >= 0; --dim)
+            if(++coord[dim] == shapeInfo[dim+1])
+                coord[dim] = 0;
+            else
+                break;
     }
 
 /**

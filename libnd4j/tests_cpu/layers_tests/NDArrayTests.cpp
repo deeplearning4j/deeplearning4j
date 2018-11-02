@@ -2674,4 +2674,14 @@ TEST_F(NDArrayTest, Test_diagonal_18) {
     delete diag;
 }
 
-
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, assign_test1) {
+    
+    NDArray x('c', {2, 3}, {1,2,3,4,5,6});
+    NDArray y('c', {2, 3}, {10,20,30,40,50,60});
+    y.reshapei('c',{3, 2});    
+        
+    x.assign(y);
+    x.reshapei('c',{3, 2});    
+    ASSERT_TRUE(x.equalsTo(y));
+}
