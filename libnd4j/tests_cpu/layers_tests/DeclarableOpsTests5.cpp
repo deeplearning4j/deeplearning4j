@@ -217,9 +217,9 @@ TEST_F(DeclarableOpsTests5, Test_Boolean_diff_1) {
     auto y = NDArrayFactory::create<double>(2.0f);
 
     nd4j::ops::less op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(Status::OK(), result->status());
-
+    ASSERT_EQ(result->at(0)->t<bool>(0), true);
     delete result;
 }
 

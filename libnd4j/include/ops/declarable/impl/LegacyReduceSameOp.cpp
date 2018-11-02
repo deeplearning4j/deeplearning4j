@@ -51,13 +51,14 @@ namespace nd4j {
                 if (block.getIArguments()->size() == x->rankOf())
                     allAxes = true;
 
-                if ((block.getIArguments()->size() == 0) ||
-                    (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
+//                if ((block.getIArguments()->size() == 0) ||
+//                    (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
+                if (block.getAxis()->empty() || allAxes) {
                     // scalar
                     NativeOpExcutioner::execReduceSameScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
-                    std::vector<int> dims(*block.getIArguments());
+                    std::vector<int> dims(*block.getAxis());
 
                     for (int e = 0; e < dims.size(); e++)
                         if (dims[e] < 0)
