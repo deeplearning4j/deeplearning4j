@@ -84,12 +84,12 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
+                    auto z = OUTPUT_VARIABLE(0); //NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillUniform(block.randomGenerator(), z, from, to);
 
                     // FIXME:
-                    OVERWRITE_RESULT(z);
+                    //OVERWRITE_RESULT(z);
                 }
                     break;
                 case 1: {
@@ -161,12 +161,12 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
+                    auto z = OUTPUT_VARIABLE(0);//NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillGaussian(block.randomGenerator(), z, mean, stdev);
 
                     // FIXME: !!
-                    OVERWRITE_RESULT(z);
+                    //OVERWRITE_RESULT(z);
                 }
                     break;
                 case 7: {
@@ -189,12 +189,12 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
+                    auto z = OUTPUT_VARIABLE(0); // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillBernoulli(block.randomGenerator(), z, prob);
 
                     // FIXME:
-                    OVERWRITE_RESULT(z);
+                    //OVERWRITE_RESULT(z);
                 }
                     break;
                 case 9: {
@@ -222,12 +222,12 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
+                    auto z = OUTPUT_VARIABLE(0);//NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillBinomial(block.randomGenerator(), z, trials, prob);
 
                     // FIXME: !!!
-                    OVERWRITE_RESULT(z);
+                    //OVERWRITE_RESULT(z);
                 }
                     break;
                 case 10: {
@@ -254,12 +254,12 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
+                    auto z = OUTPUT_VARIABLE(0);//NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillLogNormal(block.randomGenerator(), z, mean, stdev);
 
                     // FIXME: !!
-                    OVERWRITE_RESULT(z);
+                    //OVERWRITE_RESULT(z);
                 }
                     break;
                 case 11: {
@@ -286,12 +286,12 @@ namespace nd4j {
                     for (int e = 0; e < input->lengthOf(); e++)
                         shape[e] = input->e<Nd4jLong>(e);
 
-                    auto z = NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
+                    auto z = OUTPUT_VARIABLE(0); // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillTruncatedNormal(block.randomGenerator(), z, mean, stdev);
 
                     // FIXME: !!!
-                    OVERWRITE_RESULT(z);
+                    //OVERWRITE_RESULT(z);
                 }
                     break;
                 case 12: {
