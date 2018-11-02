@@ -219,7 +219,7 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
 
      // ----- calculation of gradI -> pass it through conv3d_ff ----- //
     nd4j::ops::conv3dnew conv3d;
-    const Nd4jStatus status = conv3d.execute({gradO, weights}, {gradI}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  isSameMode,  !isNCDHW});
+    const Nd4jStatus status = conv3d.execute({gradO, weights}, {gradI}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  isSameMode,  !isNCDHW}, {});
     if (status != ND4J_STATUS_OK)
         return status;
 

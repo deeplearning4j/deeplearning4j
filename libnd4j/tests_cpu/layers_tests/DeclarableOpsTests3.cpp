@@ -263,7 +263,7 @@ TEST_F(DeclarableOpsTests3, Test_ClipByAvgNorm_1) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3}, {-2.88, 0.0, 0.0, 3.84, 0.0, 0.0});
 
     nd4j::ops::clipbyavgnorm op;
-    auto result = op.execute({&x}, {0.8}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {0.8}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     auto z = result->at(0);
 

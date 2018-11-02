@@ -84,7 +84,7 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
 
     // forward steps
     nd4j::ops::dynamic_rnn dynamicRnn;
-    auto resultsFW = dynamicRnn.execute({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, {}, {timeMajor}, false, x->dataType());
+    auto resultsFW = dynamicRnn.execute({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, {}, {timeMajor}, {}, false, x->dataType());
     hFW->assign(resultsFW->at(0));                              // [time x bS x numUnitsFW] or [bS x time x numUnitsFW]
     hFWFinal->assign(resultsFW->at(1));
 
@@ -99,17 +99,17 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
 
     // reverse x     
     nd4j::ops::reverse_sequence reverse;
-    auto resultsIn = reverse.execute({x, seqLen}, {}, dimsForReverse, false, x->dataType());
+    auto resultsIn = reverse.execute({x, seqLen}, {}, dimsForReverse, {}, false, x->dataType());
     REQUIRE_TRUE (resultsIn->status() == ND4J_STATUS_OK, 0, "dynamic_bidirectional_rnn: there is a problem with reverse on the sequence.");
     auto revInput = resultsIn->at(0);
 
     // backward steps    
-    auto resultsBW = dynamicRnn.execute({revInput, WxBW, WhBW, bBW, h0BW, maxTimeStep}, {}, {timeMajor});
+    auto resultsBW = dynamicRnn.execute({revInput, WxBW, WhBW, bBW, h0BW, maxTimeStep}, {}, {timeMajor}, {});
     auto hBWtemp = resultsBW->at(0);					           // [time x bS x numUnitsBW] or [ bS x time xnumUnitsBW]
     hBWFinal->assign(resultsBW->at(1));
 
     // reverse hBWtemp 
-    auto resultsOut = reverse.execute({hBWtemp, seqLen}, {}, dimsForReverse);
+    auto resultsOut = reverse.execute({hBWtemp, seqLen}, {}, dimsForReverse, {});
     hBW->assign(resultsOut->at(0));
     
 	delete resultsOut;

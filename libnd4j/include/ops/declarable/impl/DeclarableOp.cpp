@@ -578,35 +578,39 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        nd4j::ResultSet*  nd4j::ops::DeclarableOp::execute(std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace, nd4j::DataType type) {
+        nd4j::ResultSet*  nd4j::ops::DeclarableOp::execute(std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, std::initializer_list<bool> bArgs, bool isInplace, nd4j::DataType type) {
             std::vector<NDArray*> ins(inputs);
             std::vector<double> tas(tArgs);
             std::vector<Nd4jLong> ias(iArgs);
-            return this->execute(ins, tas, ias, isInplace, type);
+            std::vector<bool> bas(bArgs);
+            return this->execute(ins, tas, ias, bas, isInplace, type);
         }
 
-        Nd4jStatus nd4j::ops::DeclarableOp::execute(std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace, nd4j::DataType type) {
-            std::vector<NDArray*> ins(inputs);
-            std::vector<NDArray*> ous(outputs);
-            std::vector<double> tas(tArgs);
-            std::vector<Nd4jLong> ias(iArgs);
-            return this->execute(ins, ous, tas, ias, isInplace, type);
-        }
-
-        Nd4jStatus nd4j::ops::DeclarableOp::execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace, nd4j::DataType type) {
+        Nd4jStatus nd4j::ops::DeclarableOp::execute(std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, std::initializer_list<bool> bArgs, bool isInplace, nd4j::DataType type) {
             std::vector<NDArray*> ins(inputs);
             std::vector<NDArray*> ous(outputs);
             std::vector<double> tas(tArgs);
             std::vector<Nd4jLong> ias(iArgs);
-            return this->execute(rng, ins, ous, tas, ias, isInplace, type);
+            std::vector<bool> bas(bArgs);
+            return this->execute(ins, ous, tas, ias, bas, isInplace, type);
         }
 
-        Nd4jStatus nd4j::ops::DeclarableOp::execute(std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs, std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace, nd4j::DataType type) {
+        Nd4jStatus nd4j::ops::DeclarableOp::execute(nd4j::graph::RandomGenerator& rng, std::initializer_list<NDArray*> inputs, std::initializer_list<NDArray*> outputs , std::initializer_list<double> tArgs, std::initializer_list<Nd4jLong> iArgs, std::initializer_list<bool> bArgs, bool isInplace, nd4j::DataType type) {
+            std::vector<NDArray*> ins(inputs);
+            std::vector<NDArray*> ous(outputs);
+            std::vector<double> tas(tArgs);
+            std::vector<Nd4jLong> ias(iArgs);
+            std::vector<bool> bas(bArgs);
+            return this->execute(rng, ins, ous, tas, ias, bas, isInplace, type);
+        }
+
+        Nd4jStatus nd4j::ops::DeclarableOp::execute(std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs, std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, std::vector<bool>& bArgs, bool isInplace, nd4j::DataType type) {
             // TODO: nullptr here might be replaced
-            return execute(ProviderRNG::getInstance().getRNG(), inputs, outputs, tArgs, iArgs, isInplace, type);
+            nd4j::graph::RandomGenerator rng(0, 0);
+            return execute(rng, inputs, outputs, tArgs, iArgs, bArgs, isInplace, type);
         }
 
-        Nd4jStatus nd4j::ops::DeclarableOp::execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs, std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace, nd4j::DataType type) {
+        Nd4jStatus nd4j::ops::DeclarableOp::execute(nd4j::graph::RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<NDArray*>& outputs, std::vector<double>& tArgs, std::vector<Nd4jLong>& iArgs, std::vector<bool>& bArgs, bool isInplace, nd4j::DataType type) {
             VariableSpace variableSpace;
             FlowPath fp;
             variableSpace.setFlowPath(&fp);
@@ -637,8 +641,8 @@ namespace nd4j {
             block.setDataType(0, type);
 
             // we need this line for tests basically
-            if (rng != nullptr)
-                block.setRNG(rng);
+            //if (rng != nullptr)
+            block.setRng(rng);
 
             for (int e = 0; e < tArgs.size(); e++)
                 block.getTArguments()->emplace_back(tArgs.at(e));
@@ -647,12 +651,15 @@ namespace nd4j {
             for (int e = 0; e < iArgs.size(); e++)
                 block.getIArguments()->emplace_back(static_cast<int>(iArgs.at(e)));
 
+            for (int e = 0; e < bArgs.size(); e++)
+                block.getBArguments()->emplace_back(static_cast<int>(bArgs.at(e)));
+
             Nd4jStatus result = this->execute(&block);
 
             return result;
         }
 
-        nd4j::ResultSet* nd4j::ops::DeclarableOp::execute(const std::vector<NDArray*>& inputs, const std::vector<double>& tArgs, const std::vector<Nd4jLong>& iArgs, bool isInplace, nd4j::DataType type) {
+        nd4j::ResultSet* nd4j::ops::DeclarableOp::execute(const std::vector<NDArray*>& inputs, const std::vector<double>& tArgs, const std::vector<Nd4jLong>& iArgs, const std::vector<bool>& bArgs, bool isInplace, nd4j::DataType type) {
             VariableSpace variableSpace;
             auto arrayList = new ResultSet();
             //ResultSet arrayList;
@@ -687,6 +694,9 @@ namespace nd4j {
             for (int e = 0; e < iArgs.size(); e++)
                 block.getIArguments()->emplace_back(iArgs.at(e));
 
+            for (int e = 0; e < bArgs.size(); e++)
+                block.getBArguments()->emplace_back(bArgs.at(e));
+
             Nd4jStatus status = this->execute(&block);
             arrayList->setStatus(status);
             if (status != ND4J_STATUS_OK)
@@ -712,7 +722,7 @@ namespace nd4j {
         }
 
         nd4j::ResultSet* nd4j::ops::DeclarableOp::execute(const nd4j::OpArgsHolder& holder, bool isInplace) {
-            return execute(holder.getInArrs(), holder.getTArgs(), holder.getIArgs(), isInplace, nd4j::DataType::DOUBLE);
+            return execute(holder.getInArrs(), holder.getTArgs(), holder.getIArgs(), holder.getBArgs(), isInplace, nd4j::DataType::DOUBLE);
         }
 
         Nd4jStatus nd4j::ops::DeclarableOp::validateInputDimensionsMatch(Context& block) {

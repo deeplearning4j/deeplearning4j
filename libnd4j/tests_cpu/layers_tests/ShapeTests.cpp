@@ -315,7 +315,7 @@ TEST_F(ShapeTests, Tests_Transpose_119_1) {
     e->streamline('c');
 
     nd4j::ops::transpose op;
-    auto result = op.execute({&x, &y}, {&z}, {}, {});
+    auto result = op.execute({&x, &y}, {&z}, {}, {}, {});
 
     ASSERT_EQ(Status::OK(), result);
     ASSERT_TRUE(e->isSameShape(z));
@@ -352,7 +352,7 @@ TEST_F(ShapeTests, Tests_Transpose_119_3) {
     auto exp = x.transpose();
 
     nd4j::ops::transpose op;
-    auto result = op.execute({&x}, {&z}, {}, {});
+    auto result = op.execute({&x}, {&z}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
 
     ASSERT_TRUE(exp->isSameShape(z));

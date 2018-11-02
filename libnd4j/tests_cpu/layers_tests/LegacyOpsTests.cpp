@@ -44,7 +44,7 @@ TEST_F(LegacyOpsTests, TransformTests_1) {
     exp.assign(-1.0);
 
     nd4j::ops::LegacyTransformSameOp op(transform::Neg); // Neg
-    auto status = op.execute({&x}, {&z}, {}, {});
+    auto status = op.execute({&x}, {&z}, {}, {}, {});
     ASSERT_EQ(status, ND4J_STATUS_OK);
     //z.printIndexedBuffer("Output NEG");
     ASSERT_TRUE(z.equalsTo(&exp));
@@ -77,7 +77,7 @@ TEST_F(LegacyOpsTests,  Reciprocal_1) {
     ethalon.assign(0.5f);
 
     nd4j::ops::LegacyTransformSameOp op(transform::Reciprocal); // Reciprocal
-    Nd4jStatus status = op.execute({&x}, {&x}, {}, {});
+    Nd4jStatus status = op.execute({&x}, {&x}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
     ASSERT_TRUE(ethalon.equalsTo(&x));
@@ -95,7 +95,7 @@ TEST_F(LegacyOpsTests,  PWT_Tests_1) {
     exp.assign(6.0);
 
     nd4j::ops::LegacyPairwiseTransformOp op(pairwise::Multiply); // Multiply
-    Nd4jStatus status = op.execute({&x, &y}, {&x}, {}, {});
+    Nd4jStatus status = op.execute({&x, &y}, {&x}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
@@ -133,7 +133,7 @@ TEST_F(LegacyOpsTests, Scalar_Test_1) {
     exp.assign(7.0);
 
     nd4j::ops::LegacyScalarOp op(scalar::Add);
-    op.execute({&x}, {&x}, {5.0}, {}); //
+    op.execute({&x}, {&x}, {5.0}, {}, {}); //
 
     ASSERT_TRUE(exp.equalsTo(&x));
 }
@@ -179,8 +179,8 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
     x.assign(1.0);
 
     nd4j::ops::LegacyReduceSameOp op(reduce::Sum);
-
-    auto result = op.execute({&x}, {}, {1});
+    auto axis = NDArrayFactory::create<Nd4jLong>('c', {1}, {1});
+    auto result = op.execute({&x, &axis}, {}, {});
 
     ASSERT_EQ(1, result->size());
 
@@ -219,16 +219,17 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
 TEST_F(LegacyOpsTests, ReduceTests_4) {
     auto x = NDArrayFactory::create<float>('c', {2, 3, 5});
     x.linspace(1);
-    auto indices = NDArrayFactory::create<int>('c', {1,1}, {1});
+    auto indices = NDArrayFactory::create<int>('c', {1, 1}, {1});
 
 
     nd4j::ops::LegacyReduceSameOp op(reduce::Sum);
-    auto result = op.execute({&x, &indices}, {}, {1});
+    auto result = op.execute({&x, &indices}, {}, {}, {true});
     auto z = result->at(0);
     auto exp = x.reduceAlongDims(reduce::Sum, {1}, true);
-
+    indices.printShapeInfo("Indices shape");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
+    z->printIndexedBuffer("Output reduce 4");
+    exp.printIndexedBuffer("Expected reduce 4");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -241,7 +242,7 @@ TEST_F(LegacyOpsTests, ReduceTests_5) {
     int opNum = reduce::Mean;
     nd4j::ops::LegacyReduceFloatOp op(opNum);
 
-    auto result = op.execute({&x}, {}, {});
+    ResultSet* result = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::FLOAT32);
 
     ASSERT_EQ(1, result->size());
 
@@ -257,10 +258,10 @@ TEST_F(LegacyOpsTests, ReduceTests_5) {
 TEST_F(LegacyOpsTests, ReduceTests_6) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
-
+    auto axis = NDArrayFactory::create<int>('c', {1}, {1});
     nd4j::ops::LegacyReduceFloatOp op(reduce::Mean);
 
-    auto result = op.execute({&x}, {}, {1});
+    auto result = op.execute({&x, &axis}, {}, {});
 
     ASSERT_EQ(1, result->size());
 
@@ -365,7 +366,7 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
     row.linspace(1);
 
     nd4j::ops::LegacyBroadcastOp op(broadcast::Add);
-    Nd4jStatus status = op.execute({&x, &row}, {&x}, {}, {1});
+    Nd4jStatus status = op.execute({&x, &row}, {&x}, {}, {1}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 

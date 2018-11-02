@@ -295,7 +295,7 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_NHWC_1) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 3, 2}, {1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f, 1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f});
 
     nd4j::ops::biasadd op;
-    auto result = op.execute({&x, &bias}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x, &bias}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -313,7 +313,7 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_NCHW_1) {
     auto exp = NDArrayFactory::create<double>('c', {2, 2, 3, 3}, {1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f, 1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f});
 
     nd4j::ops::biasadd op;
-    auto result = op.execute({&x, &bias}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x, &bias}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -613,7 +613,7 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_1) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 1, 2, 3});
 
     nd4j::ops::biasadd op;
-    auto result = op.execute({&x, &row}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x, &row}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -729,7 +729,7 @@ TEST_F(DeclarableOpsTests4, Test_Cross_1) {
     auto exp = NDArrayFactory::create<double>('c', {3}, {-5, 10, -5});
 
     nd4j::ops::cross op;
-    auto result = op.execute({&a, &b}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&a, &b}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -747,7 +747,7 @@ TEST_F(DeclarableOpsTests4, Test_Cross_2) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3}, {-5, 10, -5, -5, 10, -5});
 
     nd4j::ops::cross op;
-    auto result = op.execute({&a, &b}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&a, &b}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -765,7 +765,7 @@ TEST_F(DeclarableOpsTests4, Test_Cross_3) {
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, { -1,   2,  -1, -11,  22, -11, -11,  40, -27});
 
     nd4j::ops::cross op;
-    auto result = op.execute({&a, &b}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&a, &b}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -871,7 +871,7 @@ TEST_F(DeclarableOpsTests4, Test_TileToShape_1) {
     x.linspace(1.f);
 
     nd4j::ops::tile_to_shape op;
-    auto result = op.execute({&x},{}, {2, 4, 3}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x},{}, {2, 4, 3}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(Status::OK(), result->status());
 
@@ -1310,7 +1310,7 @@ TEST_F(DeclarableOpsTests4, WeightedCrossEntropyWithLogits_1) {
 //Result {-159.50006,  -191.1,       -16.009075, -210., -24.001238,  -15.03887}
 
     nd4j::ops::weighted_cross_entropy_with_logits op;
-    auto results = op.execute({&targets, &input, &weight}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto results = op.execute({&targets, &input, &weight}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto  output = results->at(0);
     
     // output->printIndexedBuffer();
@@ -1332,7 +1332,7 @@ TEST_F(DeclarableOpsTests4, WeightedCrossEntropyWithLogits_2) {
     auto expected = NDArrayFactory::create<double>('c', {2, 3}, {-159.5001f, -191.1f, -15.98185f, -210.f,  -24.001238f, -14.951412f});
     
     nd4j::ops::weighted_cross_entropy_with_logits op;
-    auto results = op.execute({&targets, &input, &weights}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto results = op.execute({&targets, &input, &weights}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto  output = results->at(0);
     
     // output->printIndexedBuffer("Result is ");
@@ -1446,7 +1446,7 @@ TEST_F(DeclarableOpsTests4, relu6_test1) {
     auto expected  = NDArrayFactory::create<double>('c', {2,4}, {0., 6., 0., 0.,2., 6., 6., 6.});
     
     nd4j::ops::relu6 op;
-    auto results = op.execute({&input}, {0.}, {}, false, nd4j::DataType::DOUBLE);
+    auto results = op.execute({&input}, {0.}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1468,7 +1468,7 @@ TEST_F(DeclarableOpsTests4, relu6_bp_test1) {
     auto expected  = NDArrayFactory::create<double>('c', {2,4}, {0., 0., 0., 0., 5., 0., 0., 8.});
     
     nd4j::ops::relu6_bp op;
-    auto results = op.execute({&input, &gradO}, {0.}, {}, false, nd4j::DataType::DOUBLE);
+    auto results = op.execute({&input, &gradO}, {0.}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1497,7 +1497,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_1) {
     );
 
     nd4j::ops::lrn op;
-    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {5}, false, nd4j::DataType::DOUBLE);
+    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {5}, {}, false, nd4j::DataType::DOUBLE);
     auto out = results->at(0);
         
     ASSERT_EQ(Status::OK(), results->status());
@@ -1525,7 +1525,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_2) {
                                             0.7581754,  0.58321184, 0.86747235, 0.4048204});
 
     nd4j::ops::lrn op;
-    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {2}, false, nd4j::DataType::DOUBLE);
+    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {2}, {}, false, nd4j::DataType::DOUBLE);
     auto out = results->at(0);
         
     ASSERT_EQ(Status::OK(), results->status());
@@ -1564,7 +1564,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_3) {
     );
 
     nd4j::ops::lrn op;
-    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {2}, false, nd4j::DataType::DOUBLE);
+    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {2}, {}, false, nd4j::DataType::DOUBLE);
     auto out = results->at(0);
         
     ASSERT_EQ(Status::OK(), results->status());
@@ -1603,7 +1603,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_4) {
     );
 
     nd4j::ops::lrn op;
-    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {5}, false, nd4j::DataType::DOUBLE);
+    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {5}, {}, false, nd4j::DataType::DOUBLE);
     auto out = results->at(0);
         
     ASSERT_EQ(Status::OK(), results->status());
@@ -1648,7 +1648,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_5) {
     auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 4});
 
     nd4j::ops::lrn_bp op;
-    auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {5}, false, nd4j::DataType::DOUBLE);
+    auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {5}, {}, false, nd4j::DataType::DOUBLE);
     auto out = results->at(0);
         
     ASSERT_EQ(Status::OK(), results->status());

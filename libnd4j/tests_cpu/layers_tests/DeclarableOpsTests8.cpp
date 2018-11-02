@@ -2343,7 +2343,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test4) {
     auto exp = NDArrayFactory::create<double>('c', {3, 5}, {0.405392, 0.319980, 0.091113, 0.001079, 0.354444, 0.225846, 0.426676, 0.237501, 0.138259, 0.150149, 0.268965, 0.010723, 0.049078, 0.304615, 0.317105});    
 
     nd4j::ops::clipbynorm op;
-    auto result = op.execute({&x}, {1.f}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {1.f}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = result->at(0);
         
     ASSERT_TRUE(exp.isSameShape(output));
@@ -2361,7 +2361,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test5) {
     x.linspace(1);
 
     nd4j::ops::clipbynorm op;
-    auto result = op.execute({&x}, {15.f}, {0}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {15.f}, {0}, {}, false, nd4j::DataType::DOUBLE);
     auto output = result->at(0);
         
     ASSERT_TRUE(exp.isSameShape(output));
@@ -2379,7 +2379,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test6) {
     x.linspace(1);
 
     nd4j::ops::clipbynorm op;
-    auto result = op.execute({&x}, {15.f}, {1}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {15.f}, {1}, {}, false, nd4j::DataType::DOUBLE);
     auto output = result->at(0);
         
     ASSERT_TRUE(exp.isSameShape(output));
@@ -2397,7 +2397,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test7) {
     x.linspace(1);
 
     nd4j::ops::clipbynorm op;
-    auto result = op.execute({&x}, {15.f}, {0,1}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {15.f}, {0,1}, {}, false, nd4j::DataType::DOUBLE);
     auto output = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -2415,7 +2415,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test8) {
     x.linspace(1);
 
     nd4j::ops::clipbynorm op;
-    auto result = op.execute({&x}, {15.}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {15.}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -2431,7 +2431,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test9) {
     auto exp = NDArrayFactory::create<double>('c', {2}, {2.4, 3.2});    
 
     nd4j::ops::clipbynorm op;
-    auto result = op.execute({&x}, {4.}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {4.}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -2447,7 +2447,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test10) {
     auto exp = NDArrayFactory::create<double>(5.);
 
     nd4j::ops::clipbynorm op;
-    auto result = op.execute({&x}, {5.}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {5.}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto output = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -2466,7 +2466,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test11) {
     x.linspace(1);
 
     nd4j::ops::clipbynorm op;
-    auto result = op.execute({&x}, {35.}, {0, 2}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {35.}, {0, 2}, {}, false, nd4j::DataType::DOUBLE);
     auto output = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -2481,7 +2481,7 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test_tf_119_1) {
     auto e = NDArrayFactory::create<double>('c', {3, 3}, {0.03198684, 0.06397368, 0.09596053, 0.12794736, 0.15993419, 0.19192106, 0.22390789, 0.25589472, 0.28788155});
 
     nd4j::ops::clipbynorm op;
-    auto result = op.execute({&x}, {0.54}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {0.54}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(e, *result->at(0));
 
@@ -2574,7 +2574,7 @@ TEST_F(DeclarableOpsTests8, zeros_as_test1) {
                                                                           
     nd4j::ops::zeros_as op;
 
-    Nd4jStatus status = op.execute({&x}, {&y}, {}, {});
+    Nd4jStatus status = op.execute({&x}, {&y}, {}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, status);    
     
     ASSERT_TRUE(y.isSameShape(exp));
@@ -2609,7 +2609,7 @@ TEST_F(DeclarableOpsTests8, ones_as_test1) {
 
     nd4j::ops::ones_as op;
 
-    Nd4jStatus status = op.execute({&x}, {&y}, {}, {}, false, nd4j::DataType::DOUBLE);
+    Nd4jStatus status = op.execute({&x}, {&y}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, status);    
     
     ASSERT_TRUE(y.isSameShape(exp));
@@ -2626,7 +2626,7 @@ TEST_F(DeclarableOpsTests8, ones_as_test2) {
 
     nd4j::ops::ones_as op;
 
-    auto result = op.execute({&x}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto y = result->at(0);
     ASSERT_TRUE(y->isSameShape(exp));
@@ -2873,7 +2873,7 @@ TEST_F(DeclarableOpsTests8, LrnTest_1) {
     );
 
     nd4j::ops::lrn op;
-    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {2}, false, nd4j::DataType::DOUBLE);
+    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {2}, {}, false, nd4j::DataType::DOUBLE);
     auto out = results->at(0);
         
     ASSERT_EQ(Status::OK(), results->status());
@@ -2950,7 +2950,7 @@ TEST_F(DeclarableOpsTests8, LrnTest_2) {
     );
 //
     nd4j::ops::lrn op;
-    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {2}, false, nd4j::DataType::DOUBLE);
+    auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {2}, {}, false, nd4j::DataType::DOUBLE);
     auto out = results->at(0);
         
     ASSERT_EQ(Status::OK(), results->status());
@@ -3031,7 +3031,7 @@ auto exp = NDArrayFactory::create<double>('c', {3,3,5,5}, {
     );
 
     nd4j::ops::lrn_bp op;
-    auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {2}, false, nd4j::DataType::DOUBLE);
+    auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {2}, {}, false, nd4j::DataType::DOUBLE);
     auto out = results->at(0);
         
     ASSERT_EQ(Status::OK(), results->status());
@@ -3057,7 +3057,7 @@ TEST_F(DeclarableOpsTests8, LrnTest_BP_2) {
     );
 
     nd4j::ops::lrn_bp op;
-    auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {2}, false, nd4j::DataType::DOUBLE);
+    auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {2}, {}, false, nd4j::DataType::DOUBLE);
     auto out = results->at(0);
         
     ASSERT_EQ(Status::OK(), results->status());

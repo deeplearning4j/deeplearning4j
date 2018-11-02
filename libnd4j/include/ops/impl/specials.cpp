@@ -40,6 +40,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
 
     std::vector<Nd4jLong> iArgs = {dimension};
     std::vector<double> tArgs;
+    std::vector<bool> bArgsEmpty;
     std::vector<NDArray*> inputs(numArrays);
     std::vector<NDArray*> outputs(1);
 
@@ -49,7 +50,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         inputs[i] = new NDArray(static_cast<void *>(data[i]), static_cast<Nd4jLong*>(inputShapeInfo[i]));
 
     nd4j::ops::concat op;
-    auto status = op.execute(inputs, outputs, tArgs, iArgs);
+    auto status = op.execute(inputs, outputs, tArgs, iArgs, bArgsEmpty);
     if(status != Status::OK())
         throw std::runtime_error("concatCpuGeneric fails to be executed !");
     

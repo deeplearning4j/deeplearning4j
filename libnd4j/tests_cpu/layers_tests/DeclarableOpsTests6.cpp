@@ -210,7 +210,7 @@ TEST_F(DeclarableOpsTests6, Test_CumSum_Inclusive_Reverse_1) {
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {12., 15., 18., 11., 13., 15., 7., 8., 9.});
 
     nd4j::ops::cumsum op;
-    auto result = op.execute({&x}, {}, {0, 1, 0}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {0, 1, 0}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -225,7 +225,7 @@ TEST_F(DeclarableOpsTests6, Test_CumSum_Inclusive_Reverse_2) {
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {6.f, 5.f, 3.f, 15.f, 11.f, 6.f, 24.f, 17.f, 9.f,});
 
     nd4j::ops::cumsum op;
-    auto result = op.execute({&x}, {}, {0, 1, 1}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {0, 1, 1}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -240,7 +240,7 @@ TEST_F(DeclarableOpsTests6, Test_CumSum_Exclusive_Reverse_1) {
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {11.f, 13.f, 15.f, 7.f, 8.f, 9.f, 0.f, 0.f, 0.f});
 
     nd4j::ops::cumsum op;
-    auto result = op.execute({&x}, {}, {1, 1, 0}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {1, 1, 0}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -255,7 +255,7 @@ TEST_F(DeclarableOpsTests6, Test_CumSum_Exclusive_Reverse_2) {
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {5.f, 3.f, 0.f, 11.f, 6.f, 0.f, 17.f, 9.f, 0.f});
 
     nd4j::ops::cumsum op;
-    auto result = op.execute({&x}, {}, {1, 1, 1}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {1, 1, 1}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -271,7 +271,7 @@ TEST_F(DeclarableOpsTests6, Test_CumSum_Exclusive_Reverse_2_1) {
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {5.f, 3.f, 0.f, 11.f, 6.f, 0.f, 17.f, 9.f, 0.f});
 
     nd4j::ops::cumsum op;
-    auto result = op.execute({&x, &axis}, {}, {1, 1}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x, &axis}, {}, {1, 1}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -288,7 +288,7 @@ TEST_F(DeclarableOpsTests6, TestDropout_1) {
     auto shape = NDArrayFactory::create<Nd4jLong>({2, 2});
     nd4j::ops::dropout op;
 
-    auto ress = op.execute({&x, &shape}, {0.2f}, {113}, false, nd4j::DataType::DOUBLE);
+    auto ress = op.execute({&x, &shape}, {0.2f}, {113}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
     //ress->at(0)->printIndexedBuffer("Result is ");
@@ -305,7 +305,7 @@ TEST_F(DeclarableOpsTests6, TestDropout_2) {
 
     nd4j::ops::dropout op;
 
-    auto ress = op.execute({&x}, {0.4f}, {113}, false, nd4j::DataType::DOUBLE);
+    auto ress = op.execute({&x}, {0.4f}, {113}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
     //x.printIndexedBuffer("Input is");
@@ -322,7 +322,7 @@ TEST_F(DeclarableOpsTests6, TestDropout_3) {
 
     nd4j::ops::dropout op;
 
-    auto ress = op.execute({&x, &shape}, {0.4f}, {113}, false, nd4j::DataType::DOUBLE);
+    auto ress = op.execute({&x, &shape}, {0.4f}, {113}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
     //x.printIndexedBuffer("Input is");
@@ -371,7 +371,7 @@ TEST_F(DeclarableOpsTests6, SufficientStatistics_1) {
 
     nd4j::ops::sufficient_statistics op;
 
-    auto ress = op.execute({&x, &axis}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto ress = op.execute({&x, &axis}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
     ASSERT_EQ(ress->at(0)->e<double>(0), count);
@@ -403,7 +403,7 @@ TEST_F(DeclarableOpsTests6, SufficientStatistics_2) {
 
     nd4j::ops::sufficient_statistics op;
 
-    auto ress = op.execute({&x, &axis}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto ress = op.execute({&x, &axis}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
     ASSERT_EQ(ress->at(0)->e<double>(0), count);
@@ -521,7 +521,7 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_1) {
 
     nd4j::ops::broadcast_dynamic_shape op;
 
-    auto res = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::INT32);
+    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT32);
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
@@ -541,7 +541,7 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_2) {
 
     nd4j::ops::broadcast_dynamic_shape op;
 
-    auto res = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::INT64);
+    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
 
@@ -561,7 +561,7 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_3) {
 
     nd4j::ops::broadcast_dynamic_shape op;
 
-    auto res = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::INT64);
+    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
@@ -581,7 +581,7 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_5) {
     auto exp = NDArrayFactory::create<Nd4jLong>({2, 2, 2});
 
     nd4j::ops::broadcast_dynamic_shape op;
-    auto res = op.execute({&x, &y}, {}, {}, false, nd4j::DataType::INT64);
+    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
 //    res->at(0)->printIndexedBuffer("Output");
@@ -868,7 +868,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_1) {
     });
 
     nd4j::ops::matrix_inverse op;
-    auto result = op.execute({&x}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -950,7 +950,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_3) {
     });
 
     nd4j::ops::matrix_inverse op;
-    auto result = op.execute({&x}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -984,7 +984,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_4) {
     });
 
     nd4j::ops::matrix_inverse op;
-    auto result = op.execute({&x}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -1012,7 +1012,7 @@ TEST_F(DeclarableOpsTests6, ReluLayer_1) {
                         26.2,  31.65, 60.7}); 
 
     nd4j::ops::relu_layer op;
-    auto result = op.execute({&x, &w, &b}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x, &w, &b}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -1698,7 +1698,7 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test1) {
     auto expHBWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsBW},  {0.86708881, 0.86708881, 0.86708881, 0.78347842, 0.78347842, 0.78347842, 0.55529176, 0.55529176, 0.55529176, 0.25      , 0.25      , 0.25});
 
     nd4j::ops::dynamic_bidirectional_rnn op;
-    auto results = op.execute({&x, &WxFW,&WhFW,&bFW,  &WxFW,&WhFW,&bFW,  &h0FW, &h0BW, &maxTimeStep}, {}, {1}, false, nd4j::DataType::DOUBLE);
+    auto results = op.execute({&x, &WxFW,&WhFW,&bFW,  &WxFW,&WhFW,&bFW,  &h0FW, &h0BW, &maxTimeStep}, {}, {1}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

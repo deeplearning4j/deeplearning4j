@@ -33,19 +33,20 @@ private:
 	std::vector<NDArray*> _inArrs = std::vector<NDArray*>();
     std::vector<double>           _tArgs  = std::vector<double>();
     std::vector<Nd4jLong>    _iArgs  = std::vector<Nd4jLong>();
+    std::vector<bool>        _bArgs  = std::vector<bool>();
 
     int _numInArrs = _inArrs.size();
     int _numTArgs  = _tArgs.size();
     int _numIArgs  = _iArgs.size();
-
+    int _numBArgs  = _bArgs.size();
     std::vector<bool> _isArrAlloc = std::vector<bool>();
 
 public:
 
 	OpArgsHolder() = delete;
 
-    OpArgsHolder(const std::vector<NDArray*>& inArrs, const std::vector<double>& tArgs = std::vector<double>(), const std::vector<Nd4jLong>& iArgs = std::vector<Nd4jLong>())
-    			: _inArrs(inArrs), _tArgs(tArgs), _iArgs(iArgs) { }
+    OpArgsHolder(const std::vector<NDArray*>& inArrs, const std::vector<double>& tArgs = std::vector<double>(), const std::vector<Nd4jLong>& iArgs = std::vector<Nd4jLong>(), const std::vector<bool>& bArgs = std::vector<bool>())
+    			: _inArrs(inArrs), _tArgs(tArgs), _iArgs(iArgs), _bArgs(bArgs) { }
 
     const std::vector<NDArray*>& getInArrs() const
     {return _inArrs; }
@@ -55,6 +56,9 @@ public:
 
     const std::vector<Nd4jLong>& getIArgs() const
     {return _iArgs; }
+
+    const std::vector<bool>& getBArgs() const
+    {return _bArgs; }
 
     const std::vector<bool>& getAllocInfo() const
     {return _isArrAlloc; }
@@ -67,6 +71,9 @@ public:
 
     int getNumIArgs() const
     {return _numIArgs; }
+
+    int getNumBArgs() const
+    {return _numBArgs; }
 
     OpArgsHolder createArgsHolderForBP(const std::vector<NDArray*>& inGradArrs, const bool isInPlace = false) const;
 

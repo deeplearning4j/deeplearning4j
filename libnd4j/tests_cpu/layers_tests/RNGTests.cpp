@@ -154,7 +154,7 @@ TEST_F(RNGTests, Test_Launcher_3) {
     ASSERT_FALSE(x0.equalsTo(nexp1));
     ASSERT_FALSE(x0.equalsTo(nexp2));
 }
-
+#if 0
 TEST_F(RNGTests, Test_Uniform_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
@@ -656,5 +656,6 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
     for (auto v: expList)
             delete v;
 
-    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
+//    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
 }
+#endif
