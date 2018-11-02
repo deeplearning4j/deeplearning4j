@@ -17,7 +17,11 @@
 package org.nd4j.linalg.cpu.nativecpu.rng;
 
 import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.nativeblas.Nd4jCpu;
 import org.nd4j.rng.NativeRandom;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * CPU implementation for NativeRandom
@@ -25,7 +29,6 @@ import org.nd4j.rng.NativeRandom;
  * @author raver119@gmail.com
  */
 public class CpuNativeRandom extends NativeRandom {
-
     public CpuNativeRandom() {
         super();
     }
@@ -40,11 +43,32 @@ public class CpuNativeRandom extends NativeRandom {
 
     @Override
     public void init() {
-        statePointer = nativeOps.initRandom(getExtraPointers(), seed, numberOfElements, stateBuffer.addressPointer());
+        statePointer = new Nd4jCpu.RandomGenerator(this.seed, this.seed);
     }
 
     @Override
     public PointerPointer getExtraPointers() {
         return null;
+    }
+
+    @Override
+    public void setSeed(long seed) {
+        this.seed = seed;
+        ((Nd4jCpu.RandomGenerator)statePointer).setSeed(seed);
+    }
+
+    @Override
+    public long getSeed() {
+        return seed;
+    }
+
+    @Override
+    public int nextInt() {
+        return ((Nd4jCpu.RandomGenerator)statePointer).relativeInt(currentPosition.getAndIncrement());
+    }
+
+    @Override
+    public long nextLong() {
+        return ((Nd4jCpu.RandomGenerator)statePointer).relativeLong(currentPosition.getAndIncrement());
     }
 }

@@ -1319,7 +1319,7 @@ void NativeOps::average(Nd4jPointer *extras,
         bool propagate) {
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(hX, dz, hZShapeInfo, n, length, propagate), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(hX, z, hZShapeInfo, n, length, propagate), LIBND4J_TYPES);
 }
 
 void NativeOps::accumulate(Nd4jPointer *extras,
@@ -1332,7 +1332,7 @@ void NativeOps::accumulate(Nd4jPointer *extras,
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(hX, dz, hZShapeInfo, n, length), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(hX, hz, hZShapeInfo, n, length), LIBND4J_TYPES);
 }
 
 void NativeOps::enableP2P(bool enable) {

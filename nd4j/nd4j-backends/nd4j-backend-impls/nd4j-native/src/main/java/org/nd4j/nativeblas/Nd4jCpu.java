@@ -4665,6 +4665,14 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
              * This method returns T value between 0 and MAX_T
              */
 
+            /**
+             * These two methods are made for JVM
+             * @param index
+             * @return
+             */
+            public native int relativeInt(@Cast("Nd4jLong") long index);
+            public native @Cast("Nd4jLong") long relativeLong(@Cast("Nd4jLong") long index);
+
             public native void rewindH(@Cast("Nd4jLong") long steps);
 
             /**

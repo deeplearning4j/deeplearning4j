@@ -818,43 +818,11 @@ public class RandomTests extends BaseNd4jTest {
         }
     }
 
-
-    @Test
-    public void testStepOver2() throws Exception {
-        Random random = Nd4j.getRandomFactory().getNewRandomInstance(119);
-        if (random instanceof NativeRandom) {
-            NativeRandom rng = (NativeRandom) random;
-            assertTrue(rng.getBufferSize() > 1000000L);
-
-            assertEquals(0, rng.getPosition());
-
-            rng.nextLong();
-
-            assertEquals(1, rng.getPosition());
-
-
-            assertEquals(1, rng.getGeneration());
-            for (long e = 0; e <= rng.getBufferSize(); e++) {
-                rng.nextLong();
-            }
-            assertEquals(2, rng.getPosition());
-            assertEquals(2, rng.getGeneration());
-
-            rng.reSeed(8792);
-            assertEquals(2, rng.getGeneration());
-            assertEquals(2, rng.getPosition());
-
-        } else
-            log.warn("Not a NativeRandom object received, skipping test");
-    }
-
-
     @Test
     public void testStepOver3() throws Exception {
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(119);
         if (random instanceof NativeRandom) {
             NativeRandom rng = (NativeRandom) random;
-            assertTrue(rng.getBufferSize() > 1000000L);
 
             int someInt = rng.nextInt();
             for (int e = 0; e < 10000; e++)

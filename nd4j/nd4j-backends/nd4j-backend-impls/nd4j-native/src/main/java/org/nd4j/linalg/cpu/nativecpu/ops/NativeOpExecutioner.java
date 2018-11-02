@@ -53,6 +53,7 @@ import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
+import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1295,7 +1296,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public INDArray exec(RandomOp op, Random rng) {
-        if (rng.getStateBuffer() == null)
+        if (!(rng instanceof CpuNativeRandom))
             throw new IllegalStateException(
                     "You should use one of NativeRandom classes for NativeOperations execution. Op class: " + op.getClass().getName());
 

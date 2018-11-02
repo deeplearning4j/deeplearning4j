@@ -263,14 +263,9 @@ public class DefaultRandom implements Random, RandomGenerator {
         return null;
     }
 
-    /**
-     * This method returns pointer to RNG buffer
-     *
-     * @return
-     */
     @Override
-    public DataBuffer getStateBuffer() {
-        return null;
+    public long getPosition() {
+        return 0;
     }
 
     @Override

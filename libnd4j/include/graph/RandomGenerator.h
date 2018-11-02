@@ -48,7 +48,7 @@ namespace nd4j {
             /**
              * This method returns integer value between 0 and MAX_UINT
              */
-            uint32_t relativeInt(Nd4jLong index);
+            //uint32_t relativeUInt32(Nd4jLong index);
 
         public:
             RandomGenerator(Nd4jLong rootSeed = 0, Nd4jLong nodeSeed = 0);
@@ -73,6 +73,14 @@ namespace nd4j {
              */
             template <typename T>
             T relativeT(Nd4jLong index);
+
+            /**
+             * These two methods are made for JVM
+             * @param index
+             * @return
+             */
+            int relativeInt(Nd4jLong index);
+            Nd4jLong relativeLong(Nd4jLong index);
 
             void rewindH(Nd4jLong steps);
 

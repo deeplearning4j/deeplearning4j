@@ -93,6 +93,15 @@ namespace nd4j {
             return static_cast<T>(r);
         }
 
+
+        int RandomGenerator::relativeInt(Nd4jLong index) {
+            return relativeT<int>(index);
+        }
+
+        Nd4jLong RandomGenerator::relativeLong(Nd4jLong index) {
+            return relativeT<Nd4jLong>(index);
+        }
+
         //////
         static FORCEINLINE uint32_t rotl(const uint32_t x, int k) {
 	        return (x << k) | (x >> (32 - k));
