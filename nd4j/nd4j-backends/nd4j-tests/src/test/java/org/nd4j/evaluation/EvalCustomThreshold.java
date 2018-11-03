@@ -14,25 +14,36 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.eval;
+package org.nd4j.evaluation;
 
-import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.EvaluationBinary;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Alex on 19/06/2017.
  */
-public class EvalCustomThreshold extends BaseDL4JTest {
+public class EvalCustomThreshold extends BaseNd4jTest {
+
+    public EvalCustomThreshold(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Test
     public void testEvaluationCustomBinaryThreshold() {
@@ -62,7 +73,7 @@ public class EvalCustomThreshold extends BaseDL4JTest {
             assertEquals(e.f1(), e2.f1(), 1e-6);
             assertEquals(e.precision(), e2.precision(), 1e-6);
             assertEquals(e.recall(), e2.recall(), 1e-6);
-            assertEquals(e.confusion, e2.confusion);
+            assertEquals(e.getConfusionMatrix(), e2.getConfusionMatrix());
         }
 
         //Check with decision threshold of 0.25
@@ -85,7 +96,7 @@ public class EvalCustomThreshold extends BaseDL4JTest {
         assertEquals(ex2.f1(), e025.f1(), 1e-6);
         assertEquals(ex2.precision(), e025.precision(), 1e-6);
         assertEquals(ex2.recall(), e025.recall(), 1e-6);
-        assertEquals(ex2.confusion, e025.confusion);
+        assertEquals(ex2.getConfusionMatrix(), e025.getConfusionMatrix());
 
 
         //Check the same thing, but the single binary output case:
@@ -97,7 +108,7 @@ public class EvalCustomThreshold extends BaseDL4JTest {
         assertEquals(ex2.f1(), e025v2.f1(), 1e-6);
         assertEquals(ex2.precision(), e025v2.precision(), 1e-6);
         assertEquals(ex2.recall(), e025v2.recall(), 1e-6);
-        assertEquals(ex2.confusion, e025v2.confusion);
+        assertEquals(ex2.getConfusionMatrix(), e025v2.getConfusionMatrix());
     }
 
     @Test
@@ -127,7 +138,7 @@ public class EvalCustomThreshold extends BaseDL4JTest {
             assertEquals(e.f1(), e2.f1(), 1e-6);
             assertEquals(e.precision(), e2.precision(), 1e-6);
             assertEquals(e.recall(), e2.recall(), 1e-6);
-            assertEquals(e.confusion, e2.confusion);
+            assertEquals(e.getConfusionMatrix(), e2.getConfusionMatrix());
         }
 
         //Manual checks:

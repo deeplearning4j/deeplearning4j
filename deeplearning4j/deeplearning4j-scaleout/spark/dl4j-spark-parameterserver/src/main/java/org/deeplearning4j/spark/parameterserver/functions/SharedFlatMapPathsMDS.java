@@ -17,8 +17,10 @@
 package org.deeplearning4j.spark.parameterserver.functions;
 
 import org.apache.commons.io.LineIterator;
+import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
@@ -37,8 +39,8 @@ import java.util.Iterator;
  */
 public class SharedFlatMapPathsMDS<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
-    public SharedFlatMapPathsMDS(TrainingWorker<R> worker, MultiDataSetLoader loader) {
-        super(new SharedFlatMapPathsMDSAdapter<R>(worker, loader));
+    public SharedFlatMapPathsMDS(TrainingWorker<R> worker, MultiDataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
+        super(new SharedFlatMapPathsMDSAdapter<R>(worker, loader, hadoopConfig));
     }
 }
 
@@ -47,11 +49,13 @@ class SharedFlatMapPathsMDSAdapter<R extends TrainingResult> implements FlatMapF
 
     protected final SharedTrainingWorker worker;
     protected final MultiDataSetLoader loader;
+    protected final Broadcast<SerializableHadoopConfig> hadoopConfig;
 
-    public SharedFlatMapPathsMDSAdapter(TrainingWorker<R> worker, MultiDataSetLoader loader) {
+    public SharedFlatMapPathsMDSAdapter(TrainingWorker<R> worker, MultiDataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
         // we're not going to have anything but Shared classes here ever
         this.worker = (SharedTrainingWorker) worker;
         this.loader = loader;
+        this.hadoopConfig = hadoopConfig;
     }
 
     @Override
@@ -69,7 +73,7 @@ class SharedFlatMapPathsMDSAdapter<R extends TrainingResult> implements FlatMapF
         LineIterator lineIter = new LineIterator(new FileReader(f));    //Buffered reader added automatically
         try {
             // iterator should be silently attached to VirtualDataSetIterator, and used appropriately
-            SharedTrainingWrapper.getInstance(worker.getInstanceId()).attachMDS(new PathSparkMultiDataSetIterator(lineIter, loader));
+            SharedTrainingWrapper.getInstance(worker.getInstanceId()).attachMDS(new PathSparkMultiDataSetIterator(lineIter, loader, hadoopConfig));
 
             // first callee will become master, others will obey and die
             SharedTrainingResult result = SharedTrainingWrapper.getInstance(worker.getInstanceId()).run(worker);

@@ -245,7 +245,7 @@ public class VariationalAutoencoder implements Layer {
                 INDArray temp = meanZ.mul(meanZ).addi(pzxSigmaSquared).negi();
                 temp.addi(logStdev2Z).addi(1.0);
                 double scorePt1 = -0.5 / minibatch * temp.sumNumber().doubleValue();
-                this.score = scorePt1 + (calcL1(false) + calcL2(false)) / minibatch;
+                this.score = scorePt1 + (calcL1(false) + calcL2(false));
             }
 
             INDArray pxzDistributionPreOut = current.mmul(pxzw).addiRowVector(pxzb);
@@ -481,12 +481,12 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return numParams(false);
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         int ret = 0;
         for (Map.Entry<String, INDArray> entry : params.entrySet()) {
             if (backwards && isPretrainParam(entry.getKey()))
@@ -591,6 +591,11 @@ public class VariationalAutoencoder implements Layer {
             }
         }
         return map;
+    }
+
+    @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        return true;
     }
 
     @Override

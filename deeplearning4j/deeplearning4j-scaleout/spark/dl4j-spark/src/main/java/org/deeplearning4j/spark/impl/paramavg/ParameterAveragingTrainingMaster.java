@@ -22,10 +22,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.storage.StorageLevel;
+import org.datavec.spark.util.BroadcastHadoopConfigHolder;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.api.loader.impl.SerializedDataSetLoader;
@@ -582,18 +585,19 @@ public class ParameterAveragingTrainingMaster
         if (collectTrainingStats && repartition != Repartition.Never)
             stats.logRepartitionEnd();
 
+        JavaSparkContext sc = (network != null ? network.getSparkContext() : graph.getSparkContext());
         FlatMapFunction<Iterator<String>, ParameterAveragingTrainingResult> function;
         if (network != null) {
             if(dsLoader != null){
-                function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(network), dsLoader);
+                function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(network), dsLoader, BroadcastHadoopConfigHolder.get(sc));
             } else {
-                function = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(network), mdsLoader);
+                function = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(network), mdsLoader, BroadcastHadoopConfigHolder.get(sc));
             }
         } else {
             if(dsLoader != null){
-                function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(graph), dsLoader);
+                function = new ExecuteWorkerPathFlatMap<>(getWorkerInstance(graph), dsLoader, BroadcastHadoopConfigHolder.get(sc));
             } else {
-                function = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(graph), mdsLoader);
+                function = new ExecuteWorkerPathMDSFlatMap<>(getWorkerInstance(graph), mdsLoader, BroadcastHadoopConfigHolder.get(sc));
             }
         }
 

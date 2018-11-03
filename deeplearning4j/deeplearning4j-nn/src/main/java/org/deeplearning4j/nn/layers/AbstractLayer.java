@@ -323,12 +323,12 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
      * @return the number of parameters for the model
      */
     @Override
-    public int numParams() {
+    public long numParams() {
         return 0;
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         return numParams();
     }
 
@@ -428,5 +428,11 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     public LayerHelper getHelper() {
         //Layers with helpers should override this method!
         return null;
+    }
+
+    @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        //Majority of params's gradients should be... Exception: batch norm mean/variance estimate
+        return true;
     }
 }

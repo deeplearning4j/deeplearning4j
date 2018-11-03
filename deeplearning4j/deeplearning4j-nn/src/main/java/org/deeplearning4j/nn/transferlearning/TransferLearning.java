@@ -928,7 +928,7 @@ public class TransferLearning {
 
                     org.deeplearning4j.nn.api.Layer layer = vertices[topologicalOrder[i]].getLayer();
                     String layerName = vertices[topologicalOrder[i]].getVertexName();
-                    int range = layer.numParams();
+                    long range = layer.numParams();
                     if (range <= 0)
                         continue; //some layers have no params
                     if (editedVertices.contains(layerName))

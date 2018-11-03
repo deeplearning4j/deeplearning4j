@@ -80,6 +80,34 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
 
         return result;
     }
+/*
+    @Override
+    public void registerConsumers(int consumers) {
+        try {
+            smartLock.writeLock().acquire();
+
+            super.registerConsumers(consumers);
+        } catch (InterruptedException e) {
+            smartLock.writeLock().release();
+        }
+    }
+*/
+    @Override
+    public boolean isEmpty() {
+        try {
+            // we use this lock to make
+            smartLock.readLock().acquire();
+
+            if (currentConsumers.get() > 0)
+                synchronize(currentConsumers.get());
+
+            return super.isEmpty();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            smartLock.readLock().release();
+        }
+    }
 
     @Override
     public void put(INDArray array) throws InterruptedException {
@@ -87,16 +115,18 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
             smartLock.writeLock().acquire();
 
             if (backingQueue.size() > decompressionThreshold || collapsedMode.get()) {
-                collapsedMode.set(true);
-
                 log.info("Collapsing updates...");
 
                 // if we're already in collapsed mode - we'll just poll back our single collapsed array and update it
-                INDArray params = smartDecompress(array, backingQueue.size() == 1 ? backingQueue.poll() : null);
+                INDArray params = smartDecompress(array, (collapsedMode.get() && backingQueue.size() == 1) ? backingQueue.poll() : null);
                 while (!backingQueue.isEmpty()) {
                     val arr = backingQueue.poll();
                     smartDecompress(arr, params);
                 }
+
+                numElementsDrained.set(0);
+                numElementsReady.set(1);
+                collapsedMode.set(true);
 
                 // now just put single array back
                 super.put(params);

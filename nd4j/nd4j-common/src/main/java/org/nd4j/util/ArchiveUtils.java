@@ -65,7 +65,15 @@ public class ArchiveUtils {
 
                 while (ze != null) {
                     String fileName = ze.getName();
+
+                    String canonicalDestinationDirPath = new File(dest).getCanonicalPath();
                     File newFile = new File(dest + File.separator + fileName);
+                    String canonicalDestinationFile = newFile.getCanonicalPath();
+
+                    if (!canonicalDestinationFile.startsWith(canonicalDestinationDirPath + File.separator)) {
+                        log.debug("Attempt to unzip entry is outside of the target dir");
+                        throw new IOException("Entry is outside of the target dir: ");
+                    }
 
                     if (ze.isDirectory()) {
                         newFile.mkdirs();

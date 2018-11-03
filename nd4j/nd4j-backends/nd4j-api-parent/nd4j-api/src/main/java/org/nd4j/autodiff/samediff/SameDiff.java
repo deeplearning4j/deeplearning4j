@@ -37,6 +37,7 @@ import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.base.Preconditions;
+import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
@@ -74,12 +75,20 @@ import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
+import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.lossfunctions.impl.*;
+import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -114,6 +123,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Builder
 @Slf4j
 public class SameDiff {
+
+    private TrainingConfig trainingConfig;                          //Configuration for training. Must be set for training/evaluation, but not for other operations
+    private boolean initializedTraining;                            //True if training setup has been done
+    private INDArray updaterState;                                  //Updater state array (1d, length equal to number of trainable parameters)
+    private Map<String,INDArray> updaterViews;                      //Views of updaterState array for each trainable parameter
+    private Map<String,GradientUpdater> updaterMap;                 //GradientUpdater instance for each trainable parameter
+
     private Map<String, String[]> incomingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as inputs to that function
     private Map<String, String[]> outgoingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as outputs from that function
     private Map<String, int[]> permuteOrder;
@@ -1414,6 +1430,405 @@ public class SameDiff {
     }
 
     /**
+     * Set the training configuration ({@link TrainingConfig}) for the SameDiff instance.
+     * A TrainingConfig must be set before the SameDiff instance can be trained via the fit methods
+     * @param trainingConfig Training configuration
+     */
+    public void setTrainingConfig(TrainingConfig trainingConfig){
+        this.trainingConfig = trainingConfig;
+    }
+
+    /**
+     * Fit the SameDiff instance based on a single DataSet (i.e., a single minibatch for one iteration).<br>
+     * This method can only be used for singe input, single output SameDiff instances as DataSet only supports a
+     * single input and a single output.<br>
+     * Note that a {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before training can
+     * be performed.
+     *
+     * @param dataSet The DataSet (single minibatch) to peform training on
+     */
+    public void fit(DataSet dataSet){
+        fit(new SingletonMultiDataSetIterator(dataSet.toMultiDataSet()), 1, false);
+    }
+
+    /**
+     * Fit the SameDiff instance based on DataSetIterator for the specified number of epochs.<br>
+     * This method can only be used for singe input, single output SameDiff instances as DataSet only supports a
+     * single input and a single output.<br>
+     * Note that a {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before training can
+     * be performed.
+     *
+     * @param iter      The iterator to train the SameDiff instance with
+     * @param numEpochs The number of epochs for training. Must be > 0
+     */
+    public void fit(DataSetIterator iter, int numEpochs) {
+        fit(new MultiDataSetIteratorAdapter(iter), numEpochs, true);
+    }
+
+    /**
+     * Fit the SameDiff instance based on MultiDataSetIterator for the specified number of epochs.<br>
+     * This method can both singe input, single output and multi-input, multi-output SameDiff instances<br>
+     * Note that a {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before training can
+     * be performed.
+     *
+     * @param iter      The iterator to train the SameDiff instance with
+     * @param numEpochs The number of epochs for training. Must be > 0
+     */
+    public void fit(MultiDataSetIterator iter, int numEpochs){
+        fit(iter, numEpochs, true);
+    }
+
+    protected void fit(MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount){
+        Preconditions.checkNotNull(iter, "Iterator must not be null");
+        Preconditions.checkState(numEpochs > 0, "Number of training epochs must be a positive number. Got: %s", numEpochs);
+        Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
+                "be set before training. Use setTrainingConfig(TrainingConfig)");
+        Preconditions.checkState(numEpochs == 1 || iter.resetSupported(), "Cannot train for multiple epochs on an iterator that" +
+                " does not support resetting");
+
+        if(!iter.hasNext() && iter.resetSupported())
+            iter.reset();
+
+        boolean performedValidation = false;
+
+        for(int i=0; i<numEpochs; i++ ) {
+            while (iter.hasNext()) {
+                org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
+                if(!performedValidation){
+                    Preconditions.checkState(trainingConfig.getDataSetFeatureMapping().size() == ds.numFeatureArrays(),
+                            "The number of dataset feature mapping variables set in the training configuration (%s) must match" +
+                                    " the number of dataset feature arrays (%s)", trainingConfig.getDataSetFeatureMapping().size(), ds.numFeatureArrays());
+                    Preconditions.checkState(trainingConfig.getDataSetLabelMapping().size() == ds.numLabelsArrays(),
+                            "The number of dataset label mapping variables set in the training configuration (%s) must match" +
+                                    " the number of dataset label arrays (%s)", trainingConfig.getDataSetLabelMapping().size(), ds.numLabelsArrays());
+
+                    performedValidation = true;
+                }
+
+                //Create placeholder variable map
+                Map<String, INDArray> placeholders = toPlaceholderMap(ds);
+
+                Preconditions.checkState(placeholders.size() > 0, "No placeholder variables were set for training");
+                resolveVariablesWith(placeholders);
+
+                //Calculate gradients:
+                execBackwards();
+
+
+                //Apply updater:
+                if (!initializedTraining)
+                    initializeTraining();
+
+                int iteration = trainingConfig.getIterationCount();
+                int e = trainingConfig.getEpochCount();
+                for (String s : trainingConfig.getTrainableParams()) {
+                    INDArray param = variableMap.get(s).getArr();
+                    INDArray grad = variableMap.get(s).getGradient().getArr();
+                    //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
+                    // which should flow through to here
+
+                    //Apply updater. Note that we need to reshape to [1,length] for updater
+                    INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
+                    Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", s);
+                    GradientUpdater u = updaterMap.get(s);
+                    try {
+                        u.applyUpdater(reshapedView, iteration, e);
+                    } catch (Throwable t) {
+                        throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + s
+                                + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
+                    }
+
+                    //L1 and L2 regularization:
+                    if (trainingConfig.getL1() > 0) {
+                        //L1: loss += lambda * sum_i |param_i|
+                        //dL/dp_i: lambda * sgn(param_i)
+                        INDArray signProd = Transforms.sign(param, true).muli(trainingConfig.getL1());
+                        grad.addi(signProd);
+                    }
+                    if (trainingConfig.getL2() > 0) {
+                        //L2: loss += 0.5 * lambda * sum_i param_i^2
+                        //dL/dp_i: lambda * param_i
+                        //TODO axpy optimization = safe/possible?
+                        grad.addi(param.mul(trainingConfig.getL2()));
+                    }
+
+                    if (trainingConfig.isMinimize()) {
+                        param.subi(grad);
+                    } else {
+                        param.addi(grad);
+                    }
+                }
+
+                trainingConfig.incrementIterationCount();
+            }
+
+            if(i < numEpochs-1){
+                iter.reset();
+            }
+
+            if(incrementEpochCount)
+                trainingConfig.incrementEpochCount();
+        }
+
+
+        //Clear placeholder arrays
+        for(String s : placeHolderVarNames){
+            variableNameToArr.remove(s);
+        }
+    }
+
+    /**
+     * Calculate the L2 regularization component of the loss: {@code 0.5 * sum_i (weights_i)}<br>
+     * Note that the training configuration must be set (via {@link #setTrainingConfig(TrainingConfig)}) before this
+     * method can be called
+     *
+     * @return The L2 regularization component of the score
+     */
+    public double calculateL2Loss(){
+        Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
+                "be set before calculating the L2 loss. Use setTrainingConfig(TrainingConfig)");
+
+        if(trainingConfig.getL2() == 0){
+            return 0.0;
+        }
+
+        if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().isEmpty())
+            initializeTraining();
+
+        double l2 = trainingConfig.getL2();
+        double l2Loss = 0.0;
+        for (String s : trainingConfig.getTrainableParams()) {
+            //L2: loss += 0.5 * lambda * sum_i param_i^2
+            double norm2 = variableNameToArr.get(s).norm2Number().doubleValue();
+            l2Loss += 0.5 * l2 * norm2 * norm2;
+        }
+        return l2Loss;
+    }
+
+    /**
+     * Calculate the L1 regularization component of the loss: {@code 0sum_i (abs(weights_i))}<br>
+     * Note that the training configuration must be set (via {@link #setTrainingConfig(TrainingConfig)}) before this
+     * method can be called
+     *
+     * @return The L1 regularization component of the score
+     */
+    public double calculateL1Loss(){
+        Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
+                "be set before calculating the L1 loss. Use setTrainingConfig(TrainingConfig)");
+
+        if(trainingConfig.getL1() == 0){
+            return 0.0;
+        }
+
+        if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().isEmpty())
+            initializeTraining();
+
+        double l1 = trainingConfig.getL1();
+        double l1Loss = 0.0;
+        for (String s : trainingConfig.getTrainableParams()) {
+            //L1: loss += lambda * sum_i |param_i|
+            double norm1 = variableNameToArr.get(s).norm1Number().doubleValue();
+            l1Loss += l1 * norm1;
+        }
+        return l1Loss;
+    }
+
+    /**
+     * Perform setup for training. Does the following:
+     * 1. Infer the set of trainable parameters - unless specified manually by the user
+     * 2. Set up the updaters
+     */
+    protected void initializeTraining(){
+        if(!initializedTraining){
+            //First: infer the variables to be optimized if required
+            if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().size() == 0){
+                //Variable is trainable if it's not the output of some function
+                //TODO also - should be floating point type
+                List<String> trainVarList = new ArrayList<>();
+                for(SDVariable v : variableMap.values()){
+                    String n = v.getVarName();
+                    if((!functionOutputFor.containsKey(n) || functionOutputFor.get(n) == null || functionOutputFor.get(n).size() == 0) &&       //Is a leaf (not the output of a function)
+                            !placeHolderVarNames.contains(n) &&                                                                                 //and not a placeholder
+                            (trainingConfig.getDataSetFeatureMapping() == null || !trainingConfig.getDataSetFeatureMapping().contains(n))   &&  //and not an input (this really should be a placeholder, but we can't guarantee that...)
+                            (trainingConfig.getDataSetLabelMapping() == null || !trainingConfig.getDataSetLabelMapping().contains(n))   &&      //and not a label (this really should be a placeholder, but we can't guarantee that...)
+                            (trainingConfig.getDataSetFeatureMaskMapping() == null || !trainingConfig.getDataSetFeatureMaskMapping().contains(n))   &&  //and not a feature mask (this really should be a placeholder, but we can't guarantee that...)
+                            (trainingConfig.getDataSetLabelMaskMapping() == null || !trainingConfig.getDataSetLabelMaskMapping().contains(n))){  //and not a label input (this really should be a placeholder, but we can't guarantee that...)
+                        trainVarList.add(n);
+                    }
+                }
+
+                trainingConfig.setTrainableParams(trainVarList);
+                log.info("Inferred trainable variables: {}", trainVarList);
+            }
+
+            //Allocate updater state
+            long numTrainableParams = 0;
+            for(String s : trainingConfig.getTrainableParams()){
+                SDVariable v = variableMap.get(s);
+                Preconditions.checkState(v != null, "No variable found for trainable parameter name \"%s\"", s);
+
+                INDArray arr = v.getArr();
+                Preconditions.checkState(arr != null, "No array found for trainable parameter \"%s\"", s);
+                numTrainableParams += arr.length();
+            }
+            long updaterStateSize = trainingConfig.getUpdater().stateSize(numTrainableParams);
+
+            if(updaterStateSize > 0){
+                updaterState = Nd4j.createUninitialized(new long[]{1, updaterStateSize});
+            }
+
+            long viewSoFar = 0;
+            updaterViews = new HashMap<>();
+            updaterMap = new HashMap<>();
+            for(String s : trainingConfig.getTrainableParams()){
+                long thisSize = trainingConfig.getUpdater().stateSize(variableMap.get(s).getArr().length());
+                INDArray view = (updaterStateSize == 0 || thisSize == 0 ? null :
+                        updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
+
+                updaterViews.put(s, view);
+                updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, true));
+                viewSoFar += thisSize;
+            }
+
+            initializedTraining = true;
+        }
+    }
+
+    /**
+     * Convert the MultiDataSet to a {@code Map<String,INDArray>} based on the TrainingConfig settings.
+     * The key is the placeholder/variable that the value INDArray should be associated with.
+     *
+     * @param ds MultiDataSet - source of the features/labels
+     * @return MultiDataSet converted to a Map, based on TrainingConfig
+     */
+    private Map<String,INDArray> toPlaceholderMap(org.nd4j.linalg.dataset.api.MultiDataSet ds){
+        Map<String,INDArray> placeholders = new HashMap<>();
+        int count = 0;
+        for(String s : trainingConfig.getDataSetFeatureMapping()){
+            placeholders.put(s, ds.getFeatures(count++));
+        }
+        count = 0;
+        for(String s : trainingConfig.getDataSetLabelMapping()){
+            placeholders.put(s, ds.getLabels(count++));
+        }
+        if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().size() > 0){
+            count = 0;
+            for(String s : trainingConfig.getDataSetFeatureMaskMapping()){
+                if(s == null) {
+                    count++;
+                    continue;
+                }
+                placeholders.put(s, ds.getFeaturesMaskArray(count++));
+            }
+        }
+        if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().size() > 0){
+            count = 0;
+            for(String s : trainingConfig.getDataSetLabelMaskMapping()){
+                if(s == null) {
+                    count++;
+                    continue;
+                }
+                placeholders.put(s, ds.getLabelsMaskArray(count++));
+            }
+        }
+        return placeholders;
+    }
+
+    /**
+     * Evaluate the performance of a single variable's prediction.<br>
+     * For example, if the variable to evaluatate was called "softmax" you would use:
+     * <pre>
+     * {@code Evaluation e = new Evaluation();
+     * sameDiff.evaluate(iterator, "softmax", e);}
+     * </pre>
+     *
+     * @param iterator       Iterator as source of data to evaluate
+     * @param outputVariable The variable to evaluate
+     * @param evaluations    The evaluations to perform
+     */
+    public void evaluate(DataSetIterator iterator, String outputVariable, IEvaluation... evaluations){
+        Preconditions.checkArgument(evaluations != null && evaluations.length > 0, "No evaluations were passed to the evaluate method");
+        evaluate(new MultiDataSetIteratorAdapter(iterator), Collections.singletonMap(outputVariable, Arrays.asList(evaluations)),
+                Collections.singletonMap(outputVariable, 0));
+    }
+
+    /**
+     * Evaluation for multiple-output networks.<br>
+     * See {@link #evaluate(MultiDataSetIterator, Map, Map)}
+     */
+    public void evaluate(DataSetIterator iterator, Map<String,IEvaluation> variableEvals){
+        Map<String,Integer> map = new HashMap<>();
+        Map<String,List<IEvaluation>> variableEvalsList = new HashMap<>();
+        for(String s : variableEvals.keySet()){
+            map.put(s, 0);  //Only 1 possible output here with DataSetIterator
+            variableEvalsList.put(s, Collections.singletonList(variableEvals.get(s)));
+        }
+        evaluate(new MultiDataSetIteratorAdapter(iterator), variableEvalsList, map);
+    }
+
+    /**
+     * Evaluation for multiple output networks - one ore more
+     * See {@link #evaluate(MultiDataSetIterator, Map, Map)}
+     */
+    public void evaluateMultiple(DataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals){
+        Map<String,Integer> map = new HashMap<>();
+        for(String s : variableEvals.keySet()){
+            map.put(s, 0);  //Only 1 possible output here with DataSetIterator
+        }
+        evaluate(new MultiDataSetIteratorAdapter(iterator), variableEvals, map);
+    }
+
+    /**
+     * Perform evaluation using classes such as {@link org.nd4j.evaluation.classification.Evaluation} for classifier outputs
+     * and {@link org.nd4j.evaluation.regression.RegressionEvaluation} for regression outputs.<br>
+     * <br>
+     * <b>Example: classifier evaluation</b><br>
+     * Predictions variable name: "softmaxOutput"<br>
+     * Evaluations to perform: {@link org.nd4j.evaluation.classification.Evaluation}<br>
+     * Data: single input, single output MultiDataSets<br>
+     * Code:<br>
+     * <pre>
+     * {@code
+     * MultiDataSetIterator data = ...
+     * Map<String,List<IEvaluation>> evals = Collections.singletonMap("softmaxOutput",Collections.singletonList(new Evaluation()));
+     * Map<String,Integer> labelMapping = Collections.singletonMap("softmaxOutput",0);  //Compare: "softmaxOutput" vs. MultiDataSet.getLabels(0)
+     * }
+     * </pre>
+     *
+     * @param iterator               The iterator - the source of the data for evaluation
+     * @param variableEvals          The evaluations to perform. Key: the name of the variable. Value: the evaluations to perform
+     * @param predictionLabelMapping The output/label mapping. Key: the name of the variable.
+     */
+    public void evaluate(MultiDataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals, Map<String,Integer> predictionLabelMapping){
+        Preconditions.checkState(trainingConfig != null, "Training config has not been set");
+
+        Preconditions.checkState(variableEvals.keySet().equals(predictionLabelMapping.keySet()), "Keysets for variable evaluations" +
+                " and for the prediction label mapping must be equal. Keys for variables to evaluate: %s vs. keys for label mapping: %s", variableEvals.keySet(), predictionLabelMapping.keySet());
+
+        if(!iterator.hasNext() && iterator.resetSupported())
+            iterator.reset();
+
+        while(iterator.hasNext()){
+            MultiDataSet ds = iterator.next();
+            Map<String,INDArray> placeholderMap = toPlaceholderMap(ds);
+            resolveVariablesWith(placeholderMap, false);
+
+            exec(); //TODO partial exec
+            for(Map.Entry<String,List<IEvaluation>> e : variableEvals.entrySet()){
+                INDArray prediction = variableNameToArr.get(e.getKey());
+                for(IEvaluation eval : e.getValue()){
+                    //TODO masking, time series, etc
+
+                    INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
+                    eval.eval(label, prediction);
+                }
+            }
+        }
+    }
+
+
+
+    /**
      * Create a new variable with the specified shape, with all values initialized to 1.0
      *
      * @param name  the name of the variable to create
@@ -1431,7 +1846,7 @@ public class SameDiff {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable one(String name, long[] shape) {
+    public SDVariable one(String name, long... shape) {
         return var(name, shape, new ConstantInitScheme('f', 1.0));
     }
 
@@ -1467,7 +1882,7 @@ public class SameDiff {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable zero(String name, long[] shape) {
+    public SDVariable zero(String name, long... shape) {
         return var(name, shape, new ZeroInitScheme());
     }
 
@@ -1634,6 +2049,14 @@ public class SameDiff {
     }
 
     /**
+     * @deprecated Use {@link #var(String, WeightInitScheme, long...)}
+     */
+    @Deprecated
+    public SDVariable var(String name, long[] shape, WeightInitScheme weightInitScheme) {
+        return var(name, weightInitScheme, shape);
+    }
+
+    /**
      * Variable initialization with a specified {@link WeightInitScheme}
      *
      * @param name             the name of the variable
@@ -1641,7 +2064,7 @@ public class SameDiff {
      * @param weightInitScheme the weight initialization scheme
      * @return the created variable
      */
-    public SDVariable var(String name, long[] shape, WeightInitScheme weightInitScheme) {
+    public SDVariable var(String name, WeightInitScheme weightInitScheme, long... shape) {
         if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name +
                     " already exists.");
@@ -6352,7 +6775,7 @@ public class SameDiff {
     }
 
     /**
-     * Return an arary with equal shape to the input, but all elements set to value 'set'
+     * Return a variable with equal shape to the input, but all elements set to value 'set'
      *
      * @param name Name of the output variable
      * @param in   Input variable
@@ -7825,7 +8248,6 @@ public class SameDiff {
     public SDVariable mmul(String name, SDVariable x, SDVariable y, MMulTranspose transpose) {
         SDVariable result = functionFactory.mmul(x, y, transpose);
         return updateVariableNameAndReference(result, name);
-
     }
 
     /**
@@ -9821,6 +10243,10 @@ public class SameDiff {
      * @param arrays the arrays to resolve.
      */
     public void resolveVariablesWith(Map<String, INDArray> arrays) {
+        resolveVariablesWith(arrays, true);
+    }
+
+    public void resolveVariablesWith(Map<String, INDArray> arrays, boolean resolveProperties) {
         for (val arrayEntry : arrays.entrySet()) {
             val varForName = getVariable(arrayEntry.getKey());
             if (varForName == null) {
@@ -9854,21 +10280,22 @@ public class SameDiff {
             }
 
 
-            updateShapeForVarName(entry.getKey(), entry.getValue().shape());
+            updateShapeForVarName(entry.getKey(), entry.getValue().shape(), true);
             associateArrayWithVariable(entry.getValue(), getVariable(entry.getKey()));
             updateArrayForVarName(entry.getKey(), entry.getValue());
         }
 
+        if(resolveProperties) {
+            for (val funcName : propertiesToResolve.keySet()) {
+                val func = functionInstancesById.get(funcName);
+                if (!functionInstancesById.containsKey(funcName)) {
+                    throw new ND4JIllegalStateException("Unable to resolve function name " + funcName);
+                }
 
-        for (val funcName : propertiesToResolve.keySet()) {
-            val func = functionInstancesById.get(funcName);
-            if (!functionInstancesById.containsKey(funcName)) {
-                throw new ND4JIllegalStateException("Unable to resolve function name " + funcName);
-            }
-
-            if (func instanceof CustomOp) {
-                CustomOp customOp = (CustomOp) func;
-                customOp.populateInputsAndOutputsFromSameDiff();
+                if (func instanceof CustomOp) {
+                    CustomOp customOp = (CustomOp) func;
+                    customOp.populateInputsAndOutputsFromSameDiff();
+                }
             }
         }
 
@@ -10034,6 +10461,9 @@ public class SameDiff {
      * If this is not done, arrays and shapes could be fetched from the incorrect SameDiff instance for some methods
      */
     protected void associateSameDiffWithOpsAndVariables(){
+        for(SDVariable var : variableMap.values()){
+            var.setSameDiff(this);
+        }
         for(DifferentialFunction df : functionInstancesById.values()){
             df.setSameDiff(this);
 
@@ -10055,9 +10485,6 @@ public class SameDiff {
                     out.setSameDiff(this);
                 }
             }
-        }
-        for(SDVariable var : variableMap.values()){
-            var.setSameDiff(this);
         }
     }
 

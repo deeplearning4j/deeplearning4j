@@ -73,7 +73,6 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
 
     private final int[] poolingDimensions;
-    private final boolean collapseDimensions;
     private final PoolingType poolingType;
     private final int pNorm;
 
@@ -84,7 +83,6 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 (org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer) conf.getLayer();
 
         poolingDimensions = layerConf.getPoolingDimensions();
-        collapseDimensions = layerConf.isCollapseDimensions();
         poolingType = layerConf.getPoolingType();
         pNorm = layerConf.getPnorm();
     }
@@ -186,7 +184,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         }
 
         //TODO optimize without leverage
-        if (collapseDimensions) {
+        if (layerConf().isCollapseDimensions()) {
             //Standard/common case
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d);
         } else {
@@ -197,7 +195,6 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1));
             } else {
                 return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1, 1));
-
             }
         }
     }
@@ -234,7 +231,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        if (!collapseDimensions && epsilon.rank() != 2) {
+        if (!layerConf().isCollapseDimensions() && epsilon.rank() != 2) {
             val origShape = epsilon.shape();
             //Don't collapse dims case: error should be [minibatch, vectorSize, 1] or [minibatch, channels, 1, 1]
             //Reshape it to 2d, to get rid of the 1s

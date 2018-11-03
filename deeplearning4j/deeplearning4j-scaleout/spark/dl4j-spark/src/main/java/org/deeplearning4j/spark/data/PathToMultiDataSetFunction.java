@@ -21,6 +21,9 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.util.DefaultHadoopConfig;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.io.IOException;
@@ -35,13 +38,23 @@ import java.net.URI;
 public class PathToMultiDataSetFunction implements Function<String, MultiDataSet> {
     public static final int BUFFER_SIZE = 4194304; //4 MB
 
-    private FileSystem fileSystem;
+    private transient FileSystem fileSystem;
+    private final Broadcast<SerializableHadoopConfig> conf;
+
+    public PathToMultiDataSetFunction(){
+        this(null);
+    }
+
+    public PathToMultiDataSetFunction(Broadcast<SerializableHadoopConfig> configuration){
+        this.conf = configuration;
+    }
 
     @Override
     public MultiDataSet call(String path) throws Exception {
         if (fileSystem == null) {
             try {
-                fileSystem = FileSystem.get(new URI(path), new Configuration());
+                Configuration c = conf == null ? DefaultHadoopConfig.get() : conf.getValue().getConfiguration();
+                fileSystem = FileSystem.get(new URI(path), c);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

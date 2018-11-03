@@ -294,6 +294,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         return currentSize.get();
     }
 
+    @Override
+    public long getCurrentOffset() {
+        return hostOffset.get();
+    }
+
     protected void init() {
         //  we want params validation here
 

@@ -117,7 +117,7 @@ public class CuDNNValidationUtil {
                     INDArray re = relError(p1, p2, MIN_ABS_ERROR);
                     double maxRE = re.maxNumber().doubleValue();
                     if (maxRE >= MAX_REL_ERROR) {
-                        System.out.println("Failed param values");
+                        System.out.println("Failed param values: parameter " + p + " - No CuDNN vs. with CuDNN - train=" + train);
                         System.out.println(p1);
                         System.out.println(p2);
                     }
@@ -196,9 +196,11 @@ public class CuDNNValidationUtil {
                 INDArray re = relError(g1, g2, MIN_ABS_ERROR);
                 double maxRE = re.maxNumber().doubleValue();
                 if (maxRE >= MAX_REL_ERROR) {
-                    System.out.println("Failed param values");
+                    System.out.println("Failed param values: no CuDNN vs. with CuDNN - parameter: " + p);
                     System.out.println(Arrays.toString(g1.dup().data().asFloat()));
                     System.out.println(Arrays.toString(g2.dup().data().asFloat()));
+                } else {
+                    System.out.println("OK: " + p);
                 }
                 assertTrue("Gradients are not equal: " + p, maxRE < MAX_REL_ERROR);
             }

@@ -138,7 +138,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     }
 
     @Override
-    public int numParams(){
+    public long numParams(){
         return params == null ? 0 : (int)params.length();
     }
 

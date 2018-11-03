@@ -14,9 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.eval.serde;
+package org.nd4j.evaluation.serde;
 
-import org.deeplearning4j.eval.ConfusionMatrix;
+import org.nd4j.evaluation.classification.ConfusionMatrix;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;

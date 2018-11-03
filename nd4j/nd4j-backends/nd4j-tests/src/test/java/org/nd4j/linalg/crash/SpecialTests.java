@@ -23,6 +23,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.convolution.Convolution;
@@ -36,8 +39,12 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author raver119@gmail.com
@@ -177,6 +184,81 @@ public class SpecialTests extends BaseNd4jTest {
                 System.out.println("A");
             }
         });
+    }
+
+    @Test
+    public void testMigrationMultiGpu_1() throws Exception {
+        if (Nd4j.getAffinityManager().getNumberOfDevices() < 2)
+            return;
+
+        val list = new CopyOnWriteArrayList<INDArray>();
+        val threads = new ArrayList<Thread>();
+        for (int e = 0; e< Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
+            val f = e;
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    for (int i = 0; i < 10; i++) {
+                        list.add(Nd4j.create(100, 100).assign(1.0f));
+                        Nd4j.getExecutioner().commit();
+                    }
+                }
+            });
+
+            t.start();
+            threads.add(t);
+        }
+
+        for (val t:threads)
+            t.join();
+
+        for (val a:list)
+            assertEquals(1.0f, a.meanNumber().floatValue(), 1e-5);
+    }
+
+    @Test
+    public void testMigrationMultiGpu_2() throws Exception {
+        if (Nd4j.getAffinityManager().getNumberOfDevices() < 2)
+            return;
+
+        val wsConf = WorkspaceConfiguration.builder()
+                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .initialSize(50 * 1024L * 1024L)
+                .build();
+
+        for (int x = 0; x < 10; x++) {
+
+            val list = new CopyOnWriteArrayList<INDArray>();
+            val threads = new ArrayList<Thread>();
+            for (int e = 0; e < Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
+                val f = e;
+                val t = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (int i = 0; i < 100; i++) {
+                            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, "id")) {
+                                list.add(Nd4j.create(3, 3).assign(1.0f));
+                                Nd4j.getExecutioner().commit();
+                            }
+                        }
+                    }
+                });
+
+                t.start();
+                threads.add(t);
+            }
+
+            for (val t : threads)
+                t.join();
+
+            for (val a : list) {
+                assertTrue(a.isAttached());
+                assertEquals(1.0f, a.meanNumber().floatValue(), 1e-5);
+            }
+
+            System.gc();
+        }
     }
 
     @Override

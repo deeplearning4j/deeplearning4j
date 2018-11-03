@@ -188,12 +188,15 @@ public class KerasConvolution1D extends KerasConvolution {
                 case TENSORFLOW:
                     paramValue = kerasParamValue.permute(2, 1, 0);
                     paramValue = paramValue.reshape(
-                            paramValue.size(0), paramValue.size(1), paramValue.size(2), 1);
+                            paramValue.size(0), paramValue.size(1),
+                            paramValue.size(2), 1);
                     break;
+
                 case THEANO:
-                    paramValue = kerasParamValue.reshape(
-                            kerasParamValue.size(0), kerasParamValue.size(1),
-                            kerasParamValue.size(2), 1).dup();
+                    paramValue = kerasParamValue.permute(2, 1, 0);
+                    paramValue = paramValue.reshape(
+                            paramValue.size(0), paramValue.size(1),
+                            paramValue.size(2), 1).dup();
                     for (int i = 0; i < paramValue.tensorssAlongDimension(2, 3); i++) {
                         INDArray copyFilter = paramValue.tensorAlongDimension(i, 2, 3).dup();
                         double[] flattenedFilter = copyFilter.ravel().data().asDouble();
@@ -206,6 +209,7 @@ public class KerasConvolution1D extends KerasConvolution {
                 default:
                     throw new InvalidKerasConfigurationException("Unknown keras backend " + this.getDimOrder());
             }
+
             this.weights.put(ConvolutionParamInitializer.WEIGHT_KEY, paramValue);
         } else
             throw new InvalidKerasConfigurationException(

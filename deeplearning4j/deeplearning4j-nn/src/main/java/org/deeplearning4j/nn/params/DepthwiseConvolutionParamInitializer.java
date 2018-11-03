@@ -162,7 +162,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
 
         INDArray depthWiseWeightGradientView = gradientView.get(
                 NDArrayIndex.point(0), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams))
-                .reshape('c', depthMultiplier, nIn, kernel[0], kernel[1]);
+                .reshape('c', kernel[0], kernel[1], nIn, depthMultiplier);
         out.put(WEIGHT_KEY, depthWiseWeightGradientView);
 
         if(layerConf.hasBias()){
@@ -199,7 +199,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
             double fanIn = inputDepth * kernel[0] * kernel[1];
             double fanOut = depthMultiplier * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
 
-            val weightsShape = new long[] {depthMultiplier, inputDepth, kernel[0], kernel[1]};
+            val weightsShape = new long[] {kernel[0], kernel[1], inputDepth, depthMultiplier};
 
             return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c',
                             weightView);

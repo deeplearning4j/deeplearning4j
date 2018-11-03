@@ -402,10 +402,12 @@ namespace nd4j {
         }
         __syncthreads();
 
-        for (int i = tid; i < N; i += blockDim.x * gridDim.x) {
+        int NN = N % blockDim.x  > 0 ? N - (N % blockDim.x) + blockDim.x : N;
+
+        for (int i = tid; i < NN; i += blockDim.x * gridDim.x) {
             // all threads in block reading stuff
-            T val = dx[i];
-            T abs = nd4j::math::nd4j_abs<T>(val);
+            T val = i < N ? dx[i] : (T) 0.0f;
+            T abs = i < N ? nd4j::math::nd4j_abs<T>(val) : (T) 0.0f;
 
             int byteId = i / 16 + 4;
             int bitId = i % 16;
@@ -438,11 +440,16 @@ namespace nd4j {
 
                     byte |= shmem[threadIdx.x + e];
                 }
-                dz[byteId] = byte;
+
+                if (i < N)
+                    dz[byteId] = byte;
             }
             __syncthreads();
 
-            dx[i] = vals[threadIdx.x];
+            if (i < N)
+                dx[i] = vals[threadIdx.x];
+
+            __syncthreads();
         }
         __syncthreads();
 

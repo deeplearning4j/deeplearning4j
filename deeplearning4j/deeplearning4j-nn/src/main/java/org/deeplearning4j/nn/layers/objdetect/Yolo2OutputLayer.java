@@ -272,11 +272,11 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         this.score = lambdaCoord * (positionLoss + sizeScaleLoss) +
                 confidenceLoss  +
-                classPredictionLoss +
-                fullNetworkL1 +
-                fullNetworkL2;
+                classPredictionLoss;
 
         this.score /= getInputMiniBatchSize();
+
+        this.score += fullNetworkL1 + fullNetworkL2;
 
         if(scoreOnly)
             return null;
