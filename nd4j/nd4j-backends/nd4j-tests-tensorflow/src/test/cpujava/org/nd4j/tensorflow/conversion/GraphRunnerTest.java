@@ -66,6 +66,17 @@ public class GraphRunnerTest {
         assertEquals(1,graphRunner.getOutputOrder().size());
     }
 
+
+    @Test
+    public void testMultiOutputGraph() throws Exception {
+        ClassPathResource classPathResource = new ClassPathResource("/tf_graphs/examples/ssd_inception_v2_coco_2018_01_28/frozen_inference_graph.pb");
+        GraphRunner graphRunner = new GraphRunner(classPathResource.getFile().getAbsolutePath(),Arrays.asList("image_tensor"));
+        String[] outputs = new String[] { "detection_boxes", "detection_scores", "detection_classes", "num_detections"};
+
+        assertEquals(1,graphRunner.getInputOrder().size());
+        assertEquals(4,graphRunner.getOutputOrder().size());
+    }
+
     private void runGraphRunnerTest(GraphRunner graphRunner) throws Exception {
 
         org.tensorflow.framework.ConfigProto.Builder builder = org.tensorflow.framework.ConfigProto.newBuilder();
