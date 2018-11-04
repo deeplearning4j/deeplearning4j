@@ -20,6 +20,7 @@ import com.github.os72.protobuf351.ByteString;
 import com.github.os72.protobuf351.InvalidProtocolBufferException;
 import com.github.os72.protobuf351.util.JsonFormat;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -56,8 +57,10 @@ public class GraphRunner implements Closeable {
     //a status object used
     private tensorflow.TF_Status status;
     @Getter
+    @Setter
     private List<String> inputNames,outputNames;
     @Getter
+    @Setter
     private List<String> inputOrder,outputOrder;
     @Getter
     private org.tensorflow.framework.ConfigProto protoBufConfigProto;
@@ -183,7 +186,7 @@ public class GraphRunner implements Closeable {
 
     /**
      * Initialize with the SavedModel to use
-     * @param savedModelPath path of a SavedModel directory saved by tensorflow
+     * @param modelPath path of a SavedModel directory saved by tensorflow
      * @param modelTag the tag of the model to load, typically "serve"
      * @param signatureKey the signature of the desired inputs and outputs
      */
@@ -333,7 +336,7 @@ public class GraphRunner implements Closeable {
         }
     }
 
-    private void initSessionAndStatusIfNeeded( org.tensorflow.framework.GraphDef graphDef1 ) {
+    private void initSessionAndStatusIfNeeded(org.tensorflow.framework.GraphDef graphDef1) {
         outputOrder = new ArrayList<>();
         //infer the inputs and outputs for the graph
         Set<String> seenAsInput = new LinkedHashSet<>();
@@ -345,9 +348,21 @@ public class GraphRunner implements Closeable {
         }
         //find the nodes that were not inputs to any  nodes: these are the outputs
         for(int i = 0; i < graphDef1.getNodeCount(); i++) {
-            if(!seenAsInput.contains(graphDef1.getNode(i).getName())) {
+            if(!seenAsInput.contains(graphDef1.getNode(i).getName()) && !graphDef1.getNode(i).getOp().equals("Placeholder")) {
                 outputOrder.add(graphDef1.getNode(i).getName());
             }
+        }
+
+        //multiple names: purge any generated names from the output
+        if(outputOrder.size() > 1) {
+            Set<String> remove = new HashSet<>();
+            for (String name : outputOrder) {
+                if(name.contains("/")) {
+                    remove.add(name);
+                }
+            }
+
+            outputOrder.removeAll(remove);
         }
 
         //setup and configure the session, factoring

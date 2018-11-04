@@ -74,7 +74,8 @@ public class GraphRunnerTest {
         String[] outputs = new String[] { "detection_boxes", "detection_scores", "detection_classes", "num_detections"};
 
         assertEquals(1,graphRunner.getInputOrder().size());
-        assertEquals(4,graphRunner.getOutputOrder().size());
+        System.out.println(graphRunner.getOutputOrder());
+        assertEquals("Output order was " + graphRunner.getOutputOrder(),4,graphRunner.getOutputOrder().size());
     }
 
     private void runGraphRunnerTest(GraphRunner graphRunner) throws Exception {

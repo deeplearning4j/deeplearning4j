@@ -288,6 +288,19 @@ public class TensorflowConversion {
         return graphC;
     }
 
+    /**
+     * Load a session based on the saved model
+     * @param savedModelPath the path to the model
+     * @param options the session options to use
+     * @param runOptions the run configuration to use
+     * @param tag the tag of the model
+     * @param key the key of the version
+     * @param graph the tf graph to use
+     * @param inputsMap the input map
+     * @param outputsMap the output names
+     * @param status  the status object to use for verifying the results
+     * @return
+     */
     public TF_Session loadSavedModel(String savedModelPath, TF_SessionOptions options, TF_Buffer runOptions,
             String tag, String key, TF_Graph graph, Map<String, String> inputsMap, Map<String, String> outputsMap, TF_Status status) {
         TF_Buffer metaGraph = TF_Buffer.newBuffer();
