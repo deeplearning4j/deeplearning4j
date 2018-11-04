@@ -1364,8 +1364,10 @@ public class SameDiff {
      * @return
      */
     public INDArray[] eval(Map<String, INDArray> inputs) {
-
         SameDiff execPipeline = dup();
+        for(Map.Entry<String,INDArray> entry : inputs.entrySet()) {
+            execPipeline.associateArrayWithVariable(entry.getValue(),entry.getKey());
+        }
 
         List<DifferentialFunction> opExecAction = execPipeline.exec().getRight();
         if (opExecAction.isEmpty())
@@ -1377,6 +1379,38 @@ public class SameDiff {
         }
         return ret;
     }
+
+    /**
+     * Evaluate the inputs
+     * using {@link #eval(Map)}
+     * using the order of the place holders
+     * from the {@link #inputs()} - note that
+     * each input array should match
+     * the exact index order of the variable names
+     * returned from {@link #inputs()}
+     * @param inputs the input arrays
+     * @return
+     */
+    public INDArray[] eval(INDArray[] inputs) {
+        List<String> inputVariables = inputs();
+        if(inputVariables.isEmpty()) {
+            throw new ND4JIllegalStateException("No placeholders found!");
+        }
+
+        if(inputs.length != inputVariables.size()) {
+            throw new IllegalArgumentException("Number of inputs " + inputs.length + " does not match placeholder values amount " + inputVariables.size());
+        }
+
+        int count = 0;
+        Map<String,INDArray> inputMap = new LinkedHashMap<>();
+        for(String s : inputVariables) {
+            inputMap.put(s,inputs[count]);
+            count++;
+        }
+
+        return eval(inputMap);
+    }
+
 
 
 
@@ -1419,6 +1453,14 @@ public class SameDiff {
         Nd4j.getWorkspaceManager().setWorkspaceForCurrentThread(workspace);
     }
 
+    /**
+     * Returns the inputs (placeholders)
+     * for the samediff graph
+     * @return the inputs for this graph
+     */
+    public List<String> inputs() {
+        return new ArrayList<>(placeHolderVarNames);
+    }
 
     /**
      * The list of all variables in the graph
@@ -2054,6 +2096,33 @@ public class SameDiff {
     @Deprecated
     public SDVariable var(String name, long[] shape, WeightInitScheme weightInitScheme) {
         return var(name, weightInitScheme, shape);
+    }
+
+
+    /**
+     * Create a variable with a place holder
+     * @param name the name of the variable
+     * @param weightInitScheme the weight init scheme to use
+     * @param shape the shape of the variable if any
+     * @return
+     */
+    public SDVariable placeHolder(String name,WeightInitScheme weightInitScheme,long...shape) {
+        SDVariable ret = var(name,weightInitScheme,shape);
+        addAsPlaceHolder(name);
+        return ret;
+    }
+
+
+    /**
+     * Create a variable with a place holder
+     * @param name the name of the variable
+     * @param shape the shape of the variable if any
+     * @return
+     */
+    public SDVariable placeHolder(String name,long...shape) {
+        SDVariable ret = var(name,new ZeroInitScheme(),shape);
+        addAsPlaceHolder(name);
+        return ret;
     }
 
     /**
@@ -8281,7 +8350,7 @@ public class SameDiff {
      * @return Array of multiplied SDVariables of shape (M, K)
      */
     public SDVariable[] batchMmul(String[] names, SDVariable[] matricesA, SDVariable[] matricesB,
-                                boolean transposeA, boolean transposeB) {
+                                  boolean transposeA, boolean transposeB) {
         SDVariable[] result = functionFactory.batchMmul(matricesA, matricesB, transposeA, transposeB);
         return updateVariableNamesAndReferences(result, names);
     }
@@ -8730,7 +8799,7 @@ public class SameDiff {
      * @return Cosine distance loss variable
      */
     public SDVariable lossCosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                             SDVariable weights, @NonNull LossReduce lossReduce, int dimension) {
+                                         SDVariable weights, @NonNull LossReduce lossReduce, int dimension) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
         SDVariable result = functionFactory.lossCosineDistance(label, predictions, weights, lossReduce, dimension);
@@ -8764,7 +8833,7 @@ public class SameDiff {
      * @return Loss variable
      */
     public SDVariable lossHinge(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                             SDVariable weights, @NonNull LossReduce lossReduce) {
+                                SDVariable weights, @NonNull LossReduce lossReduce) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
         SDVariable result = functionFactory.lossHinge(label, predictions, weights, lossReduce);
@@ -8805,7 +8874,7 @@ public class SameDiff {
      * @return Huber loss variable
      */
     public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                             SDVariable weights, @NonNull LossReduce lossReduce, double delta) {
+                                SDVariable weights, @NonNull LossReduce lossReduce, double delta) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
         SDVariable result = functionFactory.lossHuber(label, predictions, weights, lossReduce, delta);
@@ -8839,7 +8908,7 @@ public class SameDiff {
      * @return Log loss variable
      */
     public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                             SDVariable weights, @NonNull LossReduce lossReduce, double epsilon) {
+                              SDVariable weights, @NonNull LossReduce lossReduce, double epsilon) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
         SDVariable result = functionFactory.lossLog(label, predictions, weights, lossReduce, epsilon);
@@ -8898,7 +8967,7 @@ public class SameDiff {
      * @return Loss variable
      */
     public SDVariable lossMeanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                             SDVariable weights, @NonNull LossReduce lossReduce) {
+                                           SDVariable weights, @NonNull LossReduce lossReduce) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
         SDVariable result = functionFactory.lossMeanSquaredError(label, predictions, weights, lossReduce);
@@ -8941,7 +9010,7 @@ public class SameDiff {
      * @return Loss variable
      */
     public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictionLogits,
-                                             SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
+                                              SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
         SDVariable result = functionFactory.lossSigmoidCrossEntropy(label, predictionLogits, weights, lossReduce, labelSmoothing);
@@ -8983,7 +9052,7 @@ public class SameDiff {
      * @return Loss variable
      */
     public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable oneHotLabels, @NonNull SDVariable logitPreductions,
-                                             SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
+                                              SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
         SDVariable result = functionFactory.lossSoftmaxCrossEntropy(oneHotLabels, logitPreductions, weights, lossReduce, labelSmoothing);
@@ -10246,6 +10315,11 @@ public class SameDiff {
         resolveVariablesWith(arrays, true);
     }
 
+    /**
+     * Resolve the variables with the given input.
+     * @param arrays a map of input variable names to arrays
+     * @param resolveProperties whether to verify if properties should be resolved or not
+     */
     public void resolveVariablesWith(Map<String, INDArray> arrays, boolean resolveProperties) {
         for (val arrayEntry : arrays.entrySet()) {
             val varForName = getVariable(arrayEntry.getKey());

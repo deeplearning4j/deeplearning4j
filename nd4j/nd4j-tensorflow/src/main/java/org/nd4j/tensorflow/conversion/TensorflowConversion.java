@@ -81,7 +81,10 @@ public class TensorflowConversion {
      * @return the equivalent {@link TF_Tensor}
      */
     public TF_Tensor tensorFromNDArray(INDArray ndArray) {
-       //we infer data type from the ndarray.databuffer()
+       if(ndArray == null) {
+           throw new IllegalArgumentException("NDArray must not be null!");
+       }
+        //we infer data type from the ndarray.databuffer()
         //for now we throw an exception
         if(ndArray.data() == null) {
            throw new IllegalArgumentException("Unable to infer data type from null databuffer");

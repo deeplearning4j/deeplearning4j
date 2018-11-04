@@ -58,9 +58,6 @@ public class GraphRunner implements Closeable {
     private tensorflow.TF_Status status;
     @Getter
     @Setter
-    private List<String> inputNames,outputNames;
-    @Getter
-    @Setter
     private List<String> inputOrder,outputOrder;
     @Getter
     private org.tensorflow.framework.ConfigProto protoBufConfigProto;
@@ -210,8 +207,6 @@ public class GraphRunner implements Closeable {
             Map outputsMap = new LinkedHashMap<String, String>();
             this.graph = TF_NewGraph();
             this.session = conversion.loadSavedModel(savedModelPath, options, null, modelTag, signatureKey, graph, inputsMap, outputsMap, status);
-            inputNames = new ArrayList<String>(inputsMap.keySet());
-            outputNames = new ArrayList<String>(outputsMap.keySet());
             inputOrder = new ArrayList<String>(inputsMap.values());
             outputOrder = new ArrayList<String>(outputsMap.values());
         } catch (Exception e) {
@@ -262,7 +257,7 @@ public class GraphRunner implements Closeable {
             tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
             opsByName.put(inputOrder.get(i),inputOp);
             inputOut.position(i).oper(inputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
-            TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(inputNames != null ? inputNames.get(i) : inputOrder.get(i)));
+            TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(inputOrder.get(i)));
             inputTensors[i] = tf_tensor;
         }
 
@@ -313,7 +308,7 @@ public class GraphRunner implements Closeable {
         } else {
             for(int i = 0; i < outputOrder.size(); i++) {
                 INDArray to = conversion.ndArrayFromTensor(new TF_Tensor(outputTensorsPointer.get(i)));
-                outputArrays.put(outputNames != null ? outputNames.get(i) : outputOrder.get(i),to);
+                outputArrays.put(outputOrder.get(i),to);
             }
 
         }
