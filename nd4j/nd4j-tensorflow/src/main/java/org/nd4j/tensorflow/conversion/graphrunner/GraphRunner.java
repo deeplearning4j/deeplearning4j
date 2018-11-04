@@ -276,7 +276,7 @@ public class GraphRunner implements Closeable {
             String[] name = outputOrder.get(i).split(":");
             tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, name[0]);
             if(outputOp == null) {
-                throw new IllegalArgumentException("Illegal input found " + inputOrder.get(i) + " - no op found! Mis specified bname perhaps?")
+                throw new IllegalArgumentException("Illegal input found " + inputOrder.get(i) + " - no op found! Mis specified name perhaps?");
             }
 
             opsByName.put(outputOrder.get(i),outputOp);
