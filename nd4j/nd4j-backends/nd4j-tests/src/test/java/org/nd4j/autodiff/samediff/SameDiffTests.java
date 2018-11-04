@@ -20,10 +20,13 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
+import org.nd4j.jackson.objectmapper.holder.ObjectMapperHolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -50,6 +53,7 @@ import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -57,6 +61,9 @@ import org.nd4j.weightinit.impl.OneInitScheme;
 import org.nd4j.weightinit.impl.UniformInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -70,6 +77,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 @Slf4j
 public class SameDiffTests {
     private DataBuffer.Type initialType;
+
+    @ClassRule
+    public static TemporaryFolder folder = new TemporaryFolder();
+
 
     @Before
     public void before() throws Exception {
@@ -182,6 +193,29 @@ public class SameDiffTests {
         assertEquals(exp, resultArr);
     }
 
+    @Test
+    public void testSaveWriteWithTrainingConfig() throws Exception {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
+        SDVariable x = sameDiff.var("x", arr);
+        SDVariable result = sameDiff.sum(x, 1); //[1,4].sum(1) == [1,1]
+        TrainingConfig trainingConfig = TrainingConfig.builder()
+                .dataSetFeatureMapping("x")
+                .dataSetLabelMapping(result.getVarName())
+                .updater(new Nesterovs()).build();
+        sameDiff.setTrainingConfig(trainingConfig);
+        sameDiff.initializeTraining();
+        File newFile = folder.newFile();
+        try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(newFile))) {
+            sameDiff.saveWithTrainingConfig(bufferedOutputStream);
+        }
+
+        SameDiff sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
+        assertEquals(sameDiff.getTrainingConfig().getUpdater(),
+                sameDiff1.getTrainingConfig().getUpdater());
+        assertEquals(sameDiff.getUpdaterState(),sameDiff1.getUpdaterState());
+
+    }
 
     @Test
     public void testAddEval() {

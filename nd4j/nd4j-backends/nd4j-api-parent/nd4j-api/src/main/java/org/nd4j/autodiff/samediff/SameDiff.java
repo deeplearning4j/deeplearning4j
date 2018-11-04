@@ -25,6 +25,7 @@ import com.rits.cloning.IFastCloner;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
@@ -39,6 +40,7 @@ import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.graph.*;
+import org.nd4j.jackson.objectmapper.holder.ObjectMapperHolder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -93,6 +95,7 @@ import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.list.compat.TensorList;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ConstantInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
@@ -103,6 +106,9 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 /**
  * SameDiff is the
@@ -123,11 +129,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Builder
 @Slf4j
 public class SameDiff {
-
+    @Getter
     private TrainingConfig trainingConfig;                          //Configuration for training. Must be set for training/evaluation, but not for other operations
+    @Getter
     private boolean initializedTraining;                            //True if training setup has been done
+    @Getter
     private INDArray updaterState;                                  //Updater state array (1d, length equal to number of trainable parameters)
+    @Getter
     private Map<String,INDArray> updaterViews;                      //Views of updaterState array for each trainable parameter
+    @Getter
     private Map<String,GradientUpdater> updaterMap;                 //GradientUpdater instance for each trainable parameter
 
     private Map<String, String[]> incomingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as inputs to that function
@@ -230,6 +240,8 @@ public class SameDiff {
     @Getter
     private SameDiff child;
 
+    public final static String TRAINING_CONFIG_JSON_ZIP_ENTRY_NAME = "trainingConfig.json";
+    public final static String SAMEDIFF_FILE_ENTRY_NAME = "samediff.fb";
 
     static {
         opMethods = new HashMap<>();
@@ -1533,7 +1545,7 @@ public class SameDiff {
 
         boolean performedValidation = false;
 
-        for(int i=0; i<numEpochs; i++ ) {
+        for(int i = 0; i < numEpochs; i++) {
             while (iter.hasNext()) {
                 org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
                 if(!performedValidation){
@@ -1604,7 +1616,7 @@ public class SameDiff {
                 trainingConfig.incrementIterationCount();
             }
 
-            if(i < numEpochs-1){
+            if(i < numEpochs - 1) {
                 iter.reset();
             }
 
@@ -1626,7 +1638,7 @@ public class SameDiff {
      *
      * @return The L2 regularization component of the score
      */
-    public double calculateL2Loss(){
+    public double calculateL2Loss() {
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
                 "be set before calculating the L2 loss. Use setTrainingConfig(TrainingConfig)");
 
@@ -1681,9 +1693,12 @@ public class SameDiff {
      * 2. Set up the updaters
      */
     protected void initializeTraining(){
-        if(!initializedTraining){
+        if(!initializedTraining) {
+            if(trainingConfig == null) {
+                throw new ND4JIllegalStateException("Please specify a training config with setTrainingConfig");
+            }
             //First: infer the variables to be optimized if required
-            if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().size() == 0){
+            if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().size() == 0) {
                 //Variable is trainable if it's not the output of some function
                 //TODO also - should be floating point type
                 List<String> trainVarList = new ArrayList<>();
@@ -1705,7 +1720,7 @@ public class SameDiff {
 
             //Allocate updater state
             long numTrainableParams = 0;
-            for(String s : trainingConfig.getTrainableParams()){
+            for(String s : trainingConfig.getTrainableParams()) {
                 SDVariable v = variableMap.get(s);
                 Preconditions.checkState(v != null, "No variable found for trainable parameter name \"%s\"", s);
 
@@ -1713,16 +1728,17 @@ public class SameDiff {
                 Preconditions.checkState(arr != null, "No array found for trainable parameter \"%s\"", s);
                 numTrainableParams += arr.length();
             }
+
             long updaterStateSize = trainingConfig.getUpdater().stateSize(numTrainableParams);
 
-            if(updaterStateSize > 0){
+            if(updaterStateSize > 0) {
                 updaterState = Nd4j.createUninitialized(new long[]{1, updaterStateSize});
             }
 
             long viewSoFar = 0;
             updaterViews = new HashMap<>();
             updaterMap = new HashMap<>();
-            for(String s : trainingConfig.getTrainableParams()){
+            for(String s : trainingConfig.getTrainableParams()) {
                 long thisSize = trainingConfig.getUpdater().stateSize(variableMap.get(s).getArr().length());
                 INDArray view = (updaterStateSize == 0 || thisSize == 0 ? null :
                         updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
@@ -1743,7 +1759,7 @@ public class SameDiff {
      * @param ds MultiDataSet - source of the features/labels
      * @return MultiDataSet converted to a Map, based on TrainingConfig
      */
-    private Map<String,INDArray> toPlaceholderMap(org.nd4j.linalg.dataset.api.MultiDataSet ds){
+    private Map<String,INDArray> toPlaceholderMap(org.nd4j.linalg.dataset.api.MultiDataSet ds) {
         Map<String,INDArray> placeholders = new HashMap<>();
         int count = 0;
         for(String s : trainingConfig.getDataSetFeatureMapping()){
@@ -1753,6 +1769,7 @@ public class SameDiff {
         for(String s : trainingConfig.getDataSetLabelMapping()){
             placeholders.put(s, ds.getLabels(count++));
         }
+
         if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().size() > 0){
             count = 0;
             for(String s : trainingConfig.getDataSetFeatureMaskMapping()){
@@ -1763,6 +1780,7 @@ public class SameDiff {
                 placeholders.put(s, ds.getFeaturesMaskArray(count++));
             }
         }
+
         if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().size() > 0){
             count = 0;
             for(String s : trainingConfig.getDataSetLabelMaskMapping()){
@@ -1788,7 +1806,7 @@ public class SameDiff {
      * @param outputVariable The variable to evaluate
      * @param evaluations    The evaluations to perform
      */
-    public void evaluate(DataSetIterator iterator, String outputVariable, IEvaluation... evaluations){
+    public void evaluate(DataSetIterator iterator, String outputVariable, IEvaluation... evaluations) {
         Preconditions.checkArgument(evaluations != null && evaluations.length > 0, "No evaluations were passed to the evaluate method");
         evaluate(new MultiDataSetIteratorAdapter(iterator), Collections.singletonMap(outputVariable, Arrays.asList(evaluations)),
                 Collections.singletonMap(outputVariable, 0));
@@ -11735,9 +11753,87 @@ public class SameDiff {
     }
 
 
+    /**
+     * Save this samediff instance with its training config.
+     * Note that if a training configuration is not defined,
+     * an {@link IllegalStateException} is thrown.
+     *
+     * @param outputStream the output stream to write to
+     * @throws IOException
+     */
+    public void saveWithTrainingConfig(OutputStream outputStream) throws IOException {
+        if(this.trainingConfig == null) {
+            throw new IllegalStateException("No training configuration found!");
+        }
+
+        saveWithTrainingConfig(this.trainingConfig,outputStream);
+    }
 
     /**
-     * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later
+     * Save this samediff instance as a zip file
+     * with the training configuration
+     * @param trainingConfig the training configuration to save
+     * @param outputStream the output stream to write to
+     * @throws IOException
+     */
+    public void saveWithTrainingConfig(TrainingConfig trainingConfig,OutputStream outputStream) throws  IOException {
+        ObjectMapper objectMapper = ObjectMapperHolder.getJsonMapper();
+        String configJson = objectMapper.writeValueAsString(trainingConfig);
+        ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(outputStream));
+        ZipEntry config = new ZipEntry(TRAINING_CONFIG_JSON_ZIP_ENTRY_NAME);
+        zipfile.putNextEntry(config);
+        zipfile.write(configJson.getBytes());
+
+        ZipEntry sameDiff = new ZipEntry(SAMEDIFF_FILE_ENTRY_NAME);
+        zipfile.putNextEntry(sameDiff);
+
+        val fb = asFlatBuffers();
+        val offset = fb.position();
+
+        val array = fb.array();
+
+        try (BufferedOutputStream zipFileOutputStream = new BufferedOutputStream(zipfile);
+             val dos = new DataOutputStream(zipFileOutputStream)) {
+            dos.write(array, offset, array.length - offset);
+        }
+    }
+
+
+    /**
+     * Restore a {@link SameDiff}
+     * instance from a configuration
+     * zip file
+     * @param file the file to restore from
+     * @return the associated samediff instance
+     * @throws IOException
+     */
+    public static SameDiff restoreFromTrainingConfigZip(File file) throws IOException {
+        ZipFile zipFile = new ZipFile(file);
+        ZipEntry config = zipFile.getEntry(TRAINING_CONFIG_JSON_ZIP_ENTRY_NAME);
+        TrainingConfig trainingConfig = null;
+        try(InputStream stream = zipFile.getInputStream(config)) {
+            byte[] read = IOUtils.toByteArray(stream);
+            trainingConfig = ObjectMapperHolder.getJsonMapper().readValue(read,TrainingConfig.class);
+        }
+
+        SameDiff ret = null;
+
+        ZipEntry sameDiffFile = zipFile.getEntry(SAMEDIFF_FILE_ENTRY_NAME);
+        try(InputStream stream = zipFile.getInputStream(sameDiffFile)) {
+            byte[] read = IOUtils.toByteArray(stream);
+            ret = SameDiff.fromFlatBuffers(ByteBuffer.wrap(read));
+        }
+
+
+        ret.setTrainingConfig(trainingConfig);
+        ret.initializeTraining();
+        return ret;
+    }
+
+    /**
+     * This method converts SameDiff instance to
+     * FlatBuffers and saves it to file which
+     * can be restored later
      *
      * @param file File to save the FlatBuffers serialized graph (including arrays) to
      */
@@ -11769,15 +11865,33 @@ public class SameDiff {
     }
 
 
+    /**
+     * Create a {@link SameDiff}
+     * instance from a file.
+     * The method to save the file is
+     * {@link #asFlatFile(File)}
+     * @param file the file to load from
+     * @return the loaded same diff instance
+     * @throws IOException
+     */
     public static SameDiff fromFlatFile(@NonNull File file) throws IOException {
         byte[] bytes;
         try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
             bytes = IOUtils.toByteArray(is);
         }
+
         ByteBuffer bbIn = ByteBuffer.wrap(bytes);
         return fromFlatBuffers(bbIn);
     }
 
+    /**
+     * Create a {@link SameDiff}
+     * instance from a byte buffers
+     * instance.
+     * @param bbIn the input byte buffer
+     * @return the created samediff instance
+     * @throws IOException
+     */
     public static SameDiff fromFlatBuffers(ByteBuffer bbIn) throws IOException {
 
         FlatGraph fg = FlatGraph.getRootAsFlatGraph(bbIn);
@@ -11789,7 +11903,7 @@ public class SameDiff {
             ops.add(fg.nodes(i));
         }
         List<FlatVariable> vars = new ArrayList<>(numVars);
-        for( int i=0; i<numVars; i++ ){
+        for( int i = 0; i < numVars; i++) {
             vars.add(fg.variables(i));
         }
 
@@ -11809,7 +11923,7 @@ public class SameDiff {
         for(FlatVariable v : vars){
             int shapeLength = v.shapeLength();
             long[] shape = new long[shapeLength];
-            for( int i=0; i<shapeLength; i++ ){
+            for( int i = 0; i < shapeLength; i++) {
                 shape[i] = v.shape(i);
             }
 
@@ -11836,6 +11950,7 @@ public class SameDiff {
             if(!variablesByName.containsKey(n)){
                 variablesByName.put(n, new ArrayList<SDVariable>());
             }
+
             List<SDVariable> list = variablesByName.get(n);
             list.add(var);
         }
