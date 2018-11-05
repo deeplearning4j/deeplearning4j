@@ -1147,8 +1147,7 @@ __device__ void flattenKernelGeneric(
 					Nd4jPointer *extraPointers,
 					int dOffset,
 					char order,
-					void *vresult,
-					Nd4jLong *dZShapeInfo,
+					void *vresult, Nd4jLong *dZShapeInfo,
 					void *vinput,
 					Nd4jLong *inputShapeInfo) {
 
@@ -1238,14 +1237,13 @@ __device__ void flattenKernelGeneric(
  * @param input the input for the array
  * @param inputShapeInfo the shape information for that array
  */
-void NativeOps::flatten(
-		Nd4jPointer *extraPointers,
-		int offset,
-		char order,
-		void *dZ,
-		Nd4jLong *dZShapeInfo,
-		void *input,
-		Nd4jLong *inputShapeInfo) {
+void NativeOps::flatten(Nd4jPointer *extraPointers,
+						int offset,
+						char order,
+						void *hZ, Nd4jLong *hZShapeInfo,
+						void *dZ, Nd4jLong *dZShapeInfo,
+						void *hInput, Nd4jLong *hInputShapeInfo,
+						void *dInput, Nd4jLong *dInputShapeInfo) {
 	
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 	auto hYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
@@ -1261,7 +1259,7 @@ void NativeOps::flatten(
 		printf("AF222 opNum:[7]\n");
 
 	// flattenKernelFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, dZ, dZShapeInfo, input, inputShapeInfo, allocPointer);
-	auto xType = nd4j::ArrayOptions::dataType(inputShapeInfo);
+	auto xType = nd4j::ArrayOptions::dataType(hInputShapeInfo);
     // BUILD_SINGLE_SELECTOR(xType, flattenKernelGeneric, (extraPointers, offset, order, dZ, dZShapeInfo, input, inputShapeInfo), LIBND4J_TYPES);
 
 	DEBUG_KERNEL(stream, -1);
@@ -1836,10 +1834,10 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 		Nd4jPointer *extraPointers,
         int dimension,
         int numArrays,
-        Nd4jPointer *data,
-        Nd4jPointer *inputShapeInfo,
-        void *dZ,
-        Nd4jLong *dZShapeInfo,
+        Nd4jPointer *data, Nd4jPointer *inputShapeInfo,
+		Nd4jPointer *ddata, Nd4jPointer *dinputShapeInfo,
+		void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
 		Nd4jPointer *tadPointers,
 		Nd4jPointer *offsetPointers) {
 
@@ -2015,7 +2013,17 @@ Nd4jPointer NativeOps::getConstantSpace() {
 	return dConstAddr;
 }
 
-void NativeOps::pullRows(Nd4jPointer *extraPointers, void *dX, Nd4jLong *dXShapeInfo, void *dZ, Nd4jLong *zShapeInfo, Nd4jLong n, Nd4jLong *indexes, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
+void NativeOps::pullRows(Nd4jPointer *extraPointers,
+						 void *x, Nd4jLong *xShapeInfo,
+						 void *dX, Nd4jLong *dXShapeInfo,
+						 void *z, Nd4jLong *zShapeInfo,
+						 void *dZ, Nd4jLong *dZShapeInfo,
+						 Nd4jLong n,
+						 Nd4jLong *indexes,
+						 Nd4jLong *tadShapeInfo,
+						 Nd4jLong *tadOffsets,
+						 Nd4jLong *zTadShapeInfo,
+						 Nd4jLong *zTadOffsets) {
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 	// pullRowsKernelFloat<<<64, 256, 1024, *stream>>>(dX, dXShapeInfo, dZ, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
@@ -2026,7 +2034,14 @@ void NativeOps::pullRows(Nd4jPointer *extraPointers, void *dX, Nd4jLong *dXShape
 }
 
 
-void NativeOps::average(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jLong *dXShapeInfo, void *dz, Nd4jLong *zShapeInfo, int n, Nd4jLong length, bool propagate) {
+void NativeOps::average(Nd4jPointer *extras,
+						Nd4jPointer *x, Nd4jLong *xShapeInfo,
+						Nd4jPointer *dx, Nd4jLong *dXShapeInfo,
+						void *z, Nd4jLong *zShapeInfo,
+						void *dz, Nd4jLong *dzShapeInfo,
+						int n,
+						Nd4jLong length,
+						bool propagate) {
 
 	cudaStream_t * stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 	int mode = getDeviceId(extras[3]);
@@ -2050,7 +2065,13 @@ void NativeOps::average(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jLong *dXShapeI
 	}
 }
 
-void NativeOps::accumulate(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jLong *dXShapeInfo, void *dz, Nd4jLong *zShapeInfo, int n, Nd4jLong length) {
+void NativeOps::accumulate(Nd4jPointer *extras,
+						   Nd4jPointer *x, Nd4jLong *xShapeInfo,
+						   Nd4jPointer *dx, Nd4jLong *dXShapeInfo,
+						   void *z, Nd4jLong *zShapeInfo,
+						   void *dz, Nd4jLong *dzShapeInfo,
+						   int n,
+						   Nd4jLong length) {
 	
 	cudaStream_t * stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 	int mode = getDeviceId(extras[3]);
@@ -2075,7 +2096,15 @@ void NativeOps::accumulate(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jLong *dXSha
 }
 
 
-void NativeOps::shuffle(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer *dXShapeInfo, Nd4jPointer *dz, Nd4jPointer *zShapeInfo, int N, int *shuffleMap, Nd4jPointer *tadShapeInfo, Nd4jPointer *tadOffsets) {
+void NativeOps::shuffle(Nd4jPointer *extras,
+						Nd4jPointer *x, Nd4jPointer *xShapeInfo,
+						Nd4jPointer *dx, Nd4jPointer *dXShapeInfo,
+						Nd4jPointer *z, Nd4jPointer *zShapeInfo,
+						Nd4jPointer *dz, Nd4jPointer *dZShapeInfo,
+						int N,
+						int *shuffleMap,
+						Nd4jPointer *tadShapeInfo,
+						Nd4jPointer *tadOffsets) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
@@ -2350,10 +2379,16 @@ Nd4jPointer NativeOps::pointerForAddress(Nd4jLong address) {
 	return reinterpret_cast<Nd4jPointer >(address);
 }
 
-void NativeOps::tear(Nd4jPointer *extras, void *dX, Nd4jLong *dXShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+void NativeOps::tear(Nd4jPointer *extras,
+					 void *x, Nd4jLong *xShapeInfo,
+					 void *dX, Nd4jLong *dXShapeInfo,
+					 Nd4jPointer *targets,
+					 Nd4jLong *zShapeInfo,
+					 Nd4jLong *tadShapeInfo,
+					 Nd4jLong *tadOffsets) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
     // tearKernelFloat<<<512, 512, 512, *stream>>>(dX, dXShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
-    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     // BUILD_SINGLE_SELECTOR(xType, tearKernelGeneric, (dX, dXShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets), LIBND4J_TYPES);    
     nd4j::DebugHelper::checkErrorCode(stream, "tearFloat(...) failed");
 }
@@ -2548,7 +2583,10 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
 }
 
 
-void NativeOps::sort(Nd4jPointer *extraPointers, void *dX, Nd4jLong *dXShapeInfo, bool descending) {
+void NativeOps::sort(Nd4jPointer *extraPointers,
+					 void *x, Nd4jLong *xShapeInfo,
+					 void *dX, Nd4jLong *dXShapeInfo,
+					 bool descending) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[     1]);
     auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
@@ -2622,7 +2660,14 @@ void NativeOps::sort(Nd4jPointer *extraPointers, void *dX, Nd4jLong *dXShapeInfo
 }
 
 
-void NativeOps::sortTad(Nd4jPointer *extraPointers, void *dX, Nd4jLong *dXShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
+void NativeOps::sortTad(Nd4jPointer *extraPointers,
+						void *x, Nd4jLong *xShapeInfo,
+						void *dX, Nd4jLong *dXShapeInfo,
+						int *dimension,
+						int dimensionLength,
+						Nd4jLong *tadShapeInfo,
+						Nd4jLong *tadOffsets,
+						bool descending) {
     // to be implemented
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
@@ -2755,7 +2800,7 @@ nd4j::ShapeList* NativeOps::calculateOutputShapes(Nd4jPointer* extraPointers, Nd
 }
 
 
-static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool isInplace) {
+static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace) {
 	if (op == nullptr)
 		nd4j_printf("Can't find requested operation: [%lld]\n", hash);
 
@@ -2764,6 +2809,7 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 	std::vector<nd4j::NDArray*> inputs(numInputs);
 	std::vector<nd4j::NDArray*> outputs(numOutputs);
 	std::vector<double> ttArgs(numTArgs);
+	std::vector<bool> bbArgs(0);
 	std::vector<Nd4jLong> iiArgs(numIArgs);
 
 	// filling block now with inputs
@@ -2798,7 +2844,7 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 
 
 	// hypothetically at this point we have everything filled
-	auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, isInplace);
+	auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, isInplace);
 	//auto dZ = op->execute(inputs, ttArgs, iiArgs, isInplace);
 
 
@@ -2851,10 +2897,10 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 }
 
 
-int NativeOps::execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool isInplace) {
+int NativeOps::execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace) {
 	auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
 
-	return realExec(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, isInplace);
+	return realExec(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, bArgs, numBArgs, isInplace);
 }
 
 

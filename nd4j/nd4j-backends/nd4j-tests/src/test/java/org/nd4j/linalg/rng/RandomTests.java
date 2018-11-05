@@ -82,14 +82,13 @@ public class RandomTests extends BaseNd4jTest {
         int[] shape = {1, 12};
         double mean = 0;
         double standardDeviation = 1.0;
-        INDArray exp = Nd4j.create(new double[] {1.471510750295504, -1.7311058575777973, -0.769667196547541, -1.8070080465616434,
-                0.4985966540066825, 1.16259104957499, -0.6385914698509185, -0.222683562215109, 2.228457081217583, 3.3375576505757727,
-                -1.6103237518102358, 0.2355462332312932});
+        INDArray exp = Nd4j.create(new double[] {-0.7706380791041281, -0.3758118978292837, 0.48737085559690635, 0.027394307987528472, -1.468191897024841, -0.3645864986265372, -0.1454132438279702, 0.06501471740705274, 0.4656134949950283, -0.7363530317864846, 0.8086065604300632, 1.098882292168018});
         Nd4j.getRandom().setSeed(12345);
         INDArray arr = Nd4j.getExecutioner().exec(new GaussianDistribution(
                         Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), Nd4j.getRandom());
 
 
+        log.info("arr: {}", arr.data().asDouble());
         assertEquals(exp, arr);
     }
 
@@ -648,8 +647,7 @@ public class RandomTests extends BaseNd4jTest {
         INDArray z1 = Nd4j.zeros(20);
         INDArray z2 = Nd4j.zeros(20);
         INDArray z1Dup = Nd4j.zeros(20);
-        INDArray exp = Nd4j.create(new double[] {1.00, 0.00, 1.00, 0.00, 1.00, 1.00, 0.00, 1.00, 1.00, 0.00, 0.00, 0.00,
-                        1.00, 1.00, 1.00, 0.00, 0.00, 0.00, 0.00, 0.00});
+        INDArray exp = Nd4j.create(new double[] {1.0000,    1.0000,         0,         0,         0,         0,         0,         0,    1.0000,    1.0000,         0,    1.0000,    1.0000,    1.0000,    1.0000,    1.0000,         0,    1.0000,    1.0000,         0});
 
         BernoulliDistribution op1 = new BernoulliDistribution(z1, 0.50);
         BernoulliDistribution op2 = new BernoulliDistribution(z2, 0.50);
@@ -675,7 +673,7 @@ public class RandomTests extends BaseNd4jTest {
         INDArray z1 = Nd4j.zeros(10);
         INDArray z2 = Nd4j.zeros(10);
         INDArray z1Dup = Nd4j.zeros(10);
-        INDArray exp = Nd4j.create(new double[] {1.00, 0.00, 1.00, 0.00, 1.00, 1.00, 0.00, 1.00, 1.00, 0.00});
+        INDArray exp = Nd4j.create(new double[] {1.0000,         0,         0,         0,    1.0000,    1.0000,         0,         0,    1.0000,         0});
 
         BernoulliDistribution op1 = new BernoulliDistribution(z1, prob);
         BernoulliDistribution op2 = new BernoulliDistribution(z2, prob);
@@ -839,7 +837,6 @@ public class RandomTests extends BaseNd4jTest {
             int otherInt = rng.nextInt();
 
             assertNotEquals(someInt, otherInt);
-
 
         } else
             log.warn("Not a NativeRandom object received, skipping test");
