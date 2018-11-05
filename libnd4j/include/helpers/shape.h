@@ -217,6 +217,8 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool strideDescendingCAscendingF(const Nd4jLong *shapeBuffer);
 
+    ND4J_EXPORT _CUDA_HD bool isStrideSimple(const Nd4jLong* shapeInfo);
+
 
 /**
  * copy-past from java hasDefaultStridesForShape function
@@ -501,7 +503,7 @@ namespace shape {
  * Returns the element wise stride for this information
  * buffer
  */
-   ND4J_EXPORT _CUDA_HD Nd4jLong elementWiseStride(Nd4jLong *buffer);
+   ND4J_EXPORT _CUDA_HD Nd4jLong elementWiseStride(const Nd4jLong *buffer);
 
 
     /**
@@ -968,8 +970,12 @@ namespace shape {
    * - if input coord = {0,2}, then output coord = {1,0}
    * so the aim is to produce following subsequence of coord: {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2}   
    */
-    ND4J_EXPORT _CUDA_HD FORCEINLINE void nextIter(const int rank, const Nd4jLong *shapeInfo, Nd4jLong* coord);
-
+   
+   /* calculates an array buffer offset for given "index" using following formula: offset = coord_0*stride_0 + coord_1*stride_1 + ... + coord_{rank-1}*stride_{rank-1}
+    * arrLen - array length
+   */
+    ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
+    
     /**
    * Compute the real linear indices for the given shape and stride
    */
@@ -1923,14 +1929,18 @@ template <typename T>
         ind2subC(rank,shape, index,shape::prodLong(shape,rank),out);
     }
 
-
-    ND4J_EXPORT _CUDA_HD FORCEINLINE void nextIter(const int rank, const Nd4jLong *shapeInfo, Nd4jLong* coord) {
-
-        for(Nd4jLong dim = rank-1; dim >= 0; --dim)
-            if(++coord[dim] == shapeInfo[dim+1])
-                coord[dim] = 0;
-            else
-                break;
+//////////////////////////////////////////////////////////////////////    
+    INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen) {
+        
+        Nd4jLong offset = 0;
+        for(int i = 1; i <= shapeInfo[0]; i++) {
+            arrLen /= shapeInfo[i];
+            if(arrLen > 0 && shapeInfo[i] > 1) {                
+                offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
+                index %= arrLen;
+            }
+        }
+        return offset;
     }
 
 /**
@@ -2739,7 +2749,7 @@ template <typename T>
  * Returns the element wise stride for this information
  * buffer
  */
-    INLINEDEF _CUDA_HD Nd4jLong elementWiseStride(Nd4jLong *buffer) {
+    INLINEDEF _CUDA_HD Nd4jLong elementWiseStride(const Nd4jLong *buffer) {
         return buffer[shapeInfoLength(buffer[0]) - 2];
     }
 
@@ -3832,6 +3842,11 @@ template <typename T>
             printf("Unknown order for array!\n");
             return false;
         }
+    }
+
+    INLINEDEF _CUDA_HD bool isStrideSimple(const Nd4jLong* shapeInfo) {
+
+        return (order(shapeInfo) == 'c') && (elementWiseStride(shapeInfo) > 0);
     }
 
 ////////////////////////////////////////////////////////////////////////// 

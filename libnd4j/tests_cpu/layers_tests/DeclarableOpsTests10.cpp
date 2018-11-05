@@ -1868,5 +1868,6 @@ TEST_F(DeclarableOpsTests10, printIndexedTest_1) {
         printf("]\n");
     }
     printf("]\n");
+    delete lastDims;
 
 }

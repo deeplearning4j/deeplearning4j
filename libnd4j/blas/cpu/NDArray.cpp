@@ -986,8 +986,8 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         // memcpy is allowed only for same order && same ews (being equal to 1)
         if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1)
             memcpy(_buffer, other._buffer, _length * sizeOfT());
-        // else if(_dataType == other._dataType)
-        //     NativeOpExcutioner::execTransformSame(transform::Copy, other._buffer, other._shapeInfo, _buffer, _shapeInfo, nullptr, nullptr, nullptr);
+        else if(_dataType == other._dataType)
+            NativeOpExcutioner::execTransformSame(transform::Copy, other._buffer, other._shapeInfo, _buffer, _shapeInfo, nullptr, nullptr, nullptr);
         else
             NativeOpExcutioner::execPairwiseTransform(pairwise::CopyPws, _buffer, _shapeInfo, other._buffer, other._shapeInfo, _buffer, _shapeInfo, nullptr);
             
@@ -2320,7 +2320,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         int8_t *newBuffer;
         ALLOCATE(newBuffer, _workspace, this->lengthOf() * sizeOfT(), int8_t);
 
-        NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Ops::CopyPws, newBuffer, shapeInfoNew, this->_buffer, this->_shapeInfo, newBuffer, shapeInfoNew, nullptr);
+        NativeOpExcutioner::execTransformSame(transform::Copy, _buffer, _shapeInfo, newBuffer, shapeInfoNew, nullptr, nullptr, nullptr);
 
         if (_isBuffAlloc)
             RELEASE(_buffer, _workspace);
@@ -4544,7 +4544,7 @@ template void NDArray::operator/=(const bool scalar);
             shape::shapeBufferFortran(this->rankOf(), dataType(), shape.data(), newShape);
 
         if (!isView()) {
-            NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::CopyPws, newBuffer, newShape, _buffer, _shapeInfo, newBuffer, newShape, nullptr);
+            NativeOpExcutioner::execTransformSame(transform::Copy, _buffer, _shapeInfo, newBuffer, newShape, nullptr, nullptr, nullptr);
             memcpy(_buffer, newBuffer, this->lengthOf() * sizeOfT());
 
             //if (_isBuffAlloc)
@@ -4560,7 +4560,7 @@ template void NDArray::operator/=(const bool scalar);
             this->_shapeInfo = newShape;
             this->_isShapeAlloc = true;
         } else {
-            NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::CopyPws, newBuffer, newShape, _buffer, _shapeInfo, newBuffer, newShape, nullptr);
+            NativeOpExcutioner::execTransformSame(transform::Copy, _buffer, _shapeInfo, newBuffer, newShape, nullptr, nullptr, nullptr);
 
             if (_isBuffAlloc)
                 RELEASE(this->_buffer, this->_workspace);
