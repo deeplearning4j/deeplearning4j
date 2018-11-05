@@ -216,6 +216,65 @@ TEST_F(RNGTests, Test_Gaussian_1) {
     ASSERT_FALSE(x0.equalsTo(nexp2));
 }
 
+TEST_F(RNGTests, Test_Gaussian_21) {
+    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
+
+    RandomLauncher::fillGaussian(_rngA, &x0, 0.0f, 1.0f);
+    RandomLauncher::fillGaussian(_rngB, &x1, 0.0f, 1.0f);
+
+    //x0.printIndexedBuffer("x0");
+    //x1.printIndexedBuffer("x1");
+    ASSERT_TRUE(x0.equalsTo(&x1));
+
+    ASSERT_FALSE(x0.equalsTo(nexp0));
+    ASSERT_FALSE(x0.equalsTo(nexp1));
+    ASSERT_FALSE(x0.equalsTo(nexp2));
+    nd4j::ops::moments op;
+    auto result = op.execute({&x0}, {}, {});
+    //x0.printIndexedBuffer("X0 Normal");
+    //x1.printIndexedBuffer("X1 Normal");
+    ASSERT_TRUE(result->status() == Status::OK());
+    auto mean = result->at(0);
+    auto variance = result->at(1);
+
+    mean->printIndexedBuffer("Mean");
+    variance->printIndexedBuffer("Variance");
+
+    ASSERT_NEAR(nd4j::math::nd4j_abs(mean->e<float>(0)), 0.f, 0.2f);
+    ASSERT_NEAR(variance->e<float>(0), 1.0f, 0.2f);
+
+    delete result;
+}
+TEST_F(RNGTests, Test_Gaussian_22) {
+    auto x0 = NDArrayFactory::create<float>('c', {10000, 1000});
+    auto x1 = NDArrayFactory::create<float>('c', {10000, 1000});
+
+    RandomLauncher::fillGaussian(_rngA, &x0, 0.0f, 1.0f);
+    RandomLauncher::fillGaussian(_rngB, &x1, 0.0f, 1.0f);
+
+    //x0.printIndexedBuffer("x0");
+    //x1.printIndexedBuffer("x1");
+    ASSERT_TRUE(x0.equalsTo(&x1));
+
+    ASSERT_FALSE(x0.equalsTo(nexp0));
+    ASSERT_FALSE(x0.equalsTo(nexp1));
+    ASSERT_FALSE(x0.equalsTo(nexp2));
+    nd4j::ops::moments op;
+    auto result = op.execute({&x0}, {}, {});
+    //x0.printIndexedBuffer("X0 Normal");
+    //x1.printIndexedBuffer("X1 Normal");
+    ASSERT_TRUE(result->status() == Status::OK());
+    auto mean0 = result->at(0);
+    auto variance0 = result->at(1);
+
+    mean0->printIndexedBuffer("Mean");
+    variance0->printIndexedBuffer("Variance");
+    ASSERT_NEAR(nd4j::math::nd4j_abs(mean0->e<float>(0)), 0.f, 1.0e-3f);
+    ASSERT_NEAR(variance0->e<float>(0), 1.0f, 1.e-3f);
+    delete result;
+}
+
 TEST_F(RNGTests, Test_Gaussian_3) {
     auto x0 = NDArrayFactory::create<double>('c', {10000000});
 
