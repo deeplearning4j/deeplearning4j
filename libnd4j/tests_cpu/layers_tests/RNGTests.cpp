@@ -255,6 +255,17 @@ TEST_F(RNGTests, Test_Truncated_1) {
     ASSERT_FALSE(x0.equalsTo(nexp0));
     ASSERT_FALSE(x0.equalsTo(nexp1));
     ASSERT_FALSE(x0.equalsTo(nexp2));
+
+    /* Check up distribution */
+    auto mean = x1.reduceNumber(reduce::Mean);
+    mean.printIndexedBuffer("Mean 1.0");
+    auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
+
+    auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    //deviation /= (double)x1.lengthOf();
+    deviation.printIndexedBuffer("Deviation should be 2.0");
+    x1.printIndexedBuffer("Distribution TN");
+
 }
 
 
