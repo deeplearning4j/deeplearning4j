@@ -226,9 +226,9 @@ public class GraphRunner implements Closeable {
             Map outputsMap = new LinkedHashMap<String, String>();
             this.graph = TF_NewGraph();
             this.session = conversion.loadSavedModel(savedModelPath, options, null, modelTag, signatureKey, graph, inputsMap, outputsMap, status);
-            if(inputOrder != null)
+            if(inputOrder == null)
                 inputOrder = new ArrayList<String>(inputsMap.values());
-            if(outputOrder != null)
+            if(outputOrder == null)
                 outputOrder = new ArrayList<String>(outputsMap.values());
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse protobuf",e);
