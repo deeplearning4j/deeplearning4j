@@ -132,7 +132,7 @@ namespace nd4j {
     }
 
     SparseType ArrayOptions::sparseType(const Nd4jLong *shapeInfo) {
-        spaceType(const_cast<Nd4jLong *>(shapeInfo));
+        return sparseType(const_cast<Nd4jLong *>(shapeInfo));
     }
 
     SparseType ArrayOptions::sparseType(Nd4jLong *shapeInfo) {
