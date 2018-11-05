@@ -185,6 +185,11 @@ public class ScatterUpdate implements CustomOp {
     }
 
     @Override
+    public int numBArguments() {
+        return 0;
+    }
+
+    @Override
     public void addInputArgument(INDArray... arg) {
         op.addInputArgument(arg);
     }

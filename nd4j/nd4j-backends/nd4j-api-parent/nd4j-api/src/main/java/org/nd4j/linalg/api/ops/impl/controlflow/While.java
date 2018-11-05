@@ -560,6 +560,11 @@ public class While extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public int numBArguments() {
+        return 0;
+    }
+
+    @Override
     public void addInputArgument(INDArray... arg) {
 
     }
