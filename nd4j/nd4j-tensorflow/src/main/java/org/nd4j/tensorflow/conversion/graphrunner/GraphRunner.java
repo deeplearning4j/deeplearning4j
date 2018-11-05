@@ -51,6 +51,7 @@ import static org.bytedeco.javacpp.tensorflow.*;
  */
 @Slf4j
 public class GraphRunner implements Closeable {
+    private SavedModelConfig savedModelConfig;
     //the in memory representation parsed from protobuf
     private tensorflow.TF_Graph graph;
     //the conversion between nd4j and tensorflow
@@ -196,26 +197,23 @@ public class GraphRunner implements Closeable {
      * Initialize with the SavedModel to use
      * @param inputNames (optional) the input names for the tensorflow graph
      * @param outputNames the output names for the tensorflow graph
-     * @param modelPath path of a SavedModel directory saved by tensorflow
-     * @param modelTag the tag of the model to load, typically "serve"
-     * @param signatureKey the signature of the desired inputs and outputs
+     * @param savedModelConfig the configuration of the model to run
      */
-    public GraphRunner(List<String> inputNames,List<String> outputNames,String modelPath, String modelTag, String signatureKey) {
-        this(inputNames,outputNames,modelPath,modelTag,signatureKey,getAlignedWithNd4j());
+    public GraphRunner(List<String> inputNames,List<String> outputNames,SavedModelConfig savedModelConfig) {
+        this(inputNames,outputNames,savedModelConfig,getAlignedWithNd4j());
     }
 
     /**
      * Initialize with the SavedModel to use
      * @param inputNames (optional) the input names for the tensorflow graph
      * @param outputNames (optional) the output names for the tensorflow graph
-     * @param savedModelPath path of a SavedModel directory saved by tensorflow
-     * @param modelTag the tag of the model to load, typically "serve"
-     * @param signatureKey the signature of the desired inputs and outputs
+     * @param savedModelConfig the configuration for the saved model
      * @param sessionOptionsConfiguration the session options to use
      *                                    for running sessions
      */
-    public GraphRunner(List<String> inputNames,List<String> outputNames,String savedModelPath, String modelTag, String signatureKey, ConfigProto sessionOptionsConfiguration) {
+    public GraphRunner(List<String> inputNames,List<String> outputNames,SavedModelConfig savedModelConfig, ConfigProto sessionOptionsConfiguration) {
         try {
+            this.savedModelConfig = savedModelConfig;
             this.protoBufConfigProto = sessionOptionsConfiguration;
             //note that the input and output order, maybe null here
             //if the names are specified, we should defer to those instead
@@ -225,11 +223,13 @@ public class GraphRunner implements Closeable {
             Map inputsMap = new LinkedHashMap<String, String>();
             Map outputsMap = new LinkedHashMap<String, String>();
             this.graph = TF_NewGraph();
-            this.session = conversion.loadSavedModel(savedModelPath, options, null, modelTag, signatureKey, graph, inputsMap, outputsMap, status);
+            this.session = conversion.loadSavedModel(savedModelConfig, options, null, graph, inputsMap, outputsMap, status);
             if(inputOrder == null)
                 inputOrder = new ArrayList<String>(inputsMap.values());
             if(outputOrder == null)
                 outputOrder = new ArrayList<String>(outputsMap.values());
+            savedModelConfig.setSavedModelInputOrder(new ArrayList<String>(inputsMap.values()));
+            savedModelConfig.setSaveModelOutputOrder(new ArrayList<String>(outputsMap.values()));
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse protobuf",e);
         }
@@ -334,32 +334,31 @@ public class GraphRunner implements Closeable {
 
     /**
      * Initialize with the SavedModel to use
-     * @param modelPath path of a SavedModel directory saved by tensorflow
-     * @param modelTag the tag of the model to load, typically "serve"
-     * @param signatureKey the signature of the desired inputs and outputs
+     * @param savedModelConfig the configuration for loading the saved model
      */
-    public GraphRunner(String modelPath, String modelTag, String signatureKey) {
-        this(modelPath,modelTag,signatureKey,getAlignedWithNd4j());
+    public GraphRunner(SavedModelConfig savedModelConfig) {
+        this(savedModelConfig,getAlignedWithNd4j());
     }
 
     /**
      * Initialize with the SavedModel to use
-     * @param savedModelPath path of a SavedModel directory saved by tensorflow
-     * @param modelTag the tag of the model to load, typically "serve"
-     * @param signatureKey the signature of the desired inputs and outputs
+     * @param savedModelConfig the configuration for loading the saved model
      * @param sessionOptionsConfiguration the session options to use
      *                                    for running sessions
      */
-    public GraphRunner(String savedModelPath, String modelTag, String signatureKey, ConfigProto sessionOptionsConfiguration) {
+    public GraphRunner(SavedModelConfig savedModelConfig, ConfigProto sessionOptionsConfiguration) {
         try {
+            this.savedModelConfig = savedModelConfig;
             this.protoBufConfigProto = sessionOptionsConfiguration;
             initOptionsIfNeeded();
             Map inputsMap = new LinkedHashMap<String, String>();
             Map outputsMap = new LinkedHashMap<String, String>();
             this.graph = TF_NewGraph();
-            this.session = conversion.loadSavedModel(savedModelPath, options, null, modelTag, signatureKey, graph, inputsMap, outputsMap, status);
+            this.session = conversion.loadSavedModel(savedModelConfig, options, null, graph, inputsMap, outputsMap, status);
             inputOrder = new ArrayList<String>(inputsMap.values());
             outputOrder = new ArrayList<String>(outputsMap.values());
+            savedModelConfig.setSavedModelInputOrder(inputOrder);
+            savedModelConfig.setSaveModelOutputOrder(outputOrder);
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse protobuf",e);
         }
@@ -397,74 +396,145 @@ public class GraphRunner implements Closeable {
         }
 
 
-        Map<String,INDArray> outputArrays = new LinkedHashMap<>();
+        if(savedModelConfig != null) {
+            Map<String,INDArray> outputArrays = new LinkedHashMap<>();
 
-        Map<String,TF_Operation> opsByName = new HashMap<>();
-        tensorflow.TF_Output inputOut = new tensorflow.TF_Output(inputOrder.size());
+            Map<String,TF_Operation> opsByName = new HashMap<>();
+            tensorflow.TF_Output inputOut = new tensorflow.TF_Output(savedModelConfig.getSavedModelInputOrder().size());
 
-        TF_Tensor[] inputTensors = new TF_Tensor[inputOrder.size()];
-        for(int i = 0; i < inputOrder.size(); i++) {
-            String[] name = inputOrder.get(i).split(":");
-            tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
-            opsByName.put(inputOrder.get(i),inputOp);
-            inputOut.position(i).oper(inputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
-            TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(inputOrder.get(i)));
-            inputTensors[i] = tf_tensor;
-        }
-
-
-        //reset the position of the pointer for execution
-        inputOut.position(0);
-
-        TF_Output outputOut = new tensorflow.TF_Output(outputOrder.size());
-        //only setup the output ops
-        for(int i = 0; i < outputOrder.size(); i++) {
-            String[] name = outputOrder.get(i).split(":");
-            tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, name[0]);
-            if(outputOp == null) {
-                throw new IllegalArgumentException("Illegal input found " + inputOrder.get(i) + " - no op found! Mis specified name perhaps?");
+            TF_Tensor[] inputTensors = new TF_Tensor[savedModelConfig.getSavedModelInputOrder().size()];
+            for(int i = 0; i < savedModelConfig.getSavedModelInputOrder().size(); i++) {
+                String[] name = savedModelConfig.getSavedModelInputOrder().get(i).split(":");
+                tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
+                opsByName.put(savedModelConfig.getSavedModelInputOrder().get(i),inputOp);
+                inputOut.position(i).oper(inputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
+                TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(savedModelConfig.getSavedModelInputOrder().get(i)));
+                inputTensors[i] = tf_tensor;
             }
 
-            opsByName.put(outputOrder.get(i),outputOp);
-            outputOut.position(i).oper(outputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
+
+            //reset the position of the pointer for execution
+            inputOut.position(0);
+
+            TF_Output outputOut = new tensorflow.TF_Output(savedModelConfig.getSaveModelOutputOrder().size());
+            //only setup the output ops
+            for(int i = 0; i < savedModelConfig.getSaveModelOutputOrder().size(); i++) {
+                String[] name =savedModelConfig.getSaveModelOutputOrder().get(i).split(":");
+                tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, name[0]);
+                opsByName.put(savedModelConfig.getSaveModelOutputOrder().get(i),outputOp);
+                outputOut.position(i).oper(outputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
+            }
+
+            //reset the position of the pointer for execution
+            outputOut.position(0);
+
+
+
+            //these are references to the nd4j ndarrays wrapped for tensorflow
+            PointerPointer<TF_Tensor> inputTensorsPointer = new PointerPointer<>(inputTensors);
+            //note that these are the result pointers
+            //the result pointers are null, and will be populated automatically by the session run
+            PointerPointer<TF_Tensor> outputTensorsPointer = new PointerPointer<>(savedModelConfig.getSaveModelOutputOrder().size());
+
+
+            TF_SessionRun(
+                    session,
+                    null,
+                    //inputs
+                    inputOut, inputTensorsPointer, inputTensors.length,
+                    //outputs
+                    outputOut, outputTensorsPointer, savedModelConfig.getSaveModelOutputOrder().size(),
+                    //targets
+                    null, 0,
+                    null,
+                    status);
+
+
+            if (TF_GetCode(status) != TF_OK) {
+                throw new IllegalStateException("ERROR: Unable to run session " + TF_Message(status).getString());
+            } else {
+                for(int i = 0; i < outputOrder.size(); i++) {
+                    INDArray to = conversion.ndArrayFromTensor(new TF_Tensor(outputTensorsPointer.get(i)));
+                    outputArrays.put(savedModelConfig.getSaveModelOutputOrder().get(i),to);
+                }
+
+            }
+
+            return outputArrays;
+
         }
+        else {
+            Map<String,INDArray> outputArrays = new LinkedHashMap<>();
 
-        //reset the position of the pointer for execution
-        outputOut.position(0);
+            Map<String,TF_Operation> opsByName = new HashMap<>();
+            tensorflow.TF_Output inputOut = new tensorflow.TF_Output(inputOrder.size());
 
-
-
-        //these are references to the nd4j ndarrays wrapped for tensorflow
-        PointerPointer<TF_Tensor> inputTensorsPointer = new PointerPointer<>(inputTensors);
-        //note that these are the result pointers
-        //the result pointers are null, and will be populated automatically by the session run
-        PointerPointer<TF_Tensor> outputTensorsPointer = new PointerPointer<>(outputOrder.size());
-
-
-        TF_SessionRun(
-                session,
-                null,
-                //inputs
-                inputOut, inputTensorsPointer, inputTensors.length,
-                //outputs
-                outputOut, outputTensorsPointer, outputOrder.size(),
-                //targets
-                null, 0,
-                null,
-                status);
+            TF_Tensor[] inputTensors = new TF_Tensor[inputOrder.size()];
+            for(int i = 0; i < inputOrder.size(); i++) {
+                String[] name = inputOrder.get(i).split(":");
+                tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
+                opsByName.put(inputOrder.get(i),inputOp);
+                inputOut.position(i).oper(inputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
+                TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(inputOrder.get(i)));
+                inputTensors[i] = tf_tensor;
+            }
 
 
-        if (TF_GetCode(status) != TF_OK) {
-            throw new IllegalStateException("ERROR: Unable to run session " + TF_Message(status).getString());
-        } else {
+            //reset the position of the pointer for execution
+            inputOut.position(0);
+
+            TF_Output outputOut = new tensorflow.TF_Output(outputOrder.size());
+            //only setup the output ops
             for(int i = 0; i < outputOrder.size(); i++) {
-                INDArray to = conversion.ndArrayFromTensor(new TF_Tensor(outputTensorsPointer.get(i)));
-                outputArrays.put(outputOrder.get(i),to);
+                String[] name = outputOrder.get(i).split(":");
+                tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, name[0]);
+                if(outputOp == null) {
+                    throw new IllegalArgumentException("Illegal input found " + inputOrder.get(i) + " - no op found! Mis specified name perhaps?");
+                }
+
+                opsByName.put(outputOrder.get(i),outputOp);
+                outputOut.position(i).oper(outputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
             }
+
+            //reset the position of the pointer for execution
+            outputOut.position(0);
+
+
+
+            //these are references to the nd4j ndarrays wrapped for tensorflow
+            PointerPointer<TF_Tensor> inputTensorsPointer = new PointerPointer<>(inputTensors);
+            //note that these are the result pointers
+            //the result pointers are null, and will be populated automatically by the session run
+            PointerPointer<TF_Tensor> outputTensorsPointer = new PointerPointer<>(outputOrder.size());
+
+
+            TF_SessionRun(
+                    session,
+                    null,
+                    //inputs
+                    inputOut, inputTensorsPointer, inputTensors.length,
+                    //outputs
+                    outputOut, outputTensorsPointer, outputOrder.size(),
+                    //targets
+                    null, 0,
+                    null,
+                    status);
+
+
+            if (TF_GetCode(status) != TF_OK) {
+                throw new IllegalStateException("ERROR: Unable to run session " + TF_Message(status).getString());
+            } else {
+                for(int i = 0; i < outputOrder.size(); i++) {
+                    INDArray to = conversion.ndArrayFromTensor(new TF_Tensor(outputTensorsPointer.get(i)));
+                    outputArrays.put(outputOrder.get(i),to);
+                }
+
+            }
+
+            return outputArrays;
 
         }
 
-        return outputArrays;
     }
 
 

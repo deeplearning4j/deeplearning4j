@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
+import org.nd4j.tensorflow.conversion.graphrunner.SavedModelConfig;
 
 import java.io.File;
 import java.util.Arrays;
@@ -75,7 +76,7 @@ public class GraphRunnerTest {
 
         assertEquals(1,graphRunner.getInputOrder().size());
         System.out.println(graphRunner.getOutputOrder());
-        assertEquals("Output order was " + graphRunner.getOutputOrder(),4,graphRunner.getOutputOrder().size());
+        assertEquals(4,graphRunner.getOutputOrder().size());
     }
 
     private void runGraphRunnerTest(GraphRunner graphRunner) throws Exception {
@@ -119,7 +120,12 @@ public class GraphRunnerTest {
     public void testGraphRunnerSavedModel() throws Exception {
         File f = testDir.newFolder();
         new ClassPathResource("/tf_saved_models/saved_model_counter/00000123/").copyDirectory(f);
-        try(GraphRunner graphRunner = new GraphRunner(f.getAbsolutePath(),"serve","incr_counter_by")) {
+        SavedModelConfig savedModelConfig = SavedModelConfig.builder()
+                .savedModelPath(f.getAbsolutePath())
+                .signatureKey("incr_counter_by")
+                .modelTag("serve")
+                .build();
+        try(GraphRunner graphRunner = new GraphRunner(savedModelConfig)) {
             INDArray delta = Nd4j.create(new float[] { 42 }, new long[0]);
             Map<String,INDArray> inputs = new LinkedHashMap<>();
             inputs.put("delta:0",delta);

@@ -26,7 +26,9 @@ import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.tensorflow.conversion.graphrunner.SavedModelConfig;
 import org.tensorflow.framework.MetaGraphDef;
+import org.tensorflow.framework.SavedModel;
 import org.tensorflow.framework.SignatureDef;
 import org.tensorflow.framework.TensorInfo;
 
@@ -293,22 +295,19 @@ public class TensorflowConversion {
 
     /**
      * Load a session based on the saved model
-     * @param savedModelPath the path to the model
+     * @param savedModelConfig the configuration for the saved model
      * @param options the session options to use
      * @param runOptions the run configuration to use
-     * @param tag the tag of the model
-     * @param key the key of the version
      * @param graph the tf graph to use
      * @param inputsMap the input map
      * @param outputsMap the output names
      * @param status  the status object to use for verifying the results
      * @return
      */
-    public TF_Session loadSavedModel(String savedModelPath, TF_SessionOptions options, TF_Buffer runOptions,
-            String tag, String key, TF_Graph graph, Map<String, String> inputsMap, Map<String, String> outputsMap, TF_Status status) {
+    public TF_Session loadSavedModel(SavedModelConfig savedModelConfig, TF_SessionOptions options, TF_Buffer runOptions, TF_Graph graph, Map<String, String> inputsMap, Map<String, String> outputsMap, TF_Status status) {
         TF_Buffer metaGraph = TF_Buffer.newBuffer();
-        TF_Session session = TF_LoadSessionFromSavedModel(options, runOptions, new BytePointer(savedModelPath),
-                new BytePointer(tag), 1, graph, metaGraph, status);
+        TF_Session session = TF_LoadSessionFromSavedModel(options, runOptions, new BytePointer(savedModelConfig.getSavedModelPath()),
+                new BytePointer(savedModelConfig.getModelTag()), 1, graph, metaGraph, status);
         if (TF_GetCode(status) != TF_OK) {
             throw new IllegalStateException("ERROR: Unable to import model " + TF_Message(status).getString());
         }
@@ -320,7 +319,7 @@ public class TensorflowConversion {
             throw new IllegalStateException("ERROR: Unable to import model " + ex);
         }
         Map<String, SignatureDef> signatureDefMap = metaGraphDef.getSignatureDefMap();
-        SignatureDef signatureDef = signatureDefMap.get(key);
+        SignatureDef signatureDef = signatureDefMap.get(savedModelConfig.getSignatureKey());
 
         Map<String, TensorInfo> inputs = signatureDef.getInputsMap();
         for (Map.Entry<String, TensorInfo> e : inputs.entrySet()) {
