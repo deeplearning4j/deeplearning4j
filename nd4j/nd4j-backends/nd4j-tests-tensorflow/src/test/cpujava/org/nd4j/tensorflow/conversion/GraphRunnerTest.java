@@ -122,10 +122,10 @@ public class GraphRunnerTest {
         try(GraphRunner graphRunner = new GraphRunner(f.getAbsolutePath(),"serve","incr_counter_by")) {
             INDArray delta = Nd4j.create(new float[] { 42 }, new long[0]);
             Map<String,INDArray> inputs = new LinkedHashMap<>();
-            inputs.put("delta",delta);
+            inputs.put("delta:0",delta);
             Map<String,INDArray> outputs = graphRunner.run(inputs);
             assertEquals(1, outputs.size());
-            INDArray output = outputs.get("output");
+            INDArray output = outputs.get("incr_counter_by_op/AssignAdd:0");
             assertEquals(42.0, output.getDouble(0), 0.0);
         }
     }
