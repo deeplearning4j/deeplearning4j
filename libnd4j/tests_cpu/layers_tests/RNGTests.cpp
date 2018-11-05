@@ -217,7 +217,7 @@ TEST_F(RNGTests, Test_Gaussian_1) {
 }
 
 TEST_F(RNGTests, Test_Gaussian_3) {
-    auto x0 = NDArrayFactory::create<double>('c', {1000000});
+    auto x0 = NDArrayFactory::create<double>('c', {10000000});
 
     RandomLauncher::fillGaussian(_rngA, &x0, 0.0, 1.0);
 
@@ -675,17 +675,17 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
 TEST_F(RNGTests, Test_Uniform_4) {
     auto x1 = NDArrayFactory::create<double>('c', {1000000});
 
-    RandomLauncher::fillUniform(_rngB, &x1, 0.0, 1.0);
+    RandomLauncher::fillUniform(_rngB, &x1, 1.0, 2.0);
 
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    mean.printIndexedBuffer("Mean should be 0.5");
+    mean.printIndexedBuffer("Mean should be 1.5");
     auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsVariance, false);
     //deviation /= (double)x1.lengthOf();
     deviation.printIndexedBuffer("Deviation should be 1/12 (0.083333)");
 
-    ASSERT_NEAR(mean.e<double>(0), 0.5, 1e-3);
+    ASSERT_NEAR(mean.e<double>(0), 1.5, 1e-3);
     ASSERT_NEAR(1/12., deviation.e<double>(0), 1e-3);
 }

@@ -126,14 +126,15 @@ namespace nd4j {
             auto s1 = _nodeState._ulong;
 
             // xor by idx
-            _nodeState._long ^= (index + 1);
+            s0 |= (index * s1);
+            s1 ^= (index * s0);
 
             // since we're not modifying state - do rotl step right here
             s1 ^= s0;
-            _rootState._ulong = rotl(s0, 55) ^ s1 ^ (s1 << 14);
-            _nodeState._ulong = rotl(s1, 36);
+            s0 = rotl(s0, 55) ^ s1 ^ (s1 << 14);
+            s1 = rotl(s1, 36);
 
-            return _rootState._ulong + _nodeState._ulong;
+            return s0 + s1;
         }
 
         void RandomGenerator::rewindH(Nd4jLong steps) {
