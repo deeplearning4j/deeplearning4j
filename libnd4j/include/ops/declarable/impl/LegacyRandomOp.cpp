@@ -79,11 +79,6 @@ namespace nd4j {
                         REQUIRE_TRUE(false, 0, "Uniform requires either TArgs or 3 arguments to be present");
                     }
 
-                    REQUIRE_TRUE(input->isVector(), 0, "Uniform requires pure shape as first argument");
-                    std::vector<Nd4jLong> shape(input->lengthOf());
-                    for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = input->e<Nd4jLong>(e);
-
                     auto z = OUTPUT_VARIABLE(0); //NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillUniform(block.randomGenerator(), z, from, to);

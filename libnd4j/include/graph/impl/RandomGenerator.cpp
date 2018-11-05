@@ -17,7 +17,7 @@
 //
 // @author raver119@protonmail.com
 //
-// relies on xoroshiro 64** and xoroshiro128 implementations
+// relies on xoroshiro64** and xoroshiro128 implementations
 
 #include <op_boilerplate.h>
 #include <pointercast.h>
@@ -130,10 +130,10 @@ namespace nd4j {
 
             // since we're not modifying state - do rotl step right here
             s1 ^= s0;
-            s0 = rotl(s0, 55) ^ s1 ^ (s1 << 14);
-            s1 = rotl(s1, 36);
+            _rootState._ulong = rotl(s0, 55) ^ s1 ^ (s1 << 14);
+            _nodeState._ulong = rotl(s1, 36);
 
-            return s0 + s1;
+            return _rootState._ulong + _nodeState._ulong;
         }
 
         void RandomGenerator::rewindH(Nd4jLong steps) {

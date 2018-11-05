@@ -673,31 +673,19 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
 }
 
 TEST_F(RNGTests, Test_Uniform_4) {
-    auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
-    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x1 = NDArrayFactory::create<double>('c', {1000000});
 
-    RandomLauncher::fillUniform(_rngB, &x1, 1.0f, 2.0f);
+    RandomLauncher::fillUniform(_rngB, &x1, 0.0, 1.0);
 
-    auto op = new nd4j::ops::LegacyRandomOp(random::UniformDistribution);
-    auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
-
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(x1.isSameShape(z));
-    ASSERT_TRUE(x1.equalsTo(z));
-/* Check up distribution */
+    /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    mean.printIndexedBuffer("Mean should be 1.5");
+    mean.printIndexedBuffer("Mean should be 0.5");
     auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
-    auto deviation = x1.reduceNumber(reduce::SquaredNorm);
-    deviation /= (double)x1.lengthOf();
+    auto deviation = x1.varianceNumber(variance::SummaryStatsVariance, false);
+    //deviation /= (double)x1.lengthOf();
     deviation.printIndexedBuffer("Deviation should be 1/12 (0.083333)");
 
-    ASSERT_NEAR(mean.e<float>(0), 1.5f, 1.0e-5f);
-    ASSERT_NEAR(1/12., deviation.e<double>(0), 1.0e-5f);
-    delete op;
-    delete result;
+    ASSERT_NEAR(mean.e<double>(0), 0.5, 1e-3);
+    ASSERT_NEAR(1/12., deviation.e<double>(0), 1e-3);
 }

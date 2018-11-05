@@ -136,13 +136,13 @@ namespace functions {
 
             if (xEWS >= 1 && zEWS >= 1) {
                 if (xEWS == 1 && zEWS == 1) {
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
+//#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                     for (Nd4jLong e = 0; e < length; e++) {
                         z[e] = OpClass::op(x[e], e, length,  rng, extraArguments);
                     }
 
                 } else {
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
+//#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                     for (Nd4jLong e = 0; e < length; e++) {
                         z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, rng, extraArguments);
                     }
