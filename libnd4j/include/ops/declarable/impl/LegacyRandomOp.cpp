@@ -61,7 +61,7 @@ namespace nd4j {
                 (12, randomOps::AlphaDropOut)
             */
             switch(opNum) {
-                case 0: {
+                case nd4j::random::UniformDistribution: {
                     // uniform distribution
                     T from, to;
                     if (block.width() > 2) {
@@ -92,7 +92,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case 1: {
+                case nd4j::random::DropOut: {
                     auto z = OUTPUT_VARIABLE(0);
 
                     T prob;
@@ -113,7 +113,7 @@ namespace nd4j {
                     RandomLauncher::applyDropOut(block.randomGenerator(), z, prob);
                 }
                     break;
-                case 2: {
+                case nd4j::random::DropOutInverted: {
                     auto z = OUTPUT_VARIABLE(0);
                     nd4j::ops::dropout op;
                     return op.execute(&block);
@@ -137,7 +137,7 @@ namespace nd4j {
                      */
                 }
                     break;
-                case 6: {
+                case nd4j::random::GaussianDistribution: {
                     // gaussian distribution
                     T mean, stdev;
                     if (block.width() > 2) {
@@ -169,7 +169,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case 7: {
+                case nd4j::random::BernoulliDistribution: {
                     // bernoulli distribution
                     T prob;
                     if (block.width() > 1) {
@@ -197,7 +197,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case 9: {
+                case nd4j::random::BinomialDistributionEx: {
                     // BinomialEx distribution
                     T prob;
                     int trials;
@@ -230,7 +230,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case 10: {
+                case nd4j::random::LogNormalDistribution: {
                     // lognorm distribution
                     T mean, stdev;
                     if (block.width() > 2) {
@@ -262,7 +262,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case 11: {
+                case nd4j::random::TruncatedNormalDistribution: {
                     // truncated norm distribution
                     T mean, stdev;
                     if (block.width() > 2) {
@@ -294,7 +294,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case 12: {
+                case nd4j::random::AlphaDropOut: {
                     auto z = OUTPUT_VARIABLE(0);
 
                     T prob, a, b, pa;
