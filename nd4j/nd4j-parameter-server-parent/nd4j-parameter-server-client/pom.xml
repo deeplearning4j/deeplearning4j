@@ -89,7 +89,7 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-parameter-server-status_2.10</artifactId>
+            <artifactId>nd4j-parameter-server-status_2.11</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
