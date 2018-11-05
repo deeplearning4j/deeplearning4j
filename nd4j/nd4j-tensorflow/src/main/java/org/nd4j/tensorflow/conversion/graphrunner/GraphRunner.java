@@ -224,10 +224,8 @@ public class GraphRunner implements Closeable {
             Map outputsMap = new LinkedHashMap<String, String>();
             this.graph = TF_NewGraph();
             this.session = conversion.loadSavedModel(savedModelConfig, options, null, graph, inputsMap, outputsMap, status);
-            if(inputOrder == null)
-                inputOrder = new ArrayList<String>(inputsMap.values());
-            if(outputOrder == null)
-                outputOrder = new ArrayList<String>(outputsMap.values());
+            inputOrder = new ArrayList<String>(inputsMap.keySet());
+            outputOrder = new ArrayList<String>(outputsMap.keySet());
             savedModelConfig.setSavedModelInputOrder(new ArrayList<String>(inputsMap.values()));
             savedModelConfig.setSaveModelOutputOrder(new ArrayList<String>(outputsMap.values()));
         } catch (Exception e) {
@@ -351,14 +349,14 @@ public class GraphRunner implements Closeable {
             this.savedModelConfig = savedModelConfig;
             this.protoBufConfigProto = sessionOptionsConfiguration;
             initOptionsIfNeeded();
-            Map inputsMap = new LinkedHashMap<String, String>();
-            Map outputsMap = new LinkedHashMap<String, String>();
+            Map<String,String> inputsMap = new LinkedHashMap<String, String>();
+            Map<String,String> outputsMap = new LinkedHashMap<String, String>();
             this.graph = TF_NewGraph();
             this.session = conversion.loadSavedModel(savedModelConfig, options, null, graph, inputsMap, outputsMap, status);
-            inputOrder = new ArrayList<String>(inputsMap.values());
-            outputOrder = new ArrayList<String>(outputsMap.values());
-            savedModelConfig.setSavedModelInputOrder(inputOrder);
-            savedModelConfig.setSaveModelOutputOrder(outputOrder);
+            inputOrder = new ArrayList<String>(inputsMap.keySet());
+            outputOrder = new ArrayList<String>(outputsMap.keySet());
+            savedModelConfig.setSavedModelInputOrder(new ArrayList<>(inputsMap.values()));
+            savedModelConfig.setSaveModelOutputOrder(new ArrayList<String>(outputsMap.values()));
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse protobuf",e);
         }
@@ -408,7 +406,8 @@ public class GraphRunner implements Closeable {
                 tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
                 opsByName.put(savedModelConfig.getSavedModelInputOrder().get(i),inputOp);
                 inputOut.position(i).oper(inputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
-                TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(savedModelConfig.getSavedModelInputOrder().get(i)));
+                TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(inputOrder != null && !inputOrder.isEmpty()
+                        ? inputOrder.get(i) : savedModelConfig.getSavedModelInputOrder().get(i)));
                 inputTensors[i] = tf_tensor;
             }
 
@@ -455,7 +454,8 @@ public class GraphRunner implements Closeable {
             } else {
                 for(int i = 0; i < outputOrder.size(); i++) {
                     INDArray to = conversion.ndArrayFromTensor(new TF_Tensor(outputTensorsPointer.get(i)));
-                    outputArrays.put(savedModelConfig.getSaveModelOutputOrder().get(i),to);
+                    outputArrays.put(outputOrder != null && !outputOrder.isEmpty() ? outputOrder.get(i) :
+                            savedModelConfig.getSaveModelOutputOrder().get(i),to);
                 }
 
             }
