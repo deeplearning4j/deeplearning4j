@@ -1771,6 +1771,9 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
 
         bool rowFlag = (rank < 2) || (rank == 2 && this->sizeAt(0) == 1);
 
+        if (msg)
+            printf("%s: \n", msg);
+
         if (this->isEmpty()) {
             printf("Empty\n");
         }
@@ -1787,8 +1790,6 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
         else if (rowFlag)
             printBuffer(msg, limit);
         else {
-            if (msg)
-                printf("%s: \n", msg);
             printFormatted(this, 1, limit);
             printf("\n");
         }

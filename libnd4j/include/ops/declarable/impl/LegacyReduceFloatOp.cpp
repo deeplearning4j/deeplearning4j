@@ -112,16 +112,17 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
-                    auto z = new NDArray(newShape, x->getWorkspace());
+                    //auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
+                    //auto z = new NDArray(newShape, x->getWorkspace());
+                    auto z = OUTPUT_VARIABLE(0);
 
                     NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
 
-                    RELEASE(newShape, x->getWorkspace());
+                    //RELEASE(newShape, x->getWorkspace());
 
 
                     // keepDims processing, for TF compatibility
-                    if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
+                    if (block.getBArguments()->size() > 0 && B_ARG(0)) {
                         // z->printShapeInfo("z shape before");
                         std::vector<Nd4jLong> newshape(z->getShapeAsVector());
                         for (int e = 0; e < axis.size(); e++) {
@@ -132,7 +133,7 @@ namespace nd4j {
                         // z->printShapeInfo("z shape after");
                     }
 
-                    OVERWRITE_RESULT(z);
+                    //OVERWRITE_RESULT(z);
                 }
             }
 
