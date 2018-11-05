@@ -54,7 +54,7 @@ public class CpuNativeRandom extends NativeRandom {
     @Override
     public void setSeed(long seed) {
         this.seed = seed;
-        ((Nd4jCpu.RandomGenerator)statePointer).setSeed(seed);
+        ((Nd4jCpu.RandomGenerator)statePointer).setStates(seed, seed);
     }
 
     @Override

@@ -290,8 +290,8 @@ public class RandomTests extends BaseNd4jTest {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
-        INDArray z1 = Nd4j.create(100000);
-        INDArray z2 = Nd4j.create(100000);
+        INDArray z1 = Nd4j.create(DataType.DOUBLE, 1000000);
+        INDArray z2 = Nd4j.create(DataType.DOUBLE, 1000000);
         INDArray zDup = z1.dup();
 
         GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
