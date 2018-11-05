@@ -175,6 +175,17 @@ TEST_F(RNGTests, Test_Uniform_1) {
     }
 }
 
+TEST_F(RNGTests, Test_Uniform_3) {
+    auto x0 = NDArrayFactory::create<double>('c', {1000000});
+
+    RandomLauncher::fillUniform(_rngA, &x0, 1.0f, 2.0f);
+
+    for (int e = 0; e < x0.lengthOf(); e++) {
+        auto v = x0.t<double>(e);
+        ASSERT_TRUE(v >= 1.0 && v <= 2.0);
+    }
+}
+
 TEST_F(RNGTests, Test_Bernoulli_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
@@ -203,6 +214,18 @@ TEST_F(RNGTests, Test_Gaussian_1) {
     ASSERT_FALSE(x0.equalsTo(nexp0));
     ASSERT_FALSE(x0.equalsTo(nexp1));
     ASSERT_FALSE(x0.equalsTo(nexp2));
+}
+
+TEST_F(RNGTests, Test_Gaussian_3) {
+    auto x0 = NDArrayFactory::create<double>('c', {1000000});
+
+    RandomLauncher::fillGaussian(_rngA, &x0, 0.0, 1.0);
+
+    auto mean = x0.meanNumber().e<double>(0);
+    auto stdev = x0.varianceNumber(nd4j::variance::SummaryStatsStandardDeviation, false).e<double>(0);
+
+    ASSERT_NEAR(0.0, mean, 1e-3);
+    ASSERT_NEAR(1.0, stdev, 1e-3);
 }
 
 

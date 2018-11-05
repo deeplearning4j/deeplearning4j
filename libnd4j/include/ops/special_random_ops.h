@@ -372,30 +372,25 @@ namespace randomOps {
 
             const T epsilon = static_cast<T>(1e-5);
 
-#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
-            {
-                int tid = omp_get_thread_num();
-                Nd4jLong start = span * tid;
-                Nd4jLong end = span * (tid + 1);
-                if (end > middle)
-                    end = middle;
-
-                for (Nd4jLong e = start; e < end; e++) {
+#pragma omp parallel for num_threads(_threads) if (_threads > 1) proc_bind(spread)
+                for (Nd4jLong e = 0; e < middle; e++) {
                     auto epm = e + middle;
+
                     // we need to get random values
                     T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
                     T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
                     T realMean0 = y == z ? mean : y[e * yEWS];
 
-                    z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
+                    auto z0 =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
+                    z[e * zEWS] = z0;
 
                     if (epm < zLength) {
                         T realMean1 = y == z ? mean : y[epm * yEWS];
-                        z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
+                        auto z1 = (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
+                        z[epm * zEWS] = z1;
                     }
                 }
-            }
 
             // update rng state
             rng->rewindH(zLength);

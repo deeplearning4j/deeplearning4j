@@ -82,14 +82,16 @@ namespace nd4j {
 
         template <typename T>
         T RandomGenerator::relativeT(Nd4jLong index, T from, T to) {
-            return from + (this->relativeT<T>(index) * (to - from));
+            auto t = this->relativeT<T>(index);
+            auto z = from + (t * (to - from));
+            return z;
         }
 
         template <typename T>
         T RandomGenerator::relativeT(Nd4jLong index) {
             // This is default implementation for floating point types
-            auto i = static_cast<float>(this->relativeT<int>(index));
-            auto r = i / static_cast<float>(DataTypeUtils::max<int>());
+            auto i = static_cast<double>(this->relativeT<uint64_t>(index));
+            auto r = i / static_cast<double>(DataTypeUtils::max<uint64_t>());
             return static_cast<T>(r);
         }
 
@@ -103,18 +105,18 @@ namespace nd4j {
         }
 
         //////
-        static FORCEINLINE uint32_t rotl(const uint32_t x, int k) {
+        static FORCEINLINE _CUDA_HD uint32_t rotl(const uint32_t x, int k) {
 	        return (x << k) | (x >> (32 - k));
         }
 
-        static FORCEINLINE uint64_t rotl(const uint64_t x, int k) {
+        static FORCEINLINE _CUDA_HD  uint64_t rotl(const uint64_t x, int k) {
             return (x << k) | (x >> (64 - k));
         }
 
         uint32_t RandomGenerator::xoroshiro32(Nd4jLong index) {
             u64 v;
             // TODO: improve this
-            v._long = _rootState._long ^ _nodeState._long ^ index;
+            v._long = (_rootState._long * _nodeState._long) ^ (index + 1);
 
             return rotl(v._du32._v0 * 0x9E3779BB, 5) * 5;
         }
@@ -124,7 +126,7 @@ namespace nd4j {
             auto s1 = _nodeState._ulong;
 
             // xor by idx
-            _nodeState._long ^= index;
+            _nodeState._long ^= (index + 1);
 
             // since we're not modifying state - do rotl step right here
             s1 ^= s0;
