@@ -90,6 +90,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private ThreadLocal<Map<Integer,PointerPointer>> outputShapes = new ThreadLocal<>();
     private ThreadLocal<Map<Integer,PointerPointer>> outputBuffers = new ThreadLocal<>();
     private ThreadLocal<Map<Integer,DoublePointer>> tArgsPointer = new ThreadLocal<>();
+    private ThreadLocal<Map<Integer,BooleanPointer>> bArgsPointer = new ThreadLocal<>();
     private ThreadLocal<Map<Integer,ShortPointer>> halfArgsPointer = new ThreadLocal<>();
 
 
@@ -1618,6 +1619,23 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
 
+    private BooleanPointer getBooleanPointerFrom(ThreadLocal<Map<Integer,BooleanPointer>> map,int numArguments) {
+        if(map.get() == null) {
+            Map<Integer,BooleanPointer> store = new HashMap<>();
+            store.put(numArguments,new BooleanPointer(numArguments));
+            map.set(store);
+            return map.get().get(numArguments);
+        }
+        else if (map.get().get(numArguments) == null) {
+            val pointerPointer = new BooleanPointer(numArguments);
+            map.get().put(numArguments,pointerPointer);
+            return pointerPointer;
+        }
+
+        return map.get().get(numArguments);
+    }
+
+
     private PointerPointer getInputShapes(int numArguments) {
        return getPointerPointerFrom(inputShapes,numArguments);
     }
@@ -1713,6 +1731,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             val tArgs = op.numTArguments() > 0 ? getDoublePointerFrom(tArgsPointer,op.numTArguments()) : null;
             val tArgs1 = op.tArgs();
+            val bArgs = op.numBArguments() > 0 ? getBooleanPointerFrom(bArgsPointer,op.numBArguments()) : null;
 
             cnt = 0;
             for (val t: tArgs1)
@@ -1733,6 +1752,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.numOutputArguments(),
                         tArgs, op.numTArguments(),
                         iArgs, op.numIArguments(),
+                        bArgs, op.numBArguments(),
                         op.isInplaceCall());
 
                 status = OpStatus.byNumber(code);

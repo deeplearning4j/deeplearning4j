@@ -427,6 +427,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public int numBArguments() {
+        return bArguments == null ? 0 : bArguments.size();
+    }
+
+    @Override
     public void addTArgument(double... arg) {
         if (arg != null)
             addTArgument(Doubles.asList(arg).toArray(new Double[arg.length]));

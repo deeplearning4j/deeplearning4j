@@ -82,6 +82,7 @@ public interface CustomOp {
 
     int numTArguments();
 
+    int numBArguments();
 
     void addInputArgument(INDArray... arg);
 

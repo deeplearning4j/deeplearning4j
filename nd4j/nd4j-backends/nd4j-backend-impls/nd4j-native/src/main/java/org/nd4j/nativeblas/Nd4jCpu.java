@@ -2504,9 +2504,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("char*") String getAllOperations();
 
     // customOp executioner
-    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs, @Cast("bool") boolean isInplace);
-    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs, @Cast("bool") boolean isInplace);
-    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs);
@@ -6004,7 +6007,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             public native @StdVector DoublePointer getTArguments();
             public native @StdVector IntPointer getIArguments();
-            public native @Cast("bool*") @StdVector BoolPointer getBArguments();
+            public native @Cast("bool*") @StdVector BooleanPointer getBArguments();
             public native @StdVector IntPointer getAxis();
 
             public native @Cast("size_t") long numT();
@@ -7234,6 +7237,17 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native int sub2Ind(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer indices);
     @Namespace("shape") public static native int sub2Ind(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] indices);
 
+   /**
+   * increment n-dimensional array by one iteration by changing coord appropriately  
+   * for example we have array with shape {2, 3}:
+   * - if input coord = {0,1}, then output coord = {0,2}
+   * - if input coord = {0,2}, then output coord = {1,0}
+   * so the aim is to produce following subsequence of coord: {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2}   
+   */
+    @Namespace("shape") public static native void nextIter(int rank, @Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer coord);
+    @Namespace("shape") public static native void nextIter(int rank, @Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer coord);
+    @Namespace("shape") public static native void nextIter(int rank, @Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] coord);
+
     /**
    * Compute the real linear indices for the given shape and stride
    */
@@ -8081,14 +8095,20 @@ public static final int PREALLOC_SIZE = 33554432;
 
 	
 
-    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
-    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
     public OpArgsHolder(@Const @ByRef NDArrayVector inArrs) { super((Pointer)null); allocate(inArrs); }
     private native void allocate(@Const @ByRef NDArrayVector inArrs);
-    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
-    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/);
-    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs); }
-    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
 
     public native @Const @ByRef NDArrayVector getInArrs();
 
@@ -8096,13 +8116,17 @@ public static final int PREALLOC_SIZE = 33554432;
 
     public native @Cast("Nd4jLong*") @StdVector LongPointer getIArgs();
 
-    public native @Cast("bool*") @StdVector BoolPointer getAllocInfo();
+    public native @Cast("bool*") @StdVector BooleanPointer getBArgs();
+
+    public native @Cast("bool*") @StdVector BooleanPointer getAllocInfo();
 
     public native int getNumInArrs();
 
     public native int getNumTArgs();
 
     public native int getNumIArgs();
+
+    public native int getNumBArgs();
 
     public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
     public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs); 
@@ -10734,24 +10758,39 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              */
             public native @Cast("Nd4jStatus") int execute(Context block);
 
-            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
             public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
-            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
             public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
-            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
             public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
-            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
-            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
-            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
-            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
-            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
-            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
 
             public native ResultSet execute(@Const @ByRef OpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
             public native ResultSet execute(@Const @ByRef OpArgsHolder holder);
