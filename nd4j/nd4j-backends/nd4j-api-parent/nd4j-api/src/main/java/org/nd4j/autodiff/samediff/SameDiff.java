@@ -11769,6 +11769,29 @@ public class SameDiff {
         saveWithTrainingConfig(this.trainingConfig,outputStream);
     }
 
+
+
+    /**
+     * Save this samediff instance with its training config.
+     * Note that if a training configuration is not defined,
+     * an {@link IllegalStateException} is thrown.
+     *
+     * @param outputFile the output stream to write to
+     * @throws IOException
+     */
+    public void saveWithTrainingConfig(File outputFile) throws IOException {
+        if(this.trainingConfig == null) {
+            throw new IllegalStateException("No training configuration found!");
+        }
+
+        try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+            saveWithTrainingConfig(this.trainingConfig, bufferedOutputStream);
+            bufferedOutputStream.flush();
+        }
+
+    }
+
+
     /**
      * Save this samediff instance as a zip file
      * with the training configuration

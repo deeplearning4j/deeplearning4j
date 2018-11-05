@@ -276,7 +276,7 @@ public class TrainingConfig {
          * modified during training
          * @param trainableParams Set of parameters/variables to train
          */
-        public Builder trainableParams(List<String> trainableParams){
+        public Builder trainableParams(List<String> trainableParams) {
             this.trainableParams = trainableParams;
             return this;
         }

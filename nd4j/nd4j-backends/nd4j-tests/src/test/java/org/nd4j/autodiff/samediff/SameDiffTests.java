@@ -215,6 +215,12 @@ public class SameDiffTests {
                 sameDiff1.getTrainingConfig().getUpdater());
         assertEquals(sameDiff.getUpdaterState(),sameDiff1.getUpdaterState());
 
+        sameDiff.saveWithTrainingConfig(newFile);
+        sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
+        assertEquals(sameDiff.getTrainingConfig().getUpdater(),
+                sameDiff1.getTrainingConfig().getUpdater());
+        assertEquals(sameDiff.getUpdaterState(),sameDiff1.getUpdaterState());
+
     }
 
     @Test

@@ -349,14 +349,14 @@ public class GraphRunner implements Closeable {
             this.savedModelConfig = savedModelConfig;
             this.protoBufConfigProto = sessionOptionsConfiguration;
             initOptionsIfNeeded();
-            Map<String,String> inputsMap = new LinkedHashMap<String, String>();
-            Map<String,String> outputsMap = new LinkedHashMap<String, String>();
+            Map<String,String> inputsMap = new LinkedHashMap<>();
+            Map<String,String> outputsMap = new LinkedHashMap<>();
             this.graph = TF_NewGraph();
             this.session = conversion.loadSavedModel(savedModelConfig, options, null, graph, inputsMap, outputsMap, status);
-            inputOrder = new ArrayList<String>(inputsMap.keySet());
-            outputOrder = new ArrayList<String>(outputsMap.keySet());
+            inputOrder = new ArrayList<>(inputsMap.keySet());
+            outputOrder = new ArrayList<>(outputsMap.keySet());
             savedModelConfig.setSavedModelInputOrder(new ArrayList<>(inputsMap.values()));
-            savedModelConfig.setSaveModelOutputOrder(new ArrayList<String>(outputsMap.values()));
+            savedModelConfig.setSaveModelOutputOrder(new ArrayList<>(outputsMap.values()));
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse protobuf",e);
         }
