@@ -90,9 +90,15 @@ namespace nd4j {
         template <typename T>
         T RandomGenerator::relativeT(Nd4jLong index) {
             // This is default implementation for floating point types
+#ifdef __DOUBLE_RNG__
             auto i = static_cast<double>(this->relativeT<uint64_t>(index));
             auto r = i / static_cast<double>(DataTypeUtils::max<uint64_t>());
             return static_cast<T>(r);
+#else
+            auto i = static_cast<float>(this->relativeT<uint32_t>(index));
+            auto r = i / static_cast<float>(DataTypeUtils::max<uint32_t>());
+            return static_cast<T>(r);
+#endif
         }
 
 
@@ -114,9 +120,16 @@ namespace nd4j {
         }
 
         uint32_t RandomGenerator::xoroshiro32(Nd4jLong index) {
+            auto s0 = _rootState._ulong;
+            auto s1 = _nodeState._ulong;
+
+            // xor by idx
+            s0 |= ((index + 1) * s1);
+            s1 ^= ((index + 1) * s0);
+
             u64 v;
-            // TODO: improve this
-            v._long = (_rootState._long * _nodeState._long) ^ (index + 1);
+
+            v._long = s1 ^ s0;
 
             return rotl(v._du32._v0 * 0x9E3779BB, 5) * 5;
         }
@@ -126,8 +139,8 @@ namespace nd4j {
             auto s1 = _nodeState._ulong;
 
             // xor by idx
-            s0 |= (index * s1);
-            s1 ^= (index * s0);
+            s0 |= ((index + 1) * s1);
+            s1 ^= ((index + 1) * s0);
 
             // since we're not modifying state - do rotl step right here
             s1 ^= s0;
