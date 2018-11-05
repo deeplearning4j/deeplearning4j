@@ -17,6 +17,7 @@
 package org.deeplearning4j.optimize.solvers.accumulation;
 
 
+import EDU.oswego.cs.dl.util.concurrent.ReaderPreferenceReadWriteLock;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -42,7 +43,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @Slf4j
 public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
-    protected final ReentrantReadWriteLock smartLock = new ReentrantReadWriteLock();
+    protected final ReaderPreferenceReadWriteLock smartLock = new ReaderPreferenceReadWriteLock();
     protected int decompressionThreshold = 32;
     protected AtomicBoolean collapsedMode = new AtomicBoolean(false);
 
@@ -79,30 +80,60 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
 
         return result;
     }
+/*
+    @Override
+    public void registerConsumers(int consumers) {
+        try {
+            smartLock.writeLock().acquire();
+
+            super.registerConsumers(consumers);
+        } catch (InterruptedException e) {
+            smartLock.writeLock().release();
+        }
+    }
+*/
+    @Override
+    public boolean isEmpty() {
+        try {
+            // we use this lock to make
+            smartLock.readLock().acquire();
+
+            if (currentConsumers.get() > 0)
+                synchronize(currentConsumers.get());
+
+            return super.isEmpty();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            smartLock.readLock().release();
+        }
+    }
 
     @Override
     public void put(INDArray array) throws InterruptedException {
         try {
-            smartLock.writeLock().lock();
+            smartLock.writeLock().acquire();
 
             if (backingQueue.size() > decompressionThreshold || collapsedMode.get()) {
-                collapsedMode.set(true);
-
                 log.info("Collapsing updates...");
 
                 // if we're already in collapsed mode - we'll just poll back our single collapsed array and update it
-                INDArray params = smartDecompress(array, backingQueue.size() == 1 ? backingQueue.poll() : null);
+                INDArray params = smartDecompress(array, (collapsedMode.get() && backingQueue.size() == 1) ? backingQueue.poll() : null);
                 while (!backingQueue.isEmpty()) {
                     val arr = backingQueue.poll();
                     smartDecompress(arr, params);
                 }
+
+                numElementsDrained.set(0);
+                numElementsReady.set(1);
+                collapsedMode.set(true);
 
                 // now just put single array back
                 super.put(params);
             } else
                 super.put(array);
         } finally {
-            smartLock.writeLock().unlock();
+            smartLock.writeLock().release();
         }
     }
 
@@ -110,14 +141,16 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
     public INDArray poll() {
         try {
             // we use this lock to make
-            smartLock.readLock().lock();
+            smartLock.readLock().acquire();
 
             // from now on this SFBQ instance won't add up to single compressed array
             collapsedMode.set(false);
 
             return super.poll();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
         } finally {
-            smartLock.readLock().unlock();
+            smartLock.readLock().release();
         }
     }
 }

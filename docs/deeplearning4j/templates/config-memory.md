@@ -20,7 +20,7 @@ To manage memory allocations, we use two approaches:
 Despite the differences between these two approaches, the idea is the same: once an NDArray is no longer required on the Java side, the off-heap associated with it should be released so that it can be reused later. The difference between the GC and `MemoryWorkspaces` approaches is in when and how the memory is released.
 
 - For JVM/GC memory: whenever an INDArray is collected by the garbage collector, its off-heap memory will be deallocated, assuming it is not used elsewhere.
-- For `MemoryWorkspaces`: whenever an INDArray leaves the workspace scope - for example, when a layer finished forward pass/predictions - its memory may be reused without deallocation and reallocation. This results in better performance for cyclical workloads.
+- For `MemoryWorkspaces`: whenever an INDArray leaves the workspace scope - for example, when a layer finished forward pass/predictions - its memory may be reused without deallocation and reallocation. This results in better performance for cyclical workloads like neural network training and inference.
 
 ## Configuring Memory Limits
 
@@ -32,12 +32,12 @@ With DL4J/ND4J, there are two types of memory limits to be aware of and configur
 
 * `-Dorg.bytedeco.javacpp.maxbytes`  - this allows you to specify the off-heap memory limit.
 
-* `-Dorg.bytedeco.javacpp.maxphysicalbytes` - also for off-heap, this usually should be set equal to `maxbytes`.
+* `-Dorg.bytedeco.javacpp.maxphysicalbytes` - this specifies the maximum bytes for the entire process - usually set to `maxbytes` plus Xmx plus a bit extra, in case other libraries require some off-heap memory also. Unlike setting `maxbytes` setting `maxphysicalbytes` is optional
 
-Example: Configuring 1GB initial on-heap, 2GB max on-heap, 8GB off-heap:
+Example: Configuring 1GB initial on-heap, 2GB max on-heap, 8GB off-heap, 10GB maximum for process:
 
 ```shell
--Xms1G -Xmx2G -Dorg.bytedeco.javacpp.maxbytes=8G -Dorg.bytedeco.javacpp.maxphysicalbytes=8G
+-Xms1G -Xmx2G -Dorg.bytedeco.javacpp.maxbytes=8G -Dorg.bytedeco.javacpp.maxphysicalbytes=10G
 ```
 
 ## Gotchas: A few things to watch out for
@@ -56,7 +56,7 @@ Example: Configuring 1GB initial on-heap, 2GB max on-heap, 8GB off-heap:
 
 # Memory-mapped files
 
-As of 0.9.2-SNAPSHOT, it's possible to use a memory-mapped file instead of RAM when using the `nd4j-native` backend. On one hand, it's slower then RAM, but on other hand, it allows you to allocate memory chunks in a manner impossible otherwise.
+ND4J supports the use of a memory-mapped file instead of RAM when using the `nd4j-native` backend. On one hand, it's slower then RAM, but on other hand, it allows you to allocate memory chunks in a manner impossible otherwise.
 
 Here's sample code:
 
@@ -74,7 +74,7 @@ In this case, a 1GB temporary file will be created and mmap'ed, and NDArray `x` 
 
 ## GPUs
 
-When using GPUs, oftentimes your CPU RAM will be greater than GPU ram. When GPU RAM is less than CPU RAM, you need to monitor how much RAM is being used off-heap. You can check this based on the JavaCPP options specified above.
+When using GPUs, oftentimes your CPU RAM will be greater than GPU RAM. When GPU RAM is less than CPU RAM, you need to monitor how much RAM is being used off-heap. You can check this based on the JavaCPP options specified above.
 
 We allocate memory on the GPU equivalent to the amount of off-heap memory you specify. We don't use any more of your GPU than that. You are also allowed to specify heap space greater than your GPU (that's not encouraged, but it's possible). If you do so, your GPU will run out of RAM when trying to run jobs.
 

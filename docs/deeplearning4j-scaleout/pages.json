@@ -1,0 +1,34 @@
+{
+  "excludes": [
+  ],
+  "indices": [
+  ],
+  "pages": [
+    {
+      "page": "intro.md",
+      "class": []
+    },
+    {
+      "page": "technicalref.md",
+      "class": []
+    },
+    {
+      "page": "howto.md",
+      "class": []
+    },
+    {
+      "page": "data-howto.md",
+      "class": []
+    },
+  	{
+  	  "page": "apiref.md",
+  	  "class": [
+  	    "deeplearning4j-scaleout/spark/dl4j-spark/src/main/java/org/deeplearning4j/spark/impl/multilayer/SparkDl4jMultiLayer.java",
+  		  "deeplearning4j-scaleout/spark/dl4j-spark/src/main/java/org/deeplearning4j/spark/impl/graph/SparkComputationGraph.java",
+  		  "deeplearning4j-scaleout/spark/dl4j-spark-parameterserver/src/main/java/org/deeplearning4j/spark/parameterserver/training/SharedTrainingMaster.java",
+        "deeplearning4j-scaleout/spark/dl4j-spark/src/main/java/org/deeplearning4j/spark/impl/paramavg/ParameterAveragingTrainingMaster.java"
+  	  ]
+  	}
+  ]
+}
+

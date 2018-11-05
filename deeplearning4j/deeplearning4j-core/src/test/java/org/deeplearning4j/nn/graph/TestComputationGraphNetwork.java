@@ -1811,4 +1811,12 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(features, labels);
         net.fit(mds);
     }
+
+    @Test
+    public void testAddRemoveVertex() {
+        new NeuralNetConfiguration.Builder().graphBuilder()
+                .addVertex("toRemove", new ScaleVertex(0), "don't care")
+                .addVertex("test", new ScaleVertex(0), "toRemove")
+                .removeVertex("toRemove", true);
+    }
 }

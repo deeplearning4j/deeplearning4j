@@ -91,10 +91,14 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertEquals(0.15, ((Nesterovs)l1.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(0.15, n.getLearningRate(), 1e-6);
 
-        int numParams = net.numParams();
+        int numParams = (int)net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
         int updaterSize = (int) new Nesterovs().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
+
+        //For backward compatibility given L2 fixes in 1.0.0-beta3
+        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
+        assertTrue(l1.isLegacyBatchScaledL2());
     }
 
     @Test
@@ -146,10 +150,14 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
         assertEquals(1.5, l1.getGradientNormalizationThreshold(), 1e-5);
 
-        int numParams = net.numParams();
+        int numParams = (int)net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
         int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
+
+        //For backward compatibility given L2 fixes in 1.0.0-beta3
+        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
+        assertTrue(l1.isLegacyBatchScaledL2());
     }
 
     @Test
@@ -201,10 +209,14 @@ public class RegressionTest080 extends BaseDL4JTest {
 
         assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
 
-        int numParams = net.numParams();
+        int numParams = (int)net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
         int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
+
+        //For backward compatibility given L2 fixes in 1.0.0-beta3
+        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
+        assertTrue(l2.isLegacyBatchScaledL2());
     }
 
     @Test
@@ -240,6 +252,10 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertEquals(5, l2.getNOut());
         assertTrue(l2.getActivationFn() instanceof ActivationSoftmax);
         assertTrue(l2.getLossFn() instanceof LossMCXENT);
+
+        //For backward compatibility given L2 fixes in 1.0.0-beta3
+        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
+        assertTrue(l2.isLegacyBatchScaledL2());
     }
 
     @Test
@@ -276,5 +292,9 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertEquals(5, l2.getNOut());
         assertTrue(l2.getActivationFn() instanceof ActivationSoftmax);
         assertTrue(l2.getLossFn() instanceof LossMCXENT);
+
+        //For backward compatibility given L2 fixes in 1.0.0-beta3
+        assertTrue(net.getConfiguration().isLegacyBatchScaledL2());
+        assertTrue(l2.isLegacyBatchScaledL2());
     }
 }

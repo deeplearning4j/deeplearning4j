@@ -1400,9 +1400,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(final INDArray arr) {
+        Preconditions.checkState((this.isScalar() && arr.isScalar()) || (this.isVector() && arr.isVector()) || Shape.shapeEqualWithSqueeze(this.shape(), arr.shape()),
+                "Cannot assign arrays: arrays must both be scalars, both vectors, or shapes must be equal other than size 1 dimensions. Attempting to do x.assign(y)" +
+                        " with x.shape=%ndShape and y.shape=%ndShape", this, arr );
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this, arr, this, length()));
         return this;
-
     }
 
     @Override
@@ -2213,6 +2215,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.create(data, newShape, newStrides, offset, ordering);
     }
 
+    protected INDArray create(DataBuffer data, long[] newShape, long[] newStrides, long offset, char ordering) {
+        return Nd4j.create(data, newShape, newStrides, offset, ordering);
+    }
+
     protected INDArray create(DataBuffer data, int[] newShape, int[] newStrides, long offset) {
         return Nd4j.create(data, newShape, newStrides, offset);
     }
@@ -2595,8 +2601,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray subArray(ShapeOffsetResolution resolution) {
         Nd4j.getCompressor().autoDecompress(this);
         long[] offsets = resolution.getOffsets();
-        int[] shape = LongUtils.toInts(resolution.getShapes());
-        int[] stride = LongUtils.toInts(resolution.getStrides());
+        long[] shape = resolution.getShapes();
+        long[] stride = resolution.getStrides();
 
         //        if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
         //            throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
@@ -3683,7 +3689,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mmuli(INDArray other, INDArray result) {
         LinAlgExceptions.assertMultiplies(this, other);
-
+        if(other.rank() == 1){
+            //GEMV edge case
+            Preconditions.checkState(result.length() == this.size(0) && this.size(1) == other.size(0),
+                    "Invalid matrix multiplication: %ndShape x %ndShape with result shape %ndShape", this, other, result);
+        } else {
+            //Standard case
+            Preconditions.checkState(
+                    result.rank() == 2 && result.size(0) == this.size(0) && result.size(1) == other.size(1),
+                    "Invalid result array shape: expected shape [%s,%s], got shape %ndShape result array for %ndShape x %ndShape", this.size(0), other.size(1), result,
+                    this, other);
+        }
 
         if (other.isScalar()) {
             return muli(other.getDouble(0), result);
@@ -3721,7 +3737,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             // However, user might have called mmuli with a c order array for the result
             // In which case, we need to allocate a temporary f order array, and later do an assign to the real result array
 
-            boolean requiresTemp = result.ordering() == 'c';
+            boolean requiresTemp = result.ordering() != 'f' || result.isView() || !Shape.hasDefaultStridesForShape(result);
             INDArray gemmResultArr;
             if (requiresTemp) {
                 //Can use createUninitialized due to beta==0.0 parameter in gemm
@@ -4560,12 +4576,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        INDArray ret = Nd4j.createUninitialized(shape, order);
         if (order != ordering()) {
+            INDArray ret = Nd4j.createUninitialized(shape, order);
             ret.setData(dup(order).data());
-        } else
-            ret.assign(this);
-        return ret;
+            return ret;
+        } else {
+            INDArray ret = this.dup(order);
+            return ret.reshape(order, shape);
+        }
     }
 
     @Override
@@ -5224,8 +5242,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public long offset() {
-        if (data().offset() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Offset of buffer can not be >= Integer.MAX_VALUE");
+//        if (data().offset() >= Integer.MAX_VALUE)
+//            throw new IllegalArgumentException("Offset of buffer can not be >= Integer.MAX_VALUE");
         //  return Shape.offset(shapeInfo());
         return data().offset();
     }

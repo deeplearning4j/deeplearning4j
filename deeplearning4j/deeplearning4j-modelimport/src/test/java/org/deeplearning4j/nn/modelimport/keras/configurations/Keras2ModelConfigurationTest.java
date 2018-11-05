@@ -61,6 +61,17 @@ public class Keras2ModelConfigurationTest {
         runModelConfigTest("modelimport/keras/");
     }
 
+
+    @Test
+    public void simple222ConfigTest() throws Exception {
+        runSequentialConfigTest("modelimport/keras/configs/keras2/model_2_2_2.json");
+    }
+
+    @Test
+    public void simple224ConfigTest() throws Exception {
+        runSequentialConfigTest("modelimport/keras/configs/keras2/model_2_2_4.json");
+    }
+
     @Test
     public void yolo9000ConfigTest() throws Exception {
         KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);

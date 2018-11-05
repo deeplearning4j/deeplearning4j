@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -45,4 +46,5 @@ public class SharedTrainingAccumulationTuple implements Serializable {
     private Collection<Persistable> listenerStaticInfo;
     private Collection<Persistable> listenerUpdates;
     private Map<String,Integer> minibatchesPerExecutor;
+    private ThresholdAlgorithmReducer thresholdAlgorithmReducer;
 }

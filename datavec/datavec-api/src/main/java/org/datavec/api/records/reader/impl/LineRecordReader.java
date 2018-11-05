@@ -28,6 +28,7 @@ import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.split.StringSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.primitives.Triple;
 
 import java.io.*;
@@ -48,21 +49,25 @@ public class LineRecordReader extends BaseRecordReader {
     protected int lineIndex = 0; //Line index within the current split
     protected Configuration conf;
     protected InputSplit inputSplit;
+    protected boolean initialized;
 
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
         this.inputSplit = split;
         this.iter = getIterator(0);
+        this.initialized = true;
     }
 
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         this.conf = conf;
         initialize(split);
+        this.initialized = true;
     }
 
     @Override
     public List<Writable> next() {
+        Preconditions.checkState(initialized, "Record reader has not been initialized");
         List<Writable> ret = new ArrayList<>();
 
         if (iter.hasNext()) {
@@ -98,6 +103,8 @@ public class LineRecordReader extends BaseRecordReader {
 
     @Override
     public boolean hasNext() {
+        Preconditions.checkState(initialized, "Record reader has not been initialized");
+
         if (iter != null && iter.hasNext()) {
             return true;
         } else {

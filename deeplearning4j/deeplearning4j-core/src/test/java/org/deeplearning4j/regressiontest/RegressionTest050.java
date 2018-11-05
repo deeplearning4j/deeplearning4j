@@ -82,7 +82,7 @@ public class RegressionTest050 extends BaseDL4JTest {
         assertEquals(0.9, ((Nesterovs)l1.getIUpdater()).getMomentum(), 1e-6);
         assertEquals(0.15, ((Nesterovs)l1.getIUpdater()).getLearningRate(), 1e-6);
 
-        int numParams = net.numParams();
+        int numParams = (int)net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
         int updaterSize = (int) new Nesterovs().stateSize(net.numParams());
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
@@ -127,7 +127,7 @@ public class RegressionTest050 extends BaseDL4JTest {
         assertEquals(0.1, l1.getL1(), 1e-6);
         assertEquals(0.2, l1.getL2(), 1e-6);
 
-        int numParams = net.numParams();
+        int numParams = (int)net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
         int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
@@ -175,7 +175,7 @@ public class RegressionTest050 extends BaseDL4JTest {
         assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
 
-        int numParams = net.numParams();
+        int numParams = (int)net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
         int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());

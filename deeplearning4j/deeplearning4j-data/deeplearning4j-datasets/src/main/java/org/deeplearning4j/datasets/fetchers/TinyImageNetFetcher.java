@@ -50,9 +50,8 @@ import java.util.Random;
  * @author Justin Long (crockpotveggies)
  */
 public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
-
-    private File fileDir;
-    private static Logger log = LoggerFactory.getLogger(TinyImageNetFetcher.class);
+    public static final String WORDS_FILENAME = "words.txt";
+    public static final String LOCAL_CACHE_NAME = "TINYIMAGENET_200";
 
     public static int INPUT_WIDTH = 64;
     public static int INPUT_HEIGHT = 64;
@@ -65,7 +64,7 @@ public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
         return DL4JResources.getURLString("datasets/tinyimagenet_200_dl4j.v1.zip");
     }
     @Override
-    public String localCacheName(){ return "TINYIMAGENET_200"; }
+    public String localCacheName(){ return LOCAL_CACHE_NAME; }
     @Override
     public long expectedChecksum(DataSetType set) { return 33822361L; }
     @Override

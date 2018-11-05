@@ -35,7 +35,7 @@ public interface Trainable {
     /**
      * @return Number of parameters
      */
-    int numParams();
+    long numParams();
 
     /**
      * @return 1d parameter vector
@@ -47,6 +47,19 @@ public interface Trainable {
      * @return Parameter table
      */
     Map<String,INDArray> paramTable(boolean backpropOnly);
+
+    /**
+     * DL4J layers typically produce the sum of the gradients during the backward pass for each layer, and if required
+     * (if minibatch=true) then divide by the minibatch size.<br>
+     * However, there are some exceptions, such as the batch norm mean/variance estimate parameters: these "gradients"
+     * are actually not gradients, but are updates to be applied directly to the parameter vector. Put another way,
+     * most gradients should be divided by the minibatch to get the average; some "gradients" are actually final updates
+     * already, and should not be divided by the minibatch size.
+     *
+     * @param paramName Name of the parameter
+     * @return True if gradients should be divided by minibatch (most params); false otherwise (edge cases like batch norm mean/variance estimates)
+     */
+    boolean updaterDivideByMinibatch(String paramName);
 
     /**
      * @return 1D gradients view array

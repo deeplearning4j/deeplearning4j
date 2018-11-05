@@ -16,9 +16,14 @@
 
 package org.deeplearning4j.text.documentiterator;
 
+import lombok.val;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
 
 import static org.junit.Assert.*;
 
@@ -27,6 +32,8 @@ import static org.junit.Assert.*;
  */
 public class FileLabelAwareIteratorTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Before
     public void setUp() throws Exception {
@@ -35,14 +42,15 @@ public class FileLabelAwareIteratorTest {
 
     @Test
     public void testExtractLabelFromPath1() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/labeled");
+        val dir = testDir.newFolder();
+        val resource = new ClassPathResource("/labeled");
+        resource.copyDirectory(dir);
 
-        FileLabelAwareIterator iterator =
-                        new FileLabelAwareIterator.Builder().addSourceFolder(resource.getFile()).build();
+        val iterator = new FileLabelAwareIterator.Builder().addSourceFolder(dir).build();
 
         int cnt = 0;
         while (iterator.hasNextDocument()) {
-            LabelledDocument document = iterator.nextDocument();
+            val document = iterator.nextDocument();
             assertNotEquals(null, document);
             assertNotEquals(null, document.getContent());
             assertNotEquals(null, document.getLabel());
@@ -62,11 +70,15 @@ public class FileLabelAwareIteratorTest {
 
     @Test
     public void testExtractLabelFromPath2() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/labeled");
-        ClassPathResource resource2 = new ClassPathResource("/rootdir");
+        val dir0 = testDir.newFolder();
+        val dir1 = testDir.newFolder();
+        val resource = new ClassPathResource("/labeled");
+        val resource2 = new ClassPathResource("/rootdir");
+        resource.copyDirectory(dir0);
+        resource2.copyDirectory(dir1);
 
-        FileLabelAwareIterator iterator = new FileLabelAwareIterator.Builder().addSourceFolder(resource.getFile())
-                        .addSourceFolder(resource2.getFile()).build();
+        FileLabelAwareIterator iterator = new FileLabelAwareIterator.Builder().addSourceFolder(dir0)
+                        .addSourceFolder(dir1).build();
 
         int cnt = 0;
         while (iterator.hasNextDocument()) {

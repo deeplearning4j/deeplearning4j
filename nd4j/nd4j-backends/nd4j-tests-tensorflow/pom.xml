@@ -168,7 +168,7 @@
                                 <configuration>
                                     <!-- Configures the source directory of our integration tests -->
                                     <sources>
-                                        <source>src/gputest/java</source>
+                                        <source>src/test/gpujava</source>
                                     </sources>
                                 </configuration>
                             </execution>
@@ -216,7 +216,7 @@
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-9.2</artifactId>
+                    <artifactId>nd4j-cuda-10.0</artifactId>
                     <version>${project.version}</version>
                 </dependency>
             </dependencies>

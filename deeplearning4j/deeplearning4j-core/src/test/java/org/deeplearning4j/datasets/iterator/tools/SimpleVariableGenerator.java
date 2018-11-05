@@ -49,6 +49,7 @@ public class SimpleVariableGenerator implements DataSetIterator {
     public DataSet next() {
         INDArray features = Nd4j.create(batchSize, numFeatures).assign(counter.get());
         INDArray labels = Nd4j.create(batchSize, numFeatures).assign(counter.getAndIncrement() + 0.5);
+        Nd4j.getExecutioner().commit();
         return new DataSet(features, labels);
     }
 

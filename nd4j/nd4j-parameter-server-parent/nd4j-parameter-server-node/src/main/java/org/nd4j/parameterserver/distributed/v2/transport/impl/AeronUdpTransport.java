@@ -28,13 +28,14 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import org.jetbrains.annotations.NotNull;
+import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
@@ -43,7 +44,6 @@ import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
@@ -103,7 +103,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected final AtomicBoolean connectedFlag = new AtomicBoolean(false);
 
     public AeronUdpTransport(@NonNull String ownIp, @NonNull String rootIp, @NonNull VoidConfiguration configuration) {
-        this(ownIp, configuration.getUnicastPort(), rootIp, configuration.getUnicastPort(), configuration);
+        this(ownIp, configuration.getPortSupplier().getPort(), rootIp, configuration.getUnicastControllerPort(), configuration);
     }
 
     /**
@@ -136,8 +136,12 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
         context = new Aeron.Context().driverTimeoutMs(30000)
                 .keepAliveInterval(100000000);
+        AeronUtil.setDaemonizedThreadFactories(context);
 
-        driver = MediaDriver.launchEmbedded();
+        final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context();
+        AeronUtil.setDaemonizedThreadFactories(mediaDriverCtx);
+
+        driver = MediaDriver.launchEmbedded(mediaDriverCtx);
         context.aeronDirectoryName(driver.aeronDirectoryName());
         aeron = Aeron.connect(context);
 
@@ -152,7 +156,12 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         public Thread newThread(@NotNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
+<<<<<<< HEAD
             t.setName("messagesExecutorService thread");
+=======
+            //TODO implement support for multi-GPU masters
+            Nd4j.getAffinityManager().attachThreadToDevice(t, 0);   //Associate thread with device 0 (no-op for CPU)
+>>>>>>> master
             return t;
         }
     });
@@ -257,7 +266,11 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         if (!remoteConnections.containsKey(message.getOriginatorId()))
             addConnection(message.getOriginatorId());
 
+<<<<<<< HEAD
         log.info("Got [{}] message from [{}]; aeronQueue size: [{}]; baseQueue size: [{}]", message.getClass().getSimpleName(), message.getOriginatorId(), aeronMessageQueue.size(), messageQueue.size());
+=======
+        log.debug("Got [{}] message from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
+>>>>>>> master
 
         // we're just putting deserialized message into the buffer
         try {
@@ -328,7 +341,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
             val rc = RemoteConnection.builder()
                     .ip(ipAndPort)
-                    .port(voidConfiguration.getUnicastPort())
+                    .port(0)
                     .longHash(hash)
                     .publication(v)
                     .build();

@@ -24,6 +24,8 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
 import org.deeplearning4j.spark.api.RDDTrainingApproach;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
@@ -148,48 +150,18 @@ public class ElephasModelImport {
                     .saveUpdater(false)
                     .build();
         } else if (mode.equals("asynchronous")){
-            int shakeFrequency = 0;
-            if (innerConfig.containsKey("shake_frequency"))
-                shakeFrequency = (int) innerConfig.get("shake_frequency");
-
-            double minThreshold = 1e-5;
-            if (innerConfig.containsKey("min_threshold"))
-                minThreshold = (double) innerConfig.get("min_threshold");
-
             double updateThreshold = 1e-3;
             if (innerConfig.containsKey("update_threshold"))
-                minThreshold = (double) innerConfig.get("update_threshold");
-
-            int workersPerNode = -1;
-            if (innerConfig.containsKey("workers_per_node"))
-                workersPerNode = (int) innerConfig.get("workers_per_node");
-
-            int stepDelay = 50;
-            if (innerConfig.containsKey("step_delay"))
-                stepDelay = (int) innerConfig.get("step_delay");
-
-            double stepTrigger = 0.05;
-            if (innerConfig.containsKey("step_trigger"))
-                stepTrigger = (double) innerConfig.get("step_trigger");
-
-            double thresholdStep = 1e-5;
-            if (innerConfig.containsKey("threshold_step"))
-                thresholdStep = (double) innerConfig.get("threshold_step");
-
+                updateThreshold = (double) innerConfig.get("update_threshold");
+            ThresholdAlgorithm thresholdAlgorithm = new FixedThresholdAlgorithm(updateThreshold);
 
             VoidConfiguration voidConfiguration = VoidConfiguration.builder()
                     .build();
             tm = new SharedTrainingMaster.Builder(voidConfiguration, batchSize)
-                    .shakeFrequency(shakeFrequency)
-                    .minUpdatesThreshold(minThreshold)
-                    .updatesThreshold(updateThreshold)
+                    .thresholdAlgorithm(thresholdAlgorithm)
                     .batchSizePerWorker(batchSize)
-                    .workersPerNode(workersPerNode)
                     .collectTrainingStats(collectStats)
-                    .stepDelay(stepDelay)
-                    .stepTrigger(stepTrigger)
                     .workerPrefetchNumBatches(numBatchesPrefetch)
-                    .thresholdStep(thresholdStep)
                     .rddTrainingApproach(APPROACH)
                     .repartitioner(new DefaultRepartitioner())
                     .build();

@@ -34,11 +34,11 @@ public class TSNEStandardExample {
         log.info("Load & Vectorize data....");
         File wordFile = new ClassPathResource("words.txt").getFile();   //Open the file
         //Get the data of all unique word vectors
-        Pair&lt;InMemoryLookupTable,VocabCache&gt; vectors = WordVectorSerializer.loadTxt(wordFile);
+        Pair<InMemoryLookupTable,VocabCache> vectors = WordVectorSerializer.loadTxt(wordFile);
         VocabCache cache = vectors.getSecond();
         INDArray weights = vectors.getFirst().getSyn0();    //seperate weights of unique words into their own list
 
-        for(int i = 0; i &lt; cache.numWords(); i++)   //seperate strings of words into their own list
+        for(int i = 0; i < cache.numWords(); i++)   //seperate strings of words into their own list
             cacheList.add(cache.wordAtIndex(i));
 
         //STEP 3: build a dual-tree tsne to use later

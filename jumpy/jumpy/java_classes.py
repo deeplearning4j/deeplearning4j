@@ -46,3 +46,9 @@ DataTypeUtil = autoclass('org.nd4j.linalg.api.buffer.util.DataTypeUtil')
 MemoryManager = autoclass('org.nd4j.linalg.memory.MemoryManager')
 SameDiff = autoclass('org.nd4j.autodiff.samediff.SameDiff')
 TFGraphMapper = autoclass('org.nd4j.imports.graphmapper.tf.TFGraphMapper')
+
+try:
+    KerasModelImport = autoclass('org.deeplearning4j.nn.modelimport.keras.KerasModelImport')
+except Exception as e:
+    warnings.warn('Dl4J Core not installed. Keras model import not available.')    
+    KerasModelImport = None
