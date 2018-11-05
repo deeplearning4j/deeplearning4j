@@ -1,6 +1,9 @@
 package org.nd4j.autodiff.samediff;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.learning.config.IUpdater;
 
@@ -27,6 +30,9 @@ import java.util.List;
  * @author Alex Black
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TrainingConfig {
 
     private IUpdater updater;
@@ -270,7 +276,7 @@ public class TrainingConfig {
          * modified during training
          * @param trainableParams Set of parameters/variables to train
          */
-        public Builder trainableParams(List<String> trainableParams){
+        public Builder trainableParams(List<String> trainableParams) {
             this.trainableParams = trainableParams;
             return this;
         }
