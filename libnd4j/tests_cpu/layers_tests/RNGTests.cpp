@@ -49,8 +49,8 @@ public:
         //_bufferB = new Nd4jLong[100000];
         //_rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
         //_rngB = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferB);
-        _rngA.setSeed((int)_seed);
-        _rngB.setSeed((int)_seed);
+        _rngA.setStates(_seed, _seed);
+        _rngB.setStates(_seed, _seed);
         nexp0->assign(-1.0f);
         nexp1->assign(-2.0f);
         nexp2->assign(-3.0f);
@@ -254,7 +254,7 @@ TEST_F(RNGTests, Test_Binomial_1) {
 
 
 TEST_F(RNGTests, Test_Uniform_2) {
-    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillUniform(_rngB, &x1, 1.0f, 2.0f);
@@ -262,7 +262,7 @@ TEST_F(RNGTests, Test_Uniform_2) {
     auto op = new nd4j::ops::LegacyRandomOp(0);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
 
@@ -274,7 +274,7 @@ TEST_F(RNGTests, Test_Uniform_2) {
 }
 
 TEST_F(RNGTests, Test_Gaussian_2) {
-    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillGaussian(_rngB, &x1, 1.0f, 2.0f);
@@ -282,7 +282,7 @@ TEST_F(RNGTests, Test_Gaussian_2) {
     auto op = new nd4j::ops::LegacyRandomOp(random::GaussianDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
 
@@ -294,7 +294,7 @@ TEST_F(RNGTests, Test_Gaussian_2) {
 }
 
 TEST_F(RNGTests, Test_LogNorm_2) {
-    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillLogNormal(_rngB, &x1, 1.0f, 2.0f);
@@ -302,7 +302,7 @@ TEST_F(RNGTests, Test_LogNorm_2) {
     auto op = new nd4j::ops::LegacyRandomOp(random::LogNormalDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
 
@@ -314,7 +314,7 @@ TEST_F(RNGTests, Test_LogNorm_2) {
 }
 
 TEST_F(RNGTests, Test_TruncatedNorm_2) {
-    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillTruncatedNormal(_rngB, &x1, 1.0f, 2.0f);
@@ -322,7 +322,7 @@ TEST_F(RNGTests, Test_TruncatedNorm_2) {
     auto op = new nd4j::ops::LegacyRandomOp(random::TruncatedNormalDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
 
@@ -335,7 +335,7 @@ TEST_F(RNGTests, Test_TruncatedNorm_2) {
 
 
 TEST_F(RNGTests, Test_Binomial_2) {
-    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillBinomial(_rngB, &x1, 3, 0.5f);
@@ -343,7 +343,7 @@ TEST_F(RNGTests, Test_Binomial_2) {
     auto op = new nd4j::ops::LegacyRandomOp(random::BinomialDistribution);
     auto result = op->execute(_rngA, {&input}, {0.5f}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
 
@@ -356,7 +356,7 @@ TEST_F(RNGTests, Test_Binomial_2) {
 
 
 TEST_F(RNGTests, Test_Bernoulli_2) {
-    auto input = NDArrayFactory::create<float>('c', {1, 2}, {10, 10});
+    auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
     RandomLauncher::fillBernoulli(_rngB, &x1, 0.5f);
@@ -364,7 +364,7 @@ TEST_F(RNGTests, Test_Bernoulli_2) {
     auto op = new nd4j::ops::LegacyRandomOp(random::BernoulliDistribution);
     auto result = op->execute(_rngA, {&input}, {0.5f}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
 
@@ -376,7 +376,7 @@ TEST_F(RNGTests, Test_Bernoulli_2) {
 }
 
 TEST_F(RNGTests, Test_GaussianDistribution_1) {
-    auto x = NDArrayFactory::create<float>('c', {2}, {10, 10});
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {10, 10});
     auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
 
@@ -397,7 +397,7 @@ TEST_F(RNGTests, Test_GaussianDistribution_1) {
 }
 
 TEST_F(RNGTests, Test_BernoulliDistribution_1) {
-    auto x = NDArrayFactory::create<float>('c', {2}, {10, 10});
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {10, 10});
     auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
 
@@ -418,7 +418,7 @@ TEST_F(RNGTests, Test_BernoulliDistribution_1) {
 
 
 TEST_F(RNGTests, Test_ExponentialDistribution_1) {
-    auto x = NDArrayFactory::create<float>('c', {2}, {10, 10});
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {10, 10});
     auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
 
@@ -439,7 +439,7 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1) {
 }
 
 TEST_F(RNGTests, Test_ExponentialDistribution_2) {
-    auto x = NDArrayFactory::create<float>('c', {2}, {10, 10});
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {10, 10});
     auto y = NDArrayFactory::create<float>('c', {10, 10});
     auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 

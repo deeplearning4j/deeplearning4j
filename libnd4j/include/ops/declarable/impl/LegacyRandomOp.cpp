@@ -350,11 +350,21 @@ namespace nd4j {
         */
         ShapeList *LegacyRandomOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
-
+            auto xType = ArrayOptions::dataType(inShape);
             Nd4jLong *newShape;
-            COPY_SHAPE(inShape, newShape);
+            if (DataTypeUtils::isR(xType)) {
+                COPY_SHAPE(inShape, newShape);
 
-            return SHAPELIST(newShape);
+                return SHAPELIST(newShape);
+            } else if (DataTypeUtils::isZ(xType)) {
+                auto zShapeArr = INPUT_VARIABLE(0);
+                auto zShapeVector = zShapeArr->asVectorT<Nd4jLong>();
+                auto dtype = block.dataType();
+
+                newShape = ShapeBuilders::createShapeInfo(dtype, 'c', zShapeVector, block.workspace());
+                return SHAPELIST(newShape);
+            } else
+                throw std::runtime_error("LegacyRandomOp: Unknown input data type!");
         }
 
         Nd4jStatus LegacyRandomOp::execute(Context* block) {
@@ -390,7 +400,7 @@ namespace nd4j {
 
             Context block(1, &variableSpace, false);
             // FIX ME: implement setRng method
-            //block.setRng(rng);
+            block.setRng(rng);
             block.fillInputs(in);
             block.markInplace(isInplace);
 
