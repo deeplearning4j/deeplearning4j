@@ -33,6 +33,8 @@ namespace nd4j {
 
         static void fillGaussian(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev);
 
+        static void fillExponential(nd4j::graph::RandomGenerator& rng, NDArray* array, double lambda);
+
         static void fillLogNormal(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev);
 
         static void fillTruncatedNormal(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev);

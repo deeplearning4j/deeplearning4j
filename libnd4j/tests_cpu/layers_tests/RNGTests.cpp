@@ -82,7 +82,7 @@ TEST_F(RNGTests, Test_Dropout_1) {
     RandomLauncher::applyDropOut(_rngA, &x0, 0.5);
     RandomLauncher::applyDropOut(_rngB, &x1, 0.5);
     ASSERT_TRUE(x0.equalsTo(&x1));
-    x0.printIndexedBuffer("Dropout");
+    //x0.printIndexedBuffer("Dropout");
     // this check is required to ensure we're calling wrong signature
     ASSERT_FALSE(x0.equalsTo(nexp0));
     ASSERT_FALSE(x0.equalsTo(nexp1));
@@ -103,7 +103,7 @@ TEST_F(RNGTests, Test_DropoutInverted_1) {
     RandomLauncher::applyInvertedDropOut(_rngA, &x0, 0.5);
     RandomLauncher::applyInvertedDropOut(_rngB, &x1, 0.5);
     ASSERT_TRUE(x0.equalsTo(&x1));
-    x0.printIndexedBuffer("DropoutInverted");
+    //x0.printIndexedBuffer("DropoutInverted");
     // this check is required to ensure we're calling wrong signature
     ASSERT_FALSE(x0.equalsTo(nexp0));
     ASSERT_FALSE(x0.equalsTo(nexp1));
@@ -196,8 +196,8 @@ TEST_F(RNGTests, Test_Gaussian_1) {
     RandomLauncher::fillGaussian(_rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillGaussian(_rngB, &x1, 1.0f, 2.0f);
 
-    x0.printIndexedBuffer("x0");
-    x1.printIndexedBuffer("x1");
+    //x0.printIndexedBuffer("x0");
+    //x1.printIndexedBuffer("x1");
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     ASSERT_FALSE(x0.equalsTo(nexp0));
@@ -340,7 +340,7 @@ TEST_F(RNGTests, Test_Binomial_2) {
 
     RandomLauncher::fillBinomial(_rngB, &x1, 3, 0.5f);
 
-    auto op = new nd4j::ops::LegacyRandomOp(random::BinomialDistribution);
+    auto op = new nd4j::ops::LegacyRandomOp(random::BinomialDistributionEx);
     auto result = op->execute(_rngA, {&input}, {0.5f}, {3});
 
     ASSERT_EQ(Status::OK(), result->status());

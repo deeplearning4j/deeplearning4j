@@ -22,12 +22,13 @@
 #if NOT_EXCLUDED(OP_random_normal)
 
 #include <ops/declarable/headers/random.h>
+#include <helpers/RandomLauncher.h>
 
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(random_normal, 1, 1, true, 2, 0) {
             // normal distribution
-            auto rng = block.getRNG();
+            auto rng = block.randomGenerator();
             // FIXME: to be implemented
 /*
             REQUIRE_TRUE(rng != nullptr, 0, "RNG isn't defined for this Graph instance");
@@ -37,6 +38,9 @@ namespace nd4j {
 
             functions::random::RandomFunction<T>::template execTransform<randomOps::GaussianDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
 */
+
+            RandomLauncher::fillGaussian(rng, OUTPUT_VARIABLE(0), T_ARG(0), T_ARG(1));
+
             return Status::OK();
         }
 

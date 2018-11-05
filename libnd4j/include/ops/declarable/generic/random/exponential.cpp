@@ -22,12 +22,13 @@
 #if NOT_EXCLUDED(OP_random_exponential)
 
 #include <ops/declarable/headers/random.h>
+#include <helpers/RandomLauncher.h>
 
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(random_exponential, 1, 1, true, 1, 0) {
             // uniform distribution
-            auto rng = block.getRNG();
+            auto rng = block.randomGenerator();
 
             // FIXME: to be implemented
             /*
@@ -48,6 +49,12 @@ namespace nd4j {
 
             STORE_RESULT(*z);
 */
+
+            auto z = OUTPUT_VARIABLE(0);
+            auto lambda = T_ARG(0);
+
+            RandomLauncher::fillExponential(rng, z, lambda);
+
             return Status::OK();
         }
 

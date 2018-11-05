@@ -97,6 +97,15 @@ namespace nd4j {
         delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
 
+    void RandomLauncher::fillExponential(nd4j::graph::RandomGenerator& rng, NDArray* array, double lambda) {
+        auto extra = NDArrayFactory::create<double>(lambda);
+        auto extraPtr = extra.getBufferAsPointer(array->dataType());
+
+        NativeOpExcutioner::execRandom(random::ExponentialDistribution, &rng, array->buffer(), array->shapeInfo(), extraPtr);
+
+        delete[] (reinterpret_cast<int8_t *>(extraPtr));
+    }
+
     void RandomLauncher::fillLogNormal(nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
         auto extra = NDArrayFactory::create(array->dataType(), {2}, {mean, stdev});
         auto extraPtr = extra.getBufferAsPointer(array->dataType());
