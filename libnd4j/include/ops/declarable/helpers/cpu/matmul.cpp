@@ -46,9 +46,9 @@ namespace nd4j {
                         Z c_mnp = 0;
 
                         for (int k = 0; k < K; ++k)
-                            c_mnp += A[tA == CblasNoTrans ? (m + k * ldA) : (m * ldA + k)] * B[tB == CblasNoTrans ? (k + n * ldB) : (k * ldB + n)];
+                            c_mnp += (Z) A[tA == CblasNoTrans ? (m + k * ldA) : (m * ldA + k)] * (Z) B[tB == CblasNoTrans ? (k + n * ldB) : (k * ldB + n)];
 
-                        C[m + n * ldC] = alpha * c_mnp + beta * C[m + n * ldC];
+                        C[m + n * ldC] = (Z) alpha * (Z) c_mnp + (Z) beta * (Z) C[m + n * ldC];
                     }
                 }
             }
