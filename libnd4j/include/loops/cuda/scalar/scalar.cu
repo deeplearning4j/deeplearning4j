@@ -101,6 +101,8 @@ __device__ void scalarSimpleGeneric(
         scalarSimpleGeneric<X, Y, Z, OpType>(x, y, xShapeInfo, params, z, zShapeInfo, allocationBuffer);
     }
 
+    template __global__ void _scalarSimpleShaped<Nd4jLong, float, Nd4jLong, Add<Nd4jLong, float, Nd4jLong>>(void* x, void *y, Nd4jLong *xShapeInfo, void *params, void *z, Nd4jLong *zShapeInfo, int *allocationBuffer);
+
 
 // // scalar shape
 // DISPATCH_KERNEL_SIMPLE(scalarSimpleShaped_, scalarSimpleGeneric, float, INPUT(float x, float *y, Nd4jLong *xShapeInfo, float *params, float *z, Nd4jLong *zShapeInfo, int *allocationBuffer), PARAMS(x, y, xShapeInfo, params, z, zShapeInfo, allocationBuffer), OPS_A(SCALAR_OPS))
