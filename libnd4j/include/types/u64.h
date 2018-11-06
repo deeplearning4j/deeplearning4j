@@ -55,6 +55,9 @@ namespace nd4j {
         uint64_t _ulong;
         di32 _di32;
         du32 _du32;
+        u64() {
+            _long = 0;
+        }
     };
 }
 

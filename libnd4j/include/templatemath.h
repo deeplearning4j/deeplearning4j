@@ -285,7 +285,7 @@ namespace nd4j {
 
 //#pragma omp simd reduction(+:dot)
 			for(int e = 0; e < length; e++) {
-				dot += x[e] * y[e];
+				dot += static_cast<Z>(x[e]) * static_cast<Z>(y[e]);
 			}
 
 			return dot;
