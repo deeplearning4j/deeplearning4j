@@ -21,7 +21,7 @@
 #ifndef SCALAR_CU
 #define SCALAR_CU
 
-#include "../scalar.h"
+#include "loops/scalar.h"
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <op_boilerplate.h>
