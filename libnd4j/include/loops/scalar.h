@@ -55,6 +55,10 @@ namespace functions {
 
 #ifdef __CUDACC__
 
+            template <typename OpType>
+            __host__
+            static void _intermediateShaped(dim3& launchDims, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void* vscalar, void *vextraParams, int *allocPointer);
+
             __host__
             static void executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void* scalar, void *extraParams, Nd4jLong n);
 

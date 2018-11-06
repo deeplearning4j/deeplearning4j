@@ -101,7 +101,7 @@ __device__ void scalarSimpleGeneric(
         scalarSimpleGeneric<X, Y, Z, OpType>(x, y, xShapeInfo, params, z, zShapeInfo, allocationBuffer);
     }
 
-    template __global__ void _scalarSimpleShaped<Nd4jLong, float, Nd4jLong, Add<Nd4jLong, float, Nd4jLong>>(void* x, void *y, Nd4jLong *xShapeInfo, void *params, void *z, Nd4jLong *zShapeInfo, int *allocationBuffer);
+    //template __global__ void _scalarSimpleShaped<Nd4jLong, float, Nd4jLong, Add<Nd4jLong, float, Nd4jLong>>(void* x, void *y, Nd4jLong *xShapeInfo, void *params, void *z, Nd4jLong *zShapeInfo, int *allocationBuffer);
 
 
 // // scalar shape
@@ -142,19 +142,15 @@ namespace functions {
     }
 
 
-    template<typename X, typename Y, typename Z, typename OpType>
-    static FORCEINLINE void _intermediateShaped(dim3& launchDims, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void* vscalar, void *vextraParams, int *allocPointer){
+    template<typename X, typename Y, typename Z>
+    template<typename OpType>
+    void _CUDA_H ScalarTransform<X,Y,Z>::_intermediateShaped(dim3& launchDims, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void* vscalar, void *vextraParams, int *allocPointer){
         _scalarSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
     }
 
+
     template<typename X, typename Y, typename Z>
     void ScalarTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void* vscalar, void *vextraParams) {
-        
-        auto x = static_cast<X *>(vx);
-        auto z = static_cast<Z *>(vz);
-        auto scalar = static_cast<Y *>(vscalar)[0];
-        auto extraParams = static_cast<Z *>(vextraParams);
-
         cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
         if (nd4j::Environment::getInstance()->isDebugAndVerbose())
@@ -167,7 +163,8 @@ namespace functions {
         auto zType = nd4j::DataTypeUtils::fromT<Z>();
 
         //DISPATCH_SIMPLE(scalarSimpleShaped, float16, PARAMS(scalar, x, xShapeInfo, extraParams, z, zShapeInfo, allocPointer), OPS_A(SCALAR_OPS))
-        _intermediateShaped<X, Y, Z, simdOps::Add<X, Y, Z>>(launchDims, vx, xShapeInfo, vz, zShapeInfo, vscalar, vextraParams, allocPointer);
+        //_intermediateShaped<Add<Nd4jLong, float, Nd4jLong>>(launchDims, vx, xShapeInfo, vz, zShapeInfo, vscalar, vextraParams, allocPointer);
+        DISPATCH_BY_OPNUM_TTT(_intermediateShaped, PARAMS(launchDims, vx, xShapeInfo, vz, zShapeInfo, vscalar, vextraParams, allocPointer), SCALAR_OPS);
     }
 
 
@@ -370,10 +367,6 @@ __device__ void ScalarTransform<X,Y,Z>::transformCuda( Nd4jLong n,
         // BUILD_CALL_1(template __device__ void ScalarTransform<float>::transformCuda, float, (float, float*, Nd4jLong *, float*, float*, Nd4jLong*, int*, UnifiedSharedMemory *), SCALAR_OPS)
         // BUILD_CALL_1(template __device__ void ScalarTransform<float16>::transformCuda, float16, (float16, float16*, Nd4jLong *, float16*, float16*, Nd4jLong*, int*, UnifiedSharedMemory *), SCALAR_OPS)
         // BUILD_CALL_1(template __device__ void ScalarTransform<double>::transformCuda, double, (double, double*, Nd4jLong *, double*, double*, Nd4jLong*, int*, UnifiedSharedMemory *), SCALAR_OPS)
-
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_0);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_1);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_2);
     }
 }
 

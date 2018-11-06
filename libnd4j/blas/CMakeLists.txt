@@ -187,7 +187,7 @@ if(CUDA_BLAS)
             # ../include/loops/cuda/grid_strided.cu ../include/loops/cuda/grid_shaped.cu
             #cuda/NativeOps.cu ../include/loops/cuda/grid_strided.cu ../include/loops/cuda/grid_shaped.cu ../include/loops/cuda/scalar.cu ../include/loops/cuda/reduce.cu ../include/loops/cuda/pairwise_transform.cu
             # ../include/loops/cuda/scalar.cu ${LOOPS_SOURCES_CUDA}
-        CUDA_ADD_LIBRARY(${LIBND4J_NAME} SHARED cuda/NativeOps.cu ../include/loops/cuda/scalar/scalar.cu
+        CUDA_ADD_LIBRARY(${LIBND4J_NAME} SHARED cuda/NativeOps.cu ../include/loops/cuda/scalar/scalar_p0.cu ../include/loops/cuda/scalar/scalar_p1.cu ../include/loops/cuda/scalar/scalar_p2.cu
                 ${CUSTOMOPS_HELPERS_SOURCES}
                 ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
                 cpu/GraphExecutioner.cpp cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
