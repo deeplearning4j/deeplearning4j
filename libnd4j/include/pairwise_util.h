@@ -43,6 +43,7 @@
 //Loops adapted from:
 //https://github.com/numpy/numpy/blob/009b17a85a22707e63ac9ea1896413992bbf9ce5/numpy/core/src/private/lowlevel_strided_loops.h#L401-L401
 
+/*
 namespace shape {
 
     Nd4jLong length(const Nd4jLong *shapeInfo);
@@ -52,6 +53,7 @@ namespace shape {
     Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
 }
 
+ */
 /************************************************************
  * A struct used by CreateSortedStridePerm, new in 1.7.
  ************************************************************/
@@ -556,6 +558,7 @@ int  PrepareThreeRawArrayIter(int ndim, Nd4jLong shape[],
 
 
 ////////////////////////////////////////////////////////////////////////
+/*
 template <typename T>
 _CUDA_HD void loop2ArrsSame(const T* x, const Nd4jLong* xShapeInfo, T* z, const Nd4jLong* zShapeInfo, T* extraParams, const std::function<T(T, T*)>& func) {
 
@@ -661,6 +664,7 @@ _CUDA_HD void loop2ArrsSame(const T* x, const Nd4jLong* xShapeInfo, T* z, const 
         }                                         
     }
 }
+ */
 
 
 #endif //NATIVEOPERATIONS_PAIRWISE_UTIL_H

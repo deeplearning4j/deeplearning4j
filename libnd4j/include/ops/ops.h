@@ -221,7 +221,6 @@ namespace simdOps {
 
 		op_def static Z op(X z) {
 			auto zz = static_cast<Z>(z);
-			auto zc = static_cast<Z>(c);
 			return (zz * nd4j::math::nd4j_log<Y, Z>(z) - zz + static_cast<Z>(0.5f) * nd4j::math::nd4j_log<Z, Z>(static_cast<Z>(DOUBLE_PI_X) * zz));
 		}
 
