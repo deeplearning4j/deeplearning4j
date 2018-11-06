@@ -59,7 +59,7 @@ namespace simdOps {
         }
 
 #ifdef __CUDACC__
-        __device__ static inline void aggregatePartials(T *sPartials, int tid, int numItems, T *extraParams) {
+        __device__ static inline void aggregatePartials(Z *sPartials, int tid, int numItems, Z *extraParams) {
             // start the shared memory loop on the next power of 2 less
             // than the block size.  If block size is not a power of 2,
             // accumulate the intermediate sums in the remainder range.
@@ -88,12 +88,12 @@ namespace simdOps {
         static inline __device__ void execSpecialCuda(
 				T *dx,
 				Nd4jLong *xShapeInfo,
-				T *extraParams,
-				T *result,
+				Z *extraParams,
+				Z *result,
 				Nd4jLong *resultShapeInfo,
 				int *dimension,
 				int dimensionLength,
-				T *reductionBuffer,
+				Z *reductionBuffer,
 				UnifiedSharedMemory *manager,
 				Nd4jLong *tadOnlyShapeInfo,
 				Nd4jLong *tadOffsets) {
@@ -101,7 +101,7 @@ namespace simdOps {
 				// we assume that RESULT already holds max values
 
 				//shared memory space for storing intermediate results
-				__shared__ T *sPartials;
+				__shared__ Z *sPartials;
 
 				//                __shared__ shape::TAD *tad;
 				__shared__ Nd4jLong tadLength;
@@ -111,7 +111,7 @@ namespace simdOps {
 				__shared__ Nd4jLong *tadStride;
 				if (threadIdx.x == 0) {
 				    extern __shared__ unsigned char shmem[];
-				    sPartials = (T *) shmem;
+				    sPartials = (Z *) shmem;
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;

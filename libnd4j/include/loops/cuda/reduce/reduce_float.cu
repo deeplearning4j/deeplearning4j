@@ -23,6 +23,7 @@
 #include <loops/reduce_float.h>
 #include <loops/legacy_ops.h>
 #include <helpers/DebugHelper.h>
+#include <types/types.h>
 
 using namespace simdOps;
 
@@ -93,7 +94,7 @@ __device__ void reduceScalarGeneric(
 };
 
     template <typename X, typename Z, typename OpType>
-    __device__ void _simpleScalar(
+    __global__ void _simpleScalar(
         void *dx,
         Nd4jLong *xShapeInfo,
         void *extraParams,
@@ -148,7 +149,7 @@ namespace functions {
 
 			template <typename X, typename Y>
             _CUDA_H void ReduceFloatFunction<X,Y>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
-                DISPATCH_BY_OPNUM_TT(intermediateScalar, PARAMS(launchDims, stream, x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadOnlyShapeInfo), OPS_A(REDUCE_FLOAT_OPS));
+                DISPATCH_BY_OPNUM_TT(intermediateScalar, PARAMS(launchDims, stream, x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_FLOAT_OPS));
 
 				nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
             }
@@ -183,10 +184,10 @@ namespace functions {
 				UnifiedSharedMemory *manager,
 				Nd4jLong *tadOnlyShapeInfo) {
 
-                auto dx = static_cast<X*>(vdx);
-                auto result = static_cast<Z*>(vresult);
-                auto extraParams = static_cast<Z*>(vextraParams);
-                auto reductionBuffer = static_cast<Z*>(vreductionBuffer);
+                auto dx = reinterpret_cast<X*>(vdx);
+                auto result = reinterpret_cast<Z*>(vresult);
+                auto extraParams = reinterpret_cast<Z*>(vextraParams);
+                auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
 
 				int elementWiseStride = shape::elementWiseStride(xShapeInfo);
 
@@ -195,7 +196,7 @@ namespace functions {
 				auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
 				//shared memory space for storing intermediate results
-				Z *sPartials = static_cast<Z*>(manager->getSharedReductionBuffer());
+				Z *sPartials = reinterpret_cast<Z*>(manager->getSharedReductionBuffer());
 
 				sPartials[threadIdx.x] = OpType::startingValue(dx);
 
@@ -293,10 +294,10 @@ namespace functions {
 				Nd4jLong *tadOnlyShapeInfo,
 				Nd4jLong *tadOffsets) {
 
-                auto dx = static_cast<X*>(vdx);
-                auto result = static_cast<Z*>(vresult);
-                auto extraParams = static_cast<Z*>(vextraParams);
-                auto reductionBuffer = static_cast<Z*>(vreductionBuffer);
+                auto dx = reinterpret_cast<X*>(vdx);
+                auto result = reinterpret_cast<Z*>(vresult);
+                auto extraParams = reinterpret_cast<Z*>(vextraParams);
+                auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
 
 
                 if (OpType::requiresSpecialAccumulation) {
@@ -315,7 +316,7 @@ namespace functions {
 				__shared__ Nd4jLong *tadStride;
 				if (threadIdx.x == 0) {
 				    extern __shared__ unsigned char shmem[];
-				    sPartials = static_cast<Z*>(shmem);
+				    sPartials = reinterpret_cast<Z*>(shmem);
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
@@ -381,5 +382,7 @@ namespace functions {
 				}
 			}
 
+
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceFloatFunction, , LIBND4J_TYPES, FLOAT_TYPES);
     }
 }
