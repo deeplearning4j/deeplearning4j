@@ -227,7 +227,8 @@ namespace nd4j {
 
 
         template<typename T, typename Z>
-        math_def inline Z nd4j_tan(T val) {
+        math_def inline Z nd4j_tan(T tval) {
+        	auto val = static_cast<Z>(tval);
             return nd4j_log<Z, Z>((val + (Z)1.f / ((Z) 1.f - val)) * (Z) 0.5f);
         }
 
@@ -306,7 +307,7 @@ namespace nd4j {
         template<typename T, typename Z>
         math_def inline Z nd4j_asinh(T val) {
             //Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x)
-            return nd4j_log<T, Z>(nd4j_sqrt<T, Z>(nd4j_pow<T,T,Z>(val, (T) 2) + (T) 1) + val);
+            return nd4j_log<Z, Z>(nd4j_sqrt<Z, Z>(nd4j_pow<T,T,Z>(val, (T) 2) + (Z) 1.f) + (Z) val);
         }
 
 		template<typename T, typename Z>
