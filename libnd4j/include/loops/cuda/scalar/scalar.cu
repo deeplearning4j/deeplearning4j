@@ -67,71 +67,6 @@ __device__ void scalarSimpleGeneric(
             NULL);
 }
 
-/*
-// LEGACY KERNELS,
-template <typename T>
-__device__ void scalarGenericIndexes(
-        int opNum,
-        Nd4jLong n,
-        T x,
-        T *y,
-        T *params,
-        T *z,int *indexes, int *allocationBuffer) {
-
-    __shared__ UnifiedSharedMemory *manager;
-
-    if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::scalar::ScalarTransform<T>), sizeof(shape::TAD), 0);
-    }
-    __syncthreads();
-
-    functions::scalar::ScalarTransform<T>::transform(
-            opNum,
-            n,
-            x,
-            y,
-            params,
-            z,
-            indexes,
-            allocationBuffer,
-            manager);
-}
-
-__global__ void scalarDoubleIndexes(
-        int opNum,
-        Nd4jLong n,
-        double x,
-        double *y,
-        double *params,
-        double *z,int *indexes, int *allocationBuffer) {
-    scalarGenericIndexes<double>(opNum,
-                                 n,
-                                 x,
-                                 y,
-                                 params,
-                                 z,
-                                 indexes, allocationBuffer);
-}
-
-__global__ void scalarFloatIndexes(
-        int opNum,
-        Nd4jLong n,
-        float x,
-        float *y,
-        float *params,
-        float *z,
-        int *indexes, int *allocationBuffer) {
-    scalarGenericIndexes<float>(opNum,
-                                n,
-                                x,
-                                y,
-                                params,
-                                z,
-                                indexes, allocationBuffer);
-}
-*/
 
 template<typename X, typename Y, typename Z, typename OpType>
 __device__ void scalarSimpleGeneric(
@@ -188,6 +123,10 @@ namespace functions {
 		    printf("F13 opNum:[%i]\n", opNum);
 
 		int *allocPointer = static_cast<int *>(extraPointers[3]);
+
+		auto xType = nd4j::DataTypeUtils::fromT<X>();
+        auto yType = nd4j::DataTypeUtils::fromT<Y>();
+        auto zType = nd4j::DataTypeUtils::fromT<Z>();
 
 	    // this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(scalarSimpleStrided, float, PARAMS(n, scalar, x, xEWS, extraParams, z, zEWS, allocPointer), OPS_A(SCALAR_OPS))
