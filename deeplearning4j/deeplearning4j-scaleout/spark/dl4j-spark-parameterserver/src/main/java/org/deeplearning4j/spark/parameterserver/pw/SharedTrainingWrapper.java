@@ -315,7 +315,7 @@ public class SharedTrainingWrapper {
                                 voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastControllerPort());
                         // FIXME: implement support for Custom transport implementation
                         Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP
-                                ? new AeronUdpTransport(localIP, voidConfiguration.getPortSupplier().getPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastCotrollerPort(), voidConfiguration)
+                                ? new AeronUdpTransport(localIP, voidConfiguration.getPortSupplier().getPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastControllerPort(), voidConfiguration)
                                 :  voidConfiguration.getTransportType() == TransportType.MULTICAST
                                 ? new AeronMulticastTransport(localIP, voidConfiguration.getPortSupplier().getPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastControllerPort(), voidConfiguration)
                                 : null;
