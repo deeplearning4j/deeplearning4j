@@ -57,10 +57,11 @@ namespace functions {
 
             template <typename OpType>
             __host__
-            static void _intermediateShaped(dim3& launchDims, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void* vscalar, void *vextraParams, int *allocPointer);
+            static void intermediateShaped(dim3& launchDims, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void* vscalar, void *vextraParams, int *allocPointer);
 
+            template <typename OpType>
             __host__
-            static void executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void* scalar, void *extraParams, Nd4jLong n);
+            static void intermediateAlongDimension(dim3& launchDims, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
             __host__
             static void executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void* scalar, void *extraParams);
