@@ -38,7 +38,7 @@ namespace simdOps {
             return (T) 0.0f;
         }
 
-        op_def static T merge(T old, T opOutput, Z *extraParams) {
+        op_def static Z merge(T old, T opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
@@ -46,16 +46,16 @@ namespace simdOps {
             return opOutput + old;
         }
 
-        op_def static T op(T d1, T d2) {
-            return nd4j::math::nd4j_exp<T, T>(d1 - d2);
+        op_def static Z op(T d1, T d2) {
+            return nd4j::math::nd4j_exp<T, Z>(d1 - d2);
         }
 
-        op_def static T op(T d1, Z* extraParams) {
-            return nd4j::math::nd4j_exp<T, T>(d1 - extraParams[0]);
+        op_def static Z op(T d1, Z* extraParams) {
+            return nd4j::math::nd4j_exp<Z, Z>(static_cast<Z>(d1) - extraParams[0]);
         }
 
-        op_def static T postProcess(T reduction, Nd4jLong n, Z *extraParams) {
-            return extraParams[0] + nd4j::math::nd4j_log<T, T>(reduction);
+        op_def static Z postProcess(T reduction, Nd4jLong n, Z *extraParams) {
+            return extraParams[0] + nd4j::math::nd4j_log<T, Z>(reduction);
         }
 
 #ifdef __CUDACC__

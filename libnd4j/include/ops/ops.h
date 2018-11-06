@@ -142,20 +142,20 @@ namespace simdOps {
 	class Subtract {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return d1 - d2;
+			return static_cast<Z>(d1) - static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return d1 - d2;
+			return static_cast<Z>(d1) - static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1) {
-			return d1;
+			return static_cast<Z>(d1);
 		}
 
 		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return d1 - params[0];
+			return static_cast<Z>(d1) - static_cast<Z>(params[0]);
 		}
 
 	};
@@ -261,20 +261,20 @@ namespace simdOps {
 	class Multiply {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return d1 * d2;
+			return static_cast<Z>(d1) * static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return d1 * d2;
+			return static_cast<Z>(d1) * static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1) {
-			return d1;
+			return static_cast<Z>(d1);
 		}
 
 		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return d1 * params[0];
+			return static_cast<Z>(d1) * static_cast<Z>(params[0]);
 		}
 
 		op_def static X startingValue() {
@@ -451,20 +451,20 @@ namespace simdOps {
 	class ReverseDivide {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return d2 / d1;
+			return static_cast<Z>(d2) / static_cast<Z>(d1);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return d2 / d1;
+			return static_cast<Z>(d2) / static_cast<Z>(d1);
 		}
 
 		op_def static Z op(X d1) {
-			return d1;
+			return static_cast<Z>(d1);
 		}
 
 		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return params[0] / d1;
+			return static_cast<Z>(params[0]) / static_cast<Z>(d1);
 		}
 	};
 
@@ -1472,7 +1472,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Z *params) {
-			return d1 * nd4j::math::nd4j_sigmoid<X,Z>(d1);
+			return static_cast<Z>(d1) * nd4j::math::nd4j_sigmoid<X,Z>(d1);
 		}
 	};
 
@@ -1685,7 +1685,7 @@ namespace simdOps {
 			// keep 2/3 as runtime variable, to match precision
 			auto dis = (static_cast<X>(2) / static_cast<X>(3)) * d1;
 
-			auto tanh = nd4j::math::nd4j_sgn<X,Z>(dis) * (static_cast<Z>(1) - (static_cast<Z>(1) / (static_cast<Z>(1) + nd4j::math::nd4j_abs<X>(dis) + nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(2)) + static_cast<Z>(1.41645f) * nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(4)) )));
+			auto tanh = nd4j::math::nd4j_sgn<X,Z>(dis) * (static_cast<Z>(1) - (static_cast<Z>(1) / (static_cast<Z>(1) + static_cast<Z>(nd4j::math::nd4j_abs<X>(dis)) + nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(2)) + static_cast<Z>(1.41645f) * nd4j::math::nd4j_pow<X, X, Z>(dis, static_cast<X>(4)) )));
 			return static_cast<Z>(1.7159f) * tanh;
 		}
 	};
@@ -2335,7 +2335,7 @@ namespace simdOps {
         }
 
         op_def static Z op(X d1, Z *extraParams) {
-			return d1 * nd4j::math::nd4j_log<X, Z>(d1);
+			return static_cast<Z>(d1) * nd4j::math::nd4j_log<X, Z>(d1);
         }
 
         op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
@@ -2363,11 +2363,11 @@ namespace simdOps {
         }
 
         op_def static Z op(X d1, Z *extraParams) {
-            return d1 * nd4j::math::nd4j_log<X, Z>(d1);
+            return static_cast<Z>(d1) * nd4j::math::nd4j_log<X, Z>(d1);
         }
 
         op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
-            return -reduction;		//entropy is -sum(p(x) * log(p(x)))
+            return static_cast<Z>(-reduction);		//entropy is -sum(p(x) * log(p(x)))
         }
     };
 
@@ -3324,13 +3324,14 @@ namespace simdOps {
         	Y eps = extraParamsRef[2];
     	    Y diff = static_cast<Y>(nd4j::math::nd4j_abs<X>(d1 - d2));
 
+
     		// works well except in the range of very large numbers
     		if (diff <= eps)
     	    	return static_cast<Y>(0.f);
 
     	    // Knuth approach
     	    // works well except in the range of very small numbers
-		    if (diff <= static_cast<Y>(nd4j::math::nd4j_max<X>(nd4j::math::nd4j_abs<X>(d1), nd4j::math::nd4j_abs<X>(d2)) * eps))
+		    if (diff <= nd4j::math::nd4j_max<Y>(nd4j::math::nd4j_abs<Y>(static_cast<Y>(d1)), nd4j::math::nd4j_abs<Y>(static_cast<Y>(d2))) * static_cast<Y>(eps))
 		    	return static_cast<Y>(0.f);
 
         	return static_cast<Y>(1.f);
@@ -4031,82 +4032,84 @@ namespace simdOps {
     public:
         // op definition for PairWise Transform
         op_def static Z op(X d1, Y d2, Z *params) {
+        	auto zd1 = static_cast<Z>(d1);
+			auto zd2 = static_cast<Z>(d2);
 			auto compare = params[0];
             auto eps = params[2];
             int mode = (int) params[3];
             if (mode == 0) // equals
-                if (nd4j::math::nd4j_abs<X>(d1 - compare) <= eps)
-                    return d2;
+                if (nd4j::math::nd4j_abs<Z>(zd1 - compare) <= eps)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 1) // not equals eps
-                if (nd4j::math::nd4j_abs<X>(d1 - compare) > eps)
-                    return d2;
+                if (nd4j::math::nd4j_abs<Z>(zd1 - compare) > eps)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 2) // less_than eps
-                if (d1 < compare)
-                    return d2;
+                if (zd1 < compare)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode ==3) // greater_than
-                if (d1 > compare)
-                    return d2;
+                if (zd1 > compare)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 4) // less_or_equals_than
-                if (d1 <= compare)
-                    return d2;
+                if (zd1 <= compare)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 5) // greater_or_equals_than
-                if (d1 >= compare)
-                    return d2;
+                if (zd1 >= compare)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 6) // abs_less_than
-                if (nd4j::math::nd4j_abs<X>(d1) < compare)
-                    return d2;
+                if (nd4j::math::nd4j_abs<Z>(zd1) < compare)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 7) // abs_greater_than
-                if (nd4j::math::nd4j_abs<X>(d1) > compare)
-                    return d2;
+                if (nd4j::math::nd4j_abs<Z>(zd1) > compare)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 8) // is inf
-                if (nd4j::math::nd4j_isinf(d1))
-                    return d2;
+                if (nd4j::math::nd4j_isinf(zd1))
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 9) // is nan
-                if (nd4j::math::nd4j_isnan(d1))
-                    return d2;
+                if (nd4j::math::nd4j_isnan(zd1))
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 10)
-                if (d1 == compare)
-                    return d2;
+                if (zd1 == compare)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 11)
-                if (d1 != compare)
-                    return d2;
+                if (zd1 != compare)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 12) // abs_greater_or_equals_than
-                if (nd4j::math::nd4j_abs<X>(d1) >= compare)
-                    return d2;
+                if (nd4j::math::nd4j_abs<Z>(zd1) >= compare)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else if (mode == 13) // abs_less_or_equals_than
-                if (nd4j::math::nd4j_abs<X>(d1) <= compare)
-                    return d2;
+                if (nd4j::math::nd4j_abs<Z>(zd1) <= compare)
+                    return zd2;
                 else
-                    return d1;
+                    return zd1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
-            return d1;
+            return zd1;
         }
     };
 
@@ -4116,18 +4119,19 @@ namespace simdOps {
 
 
         // op definition for PairWise Transform
-        op_def static Z op(X d1, Y dY, Z *params) {
-		    X d2 = static_cast<X>(dY);
+        op_def static Z op(X dX, Y dY, Z *params) {
+			auto d1 = static_cast<Z>(dX);
+		    auto d2 = static_cast<Z>(dY);
             auto compare = params[0];
 			auto eps = params[2];
 			auto mode = static_cast<int>(params[3]);
             if (mode == 0) // equals
-                if (nd4j::math::nd4j_abs<X>(d2 - compare) <= eps)
+                if (nd4j::math::nd4j_abs<Z>(d2 - compare) <= eps)
                     return d2;
                 else
                     return d1;
             else if (mode == 1) // not equals
-                if (nd4j::math::nd4j_abs<X>(d2 - compare) > eps)
+                if (nd4j::math::nd4j_abs<Z>(d2 - compare) > eps)
                     return d2;
                 else
                     return d1;
@@ -4152,12 +4156,12 @@ namespace simdOps {
                 else
                     return d1;
             else if (mode == 6) // abs_less_than
-                if (nd4j::math::nd4j_abs<X>(d2) < compare)
+                if (nd4j::math::nd4j_abs<Z>(d2) < compare)
                     return d2;
                 else
                     return d1;
             else if (mode == 7) // abs_greater_than
-                if (nd4j::math::nd4j_abs<X>(d2) > compare)
+                if (nd4j::math::nd4j_abs<Z>(d2) > compare)
                     return d2;
                 else
                     return d1;
@@ -4182,12 +4186,12 @@ namespace simdOps {
                 else
                     return d1;
             else if (mode == 12) // abs_greater_or_equals_than
-                if (nd4j::math::nd4j_abs<X>(d1) >= compare)
+                if (nd4j::math::nd4j_abs<Z>(d1) >= compare)
                     return d2;
                 else
                     return d1;
             else if (mode == 13) // abs_less_or_equals_than
-                if (nd4j::math::nd4j_abs<X>(d1) <= compare)
+                if (nd4j::math::nd4j_abs<Z>(d1) <= compare)
                     return d2;
                 else
                     return d1;
