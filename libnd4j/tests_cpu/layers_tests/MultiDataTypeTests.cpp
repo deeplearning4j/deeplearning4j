@@ -1761,3 +1761,60 @@ TEST_F(MultiDataTypeTests, assign_test2) {
     x4.assign(x5);
     ASSERT_EQ(x4, exp3);
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, divide_bool_test1) {
+
+    NDArray x1('c', {2,3}, {1.5,0,3.5,0,5.5,6.5}, nd4j::DataType::FLOAT32);
+    NDArray x2('c', {3,2}, {1,1,0,1,0,1}, nd4j::DataType::BOOL);
+    NDArray x3('c', {2,3}, nd4j::DataType::FLOAT32);
+    NDArray x4('c', {2}, nd4j::DataType::BOOL);
+    
+    try {
+        NDArray x3 = x1 / x2;
+    }
+    catch (std::exception& message) {
+        printf("%s\n", message.what());
+        ASSERT_TRUE(1);    
+    }
+
+    try {
+        x1 /= x2;
+    }
+    catch (std::exception& message) {
+        printf("%s\n", message.what());
+        ASSERT_TRUE(1);    
+    }
+
+    try {
+        NDArray x3 = 150. / x2;
+    }
+    catch (std::exception& message) {
+        printf("%s\n", message.what());
+        ASSERT_TRUE(1);    
+    }    
+
+    try {
+        x1.divRowVector(&x4, &x3);
+    }
+    catch (std::exception& message) {
+        printf("%s\n", message.what());
+        ASSERT_TRUE(1);    
+    }
+
+    try {
+        x1.applyBroadcast(nd4j::broadcast::FloorDiv, {1}, &x4, &x3);
+    }
+    catch (std::exception& message) {
+        printf("%s\n", message.what());
+        ASSERT_TRUE(1);    
+    }
+
+    try {
+        x1.applyTrueBroadcast(BROADCAST(FloorMod), &x2, &x3, true);
+    }
+    catch (std::exception& message) {
+        printf("%s\n", message.what());
+        ASSERT_TRUE(1);    
+    }        
+}
