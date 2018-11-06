@@ -114,11 +114,8 @@ public abstract  class BaseTransport  implements Transport {
         public Thread newThread(@NotNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
-<<<<<<< HEAD
             t.setName("BaseExecutorService thread");
-=======
             Nd4j.getAffinityManager().attachThreadToDevice(t, 0);
->>>>>>> master
             return t;
         }
     });
