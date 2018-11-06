@@ -119,7 +119,7 @@ namespace functions {
                         for(Nd4jLong i = 0; i < len; ++i) 
                             z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams);
                     }                                         
-                }        
+                }
             }
 
 
@@ -135,8 +135,9 @@ namespace functions {
                 auto z = reinterpret_cast<X *>(vz);
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-                int elementsPerThread = n / ELEMENT_THRESHOLD;
-                int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+                int num_threads = n / ELEMENT_THRESHOLD;
+                if(num_threads < 1)
+                    num_threads = 1;
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
                 int span = (n / num_threads) + 8;

@@ -268,14 +268,16 @@ public:
     int threads;
     Nd4jLong chunks;
     Nd4jLong modulo;
+    Nd4jLong remainder;
+    
     BlockInformation(Nd4jLong length, int threshold) {
 
-    int tadsPerThread = length / threshold;
-    int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-    _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
-
-    threads = _threads;
+    threads = length / threshold;
+    threads = nd4j::math::nd4j_max<int>(1, threads);
+    threads = nd4j::math::nd4j_min<int>(threads, omp_get_max_threads());
+    
     items = length / threads;
+    remainder = length % threads;
     if(items < 1)
         items = 1;
     chunks = length / items;

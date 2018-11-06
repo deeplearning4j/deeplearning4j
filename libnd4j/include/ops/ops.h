@@ -95,6 +95,8 @@ namespace functions {
 		struct IndexValue {
 			T value;
             Nd4jLong index;
+            IndexValue() = default;
+            IndexValue(const Nd4jLong ind, const T val): index(ind), value(val) {}
 		};
 	}
 
@@ -3465,9 +3467,7 @@ namespace simdOps {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-		static inline functions::indexreduce::IndexValue<X> update(
-				functions::indexreduce::IndexValue<X> old,
-		functions::indexreduce::IndexValue<X> opOutput, X *extraParams) {
+		static inline functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
 			opOutput.value = nd4j::math::nd4j_abs<X>(opOutput.value);
 			old.value = nd4j::math::nd4j_abs<X>(old.value);
 			if (opOutput.value > old.value)
@@ -3541,9 +3541,7 @@ namespace simdOps {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        static functions::indexreduce::IndexValue<X> update(
-                functions::indexreduce::IndexValue<X> old,
-                functions::indexreduce::IndexValue<X> opOutput, X *extraParams) {
+        static functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
 
 #ifdef __CUDACC__
             if (opOutput.index < 0)
@@ -3627,9 +3625,7 @@ namespace simdOps {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        static functions::indexreduce::IndexValue<X> update(
-                functions::indexreduce::IndexValue<X> old,
-                functions::indexreduce::IndexValue<X> opOutput, X *extraParams) {
+        static functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
 #ifdef __CUDACC__
             if (opOutput.index < 0)
                 return old;
@@ -3711,9 +3707,7 @@ namespace simdOps {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        static functions::indexreduce::IndexValue<X> update(
-				functions::indexreduce::IndexValue<X> old,
-				functions::indexreduce::IndexValue<X> opOutput, X *extraParams) {
+        static functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
 			if (opOutput.value > old.value) {
                 return opOutput;
             }
@@ -3805,9 +3799,7 @@ namespace simdOps {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-		static inline functions::indexreduce::IndexValue<X> update(
-				functions::indexreduce::IndexValue<X> old,
-		functions::indexreduce::IndexValue<X> opOutput, X *extraParams) {
+		static inline functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
 			opOutput.value = nd4j::math::nd4j_abs<X>(opOutput.value);
 			old.value = nd4j::math::nd4j_abs<X>(old.value);
 			if (opOutput.value < old.value)
@@ -3885,9 +3877,7 @@ namespace simdOps {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        static inline functions::indexreduce::IndexValue<X> update(
-				functions::indexreduce::IndexValue<X> old,
-				functions::indexreduce::IndexValue<X> opOutput, X *extraParams) {
+        static inline functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
 			if (opOutput.value < old.value)
 				return opOutput;
 
