@@ -62,16 +62,6 @@ public class Split extends DynamicCustomOp {
     }
 
     @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("numSplit",numSplit);
-        ret.put("splitDim",splitDim);
-        return ret;
-    }
-
-
-
-    @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
         Map<String,PropertyMapping> map = new HashMap<>();

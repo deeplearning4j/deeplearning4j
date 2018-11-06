@@ -110,14 +110,12 @@
             <version>${project.version}</version>
             <classifier>${javacpp.platform.linux-ppc64le}</classifier>
         </dependency>
-        <!--
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>
             <classifier>${javacpp.platform.linux-armhf}</classifier>
         </dependency>
-        -->
     </dependencies>
 
     <profiles>

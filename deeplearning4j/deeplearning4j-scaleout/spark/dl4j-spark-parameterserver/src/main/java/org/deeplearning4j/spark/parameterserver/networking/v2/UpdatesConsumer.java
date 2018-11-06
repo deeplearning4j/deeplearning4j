@@ -25,6 +25,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.solvers.accumulation.FancyBlockingQueue;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
+import org.deeplearning4j.optimize.solvers.accumulation.IndexedTail;
 import org.deeplearning4j.optimize.solvers.accumulation.SmartFancyBlockingQueue;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
@@ -50,6 +51,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Builder
 @Slf4j
 public class UpdatesConsumer implements UpdatesHandler {
+    protected int numWorkers;
+
     protected transient INDArray params;
     protected transient INDArray updates;
     protected transient StepFunction stepFunction;
@@ -63,7 +66,7 @@ public class UpdatesConsumer implements UpdatesHandler {
     protected transient final AtomicLong sparseCounter = new AtomicLong(0);
 
     // make this stuff configurable
-    protected transient BlockingQueue<INDArray> updatesBuffer;
+    protected transient IndexedTail updatesBuffer;
 
     @Override
     public void onSubscribe(Subscription subscription) {
@@ -86,11 +89,11 @@ public class UpdatesConsumer implements UpdatesHandler {
         return bypassMode.get();
     }
 
-    public BlockingQueue<INDArray> getUpdatesQueue() {
+    public IndexedTail getUpdatesQueue() {
         if (updatesBuffer == null && accumulator != null) {
             synchronized (this) {
                 if (updatesBuffer == null) {
-                    updatesBuffer = new SmartFancyBlockingQueue(32, params);
+                    updatesBuffer = new IndexedTail(numWorkers, true, params.shape());
                 }
             }
         }
@@ -103,7 +106,7 @@ public class UpdatesConsumer implements UpdatesHandler {
         if (updatesBuffer == null && accumulator != null) {
             synchronized (this) {
                 if (updatesBuffer == null) {
-                    updatesBuffer = new SmartFancyBlockingQueue(32, params);
+                    updatesBuffer = new IndexedTail(numWorkers, true, params.shape());
                 }
             }
         }
@@ -114,7 +117,7 @@ public class UpdatesConsumer implements UpdatesHandler {
 
                 try {
                     // we're just storing update into buffer, and it'll be consumed by GradientsAccumulator on next cycle
-                    log.info("Putting update to the queue, current size: [{}]", updatesBuffer.size());
+                    //log.info("Putting update to the queue, current size: [{}]", updatesBuffer.size());
                     updatesBuffer.put(array);
                 } catch (Exception e) {
                     e.printStackTrace();

@@ -19,7 +19,10 @@ struct FlatProperties FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_I = 6,
     VT_L = 8,
     VT_D = 10,
-    VT_A = 12
+    VT_A = 12,
+    VT_B = 14,
+    VT_S = 16,
+    VT_SHAPE = 18
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -36,6 +39,15 @@ struct FlatProperties FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<FlatArray>> *a() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatArray>> *>(VT_A);
   }
+  const flatbuffers::Vector<uint8_t> *b() const {
+    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_B);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *s() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_S);
+  }
+  const flatbuffers::Vector<int32_t> *shape() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_SHAPE);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
@@ -49,6 +61,13 @@ struct FlatProperties FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_A) &&
            verifier.Verify(a()) &&
            verifier.VerifyVectorOfTables(a()) &&
+           VerifyOffset(verifier, VT_B) &&
+           verifier.Verify(b()) &&
+           VerifyOffset(verifier, VT_S) &&
+           verifier.Verify(s()) &&
+           verifier.VerifyVectorOfStrings(s()) &&
+           VerifyOffset(verifier, VT_SHAPE) &&
+           verifier.Verify(shape()) &&
            verifier.EndTable();
   }
 };
@@ -71,6 +90,15 @@ struct FlatPropertiesBuilder {
   void add_a(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatArray>>> a) {
     fbb_.AddOffset(FlatProperties::VT_A, a);
   }
+  void add_b(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> b) {
+    fbb_.AddOffset(FlatProperties::VT_B, b);
+  }
+  void add_s(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> s) {
+    fbb_.AddOffset(FlatProperties::VT_S, s);
+  }
+  void add_shape(flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape) {
+    fbb_.AddOffset(FlatProperties::VT_SHAPE, shape);
+  }
   explicit FlatPropertiesBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -89,8 +117,14 @@ inline flatbuffers::Offset<FlatProperties> CreateFlatProperties(
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> i = 0,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> l = 0,
     flatbuffers::Offset<flatbuffers::Vector<double>> d = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatArray>>> a = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatArray>>> a = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> b = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> s = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape = 0) {
   FlatPropertiesBuilder builder_(_fbb);
+  builder_.add_shape(shape);
+  builder_.add_s(s);
+  builder_.add_b(b);
   builder_.add_a(a);
   builder_.add_d(d);
   builder_.add_l(l);
@@ -105,14 +139,20 @@ inline flatbuffers::Offset<FlatProperties> CreateFlatPropertiesDirect(
     const std::vector<int32_t> *i = nullptr,
     const std::vector<int64_t> *l = nullptr,
     const std::vector<double> *d = nullptr,
-    const std::vector<flatbuffers::Offset<FlatArray>> *a = nullptr) {
+    const std::vector<flatbuffers::Offset<FlatArray>> *a = nullptr,
+    const std::vector<uint8_t> *b = nullptr,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *s = nullptr,
+    const std::vector<int32_t> *shape = nullptr) {
   return nd4j::graph::CreateFlatProperties(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
       i ? _fbb.CreateVector<int32_t>(*i) : 0,
       l ? _fbb.CreateVector<int64_t>(*l) : 0,
       d ? _fbb.CreateVector<double>(*d) : 0,
-      a ? _fbb.CreateVector<flatbuffers::Offset<FlatArray>>(*a) : 0);
+      a ? _fbb.CreateVector<flatbuffers::Offset<FlatArray>>(*a) : 0,
+      b ? _fbb.CreateVector<uint8_t>(*b) : 0,
+      s ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*s) : 0,
+      shape ? _fbb.CreateVector<int32_t>(*shape) : 0);
 }
 
 inline const nd4j::graph::FlatProperties *GetFlatProperties(const void *buf) {

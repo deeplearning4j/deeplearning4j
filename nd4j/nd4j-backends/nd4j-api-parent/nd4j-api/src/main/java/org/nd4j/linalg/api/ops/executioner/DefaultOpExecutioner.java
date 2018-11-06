@@ -19,6 +19,8 @@ package org.nd4j.linalg.api.ops.executioner;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -33,12 +35,10 @@ import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.linalg.profiler.OpProfiler;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Basic op executioner. Knows how to iterate over
@@ -798,5 +798,63 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public ExecutionerType type() {
         throw new UnsupportedOperationException();
+    }
+
+
+    /**
+     * Get the information about the op in a String representation, for throwing more useful exceptions (mainly for debugging)
+     * @param op
+     * @param dimensions    Use optional here for 3 states: null = "not an exec(Op, int... dim) call". empty = "exec(Op, null)".
+     *                     Otherwise present = "exec(Op,int[])" call
+     * @return
+     */
+    public String opInfoString(Op op, Optional<int[]> dimensions){
+        if(op == null)
+            return "<NULL OP>";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Class: ").append(op.getClass().getName()).append("; opNum: ").append(op.opNum())
+                .append("; opName: ").append(op.opName());
+        if(op instanceof DifferentialFunction){
+            sb.append("; opType: ").append(((DifferentialFunction)op).opType());
+        }
+
+        if(dimensions != null){
+            sb.append("; dimensions: ");
+            if(dimensions.isPresent()){
+                sb.append(Arrays.toString(dimensions.get()));
+            } else {
+                sb.append("<null>");
+            }
+        }
+
+        INDArray x = op.x();
+        INDArray y = op.y();
+        INDArray z = op.z();
+        boolean execSpecial = op.isExecSpecial();
+        Object[] extraArgs = op.extraArgs();
+
+        sb.append("\n");
+        sb.append("x: ").append(arrayInfo(x)).append("; ");
+        sb.append("y: ").append(arrayInfo(y)).append("; ");
+        sb.append("z: ").append(arrayInfo(z)).append("; ");
+        if(x == y && x != null)
+            sb.append("(x == y)");
+        if(x == z && x != null)
+            sb.append("(x == z)");
+        if(y == z && y != null)
+            sb.append("(y == z)");
+        sb.append("\n");
+        sb.append("isExecSpecial: ").append(execSpecial).append("; extraArgs: ").append(Preconditions.formatArray(extraArgs));
+        return sb.toString();
+    }
+
+    public String arrayInfo(INDArray arr){
+        if(arr == null)
+            return "<null>";
+        if(arr.isEmpty())
+            return "(empty NDArray)";
+
+        return arr.shapeInfoToString().replaceAll("\n","");
     }
 }

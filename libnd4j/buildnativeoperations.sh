@@ -452,7 +452,7 @@ fi
 
 if [ "$OS" == "$HOST" ]; then
     MKLDNN_PATH="$HOME/.javacpp/cache/mkl-dnn-0.16-1.4.3-SNAPSHOT-$HOST-x86_64.jar/org/bytedeco/javacpp/$HOST-x86_64/"
-    OPENBLAS_PATH="$HOME/.javacpp/cache/openblas-0.3.0-1.4.2-$HOST-x86_64.jar/org/bytedeco/javacpp/$HOST-x86_64/"
+    OPENBLAS_PATH="$HOME/.javacpp/cache/openblas-0.3.3-1.4.3-SNAPSHOT-$HOST-x86_64.jar/org/bytedeco/javacpp/$HOST-x86_64/"
 else
     MKLDNN_PATH=""
     OPENBLAS_PATH=""

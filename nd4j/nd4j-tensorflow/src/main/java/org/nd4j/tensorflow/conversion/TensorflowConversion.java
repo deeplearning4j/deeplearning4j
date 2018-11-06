@@ -16,6 +16,7 @@
 
 package org.nd4j.tensorflow.conversion;
 
+import com.github.os72.protobuf351.InvalidProtocolBufferException;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -25,12 +26,18 @@ import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.tensorflow.conversion.graphrunner.SavedModelConfig;
+import org.tensorflow.framework.MetaGraphDef;
+import org.tensorflow.framework.SavedModel;
+import org.tensorflow.framework.SignatureDef;
+import org.tensorflow.framework.TensorInfo;
 
 import java.io.IOException;
 import java.lang.Thread;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Map;
 
 import static org.bytedeco.javacpp.tensorflow.*;
 
@@ -76,7 +83,10 @@ public class TensorflowConversion {
      * @return the equivalent {@link TF_Tensor}
      */
     public TF_Tensor tensorFromNDArray(INDArray ndArray) {
-       //we infer data type from the ndarray.databuffer()
+       if(ndArray == null) {
+           throw new IllegalArgumentException("NDArray must not be null!");
+       }
+        //we infer data type from the ndarray.databuffer()
         //for now we throw an exception
         if(ndArray.data() == null) {
            throw new IllegalArgumentException("Unable to infer data type from null databuffer");
@@ -221,9 +231,9 @@ public class TensorflowConversion {
      * @return the initialized graph
      * @throws IOException
      */
-    public TF_Graph loadGraph(String filePath) throws IOException {
+    public TF_Graph loadGraph(String filePath, TF_Status status) throws IOException {
         byte[] bytes = Files.readAllBytes(Paths.get(filePath));
-        return loadGraph(bytes);
+        return loadGraph(bytes, status);
     }
 
     /**
@@ -267,21 +277,60 @@ public class TensorflowConversion {
      * @throws IOException
      */
 
-    public TF_Graph loadGraph(byte[] content) {
+    public TF_Graph loadGraph(byte[] content, TF_Status status) {
         byte[] toLoad = content;
         TF_Buffer graph_def = TF_NewBufferFromString(new BytePointer(toLoad), content.length);
-        TF_Status status = TF_NewStatus();
         TF_Graph graphC = TF_NewGraph();
         TF_ImportGraphDefOptions opts = TF_NewImportGraphDefOptions();
         TF_GraphImportGraphDef(graphC, graph_def, opts, status);
         if (TF_GetCode(status) != TF_OK) {
-            throw new RuntimeException("ERROR: Unable to import graph " + TF_Message(status).getString());
+            throw new IllegalStateException("ERROR: Unable to import graph " + TF_Message(status).getString());
         }
 
 
         TF_DeleteImportGraphDefOptions(opts);
-        TF_DeleteStatus(status);
 
         return graphC;
+    }
+
+    /**
+     * Load a session based on the saved model
+     * @param savedModelConfig the configuration for the saved model
+     * @param options the session options to use
+     * @param runOptions the run configuration to use
+     * @param graph the tf graph to use
+     * @param inputsMap the input map
+     * @param outputsMap the output names
+     * @param status  the status object to use for verifying the results
+     * @return
+     */
+    public TF_Session loadSavedModel(SavedModelConfig savedModelConfig, TF_SessionOptions options, TF_Buffer runOptions, TF_Graph graph, Map<String, String> inputsMap, Map<String, String> outputsMap, TF_Status status) {
+        TF_Buffer metaGraph = TF_Buffer.newBuffer();
+        TF_Session session = TF_LoadSessionFromSavedModel(options, runOptions, new BytePointer(savedModelConfig.getSavedModelPath()),
+                new BytePointer(savedModelConfig.getModelTag()), 1, graph, metaGraph, status);
+        if (TF_GetCode(status) != TF_OK) {
+            throw new IllegalStateException("ERROR: Unable to import model " + TF_Message(status).getString());
+        }
+
+        MetaGraphDef metaGraphDef;
+        try {
+            metaGraphDef = MetaGraphDef.parseFrom(metaGraph.data().capacity(metaGraph.length()).asByteBuffer());
+        } catch (InvalidProtocolBufferException ex) {
+            throw new IllegalStateException("ERROR: Unable to import model " + ex);
+        }
+        Map<String, SignatureDef> signatureDefMap = metaGraphDef.getSignatureDefMap();
+        SignatureDef signatureDef = signatureDefMap.get(savedModelConfig.getSignatureKey());
+
+        Map<String, TensorInfo> inputs = signatureDef.getInputsMap();
+        for (Map.Entry<String, TensorInfo> e : inputs.entrySet()) {
+            inputsMap.put(e.getKey(), e.getValue().getName());
+        }
+
+        Map<String, TensorInfo> outputs = signatureDef.getOutputsMap();
+        for (Map.Entry<String, TensorInfo> e : outputs.entrySet()) {
+            outputsMap.put(e.getKey(), e.getValue().getName());
+        }
+
+        return session;
     }
 }

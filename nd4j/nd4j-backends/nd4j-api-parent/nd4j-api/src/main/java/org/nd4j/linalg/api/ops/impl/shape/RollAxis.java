@@ -69,9 +69,7 @@ public class RollAxis extends ShapeOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("axis", axis);
-        return ret;
+        return Collections.<String,Object>singletonMap("axis", axis);
     }
 
 
@@ -87,10 +85,18 @@ public class RollAxis extends ShapeOp {
 
     @Override
     public void exec() {
+        int[] permute = new int[x.rank()];
+        permute[0] = axis;
+        int outPos = 1;
+        for( int i=0; i<x.rank(); i++ ){
+            if(i == axis)
+                continue;
+            permute[outPos++] = i;
+        }
         if (x != z) {
-            z.assign(x.transpose());
+            z.assign(x.permute(permute));
         } else {
-            this.z = x.transpose();
+            this.z = x.permute(permute);
         }
 
     }

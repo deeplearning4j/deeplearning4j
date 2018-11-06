@@ -21,6 +21,9 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.util.DefaultHadoopConfig;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.spark.util.data.ValidationResult;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -40,19 +43,26 @@ public class ValidateDataSetFn implements Function<String, ValidationResult> {
     private final boolean deleteInvalid;
     private final int[] featuresShape;
     private final int[] labelsShape;
+    private final Broadcast<SerializableHadoopConfig> conf;
     private transient FileSystem fileSystem;
 
     public ValidateDataSetFn(boolean deleteInvalid, int[] featuresShape, int[] labelsShape) {
+        this(deleteInvalid, featuresShape, labelsShape, null);
+    }
+
+    public ValidateDataSetFn(boolean deleteInvalid, int[] featuresShape, int[] labelsShape, Broadcast<SerializableHadoopConfig> configuration) {
         this.deleteInvalid = deleteInvalid;
         this.featuresShape = featuresShape;
         this.labelsShape = labelsShape;
+        this.conf = configuration;
     }
 
     @Override
     public ValidationResult call(String path) throws Exception {
         if (fileSystem == null) {
+            Configuration c = conf == null ? DefaultHadoopConfig.get() : conf.getValue().getConfiguration();
             try {
-                fileSystem = FileSystem.get(new URI(path), new Configuration());
+                fileSystem = FileSystem.get(new URI(path), c);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

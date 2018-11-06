@@ -87,11 +87,6 @@ public class SConv2D extends Conv2D {
         return "config";
     }
 
-    @Override
-    public void setValueFor(Field target, Object value) {
-        config.setValueFor(target,value);
-    }
-
 
     @Override
     public String[] tensorflowNames() {

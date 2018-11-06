@@ -1423,10 +1423,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void read(DataInputStream s) {
         try {
             //referencing = Collections.synchronizedSet(new HashSet<String>());
-            allocationMode = AllocationMode.valueOf(s.readUTF());
+            val savedMode = AllocationMode.valueOf(s.readUTF());
+            allocationMode = AllocationMode.LONG_SHAPE;
 
             // old AllocationMode values are: DIRECT, HEAP, JAVACPP. Just using legacy here
-            if (allocationMode.ordinal() < 3) {
+            if (savedMode.ordinal() < 3) {
                 length = s.readInt();
                 Type currentType = Type.valueOf(s.readUTF());
                 if (currentType != Type.COMPRESSED)
@@ -1458,7 +1459,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
                 //wrappedBuffer = pointer().asByteBuffer();
 
-            } else if (allocationMode.equals(AllocationMode.LONG_SHAPE)) {
+            } else if (savedMode.equals(AllocationMode.LONG_SHAPE)) {
                 length = s.readLong();
                 Type currentType = Type.valueOf(s.readUTF());
                 if (currentType != Type.COMPRESSED)

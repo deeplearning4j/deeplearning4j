@@ -26,6 +26,7 @@ import lombok.val;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.ByteOrder;
 import org.nd4j.graph.FlatArray;
@@ -565,7 +566,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(double[] data, int[] shape, char ordering) {
-        this(internalCreateBuffer(data), shape, ordering);
+        this(Nd4j.createBuffer(data), shape, ordering);
     }
 
     public BaseNDArray(double[] data, long[] shape, char ordering) {
@@ -871,7 +872,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(double[] data, int[] shape, int[] stride, long offset) {
-        this(internalCreateBuffer(data), shape, stride, offset);
+        this(data, shape, stride, offset, Nd4j.order());
     }
 
 
@@ -1399,9 +1400,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(final INDArray arr) {
+        Preconditions.checkState((this.isScalar() && arr.isScalar()) || (this.isVector() && arr.isVector()) || Shape.shapeEqualWithSqueeze(this.shape(), arr.shape()),
+                "Cannot assign arrays: arrays must both be scalars, both vectors, or shapes must be equal other than size 1 dimensions. Attempting to do x.assign(y)" +
+                        " with x.shape=%ndShape and y.shape=%ndShape", this, arr );
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.Set(this, arr, this, length()));
         return this;
-
     }
 
     @Override
@@ -2212,6 +2215,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.create(data, newShape, newStrides, offset, ordering);
     }
 
+    protected INDArray create(DataBuffer data, long[] newShape, long[] newStrides, long offset, char ordering) {
+        return Nd4j.create(data, newShape, newStrides, offset, ordering);
+    }
+
     protected INDArray create(DataBuffer data, int[] newShape, int[] newStrides, long offset) {
         return Nd4j.create(data, newShape, newStrides, offset);
     }
@@ -2554,6 +2561,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             And it's possible to be not a view, and have non-empty originalBuffer
          */
         // length/data.length can be different in case of Threshold conversion
+        if(isEmpty())
+            return false;
         return Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
                 || (length() < data().length() && data.dataType() != DataBuffer.Type.INT)
                 || data().originalDataBuffer() != null;
@@ -2592,8 +2601,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray subArray(ShapeOffsetResolution resolution) {
         Nd4j.getCompressor().autoDecompress(this);
         long[] offsets = resolution.getOffsets();
-        int[] shape = LongUtils.toInts(resolution.getShapes());
-        int[] stride = LongUtils.toInts(resolution.getStrides());
+        long[] shape = resolution.getShapes();
+        long[] stride = resolution.getStrides();
 
         //        if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
         //            throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
@@ -3680,7 +3689,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mmuli(INDArray other, INDArray result) {
         LinAlgExceptions.assertMultiplies(this, other);
-
+        if(other.rank() == 1){
+            //GEMV edge case
+            Preconditions.checkState(result.length() == this.size(0) && this.size(1) == other.size(0),
+                    "Invalid matrix multiplication: %ndShape x %ndShape with result shape %ndShape", this, other, result);
+        } else {
+            //Standard case
+            Preconditions.checkState(
+                    result.rank() == 2 && result.size(0) == this.size(0) && result.size(1) == other.size(1),
+                    "Invalid result array shape: expected shape [%s,%s], got shape %ndShape result array for %ndShape x %ndShape", this.size(0), other.size(1), result,
+                    this, other);
+        }
 
         if (other.isScalar()) {
             return muli(other.getDouble(0), result);
@@ -3718,7 +3737,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             // However, user might have called mmuli with a c order array for the result
             // In which case, we need to allocate a temporary f order array, and later do an assign to the real result array
 
-            boolean requiresTemp = result.ordering() == 'c';
+            boolean requiresTemp = result.ordering() != 'f' || result.isView() || !Shape.hasDefaultStridesForShape(result);
             INDArray gemmResultArr;
             if (requiresTemp) {
                 //Can use createUninitialized due to beta==0.0 parameter in gemm
@@ -4557,12 +4576,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        INDArray ret = Nd4j.createUninitialized(shape, order);
         if (order != ordering()) {
+            INDArray ret = Nd4j.createUninitialized(shape, order);
             ret.setData(dup(order).data());
-        } else
-            ret.assign(this);
-        return ret;
+            return ret;
+        } else {
+            INDArray ret = this.dup(order);
+            return ret.reshape(order, shape);
+        }
     }
 
     @Override
@@ -5221,8 +5242,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public long offset() {
-        if (data().offset() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Offset of buffer can not be >= Integer.MAX_VALUE");
+//        if (data().offset() >= Integer.MAX_VALUE)
+//            throw new IllegalArgumentException("Offset of buffer can not be >= Integer.MAX_VALUE");
         //  return Shape.offset(shapeInfo());
         return data().offset();
     }
@@ -6255,9 +6276,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
+        if(isView()){
+            return dup(this.ordering()).toFlatArray(builder);
+        }
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
         int buffer = this.isEmpty() ? 0 : FlatArray.createBufferVector(builder, this.data().asBytes());
-        val type = this.isEmpty() ? SameDiff.getDataTypeAsByte(Nd4j.dataType()) : SameDiff.getDataTypeAsByte(this.data().dataType());
+        val type = this.isEmpty() ? FlatBuffersMapper.getDataTypeAsByte(Nd4j.dataType()) : FlatBuffersMapper.getDataTypeAsByte(this.data().dataType());
         int array = FlatArray.createFlatArray(builder, shape, buffer, type, ByteOrder.BE);
 
         return array;

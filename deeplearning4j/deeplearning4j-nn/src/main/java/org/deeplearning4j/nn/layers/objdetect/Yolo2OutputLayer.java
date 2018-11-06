@@ -45,8 +45,10 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
@@ -148,6 +150,13 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         // ----- Step 2: apply activation functions to network output activations -----
         //Reshape from [minibatch, B*(5+C), H, W] to [minibatch, B, 5+C, H, W]
+        long[] expInputShape = new long[]{mb, b*(5+c), h, w};
+        long[] newShape = new long[]{mb, b, 5+c, h, w};
+        long newLength = ArrayUtil.prodLong(newShape);
+        Preconditions.checkState(Arrays.equals(expInputShape, input.shape()), "Unable to reshape input - input array shape does not match" +
+                " expected shape. Expected input shape [minibatch, B*(5+C), H, W]=%s but got input of shape %ndShape. This may be due to an incorrect nOut (layer size/channels)" +
+                " for the last convolutional layer in the network. nOut of the last layer must be B*(5+C) where B is the number of" +
+                " bounding boxes, and C is the number of object classes. Expected B=%s from network configuration and C=%s from labels", expInputShape, input, b, c);
         INDArray input5 = input.dup('c').reshape('c', mb, b, 5+c, h, w);
         INDArray inputClassesPreSoftmax = input5.get(all(), all(), interval(5, 5+c), all(), all());
 
@@ -263,11 +272,11 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         this.score = lambdaCoord * (positionLoss + sizeScaleLoss) +
                 confidenceLoss  +
-                classPredictionLoss +
-                fullNetworkL1 +
-                fullNetworkL2;
+                classPredictionLoss;
 
         this.score /= getInputMiniBatchSize();
+
+        this.score += fullNetworkL1 + fullNetworkL2;
 
         if(scoreOnly)
             return null;

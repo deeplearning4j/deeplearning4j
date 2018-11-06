@@ -24,6 +24,7 @@ import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Optional;
@@ -110,6 +111,7 @@ public abstract  class BaseTransport  implements Transport {
         public Thread newThread(@NotNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
+            Nd4j.getAffinityManager().attachThreadToDevice(t, 0);
             return t;
         }
     });
@@ -323,11 +325,11 @@ public abstract  class BaseTransport  implements Transport {
 
         // now we're sending message down
         if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode) {
-            downstreams.forEach(n -> {
+            for (val n:downstreams) {
                 if (!isLoopedNode(n, originatorId, relayId)) {
                     sendMessage(voidMessage, n.getId());
                 }
-            });
+            };
         }
     }
 
@@ -348,6 +350,7 @@ public abstract  class BaseTransport  implements Transport {
     }
 
     protected void internalProcessMessage(VoidMessage message) {
+        val m = message instanceof INDArrayMessage;
         /**
          * TODO: we need better isolation here
          */

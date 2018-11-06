@@ -134,6 +134,16 @@ public class IndexingIterationTests extends BaseNd4jTest {
         assertEquals(indArrayIndex.offset(), indArrayIndex.end());
     }
 
+    @Test
+    public void testInterval1d(){
+        INDArray arr = Nd4j.linspace(1, 10, 10).reshape(10);
+        INDArray subset = arr.get(NDArrayIndex.interval(5,10));
+        INDArray exp = Nd4j.trueVector(new double[]{6,7,8,9,10});
+
+        assertArrayEquals(new long[]{5}, subset.shape());
+        assertEquals(exp, subset);
+    }
+
 
     @Override
     public char ordering() {

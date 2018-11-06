@@ -22,9 +22,12 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
+import org.datavec.spark.util.BroadcastHadoopConfigHolder;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.api.loader.impl.SerializedDataSetLoader;
@@ -35,6 +38,10 @@ import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.residual.ResidualClippingPostProcessor;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.AdaptiveThresholdAlgorithm;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
@@ -47,7 +54,10 @@ import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccum
 import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccumulationTuple;
 import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAggregateFunction;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
-import org.deeplearning4j.spark.parameterserver.functions.*;
+import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapDataSet;
+import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapMultiDataSet;
+import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapPaths;
+import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapPathsMDS;
 import org.deeplearning4j.spark.parameterserver.networking.v1.SilentTrainingDriver;
 import org.deeplearning4j.spark.parameterserver.networking.v2.UpdatesConsumer;
 import org.deeplearning4j.spark.util.SparkUtils;
@@ -62,9 +72,6 @@ import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
-import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
-import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
@@ -78,6 +85,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * SharedTrainingMaster implements distributed training of neural networks using a compressed quantized gradient (update)
+ * sharing implementation based on the Strom 2015 paper "Scalable Distributed DNN Training Using Commodity GPU Cloud Computing":
+ * <a href="https://s3-us-west-2.amazonaws.com/amazon.jobs-public-documents/strom_interspeech2015.pdf">https://s3-us-west-2.amazonaws.com/amazon.jobs-public-documents/strom_interspeech2015.pdf</a>.
+ * The Deeplearning4j implementation makes a number of modifications, such as having the option to use a parameter-server
+ * based implementation for fault tolerance and execution where multicast networking support is not available.
+ *
  * @author raver119@gmail.com
  */
 @Slf4j
@@ -101,15 +114,11 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected boolean collectTrainingStats;
     protected int rddDataSetNumExamples;
     protected long debugLongerIterations = 0L;
-    protected boolean logMinibatchesPerWorker = true;
+    protected boolean logMinibatchesPerWorker = false;
+    protected boolean encodingDebugMode = false;
 
-    // TODO: this option should be abstracted, if we decide to generalize this trainingmaster
-    protected double threshold;
-    protected double thresholdStep;
-    protected double minThreshold;
-    protected double stepTrigger = 0.05;
-    protected int stepDelay = 50;
-    protected int shakeFrequency;
+    protected ThresholdAlgorithm thresholdAlgorithm;
+    protected ResidualPostProcessor residualPostProcessor;
 
     protected Repartition repartition;
     protected RepartitionStrategy repartitionStrategy;
@@ -138,18 +147,16 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers,
                     RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats,
-                    RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold,
-                    double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency,
+                    RepartitionStrategy repartitionStrategy, Repartition repartition,
+                    ThresholdAlgorithm thresholdAlgorithm, ResidualPostProcessor residualPostProcessor,
+                    int rddDataSetNumExamples,
                     int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode, int workerPrefetchBatches,
-                    Repartitioner repartitioner) {
+                    Repartitioner repartitioner, Boolean workerTogglePeriodicGC, Integer workerPeriodicGCFrequency,
+                    boolean encodingDebugMode) {
         this.voidConfiguration = voidConfiguration;
         this.numWorkers = numWorkers;
-        this.threshold = threshold;
-        this.minThreshold = minThreshold;
-        this.thresholdStep = thresholdStep;
-        this.stepTrigger = stepTrigger;
-        this.stepDelay = stepDelay;
-        this.shakeFrequency = shakeFrequency;
+        this.thresholdAlgorithm = thresholdAlgorithm;
+        this.residualPostProcessor = residualPostProcessor;
         this.rddTrainingApproach = rddTrainingApproach;
         this.repartitionStrategy = repartitionStrategy;
         this.repartition = repartition;
@@ -157,11 +164,14 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         this.collectTrainingStats = collectTrainingStats;
         this.isFirstRun = new AtomicBoolean(false);
         this.batchSizePerWorker = batchSizePerWorker;
-        this.rddDataSetNumExamples = batchSizePerWorker;
+        this.rddDataSetNumExamples = rddDataSetNumExamples;
         this.debugLongerIterations = debugLongerIterations;
         this.numWorkersPerNode = numWorkersPerNode;
         this.workerPrefetchBatches = workerPrefetchBatches;
         this.repartitioner = repartitioner;
+        this.workerTogglePeriodicGC = workerTogglePeriodicGC;
+        this.workerPeriodicGCFrequency = workerPeriodicGCFrequency;
+        this.encodingDebugMode = encodingDebugMode;
 
 
         if (collectTrainingStats)
@@ -248,10 +258,15 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         NetBroadcastTuple tuple = new NetBroadcastTuple(network.getNetwork().getLayerWiseConfigurations(),
                         network.getNetwork().params(), network.getNetwork().getUpdater().getStateViewArray());
 
-        SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder().threshold(threshold)
-                        .minThreshold(minThreshold).shakeFrequency(shakeFrequency).thresholdStep(thresholdStep)
-                        .stepTrigger(stepTrigger).stepDelay(stepDelay).voidConfiguration(voidConfiguration)
-                        .debugLongerIterations(debugLongerIterations).numberOfWorkersPerNode(numWorkersPerNode).build();
+        voidConfiguration.setUnicastControllerPort(voidConfiguration.getPortSupplier().getPort());
+
+        SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder()
+                .thresholdAlgorithm(thresholdAlgorithm)
+                .residualPostProcessor(residualPostProcessor)
+                .voidConfiguration(voidConfiguration)
+                .debugLongerIterations(debugLongerIterations)
+                .numberOfWorkersPerNode(numWorkersPerNode)
+                .encodingDebugMode(encodingDebugMode).build();
 
         if (collectTrainingStats)
             stats.logBroadcastStart();
@@ -265,7 +280,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logBroadcastEnd();
 
-        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration, listeners, statsStorage);
+        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration, listeners,
+                statsStorage, workerTogglePeriodicGC, workerPeriodicGCFrequency);
 
         return worker;
     }
@@ -275,11 +291,13 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         NetBroadcastTuple tuple = new NetBroadcastTuple(graph.getNetwork().getConfiguration(),
                         graph.getNetwork().params(), graph.getNetwork().getUpdater().getStateViewArray());
 
-        SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder().threshold(threshold)
-                        .minThreshold(minThreshold).shakeFrequency(shakeFrequency).thresholdStep(thresholdStep)
-                        .voidConfiguration(voidConfiguration).debugLongerIterations(debugLongerIterations)
-                        .numberOfWorkersPerNode(numWorkersPerNode)
-                        .prefetchSize(workerPrefetchBatches)
+        SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder()
+                .thresholdAlgorithm(thresholdAlgorithm)
+                .residualPostProcessor(residualPostProcessor)
+                .voidConfiguration(voidConfiguration).debugLongerIterations(debugLongerIterations)
+                .numberOfWorkersPerNode(numWorkersPerNode)
+                .prefetchSize(workerPrefetchBatches)
+                .encodingDebugMode(encodingDebugMode)
                 .build();
 
         if (collectTrainingStats)
@@ -294,7 +312,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logBroadcastEnd();
 
-        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration, listeners, statsStorage);
+        SharedTrainingWorker worker = new SharedTrainingWorker(instanceId, broadcastModel, broadcastConfiguration, listeners,
+                statsStorage, workerTogglePeriodicGC, workerPeriodicGCFrequency);
 
         return worker;
     }
@@ -410,6 +429,11 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (network == null && graph == null)
             throw new IllegalStateException("Both MLN & CG are undefined");
 
+        //Get the port for communicating with the master/driver - and add it to the configuration for use from each machine
+        //Note that each machine will allocate their own port for inbound communications according to what the PortSupplier
+        //returns on each worker machine.
+        voidConfiguration.setUnicastControllerPort(voidConfiguration.getPortSupplier().getPort());
+
         // first of all, we're instantiating ParameterServer shard here\
         if (numWorkers == null)
             numWorkers = network != null ? network.getSparkContext().defaultParallelism()
@@ -446,16 +470,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         // we're forcing proper defaults
         log.info("Setting controller address to {}:{}", voidConfiguration.getControllerAddress(),
-                        voidConfiguration.getUnicastPort());
+                        voidConfiguration.getUnicastControllerPort());
         voidConfiguration.setShardAddresses(voidConfiguration.getControllerAddress());
         voidConfiguration.setNumberOfShards(1);
-
-        {
-            log.info("Initializing messages lol");
-            val hreq = new HandshakeRequest();
-            val hres = new HandshakeResponse();
-            val gm = new GradientsUpdateMessage();
-        }
 
         if (network != null)
             network.getNetwork().init();
@@ -477,7 +494,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             }
 
             val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP
-                    ? new AeronUdpTransport(voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration)
+                    ? new AeronUdpTransport(voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastControllerPort(), voidConfiguration)
                     : null;
 
             if (transport == null)
@@ -699,12 +716,21 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             }
         }
 
+        if(finalResult.getThresholdAlgorithmReducer() != null){
+            //Store the final threshold algorithm after aggregation
+            //Some threshold algorithms contain state/history, used to adapt the threshold algorithm
+            //The idea is we want to keep this history/state for next epoch, rather than simply throwing it away
+            // and starting the threshold adaption process from scratch on each epoch
+            ThresholdAlgorithm ta = finalResult.getThresholdAlgorithmReducer().getFinalResult();
+            this.thresholdAlgorithm = ta;
+        }
+
         Nd4j.getExecutioner().commit();
     }
 
     protected void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
-                        splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, thresholdAlgorithm={}, Configured for {} workers",
+                        splitNum, numSplits, batchSizePerWorker, thresholdAlgorithm, numWorkers);
 
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
@@ -741,8 +767,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     protected void doIterationMDS(SparkComputationGraph network, JavaRDD<MultiDataSet> split, int splitNum,
                     int numSplits) {
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
-                        splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, thresholdAlgorithm={}, Configured for {} workers",
+                        splitNum, numSplits, batchSizePerWorker, thresholdAlgorithm, numWorkers);
 
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
@@ -778,8 +804,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
     protected void doIteration(SparkComputationGraph network, JavaRDD<DataSet> data, int splitNum, int numSplits) {
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
-                        splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, thresholdAlgorithm={}, Configured for {} workers",
+                        splitNum, numSplits, batchSizePerWorker, thresholdAlgorithm, numWorkers);
 
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
@@ -817,8 +843,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (network == null && graph == null)
             throw new DL4JInvalidConfigException("Both MLN & CompGraph are NULL");
 
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
-                        splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, thresholdAlgorithm={}, Configured for {} workers",
+                        splitNum, numSplits, batchSizePerWorker, thresholdAlgorithm, numWorkers);
 
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
@@ -839,13 +865,14 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats && repartition != Repartition.Never)
             stats.logRepartitionEnd();
 
+        JavaSparkContext sc = (network != null ? network.getSparkContext() : graph.getSparkContext());
         FlatMapFunction<Iterator<String>, SharedTrainingResult> function;
         if(dsLoader != null){
             function = new SharedFlatMapPaths<>(
-                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), dsLoader);
+                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), dsLoader, BroadcastHadoopConfigHolder.get(sc));
         } else {
             function = new SharedFlatMapPathsMDS<>(
-                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), mdsLoader);
+                    network != null ? getWorkerInstance(network) : getWorkerInstance(graph), mdsLoader, BroadcastHadoopConfigHolder.get(sc));
         }
 
 
@@ -859,18 +886,14 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
 
     public static class Builder {
-        protected double threshold = 1e-3;
-        protected double thresholdStep = 1e-5;
-        protected double minThreshold = 1e-5;
-        protected double stepTrigger = 0.05;
-        protected int stepDelay = 50;
-        protected int shakeFrequency = 0;
+        protected ThresholdAlgorithm thresholdAlgorithm = new AdaptiveThresholdAlgorithm();
+        protected ResidualPostProcessor residualPostProcessor = new ResidualClippingPostProcessor(5.0, 5);
+        protected int rddDataSetNumExamples = 1;
         @Deprecated
         protected Repartition repartition = Repartition.Always;
         @Deprecated
         protected RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
         protected StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
-        protected StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
         protected VoidConfiguration voidConfiguration;
         protected RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
         protected long rngSeed;
@@ -883,39 +906,70 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected int numWorkersPerNode = -1;
         protected int workerPrefetchNumBatches = 2;
         protected Repartitioner repartitioner = new DefaultRepartitioner();
+        protected Boolean workerTogglePeriodicGC = new Boolean(true);
+        protected Integer workerPeriodicGCFrequency = new Integer(5000);
+        protected boolean encodingDebugMode = false;
 
-
+        /**
+         * Create a SharedTrainingMaster with defaults other than the RDD number of examples
+         * @param rddDataSetNumExamples When fitting from an {@code RDD<DataSet>} how many examples are in each dataset?
+         */
         public Builder(int rddDataSetNumExamples) {
-            this(1e-3, rddDataSetNumExamples);
-        }
-
-        public Builder(@NonNull VoidConfiguration voidConfiguration, int rddDataSetNumExamples) {
-            this(voidConfiguration, 1e-3, rddDataSetNumExamples);
-        }
-
-        public Builder(double threshold, int rddDataSetNumExamples) {
-            this(VoidConfiguration.builder().executionMode(ExecutionMode.MANAGED).forcedRole(NodeRole.SHARD)
-
-                            // we're setting controller to Spark Master, if it's null - that's ok for now.
-                            .controllerAddress(System.getenv("SPARK_PUBLIC_DNS")).build(), null, threshold,
-                            rddDataSetNumExamples);
-        }
-
-        public Builder(@NonNull VoidConfiguration voidConfiguration, double threshold, int rddDataSetNumExamples) {
-            this(voidConfiguration, null, threshold, rddDataSetNumExamples);
+            this(new AdaptiveThresholdAlgorithm(), rddDataSetNumExamples);
         }
 
         /**
-         *
-         * @param voidConfiguration ParameterServer configuration POJO
-         * @param numWorkers
-         * @param threshold Update sharing threshold
+         * Create a SharedTrainingMaster with defaults other than the RDD number of examples
+         * @param voidConfiguration     Configuration bean for the SharedTrainingMaster parameter server
+         * @param rddDataSetNumExamples When fitting from an {@code RDD<DataSet>} how many examples are in each dataset?
+         */
+        public Builder(@NonNull VoidConfiguration voidConfiguration, int rddDataSetNumExamples) {
+            this(voidConfiguration, new AdaptiveThresholdAlgorithm(), rddDataSetNumExamples);
+        }
+
+        /**
+         * Create a SharedTrainingMaster with defaults other than the RDD number of examples
+         * @param thresholdAlgorithm    Threshold algorithm for the sparse update encoding
+         * @param rddDataSetNumExamples When fitting from an {@code RDD<DataSet>} how many examples are in each dataset?
+         */
+        public Builder(ThresholdAlgorithm thresholdAlgorithm, int rddDataSetNumExamples) {
+            this(VoidConfiguration.builder().executionMode(ExecutionMode.MANAGED).forcedRole(NodeRole.SHARD)
+                            // we're setting controller to Spark Master, if it's null - that's ok for now.
+                            .controllerAddress(System.getenv("SPARK_PUBLIC_DNS")).build(), thresholdAlgorithm,
+                            rddDataSetNumExamples);
+        }
+
+        /**
+         * @param voidConfiguration     Configuration bean for the SharedTrainingMaster parameter server
+         * @param numWorkers            No longer used/required
+         * @param threshold             Encoding threshold
+         * @param rddDataSetNumExamples When fitting from an {@code RDD<DataSet>} how many examples are in each dataset?
+         * @deprecated This constructor is deprecated - use {@link #Builder(VoidConfiguration, int)} or {@link #Builder(VoidConfiguration, ThresholdAlgorithm, int)}
+         */
+        @Deprecated
+        public Builder(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, double threshold, int rddDataSetNumExamples) {
+            this(voidConfiguration, new AdaptiveThresholdAlgorithm(threshold), rddDataSetNumExamples);
+        }
+
+        /**
+         * @param voidConfiguration     Configuration bean for the SharedTrainingMaster parameter server
+         * @param thresholdAlgorithm    Update sharing threshold algorithm
          * @param rddDataSetNumExamples
          */
-        public Builder(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, double threshold,
-                        int rddDataSetNumExamples) {
-            this.threshold = threshold;
+        public Builder(@NonNull VoidConfiguration voidConfiguration, ThresholdAlgorithm thresholdAlgorithm, int rddDataSetNumExamples) {
+            this.thresholdAlgorithm = thresholdAlgorithm;
             this.voidConfiguration = voidConfiguration;
+            this.rddDataSetNumExamples = rddDataSetNumExamples;
+
+            // we're enforcing managed mode in all cases here
+            this.voidConfiguration.setExecutionMode(ExecutionMode.MANAGED);
+        }
+
+        public Builder(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, ThresholdAlgorithm thresholdAlgorithm, int rddDataSetNumExamples) {
+            this.thresholdAlgorithm = thresholdAlgorithm;
+            this.voidConfiguration = voidConfiguration;
+            this.rddDataSetNumExamples = rddDataSetNumExamples;
+            this.numWorkers = numWorkers;
 
             // we're enforcing managed mode in all cases here
             this.voidConfiguration.setExecutionMode(ExecutionMode.MANAGED);
@@ -923,16 +977,16 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         /**
          * Enable/disable collection of training statistics
-         * @param reallyConnect
+         * @param enable Enable
          * @return
          */
-        public Builder collectTrainingStats(boolean reallyConnect) {
-            this.collectTrainingStats = reallyConnect;
+        public Builder collectTrainingStats(boolean enable) {
+            this.collectTrainingStats = enable;
             return this;
         }
 
         /**
-         * This parameter defines when repartition is applied (if applied)
+         * This parameter defines when repartition is applied (if applied).
          * @param repartition Repartition setting
          * @deprecated Use {@link #repartitioner(Repartitioner)}
          */
@@ -960,13 +1014,19 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
          * Set the storage level for {@code RDD<DataSet>}s.<br>
          * Default: StorageLevel.MEMORY_ONLY_SER() - i.e., store in memory, in serialized form<br>
          * To use no RDD persistence, use {@code null}<br>
+         * Note that this only has effect when {@code RDDTrainingApproach.Direct} is used (which is not the default),
+         * and when fitting from an {@code RDD<DataSet>}.
          * <p>
          * <b>Note</b>: Spark's StorageLevel.MEMORY_ONLY() and StorageLevel.MEMORY_AND_DISK() can be problematic when
          * it comes to off-heap data (which DL4J/ND4J uses extensively). Spark does not account for off-heap memory
          * when deciding if/when to drop blocks to ensure enough free memory; consequently, for DataSet RDDs that are
          * larger than the total amount of (off-heap) memory, this can lead to OOM issues. Put another way: Spark counts
          * the on-heap size of DataSet and INDArray objects only (which is negligible) resulting in a significant
-         * underestimate of the true DataSet object sizes. More DataSets are thus kept in memory than we can really afford.
+         * underestimate of the true DataSet object sizes. More DataSets are thus kept in memory than we can really afford.<br>
+         * <br>
+         * Note also that fitting directly from an {@code RDD<DataSet>} is discouraged - it is better to export your
+         * prepared data once and call (for example} {@code SparkDl4jMultiLayer.fit(String savedDataDirectory)}.
+         * See DL4J's Spark website documentation for details.<br>
          *
          * @param storageLevel Storage level to use for DataSet RDDs
          */
@@ -977,7 +1037,11 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         /**
          * The approach to use when training on a {@code RDD<DataSet>} or {@code RDD<MultiDataSet>}.
-         * Default: {@link RDDTrainingApproach#Export}, which exports data to a temporary directory first
+         * Default: {@link RDDTrainingApproach#Export}, which exports data to a temporary directory first.<br>
+         * The default cluster temporary directory is used, though can be configured using {@link #exportDirectory(String)}
+         * Note also that fitting directly from an {@code RDD<DataSet>} is discouraged - it is better to export your
+         * prepared data once and call (for example} {@code SparkDl4jMultiLayer.fit(String savedDataDirectory)}.
+         * See DL4J's Spark website documentation for details.<br>
          *
          * @param rddTrainingApproach Training approach to use when training from a {@code RDD<DataSet>} or {@code RDD<MultiDataSet>}
          */
@@ -1001,11 +1065,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         * Random number generator seed, used mainly for enforcing repeatable splitting on RDDs
+         * Random number generator seed, used mainly for enforcing repeatable splitting/repartitioning on RDDs
          * Default: no seed set (i.e., random seed)
          *
          * @param rngSeed RNG seed
-         * @return
          */
         public Builder rngSeed(long rngSeed) {
             this.rngSeed = rngSeed;
@@ -1013,94 +1076,48 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         * Threshold for updates encoding. Lower values might improve convergence, but increase amount of network
-         * communication.
-         *
-         * Default value: 1e-3
-         * @param threshold Threshold to use
-         * @return
+         * @deprecated Use {@link #thresholdAlgorithm(ThresholdAlgorithm)} with (for example) {@link AdaptiveThresholdAlgorithm}
          */
-        public Builder updatesThreshold(double threshold) {
-            this.threshold = threshold;
+        @Deprecated
+        public Builder updatesThreshold(double updatesThreshold){
+            return thresholdAlgorithm(new AdaptiveThresholdAlgorithm(updatesThreshold));
+        }
+
+        /**
+         * Algorithm to use to determine the threshold for updates encoding. Lower values might improve convergence, but
+         * increase amount of network communication<br>
+         * Values that are too low may also impact network convergence. If convergence problems are observed, try increasing
+         * or decreasing this by a factor of 10 - say 1e-4 and 1e-2.<br>
+         * For technical details, see the paper <a href="https://s3-us-west-2.amazonaws.com/amazon.jobs-public-documents/strom_interspeech2015.pdf">
+         * Scalable Distributed DNN Training Using Commodity GPU Cloud Computing</a><br>
+         * See also {@link ThresholdAlgorithm}<br><br>
+         * Default: {@link AdaptiveThresholdAlgorithm} with default parameters
+         * @param thresholdAlgorithm Threshold algorithm to use to determine encoding threshold
+         */
+        public Builder thresholdAlgorithm(ThresholdAlgorithm thresholdAlgorithm){
+            this.thresholdAlgorithm = thresholdAlgorithm;
             return this;
         }
 
         /**
-         * Once update with given threshold become too sparse, threshold will be decreased by thresholdStep, but not below minimum threshold.
-         * This method is used to set that minimum threshold
+         * Residual post processor. See {@link ResidualPostProcessor} for details.
          *
-         * Default value: 1e-5
-         * @param threshold
-         * @return
+         * Default: {@code new ResidualClippingPostProcessor(5.0, 5)} - i.e., a {@link ResidualClippingPostProcessor}
+         * that clips the residual to +/- 5x current threshold, every 5 iterations.
+         *
+         * @param residualPostProcessor Residual post processor to use
          */
-        public Builder minUpdatesThreshold(double threshold) {
-            this.minThreshold = threshold;
+        public Builder residualPostProcessor(ResidualPostProcessor residualPostProcessor){
+            this.residualPostProcessor = residualPostProcessor;
             return this;
         }
 
         /**
-         * Step size for threshold decay. When sparsity is less than
+         * Minibatch size to use when training workers. In principle, the source data (i.e., {@code RDD<DataSet>} etc)
+         * can have a different number of examples in each {@code DataSet} than we want to use when training.
+         * i.e., we can split or combine DataSets if required.
          *
-         * Default value: 1e-5
-         * @param step Step size
-         * @return
-         */
-        public Builder thresholdStep(double step) {
-            Preconditions.checkArgument(step >= 0, "Threshold step size should be positive. Got: %s", step);
-            this.thresholdStep = step;
-            return this;
-        }
-
-        /**
-         * Target sparsity/dense level, when threshold step will happen. i.e. 5 value = 5% of original updates size.
-         *
-         * Default value: 0.05
-         * @param step
-         * @return
-         */
-        public Builder stepTrigger(double step) {
-            if (step < 0.0 || step > 100.0)
-                throw new DL4JInvalidConfigException("stepTrigger value should be in range of 0..100");
-            this.stepTrigger = step;
-            return this;
-        }
-
-        /**
-         * Wait at least X iterations between applying threshold decay
-         *
-         * Default value: 50
-         * @param step
-         * @return
-         */
-        public Builder stepDelay(int step) {
-            this.stepDelay = step;
-            return this;
-        }
-
-        /**
-         * During NN training, each X iterations, executors will send encoded dense updates with lower threshold.
-         * Please note: If you'll set this value too low (i.e. 1) - it might lead to worse training performance
-         *
-         * Default value: 0 (disabled)
-         * @param frequency
-         * @return
-         */
-        public Builder shakeFrequency(int frequency) {
-            if (frequency < 0)
-                throw new DL4JInvalidConfigException("shakeFrequency should be non-negative value");
-
-            if (frequency == 1)
-                log.warn("shakeFrequency of 1 means that all updates will be sparse, and might lead to worse performance");
-
-            this.shakeFrequency = frequency;
-            return this;
-        }
-
-        /**
-         * Batch size value,  used for repartition purposes
-         *
-         * @param batchSize
-         * @return
+         * @param batchSize Minibatch size to use when fitting each worker
          */
         public Builder batchSizePerWorker(int batchSize) {
             this.batchSize = batchSize;
@@ -1108,13 +1125,19 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         * This method allows to configure number of trainer threads per cluster node.
-         *
-         *
+         * This method allows to configure number of network training threads per cluster node.<br>
          * Default value: -1, which defines automated number of workers selection, based on hardware present in system
+         * (i.e., number of GPUs, if training on a GPU enabled system).
+         * <br>
+         * When training on GPUs, you should use 1 worker per GPU (which is the default). For CPUs, 1 worker per
+         * node is usually preferred, though multi-CPU (i.e., multiple physical CPUs) or CPUs with large core counts
+         * may have better throughput (i.e., more examples per second) when increasing the number of workers,
+         * at the expense of more memory consumed. Note that if you increase the number of workers on a CPU system,
+         * you should set the number of OpenMP threads using the {@code OMP_NUM_THREADS} property - see
+         * {@link org.nd4j.config.ND4JEnvironmentVars#OMP_NUM_THREADS} for more details.
+         * For example, a machine with 32 physical cores could use 4 workers with {@code OMP_NUM_THREADS=8}
          *
-         * @param numWorkers
-         * @return
+         * @param numWorkers Number of workers on each node.
          */
         public Builder workersPerNode(int numWorkers) {
             if (numWorkers < 1)
@@ -1141,9 +1164,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         * Optional method: Transport implementation to be used as TransportType.CUSTOM for VoidParameterAveraging method
+         * Optional method: Transport implementation to be used as TransportType.CUSTOM for VoidParameterAveraging method<br>
+         * Generally not used by users
          *
-         * @param transport
+         * @param transport Transport to use
          * @return
          */
         public Builder transport(Transport transport) {
@@ -1152,7 +1176,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         * Number of minibatches to asynchronously prefetch when training. Default: 2
+         * Number of minibatches to asynchronously prefetch on each worker when training. Default: 2, which is usually suitable
+         * in most cases. Increasing this might help in some cases of ETL (data loading) bottlenecks, at the expense
+         * of greater memory consumption
          * @param prefetchNumBatches Number of batches to prefetch
          */
         public Builder workerPrefetchNumBatches(int prefetchNumBatches){
@@ -1161,24 +1187,67 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         * Repartitioner to use to repartition data before fitting.
+         * Repartitioner to use to repartition data before fitting.<br>
          * DL4J performs a MapPartitions operation for training, hence how the data is partitioned can matter a lot for
-         * performance (specifically, too few partitions can result in poor cluster utilization).
-         * Default is {@link DefaultRepartitioner}
+         * performance - too few partitions (or very imbalanced partitions can result in poor cluster utilization, due to
+         * some workers being idle. A larger number of smaller partitions can help to avoid so-called "end-of-epoch"
+         * effects where training can only complete once the last/slowest worker finishes it's partition.<br>
+         * Default repartitioner is {@link DefaultRepartitioner}, which repartitions equally up to a maximum of 5000
+         * partitions, and is usually suitable for most purposes. In the worst case, the "end of epoch" effect
+         * when using the partitioner should be limited to a maximum of the amount of time required to process a single partition.
          *
          * @param repartitioner Repartitioner to use
-         * @return Repartitioner
          */
         public Builder repartitioner(Repartitioner repartitioner){
             this.repartitioner = repartitioner;
             return this;
         }
 
+        /**
+         * Used to disable the periodic garbage collection calls on the workers.<br>
+         * Equivalent to {@code Nd4j.getMemoryManager().togglePeriodicGc(workerTogglePeriodicGC);}<br>
+         * Pass false to disable periodic GC on the workers or true (equivalent to the default, or not setting it) to keep it enabled.
+         * 
+         * @param workerTogglePeriodicGC Worker periodic garbage collection setting
+         */
+        public Builder workerTogglePeriodicGC(boolean workerTogglePeriodicGC){
+            this.workerTogglePeriodicGC = workerTogglePeriodicGC;
+            return this;
+        }
+
+        /**
+         * Used to set the periodic garbage collection frequency on the workers.<br>
+         * Equivalent to calling {@code Nd4j.getMemoryManager().setAutoGcWindow(workerPeriodicGCFrequency);} on each worker<br>
+         * Does not have any effect if {@link #workerTogglePeriodicGC(boolean)} is set to false
+         * 
+         * @param workerPeriodicGCFrequency The periodic GC frequency to use on the workers
+         */
+        public Builder workerPeriodicGCFrequency(int workerPeriodicGCFrequency){
+            this.workerPeriodicGCFrequency = workerPeriodicGCFrequency;
+            return this;
+        }
+
+        /**
+         * Enable debug mode for threshold encoding. When enabled, various statistics for the threshold and the residual
+         * will be calculated and logged on each worker (at info log level).<br>
+         * This information can be used to check if the encoding threshold is too big (for example, virtually all updates
+         * are much smaller than the threshold) or too big (majority of updates are much larger than the threshold).<br>
+         * encodingDebugMode is disabled by default.<br>
+         * <b>IMPORTANT</b>: enabling this has a performance overhead, and should not be enabled unless the debug information is actually required.<br>
+         *
+         * @param enabled True to enable
+         */
+        public Builder encodingDebugMode(boolean enabled){
+            this.encodingDebugMode = enabled;
+            return this;
+        }
+
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach,
-                            storageLevel, collectTrainingStats, repartitionStrategy, repartition, threshold,
-                            minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, batchSize,
-                            debugLongerIterations, numWorkersPerNode, workerPrefetchNumBatches, repartitioner);
+                            storageLevel, collectTrainingStats, repartitionStrategy, repartition,
+                        thresholdAlgorithm, residualPostProcessor, rddDataSetNumExamples, batchSize,
+                            debugLongerIterations, numWorkersPerNode, workerPrefetchNumBatches, repartitioner, workerTogglePeriodicGC,
+                    workerPeriodicGCFrequency, encodingDebugMode);
             if (transport != null)
                 master.transport = this.transport;
 

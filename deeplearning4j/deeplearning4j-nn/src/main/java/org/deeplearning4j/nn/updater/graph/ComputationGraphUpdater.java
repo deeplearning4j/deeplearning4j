@@ -37,11 +37,11 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
     protected Trainable[] orderedLayers;
 
     public ComputationGraphUpdater(ComputationGraph graph) {
-        this(graph, null);
+        this(graph, null, graph.getConfiguration().isLegacyBatchScaledL2());
     }
 
-    public ComputationGraphUpdater(ComputationGraph graph, INDArray updaterState) {
-        super(graph, updaterState);
+    public ComputationGraphUpdater(ComputationGraph graph, INDArray updaterState, boolean legacyBatchScaledL2) {
+        super(graph, updaterState, legacyBatchScaledL2);
 
         layersByName = new HashMap<>();
         Trainable[] layers = getOrderedLayers();

@@ -105,8 +105,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected int[] topologicalOrder;
     protected List<String> topologicalOrderStr;
 
+    @Getter @Setter
+    protected boolean legacyBatchScaledL2 = true;   //Default to legacy for pre 1.0.0-beta3 networks on deserialization
+
     /**
-     * @return JSON representation of configuration
+     * @return YAML representation of configuration
      */
     public String toYaml() {
         ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
@@ -120,9 +123,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     }
 
     /**
-     * Create a neural net configuration from json
+     * Create a neural net configuration from YAML
      *
-     * @param json the neural net configuration from json
+     * @param json the neural net configuration from YAML
      * @return {@link ComputationGraphConfiguration}
      */
     public static ComputationGraphConfiguration fromYaml(String json) {
@@ -262,6 +265,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
         conf.cacheMode = this.cacheMode;
         conf.defaultConfiguration.cacheMode = this.cacheMode;
+        conf.legacyBatchScaledL2 = this.legacyBatchScaledL2;
 
         return conf;
     }
@@ -403,7 +407,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         List<String> topologicalOrdering = topologicalOrdering();
 
         //Now, given the topological sort: do equivalent of forward pass
-        Map<String, InputType> vertexOutputs = new HashMap<>();
+        Map<String, InputType> vertexOutputs = new LinkedHashMap<>();
         int currLayerIdx = -1;
         for (String s : topologicalOrdering) {
             int inputIdx = networkInputs.indexOf(s);
@@ -829,12 +833,24 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 if (networkOutputs.contains(vertexName)) {
                     networkOutputs.remove(vertexName);
                 }
+                Map<String,List<String>> newVertexInputs = new LinkedHashMap<>();
                 for (Map.Entry<String, List<String>> entry : this.vertexInputs.entrySet()) {
-                    List inputs = entry.getValue();
+                    List<String> inputs = entry.getValue();
                     if (inputs.contains(vertexName)) {
-                        inputs.remove(vertexName);
+                        //Some lists are not modifiable. So we'll make a new copy, minus the one to be removed
+                        List<String> newList = new ArrayList<>(inputs.size()-1);
+                        for(String s : inputs){
+                            if(!vertexName.equals(s)){
+                                newList.add(s);
+                            }
+                        }
+                        newVertexInputs.put(entry.getKey(), newList);
+                    } else {
+                        newVertexInputs.put(entry.getKey(), entry.getValue());
                     }
                 }
+                this.vertexInputs = newVertexInputs;
+
                 if (inputPreProcessors.containsKey(vertexName)) {
                     inputPreProcessors.remove(vertexName);
                 }
@@ -905,6 +921,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param vertexInputs The inputs/activations to this GraphVertex
          */
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
+            Preconditions.checkState(!vertices.containsKey(vertexName), "Cannot add vertex: a vertex with name \"%s\" already exists", vertexName);
             vertices.put(vertexName, vertex);
 
             //Automatically insert a MergeNode if this vertex can only take 1 input (layer vertices, etc)
@@ -1020,6 +1037,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             conf.defaultConfiguration = globalConfiguration.build();
             conf.getDefaultConfiguration().setPretrain(pretrain);
+            conf.setLegacyBatchScaledL2(globalConfiguration.isLegacyBatchScaledL2());
 
             //Add preprocessors that were defined separately to the Layers to which they belong
             for (Map.Entry<String, InputPreProcessor> entry : inputPreProcessors.entrySet()) {

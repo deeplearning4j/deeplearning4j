@@ -19,9 +19,13 @@ package org.nd4j.linalg.api.ops.impl.transforms.segment;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Unsorted segment max operation
@@ -48,6 +52,14 @@ public class UnsortedSegmentMax extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "UnsortedSegmentMax";
+    }
+
+    @Override
+    public void resolvePropertiesFromSameDiffBeforeExecution() {
+        if(args().length == 3 && iArguments == null || iArguments.size() == 0){
+            addIArgument(arg(2).getArr().getInt(0));
+        }
+        super.resolvePropertiesFromSameDiffBeforeExecution();
     }
 
     @Override

@@ -489,7 +489,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
                             out = sd.conv3d(in, w0, b0, Conv3DConfig.builder()
                                     .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
-                                    .isValidMode(false)
+                                    .isSameMode(true)
                                     .kH(2).kW(2).kD(2)
                                     .sD(1).sH(1).sW(1)
                                     .build());
@@ -500,7 +500,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             SDVariable w1 = sd.var("w1", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
                             out = sd.conv3d(in, w1, Conv3DConfig.builder()
                                     .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
-                                    .isValidMode(true)
+                                    .isSameMode(false)
                                     .kH(2).kW(2).kD(2)
                                     .sD(1).sH(1).sW(1)
                                     .build());
@@ -511,7 +511,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             out = sd.avgPooling3d(in, Pooling3DConfig.builder()
                                     .kH(2).kW(2).kD(2)
                                     .sH(1).sW(1).sD(1)
-                                    .ceilingMode(false)
+                                    .isSameMode(false)
                                     .build());
                             break;
                         case 3:
@@ -520,7 +520,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             out = sd.avgPooling3d(in, Pooling3DConfig.builder()
                                     .kH(2).kW(2).kD(2)
                                     .sH(1).sW(1).sD(1)
-                                    .ceilingMode(true)
+                                    .isSameMode(true)
                                     .build());
                             break;
                         case 4:
@@ -866,7 +866,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .pH(0).pW(0).pD(0)
                 .sH(1).sW(1).sD(1)
                 .dH(1).dW(1).dD(1)
-                .ceilingMode(false)
+                .isSameMode(false)
                 .isNCDHW(true)
                 .build();
 
@@ -907,7 +907,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .pH(0).pW(0).pD(0)
                 .sH(1).sW(1).sD(1)
                 .dH(1).dW(1).dD(1)
-                .ceilingMode(false)
+                .isSameMode(false)
                 .build();
 
         SDVariable out = sd.maxPooling3d(in, pooling3DConfig);
@@ -954,7 +954,6 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testConv3dBasic() {
-        OpValidationSuite.ignoreFailing();
         int nIn = 3;
         int nOut = 4;
         int kH = 2;
@@ -967,9 +966,9 @@ public class LayerOpValidation extends BaseOpValidation {
         int imgT = 8;
 
         SameDiff sd = SameDiff.create();
-        INDArray wArr = Nd4j.create(nOut, nIn, kD, kH, kW); //As per DL4J
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgT, imgH, imgW);
+        INDArray wArr = Nd4j.rand(new int[]{kD, kH, kW, nIn, nOut});
+        INDArray bArr = Nd4j.rand(1, nOut);
+        INDArray inArr = Nd4j.rand(new int[]{mb, nIn, imgT, imgH, imgW});
 
         SDVariable in = sd.var("in", inArr);
         SDVariable w = sd.var("W", wArr);
@@ -979,8 +978,9 @@ public class LayerOpValidation extends BaseOpValidation {
                 .kH(kH).kW(kW).kD(kD)
                 .sD(1).sH(1).sW(1)
                 .dH(1).dW(1).dD(1)
-                .isValidMode(false) //samemode = true
+                .isSameMode(true)
                 .biasUsed(false)
+                .dataFormat(Conv3DConfig.NCDHW)
                 .build();
 
         SDVariable out = sd.conv3d(in, w, b, conv3DConfig);

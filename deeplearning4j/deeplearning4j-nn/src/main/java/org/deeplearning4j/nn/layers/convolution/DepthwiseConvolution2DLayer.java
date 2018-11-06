@@ -81,9 +81,9 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         int inH = (int) input.size(2);
         int inW = (int) input.size(3);
 
-        int inDepth = (int) depthWiseWeights.size(1);
-        int kH = (int) depthWiseWeights.size(2);
-        int kW = (int) depthWiseWeights.size(3);
+        int inDepth = (int) depthWiseWeights.size(2);
+        int kH = (int) depthWiseWeights.size(0);
+        int kW = (int) depthWiseWeights.size(1);
 
         int[] dilation = layerConf().getDilation();
         int[] kernel = layerConf().getKernelSize();
@@ -169,8 +169,8 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         }
 
         // FIXME: int cast
-        int inDepth = (int) depthWiseWeights.size(1);
-        int depthMultiplier = (int) depthWiseWeights.size(0);
+        int inDepth = (int) depthWiseWeights.size(2);
+        int depthMultiplier = (int) depthWiseWeights.size(3);
         int outDepth = depthMultiplier * inDepth;
 
         if (input.size(1) != inDepth) {
@@ -184,8 +184,8 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
                     + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
                     + layerId());
         }
-        int kH = (int) depthWiseWeights.size(2);
-        int kW = (int) depthWiseWeights.size(3);
+        int kH = (int) depthWiseWeights.size(0);
+        int kW = (int) depthWiseWeights.size(1);
 
         int[] dilation = layerConf().getDilation();
         int[] kernel = layerConf().getKernelSize();

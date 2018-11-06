@@ -384,7 +384,7 @@ public class DelayedModelParameterServerTest {
     @Test
     public void testMeshConsistency_2() throws Exception {
         Nd4j.create(1);
-        final int numMessages = 500;
+        final int numMessages = 100;
         val rootCount = new AtomicInteger(0);
         val rootSum = new AtomicInteger(0);
         val counter = new AtomicInteger(0);
@@ -434,6 +434,8 @@ public class DelayedModelParameterServerTest {
             //log.info("Client [{}] started", e );
         }
 
+        Thread.sleep(500);
+
 
         val deductions = new int[servers.size()];
         for (int e = 0; e < numMessages; e++) {
@@ -448,6 +450,9 @@ public class DelayedModelParameterServerTest {
         }
 
         connector.blockUntilFinished();
+
+        //Thread.sleep(1000);
+        //Thread.sleep(3000000000000L);
 
         // checking if master node got all updates we've sent
         assertEquals(numMessages, rootCount.get());

@@ -81,16 +81,6 @@ public class BinomialDistribution extends BaseRandomOp {
         this.extraArgs = new Object[] {(double) this.trials, this.probability};
     }
 
-
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("trials",trials);
-        ret.put("probability",probability);
-        return ret;
-    }
-
-
     /**
      * This op fills Z with binomial distribution over given trials with probability for each trial given as probabilities INDArray
      *

@@ -24,6 +24,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -179,6 +180,9 @@ public abstract class BaseNd4jTest {
         Nd4j.factory().setOrder(ordering());
         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
         Nd4j.MAX_SLICES_TO_PRINT = -1;
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
     }
 
     @After
@@ -192,6 +196,9 @@ public abstract class BaseNd4jTest {
         Nd4j.factory().setOrder(ordering());
         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
         Nd4j.MAX_SLICES_TO_PRINT = -1;
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
     }
 
 

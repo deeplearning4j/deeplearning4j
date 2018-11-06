@@ -81,12 +81,6 @@ public class Pooling3D extends DynamicCustomOp {
         addArgs();
     }
 
-
-    @Override
-    public void setValueFor(Field target, Object value) {
-        config.setValueFor(target,value);
-    }
-
     @Override
     public boolean isConfigProperties() {
         return true;
@@ -117,7 +111,7 @@ public class Pooling3D extends DynamicCustomOp {
         addIArgument(config.getDD());
         addIArgument(config.getDW());
         addIArgument(config.getDH());
-        addIArgument(config.isCeilingMode() ? 1 : 0);       //Ceiling mode == same mode
+        addIArgument(config.isSameMode() ? 1 : 0);       //Ceiling mode == same mode
         addIArgument(0);                                    //0 == "exclude padding from average count"
         addIArgument(config.isNCDHW() ? 0 : 1);
 
@@ -206,7 +200,7 @@ public class Pooling3D extends DynamicCustomOp {
                 .pD(padding[0]).pH(padding[1]).pW(padding[2])
                 .kD(kernel[0]).kH(kernel[1]).kW(kernel[2])
                 .type(type)
-                .ceilingMode(isSameMode)
+                .isSameMode(isSameMode)
                 .isNCDHW(data_format.equalsIgnoreCase("ncdhw"))
                 .build();
         this.config = conf;
