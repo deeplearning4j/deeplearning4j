@@ -156,12 +156,9 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         public Thread newThread(@NotNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
-<<<<<<< HEAD
             t.setName("messagesExecutorService thread");
-=======
             //TODO implement support for multi-GPU masters
             Nd4j.getAffinityManager().attachThreadToDevice(t, 0);   //Associate thread with device 0 (no-op for CPU)
->>>>>>> master
             return t;
         }
     });
@@ -266,11 +263,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         if (!remoteConnections.containsKey(message.getOriginatorId()))
             addConnection(message.getOriginatorId());
 
-<<<<<<< HEAD
         log.info("Got [{}] message from [{}]; aeronQueue size: [{}]; baseQueue size: [{}]", message.getClass().getSimpleName(), message.getOriginatorId(), aeronMessageQueue.size(), messageQueue.size());
-=======
-        log.debug("Got [{}] message from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
->>>>>>> master
 
         // we're just putting deserialized message into the buffer
         try {
