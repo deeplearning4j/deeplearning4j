@@ -2171,6 +2171,32 @@ void NativeOps::setTADThreshold(int num) {
     // this is no-op for CUDA
 }
 
+void NativeOps::execScalar(
+		Nd4jPointer *extraPointers,
+		int opNum,
+		void *hX, Nd4jLong *hXShapeInfo,
+		void *dX, Nd4jLong *dXShapeInfo,
+		void *hZ, Nd4jLong *hZShapeInfo,
+		void *dZ, Nd4jLong *dZShapeInfo,
+		void *hScalar, Nd4jLong *hScalarShapeInfo,
+		void *dScalar, Nd4jLong *dScalarShapeInfo,
+		void *extraParams) {
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+	// auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+	//auto hostTadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
+
+	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]),hXShapeInfo, hostTadShapeInfo, funcAttributes[47] ,dimensionLength, sizeof(float), 0);
+	dim3 launchDims = dim3(256, 256, 1024);
+
+	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+	auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
+	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaShaped(launchDims, extraPointers, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
+
+	DEBUG_KERNEL(stream, opNum);
+}
+
 void NativeOps::execScalar(Nd4jPointer *extraPointers,
 					 int opNum,
 					 void *hX, Nd4jLong *hXShapeInfo,
@@ -2185,15 +2211,14 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
     
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     // auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    auto hostTadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
+    //auto hostTadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
 
     //dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]),hXShapeInfo, hostTadShapeInfo, funcAttributes[47] ,dimensionLength, sizeof(float), 0);
     dim3 launchDims = dim3(256, 256, 1024);
 
-    // functions::scalar::ScalarTransform. ::executeCudaAlongDimension(launchDims, extraPointers, opNum, dX, dXShapeInfo, dZ, zShapeInfo, scalars, extraParams, dimension, dimensionLength);
-	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(dScalarShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
+	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, extraPointers, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength), LIBND4J_TYPES, LIBND4J_TYPES);
 
 	DEBUG_KERNEL(stream, opNum);

@@ -83,9 +83,6 @@ namespace functions {
             __device__
 	        static void transformCuda(Nd4jLong n, void* dx, void *dy, Nd4jLong incy, void *params, void *result, Nd4jLong resultStride, int *allocationBuffer, UnifiedSharedMemory *manager);
 
-/*
-#include "cuda/scalar_temp.cu"
-*/
 #endif
             template <typename OpType>
             static void transform(void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
