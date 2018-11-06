@@ -129,45 +129,44 @@ namespace helpers {
 
     template <typename T>
     int resizeBilinearFunctor(NDArray<T> const* images, int width, int height, bool center, NDArray<T>* output) {
-        const Nd4jLong batch_size = images->sizeAt(0);
-        const Nd4jLong in_height = images->sizeAt(1);
-        const Nd4jLong in_width = images->sizeAt(2);
-        const Nd4jLong channels = images->sizeAt(3);
+        const Nd4jLong batchSize = images->sizeAt(0);
+        const Nd4jLong inHeight  = images->sizeAt(1);
+        const Nd4jLong inWidth   = images->sizeAt(2);
+        const Nd4jLong channels  = images->sizeAt(3);
 
-        const Nd4jLong out_height = output->sizeAt(1);
-        const Nd4jLong out_width = output->sizeAt(2);
+        const Nd4jLong outHeight = output->sizeAt(1);
+        const Nd4jLong outWidth = output->sizeAt(2);
 
         // Handle no-op resizes efficiently.
-        if (out_height == in_height && out_width == in_width) {
+        if (outHeight == inHeight && outWidth == inWidth) {
             output->assign(images);
             return ND4J_STATUS_OK;
         }
 
-        if ((center && in_height < 2) || (in_height < 1) || (out_height < 1) || (center && out_height < 2) ||
-            (center && in_width < 2) || (in_width < 1) || (out_width < 1) || (center && out_width < 2)) {
+        if ((center && inHeight < 2) || (inHeight < 1) || (outHeight < 1) || (center && outHeight < 2) ||
+            (center && inWidth < 2) || (inWidth < 1) || (outWidth < 1) || (center && outWidth < 2)) {
             // wrong input data
             nd4j_printf("image.resize_bilinear: Wrong input or output size to resize\n", "");
             return ND4J_STATUS_BAD_ARGUMENTS;
         }
-        double height_scale = center? (in_height - 1.) / double(out_height - 1.0): (in_height / double(out_height));
-        double width_scale = center? (in_width - 1.) / double(out_width - 1.0): (in_width / double(out_width));
+        double heightScale = center? (inHeight - 1.) / double(outHeight - 1.0): (inHeight / double(outHeight));
+        double widthScale = center? (inWidth - 1.) / double(outWidth - 1.0): (inWidth / double(outWidth));
 
-        std::vector<BilinearInterpolationData> ys(out_height + 1);
-        std::vector<BilinearInterpolationData> xs(out_width + 1);
+        std::vector<BilinearInterpolationData> ys(outHeight + 1);
+        std::vector<BilinearInterpolationData> xs(outWidth + 1);
 
         // Compute the cached interpolation weights on the x and y dimensions.
-        computeInterpolationWeights(out_height, in_height, height_scale,
+        computeInterpolationWeights(outHeight, inHeight, heightScale,
                                       ys.data());
-        computeInterpolationWeights(out_width, in_width, width_scale, xs.data());
+        computeInterpolationWeights(outWidth, inWidth, widthScale, xs.data());
 
         // Scale x interpolation weights to avoid a multiplication during iteration.
         for (int i = 0; i < xs.size(); ++i) {
             xs[i].bottomIndex *= channels;
-            xs[i].topIndex *= channels;
+            xs[i].topIndex    *= channels;
         }
 
-        resizeImage<T>(images, batch_size, in_height, in_width, out_height,
-                        out_width, channels, xs, ys, output);
+        resizeImage(images, batchSize, inHeight, inWidth, outHeight,  outWidth, channels, xs, ys, output);
         return ND4J_STATUS_OK;
     }
     template int resizeBilinearFunctor(NDArray<float> const* image, int width, int height, bool center, NDArray<float>* output);
