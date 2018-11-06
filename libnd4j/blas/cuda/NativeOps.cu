@@ -642,17 +642,13 @@ void   NativeOps::execReduceFloat(
 
 	void *reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
+	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
 
 	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
 		printf("AF7 opNum:[%i]\n", opNum);
-
-	if (opNum == 19) {
-		execReduceFloat(extraPointers, 3, nullptr, nullptr, dX, dXShapeInfo, extraParams, nullptr, nullptr, dZ, dZShapeInfo);
-	}
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
     //DISPATCH_SIMPLE(reduceScalarSimple, float, PARAMS(dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
@@ -2219,6 +2215,7 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, extraPointers, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength), LIBND4J_TYPES, LIBND4J_TYPES);
 
 	DEBUG_KERNEL(stream, opNum);
