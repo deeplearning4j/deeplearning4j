@@ -650,15 +650,10 @@ TEST_F(PlaygroundTests, ndarray_tile_test2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(PlaygroundTests, loop_test1) {
+TEST_F(PlaygroundTests, loopThroughArrs_test1) {
     
     NDArray x('c', {20, 30, 40}, nd4j::DataType::DOUBLE);
-    NDArray y('f', {50, 30, 4, 4}, nd4j::DataType::DOUBLE);
-
-    Nd4jLong xCoord[MAX_RANK];
-    Nd4jLong yCoord[MAX_RANK];
-    memset(xCoord, 0, MAX_RANK * sizeof(Nd4jLong));
-    memset(yCoord, 0, MAX_RANK * sizeof(Nd4jLong));
+    NDArray y('f', {50, 30, 4, 4}, nd4j::DataType::DOUBLE);  
 
     auto xBuff = x.bufferAsT<double>();
     auto yBuff = y.bufferAsT<double>();
@@ -667,27 +662,14 @@ TEST_F(PlaygroundTests, loop_test1) {
 
     //***********************************
     //***********************************
-    memset(xCoord, 0, MAX_RANK * sizeof(Nd4jLong));
-    memset(yCoord, 0, MAX_RANK * sizeof(Nd4jLong));
-    
+  
     auto timeStart = std::chrono::system_clock::now();
-#pragma omp parallel for schedule(guided) firstprivate(xCoord, yCoord)
+#pragma omp parallel for schedule(guided) 
     for(Nd4jLong i = 0; i < len; ++i) {
-
-        Nd4jLong offset1, offset2;
-        #pragma omp parallel sections 
-        {
-            #pragma omp section 
-            {
-                shape::nextIter(x.rankOf(), x.getShapeInfo(), xCoord);
-                offset1 = shape::getOffset(0, x.shapeOf(), x.stridesOf(), xCoord, x.rankOf());
-            }
-            #pragma omp section 
-            {
-                shape::nextIter(y.rankOf(), y.getShapeInfo(), yCoord);
-                offset2 = shape::getOffset(0, y.shapeOf(), y.stridesOf(), yCoord    , y.rankOf());
-            }
-        }    
+                
+        Nd4jLong offset1 = shape::getIndexOffset(i, x.getShapeInfo(), len);
+        Nd4jLong offset2 = shape::getIndexOffset(i, y.getShapeInfo(), len);
+        
         xBuff[offset1] = yBuff[offset2];
     }
     auto timeEnd = std::chrono::system_clock::now();
@@ -695,6 +677,8 @@ TEST_F(PlaygroundTests, loop_test1) {
     
     //***********************************
     //***********************************
+    Nd4jLong xCoord[MAX_RANK];
+    Nd4jLong yCoord[MAX_RANK];
     memset(xCoord, 0, MAX_RANK * sizeof(Nd4jLong));
     memset(yCoord, 0, MAX_RANK * sizeof(Nd4jLong));
 
@@ -702,29 +686,17 @@ TEST_F(PlaygroundTests, loop_test1) {
 #pragma omp parallel for schedule(guided) firstprivate(xCoord, yCoord)
     for(Nd4jLong i = 0; i < len; ++i) {
 
-        Nd4jLong offset1, offset2;
-        #pragma omp parallel sections 
-        {
-            #pragma omp section 
-            {
-                shape::ind2subC(x.rankOf(), x.shapeOf(), i, xCoord);
-                offset1 = shape::getOffset(0, x.shapeOf(), x.stridesOf(), xCoord, x.rankOf());
-            }
-            #pragma omp section 
-            {
-                shape::ind2subC(y.rankOf(), y.shapeOf(), i, yCoord);
-                offset2 = shape::getOffset(0, y.shapeOf(), y.stridesOf(), yCoord, y.rankOf());
-            }
-        }    
+        shape::ind2subC(x.rankOf(), x.shapeOf(), i, xCoord);
+        Nd4jLong offset1 = shape::getOffset(0, x.shapeOf(), x.stridesOf(), xCoord, x.rankOf());
+        shape::ind2subC(y.rankOf(), y.shapeOf(), i, yCoord);
+        Nd4jLong offset2 = shape::getOffset(0, y.shapeOf(), y.stridesOf(), yCoord, y.rankOf());
         xBuff[offset1] = yBuff[offset2];
     }
-     timeEnd = std::chrono::system_clock::now();
+    timeEnd = std::chrono::system_clock::now();
     auto oldTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
    
-
     nd4j_printf("My  time: %lld us;\n", myTime);
     nd4j_printf("Old time: %lld us;\n", oldTime);
 
     ASSERT_TRUE(1);        
 }
-

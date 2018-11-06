@@ -68,158 +68,60 @@ namespace functions {
 		        auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 if(OpType::requiresSpecial) {
-                    OpType::execSpecial(x, xShapeInfo, z,zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+                    OpType::execSpecial(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
                     return;
                 }
 
-                auto len = shape::length(xShapeInfo);
-                auto xEws = shape::elementWiseStride(xShapeInfo);
-                auto zEws = shape::elementWiseStride(zShapeInfo);
+                const auto len = shape::length(xShapeInfo);
+                const auto xEws = shape::elementWiseStride(xShapeInfo);
+                const auto zEws = shape::elementWiseStride(zShapeInfo);
+                const auto xOrder = shape::order(xShapeInfo);
+                const auto zOrder = shape::order(zShapeInfo);
 
-                if(xEws >= 1 && zEws >= 1 && shape::order(xShapeInfo) == shape::order(zShapeInfo)) {
+                // loop2ArrsSame<X>(x, xShapeInfo, z, zShapeInfo, extraParams, OpType::op);
+
+                if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
                     exec<OpType>(x,xEws,z,zEws,extraParams,len);
                 }
                 else {
-                    Nd4jLong shapeIter[MAX_RANK];
-                    
-                    int dim;
-                    Nd4jLong xStridesIter[MAX_RANK];
-                    Nd4jLong zStridesIter[MAX_RANK];
-                    const auto xShape = shape::shapeOf(xShapeInfo);
-                    const auto zShape = shape::shapeOf(zShapeInfo);
-                    const auto xStride = shape::stride(xShapeInfo);
-                    const auto zStride = shape::stride(zShapeInfo);
-                    const auto xOrder = shape::order(xShapeInfo);
-                    const auto zOrder = shape::order(zShapeInfo);
-                    int xRank = shape::rank(xShapeInfo);
-                    int zRank = shape::rank(zShapeInfo);
-
-                    if (0) {
-
-                    if(xOrder == zOrder && xOrder == 'c' && xEws >= 1 && zEws >= 1) {
-                        if(xEws == 1 && zEws == 1) {
-                            #pragma omp parallel for schedule(guided)
-                            for(Nd4jLong i = 0; i < len; ++i)
-                                z[i] = OpType::op(x[i], extraParams);
-                        }
-                        else if(xEws == 1 && zEws >= 1) {
-                            #pragma omp parallel for schedule(guided)
-                            for(Nd4jLong i = 0; i < len; ++i)
-                                z[i*zEws] = OpType::op(x[i], extraParams);   
-                        }
-                        else if(xEws >= 1 && zEws == 1) {
-                            #pragma omp parallel for schedule(guided)
-                            for(Nd4jLong i = 0; i < len; ++i)
-                                z[i] = OpType::op(x[i*xEws], extraParams);   
-                        }
-                        else {
-                            #pragma omp parallel for schedule(guided)
-                            for(Nd4jLong i = 0; i < len; ++i)
-                                z[i*zEws] = OpType::op(x[i*xEws], extraParams);   
-                        }
-                    }
-                    else if(xOrder == 'c' && xEws >= 1 && (zOrder == 'f' || zEws < 1)) {                        
-                        Nd4jLong zCoord[MAX_RANK]; 
-                        memset(zCoord, 0, MAX_RANK * sizeof(Nd4jLong));
-
+                            
+                    const bool xSimpe = shape::isStrideSimple(xShapeInfo);
+                    const bool zSimpe = shape::isStrideSimple(zShapeInfo);
+                   
+                    if(xSimpe) {
+                        
                         if(xEws == 1) {
-                            #pragma omp parallel for schedule(guided) firstprivate(zCoord)
-                            for(Nd4jLong i = 0; i < len; ++i) {
-                                shape::nextIter(zRank, zShapeInfo, zCoord);
-                                Nd4jLong zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-                                z[zOffset] = OpType::op(x[i], extraParams);                       
-                            }
+                            #pragma omp parallel for schedule(guided)
+                            for(Nd4jLong i = 0; i < len; ++i)
+                                z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[i], extraParams);                       
                         }
                         else {
-                            #pragma omp parallel for schedule(guided) firstprivate(zCoord)
-                            for(Nd4jLong i = 0; i < len; ++i) {
-                                shape::nextIter(zRank, zShapeInfo, zCoord);
-                                Nd4jLong zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-                                z[zOffset] = OpType::op(x[i*xEws], extraParams);
-                            }
+                            #pragma omp parallel for schedule(guided)
+                            for(Nd4jLong i = 0; i < len; ++i)
+                                z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[i*xEws], extraParams);
                         }
                     }
-                    else if(zOrder == 'c' && zEws >= 1 && (xOrder == 'f' || xEws < 1)) {
-
-                        Nd4jLong xCoord[MAX_RANK]; 
-                        memset(xCoord, 0, MAX_RANK * sizeof(Nd4jLong));
+                    else if(zSimpe) {
 
                         if(zEws == 1) {
-                            printf("!!!!!!!!!\n");
-                            #pragma omp parallel for schedule(guided) firstprivate(xCoord)
-                            for(Nd4jLong i = 0; i < len; ++i) {
-                                shape::nextIter(xRank, xShapeInfo, xCoord);
-                                Nd4jLong xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                                z[i] = OpType::op(x[xOffset], extraParams);         
-                            }
+                            #pragma omp parallel for schedule(guided)
+                            for(Nd4jLong i = 0; i < len; ++i)                                
+                                z[i] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams);         
                         }
                         else {
-                            #pragma omp parallel for schedule(guided) firstprivate(xCoord)
-                            for(Nd4jLong i = 0; i < len; ++i) {
-                                shape::nextIter(xRank, xShapeInfo, xCoord);
-                                Nd4jLong xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                                z[i*zEws] = OpType::op(x[xOffset], extraParams);
-                            }
+                            #pragma omp parallel for schedule(guided)
+                            for(Nd4jLong i = 0; i < len; ++i)                                
+                                z[i*zEws] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams);
                         }
                     }
                     else {
-
-                        Nd4jLong xCoord[MAX_RANK]; 
-                        memset(xCoord, 0, MAX_RANK * sizeof(Nd4jLong));
-                        Nd4jLong zCoord[MAX_RANK]; 
-                        memset(zCoord, 0, MAX_RANK * sizeof(Nd4jLong));
-
-                        #pragma omp parallel for schedule(guided) firstprivate(xCoord, zCoord)
-                        for(Nd4jLong i = 0; i < len; ++i) {
-
-                            Nd4jLong xOffset, zOffset;
-                            #pragma omp parallel sections 
-                            {
-                                #pragma omp section 
-                                {
-                                    shape::nextIter(xRank, xShapeInfo, xCoord);
-                                    xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                                }
-                                #pragma omp section 
-                                {
-                                    shape::nextIter(zRank, zShapeInfo, zCoord);
-                                    zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-                                }
-                            }    
-                            z[zOffset] = OpType::op(x[xOffset], extraParams);
-                        }
-                    } 
-
-                    }
-                    else {
-                        Nd4jLong coord[MAX_RANK]; 
-
-                    if(PrepareTwoRawArrayIter<X>(xRank, xShape,
-                                                 x, xStride,
-                                                 z, zStride,
-                                                 &xRank, shapeIter,
-                                                 &x, xStridesIter,
-                                                 &z, zStridesIter) >= 0) {
-                        ND4J_RAW_ITER_START(dim, xRank, coord, shapeIter);
-                        {
-                            // Process the innermost dimension
-                            auto xIter = x;
-                            auto resultIter = z;
-                            resultIter[0] = OpType::op(xIter[0], extraParams);
-                        }
-                        ND4J_RAW_ITER_TWO_NEXT(dim,
-                                               xRank,
-                                               coord,
-                                               shapeIter,
-                                               x,
-                                               xStridesIter,
-                                               z,
-                                               zStridesIter);
-
-                    }
-                    }
+                        #pragma omp parallel for schedule(guided)
+                        for(Nd4jLong i = 0; i < len; ++i) 
+                            z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams);
+                    }                                         
                 }        
             }
+
 
         template <typename X>
         template <typename OpType>
@@ -248,7 +150,6 @@ namespace functions {
                         Nd4jLong end = span * (tid + 1);
                         if (end > n)
                             end = n;
-
 #pragma omp simd
                         for (Nd4jLong i = start; i < end; i++) {
                             z[i] = OpType::op(x[i], extraParams);

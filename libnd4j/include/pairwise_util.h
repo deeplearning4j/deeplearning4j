@@ -32,6 +32,7 @@
 #endif
 
 #include <templatemath.h>
+#include <functional>
 #include <pointercast.h>
 #include <op_boilerplate.h>
 #include <dll.h>
@@ -42,6 +43,14 @@
 //Loops adapted from:
 //https://github.com/numpy/numpy/blob/009b17a85a22707e63ac9ea1896413992bbf9ce5/numpy/core/src/private/lowlevel_strided_loops.h#L401-L401
 
+namespace shape {
+
+    Nd4jLong length(const Nd4jLong *shapeInfo);
+    Nd4jLong elementWiseStride(const Nd4jLong *shapeInfo);
+    char order(const Nd4jLong *shapeInfo);
+    bool isStrideSimple(const Nd4jLong* shapeInfo);
+    Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
+}
 
 /************************************************************
  * A struct used by CreateSortedStridePerm, new in 1.7.
@@ -543,6 +552,114 @@ int  PrepareThreeRawArrayIter(int ndim, Nd4jLong shape[],
     *out_dataC = dataC;
     out_ndim = ndim;
     return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+_CUDA_HD void loop2ArrsSame(const T* x, const Nd4jLong* xShapeInfo, T* z, const Nd4jLong* zShapeInfo, T* extraParams, const std::function<T(T, T*)>& func) {
+
+    const auto len = shape::length(xShapeInfo);
+    const auto xEws = shape::elementWiseStride(xShapeInfo);
+    const auto zEws = shape::elementWiseStride(zShapeInfo);
+    const auto xOrder = shape::order(xShapeInfo);
+    const auto zOrder = shape::order(zShapeInfo);
+    const bool xSimpe = shape::isStrideSimple(xShapeInfo);
+    const bool zSimpe = shape::isStrideSimple(zShapeInfo);
+    
+    if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
+
+        Nd4jLong elementsPerThread = len / ELEMENT_THRESHOLD;
+        int numThreads = nd4j::math::nd4j_max<Nd4jLong>(1, elementsPerThread);
+        numThreads = nd4j::math::nd4j_min<int>(numThreads, omp_get_max_threads());
+        const Nd4jLong span = (len / numThreads) + 8;
+
+        if (xEws == 1 && zEws == 1) {
+#pragma omp parallel num_threads(numThreads) if (numThreads>1) proc_bind(close) default(shared)
+            {
+                int tid = omp_get_thread_num();
+                Nd4jLong start = span * tid;
+                Nd4jLong end = span * (tid + 1);
+                if (end > len)
+                    end = len;
+#pragma omp simd
+                for (Nd4jLong i = start; i < end; i++) 
+                    z[i] = func(x[i], extraParams);                        
+            }
+        } 
+        else if(xEws == 1) {
+#pragma omp parallel num_threads(numThreads) if (numThreads>1) proc_bind(close) default(shared)
+            {
+                int tid = omp_get_thread_num();
+                Nd4jLong start = span * tid;
+                Nd4jLong end = span * (tid + 1);
+                if (end > len)
+                    end = len;
+#pragma omp simd
+                for (Nd4jLong i = start; i < end; i++) 
+                    z[i*zEws] = func(x[i], extraParams);                    
+            }
+        }
+        else if(zEws == 1) {
+#pragma omp parallel num_threads(numThreads) if (numThreads>1) proc_bind(close) default(shared)
+            {
+                int tid = omp_get_thread_num();
+                Nd4jLong start = span * tid;
+                Nd4jLong end = span * (tid + 1);
+                if (end > len)
+                    end = len;
+#pragma omp simd
+                for (Nd4jLong i = start; i < end; i++) 
+                    z[i] = func(x[i*xEws], extraParams);                    
+            }
+        }
+        else {
+#pragma omp parallel num_threads(numThreads) if (numThreads>1) proc_bind(close) default(shared)
+            {
+                int tid = omp_get_thread_num();
+                Nd4jLong start = span * tid;
+                Nd4jLong end = span * (tid + 1);
+                if (end > len)
+                    end = len;
+#pragma omp simd
+                for (Nd4jLong i = start; i < end; i++) 
+                    z[i*zEws] = func(x[i*xEws], extraParams);                    
+            }
+        }
+    }
+    else {
+
+        if(xSimpe) {
+            if(xEws == 1) {
+#pragma omp parallel for schedule(guided)
+                for(Nd4jLong i = 0; i < len; ++i)
+                    z[shape::getIndexOffset(i, zShapeInfo, len)] = func(x[i], extraParams);                                   
+            }
+            else {
+#pragma omp parallel for schedule(guided)
+                for(Nd4jLong i = 0; i < len; ++i)
+                    z[shape::getIndexOffset(i, zShapeInfo, len)] = func(x[i*xEws], extraParams);
+            }
+        }
+        else if(zSimpe) {
+            
+            if(zEws == 1) {
+#pragma omp parallel for schedule(guided)
+                for(Nd4jLong i = 0; i < len; ++i)                    
+                    z[i] = func(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams);         
+            }
+            else {
+#pragma omp parallel for schedule(guided)
+                for(Nd4jLong i = 0; i < len; ++i)
+                    z[i*zEws] = func(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams);
+            }
+        }
+        else {
+#pragma omp parallel for schedule(guided)
+            for(Nd4jLong i = 0; i < len; ++i)                 
+                z[shape::getIndexOffset(i, zShapeInfo, len)] = func(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams);
+        }                                         
+    }
 }
 
 
