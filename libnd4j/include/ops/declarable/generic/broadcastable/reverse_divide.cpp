@@ -31,13 +31,8 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::ReverseDivide<T>>(x, y, z);
-            x->applyTrueBroadcast(BROADCAST(ReverseDivide), y, z, true);
-            // if (tZ == nullptr)
-            //     return ND4J_STATUS_KERNEL_FAILURE;
-            // else if (tZ != z) {
-            //     OVERWRITE_RESULT(tZ);
-            // }
+            REQUIRE_TRUE(!x->isB(), 0, "REVERSEDIVIDE OP: you can't divide by bool array!");
+            x->applyTrueBroadcast(BROADCAST(ReverseDivide), y, z, true);            
 
 			return Status::OK();
         }

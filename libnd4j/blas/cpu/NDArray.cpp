@@ -2010,6 +2010,8 @@ NDArray NDArray::transp() const {
 
         if (isS())
             throw std::runtime_error("NDArray::divRowVector: you can't use this method on String array!");
+        if (row->isB())
+            throw std::runtime_error("NDArray::divRowVector: you can't divide by bool row!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
             throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
         if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
@@ -2776,6 +2778,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int>& dimensions, const NDArray* tadArray, NDArray* target, void* extraArgs) {
         if (isS())
             throw std::runtime_error("NDArray::applyBroadcast: you can't use this method on String array!");
+        if(((op == broadcast::Divide || op == broadcast::FloorDiv || op == broadcast::FloorMod) && tadArray->isB()) || (op == broadcast::ReverseDivide && this->isB()))
+            throw std::runtime_error("NDArray::applyBroadcast: you can't divide by array!");
 
         if (dimensions.size() == 0)
             return;
@@ -2843,7 +2847,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             throw std::runtime_error("NDArray::applyTrueBroadcast bool: you can't use this method on String array!");
         if(target == nullptr || other == nullptr)
             throw std::runtime_error("NDArray::applyTrueBroadcast bool method: target or other = nullptr !");
-
+        
         if (isScalar()) {
             NDArray temp(target->_shapeInfo, _dataType, false, _workspace);
             temp.assign(this);
@@ -2937,6 +2941,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             throw std::runtime_error("NDArray::applyTrueBroadcast: you can't use this method on String array!");
         if(target == nullptr || other == nullptr)
             throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
+        if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
+            throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
 
         if (isScalar()) {
             target->assign(this);
@@ -4052,9 +4058,11 @@ ND4J_EXPORT NDArray operator-(const int& scalar, const NDArray& arr) {
 
 
 ////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator/(const float16& scalar, const NDArray & arr) {
+ND4J_EXPORT NDArray operator/(const float16& scalar, const NDArray& arr) {
     if (arr.isS())
         throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
+    if (arr.isB())
+        throw std::runtime_error("NDArray::operator/: you can't divide scalar by bool array!");
 
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float16>()), false, arr.getWorkspace());
@@ -4065,6 +4073,8 @@ ND4J_EXPORT NDArray operator/(const float16& scalar, const NDArray & arr) {
 ND4J_EXPORT NDArray operator/(const float& scalar, const NDArray & arr) {
     if (arr.isS())
         throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
+    if (arr.isB())
+        throw std::runtime_error("NDArray::operator/: you can't divide scalar by bool array!");
 
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float>()), false, arr.getWorkspace());
@@ -4075,6 +4085,8 @@ ND4J_EXPORT NDArray operator/(const float& scalar, const NDArray & arr) {
 ND4J_EXPORT NDArray operator/(const double& scalar, const NDArray & arr) {
     if (arr.isS())
         throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
+    if (arr.isB())
+        throw std::runtime_error("NDArray::operator/: you can't divide scalar by bool array!");
 
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<double>()), false, arr.getWorkspace());
@@ -4085,6 +4097,8 @@ ND4J_EXPORT NDArray operator/(const double& scalar, const NDArray & arr) {
 ND4J_EXPORT NDArray operator/(const int& scalar, const NDArray & arr) {
     if (arr.isS())
         throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
+    if (arr.isB())
+        throw std::runtime_error("NDArray::operator/: you can't divide scalar by bool array!");
 
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<int>()), false, arr.getWorkspace());
@@ -4175,8 +4189,10 @@ void NDArray::operator*=(const NDArray& other) {
 }
 
 void NDArray::operator/=(const NDArray& other) {
-    if (isS())
+    if (isS() || other.isS())
         throw std::runtime_error("NDArray::operator/=: you can't use this method on String array!");
+    if (other.isB())
+        throw std::runtime_error("NDArray::operator/=: you can't divide by bool array!");
 
     if (!this->isScalar() && other.isScalar()) {
         NativeOpExcutioner::execScalar(nd4j::scalar::Divide, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
@@ -4313,6 +4329,8 @@ template void NDArray::operator/=(const bool scalar);
     NDArray NDArray::operator/(const NDArray& other) const {
         if (isS())
             throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
+        if (other.isB())
+            throw std::runtime_error("NDArray::operator/: you can't divide by bool array!");
 
         if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_shapeInfo, other._shapeInfo), false, this->_workspace);

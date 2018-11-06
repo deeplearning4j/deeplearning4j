@@ -28,7 +28,7 @@ namespace nd4j {
     private:
 
     public:
-        nd4j::scalar::BoolOps  s;
+        nd4j::scalar::BoolOps s;
         nd4j::pairwise::BoolOps p;
         nd4j::broadcast::BoolOps b;
 
