@@ -49,7 +49,7 @@ public class VoidConfiguration implements Serializable {
      * StreamId is used for Aeron configuration
      */
     @Builder.Default
-    private int streamId = 119;
+    private int streamId = -1;
 
     /**
      * This variable defines UDP port that will be used for communication with cluster driver.<br>
