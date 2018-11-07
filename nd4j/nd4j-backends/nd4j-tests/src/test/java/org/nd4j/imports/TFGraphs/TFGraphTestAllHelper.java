@@ -44,6 +44,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.BiFunction;
 import org.nd4j.linalg.function.Function;
@@ -413,6 +415,9 @@ public class TFGraphTestAllHelper {
         Map<String, INDArray> varMap = new HashMap<>();
         String modelDir = base_dir + "/" + modelName;
 
+        // key is variable name, value is data type
+        val dtypes = new HashMap<String, DataType>();
+
         List<Pair<Resource,Resource>> resources = new ArrayList<>();
         if(recursive){
             String nameRegex = pattern.replace("**.",".*\\.") + "\\.shape";
@@ -443,6 +448,26 @@ public class TFGraphTestAllHelper {
                             if(filename.matches(nameRegex)){
                                 File csvFile = new File(f.getAbsolutePath().replace(".shape",".csv"));
                                 resources.add(new Pair<>(new FileSystemResource(f), new FileSystemResource(csvFile)));
+                            } else if (filename.equals("dtypes")) {
+                                log.info("F: {}", filename);
+
+                                List<String> stringList;
+
+                                try (val is = new BufferedInputStream(new FileInputStream(f))) {
+                                    stringList = IOUtils.readLines(is, StandardCharsets.UTF_8);
+
+                                    for (val s:stringList) {
+                                        val split = s.split("\\ ");
+                                        val key = split[0];
+                                        val value = ArrayOptionsHelper.dataType(split[1]);
+                                        if (dtypes.containsKey(key))
+                                            throw new ND4JIllegalStateException("Specified key already exist: [" + key + "]");
+                                        else
+                                            dtypes.put(key, value);
+                                    }
+                                } catch (FileNotFoundException e) {
+                                    stringList = new ArrayList<>();
+                                }
                             }
                         }
                     }
@@ -459,7 +484,6 @@ public class TFGraphTestAllHelper {
             }
 
         }
-
 
         val dtype = Nd4j.dataType();
         for (int i = 0; i < resources.size(); i++) {

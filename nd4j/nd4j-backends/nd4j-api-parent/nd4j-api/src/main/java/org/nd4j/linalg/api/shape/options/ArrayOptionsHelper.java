@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.shape.options;
 
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -167,6 +168,28 @@ public class ArrayOptionsHelper {
                 return DataType.UTF8;
             default:
                 throw new UnsupportedOperationException("Unknown TF data type: [" + dataType.name() + "]");
+        }
+    }
+
+    public static DataType dataType(@NonNull String dataType) {
+        switch (dataType) {
+            case "int64":
+                return DataType.LONG;
+            case "int32":
+                return DataType.INT;
+            case "int16":
+                return DataType.SHORT;
+            case "int8":
+                return DataType.BYTE;
+            case "bool":
+                return DataType.BOOL;
+            case "float32":
+                return DataType.FLOAT;
+            case "float64":
+            case "double":
+                return DataType.DOUBLE;
+            default:
+                throw new ND4JIllegalStateException("Unknown data type used: [" + dataType + "]");
         }
     }
 
