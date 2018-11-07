@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -433,6 +434,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         //Note that each machine will allocate their own port for inbound communications according to what the PortSupplier
         //returns on each worker machine.
         voidConfiguration.setUnicastControllerPort(voidConfiguration.getPortSupplier().getPort());
+
+        // if streamId has default value - generate random one
+        if (voidConfiguration.getStreamId() < 1)
+            voidConfiguration.setStreamId(RandomUtils.nextInt(119, Integer.MAX_VALUE - 1));
 
         // first of all, we're instantiating ParameterServer shard here\
         if (numWorkers == null)
