@@ -56,6 +56,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -458,12 +459,26 @@ public class TFGraphTestAllHelper {
 
                                     for (val s:stringList) {
                                         val split = s.split("\\ ");
-                                        val key = split[0];
+
+                                        // adopt / in names
+                                        val key = split[0].replaceAll("____", "/");
+
+                                        // parse type directly
                                         val value = ArrayOptionsHelper.dataType(split[1]);
+
+                                        // adding key directly
                                         if (dtypes.containsKey(key))
                                             throw new ND4JIllegalStateException("Specified key already exist: [" + key + "]");
                                         else
                                             dtypes.put(key, value);
+
+                                        // adding zero output duplicate (if it doesn't exist)
+                                        if (key.endsWith(".0")) {
+                                            val nkey = key.replaceAll("\\.0$","");
+                                            if (!dtypes.containsKey(nkey)) {
+                                                dtypes.put(nkey, value);
+                                            }
+                                        }
                                     }
                                 } catch (FileNotFoundException e) {
                                     stringList = new ArrayList<>();
@@ -487,6 +502,16 @@ public class TFGraphTestAllHelper {
 
         val dtype = Nd4j.dataType();
         for (int i = 0; i < resources.size(); i++) {
+            URI u = resources.get(i).getFirst().getURI();
+            String varName = u.toString();
+            int idx = varName.indexOf(modelName);
+            varName = varName.substring(idx + modelName.length()+1);    //+1 for "/"
+            varName = varName.replaceAll("____","/");
+            varName = varName.replaceAll(".placeholder.shape","");
+            varName = varName.replaceAll(".prediction.shape","");
+            varName = varName.replaceAll(".prediction_inbw.shape","");
+
+            val type = dtypes.get(varName);
 
             List<String> lines; //= FileUtils.readLines(new ClassPathResource(varPath).getFile(), Charset.forName("UTF-8"));
             try(InputStream is = new BufferedInputStream(resources.get(i).getFirst().getInputStream())){
@@ -525,6 +550,7 @@ public class TFGraphTestAllHelper {
 //                        log.info("Finished reading: {} ms", end - start);
                     }
                     //= FileUtils.readFileToString(new ClassPathResource(varPath.replace(".shape", ".csv")).getFile(), Charset.forName("UTF-8"));
+
                     if (content.isEmpty()) {
                         if (varShape.length == 1 && varShape[0] == 0) {
                             varValue = Nd4j.empty();
@@ -534,15 +560,25 @@ public class TFGraphTestAllHelper {
                     } else {
                         content = content.replaceAll("False", "0");
                         content = content.replaceAll("True", "1");
-                        float[] varContents = Nd4j.readNumpy(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), ",").data().asFloat();
+                        val varContents = Nd4j.readNumpy(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), ",").data().asDouble();
+
                         if (varShape.length == 1) {
                             if (varShape[0] == 0) {
-                                varValue = Nd4j.trueScalar(varContents[0]);
+                                if (type == null)
+                                    varValue = Nd4j.trueScalar(varContents[0]);
+                                else
+                                    varValue = Nd4j.scalar(type, varContents[0]);
                             } else {
-                                varValue = Nd4j.trueVector(varContents);
+                                if (type == null)
+                                    varValue = Nd4j.trueVector(varContents);
+                                else
+                                    varValue = Nd4j.create(varContents, new long[]{varContents.length}, type);
                             }
                         } else {
-                            varValue = Nd4j.create(varContents, varShape);
+                            if (type == null)
+                                varValue = Nd4j.create(varContents, varShape);
+                            else
+                                varValue = Nd4j.create(varContents, ArrayUtil.toLongArray(varShape), type);
                         }
                     }
                 } catch (NumberFormatException e) {
@@ -551,14 +587,6 @@ public class TFGraphTestAllHelper {
                 }
             }
 
-            URI u = resources.get(i).getFirst().getURI();
-            String varName = u.toString();
-            int idx = varName.indexOf(modelName);
-            varName = varName.substring(idx + modelName.length()+1);    //+1 for "/"
-            varName = varName.replaceAll("____","/");
-            varName = varName.replaceAll(".placeholder.shape","");
-            varName = varName.replaceAll(".prediction.shape","");
-            varName = varName.replaceAll(".prediction_inbw.shape","");
             varMap.put(varName, varValue);
         }
         return varMap;
