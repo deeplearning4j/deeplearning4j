@@ -74,18 +74,18 @@ namespace helpers {
                     auto trial = (*input)(e, dimsToExclude);
 
                     //auto trialTo = lastDimList->at(e); // a vector to be search
-                    nd4j_printf("%i: ", e);
-                    trial.printIndexedBuffer("TRIAL:");
+                    //nd4j_printf("%i: ", e);
+                    //trial.printIndexedBuffer("TRIAL:");
                     //trialTo->printIndexedBuffer("TOTRI:");
                     std::vector<Nd4jLong> topIndices(k);
-                    std::vector<double> topValues(k);
+                    std::vector<T> topValues(k);
 
                     // fill up the first k elements
                     for (Nd4jLong pos = 0; pos < k; ++pos) {
                         topIndices[pos] = pos;
                         topValues[pos] = trial.e<T>(pos);
                     }
-                    std::vector<double> sortedVals(topValues);
+                    std::vector<T> sortedVals(topValues);
                     std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
                     
                     for (int i = k; i < width; ++i) {
@@ -105,8 +105,8 @@ namespace helpers {
                     }
 
                     if (needSort) {
-                        std::sort(topValues.begin(), topValues.end(), [](double a, double b) {
-                            return a > b;   
+                        std::sort(topValues.begin(), topValues.end(), [](T a, T b) {
+                            return a > b;
                         });
 
                         for (int j = 0; j < width; j++)
@@ -140,7 +140,7 @@ namespace helpers {
                         indeces->p<Nd4jLong>(nextPos, topIndices[pos]);
                     }
                 }
-                indeces->printIndexedBuffer("Indices as is");
+                //indeces->printIndexedBuffer("Indices as is");
         }
         return Status::OK();
     }
