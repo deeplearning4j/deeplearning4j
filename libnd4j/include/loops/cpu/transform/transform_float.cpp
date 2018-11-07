@@ -30,26 +30,26 @@ namespace functions {
 
         template <typename X, typename Y>
         void TransformFloat<X, Y>::exec(int opNum,
-                void *dx,
+                void *x,
                 Nd4jLong xStride,
-                void *result,
-                Nd4jLong resultStride,
+                void *z,
+                Nd4jLong zStride,
                 void *extraParams,
                 const Nd4jLong n) {
-            DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_FLOAT_OPS);
+            DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xStride, z, zStride, extraParams, n), TRANSFORM_FLOAT_OPS);
 		}
 
         template <typename X, typename Y>
         void TransformFloat<X, Y>::exec(
 				int opNum,
-				void *dx,
+				void *x,
 				Nd4jLong *xShapeInfo,
-				void *result,
-				Nd4jLong *resultShapeInfo,
+				void *z,
+				Nd4jLong *zShapeInfo,
 				void *extraParams,
 				Nd4jLong *tadShapeInfo,
 				Nd4jLong *tadOffsets) {
-                    DISPATCH_BY_OPNUM_TT(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
+                    DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
 		}
 
         template <typename X, typename Z>
@@ -57,89 +57,92 @@ namespace functions {
 		void _CUDA_H TransformFloat<X, Z>::exec(
                     void *vx,
                     Nd4jLong *xShapeInfo,
-                    void *vresult,
-                    Nd4jLong *resultShapeInfo,
+                    void *vz,
+                    Nd4jLong *zShapeInfo,
                     void *vextraParams,
                     Nd4jLong *tadShapeInfo,
                     Nd4jLong *tadOffsets) {
 
-		        auto dx = reinterpret_cast<X *>(vx);
-		        auto result = reinterpret_cast<Z *>(vresult);
+		        auto x = reinterpret_cast<X *>(vx);
+		        auto z = reinterpret_cast<Z *>(vz);
 		        auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
                 if(OpType::requiresSpecial) {
-                    OpType::execSpecial(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+                    OpType::execSpecial(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
                     return;
                 }
 
-                auto n = shape::length(xShapeInfo);
-                auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                auto resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+                const auto len = shape::length(xShapeInfo);
+                const auto xEws = shape::elementWiseStride(xShapeInfo);
+                const auto zEws = shape::elementWiseStride(zShapeInfo);
+                const auto xOrder = shape::order(xShapeInfo);
+                const auto zOrder = shape::order(zShapeInfo);
 
-                if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeInfo) == shape::order(resultShapeInfo)) {
-                    exec<OpType>(dx,xElementWiseStride,result,resultElementWiseStride,extraParams,n);
+                // loop2ArrsSame<X>(x, xShapeInfo, z, zShapeInfo, extraParams, OpType::op);
+
+                if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
+                    exec<OpType>(x,xEws,z,zEws,extraParams,len);
                 }
                 else {
-                    Nd4jLong shapeIter[MAX_RANK];
-                    Nd4jLong coord[MAX_RANK];
-                    int dim;
-                    Nd4jLong xStridesIter[MAX_RANK];
-                    Nd4jLong resultStridesIter[MAX_RANK];
-                    auto xShape = shape::shapeOf(xShapeInfo);
-                    auto xStride = shape::stride(xShapeInfo);
-                    auto resultStride = shape::stride(resultShapeInfo);
-                    int rank = shape::rank(xShapeInfo);
-                    if(PrepareTwoRawArrayIter<X, Z>(rank,
-                                                 xShape,
-                                                 dx,
-                                                 xStride,
-                                                 result,
-                                                 resultStride,
-                                                 &rank,
-                                                 shapeIter,
-                                                 &dx,
-                                                 xStridesIter,
-                                                 &result,
-                                                 resultStridesIter) >= 0) {
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
-                        {
-                            // Process the innermost dimension
-                            auto xIter = dx;
-                            auto resultIter = result;
-                            resultIter[0] = OpType::op(xIter[0], extraParams);
+                            
+                    const bool xSimpe = shape::isStrideSimple(xShapeInfo);
+                    const bool zSimpe = shape::isStrideSimple(zShapeInfo);
+                   
+                    if(xSimpe) {
+                        
+                        if(xEws == 1) {
+                            #pragma omp parallel for schedule(guided)
+                            for(Nd4jLong i = 0; i < len; ++i)
+                                z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[i], extraParams);                       
                         }
-                        ND4J_RAW_ITER_TWO_NEXT(dim,
-                                               rank,
-                                               coord,
-                                               shapeIter,
-                                               dx,
-                                               xStridesIter,
-                                               result,
-                                               resultStridesIter);
+                        else {
+                            #pragma omp parallel for schedule(guided)
+                            for(Nd4jLong i = 0; i < len; ++i)
+                                z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[i*xEws], extraParams);
+                        }
+                    }
+                    else if(zSimpe) {
 
+                        if(zEws == 1) {
+                            #pragma omp parallel for schedule(guided)
+                            for(Nd4jLong i = 0; i < len; ++i)                                
+                                z[i] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams);         
+                        }
+                        else {
+                            #pragma omp parallel for schedule(guided)
+                            for(Nd4jLong i = 0; i < len; ++i)                                
+                                z[i*zEws] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams);
+                        }
+                    }
+                    else {
+                        #pragma omp parallel for schedule(guided)
+                        for(Nd4jLong i = 0; i < len; ++i) 
+                            z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams);
+                    }                                         
                 }
-            }
         }
+        
 
         template <typename X, typename Z>
         template <typename OpType>
 		void _CUDA_H TransformFloat<X, Z>::exec(void *vx,
                              Nd4jLong xStride,
-                             void *vresult,
-                             Nd4jLong resultStride,
+                             void *vz,
+                             Nd4jLong zStride,
                              void *vextraParams,
                              const Nd4jLong n) {
-                auto dx = reinterpret_cast<X *>(vx);
-                auto result = reinterpret_cast<Z *>(vresult);
+                auto x = reinterpret_cast<X *>(vx);
+                auto z = reinterpret_cast<Z *>(vz);
                 auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-                int elementsPerThread = n / ELEMENT_THRESHOLD;
-                int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+                int num_threads = n / ELEMENT_THRESHOLD;
+                if(num_threads < 1)
+                    num_threads = 1;
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
                 int span = (n / num_threads) + 8;
 
-                if (xStride == 1 && resultStride == 1) {
+                if (xStride == 1 && zStride == 1) {
 
 #pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
                     {
@@ -151,7 +154,7 @@ namespace functions {
 
 #pragma omp simd
                         for (Nd4jLong i = start; i < end; i++) {
-                            result[i] = OpType::op(dx[i], extraParams);
+                            z[i] = OpType::op(x[i], extraParams);
                         }
                     }
                 } else {
@@ -166,7 +169,7 @@ namespace functions {
 
 #pragma omp simd
                         for (Nd4jLong i = start; i < end; i++) {
-                            result[i*resultStride] = OpType::op(dx[i * xStride], extraParams);
+                            z[i*zStride] = OpType::op(x[i * xStride], extraParams);
                     }
                 }
             }

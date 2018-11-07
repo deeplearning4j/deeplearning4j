@@ -25,242 +25,175 @@
 
 using namespace simdOps;
 
-namespace functions {
-    namespace indexreduce {
+namespace functions   {
+namespace indexreduce {
 
-        template <typename X>
-        Nd4jLong IndexReduce<X>::execScalar(
-                const int opNum,
-                void *x,
-                Nd4jLong *xShapeInfo,
-                void *extraParams) {
-            RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
+////////////////////////////////////////////////////////////////////////
+template <typename X> Nd4jLong IndexReduce<X>::execScalar( const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams) {
+    RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename X>
+void IndexReduce<X>::exec(const int opNum,
+                        void *x,  Nd4jLong *xShapeInfo,
+                        void *extraParams,
+                        Nd4jLong *z, Nd4jLong *zShapeInfo,
+                        int *dimension, int dimensionLength, 
+                        Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
+
+DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename X>
+template<typename OpType>
+Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextraParams) {
+        
+    auto x = reinterpret_cast<X *>(vx);
+    auto extraParams = reinterpret_cast<X *>(vextraParams);
+
+    //T startingVal = OpType::startingValue(x);
+    auto startingIndex = OpType::startingIndexValue(x);
+    Nd4jLong len = shape::length(xShapeInfo);
+    int xEws = shape::elementWiseStride(xShapeInfo);
+
+    if(xEws < 1) {        
+        for (Nd4jLong i = 0; i < len; i++) {
+            IndexValue<X> curr(i, x[shape::getIndexOffset(i, xShapeInfo, len)]);
+            startingIndex = OpType::update(startingIndex, curr, extraParams);
         }
-
-        template <typename X>
-        void IndexReduce<X>::exec(const int opNum,
-                  void *x,
-                  Nd4jLong *xShapeInfo,
-                  void *extraParams,
-                  Nd4jLong *result,
-                  Nd4jLong *resultShapeInfoBuffer,
-                  int *dimension,
-                  int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
-            DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
-        }
-
-        template <typename X>
-        template<typename OpType>
-        Nd4jLong IndexReduce<X>::execScalar(void *vx,
-                Nd4jLong *xShapeInfo,
-                void *vextraParams) {
-            auto x = reinterpret_cast<X *>(vx);
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-            //T startingVal = OpType::startingValue(x);
-            auto startingIndex = OpType::startingIndexValue(x);
-
-            Nd4jLong length = shape::length(xShapeInfo);
-            int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-            if(xElementWiseStride < 1) {
-                auto xShape = shape::shapeOf(xShapeInfo);
-                auto xStride = shape::stride(xShapeInfo);
-                int tadRank = shape::rank(xShapeInfo);
-                Nd4jLong xCoord[MAX_RANK];
-
-                for (Nd4jLong i = 0; i < length; i++) {
-                    shape::ind2subC(tadRank,xShape, i, length, xCoord);
-                    auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, tadRank);
-
-                    IndexValue<X> curr;
-                    curr.value = x[xOffset];
-                    curr.index = i;
-
-                    startingIndex = OpType::update(startingIndex, curr, extraParams);
-                }
-                return startingIndex.index;
-            }
-            else {
-
-                if (xElementWiseStride == 1) {
-                    if(length < ELEMENT_THRESHOLD) {
+        return startingIndex.index;
+    }
+    
+    if (len < ELEMENT_THRESHOLD) {
 // FIXME: proper reduction to be used here
-//#pragma omp simd
-                        for (Nd4jLong i = 0; i < length; i++) {
-                            IndexValue<X> curr;
-                            curr.value = x[i];
-                            curr.index = i;
-                            startingIndex = OpType::update(startingIndex, curr, extraParams);
-
-                        }
-                        return startingIndex.index;
-                    }
-                    else {
-                        BlockInformation info(length, ELEMENT_THRESHOLD);
-
+        for (Nd4jLong i = 0; i < len; i++) {
+            IndexValue<X> curr(i, x[i*xEws]);
+            startingIndex = OpType::update(startingIndex, curr, extraParams);
+        }
+        return startingIndex.index;
+    }
+    
+    // xEws >= 1 && len >= ELEMENT_THRESHOLD
+    BlockInformation info(len, ELEMENT_THRESHOLD);
 #pragma omp parallel num_threads(info.threads) if (info.threads > 1) default(shared)
+    {
+        auto local = OpType::startingIndexValue(x);
+        auto i = omp_get_thread_num();            
+        Nd4jLong itemsToLoop = (i < info.threads-1) ? info.items : info.items + info.remainder;
+        Nd4jLong index = i * info.items;
+        auto xi = x + xEws * index;
 
-                        {
-                            auto local = OpType::startingIndexValue(x);
-
-
-                            for (Nd4jLong i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
-                                Nd4jLong newOffset = (i * info.items);
-                                auto chunk = x + newOffset;
-                                Nd4jLong itemsToLoop = info.items;
-                                if(newOffset >= length) {
-                                    break;
-                                }
-
-                                //handle modulo case
-                                if(newOffset + info.items >= length) {
-                                    itemsToLoop = length - newOffset;
-                                }
-
-                                for (Nd4jLong j = 0; j < itemsToLoop; j++) {
-                                    IndexValue<X> curr;
-                                    curr.value = chunk[j];
-                                    curr.index = newOffset + j;
-                                    local = OpType::update(local, curr, extraParams);
-                                }
+        for (Nd4jLong j = 0; j < itemsToLoop; j++) {
+            IndexValue<X> curr(index + j, xi[j*xEws]);
+            local = OpType::update(local, curr, extraParams);
+        }
 
 #pragma omp critical
-                                {
-                                    startingIndex = OpType::update(startingIndex, local, extraParams);
-                                }
-                            }
-                        }
-
-                        return startingIndex.index;
-                    }
-
-                }
-
-                else {
-                    for (Nd4jLong i = 0; i < length; i++) {
-                        IndexValue<X> curr;
-                        curr.value = x[i * xElementWiseStride];
-                        curr.index = i;
-                        startingIndex = OpType::update(startingIndex, curr,
-                                                       extraParams);
-                    }
-                }
-            }
-
-            return  startingIndex.index;
-        };
-
-        template <typename X>
-        template<typename OpType>
-        void IndexReduce<X>::exec(void *vx,
-                Nd4jLong *xShapeInfo,
-                void *vextraParams,
-                Nd4jLong *result,
-                Nd4jLong *resultShapeInfoBuffer,
-                int *dimension,
-                int dimensionLength,
-                Nd4jLong *tadShapeInfo,
-                Nd4jLong *tadOffset) {
-
-            auto x = reinterpret_cast<X *>(vx);
-            auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-            if(shape::isScalar(resultShapeInfoBuffer)) {
-                result[0] = execScalar<OpType>(x,xShapeInfo,extraParams);
-                return;
-            }
-
-            const Nd4jLong resultLength = shape::length(resultShapeInfoBuffer);
-            auto startingIndex = new IndexValue<X>[resultLength];
-
-#pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
-            for (Nd4jLong i = 0; i < resultLength; i++) {
-                auto val = OpType::startingIndexValue(x);
-                startingIndex[i] = val;
-            }
-
-            auto tadOnlyShapeInfo = tadShapeInfo;
-            Nd4jLong *tadOffsets = tadOffset;
-            shape::TAD *tad = nullptr;
-
-            if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
-                tad->createTadOnlyShapeInfo();
-                tad->createOffsets();
-
-                if (tad->dimensionLength < 1) {
-                    delete tad;
-                    delete[] startingIndex;
-                    return;
-                }
-
-                tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
-                tadOffsets = tad->tadOffsets;
-            }
-
-            int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-            int numTads = shape::length(xShapeInfo) / tadLength;
+        startingIndex = OpType::update(startingIndex, local, extraParams);
+    }
+    return startingIndex.index;
+}
 
 
-            if(!(shape::elementWiseStride(tadOnlyShapeInfo) > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo)))) {
-                /**
-                             * The element wise stride belong longs to a reduction index.
-                             * When used out of order, we can get rid of the data
-                             * dependencies and rely on using the max dimension
-                             * specified for stride instead.
-                             * Say we take the sum(0,1) along long arr
-                             * we can use arr.stride(1) as a representation
-                             * along long which to iterate.
-                             */
+////////////////////////////////////////////////////////////////////////
+template <typename X>
+template<typename OpType>
+void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
+                        void *vextraParams,
+                        Nd4jLong *z, Nd4jLong *zShapeInfo,
+                        int *dimension, int dimensionLength,
+                        Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
 
-                auto tadShapeShapeInfo = tadOnlyShapeInfo;
-                auto xShape = shape::shapeOf(tadShapeShapeInfo);
-                auto xStride = shape::stride(tadShapeShapeInfo);
-                int rank = shape::rank(tadShapeShapeInfo);
+    auto x = reinterpret_cast<X *>(vx);
+    auto extraParams = reinterpret_cast<X *>(vextraParams);
 
+    if(shape::isScalar(zShapeInfo)) {
+        z[0] = execScalar<OpType>(x,xShapeInfo,extraParams);
+        return;
+    }
 
-#pragma omp  parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
-                for(Nd4jLong i = 0; i < resultLength; i++) {
-                    auto offset = tadOffsets[i];
+    const Nd4jLong zLen = shape::length(zShapeInfo);
+    auto startingIndex = new IndexValue<X>[zLen];
 
-                    auto indexValue = OpType::startingIndexValue(&x[offset]);
+#pragma omp parallel for schedule(guided) if (zLen > TAD_THRESHOLD) default(shared)
+    for (Nd4jLong i = 0; i < zLen; i++)
+        startingIndex[i] = OpType::startingIndexValue(x);        
 
-                    Nd4jLong xCoord[MAX_RANK];
+    auto tadOnlyShapeInfo = tadShapeInfo;
+    Nd4jLong *tadOffsets = tadOffset;
+    shape::TAD *tad = nullptr;
 
-                    for(int j = 0; j < tadLength; j++) {
-                        shape::ind2subC(rank,xShape, j, tadLength, xCoord);
-                        auto  xOffset = shape::getOffset(offset, xShape, xStride, xCoord, rank);
+    if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
+        tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
 
-                        IndexValue<X> comp;
-                        comp.index = j;
-                        comp.value = x[xOffset];
-                        indexValue = OpType::update(indexValue,comp,extraParams);
-                    }
-                    result[i] = indexValue.index;
-                }
-            } else {
-                auto tadElementWiseStride = shape::elementWiseStride(tadOnlyShapeInfo);
-
-//#pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
-                for(Nd4jLong i = 0;  i < resultLength; i++) {
-                    auto baseOffset = tadOffsets[i];
-                    auto indexValue = OpType::startingIndexValue(&x[baseOffset]);
-
-// FIXME: proper reduction required here
-                    for(int j = 0; j < tadLength; j++) {
-                        IndexValue<X> comp;
-                        comp.index = j;
-                        comp.value = x[baseOffset + tadElementWiseStride * j];
-                        indexValue = OpType::update(indexValue,comp,extraParams);
-                    }
-                    result[i] = indexValue.index;
-                }
-            }
-
+        if (tad->dimensionLength < 1) {
+            delete tad;
             delete[] startingIndex;
+            return;
         }
 
+        tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
+        tadOffsets = tad->tadOffsets;
+    }
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES);
-    };
+    int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    int numTads = shape::length(xShapeInfo) / tadLength;
+
+    if(!(shape::elementWiseStride(tadOnlyShapeInfo) > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo)))) {
+        /**
+         * The element wise stride belong longs to a reduction index.
+         * When used out of order, we can get rid of the data
+         * dependencies and rely on using the max dimension
+         * specified for stride instead.
+         * Say we take the sum(0,1) along long arr
+         * we can use arr.stride(1) as a representation
+         * along long which to iterate.
+         */
+
+        auto tadShapeShapeInfo = tadOnlyShapeInfo;
+        auto xShape = shape::shapeOf(tadShapeShapeInfo);
+        auto xStride = shape::stride(tadShapeShapeInfo);
+        int rank = shape::rank(tadShapeShapeInfo);
+
+#pragma omp  parallel for schedule(guided) if (zLen > TAD_THRESHOLD) default(shared)
+        for(Nd4jLong i = 0; i < zLen; i++) {
+
+            auto offset = tadOffsets[i];
+            auto indexValue = OpType::startingIndexValue(&x[offset]);
+
+            for(int j = 0; j < tadLength; j++) {
+                auto xOffset = offset + shape::getIndexOffset(j, tadShapeShapeInfo, tadLength);
+                IndexValue<X> comp(j, x[xOffset]);
+                indexValue = OpType::update(indexValue,comp,extraParams);
+            }
+            z[i] = indexValue.index;
+        }
+    } 
+    else {
+        auto tadEws = shape::elementWiseStride(tadOnlyShapeInfo);
+
+//#pragma omp parallel for schedule(guided) if (zLen > TAD_THRESHOLD) default(shared)
+        for(Nd4jLong i = 0;  i < zLen; i++) {
+            auto baseOffset = tadOffsets[i];
+            auto indexValue = OpType::startingIndexValue(&x[baseOffset]);
+// FIXME: proper reduction required here
+            for(int j = 0; j < tadLength; j++) {
+                IndexValue<X> comp(j, x[baseOffset + tadEws * j]);
+                indexValue = OpType::update(indexValue,comp,extraParams);
+            }
+            z[i] = indexValue.index;
+        }
+    }
+
+    delete[] startingIndex;
+}
+
+
+BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES);
+
+}
 }
