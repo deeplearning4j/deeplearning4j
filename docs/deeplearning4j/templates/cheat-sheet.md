@@ -170,8 +170,8 @@ Neither type (iteration/training) are called outside of training (i.e., during o
 
 Link: [Main evaluation page](https://deeplearning4j.org/evaluation)
 
-ND4J has a number of classes for evaluating the performance of a network, against a test set. Different evaluation classes are suitable for different types of networks.
-Note: in 1.0.0-beta3 (November 2018), all evaluation classes were moved from DL4J to ND4J.
+ND4J has a number of classes for evaluating the performance of a network, against a test set. Deeplearning4j (and SameDiff) use these ND4J evaluation classes. Different evaluation classes are suitable for different types of networks.
+Note: in 1.0.0-beta3 (November 2018), all evaluation classes were moved from DL4J to ND4J; previously they were in DL4J.
 
 
 * **Evaluation** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/evaluation/classification/Evaluation.java)) - Used for the evaluation of multi-class classifiers (assumes standard one-hot labels, and softmax probability distribution over N classes for predictions). Calculates a number of metrics - accuracy, precision, recall, F1, F-beta, Matthews correlation coefficient, confusion matrix. Optionally calculates top N accuracy, custom binary decision thresholds, and cost arrays (for non-binary case). Typically used for softmax + mcxent/negative-log-likelihood networks.
