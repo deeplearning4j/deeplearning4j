@@ -111,11 +111,11 @@ namespace simdOps {
 	class Add {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return static_cast<Z>(d1) + static_cast<Z>(d2);
+			return static_cast<Z>(d1 + d2);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return static_cast<Z>(d1) + static_cast<Z>(d2);
+			return static_cast<Z>(d1 + d2);
 		}
 
 		op_def static Z op(X d1) {
@@ -124,7 +124,7 @@ namespace simdOps {
 
 		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return static_cast<Z>(d1) + static_cast<Z>(params[0]);
+			return static_cast<Z>(d1 + params[0]);
 		}
 
 		op_def static X startingValue() {
@@ -144,11 +144,11 @@ namespace simdOps {
 	class Subtract {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return static_cast<Z>(d1) - static_cast<Z>(d2);
+			return static_cast<Z>(d1 - d2);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return static_cast<Z>(d1) - static_cast<Z>(d2);
+			return static_cast<Z>(d1 - d2);
 		}
 
 		op_def static Z op(X d1) {
@@ -157,7 +157,7 @@ namespace simdOps {
 
 		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return static_cast<Z>(d1) - static_cast<Z>(params[0]);
+			return static_cast<Z>(d1 - params[0]);
 		}
 
 	};
@@ -166,11 +166,11 @@ namespace simdOps {
 	class SquaredSubtract {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return nd4j::math::nd4j_pow<Z, Y, Z>(static_cast<Z>(d1) - static_cast<Z>(d2), static_cast<Y>(2.f));
+			return nd4j::math::nd4j_pow<Z, float, Z>(static_cast<Z>(d1 - d2), 2.f);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return nd4j::math::nd4j_pow<Z, Y, Z>(static_cast<Z>(d1) - static_cast<Z>(d2), static_cast<Y>(2.f));
+			return nd4j::math::nd4j_pow<Z, float, Z>(static_cast<Z>(d1 - d2), 2.f);
 		}
 
 		op_def static Z op(X d1) {
@@ -179,7 +179,7 @@ namespace simdOps {
 
 		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return nd4j::math::nd4j_pow<Z, Y, Z>(static_cast<Z>(d1) - static_cast<Z>(params[0]), static_cast<X>(2.f));
+			return nd4j::math::nd4j_pow<Z, float, Z>(static_cast<Z>(d1 - params[0]), 2.f);
 		}
 	};
 
@@ -187,11 +187,11 @@ namespace simdOps {
 	class ReverseSubtract {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return static_cast<Z>(d2) - static_cast<Z>(d1);
+			return static_cast<Z>(d2 - d1);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return static_cast<Z>(d2) - static_cast<Z>(d1);
+			return static_cast<Z>(d2 - d1);
 		}
 
 		op_def static Z op(X d1) {
@@ -200,7 +200,7 @@ namespace simdOps {
 
 		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return static_cast<Z>(params[0]) - static_cast<Z>(d1);
+			return static_cast<Z>(params[0] - d1);
 		}
 	};
 
@@ -262,11 +262,11 @@ namespace simdOps {
 	class Multiply {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return static_cast<Z>(d1) * static_cast<Z>(d2);
+			return static_cast<Z>(d1 * d2);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return static_cast<Z>(d1) * static_cast<Z>(d2);
+			return static_cast<Z>(d1 * d2);
 		}
 
 		op_def static Z op(X d1) {
@@ -275,7 +275,7 @@ namespace simdOps {
 
 		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return static_cast<Z>(d1) * static_cast<Z>(params[0]);
+			return static_cast<Z>(d1 * params[0]);
 		}
 
 		op_def static X startingValue() {
@@ -287,11 +287,11 @@ namespace simdOps {
 	class Divide {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return static_cast<Z>(d1) / static_cast<Z>(d2);
+			return static_cast<Z>(d1 / d2);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return static_cast<Z>(d1) / static_cast<Z>(d2);
+			return static_cast<Z>(d1 / d2);
 		}
 
 		op_def static Z op(X d1) {
@@ -300,7 +300,7 @@ namespace simdOps {
 
 		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return static_cast<Z>(d1) / static_cast<Z>(params[0]);
+			return static_cast<Z>(d1 / params[0]);
 		}
 
 		op_def static X startingValue() {
@@ -314,13 +314,13 @@ namespace simdOps {
 		op_def static Z op(X d1, Y d2) {
 			if(d2 == static_cast<Y>(0))
 				return static_cast<Z>(0);
-			return static_cast<Z>(d1) / static_cast<Z>(d2);
+			return static_cast<Z>(d1 / d2);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
 			if(d2 == static_cast<Y>(0))
-				return static_cast<X>(0);
-			return static_cast<Z>(d1) / static_cast<Z>(d2);
+				return static_cast<Z>(0);
+			return static_cast<Z>(d1 / d2);
 		}
 
 		op_def static Z op(X d1) {
@@ -331,7 +331,7 @@ namespace simdOps {
 		op_def static Z op(X d1, Y *params) {
 			if(params[0] == static_cast<Y>(0))
 				return static_cast<Z>(0);
-			return static_cast<Z>(d1) / static_cast<Z>(params[0]);
+			return static_cast<Z>(d1 / params[0]);
 		}
 	};
 
@@ -339,11 +339,11 @@ namespace simdOps {
     class FloorDiv {
     public:
         op_def static Z op(X d1, Y d2) {
-            return nd4j::math::nd4j_floor<Z,Z>(static_cast<Z>(d1) / static_cast<Z>(d2));
+            return nd4j::math::nd4j_floor<Z,Z>(static_cast<Z>(d1 / d2));
         }
 
         op_def static Z op(X d1, Y d2, Z *params) {
-            return nd4j::math::nd4j_floor<Z,Z>(static_cast<Z>(d1) / static_cast<Z>(d2));
+            return nd4j::math::nd4j_floor<Z,Z>(static_cast<Z>(d1 / d2));
         }
 
         op_def static Z op(X d1) {
@@ -352,7 +352,7 @@ namespace simdOps {
 
         // op for MetaOps
         op_def static Z op(X d1, Y *params) {
-            return nd4j::math::nd4j_floor<Z,Z>(static_cast<Z>(d1) / static_cast<Z>(params[0]));
+            return nd4j::math::nd4j_floor<Z,Z>(static_cast<Z>(d1 / params[0]));
         }
     };
 
@@ -452,11 +452,11 @@ namespace simdOps {
 	class ReverseDivide {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return static_cast<Z>(d2) / static_cast<Z>(d1);
+			return static_cast<Z>(d2 / d1);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return static_cast<Z>(d2) / static_cast<Z>(d1);
+			return static_cast<Z>(d2 / d1);
 		}
 
 		op_def static Z op(X d1) {
@@ -465,7 +465,7 @@ namespace simdOps {
 
 		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return static_cast<Z>(params[0]) / static_cast<Z>(d1);
+			return static_cast<Z>(params[0] / d1);
 		}
 	};
 
@@ -527,12 +527,12 @@ namespace simdOps {
 	class Axpy {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return static_cast<Z>(d2) + static_cast<Z>(d1);
+			return static_cast<Z>(d2 + d1);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
 			auto alpha = params[0];
-			return static_cast<Z>(alpha) * static_cast<Z>(d1) + static_cast<Z>(d2);
+			return alpha * static_cast<Z>(d1+ d2);
 		}
 
 		op_def static Z op(X d1) {
