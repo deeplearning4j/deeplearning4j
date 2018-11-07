@@ -60,7 +60,8 @@ namespace helpers {
     void softPlusDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     void sigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     void hardSigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-
+    void logSumExp(NDArray* input, NDArray* axis, NDArray* output);
+    void logSumExp(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output);
 }
 }
 }

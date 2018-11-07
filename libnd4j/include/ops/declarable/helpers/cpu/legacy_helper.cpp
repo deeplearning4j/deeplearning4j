@@ -289,6 +289,47 @@ namespace helpers {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), hardSigmoidDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
+    template <typename T>
+    static void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
+        // reduce along axis with
+        std::unique_ptr<NDArray> tempInput(input->dup());
+        input->applyTransform(transform::Exp, tempInput.get());
+        std::vector<int> axisVector;
+        if (axis != nullptr) {
+            axisVector.resize(axis->lengthOf());
+            for (size_t i = 0; i < axisVector.size(); ++i)
+                axisVector[i] = axis->e<int>(i);
+        }
+        tempInput->reduceAlongDimension(reduce::Sum, output, axisVector);
+        output->applyTransform(transform::Log, nullptr, nullptr);
+    }
+
+    template <typename T>
+    static void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
+        // reduce along axis with
+        std::unique_ptr<NDArray> tempInput(input->dup());
+        input->applyPairwiseTransform(pairwise::Subtract, subtrah, tempInput.get());
+        tempInput->applyTransform(transform::Exp, nullptr, nullptr);
+
+        std::vector<int> axisVector;
+        if (axis != nullptr) {
+            axisVector.resize(axis->lengthOf());
+            for (size_t i = 0; i < axisVector.size(); ++i)
+                axisVector[i] = axis->e<int>(i);
+        }
+        tempInput->reduceAlongDimension(reduce::Sum, output, axisVector);
+        output->applyTransform(transform::Log, nullptr, nullptr);
+    }
+
+    void logSumExp(NDArray* input, NDArray* axis, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), logSumExp_, (input, axis, output), FLOAT_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template void logSumExp_, (NDArray* input, NDArray* axis, NDArray*output);, FLOAT_TYPES);
+
+    void logSumExp(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), logSumExp_, (input, subtrah, axis, output), FLOAT_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template void logSumExp_, (NDArray* input, NDArray* subtrah, NDArray* axis, NDArray*output);, FLOAT_TYPES);
 
 }
 }
