@@ -183,6 +183,7 @@ public class ArrayOptionsHelper {
                 return DataType.BYTE;
             case "bool":
                 return DataType.BOOL;
+            case "resource": //special case, nodes like Enter
             case "float32":
                 return DataType.FLOAT;
             case "float64":

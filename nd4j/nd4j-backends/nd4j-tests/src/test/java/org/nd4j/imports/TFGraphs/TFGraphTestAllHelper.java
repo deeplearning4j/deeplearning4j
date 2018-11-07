@@ -450,8 +450,6 @@ public class TFGraphTestAllHelper {
                                 File csvFile = new File(f.getAbsolutePath().replace(".shape",".csv"));
                                 resources.add(new Pair<>(new FileSystemResource(f), new FileSystemResource(csvFile)));
                             } else if (filename.equals("dtypes")) {
-                                log.info("F: {}", filename);
-
                                 List<String> stringList;
 
                                 try (val is = new BufferedInputStream(new FileInputStream(f))) {
