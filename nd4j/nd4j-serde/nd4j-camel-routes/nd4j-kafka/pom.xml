@@ -71,13 +71,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-        <!-- testing -->
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-base64</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 
     <profiles>
