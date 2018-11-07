@@ -28,7 +28,7 @@ namespace nd4j {
     namespace ops {
         REDUCTION_OP_IMPL(norm, 1, 1, false, 1, -2) {
             auto input = INPUT_VARIABLE(0);
-            NDArray *output = nullptr;
+            NDArray *output = OUTPUT_VARIABLE(0);
 
             auto mode = (int) T_ARG(0);
             std::vector<int> dims = *block.getIArguments();
@@ -42,9 +42,10 @@ namespace nd4j {
                 helpers::adjustAxis(input, axisVector, dims);
                 axisVector->printIndexedBuffer("AXIS");
                 auto shape = ShapeUtils::evalReduceShapeInfo(input->ordering(), dims, *input, false, false);
-                output = new NDArray(shape, false, block.getWorkspace());
-
-                overwrite = true;
+                if (!shape::equalsStrict(shape, output->shapeInfo())) {
+                    output = new NDArray(shape, false, block.getWorkspace());
+                    overwrite = true;
+                }
                 RELEASE(shape, input->getWorkspace());
             }
             output->printShapeInfo("Output Shape Info");

@@ -37,8 +37,18 @@ namespace nd4j {
         nd4j::ShapeList* DeclarableReductionOp::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block)  {
            // int numDims = INT_ARG(0);
             std::vector<int> dims;
-            for (int e = 0; e < block.getIArguments()->size(); e++)
-                dims.push_back(INT_ARG(e));
+            if (inputShape->size() > 1) {
+                // the second argument is axis
+                auto axis = INPUT_VARIABLE(1);
+                for (int e = 0; e < axis->lengthOf(); e++)
+                    dims.push_back(axis->e<int>(e));
+            }
+            else if (block.getIArguments()->size())
+               for (int e = 0; e < block.getIArguments()->size(); e++)
+                   dims.push_back(INT_ARG(e));
+            else if (block.getAxis()->size()) {
+                dims = *block.getAxis(); //.push_back(axis->e<int>(e));
+            }
 
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());
