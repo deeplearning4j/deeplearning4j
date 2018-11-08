@@ -2077,6 +2077,48 @@ TEST_F(DeclarableOpsTests10, pad_tests26) {
 }
 
 ////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_1) {
+
+    NDArray<float> boxes   ('c', {3,4});
+    NDArray<float> scales('c', {3}, {1, 2, 3});
+    NDArray<float> expected('c', {3}, {2.,1.,0.});
+    boxes.linspace(1.f);
+
+    nd4j::ops::non_max_suppression<float> op;
+    auto results = op.execute({&boxes, &scales}, {}, {5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
+
+    NDArray<float> boxes   ('c', {6,4}, {0, 0, 1, 1, 0, 0.1f, 1, 1.1f, 0, -0.1f, 1.f, 0.9f,
+                                         0, 10, 1, 11, 0, 10.1f, 1.f, 11.1f, 0, 100, 1, 101});
+    NDArray<float> scales('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray<float> expected('c', {3}, {3.,0.,5.});
+
+    nd4j::ops::non_max_suppression<float> op;
+    auto results = op.execute({&boxes, &scales}, {0.5}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, batchnorm_new_test1) {
     
     NDArray<double> input   ('c', {2,3,4});
