@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void nonMaxSuppressionV2(NDArray<T>* boxes, NDArray<T>* scales, int maxSize, NDArray<T>* output);
+    void nonMaxSuppressionV2(NDArray<T>* boxes, NDArray<T>* scales, int maxSize, T threshold, NDArray<T>* output);
 
 }
 }
