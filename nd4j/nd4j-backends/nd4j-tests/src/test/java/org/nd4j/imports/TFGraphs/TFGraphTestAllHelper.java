@@ -80,6 +80,7 @@ import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
  */
 @Slf4j
 public class TFGraphTestAllHelper {
+    public static final String resourceFolderVar = "DL4J_TEST_RESOURCES";
 
     public enum ExecuteWith {
         SAMEDIFF, LIBND4J, JUST_PRINT
@@ -431,12 +432,22 @@ public class TFGraphTestAllHelper {
 //            baseDir.mkdirs();
 //            baseDir.deleteOnExit();
 //            new ClassPathResource(modelDir).copyDirectory(baseDir);
-            File baseDir = new File(localTestDir, "extracted/" + modelName);
+
+            // checking out, if local folder declared
+            val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
+
+            // baseDir will differ, depending on run mode
+            File baseDir = localPath == null ? new File(localTestDir, "extracted/" + modelName) : new File(localTestDir, base_dir + "/" + modelName);
             String[] arr = baseDir.list();
+
             if(!baseDir.exists() || arr == null || arr.length == 0){
-                baseDir.mkdirs();
-                baseDir.deleteOnExit();
-                new ClassPathResource(modelDir).copyDirectory(baseDir);
+                // we're skipping extraction if we're using local copy of dl4j-tests-resources
+                if (localPath == null) {
+                    baseDir.mkdirs();
+                    baseDir.deleteOnExit();
+                    new ClassPathResource(modelDir).copyDirectory(baseDir);
+                } else
+                    throw new IllegalStateException("local directory declared but doesn't exist");
             }
 
             LinkedList<File> queue = new LinkedList<>();
