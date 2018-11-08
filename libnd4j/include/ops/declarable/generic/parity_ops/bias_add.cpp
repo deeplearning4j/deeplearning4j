@@ -69,7 +69,7 @@ namespace nd4j {
             COPY_SHAPE(xShape, newShape);
             ArrayOptions::setDataType(newShape, dtype);
 
-            return SHAPELIST();
+            return SHAPELIST(newShape);
         }
 
         DECLARE_TYPES(biasadd_bp) {
