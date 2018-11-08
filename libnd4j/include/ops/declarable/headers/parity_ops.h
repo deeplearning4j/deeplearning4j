@@ -1459,6 +1459,11 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(matrix_band_part, 1, 1, true, 0, 2);
         #endif
 
+
+        #if NOT_EXCLUDED(OP_Assert)
+        DECLARE_OP(Assert, 1, 1, false);
+        #endif
+
     }
 }
 
