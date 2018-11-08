@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.image;
 
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -23,6 +24,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +33,8 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 public class ResizeBilinear extends DynamicCustomOp {
+    protected boolean alignCorners = false;
+
     @Override
     public String opName() {
         return "resize_bilinear";
@@ -38,16 +42,32 @@ public class ResizeBilinear extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "resize_bilinear";
+        return "ResizeBilinear";
     }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+
+        this.alignCorners = attributesForNode.get("align_corners").getB();
         addArgs();
     }
 
     protected void addArgs() {
         // to be implemented
+        iArguments.clear();
+        iArguments.add(alignCorners ? 1L : 0L);
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("alignCorners", alignCorners);
+        return ret;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        throw new UnsupportedOperationException();
     }
 }
