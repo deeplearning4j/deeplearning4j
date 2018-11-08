@@ -144,7 +144,7 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return 0;
     }
 

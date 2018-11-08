@@ -402,7 +402,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return 0;
     }
 

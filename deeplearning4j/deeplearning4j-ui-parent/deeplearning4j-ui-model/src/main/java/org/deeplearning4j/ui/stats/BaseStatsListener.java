@@ -663,7 +663,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         if (initConfig.collectModelInfo()) {
             String jsonConf;
             int numLayers;
-            int numParams;
+            long numParams;
             if (model instanceof MultiLayerNetwork) {
                 MultiLayerNetwork net = ((MultiLayerNetwork) model);
                 jsonConf = net.getLayerWiseConfigurations().toJson();

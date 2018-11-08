@@ -275,10 +275,37 @@ nd4j.graph.FlatNode.prototype.scopeName = function(optionalEncoding) {
 };
 
 /**
+ * @param {number} index
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array}
+ */
+nd4j.graph.FlatNode.prototype.outputNames = function(index, optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 36);
+  return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.FlatNode.prototype.outputNamesLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 36);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array|null}
+ */
+nd4j.graph.FlatNode.prototype.opName = function(optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 38);
+  return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatNode.startFlatNode = function(builder) {
-  builder.startObject(16);
+  builder.startObject(18);
 };
 
 /**
@@ -554,6 +581,43 @@ nd4j.graph.FlatNode.addScopeId = function(builder, scopeId) {
  */
 nd4j.graph.FlatNode.addScopeName = function(builder, scopeNameOffset) {
   builder.addFieldOffset(15, scopeNameOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} outputNamesOffset
+ */
+nd4j.graph.FlatNode.addOutputNames = function(builder, outputNamesOffset) {
+  builder.addFieldOffset(16, outputNamesOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<flatbuffers.Offset>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatNode.createOutputNamesVector = function(builder, data) {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.FlatNode.startOutputNamesVector = function(builder, numElems) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} opNameOffset
+ */
+nd4j.graph.FlatNode.addOpName = function(builder, opNameOffset) {
+  builder.addFieldOffset(17, opNameOffset, 0);
 };
 
 /**

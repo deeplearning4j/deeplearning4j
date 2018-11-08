@@ -77,7 +77,7 @@ public class Entropy extends BaseAccumulation {
 
     @Override
     public String tensorflowName() {
-        return "entropy_shannon";
+        return "entropy";
     }
 
     @Override

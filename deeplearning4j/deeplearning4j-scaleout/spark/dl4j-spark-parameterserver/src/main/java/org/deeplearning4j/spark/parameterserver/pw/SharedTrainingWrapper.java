@@ -24,12 +24,17 @@ import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
+import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
 import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.SmartFancyBlockingQueue;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
@@ -52,6 +57,7 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
+import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvider;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 
 import java.util.ArrayList;
@@ -248,10 +254,7 @@ public class SharedTrainingWrapper {
                     }
                 }
 
-                val handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(),
-                                trainingConfiguration.getMinThreshold(), trainingConfiguration.getThresholdStep(),
-                                trainingConfiguration.getStepTrigger(), trainingConfiguration.getStepDelay(),
-                                trainingConfiguration.getShakeFrequency());
+                val handler = new WiredEncodingHandler(trainingConfiguration.getThresholdAlgorithm(), trainingConfiguration.getResidualPostProcessor(), null, trainingConfiguration.isEncodingDebugMode());
 
                 // TODO: if there will be no code difference - use the same class instead of 2 different classes
                 val modelParamsSupplier = new ModelParamsConsumer();
@@ -273,8 +276,11 @@ public class SharedTrainingWrapper {
                                     : EncodedGradientsAccumulator.getOptimalBufferSize(model, numWorkers, 2);
 
                     accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
-                                    .encodingThreshold(trainingConfiguration.getThreshold())
-                                    .memoryParameters(bufferSize, queueSize).build();
+                            .thresholdAlgorithm(trainingConfiguration.getThresholdAlgorithm())
+                            .residualPostProcessor(trainingConfiguration.getResidualPostProcessor())
+                            .memoryParameters(bufferSize, queueSize)
+                            .encodingDebugMode(trainingConfiguration.isEncodingDebugMode())
+                            .build();
 
                     // we should introduce ourselves to controller
                     // FIXME: if localIP is null - use original ip discovery available in VoidParameterServer
@@ -298,37 +304,83 @@ public class SharedTrainingWrapper {
 
                     log.debug("Checking for ModelParameterServer existence");
 
+                    // we're saving reference to original model
+                    originalModel = model;
+
                     // if we're running in spark localhost mode - we don't want double initialization
                     if (!ModelParameterServer.getInstance().isInitialized()) {
-                        log.info("Initializing transport [{}:{}] with root as [{}:{}]...", localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort());
+                        log.info("Initializing transport [{}:{}] with root as [{}:{}]...", localIP, voidConfiguration.getPortSupplier().getPort(),
+                                voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastControllerPort());
                         // FIXME: implement support for Custom transport implementation
-                        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getUnicastPort(), voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort(), voidConfiguration) :  null;
+
+                        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getPortSupplier().getPort(),
+                                voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastControllerPort(), voidConfiguration) :  null;
 
                         if (transport == null)
                             throw new DL4JInvalidConfigException(
                                     "No Transport implementation was defined for this training session!");
 
                         consumer = UpdatesConsumer.builder()
+                                .numWorkers(numWorkers)
                                 .accumulator(accumulator)
+                                .params(model.params())
                                 .build();
 
                         accumulator.setExternalSource(consumer.getUpdatesQueue());
 
                         log.debug("Configuring transport...");
                         //  pass values right away
-                        ModelParameterServer.getInstance().configure(voidConfiguration, transport, false);
+                        ModelParameterServer.getInstance().configure(voidConfiguration, transport, new UpdaterParametersProvider() {
+                            @Override
+                            public INDArray getUpdaterParameters() {
+                                log.info("Serving updater parameters...");
+                                Updater updater = null;
+                                if (originalModel instanceof MultiLayerNetwork) {
+                                    updater = ((MultiLayerNetwork) originalModel).getUpdater();
+                                } else if (originalModel instanceof ComputationGraph) {
+                                    updater = ((ComputationGraph) originalModel).getUpdater();
+                                }
+
+                                if (updater != null) {
+                                    if (updater instanceof BaseMultiLayerUpdater) {
+                                        return ((BaseMultiLayerUpdater) updater).getStateViewArrayCopy();
+                                    } else {
+                                        log.error("Updater doesn't implement getStateViewArrayCopy()");
+                                        return null;
+                                    }
+                                } else {
+                                    log.warn("No Updater in the model");
+                                    return null;
+                                }
+                            };
+                        });
+
                         ModelParameterServer.getInstance().addUpdatesSubscriber(consumer);
                         ModelParameterServer.getInstance().addModelParamsSubscriber(modelParamsSupplier);
                         ModelParameterServer.getInstance().addUpdaterParamsSubscriber(updateParamsSupplier);
                     }
 
-
-                    // we're saving reference to original model
-                    originalModel = model;
-
                     log.debug("Starting ModelParameterServer...");
                     // after initialization finished, we're ok to actually start training
                     ModelParameterServer.getInstance().launch();
+
+                    // waiting for introduction. probably no-op in 99.9999% cases
+                    while (!ModelParameterServer.getInstance().getTransport().isIntroduced()) {
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+
+                // propagate iteration/epoch numbers
+                if (originalModel instanceof MultiLayerNetwork) {
+                    ((MultiLayerNetwork) model).setIterationCount(ModelParameterServer.getInstance().getStartPosition().getFirst());
+                    ((MultiLayerNetwork) model).setEpochCount(ModelParameterServer.getInstance().getStartPosition().getSecond());
+                } else if (originalModel instanceof ComputationGraph) {
+                    ((ComputationGraph) model).getConfiguration().setIterationCount(ModelParameterServer.getInstance().getStartPosition().getFirst());
+                    ((ComputationGraph) model).getConfiguration().setEpochCount(ModelParameterServer.getInstance().getStartPosition().getSecond());
                 }
 
                 // if we're going to extend iteratation for debugging purposes - let's do that here
@@ -337,6 +389,9 @@ public class SharedTrainingWrapper {
                     model.addListeners(SleepyTrainingListener.builder()
                                     .timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
                 }
+
+                // :)
+                accumulator.markExternalUpdates(true);
 
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
@@ -350,6 +405,8 @@ public class SharedTrainingWrapper {
                                     .prefetchBuffer(trainingConfiguration.getPrefetchSize())
                                     .modelParamsSupplier(modelParamsSupplier)
                                     .updaterParamsSupplier(updateParamsSupplier)
+                                    .thresholdAlgorithm(trainingConfiguration.getThresholdAlgorithm())
+                                    .residualPostProcessor(trainingConfiguration.getResidualPostProcessor())
                                     .build();
                     wrapper.setExceptionEncountered(exceptionEncountered);
                 } else {
@@ -358,6 +415,13 @@ public class SharedTrainingWrapper {
                     // since there'll be only one consumer, we don't need complex sync logic anymore
                     accumulator.fallbackToSingleConsumerMode(true);
                     accumulator.touch();
+
+                    // checking if there were updated params received (i.e. if that's failover routine
+                    val mParams = modelParamsSupplier.get();
+                    if (mParams != null) {
+                        log.info("Updating model params to the most recent ones...");
+                        originalModel.params().assign(mParams);
+                    }
 
                     // ok. attaching accumulator to model
                     if (model instanceof ComputationGraph) {
@@ -407,6 +471,8 @@ public class SharedTrainingWrapper {
                             }
                         }
                     }
+
+                    consumer.getUpdatesQueue().purge();
                 }
             } catch (Throwable t){
                 log.warn("Exception encountered during fit operation", t);
@@ -416,6 +482,12 @@ public class SharedTrainingWrapper {
 
 
             // conditionally shutdown & reset ParallelWrapper
+            EncodedGradientsAccumulator accum;
+            if(wrapper != null){
+                accum = (EncodedGradientsAccumulator) wrapper.getGradientsAccumulator();        //Store before possible shutdown for below
+            } else {
+                accum = accumulator;
+            }
             if (trainingConfiguration.isEpochReset()) {
                 wrapper.shutdown();
                 wrapper = null;
@@ -434,7 +506,7 @@ public class SharedTrainingWrapper {
 
             isFirst.set(false);
 
-            log.debug("Master thread done...");
+            log.info("Master thread done...");
 
             INDArray updaterState = null;
             if (model instanceof ComputationGraph) {
@@ -443,19 +515,25 @@ public class SharedTrainingWrapper {
                 updaterState = ((MultiLayerNetwork) originalModel).getUpdater().getStateViewArray();
             }
 
+            //Get threshold algorithm instances from each thread, and average them - they may have state that needs
+            // to be averaged and persisted, to avoid starting threshold adaption from scratch
+            EncodingHandler mh = (EncodingHandler) accum.getHandler();
+            ThresholdAlgorithm taAveraged = mh.getAverageThresholdAlgorithm();
+
             // FIXME: fill stats here
             return SharedTrainingResult.builder().aggregationsCount(1).scoreSum(originalModel.score())
                             .updaterStateArray(updaterState).listenerMetaData(new ArrayList<>())
                             .listenerStaticInfo(new ArrayList<>()).listenerUpdates(new ArrayList<>())
                             .minibatchesPerExecutor(Collections.singletonMap(SparkUtils.getSparkExecutorId(), iteratorDataSetCount.get().get()))
-                    .build();
+                            .thresholdAlgorithm(taAveraged)
+                            .build();
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {
                 observer.get().waitTillDone();
                 //observer.get().wait();
 
-                log.debug("Feeder thread done...");
+                log.info("Feeder [{}] thread done...", Thread.currentThread().getName());
 
                 if(exceptionEncountered.get()){
                     //Propagate exception

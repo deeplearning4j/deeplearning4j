@@ -1864,10 +1864,36 @@ public class ArrayUtil {
             e[i] = e[e.length - i - 1];
             e[e.length - i - 1] = temp;
         }
+    }
 
+    public static boolean[] flatten(boolean[][] arr) {
+        if(arr.length == 0 || arr[0].length == 0)
+            return new boolean[0];
+        boolean[] ret = new boolean[arr.length * arr[0].length];
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+
+    public static boolean[] flatten(boolean[][][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+            return new boolean[0];
+        boolean[] ret = new boolean[arr.length * arr[0].length * arr[0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    ret[count++] = arr[i][j][k];
+                }
+        return ret;
     }
 
     public static float[] flatten(float[][] arr) {
+        if(arr.length == 0 || arr[0].length == 0)
+            return new float[0];
         float[] ret = new float[arr.length * arr[0].length];
         int count = 0;
         for (int i = 0; i < arr.length; i++)
@@ -1878,6 +1904,8 @@ public class ArrayUtil {
 
 
     public static float[] flatten(float[][][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+            return new float[0];
         float[] ret = new float[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
@@ -1890,6 +1918,8 @@ public class ArrayUtil {
     }
 
     public static double[] flatten(double[][][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+            return new double[0];
         double[] ret = new double[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
@@ -1902,6 +1932,8 @@ public class ArrayUtil {
     }
 
     public static int[] flatten(int[][][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+            return new int[0];
         int[] ret = new int[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
@@ -1955,6 +1987,8 @@ public class ArrayUtil {
 
 
     public static int[] flatten(int[][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 )
+            return new int[0];
         int[] ret = new int[arr.length * arr[0].length];
         int count = 0;
         for (int i = 0; i < arr.length; i++)
@@ -1964,11 +1998,27 @@ public class ArrayUtil {
     }
 
     public static long[] flatten(long[][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 )
+            return new long[0];
         long[] ret = new long[arr.length * arr[0].length];
         int count = 0;
         for (int i = 0; i < arr.length; i++)
             for (int j = 0; j < arr[i].length; j++)
                 ret[count++] = arr[i][j];
+        return ret;
+    }
+
+    public static long[] flatten(long[][][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+            return new long[0];
+        long[] ret = new long[arr.length * arr[0].length * arr[0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    ret[count++] = arr[i][j][k];
+                }
         return ret;
     }
 
@@ -1980,6 +2030,8 @@ public class ArrayUtil {
      * @return a flattened representation of the array
      */
     public static double[] flatten(double[][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 )
+            return new double[0];
         double[] ret = new double[arr.length * arr[0].length];
         int count = 0;
         for (int i = 0; i < arr.length; i++)
@@ -2029,6 +2081,126 @@ public class ArrayUtil {
             for (int i = 0; i < arr.length; i++)
                 ret[count++] = arr[i][j];
         return ret;
+    }
+
+    public static int[][] reshapeInt(int[] in, int rows, int cols){
+        int[][] out = new int[rows][cols];
+        int x = 0;
+        for(int i=0; i<rows; i++ ){
+            for( int j=0; j<cols; j++ ){
+                out[i][j] = in[x++];
+            }
+        }
+        return out;
+    }
+
+    public static int[][][] reshapeInt(int[] in, int d0, int d1, int d2){
+        int[][][] out = new int[d0][d1][d2];
+        int x = 0;
+        for(int i=0; i<d0; i++ ){
+            for( int j=0; j<d1; j++ ){
+                for( int k=0; k<d2; k++ ) {
+                    out[i][j][k] = in[x++];
+                }
+            }
+        }
+        return out;
+    }
+
+    public static double[][] reshapeDouble(double[] in, int rows, int cols){
+        double[][] out = new double[rows][cols];
+        int x = 0;
+        for(int i=0; i<rows; i++ ){
+            for( int j=0; j<cols; j++ ){
+                out[i][j] = in[x++];
+            }
+        }
+        return out;
+    }
+
+    public static double[][][] reshapeDouble(double[] in, int d0, int d1, int d2){
+        double[][][] out = new double[d0][d1][d2];
+        int x = 0;
+        for(int i=0; i<d0; i++ ){
+            for( int j=0; j<d1; j++ ){
+                for( int k=0; k<d2; k++ ) {
+                    out[i][j][k] = in[x++];
+                }
+            }
+        }
+        return out;
+    }
+
+    public static long[][] reshapeLong(long[] in, int rows, int cols){
+        long[][] out = new long[rows][cols];
+        int x = 0;
+        for(int i=0; i<rows; i++ ){
+            for( int j=0; j<cols; j++ ){
+                out[i][j] = in[x++];
+            }
+        }
+        return out;
+    }
+
+    public static long[][][] reshapeLong(long[] in, int d0, int d1, int d2){
+        long[][][] out = new long[d0][d1][d2];
+        int x = 0;
+        for(int i=0; i<d0; i++ ){
+            for( int j=0; j<d1; j++ ){
+                for( int k=0; k<d2; k++ ) {
+                    out[i][j][k] = in[x++];
+                }
+            }
+        }
+        return out;
+    }
+
+    public static boolean[][] reshapeBoolean(boolean[] in, int rows, int cols){
+        boolean[][] out = new boolean[rows][cols];
+        int x = 0;
+        for(int i=0; i<rows; i++ ){
+            for( int j=0; j<cols; j++ ){
+                out[i][j] = in[x++];
+            }
+        }
+        return out;
+    }
+
+    public static boolean[][][] reshapeBoolean(boolean[] in, int d0, int d1, int d2){
+        boolean[][][] out = new boolean[d0][d1][d2];
+        int x = 0;
+        for(int i=0; i<d0; i++ ){
+            for( int j=0; j<d1; j++ ){
+                for( int k=0; k<d2; k++ ) {
+                    out[i][j][k] = in[x++];
+                }
+            }
+        }
+        return out;
+    }
+
+    public static <T> T[][] reshapeObject(T[] in, int rows, int cols){
+        Object[][] out = new Object[rows][cols];
+        int x = 0;
+        for(int i=0; i<rows; i++ ){
+            for( int j=0; j<cols; j++ ){
+                out[i][j] = in[x++];
+            }
+        }
+        return (T[][])out;
+    }
+
+    public static <T> T[][][] reshapeObject(T[] in, int d0, int d1, int d2){
+        Object[][][] out = new Object[d0][d1][d2];
+        int x = 0;
+        for(int i=0; i<d0; i++ ){
+            for( int j=0; j<d1; j++ ){
+                for( int k=0; k<d2; k++ ) {
+                    out[i][j][k] = in[x++];
+                }
+            }
+        }
+        return (T[][][])out;
     }
 
     /**
@@ -2301,6 +2473,17 @@ public class ArrayUtil {
      * Length of returned array is number of dimensions; returned[i] is size of ith dimension.
      */
     public static int[] arrayShape(Object array) {
+        return arrayShape(array, false);
+    }
+
+    /** Calculate the shape of an arbitrary multi-dimensional array.<br>
+     * Note that the method assumes the array is rectangular (not ragged) and first elements (i.e., array[0][0][0]...) are non-null <br>
+     * Note also that if allowSize0Dims is true, any elements are length 0, all subsequent dimensions will be reported as 0.
+     * i.e., a double[3][0][2] would be reported as shape [3,0,0]. If allowSize0Dims is false, an exception will be thrown for this case instead.
+     * Can pass any Java array opType: double[], Object[][][], float[][], etc.<br>
+     * Length of returned array is number of dimensions; returned[i] is size of ith dimension.
+     */
+    public static int[] arrayShape(Object array, boolean allowSize0Dims) {
         int nDimensions = 0;
         Class<?> c = array.getClass().getComponentType();
         while (c != null) {
@@ -2308,11 +2491,16 @@ public class ArrayUtil {
             c = c.getComponentType();
         }
 
-
         int[] shape = new int[nDimensions];
         Object current = array;
         for (int i = 0; i < shape.length - 1; i++) {
             shape[i] = ((Object[]) current).length;
+            if(shape[i] == 0){
+                if(allowSize0Dims){
+                    return shape;
+                }
+                throw new IllegalStateException("Cannot calculate array shape: Array has size 0 for dimension " + i );
+            }
             current = ((Object[]) current)[0];
         }
 

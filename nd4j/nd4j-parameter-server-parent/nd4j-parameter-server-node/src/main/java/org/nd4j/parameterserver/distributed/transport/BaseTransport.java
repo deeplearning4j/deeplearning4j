@@ -337,8 +337,9 @@ public abstract class BaseTransport implements Transport {
                     }
                 });
 
+                threadA.setDaemon(true);
                 threadA.start();
-            }
+                }
                 break;
             case DEDICATED_THREADS: {
                 // we start separate thread for each handler
@@ -354,12 +355,15 @@ public abstract class BaseTransport implements Transport {
                     // // Shard or Backup uses two subscriptions
 
                     // setting up thread for shard->client communication listener
-                    if (messageHandlerForShards != null)
+                    if (messageHandlerForShards != null) {
                         threadB = new Thread(() -> {
                             while (runner.get())
                                 idler.idle(subscriptionForShards.poll(messageHandlerForShards, 512));
 
                         });
+                        threadB.setDaemon(true);
+                        threadB.setName("VoidParamServer subscription threadB [" + nodeRole + "]");
+                    }
 
                     // setting up thread for inter-shard communication listener
                     threadA = new Thread(() -> {

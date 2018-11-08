@@ -18,8 +18,8 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created by on 18.04.2018
 //
 
-#ifndef LIBND4J_SRU_H
-#define LIBND4J_SRU_H
+#ifndef LIBND4J_MESHGRID_H
+#define LIBND4J_MESHGRID_H
 
 #include <ops/declarable/helpers/helpers.h>
 

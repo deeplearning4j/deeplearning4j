@@ -255,6 +255,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
                         .layer(1, new OutputLayer.Builder().nIn(2).nOut(1).weightInit(WeightInit.DISTRIBUTION)
+                                        .activation(Activation.TANH)
                                         .dist(new NormalDistribution(0, 1)).lossFunction(LossFunctions.LossFunction.MSE).build())
                         .build();
         return conf;

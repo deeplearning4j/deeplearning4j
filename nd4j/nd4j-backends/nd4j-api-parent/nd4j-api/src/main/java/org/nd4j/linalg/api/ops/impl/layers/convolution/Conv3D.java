@@ -90,30 +90,34 @@ public class Conv3D extends DynamicCustomOp {
                 getConfig().getDH(),
                 getConfig().getDW(),
 
-                getConfig().isValidMode() ? 0 : 1,
+                getConfig().isSameMode() ? 1 : 0,
                 getConfig().isNCDHW() ? 0 : 1
         );
-
     }
 
 
     @Override
     public Object getValue(Field property) {
-        if (config == null) {
-            config = Conv3DConfig.builder().build();
+        if (config == null && !iArguments.isEmpty()) {
+            config = Conv3DConfig.builder()
+                    .kD(iArguments.get(0))
+                    .kH(iArguments.get(1))
+                    .kW(iArguments.get(2))
+                    .sD(iArguments.get(3))
+                    .sH(iArguments.get(4))
+                    .sW(iArguments.get(5))
+                    .pD(iArguments.get(6))
+                    .pH(iArguments.get(7))
+                    .pW(iArguments.get(8))
+                    .dD(iArguments.get(9))
+                    .dH(iArguments.get(10))
+                    .dW(iArguments.get(11))
+                    .isSameMode(iArguments.get(12) == 1)
+                    .dataFormat(iArguments.get(13) == 1 ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
+                    .build();
         }
 
         return config.getValue(property);
-    }
-
-    @Override
-    public void setValueFor(Field target, Object value) {
-        if (config == null) {
-            config = Conv3DConfig.builder().build();
-        }
-
-        if (target != null)
-            config.setValueFor(target, value);
     }
 
     @Override
@@ -144,8 +148,7 @@ public class Conv3D extends DynamicCustomOp {
         tfAdapters.put("pW", new IntArrayIntIndexAdpater(3));
 
 
-        tfAdapters.put("isValidMode", new StringEqualsAdapter("VALID"));
-        tfAdapters.put("isNCDHW", new StringEqualsAdapter("NCDHW"));
+        tfAdapters.put("isSameMode", new StringNotEqualsAdapter("VALID"));
 
         ret.put(tensorflowName(), tfAdapters);
 
@@ -192,7 +195,7 @@ public class Conv3D extends DynamicCustomOp {
 
         val sameMode = PropertyMapping.builder()
                 .onnxAttrName("auto_pad")
-                .propertyNames(new String[]{"isValidMode"})
+                .propertyNames(new String[]{"isSameMode"})
                 .tfAttrName("padding")
                 .build();
 
@@ -204,7 +207,7 @@ public class Conv3D extends DynamicCustomOp {
         val dataFormat = PropertyMapping.builder()
                 .onnxAttrName("data_format")
                 .tfAttrName("data_format")
-                .propertyNames(new String[]{"isNCDHW"})
+                .propertyNames(new String[]{"dataFormat"})
                 .build();
 
 

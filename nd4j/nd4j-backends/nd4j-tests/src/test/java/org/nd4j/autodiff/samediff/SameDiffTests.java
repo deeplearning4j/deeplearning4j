@@ -20,10 +20,13 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
+import org.nd4j.jackson.objectmapper.holder.ObjectMapperHolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -50,6 +53,7 @@ import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -57,6 +61,9 @@ import org.nd4j.weightinit.impl.OneInitScheme;
 import org.nd4j.weightinit.impl.UniformInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -70,6 +77,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 @Slf4j
 public class SameDiffTests {
     private DataBuffer.Type initialType;
+
+    @ClassRule
+    public static TemporaryFolder folder = new TemporaryFolder();
+
 
     @Before
     public void before() throws Exception {
@@ -183,25 +194,47 @@ public class SameDiffTests {
     }
 
     @Test
-    public void testSoftmaxXentWithLogits() {
-
+    public void testSaveWriteWithTrainingConfig() throws Exception {
         SameDiff sameDiff = SameDiff.create();
-        INDArray logits = Nd4j.create(new long[]{1, 1});
-        INDArray weights = Nd4j.create(new long[]{1, 1});
-        INDArray labels = Nd4j.create(new long[]{1, 1});
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
+        SDVariable x = sameDiff.var("x", arr);
+        SDVariable result = sameDiff.sum(x, 1); //[1,4].sum(1) == [1,1]
+        TrainingConfig trainingConfig = TrainingConfig.builder()
+                .dataSetFeatureMapping("x")
+                .dataSetLabelMapping(result.getVarName())
+                .updater(new Nesterovs()).build();
+        sameDiff.setTrainingConfig(trainingConfig);
+        sameDiff.initializeTraining();
+        File newFile = folder.newFile();
+        try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(newFile))) {
+            sameDiff.saveWithTrainingConfig(bufferedOutputStream);
+        }
 
-        SDVariable sdLogits = sameDiff.var("logits", logits);
-        SDVariable sdWeights = sameDiff.var("weights", weights);
-        SDVariable sdLabels = sameDiff.var("labels", labels);
+        SameDiff sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
+        assertEquals(sameDiff.getTrainingConfig().getUpdater(),
+                sameDiff1.getTrainingConfig().getUpdater());
+        assertEquals(sameDiff.getUpdaterState(),sameDiff1.getUpdaterState());
 
-        int mode = 0;
-        double labelSmoothing = 0.0;
+        sameDiff.saveWithTrainingConfig(newFile);
+        sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
+        assertEquals(sameDiff.getTrainingConfig().getUpdater(),
+                sameDiff1.getTrainingConfig().getUpdater());
+        assertEquals(sameDiff.getUpdaterState(),sameDiff1.getUpdaterState());
 
-        SDVariable res = sameDiff.softmaxCrossEntropyWithLogits(sdLogits, sdWeights, sdLabels, mode, labelSmoothing);
-        sameDiff.exec();
+    }
 
-        INDArray resultArray = res.getArr();
-        assertArrayEquals(new long[]{1, 1}, res.getShape());
+    @Test
+    public void testAddEval() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray x = Nd4j.scalar(1.0);
+        INDArray y = Nd4j.scalar(2.0);
+        SDVariable xVar = sameDiff.placeHolder("x",1,1);
+        SDVariable yVar = sameDiff.placeHolder("y",1,1);
+        SDVariable output = xVar.add(yVar);
+        INDArray[] eval = sameDiff.eval(new INDArray[]{x, y});
+        assertEquals(1,eval.length);
+        INDArray outputAssertion = x.add(y);
+        assertEquals(outputAssertion,eval[0]);
     }
 
     @Test
@@ -220,28 +253,6 @@ public class SameDiffTests {
 
         INDArray resultArray = res.getArr();
         assertArrayEquals(new long[]{1, 5}, res.getShape());
-    }
-
-    @Test
-    public void testSigmoidXentWithLogits() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray logits = Nd4j.create(new long[]{1, 5});
-        INDArray weights = Nd4j.create(new long[]{1, 5});
-        INDArray labels = Nd4j.create(new long[]{1, 5});
-
-        SDVariable sdLogits = sameDiff.var("logits", logits);
-        SDVariable sdWeights = sameDiff.var("weights", weights);
-        SDVariable sdLabels = sameDiff.var("labels", labels);
-
-        int mode = 0;
-        double labelSmoothing = 0.0;
-
-        SDVariable res = sameDiff.sigmoidCrossEntropyWithLogits(sdLogits, sdWeights, sdLabels, mode, labelSmoothing);
-        sameDiff.exec();
-
-        INDArray resultArray = res.getArr();
-        assertArrayEquals(new long[]{1, 5}, res.getShape());
-
     }
 
     @Test
@@ -1314,7 +1325,9 @@ public class SameDiffTests {
 
 
         SameDiff logisticGraph = sameDiffOuter.getFunction("oneminuspredictions");
-        INDArray[] outputs = logisticGraph.eval(inputs);
+        Map<String,INDArray> inputsSubset = new HashMap<>();
+        inputsSubset.put("y", inputs.get("y"));
+        INDArray[] outputs = logisticGraph.eval(inputsSubset);
         INDArray assertion = Nd4j.create(new double[]{0, 0, 1, 0});
         assertEquals(assertion, outputs[outputs.length - 1]);
 
@@ -1543,10 +1556,10 @@ public class SameDiffTests {
         SameDiff sd = SameDiff.create();
 
         INDArray input = Nd4j.rand(1, 10);
-        INDArray mean = Nd4j.rand(1, 10);
-        INDArray var = Nd4j.rand(1, 10);
-        INDArray gamma = Nd4j.rand(1, 10);
-        INDArray beta = Nd4j.rand(1, 10);
+        INDArray mean = Nd4j.rand(1, 10).reshape(10);
+        INDArray var = Nd4j.rand(1, 10).reshape(10);
+        INDArray gamma = Nd4j.rand(1, 10).reshape(10);
+        INDArray beta = Nd4j.rand(1, 10).reshape(10);
 
         SDVariable sdInput = sd.var("input", input);
         SDVariable sdMean = sd.var("mean", mean);
@@ -1555,7 +1568,7 @@ public class SameDiffTests {
         SDVariable sdBeta = sd.var("beta", beta);
 
         SDVariable out = sd.batchNorm(sdInput, sdMean, sdVar, sdGamma, sdBeta,
-                true, true, 0.0);
+                0.0, 1);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
@@ -2314,9 +2327,9 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
         INDArray arr3 = Nd4j.ones(2, 3);
         INDArray expected = Nd4j.create(new float[]{1, 1, 1,
-                                                    1, 1, 1,
-                                                    0, 0, 0},
-                                            new long[]{3, 3});
+                        1, 1, 1,
+                        0, 0, 0},
+                new long[]{3, 3});
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -2335,9 +2348,9 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
         INDArray arr3 = Nd4j.zeros(2, 3);
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
-                                                    0, 0, 0,
-                                                   1, 1, 1},
-                                           new long[]{3, 3});
+                        0, 0, 0,
+                        1, 1, 1},
+                new long[]{3, 3});
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -2356,9 +2369,9 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
         INDArray arr3 = Nd4j.ones(2, 3);
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
-                                                    0, 0, 0,
-                                                    1, 1, 1},
-                                            new long[]{3, 3});
+                        0, 0, 0,
+                        1, 1, 1},
+                new long[]{3, 3});
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -2377,9 +2390,9 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
         INDArray arr3 = Nd4j.ones(2, 3).assign(2);
         INDArray expected = Nd4j.create(new float[]{0.5f, 0.5f, 0.5f,
-                                                    0.5f, 0.5f, 0.5f,
-                                                    1.0f, 1.0f, 1.0f},
-                                            new long[]{3, 3});
+                        0.5f, 0.5f, 0.5f,
+                        1.0f, 1.0f, 1.0f},
+                new long[]{3, 3});
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -2719,30 +2732,30 @@ public class SameDiffTests {
     public void testPermute(){
         SameDiff sd  = SameDiff.create();
         INDArray arr = Nd4j.create(new double[]{
-                                              /////////////
-                                              1, 2, 3, 4,
-                                              5, 6, 7, 8,
-                                              9, 10, 11, 12,
-                                              //////////////
-                                              13, 14, 15, 16,
-                                              17, 18, 19, 20,
-                                              21, 22, 23, 24
-                                              /////////////
-                                                },
-                                   new int[]{2, 3, 4});
+                        /////////////
+                        1, 2, 3, 4,
+                        5, 6, 7, 8,
+                        9, 10, 11, 12,
+                        //////////////
+                        13, 14, 15, 16,
+                        17, 18, 19, 20,
+                        21, 22, 23, 24
+                        /////////////
+                },
+                new int[]{2, 3, 4});
 
         INDArray expOut = Nd4j.create(new double[]{
-                /////////////
-                1, 2, 3, 4,
-                13, 14, 15, 16,
-                /////////////
-                5, 6, 7, 8,
-                17, 18, 19, 20,
-                /////////////
-                9, 10, 11, 12,
-                21, 22, 23, 24
-                /////////////
-        },
+                        /////////////
+                        1, 2, 3, 4,
+                        13, 14, 15, 16,
+                        /////////////
+                        5, 6, 7, 8,
+                        17, 18, 19, 20,
+                        /////////////
+                        9, 10, 11, 12,
+                        21, 22, 23, 24
+                        /////////////
+                },
                 new int[]{3, 2, 4});
 
 

@@ -84,15 +84,6 @@ public class BinomialDistributionEx extends BaseRandomOp {
         this(z, (int) probabilities.length(), probabilities);
     }
 
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("trials",trials);
-        ret.put("probability",probability);
-        return ret;
-    }
-
-
 
     @Override
     public int opNum() {

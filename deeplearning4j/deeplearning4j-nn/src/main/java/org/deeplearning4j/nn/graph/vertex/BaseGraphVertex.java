@@ -196,8 +196,8 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
-    public int numParams(){
-        return params() == null ? 0 : (int)params().length();
+    public long numParams(){
+        return params() == null ? 0 : params().length();
     }
 
     @Override
@@ -213,5 +213,13 @@ public abstract class BaseGraphVertex implements GraphVertex {
     @Override
     public INDArray getGradientsViewArray() {
         return null;
+    }
+
+    @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        if(hasLayer()){
+            return getLayer().updaterDivideByMinibatch(paramName);
+        }
+        return true;
     }
 }

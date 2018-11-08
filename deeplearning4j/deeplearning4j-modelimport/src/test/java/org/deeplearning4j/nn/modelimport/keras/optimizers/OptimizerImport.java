@@ -16,10 +16,12 @@
 
 package org.deeplearning4j.nn.modelimport.keras.optimizers;
 
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.e2e.KerasModelEndToEndTest;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
+import org.deeplearning4j.util.DL4JFileUtils;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
 
@@ -70,7 +72,7 @@ public class OptimizerImport {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = createTempFile("tempModel", ".h5");
+        File modelFile = DL4JFileUtils.createTempFile("tempModel", ".h5");
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
                 .enforceTrainingConfig(false);

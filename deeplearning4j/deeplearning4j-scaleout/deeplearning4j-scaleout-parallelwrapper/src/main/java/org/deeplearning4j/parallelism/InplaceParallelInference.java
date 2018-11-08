@@ -241,18 +241,25 @@ public class InplaceParallelInference extends ParallelInference {
                     val model = acquireModel();
 
                     // doing inference
-                    val output = ((ComputationGraph) model).output(false, input, inputMasks);
-
-                    // releasing model
-                    releaseModel(model);
+                    INDArray[] output;
+                    try{
+                        output = ((ComputationGraph) model).output(false, input, inputMasks);
+                    } finally {
+                        // releasing model
+                        releaseModel(model);
+                    }
                     return output;
                 } else if (isMLN) {
                     if (input.length > 1 || (inputMasks != null && inputMasks.length > 1))
                         throw new ND4JIllegalStateException("MultilayerNetwork can't have multiple inputs");
 
                     val model = acquireModel();
-                    val result = ((MultiLayerNetwork) model).output(input[0], false, (inputMasks == null ? null : inputMasks[0]), null);
-                    releaseModel(model);
+                    INDArray result;
+                    try {
+                        result = ((MultiLayerNetwork) model).output(input[0], false, (inputMasks == null ? null : inputMasks[0]), null);
+                    } finally {
+                        releaseModel(model);
+                    }
                     return new INDArray[]{result};
                 } else
                     throw new UnsupportedOperationException();

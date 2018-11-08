@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.inputs;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
@@ -128,8 +129,25 @@ public abstract class InputType implements Serializable {
     }
 
     /**
-     * Input type for 3D convolutional (CNN3D) data, that is 5d with shape
-     * [miniBatchSize, channels, height, width, channels].
+     * Input type for 3D convolutional (CNN3D) data in NDHWC format, that is 5d with shape
+     * [miniBatchSize, depth, height, width, channels].
+     *
+     * @param height   height of the input
+     * @param width    Width of the input
+     * @param depth    Depth of the input
+     * @param channels Number of channels of the input
+     * @return InputTypeConvolutional3D
+     * @deprecated Use {@link #convolutional3D(Convolution3D.DataFormat, long, long, long, long)}
+     */
+    @Deprecated
+    public static InputType convolutional3D(long depth, long height, long width,  long channels) {
+        return convolutional3D(Convolution3D.DataFormat.NDHWC, depth, height, width, channels);
+    }
+
+    /**
+     * Input type for 3D convolutional (CNN3D) 5d data:<br>
+     * If NDHWC format [miniBatchSize, depth, height, width, channels]<br>
+     * If NDCWH
      *
      * @param height   height of the input
      * @param width    Width of the input
@@ -137,8 +155,8 @@ public abstract class InputType implements Serializable {
      * @param channels Number of channels of the input
      * @return InputTypeConvolutional3D
      */
-    public static InputType convolutional3D(long depth, long height, long width,  long channels) {
-        return new InputTypeConvolutional3D(depth, height, width, channels);
+    public static InputType convolutional3D(Convolution3D.DataFormat dataFormat, long depth, long height, long width, long channels) {
+        return new InputTypeConvolutional3D(dataFormat, depth, height, width, channels);
     }
 
     /**
@@ -285,6 +303,7 @@ public abstract class InputType implements Serializable {
     @EqualsAndHashCode(callSuper = false)
     @NoArgsConstructor
     public static class InputTypeConvolutional3D extends InputType {
+        private Convolution3D.DataFormat dataFormat;
         private long depth;
         private long height;
         private long width;
@@ -297,7 +316,7 @@ public abstract class InputType implements Serializable {
 
         @Override
         public String toString() {
-            return "InputTypeConvolutional3D(d=" + depth + ",h=" + height + ",w=" + width + ",c=" + channels + ")";
+            return "InputTypeConvolutional3D(format=" + dataFormat + ",d=" + depth + ",h=" + height + ",w=" + width + ",c=" + channels + ")";
         }
 
         @Override
@@ -307,8 +326,13 @@ public abstract class InputType implements Serializable {
 
         @Override
         public long[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new long[]{-1, channels, depth, height, width};
-            else return new long[]{channels, depth, height, width};
+            if(dataFormat == Convolution3D.DataFormat.NDHWC){
+                if(includeBatchDim) return new long[]{-1, depth, height, width, channels};
+                else return new long[]{depth, height, width, channels};
+            } else {
+                if(includeBatchDim) return new long[]{-1, channels, depth, height, width};
+                else return new long[]{channels, depth, height, width};
+            }
         }
     }
 

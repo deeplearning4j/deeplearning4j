@@ -29,9 +29,12 @@ import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.ModelParame
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.ModelParametersRequest;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterParametersMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterParametersRequest;
+import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvider;
+import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DelayedDummyTransport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DummyTransport;
 import org.nd4j.parameterserver.distributed.v2.util.AbstractSubscriber;
+import org.nd4j.parameterserver.distributed.v2.util.AbstractUpdatesHandler;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -125,6 +128,17 @@ public class ModelParameterServerTest {
         connector.register(rootTransport);
 
         val rootServer = new ModelParameterServer(config, rootTransport, true);
+        rootServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+            @Override
+            public INDArray getParametersArray() {
+                return Nd4j.create(10, 10);
+            }
+
+            @Override
+            public void onNext(INDArray array) {
+
+            }
+        });
         rootServer.launch();
 
         val servers = new ArrayList<ModelParameterServer>();
@@ -254,7 +268,12 @@ public class ModelParameterServerTest {
             }
         });
 
-        clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+        clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+            @Override
+            public INDArray getParametersArray() {
+                return null;
+            }
+
             @Override
             public void onNext(INDArray array) {
                 assertNotNull(array);
@@ -306,7 +325,12 @@ public class ModelParameterServerTest {
             }
         });
 
-        rootServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+        rootServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+            @Override
+            public INDArray getParametersArray() {
+                return Nd4j.create(10, 10);
+            }
+
             @Override
             public void onNext(INDArray array) {
                 assertNotNull(array);
@@ -327,6 +351,12 @@ public class ModelParameterServerTest {
             val clientTransport = new DummyTransport(String.valueOf(e), connector, rootId, config);
             val clientServer = new ModelParameterServer(config, clientTransport, false);
 
+            clientServer.configure(config, clientTransport, new UpdaterParametersProvider() {
+                @Override
+                public INDArray getUpdaterParameters() {
+                    return Nd4j.create(10, 10);
+                }
+            });
             servers.add(clientServer);
             transports.add(clientTransport);
 
@@ -368,7 +398,12 @@ public class ModelParameterServerTest {
             }
         });
 
-        clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+        clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+            @Override
+            public INDArray getParametersArray() {
+                return null;
+            }
+
             @Override
             public void onNext(INDArray array) {
                 assertNotNull(array);
@@ -403,8 +438,8 @@ public class ModelParameterServerTest {
         assertEquals("Some nodes got no updates:", 0, failedCnt);
 
         assertTrue(updatedModel.get());
-        assertTrue(updatedUpdater.get());
         assertTrue(gotGradients.get());
+        assertTrue(updatedUpdater.get());
     }
 
 
@@ -434,7 +469,12 @@ public class ModelParameterServerTest {
             }
         });
 
-        rootServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+        rootServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+            @Override
+            public INDArray getParametersArray() {
+                return null;
+            }
+
             @Override
             public void onNext(INDArray array) {
                 assertNotNull(array);

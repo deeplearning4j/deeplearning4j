@@ -34,8 +34,7 @@ public class ConditionalFieldValueIntIndexArrayAdapter implements AttributeAdapt
         Object comp = on.getValue(fieldName);
         if(targetValue.equals(comp)) {
             on.setValueFor(fieldFor,inputValue[trueIndex]);
-        }
-        else {
+        } else {
             on.setValueFor(fieldFor,inputValue[falseIndex]);
         }
     }

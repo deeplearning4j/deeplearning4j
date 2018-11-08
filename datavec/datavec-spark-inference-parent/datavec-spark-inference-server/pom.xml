@@ -25,7 +25,7 @@
 
     <artifactId>datavec-spark-inference-server_2.11</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.0_spark_1-SNAPSHOT</version>
+    <version>1.0.0_spark_2-SNAPSHOT</version>
     <name>datavec-spark-inference-server</name>
 
     <properties>
@@ -60,12 +60,6 @@
             <groupId>org.datavec</groupId>
             <artifactId>datavec-data-image</artifactId>
             <version>${datavec.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-base64</artifactId>
-            <version>${nd4j.version}</version>
         </dependency>
 
         <dependency>
@@ -188,7 +182,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-9.2</id>
+            <id>test-nd4j-cuda-10.0</id>
         </profile>
     </profiles>
 </project>

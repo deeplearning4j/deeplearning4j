@@ -28,6 +28,7 @@ import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.PrefetchingSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SynchronizedSentenceIterator;
+import org.deeplearning4j.util.DL4JFileUtils;
 import org.deeplearning4j.util.ThreadUtils;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -289,7 +290,7 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
             // use temp file, if no target file was specified
             try {
                 if (this.target == null) {
-                    this.target = File.createTempFile("cooccurrence", "map");
+                    this.target = DL4JFileUtils.createTempFile("cooccurrence", "map");
                 }
                 this.target.deleteOnExit();
             } catch (Exception e) {
@@ -417,8 +418,8 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                 counter = new RoundCount(1);
                 tempFiles = new File[2];
 
-                tempFiles[0] = File.createTempFile("aco", "tmp");
-                tempFiles[1] = File.createTempFile("aco", "tmp");
+                tempFiles[0] = DL4JFileUtils.createTempFile("aco", "tmp");
+                tempFiles[1] = DL4JFileUtils.createTempFile("aco", "tmp");
 
                 tempFiles[0].deleteOnExit();
                 tempFiles[1].deleteOnExit();

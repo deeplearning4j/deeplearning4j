@@ -30,6 +30,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
@@ -43,6 +45,7 @@ import static org.nd4j.linalg.util.ArrayUtil.prodLong;
 @Data
 @Slf4j
 @EqualsAndHashCode(callSuper = false)
+@JsonIgnoreProperties({"hasMiniBatchDimension", "miniBatchSize"})
 public class ReshapePreprocessor extends BaseInputPreProcessor {
 
     private long[] inputShape;
@@ -50,7 +53,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     private boolean hasMiniBatchDimension = false;
     private int miniBatchSize;
 
-    public ReshapePreprocessor(long[] inputShape, long[] targetShape) {
+    public ReshapePreprocessor(@JsonProperty("inputShape") long[] inputShape, @JsonProperty("targetShape") long[] targetShape) {
         this.inputShape = inputShape;
         this.targetShape = targetShape;
     }

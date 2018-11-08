@@ -22,7 +22,9 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Optional;
@@ -46,13 +48,11 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -103,11 +103,15 @@ public abstract  class BaseTransport  implements Transport {
     // we're keeping Ids of last 2k INDArrayMessages, just to avoid double spending/retransmission
     protected MessagesHistoryHolder<String> historyHolder = new HashHistoryHolder<String>(2048);
 
+    // this flag is used to track status of handshake procedure at node side
+    protected AtomicBoolean handshakeFlag = new AtomicBoolean(false);
+
     protected final ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()), new ThreadFactory() {
         @Override
         public Thread newThread(@NotNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
+            Nd4j.getAffinityManager().attachThreadToDevice(t, 0);
             return t;
         }
     });
@@ -321,11 +325,11 @@ public abstract  class BaseTransport  implements Transport {
 
         // now we're sending message down
         if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode) {
-            downstreams.forEach(n -> {
+            for (val n:downstreams) {
                 if (!isLoopedNode(n, originatorId, relayId)) {
                     sendMessage(voidMessage, n.getId());
                 }
-            });
+            };
         }
     }
 
@@ -346,6 +350,7 @@ public abstract  class BaseTransport  implements Transport {
     }
 
     protected void internalProcessMessage(VoidMessage message) {
+        val m = message instanceof INDArrayMessage;
         /**
          * TODO: we need better isolation here
          */
@@ -354,6 +359,7 @@ public abstract  class BaseTransport  implements Transport {
             val msg = new PongMessage();
             msg.setRequestId(((PingMessage) message).getRequestId());
             sendMessage(msg, message.getOriginatorId());
+            return;
         } if (message instanceof PongMessage) {
 
             // do nothing
@@ -363,11 +369,12 @@ public abstract  class BaseTransport  implements Transport {
 
             // if this chunk was the last message, we'll forward it to parameter server for actual use
             if (opt.isPresent())
-                this.processMessage(opt.get());
+                this.internalProcessMessage(opt.get());
         } else if (message instanceof INDArrayMessage) {
             // just forward message, but ONLY if it's not a Response message, since it's probably processed separately
             if (!(message instanceof ResponseMessage)) {
-                if (!historyHolder.isKnownMessageId(message.getMessageId())) {// we're not applying the same message twice
+                // we're not applying the same message twice
+                if (!historyHolder.isKnownMessageId(message.getMessageId())) {
                     forwardToParameterServer((INDArrayMessage) message);
                 }
             } else {
@@ -388,12 +395,18 @@ public abstract  class BaseTransport  implements Transport {
 
             synchronized (mesh) {
                 if (mesh.get().isKnownNode(message.getOriginatorId())) {
+                    log.warn("Got request from known node [{}]. Remapping.", message.getOriginatorId());
+
+                    // notifying transport implementation about node reconnect
+                    onRemap(message.getOriginatorId());
+
                     mesh.get().remapNodeAndDownstreams(message.getOriginatorId());
                     // we say that this model has restarted
                     response.setRestart(true);
                 } else {
                     // first we add new node to the mesh
                     mesh.get().addNode(message.getOriginatorId());
+                    numerOfNodes.incrementAndGet();
                 }
 
                 response.setMesh(mesh.get().clone());
@@ -403,11 +416,12 @@ public abstract  class BaseTransport  implements Transport {
             sendMessage(response, message.getOriginatorId());
 
             // update all other nodes with new mesh
+            // this message is called only from  spark driver context probably
             try {
                 propagateMessageDirect(new MeshUpdateMessage(mesh.get()));
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
-                log.error("Exception: {}", e);
+                log.error("MeshUpdateMessage propagation failed:", e);
                 throw new RuntimeException(e);
             }
         } else if (message instanceof HandshakeResponse) {
@@ -428,12 +442,15 @@ public abstract  class BaseTransport  implements Transport {
 
             // optionally calling out callback, which will happen approximately 100% of time
             if (response.isRestart()) {
-                if (restartCallback != null)
+                log.info("Processing restart response...");
+                if (restartCallback != null) {
                     restartCallback.call(response);
-                else
+                } else
                     log.warn("Got restart message from master, but there's no defined RestartCallback");
             }
 
+            // at last step we're updating handshake flag, so we're aware of finished handshake process
+            handshakeFlag.set(true);
 
             // in any way we're putting this message back to replies
             val reply = (ResponseMessage) message;
@@ -468,7 +485,7 @@ public abstract  class BaseTransport  implements Transport {
                 val name = message.getClass().getCanonicalName();
                 val consumer = consumers.get(name);
                 if (consumer == null)
-                    throw new ND4JIllegalStateException("Not supported  RequestMessage received: [" + message.getClass().getCanonicalName() + "]");
+                    throw new ND4JIllegalStateException("Not supported RequestMessage received: [" + message.getClass().getCanonicalName() + "]");
             } else
                 throw new ND4JIllegalStateException("Unknown message received: [" + message.getClass().getCanonicalName() + "]");
         }
@@ -477,9 +494,15 @@ public abstract  class BaseTransport  implements Transport {
         if (message instanceof BroadcastableMessage) {
             // here we should propagate message down
             try {
-                propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.BOTH_WAYS);
+                // we propagate message ONLY if we've already received Mesh from master
+                if (numerOfNodes.get() > 0) {
+                    propagateBroadcastableMessage((BroadcastableMessage) message, PropagationMode.BOTH_WAYS);
+                } else {
+                    log.info("Skipping broadcast due to absence of nodes in mesh");
+                }
             } catch (Exception e) {
-                log.error("Wasn't able to propagate message from [{}]", id());
+                log.error("Wasn't able to propagate message [{}] from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
+                log.error("BroadcastableMessage propagation exception:", e);
                 throw new RuntimeException(e);
             }
         }
@@ -515,6 +538,23 @@ public abstract  class BaseTransport  implements Transport {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public String getRandomDownstreamFrom(@NonNull String id, String exclude) {
+        val nodes = mesh.get().getDownstreamsForNode(id);
+        if (nodes.isEmpty())
+            return null;
+
+        // fetching ids of all the nodes
+        val ids = new ArrayList<String>(nodes.stream().map(node -> {return node.getId();}).collect(Collectors.toList()));
+        if (exclude != null)
+            ids.remove(exclude);
+
+        if (ids.size() > 1)
+            Collections.shuffle(ids);
+
+        return ids.get(0);
     }
 
     @Override
@@ -659,6 +699,11 @@ public abstract  class BaseTransport  implements Transport {
     }
 
     @Override
+    public void onRemap(String id) {
+        //
+    }
+
+    @Override
     public String getRootId() {
         return rootId;
     }
@@ -666,5 +711,23 @@ public abstract  class BaseTransport  implements Transport {
     @Override
     public int totalNumberOfNodes() {
         return numerOfNodes.get();
+    }
+
+    @Override
+    public boolean isConnected() {
+        return true;
+    }
+
+    @Override
+    public boolean isIntroduced() {
+        if (masterMode)
+            return true;
+
+        return handshakeFlag.get();
+    }
+
+    @Override
+    public void ensureConnection(String id) {
+        // no-op for local transports
     }
 }

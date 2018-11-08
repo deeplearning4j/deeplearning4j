@@ -113,15 +113,6 @@ public class Axpy extends BaseTransformOp {
     }
 
     @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("p",p);
-        return ret;
-    }
-
-
-
-    @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
 

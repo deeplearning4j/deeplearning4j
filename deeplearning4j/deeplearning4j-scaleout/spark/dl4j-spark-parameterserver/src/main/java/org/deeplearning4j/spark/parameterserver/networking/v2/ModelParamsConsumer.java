@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.parameterserver.networking.v2;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.function.Consumer;
@@ -39,7 +40,8 @@ public class ModelParamsConsumer implements Subscriber<INDArray>, Supplier<INDAr
     }
 
     @Override
-    public synchronized void onNext(INDArray array) {
+    public synchronized void onNext(@NonNull INDArray array) {
+        log.info("Storing params for future use...");
         if (array != null)
             params.set(array);
     }

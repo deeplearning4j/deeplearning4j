@@ -29,6 +29,7 @@ import java.io.IOException;
 
 /**
  * @author Adam Gibson
+ * @deprecated Use {@link org.nd4j.serde.jackson.ndarray.NDArraySerializer}
  */
 public class NDArraySerializer extends JsonSerializer<INDArray> {
     @Override

@@ -103,15 +103,6 @@ public class Unstack extends DynamicCustomOp {
         addArgs();
     }
 
-
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("axis", axis);
-        return ret;
-    }
-
-
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();

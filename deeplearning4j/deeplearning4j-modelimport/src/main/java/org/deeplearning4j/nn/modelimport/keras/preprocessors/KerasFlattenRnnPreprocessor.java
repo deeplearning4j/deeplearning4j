@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
@@ -24,6 +25,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Preprocessor to flatten input of RNN type
@@ -31,12 +33,13 @@ import org.nd4j.linalg.api.shape.Shape;
  * @author Max Pumperla
  */
 @Slf4j
+@Data
 public class KerasFlattenRnnPreprocessor extends BaseInputPreProcessor {
 
     private long tsLength;
     private long depth;
 
-    public KerasFlattenRnnPreprocessor(long depth, long tsLength) {
+    public KerasFlattenRnnPreprocessor(@JsonProperty("depth") long depth, @JsonProperty("tsLength") long tsLength) {
         super();
         this.tsLength = Math.abs(tsLength);
         this.depth = depth;

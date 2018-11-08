@@ -26,6 +26,8 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 
 /**
@@ -36,12 +38,13 @@ import org.nd4j.linalg.api.shape.Shape;
 @Data
 @Slf4j
 @EqualsAndHashCode(callSuper = false)
+@JsonIgnoreProperties({"hasLeadingDimension"})
 public class PermutePreprocessor extends BaseInputPreProcessor {
 
     private int[] permutationIndices;
     private boolean hasLeadingDimension = false;
 
-    public PermutePreprocessor(int[] permutationIndices) {
+    public PermutePreprocessor(@JsonProperty("permutationIndices") int[] permutationIndices) {
         this.permutationIndices = permutationIndices;
     }
 

@@ -96,7 +96,7 @@ public class Level2Test extends BaseNd4jTest {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
-        INDArray array3 = Nd4j.create(10);
+        INDArray array3 = Nd4j.create(10,1);
 
         array1.mmul(array2, array3);
 
@@ -112,7 +112,7 @@ public class Level2Test extends BaseNd4jTest {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
-        INDArray array3 = Nd4j.create(10);
+        INDArray array3 = Nd4j.create(10,1);
 
         array1.mmul(array2, array3);
 
@@ -128,7 +128,7 @@ public class Level2Test extends BaseNd4jTest {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
-        INDArray array3 = Nd4j.create(10);
+        INDArray array3 = Nd4j.create(10,1);
 
         array1.mmul(array2, array3);
 

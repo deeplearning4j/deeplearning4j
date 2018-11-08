@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.models.embeddings.inmemory;
 
+import lombok.val;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
@@ -36,6 +39,9 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 public class InMemoryLookupTableTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Before
     public void setUp() throws Exception {
@@ -126,9 +132,11 @@ public class InMemoryLookupTableTest {
         AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>().build();
 
 
+        val dir = testDir.newFolder();
+        new ClassPathResource("/paravec/labeled").copyDirectory(dir);
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
-                        .addSourceFolder(new ClassPathResource("/paravec/labeled").getFile()).build();
+                        .addSourceFolder(dir).build();
 
         transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator).tokenizerFactory(t).build();
 

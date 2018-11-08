@@ -197,11 +197,6 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-base64</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.nd4j</groupId>
         <artifactId>nd4j-kafka_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -294,7 +289,7 @@
     <dependencies>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-cuda-9.2</artifactId>
+        <artifactId>nd4j-cuda-10.0</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>
@@ -326,12 +321,12 @@
     <dependencies>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-cuda-9.2</artifactId>
+        <artifactId>nd4j-cuda-10.0</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-cuda-9.2-platform</artifactId>
+        <artifactId>nd4j-cuda-10.0-platform</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>

@@ -326,7 +326,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSliceGradient() {
-        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         //Order here: original shape, begin, size
@@ -656,7 +655,8 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         for (long[] shape : unstackedShape) {
             for (int axis = 0; axis <= shape.length; axis++) {
-                for (int numInputs : new int[]{1, 3}) {
+//                for (int numInputs : new int[]{1, 3}) {
+                for (int numInputs : new int[]{3}) {
 
                     long[] stackedShape = new long[shape.length + 1];
                     int x = 0;
@@ -729,7 +729,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testTile() {
-        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         List<int[]> tileArg = Arrays.asList(
@@ -939,6 +938,8 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable result = sameDiff.shape(x);
         SDVariable loss = sameDiff.standardDeviation(result, true);
 
+        System.out.println(sameDiff.summary());
+
         String err = OpValidation.validate(new TestCase(sameDiff)
                 .expected(result, Nd4j.create(new double[]{2,3}, new long[]{2})));
 
@@ -1103,7 +1104,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testReverseSequence() {
-        OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
         float[] input_data = new float[]{
                 1, 2, 3,
@@ -1150,7 +1150,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMatrixDeterminant(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6072
+        OpValidationSuite.ignoreFailing();  //Gradient check failing
 
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(3,3);
@@ -1171,7 +1171,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testDeterminant22(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6071
+        OpValidationSuite.ignoreFailing();  //Gradient check failing
 
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.create(new double[][]{{1, 2.5}, {3.5, 4.5}});
@@ -1195,7 +1195,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMatrixDeterminant3(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6072
+        OpValidationSuite.ignoreFailing();  //Gradient checks failing
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(3,3);
         //System.out.println(in.shapeInfoToString());   //Rank: 2,Offset: 0 Order: c Shape: [3,3],  stride: [3,1]
@@ -1226,7 +1226,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMatrixDeterminant4(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6072
+        OpValidationSuite.ignoreFailing();  //Gradient checks failing
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(4,4);
         //System.out.println(in.shapeInfoToString());   //Rank: 2,Offset: 0 Order: c Shape: [4,4],  stride: [4,1]
@@ -1246,50 +1246,84 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSegmentOps(){
-        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6073
-
         INDArray s = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8});
         INDArray d = Nd4j.create(new double[]{5,1,7,2,3,4,1,3}, new long[]{8});
+        int numSegments = 4;
 
         List<String> failed = new ArrayList<>();
 
-        for(String op : new String[]{"max", "min", "mean", "prod", "sum"}) {
+        for(String op : new String[]{"max", "min", "mean", "prod", "sum",
+                "umax", "umin", "umean", "uprod", "usum", "usqrtn"}) {
+            log.info("Starting test: {}", op);
+
+            if(op.startsWith("u")){
+                //Unsorted segment cases
+                s = Nd4j.create(new double[]{3,1,0,0,2,0,3,2}, new long[]{8});
+                d = Nd4j.create(new double[]{1,2,5,7,3,1,3,4}, new long[]{8});
+            }
 
             SameDiff sd = SameDiff.create();
-            SDVariable vs = sd.var("s", s);
-            SDVariable vd = sd.var("d", d);
+            SDVariable data = sd.var("data", d);
+            SDVariable segments = sd.var("segments", s);
 
             SDVariable sm;
             INDArray exp;
             switch (op){
                 case "max":
-                    sm = sd.f().segmentMax(vd, vs);
+                    sm = sd.segmentMax(data, segments);
                     exp = Nd4j.create(new double[]{7, 2, 4, 3});
                     break;
                 case "min":
-                    sm = sd.f().segmentMin(vd, vs);
+                    sm = sd.segmentMin(data, segments);
                     exp = Nd4j.create(new double[]{1, 2, 3, 1});
                     break;
                 case "mean":
-                    sm = sd.f().segmentMean(vd, vs);
+                    sm = sd.segmentMean(data, segments);
                     exp = Nd4j.create(new double[]{4.3333333333, 2, 3.5, 2});
                     break;
                 case "prod":
-                    sm = sd.f().segmentProd(vd, vs);
+                    sm = sd.segmentProd(data, segments);
                     exp = Nd4j.create(new double[]{35, 2, 12, 3});
                     break;
                 case "sum":
-                    sm = sd.f().segmentSum(vd, vs);
+                    sm = sd.segmentSum(data, segments);
                     exp = Nd4j.create(new double[]{13, 2, 7, 4});
+                    break;
+                case "umax":
+                    sm = sd.unsortedSegmentMax(data, segments, numSegments);
+                    exp = Nd4j.create(new double[]{7, 2, 4, 3});
+                    break;
+                case "umin":
+                    sm = sd.unsortedSegmentMin(data, segments, numSegments);
+                    exp = Nd4j.create(new double[]{1, 2, 3, 1});
+                    break;
+                case "umean":
+                    sm = sd.unsortedSegmentMean(data, segments, numSegments);
+                    exp = Nd4j.create(new double[]{4.3333333333, 2, 3.5, 2});
+                    break;
+                case "uprod":
+                    sm = sd.unsortedSegmentProd(data, segments, numSegments);
+                    exp = Nd4j.create(new double[]{35, 2, 12, 3});
+                    break;
+                case "usum":
+                    sm = sd.unsortedSegmentSum(data, segments, numSegments);
+                    exp = Nd4j.create(new double[]{13, 2, 7, 4});
+                    break;
+                case "usqrtn":
+                    sm = sd.unsortedSegmentSqrtN(data, segments, numSegments);
+                    exp = Nd4j.trueVector(new double[]{(5+7+1)/Math.sqrt(3), 2, (3+4)/Math.sqrt(2), (1+3)/Math.sqrt(2)});
                     break;
                 default:
                     throw new RuntimeException();
             }
 
+            SDVariable loss = sm.std(false);
+
             TestCase tc = new TestCase(sd)
                     .testName(op)
                     .expected(sm, exp)
-                    .gradientCheck(true);
+                    .gradientCheck(true)
+                    .gradCheckSkipVariables(segments.getVarName());
 
             String err = OpValidation.validate(tc);
             if(err != null)
@@ -1720,8 +1754,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testEye(){
-        OpValidationSuite.ignoreFailing();
-
         int[] rows = new int[]{3,3,3,3};
         int[] cols = new int[]{3,2,2,2};
         int[][] batch = new int[][]{null, null, {4}, {3,3}};

@@ -168,7 +168,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                     helperCountFail++;
                     log.warn("CuDNN execution failed - falling back on built-in implementation",e);
                 } else {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException("Error during ConovlutionLayer CuDNN helper backprop - isCudnnAllowFallback() is set to false", e);
                 }
             }
 

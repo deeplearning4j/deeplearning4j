@@ -37,6 +37,7 @@ import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DelayedDummyTransport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DummyTransport;
 import org.nd4j.parameterserver.distributed.v2.util.AbstractSubscriber;
+import org.nd4j.parameterserver.distributed.v2.util.AbstractUpdatesHandler;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 
 import java.util.ArrayList;
@@ -208,7 +209,12 @@ public class DelayedModelParameterServerTest {
 
             val f = e;
 
-            clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+            clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+                @Override
+                public INDArray getParametersArray() {
+                    return null;
+                }
+
                 @Override
                 public void onNext(INDArray array) {
                     assertNotNull(array);
@@ -257,7 +263,12 @@ public class DelayedModelParameterServerTest {
             }
         });
 
-        clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+        clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+            @Override
+            public INDArray getParametersArray() {
+                return null;
+            }
+
             @Override
             public void onNext(INDArray array) {
                 assertNotNull(array);
@@ -321,7 +332,12 @@ public class DelayedModelParameterServerTest {
 
             val f = e;
             counters[f] = new AtomicInteger(0);
-            clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+            clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+                @Override
+                public INDArray getParametersArray() {
+                    return null;
+                }
+
                 @Override
                 public void onNext(INDArray array) {
                     assertNotNull(array);
@@ -368,7 +384,7 @@ public class DelayedModelParameterServerTest {
     @Test
     public void testMeshConsistency_2() throws Exception {
         Nd4j.create(1);
-        final int numMessages = 500;
+        final int numMessages = 100;
         val rootCount = new AtomicInteger(0);
         val rootSum = new AtomicInteger(0);
         val counter = new AtomicInteger(0);
@@ -396,7 +412,12 @@ public class DelayedModelParameterServerTest {
 
             val f = e;
             counters[f] = new AtomicInteger(0);
-            clientServer.addUpdatesSubscriber(new AbstractSubscriber<INDArray>() {
+            clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
+                @Override
+                public INDArray getParametersArray() {
+                    return null;
+                }
+
                 @Override
                 public void onNext(INDArray array) {
                     assertNotNull(array);
@@ -413,6 +434,8 @@ public class DelayedModelParameterServerTest {
             //log.info("Client [{}] started", e );
         }
 
+        Thread.sleep(500);
+
 
         val deductions = new int[servers.size()];
         for (int e = 0; e < numMessages; e++) {
@@ -427,6 +450,9 @@ public class DelayedModelParameterServerTest {
         }
 
         connector.blockUntilFinished();
+
+        //Thread.sleep(1000);
+        //Thread.sleep(3000000000000L);
 
         // checking if master node got all updates we've sent
         assertEquals(numMessages, rootCount.get());

@@ -28,13 +28,14 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import org.jetbrains.annotations.NotNull;
+import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
@@ -42,7 +43,6 @@ import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
@@ -101,7 +101,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected final AtomicBoolean connectedFlag = new AtomicBoolean(false);
 
     public AeronUdpTransport(@NonNull String ownIp, @NonNull String rootIp, @NonNull VoidConfiguration configuration) {
-        this(ownIp, configuration.getUnicastPort(), rootIp, configuration.getUnicastPort(), configuration);
+        this(ownIp, configuration.getPortSupplier().getPort(), rootIp, configuration.getUnicastControllerPort(), configuration);
     }
 
     /**
@@ -134,8 +134,12 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
         context = new Aeron.Context().driverTimeoutMs(30000)
                 .keepAliveInterval(100000000);
+        AeronUtil.setDaemonizedThreadFactories(context);
 
-        driver = MediaDriver.launchEmbedded();
+        final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context();
+        AeronUtil.setDaemonizedThreadFactories(mediaDriverCtx);
+
+        driver = MediaDriver.launchEmbedded(mediaDriverCtx);
         context.aeronDirectoryName(driver.aeronDirectoryName());
         aeron = Aeron.connect(context);
 
@@ -150,6 +154,8 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         public Thread newThread(@NotNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
+            //TODO implement support for multi-GPU masters
+            Nd4j.getAffinityManager().attachThreadToDevice(t, 0);   //Associate thread with device 0 (no-op for CPU)
             return t;
         }
     });
@@ -248,6 +254,8 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         if (!remoteConnections.containsKey(message.getOriginatorId()))
             addConnection(message.getOriginatorId());
 
+        log.debug("Got [{}] message from [{}]", message.getClass().getSimpleName(), message.getOriginatorId());
+
         // we're just putting deserialized message into the buffer
         try {
             messageQueue.put(message);
@@ -255,6 +263,37 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             // :(
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void onRemap(String id) {
+        try {
+            aeronLock.lock();
+
+            log.info("Trying to disconnect failed node: [{}]", id);
+
+            if (remoteConnections.containsKey(id)) {
+                val v = remoteConnections.get(id);
+                try {
+                    v.getPublication().close();
+                } catch (Exception e) {
+                    // no-op
+                }
+
+                remoteConnections.remove(id);
+            }
+
+            log.info("Trying to add failed node back again: [{}]", id);
+            addConnection(id);
+        } finally {
+            aeronLock.unlock();
+        }
+    }
+
+    @Override
+    public void ensureConnection(String id) {
+        // we just directly call addConnection
+        addConnection(id);
     }
 
     protected void addConnection(@NonNull String ipAndPort) {
@@ -268,11 +307,22 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
             val v = aeron.addPublication(ipAndPort, voidConfiguration.getStreamId());
 
+            int cnt = 0;
+            while (!v.isConnected()) {
+                try {
+                    Thread.sleep(100);
+                    if (cnt ++ > 100)
+                        throw new ND4JIllegalStateException("Can't establish connection afet 10 seconds. Terminating...");
+                } catch (InterruptedException e) {
+                    //
+                }
+            }
+
             val hash = HashUtil.getLongHash(ipAndPort);
 
             val rc = RemoteConnection.builder()
                     .ip(ipAndPort)
-                    .port(voidConfiguration.getUnicastPort())
+                    .port(0)
                     .longHash(hash)
                     .publication(v)
                     .build();
@@ -355,6 +405,20 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             return;
         }
 
+        if (message instanceof INDArrayMessage) {
+            try {
+                val splits = splitter.split(message, voidConfiguration.getMaxChunkSize());
+
+                for(val m:splits) {
+                    sendMessage(m, id);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            return;
+        }
+
         // serialize out of locks
         val b = message.asUnsafeBuffer();
 
@@ -378,15 +442,43 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
             // if response != OK we must do something with response
             switch (status) {
-                case MAX_POSITION_EXCEEDED:
+                case MAX_POSITION_EXCEEDED: {
+                        log.warn("MaxPosition hit: [{}]", id);
+                        try {
+                            // in case of backpressure we're just sleeping for a while, and message out again
+                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                        } catch (InterruptedException e) {
+                            //
+                        }
+                    }
+                    break;
                 case CLOSED: {
                     // TODO: here we should properly handle reconnection
-                    log.warn("Upstream connection was closed: [{}]", id);
+                    log.warn(" Connection was closed: [{}]", id);
                     return;
                 }
-                case ADMIN_ACTION:
-                case NOT_CONNECTED:
+                case ADMIN_ACTION: {
+                        log.info("ADMIN_ACTION: [{}]", id);
+                        try {
+                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                        } catch (InterruptedException e) {
+                            //
+                        }
+                    }
+                    break;
+                case NOT_CONNECTED: {
+                            log.info("NOT_CONNECTED: [{}]", id);
+                            addConnection(id);
+                            try {
+                                // in case of backpressure we're just sleeping for a while, and message out again
+                                Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                            } catch (InterruptedException e) {
+                                //
+                            }
+                        }
+                        break;
                 case BACK_PRESSURED: {
+                    log.info("BACK_PRESSURED: [{}]", id);
                     try {
                         // in case of backpressure we're just sleeping for a while, and message out again
                         Thread.sleep(voidConfiguration.getRetransmitTimeout());
@@ -397,6 +489,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             }
         }
     }
+
 
     protected void shutdownSilent() {
         // closing own connection

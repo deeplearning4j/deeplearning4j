@@ -1426,7 +1426,49 @@ public class Shape {
         return ArrayUtil.toArrayLong(ret);
     }
 
+    /**
+     * Return true if the shapes are equal after removing any size 1 dimensions
+     * For example, [1,3,4] and [3,4] are considered equal by this method.
+     * Or [2,1,1] and [1,2] are considered equal.
+     * @param shape1 First shape
+     * @param shape2 Second shape
+     * @return
+     */
+    public static boolean shapeEqualWithSqueeze(long[] shape1, long[] shape2){
+        if(shape1 == null)
+            return shape2 == null;
+        if(shape2 == null)
+            return false;   //Shape 1 must be non-null by this point
+        if(shape1.length == 0 && shape2.length == 0)
+            return true;
 
+        int pos1 = 0;
+        int pos2 = 0;
+        while(pos1 < shape1.length && pos2 < shape2.length){
+            if(shape1[pos1] == 1){
+                pos1++;
+                continue;
+            }
+            if(shape2[pos2] == 1){
+                pos2++;
+                continue;
+            }
+            //Both are non-1 shape. Must be equal
+            if(shape1[pos1] != shape2[pos2]){
+                return false;
+            }
+            pos1++;
+            pos2++;
+        }
+        //Handle trailing 1s
+        while(pos1 < shape1.length && shape1[pos1] == 1)
+            pos1++;
+        while(pos2 < shape2.length && shape2[pos2] == 1)
+            pos2++;
+
+        //2 possibilities: all entries consumed -> same shape. Or some remaining - something like [2] vs. [2,3,4,5]
+        return pos1 == shape1.length && pos2 == shape2.length;
+    }
 
     /**
      * Returns whether 2 shapes are equals by checking for dimension semantics

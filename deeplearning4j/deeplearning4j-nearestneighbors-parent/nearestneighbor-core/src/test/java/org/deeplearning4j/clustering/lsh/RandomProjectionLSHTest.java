@@ -90,7 +90,7 @@ public class RandomProjectionLSHTest {
     @Test
     public void testRawBucketOfReflexive(){
         rpLSH.makeIndex(inputs);
-        int idx = (new Random()).nextInt(100);
+        int idx = (new Random(12345)).nextInt(100);
         INDArray row = inputs.getRow(idx);
         assertEquals(1.0f, rpLSH.rawBucketOf(row).maxNumber().floatValue(), 1e-3f);
     }
@@ -104,7 +104,7 @@ public class RandomProjectionLSHTest {
     @Test
     public void testBucketReflexive(){
         rpLSH.makeIndex(inputs);
-        int idx = (new Random()).nextInt(100);
+        int idx = (new Random(12345)).nextInt(100);
         INDArray row = inputs.getRow(idx);
         assertEquals(1.0f, rpLSH.bucket(row).maxNumber().floatValue(), 1e-3f);
     }
@@ -113,7 +113,7 @@ public class RandomProjectionLSHTest {
     @Test
     public void testBucketDataReflexiveDimensions() {
         rpLSH.makeIndex(inputs);
-        int idx = (new Random()).nextInt(100);
+        int idx = (new Random(12345)).nextInt(100);
         INDArray row = inputs.getRow(idx);
         INDArray bucketData = rpLSH.bucketData(row);
 
@@ -124,7 +124,7 @@ public class RandomProjectionLSHTest {
     @Test
     public void testBucketDataReflexive(){
         rpLSH.makeIndex(inputs);
-        int idx = (new Random()).nextInt(100);
+        int idx = (new Random(12345)).nextInt(100);
         INDArray row = inputs.getRow(idx);
         INDArray bucketData =  rpLSH.bucketData(row);
 
@@ -140,7 +140,7 @@ public class RandomProjectionLSHTest {
     @Test
     public void testSearchReflexiveDimensions() {
         rpLSH.makeIndex(inputs);
-        int idx = (new Random()).nextInt(100);
+        int idx = (new Random(12345)).nextInt(100);
         INDArray row = inputs.getRow(idx);
         INDArray searchResults = rpLSH.search(row, 10.0f);
 
@@ -153,7 +153,7 @@ public class RandomProjectionLSHTest {
     @Test
     public void testSearchReflexive() {
         rpLSH.makeIndex(inputs);
-        int idx = (new Random()).nextInt(100);
+        int idx = (new Random(12345)).nextInt(100);
         INDArray row = inputs.getRow(idx);
 
         INDArray searchResults = rpLSH.search(row, 10.0f);
@@ -172,7 +172,7 @@ public class RandomProjectionLSHTest {
     @Test
     public void testANNSearchReflexiveDimensions() {
         rpLSH.makeIndex(inputs);
-        int idx = (new Random()).nextInt(100);
+        int idx = (new Random(12345)).nextInt(100);
         INDArray row = inputs.getRow(idx);
         INDArray searchResults = rpLSH.search(row, 100);
 
@@ -185,7 +185,7 @@ public class RandomProjectionLSHTest {
     @Test
     public void testANNSearchReflexive() {
         rpLSH.makeIndex(inputs);
-        int idx = (new Random()).nextInt(100);
+        int idx = (new Random(12345)).nextInt(100);
         INDArray row = inputs.getRow(idx);
 
         INDArray searchResults = rpLSH.search(row, 100);

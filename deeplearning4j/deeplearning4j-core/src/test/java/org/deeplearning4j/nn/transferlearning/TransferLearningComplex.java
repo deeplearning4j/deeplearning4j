@@ -60,7 +60,7 @@ public class TransferLearningComplex extends BaseDL4JTest {
                         .addLayer("B", new DenseLayer.Builder().nIn(9).nOut(8).build(), "A")
                         .addLayer("C", new DenseLayer.Builder().nIn(7).nOut(6).build(), "in2")
                         .addLayer("D", new DenseLayer.Builder().nIn(8 + 7).nOut(5).build(), "B", "C")
-                        .addLayer("out", new OutputLayer.Builder().nIn(5).nOut(4).build(), "D")
+                        .addLayer("out", new OutputLayer.Builder().nIn(5).nOut(4).activation(Activation.LEAKYRELU).build(), "D")
                         .setOutputs("out")
                         .validateOutputLayerConfig(false)
                         .build();

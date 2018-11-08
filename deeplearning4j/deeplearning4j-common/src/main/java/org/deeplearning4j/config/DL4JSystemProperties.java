@@ -27,6 +27,13 @@ public class DL4JSystemProperties {
     private DL4JSystemProperties(){ }
 
     /**
+     * Applicability: DL4J ModelSerializer, ModelGuesser, Keras model import<br>
+     * Description: Specify the local directory where temporary files will be written. If not specified, the default
+     * Java temporary directory (java.io.tmpdir system property) will generally be used.
+     */
+    public static final String DL4J_TEMP_DIR_PROPERTY = "org.deeplearning4j.tempdir";
+
+    /**
      * Applicability: Numerous modules, including deeplearning4j-datasets and deeplearning4j-zoo<br>
      * Description: Used to set the local location for downloaded remote resources such as datasets (like MNIST) and
      * pretrained models in the model zoo. Default value is set via {@code new File(System.getProperty("user.home"), ".deeplearning4j")}.

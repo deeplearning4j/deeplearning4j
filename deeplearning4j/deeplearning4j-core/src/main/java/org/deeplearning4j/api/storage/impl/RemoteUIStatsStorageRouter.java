@@ -131,7 +131,7 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializa
         }
     }
 
-    private void checkThread(){
+    private synchronized void checkThread(){
         if(postThread == null){
             postThread = new Thread(new PostRunnable());
             postThread.setDaemon(true);

@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops;
 
 import com.google.common.primitives.Ints;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
@@ -48,10 +49,11 @@ import java.util.Map;
 @Slf4j
 public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
+    @Setter @Getter
     protected boolean keepDims = false;
 
     // flag for tf imported ops, shows that there's probably one more value appended in axis
-    @Getter
+    @Setter @Getter
     protected boolean newFormat = false;
     protected boolean isComplex = false;
 

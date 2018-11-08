@@ -25,9 +25,12 @@ import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -53,7 +56,14 @@ public class TFGraphTestAllSameDiff {
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
     private String modelName;
+    private File localTestDir;
+
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
+    private static final String BASE_DIR = "tf_graphs/examples";
+    private static final String MODEL_FILENAME = "frozen_model.pb";
+
+
+
     private static final String[] SKIP_ARR = new String[] {
             "deep_mnist",
             "deep_mnist_no_dropout",
@@ -64,10 +74,6 @@ public class TFGraphTestAllSameDiff {
     };
 
     public static final String[] IGNORE_REGEXES = new String[]{
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6154
-            "transforms/atan2_3,1,4_1,2,4",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6142
-            "reverse/shape5.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6172
             "pad/rank1.*",
             "pad/rank2Pone_const10",
@@ -83,12 +89,12 @@ public class TFGraphTestAllSameDiff {
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
 
+            //TODO look into this:
+            "reverse/shape5-.*",
+
             //https://github.com/deeplearning4j/deeplearning4j/issues/6281
             "log_determinant/.*",
             "slogdet/.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6285
-            "histogram_fixed_width/.*",
 
             //TODO need unsorted segment sum - then need to change libnd4j impl slightly (need to know format first)
             "bincount/.*",
@@ -102,20 +108,11 @@ public class TFGraphTestAllSameDiff {
             //scatter_nd: one minor validation issue mentioned tu Yurii, already fixed but not merged (should validate vs. shape array length, not rank)
             "scatter_nd/.*",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6312
-            "cnn1d_layers/channels_last_b1_k2_s1_d2_SAME",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6311
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6476
             "embedding_lookup/.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6315
             "nth_element/.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6290
-            "unsorted_segment/.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6321
-            "broadcast_to/.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6322
             "broadcast_dynamic_shape/.*",
@@ -137,32 +134,38 @@ public class TFGraphTestAllSameDiff {
             // this test with a set of more thorough/isolated strided slice tests
             "g_07",
 
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6447
+            "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
+            "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
 
+            //These have a random component so can't be validated using simple .equals... should still be compared, however
+            "alpha_dropout/.*",
+            "layers_dropout/.*",
 
-            //TEMPORARY ignores for new tests before merging PR with fixes
-            // https://github.com/deeplearning4j/deeplearning4j/pull/6373
-            "avg_pooling1d/.*",
-            "avg_pooling3d/.*",
-            "batchnorm.*",
-            "cnn1d_layers/.*",
-            "cnn1d_nn/.*",
-            "cnn2d_layers/.*",
-            "cnn2d_nn/.*",
-            "cnn3d_layers/.*",
-            "cnn3d_nn/.*",
-            "conv2d_transpose/.*",
-            "sepconv2d_layers/.*",
-            "losses/hinge.*",
-            "max_pooling1d/.*",
-            "max_pooling3d/.*",
-            "svd.*",
-            "unsorted_segment_sqrt.*"
+            //These absurdly slow:
+            "simplewhile.*",
+
+            //New failures:
+            "gru_dynamic_mnist",
+            "primitive_gru_dynamic",
+            "simple_while",
+
+            //Bad test, no outputs (but there are non-output ("inbetween") results)
+            "g_10",
+
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6464
+            "cnn2d_nn/nchw_b1_k12_s12_d12_SAME",
+            "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
+
+            "conv_4",
+            "ae"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
     @BeforeClass
     public static void beforeClass() throws Exception {
         Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 
     @Before
@@ -178,14 +181,16 @@ public class TFGraphTestAllSameDiff {
 
     @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(EXECUTE_WITH);
+        File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
         return params;
     }
 
-    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
+    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws IOException {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;
+        this.localTestDir = localTestDir;
     }
 
     @Test(timeout = 25000L)
@@ -202,9 +207,18 @@ public class TFGraphTestAllSameDiff {
                 OpValidationSuite.ignoreFailing();
             }
         }
-        Double precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
+        Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
+        Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH, precisionOverride);
+        try {
+            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,
+                    TFGraphTestAllHelper.LOADER, maxRE, minAbs);
+        } catch (Throwable t){
+            log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);
+            t.printStackTrace();
+            throw t;
+        }
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 

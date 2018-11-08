@@ -23,7 +23,7 @@ quickly. Current input data types supported out of the box:
 * JSON, XML, YAML, XML
 
 Datavec draws inspiration from a lot of the Hadoop ecosystem tools, and in particular accesses data on disk through the
-Hadoop API (like Spark does), which means it's compatible with many records
+Hadoop API (like Spark does), which means it's compatible with many records.
 
 DataVec also includes sophisticated functionality for feature engineering, data cleaning and data normalization both for
 static data and for sequences (time series). Such operations can be executed on [Apache Spark](https://spark.apache.org/) using DataVec-Spark.
@@ -31,28 +31,22 @@ static data and for sequences (time series). Such operations can be executed on 
 ## Datavec's architecture : API, transforms and filters, and schema management
 
 Apart from obviously providing readers for classic data formats, DataVec also provides an interface. So if you wanted to
-ingest specific custom data, you don't have to do the whole pipeline, you just have to do the very first step. You
-describe through the API how your data fits into a common format that complies with the interface, in this case, DataVec
-will return a list of Writables for each record. You'll find more detail on the API in the
-corresponding [module](https://github.com/deeplearning4j/DataVec/tree/master/datavec-api).
+ingest specific custom data, you wouldn't have to build the whole pipeline. You would just have to write the very first step. For example, if you describe through the API how your data fits into a common format that complies with the interface, DataVec
+would return a list of Writables for each record. You'll find more detail on the API in the corresponding [module](https://github.com/deeplearning4j/DataVec/tree/master/datavec-api).
 
-Another thing you can do with DataVec is data cleaning functionality. Instead of having clean ready-to-go data, say you
-start with maybe data in different forms or from different sources. You might need to do sampling, filtering, or several of all
-those incredibly messy ETL tasks that you need to prepare data in the real world. DataVec offers filters and
-transformations that help with curating, preparing and massaging your data. It leverages Apache Spark to do this at
-scale.
+Another thing you can do with DataVec is data cleaning. Instead of having clean, ready-to-go data, let's say you start with data in different forms or from different sources. You might need to do sampling, filtering, or several incredibly messy ETL tasks needed to prepare data in the real world. DataVec offers filters and transformations that help with curating, preparing and massaging your data. It leverages Apache Spark to do this at scale.
 
 Finally, DataVec tracks a schema for your columnar data, across all transformations. This schema is actively checked
 through probing, and DataVec will raise exceptions if your data does not match the schema. You can specify filters as
 well: you can attach a regular expression to an input column of type `String`, for example, and DataVec will only keep
-data that matches this filter
+data that matches this filter.
 
 ## On Distribution
 
-Distributed treatment through Apache Spark is entirely optional, including running Spark in local-mode (where your
-cluster is emulated with multi-threading) when necessary. Datavec aims to abstract away from the actual execution and
+Distributed treatment through Apache Spark is optional, including running Spark in local-mode (where your
+cluster is emulated with multi-threading) when necessary. Datavec aims to abstract away from the actual execution, and
 create at compile time, a logical set of operations to execute. While we have some code that uses Spark, we do not want
-to be locked into a single tool, and using [Apache Flink](https://flink.apache.org/) or [Beam](https://beam.apache.org/) are possibilities, on which we would welcome collaboration.
+to be locked into a single tool, and using [Apache Flink](https://flink.apache.org/) or [Beam](https://beam.apache.org/) are possibilities - projects on which we would welcome collaboration.
 
 ## Examples
 
@@ -65,12 +59,12 @@ here: [https://github.com/deeplearning4j/dl4j-examples](https://github.com/deepl
 
 ### Where to contribute?
 
-We have a lot on the pipeline, and even more we'd love to receive contributions. We want to support representing data as
+We have a lot in the pipeline, and we'd love to receive contributions. We want to support representing data as
 more than a collection of simple types ("*writables*"), and rather as binary data — that will help with GC pressure
-across our pipelines and fit better with media-based uses cases, where columnar data is not essential. We also expect it
+across our pipelines and fit better with media-based use cases, where columnar data is not essential. We also expect it
 will streamline a lot of the specialized operations we now do on primitive types.
 
-With that being said, an area that could welcome a first contribution is the implementations of the `RecordReader`
+That being said, an area that could use a first contribution is the implementations of the `RecordReader`
 interface, since this is relatively self-contained. Of note, to support most of the distributed file formats of the
 Hadoop ecosystem, we use [Apache Camel](https://camel.apache.org/). Camel supports
 a [pluggable DataFormat](https://camel.apache.org/data-format.html) to allow messages to be marshalled to and from
@@ -81,10 +75,7 @@ operation that has not been implemented yet, and provide it in a self-contained 
 
 ## Which maintainers to contact?
 
-It's often useful to have an idea of which maintainers to contact to get information on a particular part of the code,
-including reviewing your pull requests, or asking questions on
-our [gitter channel](https://gitter.im/deeplearning4j/deeplearning4j). For this you can use the following, indicative
-mapping:
+It's useful to know which maintainers to contact to get information on a particular part of the code, including reviewing your pull requests, or asking questions on our [gitter channel](https://gitter.im/deeplearning4j/deeplearning4j). For this you can use the following, indicative mapping:
 
 - `RecordReader` implementations:
    @saudet and @agibsonccc
@@ -105,16 +96,15 @@ mapping:
 5. Note the repository follows the [Google Java style](https://google.github.io/styleguide/javaguide.html) with two
    modifications: 120-char column wrap and 4-spaces indentation. You can format your code to this format by typing `mvn
    formatter:format` in the subproject you work on, by using the `contrib/formatter.xml` at the root of the repository
-   to configure the Eclipse formatter, or
-   by
+   to configure the Eclipse formatter, or by
    [using the INtellij plugin](https://github.com/HPI-Information-Systems/Metanome/wiki/Installing-the-google-styleguide-settings-in-intellij-and-eclipse).
 
 6. Send a pull request, and bug us on Gitter until it gets merged and published.
 
 ## Eclipse Setup
 
-1. Downloading the latest jar from https://projectlombok.org/download
-2. Double click the jar to install the plugin for Eclipse
-3. Clone datavec to your system
-4. Import the project as a maven project
+1. Downloading the latest JAR from https://projectlombok.org/download
+2. Double-click the JAR file to install the plugin for Eclipse
+3. Clone Datavec to your system
+4. Import the project as a Maven project
 5. You will also need clone and build ND4J and libnd4j

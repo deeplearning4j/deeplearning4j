@@ -25,9 +25,12 @@ import org.datavec.api.records.reader.impl.LineRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.base.Preconditions;
 
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -187,6 +190,7 @@ public class CSVRecordReader extends LineRecordReader {
     }
 
     protected String readStringLine(){
+        Preconditions.checkState(initialized, "RecordReader has not been initialized before use");
         Text t = (Text) super.next().iterator().next();
         return t.toString();
     }
@@ -218,8 +222,12 @@ public class CSVRecordReader extends LineRecordReader {
 
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        //Here: we are reading a single line from the DataInputStream. How to handle skipLines???
-        throw new UnsupportedOperationException("Reading CSV data from DataInputStream not yet implemented");
+        BufferedReader br = new BufferedReader(new InputStreamReader(dataInputStream));
+        for( int i=0; i<skipNumLines; i++ ){
+            br.readLine();
+        }
+        String line = br.readLine();
+        return parseLine(line);
     }
 
     @Override

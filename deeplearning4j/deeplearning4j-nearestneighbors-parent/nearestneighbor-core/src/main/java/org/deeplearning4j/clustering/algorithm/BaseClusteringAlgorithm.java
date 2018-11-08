@@ -31,6 +31,7 @@ import org.deeplearning4j.clustering.strategy.ClusteringStrategy;
 import org.deeplearning4j.clustering.strategy.ClusteringStrategyType;
 import org.deeplearning4j.clustering.strategy.OptimisationStrategy;
 import org.deeplearning4j.clustering.util.MultiThreadUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -134,7 +135,8 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 
         //Initialize the ClusterSet with a single cluster center (based on position of one of the points chosen randomly)
         Random random = new Random();
-        clusterSet = new ClusterSet(clusteringStrategy.getDistanceFunction(),
+        String distanceFn = clusteringStrategy.getDistanceFunction();
+        clusterSet = new ClusterSet(distanceFn,
                         clusteringStrategy.inverseDistanceCalculation());
         clusterSet.addNewClusterWithCenter(points.remove(random.nextInt(points.size())));
         int initialClusterCount = clusteringStrategy.getInitialClusterCount();
@@ -150,6 +152,9 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
             dxs = ClusterUtils.computeSquareDistancesFromNearestCluster(clusterSet, points, dxs, exec);
             double r = random.nextFloat() * dxs.maxNumber().doubleValue();
             for (int i = 0; i < dxs.length(); i++) {
+                double distance = dxs.getDouble(i);
+                Preconditions.checkState(distance >= 0, "Encountered negative distance: distance function is not valid? Distance " +
+                        "function must return values >= 0, got distance %s for function s", distance, distanceFn);
                 if (dxs.getDouble(i) >= r) {
                     clusterSet.addNewClusterWithCenter(points.remove(i));
                     dxs = Nd4j.create(ArrayUtils.remove(dxs.data().asDouble(), i));

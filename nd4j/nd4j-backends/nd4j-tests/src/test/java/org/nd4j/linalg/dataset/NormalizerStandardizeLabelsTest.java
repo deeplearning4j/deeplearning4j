@@ -112,7 +112,7 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
             Obtained mean and std dev are compared to theoretical
             Transformed values should be the same as X with the same seed.
          */
-        long randSeed = 2227724;
+        long randSeed = 12345;
 
         int nFeatures = 2;
         int nSamples = 6400;
@@ -140,7 +140,7 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         assertTrue(sampleMeanDelta.mul(100).div(normData.theoreticalMean).max(1).getDouble(0, 0) < tolerancePerc);
         //sanity check to see if it's within the theoretical standard error of mean
         sampleMeanSEM = sampleMeanDelta.div(normData.theoreticalSEM).max(1).getDouble(0, 0);
-        assertTrue(sampleMeanSEM < 2.6); //99% of the time it should be within this many SEMs
+        assertTrue(String.valueOf(sampleMeanSEM), sampleMeanSEM < 2.6); //99% of the time it should be within this many SEMs
 
         tolerancePerc = 5; //within 5%
         sampleStd = myNormalizer.getStd();

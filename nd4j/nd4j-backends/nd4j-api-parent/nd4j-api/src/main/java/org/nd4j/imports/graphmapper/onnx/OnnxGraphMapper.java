@@ -462,6 +462,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         return false;
     }
 
+    @Override
+    public boolean isConstant(OnnxProto3.TypeProto.Tensor nodeType) {
+        return false;
+    }
+
 
     @Override
     public INDArray getNDArrayFromTensor(String tensorName, OnnxProto3.TypeProto.Tensor tensorProto, OnnxProto3.GraphProto graph) {

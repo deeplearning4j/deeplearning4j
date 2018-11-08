@@ -1139,9 +1139,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
                     INDArray a = la.get(i).getFirst();
                     INDArray b = lb.get(i).getFirst();
 
-                    INDArray result1 = Nd4j.createUninitialized(5, 4);
-                    INDArray result2 = Nd4j.createUninitialized(5, 4);
-                    INDArray result3 = Nd4j.createUninitialized(5, 4);
+                    INDArray result1 = Nd4j.createUninitialized(new long[]{5, 4}, 'f');
+                    INDArray result2 = Nd4j.createUninitialized(new long[]{5, 4}, 'f');
+                    INDArray result3 = Nd4j.createUninitialized(new long[]{5, 4}, 'f');
 
                     Nd4j.gemm(a.dup('c'), b.dup('c'), result1, false, false, 1.0, 0.0);
                     Nd4j.gemm(a.dup('f'), b.dup('f'), result2, false, false, 1.0, 0.0);
@@ -3181,60 +3181,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testTensorStats() {
-        List<Pair<INDArray, String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(9, 13, 123);
-
-        for (Pair<INDArray, String> pair : testInputs) {
-            INDArray arr = pair.getFirst();
-            String msg = pair.getSecond();
-
-            val nTAD0 = arr.tensorssAlongDimension(0);
-            val nTAD1 = arr.tensorssAlongDimension(1);
-
-            OpExecutionerUtil.Tensor1DStats t0 = OpExecutionerUtil.get1DTensorStats(arr, 0);
-            OpExecutionerUtil.Tensor1DStats t1 = OpExecutionerUtil.get1DTensorStats(arr, 1);
-
-            assertEquals(nTAD0, t0.getNumTensors());
-            assertEquals(nTAD1, t1.getNumTensors());
-
-            INDArray tFirst0 = arr.tensorAlongDimension(0, 0);
-            INDArray tSecond0 = arr.tensorAlongDimension(1, 0);
-
-            INDArray tFirst1 = arr.tensorAlongDimension(0, 1);
-            INDArray tSecond1 = arr.tensorAlongDimension(1, 1);
-
-            assertEquals(tFirst0.offset(), t0.getFirstTensorOffset());
-            assertEquals(tFirst1.offset(), t1.getFirstTensorOffset());
-            long separation0 = tSecond0.offset() - tFirst0.offset();
-            long separation1 = tSecond1.offset() - tFirst1.offset();
-            assertEquals(separation0, t0.getTensorStartSeparation());
-            assertEquals(separation1, t1.getTensorStartSeparation());
-
-            for (int i = 0; i < nTAD0; i++) {
-                INDArray tad0 = arr.tensorAlongDimension(i, 0);
-                assertEquals(tad0.length(), t0.getTensorLength());
-                assertEquals(tad0.elementWiseStride(), t0.getElementWiseStride());
-
-                long offset = tad0.offset();
-                long calcOffset = t0.getFirstTensorOffset() + i * t0.getTensorStartSeparation();
-                assertEquals(offset, calcOffset);
-            }
-
-            for (int i = 0; i < nTAD1; i++) {
-                INDArray tad1 = arr.tensorAlongDimension(i, 1);
-                assertEquals(tad1.length(), t1.getTensorLength());
-                assertEquals(tad1.elementWiseStride(), t1.getElementWiseStride());
-
-                long offset = tad1.offset();
-                long calcOffset = t1.getFirstTensorOffset() + i * t1.getTensorStartSeparation();
-                assertEquals(offset, calcOffset);
-            }
-        }
-    }
-
-
-
-    @Test
     @Ignore
     public void largeInstantiation() {
         Nd4j.ones((1024 * 1024 * 511) + (1024 * 1024 - 1)); // Still works; this can even be called as often as I want, allowing me even to spill over on disk
@@ -3279,35 +3225,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray fSum = arrf.sum(0);
         assertEquals(arrc, arrf);
         assertEquals(cSum, fSum); //Expect: 4,6. Getting [4, 4] for f order
-    }
-
-    @Test
-    public void testAssignMixedC() {
-        int[] shape1 = {3, 2, 2, 2, 2, 2};
-        int[] shape2 = {12, 8};
-        int length = ArrayUtil.prod(shape1);
-
-        assertEquals(ArrayUtil.prod(shape1), ArrayUtil.prod(shape2));
-
-        INDArray arr = Nd4j.linspace(1, length, length).reshape('c', shape1);
-        INDArray arr2c = Nd4j.create(shape2, 'c');
-        INDArray arr2f = Nd4j.create(shape2, 'f');
-
-        log.info("2f data: {}", Arrays.toString(arr2f.data().asFloat()));
-
-        arr2c.assign(arr);
-        System.out.println("--------------");
-        arr2f.assign(arr);
-
-        INDArray exp = Nd4j.linspace(1, length, length).reshape('c', shape2);
-
-        log.info("arr data: {}", Arrays.toString(arr.data().asFloat()));
-        log.info("2c data: {}", Arrays.toString(arr2c.data().asFloat()));
-        log.info("2f data: {}", Arrays.toString(arr2f.data().asFloat()));
-        log.info("2c shape: {}", Arrays.toString(arr2c.shapeInfoDataBuffer().asInt()));
-        log.info("2f shape: {}", Arrays.toString(arr2f.shapeInfoDataBuffer().asInt()));
-        assertEquals(exp, arr2c);
-        assertEquals(exp, arr2f);
     }
 
     @Test
@@ -6415,6 +6332,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(120, array.length());
         assertArrayEquals(new long[]{2, 3, 4, 5}, array.shape());
         assertEquals(exp, array);
+
+        val bos = new ByteArrayOutputStream();
+        Nd4j.write(bos, array);
+
+        val bis = new ByteArrayInputStream(bos.toByteArray());
+        val array2 = Nd4j.read(bis);
+
+        assertEquals(exp, array2);
     }
 
     @Test
@@ -7045,7 +6970,39 @@ public class Nd4jTestsC extends BaseNd4jTest {
         } catch (IllegalArgumentException e){
             assertTrue(e.getMessage().toLowerCase().contains("order"));
         }
+    }
 
+    @Test
+    public void testAssignValid(){
+        INDArray arr1 = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
+        INDArray arr2 = Nd4j.create(3,4);
+        arr2.assign(arr1);
+        assertEquals(arr1, arr2);
+    }
+
+    @Test
+    public void testAssignInvalid(){
+        INDArray arr1 = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
+        INDArray arr2 = Nd4j.create(4,3);
+        try {
+            arr2.assign(arr1);
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage(), e.getMessage().contains("shape"));
+        }
+    }
+
+
+    @Test
+    public void testInvalidTransformsSoftmax(){
+        INDArray arr = Nd4j.zeros(2,3,4);
+        try{
+            Transforms.softmax(arr);
+            fail("Expected exception");
+        } catch (IllegalArgumentException e){
+            //OK
+            assertTrue(e.getMessage().contains("rank 2"));
+        }
     }
 
     ///////////////////////////////////////////////////////
@@ -7072,7 +7029,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray ret = Nd4j.createUninitialized(input.size(0), W.size(1));
         input.mmuli(W, ret);
         ret.addiRowVector(b);
-
         return ret;
     }
 
