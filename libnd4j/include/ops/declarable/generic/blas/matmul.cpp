@@ -110,16 +110,23 @@ DECLARE_SHAPE_FN(matmul) {
     }
 
     auto zShapeOnly = ShapeUtils::evalShapeForMatmul(xShapeInfo, yShapeInfo, transX, transY);
-    auto newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(xShapeInfo), 'f', zShapeOnly, block.getWorkspace());
+
+    auto dtypeX = ArrayOptions::dataType(xShapeInfo);
+    auto dtypeY = ArrayOptions::dataType(yShapeInfo);
+
+    // we just picker higher data type out of X and Y
+    auto dtypeZ = dtypeX > dtypeY ? dtypeX : dtypeY;
+
+    auto newShape = ShapeBuilders::createShapeInfo(dtypeZ, 'f', zShapeOnly, block.getWorkspace());
 
     return SHAPELIST( newShape );
 }
 
     DECLARE_TYPES(matmul) {
         getOpDescriptor()
-                ->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+                ->setAllowedInputTypes(0, {ALL_FLOATS})
+                ->setAllowedInputTypes(1, {ALL_FLOATS})
+                ->setAllowedOutputTypes(0, {ALL_FLOATS});
     }
 
 }
