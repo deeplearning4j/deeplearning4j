@@ -163,6 +163,18 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_5) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests5, Test_CumSum_Axis_1) {
+    NDArray<double> x('c', {4, 16, 16, 1});
+    NDArray<double> y(-3.0);
+
+    nd4j::ops::cumsum<double> op;
+    auto result = op.execute({&x, &y}, {}, {1, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
     NDArray<float> x('c', {2, 1, 3});
     NDArray<float> eps('c', {2, 4, 3});
