@@ -305,9 +305,14 @@ JavaRDD<DataSet> dataSetRdd = sequencesRdd.map(new DataVecSequenceDataSetFunctio
 
 <br><br>
 
-## <a name="images">How to create an RDD[DataSet] for images</a>
+## <a name="images">How to create a Spark data pipeline for training on images</a>
 
-This guide shows how to create an ```RDD<DataSet>``` for image classification, starting from images stored on a network file system such as HDFS.
+This guide shows how to create an ```RDD<DataSet>``` for image classification, starting from images stored either locally, or on a network file system such as HDFS.
+
+The approach here used (added in 1.0.0-beta3) is to first preprocess the images into batches of files - [FileBatch](https://github.com/deeplearning4j/deeplearning4j/blob/master/nd4j/nd4j-common/src/main/java/org/nd4j/api/loader/FileBatch.java) objects.
+The motivation for this approach is simple: the original image files typically use efficient compresion (JPEG for example) which is much more space (and network) efficient than a bitmap (int8 or 32-bit floating point) representation. However, on a cluster we want to minimize disk reads due to latency issues with remote storage - one file read/transfer is going to be faster than ```minibatchSize``` remote file reads.
+
+The [TinyImageNet example](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/tinyimagenet) also shows how this can be done.
 
 Note that one limitation of the implementation is that the set of classes (i.e., the class/category labels when doing classification) needs to be known, provided or collected manually. This differs from using ImageRecordReader for classification on a single machine, which can automatically infer the set of class labels.
 
@@ -322,34 +327,58 @@ rootDir/dog/img1.jpg
 ```
 (Note the file names don't matter in this example - however, the parent directory names are the class labels)
 
-The data pipeline for image classification can be constructed as follows:
+**Step 1 (option 1 of 2): Preprocess Locally**
+
+Local preprocessing can be done as follows:
 ```
-String rootDir = "hdfs://path/to/rootDir";
-JavaPairRDD<String, PortableDataStream> files = sc.binaryFiles(rootDir);
+String sourceDirectory = "/home/user/my_images";            //Where your data is located
+String destinationDirectory = "/home/user/preprocessed";    //Where the preprocessed data should be written
+int batchSize = 32;                                         //Number of examples (images) in each FileBatch object
+SparkDataUtils.createFileBatchesLocal(sourceDirectory, NativeImageLoader.ALLOWED_FORMATS, true, saveDirTrain, batchSize);
+```
 
-List<String> labelsList = Arrays.asList("cat", "dog");  //Substitute your class labels here
+The full import for SparkDataUtils is ```org.deeplearning4j.spark.util.SparkDataUtils```.
 
-int imageHW = 224;              //Height/width to convert images to
-int imageChannels = 3;          //Image channels to convert images to - 3 = RGB, 1 = grayscale
-ImageRecordReader imageRecordReader = new ImageRecordReader(imageHW, imageHW, imageChannels);
-rr.setLabels(labelsList);
+After preprocessing is has been completed, the directory can be copied to the cluster for use in training (Step 2).
 
-JavaRDD<List<Writable>> writablesRdd = origData.map(new RecordReaderFunction(rr));
+**Step 1 (option 2 of 2): Preprocess using Spark**
 
-int labelIndex = 1;   //Always index 1 with ImageRecordReader
-int numClasses = labelsList.size();
-JavaRDD<DataSet> dataSetRdd = writablesRdd.map(new DataVecDataSetFunction(labelIndex, numClasses, false));
+Alternatively, if the original images are on remote file storage (such as HDFS), we can use the following:
+```
+```
+String sourceDirectory = "hdfs:///data/my_images";          //Where your data is located
+String destinationDirectory = "hdfs:///data/preprocessed";  //Where the preprocessed data should be written
+int batchSize = 32;                                         //Number of examples (images) in each FileBatch object
+SparkDataUtils.createFileBatchesSpark(sourceDirectory, destinationDirectory, batchSize, sparkContext);
+```
+```
+
+**Step 2: Training**
+The data pipeline for image classification can be constructed as follows. This code is taken from the [TinyImageNet example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/tinyimagenet/TrainSpark.java):
+```
+//Create data loader
+int imageHeightWidth = 64;      //64x64 pixel input to network
+int imageChannels = 3;          //RGB
+PathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+ImageRecordReader rr = new ImageRecordReader(imageHeightWidth, imageHeightWidth, imageChannels, labelMaker);
+rr.setLabels(Arrays.asList("cat", "dog"));
+int numClasses = 2;
+RecordReaderFileBatchLoader loader = new RecordReaderFileBatchLoader(rr, minibatch, 1, numClasses);
+loader.setPreProcessor(new ImagePreProcessingScaler());   //Scale 0-255 valued pixels to 0-1 range
+
+
+//Fit the network
+String trainDataPath = "hdfs:///data/preprocessed";         //Where the preprocessed data is located
+JavaRDD<String> pathsTrain = SparkUtils.listPaths(sc, trainDataPath);
+for (int i = 0; i < numEpochs; i++) {
+    sparkNet.fitPaths(pathsTrain, loader);
+}
 ```
 
 And that's it.
 
-Note 1: If a DataSetPreprocess is required (such as ```ImagePreProcessingScaler```) this can be provided as an argument to DataVecDataSetFunction:
-```
-JavaRDD<DataSet> dataSetRdd = writablesRdd.map(new DataVecDataSetFunction(labelIndex, numClasses, false, new ImagePreProcessingScaler(), null));
-```
-
-Note 2: for other label generation cases (such as labels provided from the filename instead of parent directory), or for tasks such as semantic segmentation, you can substitute a different PathLabelGenerator instead of the default. For example, if the label should come from the file name, you can use ```PatternPathLabelGenerator``` instead.
-Let's say images are in the format "cat_img1234.jpg", "dog_2309.png" etc. We can use tho following process:
+Note: for other label generation cases (such as labels provided from the filename instead of parent directory), or for tasks such as semantic segmentation, you can substitute a different PathLabelGenerator instead of the default. For example, if the label should come from the file name, you can use ```PatternPathLabelGenerator``` instead.
+Let's say images are in the format "cat_img1234.jpg", "dog_2309.png" etc. We can use the following process:
 ```
 PathLabelGenerator labelGenerator = new PatternPathLabelGenerator("_", 0);  //Split on the "_" character, and take the first value
 ImageRecordReader imageRecordReader = new ImageRecordReader(imageHW, imageHW, imageChannels, labelGenerator);
