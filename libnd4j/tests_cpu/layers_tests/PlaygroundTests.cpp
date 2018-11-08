@@ -702,7 +702,7 @@ TEST_F(PlaygroundTests, loopThroughArrs_test1) {
 }
 
 
-void loopSpan(double* x, Nd4jLong* xShapeInfo, double* y, Nd4jLong* yShapeInfo, double* z, Nd4jLong* zShapeInfo) {
+void loopSpan(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
 
     auto len = shape::length(xShapeInfo);
     int xEws = shape::elementWiseStride(xShapeInfo);
@@ -724,7 +724,7 @@ void loopSpan(double* x, Nd4jLong* xShapeInfo, double* y, Nd4jLong* yShapeInfo, 
     }
 }
 
-void loopSimple(double* x, Nd4jLong* xShapeInfo, double* y, Nd4jLong* yShapeInfo, double* z, Nd4jLong* zShapeInfo) {
+void loopSimple(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
 
     auto len = shape::length(xShapeInfo);
     int xEws = shape::elementWiseStride(xShapeInfo);
@@ -744,9 +744,9 @@ TEST_F(PlaygroundTests, loopThroughArrs_test2) {
     NDArray y('c', {20, 20, 2500}, nd4j::DataType::DOUBLE);  
     NDArray z('c', {20, 20, 50, 50}, nd4j::DataType::DOUBLE);  
 
-    auto xBuff = x.bufferAsT<double>();
-    auto yBuff = y.bufferAsT<double>();
-    auto zBuff = y.bufferAsT<double>();
+    auto xBuff = x.bufferAsT<float>();
+    auto yBuff = y.bufferAsT<float>();
+    auto zBuff = y.bufferAsT<float>();
     auto xShapeInfo = x.getShapeInfo();
     auto yShapeInfo = y.getShapeInfo();
     auto zShapeInfo = z.getShapeInfo();
