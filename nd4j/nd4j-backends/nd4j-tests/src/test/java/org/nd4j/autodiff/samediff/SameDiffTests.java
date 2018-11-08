@@ -1326,6 +1326,8 @@ public class SameDiffTests {
 
         SameDiff logisticGraph = sameDiffOuter.getFunction("oneminuspredictions");
         INDArray[] outputs = logisticGraph.eval(inputs);
+        Map<String,INDArray> inputsSubset = new HashMap<>();
+        inputsSubset.put("y", inputs.get("y"));
         INDArray assertion = Nd4j.create(new double[]{0, 0, 1, 0});
         assertEquals(assertion, outputs[outputs.length - 1]);
 
