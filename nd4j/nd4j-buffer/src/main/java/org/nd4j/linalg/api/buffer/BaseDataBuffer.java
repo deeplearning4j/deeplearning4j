@@ -1189,16 +1189,27 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (indexer == null) {
             throw new IllegalStateException("Indexer must never be null");
         }
-        if (dataType() == DataType.FLOAT) {
-            return ((FloatIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.INT) {
-            return ((IntIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.LONG) {
+        switch (dataType()) {
+            case FLOAT:
+                return ((FloatIndexer) indexer).get(offset() + i);
+            case INT:
+                return ((IntIndexer) indexer).get(offset() + i);
+            case HALF:
+                return ((HalfIndexer) indexer).get(offset() + i);
+            case SHORT:
+                return ((ShortIndexer) indexer).get(offset() + i);
+            case LONG:
                 return ((LongIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.BOOL) {
-            return ((BooleanIndexer) indexer).get(offset() + i) ? 1.0 : 0.0;
-        } else {
-            return ((DoubleIndexer) indexer).get(offset() + i);
+            case BOOL:
+                return ((BooleanIndexer) indexer).get(offset() + i) ? 1.0 : 0.0;
+            case DOUBLE:
+                return ((DoubleIndexer) indexer).get(offset() + i);
+            case BYTE:
+                return ((ByteIndexer) indexer).get(offset() + i);
+            case UBYTE:
+                return ((UByteIndexer) indexer).get(offset() + i);
+            default:
+                throw new UnsupportedOperationException();
         }
     }
 

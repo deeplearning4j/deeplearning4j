@@ -15898,7 +15898,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * 1: bias vector
          */
 //         #if NOT_EXCLUDED(OP_biasadd)
-        @Namespace("nd4j::ops") public static class biasadd extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class biasadd extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public biasadd(Pointer p) { super(p); }
@@ -15909,10 +15909,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                 return (biasadd)super.position(position);
             }
         
-                                                    public biasadd() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                }
+                                                                                    public biasadd() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
         @Namespace("nd4j::ops") public static class biasadd_bp extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
