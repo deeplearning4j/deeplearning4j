@@ -47,14 +47,14 @@ public class MergeAvg extends DynamicCustomOp {
     }
 
 
-
+/*
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         List<LongShapeDescriptor> ret = new ArrayList<>(1);
         ret.add(LongShapeDescriptor.fromShape(arg().getShape(), Nd4j.defaultFloatintPointType()));
         return ret;
     }
-
+*/
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {

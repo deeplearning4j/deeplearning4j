@@ -46,14 +46,14 @@ public class MergeMax extends DynamicCustomOp {
     public String opName() {
         return "mergemax";
     }
-
+/*
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         List<LongShapeDescriptor> ret = new ArrayList<>(1);
         ret.add(arg().getShapeDescriptor());
         return ret;
     }
-
+*/
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
