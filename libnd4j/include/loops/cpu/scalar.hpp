@@ -161,7 +161,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
             if(xEws == 1) {
                 #pragma omp parallel for schedule(guided) if (len > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
                 for(Nd4jLong i = 0; i < len; ++i)
-                    z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[i], scalar, extraParams);                       
+                    z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[i], scalar, extraParams);
             }
             else {
                 #pragma omp parallel for schedule(guided) if (len > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)

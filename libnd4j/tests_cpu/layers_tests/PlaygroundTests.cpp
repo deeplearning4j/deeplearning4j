@@ -698,5 +698,74 @@ TEST_F(PlaygroundTests, loopThroughArrs_test1) {
     nd4j_printf("My  time: %lld us;\n", myTime);
     nd4j_printf("Old time: %lld us;\n", oldTime);
 
+    ASSERT_TRUE(1);
+}
+
+
+void loopSpan(double* x, Nd4jLong* xShapeInfo, double* y, Nd4jLong* yShapeInfo, double* z, Nd4jLong* zShapeInfo) {
+
+    auto len = shape::length(xShapeInfo);
+    int xEws = shape::elementWiseStride(xShapeInfo);
+    int yEws = shape::elementWiseStride(yShapeInfo);
+    int zEws = shape::elementWiseStride(zShapeInfo);
+            
+    BlockInformation info(len, ELEMENT_THRESHOLD);
+    #pragma omp parallel num_threads(info.threads) if (info.threads > 1) default(shared)
+    {                
+        auto i = omp_get_thread_num();            
+        Nd4jLong itemsToLoop = (i < info.threads-1) ? info.items : info.items + info.remainder;
+        Nd4jLong index = i * info.items;
+        auto xi = x + xEws * index;
+        auto yi = y + yEws * index;
+        auto zi = z + zEws * index;        
+        #pragma omp simd
+        for (Nd4jLong j = 0; j < itemsToLoop; j++) 
+            zi[j * zEws] = xi[j * xEws] * yi[j * yEws];
+    }
+}
+
+void loopSimple(double* x, Nd4jLong* xShapeInfo, double* y, Nd4jLong* yShapeInfo, double* z, Nd4jLong* zShapeInfo) {
+
+    auto len = shape::length(xShapeInfo);
+    int xEws = shape::elementWiseStride(xShapeInfo);
+    int yEws = shape::elementWiseStride(yShapeInfo);
+    int zEws = shape::elementWiseStride(zShapeInfo);
+    
+    #pragma omp parallel for simd schedule(guided) if (len > ELEMENT_THRESHOLD) proc_bind(close) default(shared)
+    for(Nd4jLong i = 0; i < len; ++i)
+        z[i * zEws] = x[i * xEws] * y[i * yEws];
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, loopThroughArrs_test2) {
+    
+    NDArray x('c', {400, 2500}, nd4j::DataType::DOUBLE);
+    NDArray y('c', {20, 20, 2500}, nd4j::DataType::DOUBLE);  
+    NDArray z('c', {20, 20, 50, 50}, nd4j::DataType::DOUBLE);  
+
+    auto xBuff = x.bufferAsT<double>();
+    auto yBuff = y.bufferAsT<double>();
+    auto zBuff = y.bufferAsT<double>();
+    auto xShapeInfo = x.getShapeInfo();
+    auto yShapeInfo = y.getShapeInfo();
+    auto zShapeInfo = z.getShapeInfo();
+
+    //***********************************    
+    auto timeStart = std::chrono::system_clock::now();
+    loopSimple(xBuff, xShapeInfo, yBuff, yShapeInfo, zBuff, zShapeInfo);
+    auto timeEnd = std::chrono::system_clock::now();
+    auto simpleTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+
+
+    //***********************************   
+    timeStart = std::chrono::system_clock::now();
+    loopSpan(xBuff, xShapeInfo, yBuff, yShapeInfo, zBuff, zShapeInfo);
+    timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+
+    nd4j_printf("simple time: %lld us;\n", simpleTime);
+    nd4j_printf("span   time: %lld us;\n", spanTime);
+
     ASSERT_TRUE(1);        
 }
