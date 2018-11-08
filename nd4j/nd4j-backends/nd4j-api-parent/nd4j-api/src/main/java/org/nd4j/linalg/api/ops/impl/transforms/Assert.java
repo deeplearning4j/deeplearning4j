@@ -28,7 +28,7 @@ import java.util.List;
 public class Assert extends DynamicCustomOp {
     @Override
     public String opName() {
-        return "assert";
+        return "Assert";
     }
 
     @Override

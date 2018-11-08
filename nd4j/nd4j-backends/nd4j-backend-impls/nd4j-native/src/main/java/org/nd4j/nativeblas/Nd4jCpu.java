@@ -331,6 +331,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_reduce_dot_bp.class,
         float_resize_bilinear.class,
         float_matrix_band_part.class,
+        float_Assert.class,
         float_set_seed.class,
         float_get_seed.class,
         float_randomuniform.class,
@@ -733,6 +734,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_reduce_dot_bp.class,
         half_resize_bilinear.class,
         half_matrix_band_part.class,
+        half_Assert.class,
         half_set_seed.class,
         half_get_seed.class,
         half_randomuniform.class,
@@ -1135,6 +1137,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_reduce_dot_bp.class,
         double_resize_bilinear.class,
         double_matrix_band_part.class,
+        double_Assert.class,
         double_set_seed.class,
         double_get_seed.class,
         double_randomuniform.class,
@@ -36339,6 +36342,55 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
+//         #endif
+
+
+//         #if NOT_EXCLUDED(OP_Assert)
+        @Name("nd4j::ops::Assert<float>") public static class float_Assert extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_Assert(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_Assert(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_Assert position(long position) {
+                return (float_Assert)super.position(position);
+            }
+        
+                                                    public float_Assert() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                }
+        @Name("nd4j::ops::Assert<float16>") public static class half_Assert extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_Assert(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_Assert(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_Assert position(long position) {
+                return (half_Assert)super.position(position);
+            }
+        
+                                                    public half_Assert() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                }
+        @Name("nd4j::ops::Assert<double>") public static class double_Assert extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_Assert(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_Assert(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_Assert position(long position) {
+                return (double_Assert)super.position(position);
+            }
+        
+                                                    public double_Assert() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                }
 //         #endif
 
     
