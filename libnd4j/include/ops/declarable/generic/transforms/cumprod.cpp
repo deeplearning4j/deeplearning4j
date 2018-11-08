@@ -30,6 +30,8 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
+            REQUIRE_TRUE(input->dataType() == output->dataType(), 0, "CumSum: input and output data types must be equal");
+
             const bool exclusive = INT_ARG(0) == 1;
             const bool reverse = INT_ARG(1) == 1;
 

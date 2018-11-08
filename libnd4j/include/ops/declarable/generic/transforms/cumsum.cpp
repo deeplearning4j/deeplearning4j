@@ -34,6 +34,8 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
     const bool exclusive = INT_ARG(0) == 1;
     const bool reverse = INT_ARG(1) == 1;
 
+    REQUIRE_TRUE(input->dataType() == output->dataType(), 0, "CumSum: input and output data types must be equal");
+
     if (block.getIArguments()->size() == 2 && block.width() == 1) {
         // all at once case
         nd4j::ops::helpers::_prefix(scalar::Add, input, output, exclusive, reverse);
