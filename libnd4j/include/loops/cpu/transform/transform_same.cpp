@@ -31,12 +31,12 @@ namespace functions {
         template <typename X>
         void TransformSame<X>::exec(int opNum,
                 void *x,
-                Nd4jLong xStride,
+                Nd4jLong xEws,
                 void *z,
-                Nd4jLong zStride,
+                Nd4jLong zEws,
                 void *extraParams,
                 const Nd4jLong n) {
-            DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xStride, z, zStride, extraParams, n), TRANSFORM_SAME_OPS);
+            DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xEws, z, zEws, extraParams, n), TRANSFORM_SAME_OPS);
 		}
 
         template <typename X>
@@ -122,52 +122,38 @@ namespace functions {
         template <typename X>
         template <typename OpType>
 		void _CUDA_H TransformSame<X>::exec(void *vx,
-                             Nd4jLong xStride,
+                             Nd4jLong xEws,
                              void *vz,
-                             Nd4jLong zStride,
+                             Nd4jLong zEws,
                              void *vextraParams,
-                             const Nd4jLong n) {
+                             const Nd4jLong len) {
+                
                 auto x = reinterpret_cast<X *>(vx);
                 auto z = reinterpret_cast<X *>(vz);
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-                int num_threads = n / ELEMENT_THRESHOLD;
-                if(num_threads < 1)
-                    num_threads = 1;
-                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-                int span = (n / num_threads) + 8;
-
-                if (xStride == 1 && zStride == 1) {
-
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
-                    {
-                        int tid = omp_get_thread_num();
-                        Nd4jLong start = span * tid;
-                        Nd4jLong end = span * (tid + 1);
-                        if (end > n)
-                            end = n;
-#pragma omp simd
-                        for (Nd4jLong i = start; i < end; i++) {
-                            z[i] = OpType::op(x[i], extraParams);
-                        }
+                if (len < ELEMENT_THRESHOLD) {
+// FIXME: proper reduction to be used here
+                    for (Nd4jLong i = 0; i < len; i++) {
+                        z[i*zEws] = OpType::op(x[i*xEws], extraParams);
                     }
-                } else {
-
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
-                    {
-                        int tid = omp_get_thread_num();
-                        Nd4jLong start = span * tid;
-                        Nd4jLong end = span * (tid + 1);
-                        if (end > n)
-                            end = n;
-
-#pragma omp simd
-                        for (Nd4jLong i = start; i < end; i++) {
-                            z[i*zStride] = OpType::op(x[i * xStride], extraParams);
-                    }
+                    return;
                 }
-            }
+    
+
+                BlockInformation info(len, ELEMENT_THRESHOLD);
+#pragma omp parallel num_threads(info.threads) if (info.threads > 1) default(shared)
+                {                
+                    auto i = omp_get_thread_num();            
+                    Nd4jLong itemsToLoop = (i < info.threads-1) ? info.items : info.items + info.remainder;
+                    Nd4jLong index = i * info.items;
+                    auto xi = x + xEws * index;
+                    auto zi = z + zEws * index;        
+#pragma omp simd
+                    for (Nd4jLong j = 0; j < itemsToLoop; j++) 
+                        z[j*zEws] = OpType::op(x[j*xEws], extraParams);
+                }
+
         }
 
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TransformSame, , LIBND4J_TYPES);
