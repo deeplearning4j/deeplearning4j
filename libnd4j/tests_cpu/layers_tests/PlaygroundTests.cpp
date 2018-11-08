@@ -740,29 +740,48 @@ void loopSimple(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, 
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, loopThroughArrs_test2) {
     
-    NDArray x('c', {400, 2500}, nd4j::DataType::DOUBLE);
-    NDArray y('c', {20, 20, 2500}, nd4j::DataType::DOUBLE);  
-    NDArray z('c', {20, 20, 50, 50}, nd4j::DataType::DOUBLE);  
+    NDArray x('c', {400, 2500}, nd4j::DataType::FLOAT32);
 
-    auto xBuff = x.bufferAsT<float>();
-    auto yBuff = y.bufferAsT<float>();
-    auto zBuff = y.bufferAsT<float>();
-    auto xShapeInfo = x.getShapeInfo();
-    auto yShapeInfo = y.getShapeInfo();
-    auto zShapeInfo = z.getShapeInfo();
-
+    std::vector<NDArray> arrs(200);
+    for(auto& arr : arrs)
+        arr = x;
+    
     //***********************************    
     auto timeStart = std::chrono::system_clock::now();
-    loopSimple(xBuff, xShapeInfo, yBuff, yShapeInfo, zBuff, zShapeInfo);
+    srand(time(nullptr));
+    for(Nd4jLong i = 0; i < 100; ++i) {
+        int xInd = rand() % 200;
+        int yInd = rand() % 200;
+        int zInd = rand() % 200;
+        auto xBuff = arrs[xInd].bufferAsT<float>();
+        auto yBuff = arrs[yInd].bufferAsT<float>();
+        auto zBuff = arrs[zInd].bufferAsT<float>();
+        auto xShapeInfo = arrs[xInd].getShapeInfo();
+        auto yShapeInfo = arrs[yInd].getShapeInfo();
+        auto zShapeInfo = arrs[zInd].getShapeInfo();        
+    
+        loopSimple(xBuff, xShapeInfo, yBuff, yShapeInfo, zBuff, zShapeInfo);
+    }
     auto timeEnd = std::chrono::system_clock::now();
-    auto simpleTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+    auto simpleTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/100).count();
 
-
-    //***********************************   
+    //***********************************
     timeStart = std::chrono::system_clock::now();
-    loopSpan(xBuff, xShapeInfo, yBuff, yShapeInfo, zBuff, zShapeInfo);
+    for(Nd4jLong i = 0; i < 100; ++i) {
+        int xInd = rand() % 200;
+        int yInd = rand() % 200;
+        int zInd = rand() % 200;
+        auto xBuff = arrs[xInd].bufferAsT<float>();
+        auto yBuff = arrs[yInd].bufferAsT<float>();
+        auto zBuff = arrs[zInd].bufferAsT<float>();
+        auto xShapeInfo = arrs[xInd].getShapeInfo();
+        auto yShapeInfo = arrs[yInd].getShapeInfo();
+        auto zShapeInfo = arrs[zInd].getShapeInfo();        
+
+        loopSpan(xBuff, xShapeInfo, yBuff, yShapeInfo, zBuff, zShapeInfo);    
+    }
     timeEnd = std::chrono::system_clock::now();
-    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/100).count();
 
     nd4j_printf("simple time: %lld us;\n", simpleTime);
     nd4j_printf("span   time: %lld us;\n", spanTime);
