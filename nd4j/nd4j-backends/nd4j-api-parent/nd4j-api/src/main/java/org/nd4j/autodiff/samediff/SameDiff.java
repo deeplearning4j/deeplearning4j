@@ -812,6 +812,8 @@ public class SameDiff {
      * @param variable the name of the variable to associate the array with
      */
     public void associateArrayWithVariable(INDArray arr, @NonNull String variable) {
+    Preconditions.checkState(variableMap.containsKey(variable), "Cannot associate array with variable \"%s\": " +
+            "variable \"%s\" does not exist in this SameDiff instance", variable, variable);
         associateArrayWithVariable(arr, this.getVariable(variable));
     }
 
