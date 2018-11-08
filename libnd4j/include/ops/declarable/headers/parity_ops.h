@@ -1464,6 +1464,10 @@ namespace nd4j {
         DECLARE_OP(Assert, 1, 1, false);
         #endif
 
+        #if NOT_EXCLUDED(OP_image_non_max_suppression)
+        DECLARE_CUSTOM_OP(non_max_suppression, 2, 1, false, 0, 1);
+        #endif
+
     }
 }
 
