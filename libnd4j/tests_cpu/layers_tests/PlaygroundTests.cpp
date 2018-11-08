@@ -26,6 +26,7 @@
 #include <graph/profiling/GraphProfilingHelper.h>
 #include <type_conversions.h>
 #include <helpers/threshold.h>
+#include <ops/ops.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -720,7 +721,7 @@ void loopSpan(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, fl
         auto zi = z + zEws * index;        
         #pragma omp simd
         for (Nd4jLong j = 0; j < itemsToLoop; j++) 
-            zi[j * zEws] = xi[j * xEws] * yi[j * yEws];
+            zi[j * zEws] = simdOps::LogPoisonLoss<float, float, float>::op(xi[j * xEws], yi[j * yEws]);
     }
 }
 
@@ -730,10 +731,12 @@ void loopSimple(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, 
     int xEws = shape::elementWiseStride(xShapeInfo);
     int yEws = shape::elementWiseStride(yShapeInfo);
     int zEws = shape::elementWiseStride(zShapeInfo);
+    int threads = 6;
+    int span_size = len / threads + 1;
     
-    #pragma omp parallel for simd schedule(guided) if (len > ELEMENT_THRESHOLD) proc_bind(close) default(shared)
+    #pragma omp parallel for simd schedule(static, span_size) if (len > ELEMENT_THRESHOLD) proc_bind(close) default(shared)
     for(Nd4jLong i = 0; i < len; ++i)
-        z[i * zEws] = x[i * xEws] * y[i * yEws];
+        z[i * zEws] = simdOps::LogPoisonLoss<float, float, float>::op(x[i * xEws], y[i * yEws]);
 
 }
 
@@ -742,17 +745,20 @@ TEST_F(PlaygroundTests, loopThroughArrs_test2) {
     
     NDArray x('c', {400, 2500}, nd4j::DataType::FLOAT32);
 
-    std::vector<NDArray> arrs(200);
+    const int iterations = 10000;
+    const int arrays = 1000;
+
+    std::vector<NDArray> arrs(arrays);
     for(auto& arr : arrs)
         arr = x;
     
     //***********************************    
     auto timeStart = std::chrono::system_clock::now();
-    srand(time(nullptr));
-    for(Nd4jLong i = 0; i < 100; ++i) {
-        int xInd = rand() % 200;
-        int yInd = rand() % 200;
-        int zInd = rand() % 200;
+    srand(119);
+    for(Nd4jLong i = 0; i < iterations; ++i) {
+        int xInd = rand() % arrays;
+        int yInd = rand() % arrays;
+        int zInd = rand() % arrays;
         auto xBuff = arrs[xInd].bufferAsT<float>();
         auto yBuff = arrs[yInd].bufferAsT<float>();
         auto zBuff = arrs[zInd].bufferAsT<float>();
@@ -763,14 +769,14 @@ TEST_F(PlaygroundTests, loopThroughArrs_test2) {
         loopSimple(xBuff, xShapeInfo, yBuff, yShapeInfo, zBuff, zShapeInfo);
     }
     auto timeEnd = std::chrono::system_clock::now();
-    auto simpleTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/100).count();
+    auto simpleTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
 
     //***********************************
     timeStart = std::chrono::system_clock::now();
-    for(Nd4jLong i = 0; i < 100; ++i) {
-        int xInd = rand() % 200;
-        int yInd = rand() % 200;
-        int zInd = rand() % 200;
+    for(Nd4jLong i = 0; i < iterations; ++i) {
+        int xInd = rand() % arrays;
+        int yInd = rand() % arrays;
+        int zInd = rand() % arrays;
         auto xBuff = arrs[xInd].bufferAsT<float>();
         auto yBuff = arrs[yInd].bufferAsT<float>();
         auto zBuff = arrs[zInd].bufferAsT<float>();
@@ -781,7 +787,7 @@ TEST_F(PlaygroundTests, loopThroughArrs_test2) {
         loopSpan(xBuff, xShapeInfo, yBuff, yShapeInfo, zBuff, zShapeInfo);    
     }
     timeEnd = std::chrono::system_clock::now();
-    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/100).count();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
 
     nd4j_printf("simple time: %lld us;\n", simpleTime);
     nd4j_printf("span   time: %lld us;\n", spanTime);
