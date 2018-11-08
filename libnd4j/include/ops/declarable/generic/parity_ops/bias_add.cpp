@@ -31,7 +31,7 @@ namespace nd4j {
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
-        OP_IMPL(biasadd, 2, 1, true) {
+        CUSTOM_OP_IMPL(biasadd, 2, 1, true, 0, 0) {
             //REQUIRE_OK(this->validateInput2D(block));
             auto input = INPUT_VARIABLE(0);
             auto bias = INPUT_VARIABLE(1);
@@ -59,6 +59,18 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(bias_add, biasadd);
+
+        DECLARE_SHAPE_FN(biasadd) {
+            auto xShape = inputShape->at(0);
+            auto yShape = inputShape->at(1);
+
+            auto dtype = ArrayOptions::dataType(yShape);
+            Nd4jLong *newShape;
+            COPY_SHAPE(xShape, newShape);
+            ArrayOptions::setDataType(newShape, dtype);
+
+            return SHAPELIST();
+        }
 
         DECLARE_TYPES(biasadd_bp) {
             getOpDescriptor()

@@ -115,7 +115,7 @@ namespace nd4j {
          * 1: bias vector
          */
         #if NOT_EXCLUDED(OP_biasadd)
-        DECLARE_OP(biasadd, 2, 1, true);
+        DECLARE_CUSTOM_OP(biasadd, 2, 1, true, 0, 0);
         DECLARE_CUSTOM_OP(biasadd_bp, 3, 2, false, 0, 0);
         #endif
 
