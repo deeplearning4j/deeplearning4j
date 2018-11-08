@@ -14,22 +14,30 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-//  @author sgazeos@gmail.com
-//
-#ifndef __RANDOM_CROP_HELPERS__
-#define __RANDOM_CROP_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+package org.nd4j.linalg.api.ops.impl.transforms;
 
-namespace nd4j {
-namespace ops {
-namespace helpers {
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-    template <typename T>
-    int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* shape, NDArray<T>* output, int seed);
+import java.util.List;
 
+/**
+ * Assertion op wrapper
+ * @author raver119@gmail.com
+ */
+public class Assert extends DynamicCustomOp {
+    @Override
+    public String opName() {
+        return "Assert";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "Assert";
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        throw new UnsupportedOperationException();
+    }
 }
-}
-}
-#endif

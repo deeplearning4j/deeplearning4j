@@ -15,21 +15,27 @@
  ******************************************************************************/
 
 //
-//  @author sgazeos@gmail.com
+// @author raver119@gmail.com
 //
-#ifndef __RANDOM_CROP_HELPERS__
-#define __RANDOM_CROP_HELPERS__
+
 #include <op_boilerplate.h>
-#include <NDArray.h>
+#if NOT_EXCLUDED(OP_Assert)
+
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/axis.h>
 
 namespace nd4j {
-namespace ops {
-namespace helpers {
+    namespace ops {
+        OP_IMPL(Assert, 1, 1, false) {
+            auto x = INPUT_VARIABLE(0);
 
-    template <typename T>
-    int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* shape, NDArray<T>* output, int seed);
+            if (x->getScalar(0) == (T) 0.0f) {
+                nd4j_printf("Assertion failed for node [%i]\n", block.getNodeId());
+            }
 
+            return Status::OK();
+        }
+    }
 }
-}
-}
+
 #endif

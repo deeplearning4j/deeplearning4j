@@ -17,8 +17,8 @@
 //
 //  @author sgazeos@gmail.com
 //
-#ifndef __RANDOM_CROP_HELPERS__
-#define __RANDOM_CROP_HELPERS__
+#ifndef __IMAGE_RESIZE_HELPERS__
+#define __IMAGE_RESIZE_HELPERS__
 #include <op_boilerplate.h>
 #include <NDArray.h>
 
@@ -27,8 +27,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* shape, NDArray<T>* output, int seed);
-
+    int resizeBilinearFunctor(NDArray<T> const* image, int width, int height, bool center, NDArray<T>* output);
 }
 }
 }

@@ -1091,6 +1091,15 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertEquals(exp, array);
     }
 
+    @Test
+    public void testSSD_1() throws Exception {
+        // tf_graphs/examples/ssd_inception_v2_coco_2018_01_28/frozen_inference_graph.pb
+        Nd4j.create(1);
+
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/ssd_inception_v2_coco_2018_01_28/frozen_inference_graph.pb").getInputStream());
+        assertNotNull(tg);
+    }
+
     @Test(expected = ND4JIllegalStateException.class)
     public void testNonFrozenGraph1() throws Exception {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/unfrozen_simple_ae.pb").getInputStream());

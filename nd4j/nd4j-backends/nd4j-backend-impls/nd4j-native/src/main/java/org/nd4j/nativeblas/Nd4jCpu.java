@@ -329,7 +329,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_reduce_stdev.class,
         float_reduce_stdev_bp.class,
         float_reduce_dot_bp.class,
+        float_resize_bilinear.class,
         float_matrix_band_part.class,
+        float_Assert.class,
         float_set_seed.class,
         float_get_seed.class,
         float_randomuniform.class,
@@ -730,7 +732,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_reduce_stdev.class,
         half_reduce_stdev_bp.class,
         half_reduce_dot_bp.class,
+        half_resize_bilinear.class,
         half_matrix_band_part.class,
+        half_Assert.class,
         half_set_seed.class,
         half_get_seed.class,
         half_randomuniform.class,
@@ -1131,7 +1135,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_reduce_stdev.class,
         double_reduce_stdev_bp.class,
         double_reduce_dot_bp.class,
+        double_resize_bilinear.class,
         double_matrix_band_part.class,
+        double_Assert.class,
         double_set_seed.class,
         double_get_seed.class,
         double_randomuniform.class,
@@ -36208,6 +36214,71 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+        * This op make bilinear interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
+        *
+        * int arguments: (optional)
+        *   0 - new width
+        *   1 - new height
+        *
+        * output array:
+        *   the tensor with calculated backproped dots
+        *
+        * CAUTION: either size tensor or a pair of int params should be provided.
+        */
+
+//         #if NOT_EXCLUDED(OP_resize_bilinear)
+        @Name("nd4j::ops::resize_bilinear<float>") public static class float_resize_bilinear extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_resize_bilinear(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_resize_bilinear(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_resize_bilinear position(long position) {
+                return (float_resize_bilinear)super.position(position);
+            }
+        
+                                                                                    public float_resize_bilinear() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::resize_bilinear<float16>") public static class half_resize_bilinear extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_resize_bilinear(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_resize_bilinear(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_resize_bilinear position(long position) {
+                return (half_resize_bilinear)super.position(position);
+            }
+        
+                                                                                    public half_resize_bilinear() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::resize_bilinear<double>") public static class double_resize_bilinear extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_resize_bilinear(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_resize_bilinear(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_resize_bilinear position(long position) {
+                return (double_resize_bilinear)super.position(position);
+            }
+        
+                                                                                    public double_resize_bilinear() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
+        /**
         * This op calculates backprop dot for two tensors along given dimensions
         *
         * input array:
@@ -36271,6 +36342,55 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
+//         #endif
+
+
+//         #if NOT_EXCLUDED(OP_Assert)
+        @Name("nd4j::ops::Assert<float>") public static class float_Assert extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_Assert(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_Assert(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_Assert position(long position) {
+                return (float_Assert)super.position(position);
+            }
+        
+                                                    public float_Assert() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                }
+        @Name("nd4j::ops::Assert<float16>") public static class half_Assert extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_Assert(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_Assert(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_Assert position(long position) {
+                return (half_Assert)super.position(position);
+            }
+        
+                                                    public half_Assert() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                }
+        @Name("nd4j::ops::Assert<double>") public static class double_Assert extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_Assert(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_Assert(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_Assert position(long position) {
+                return (double_Assert)super.position(position);
+            }
+        
+                                                    public double_Assert() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                }
 //         #endif
 
     

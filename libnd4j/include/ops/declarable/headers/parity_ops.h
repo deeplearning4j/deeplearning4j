@@ -1417,6 +1417,27 @@ namespace nd4j {
         #endif
 
         /**
+        * This op make bilinear interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
+        *
+        * int arguments: (optional)
+        *   0 - new width
+        *   1 - new height
+        *
+        * output array:
+        *   the tensor with calculated backproped dots
+        *
+        * CAUTION: either size tensor or a pair of int params should be provided.
+        */
+
+        #if NOT_EXCLUDED(OP_resize_bilinear)
+        DECLARE_CUSTOM_OP(resize_bilinear, 1, 1, false, 0, -2);
+        #endif
+
+        /**
         * This op calculates backprop dot for two tensors along given dimensions
         *
         * input array:
@@ -1436,6 +1457,11 @@ namespace nd4j {
 
         #if NOT_EXCLUDED(OP_matrix_band_part)
         DECLARE_CONFIGURABLE_OP(matrix_band_part, 1, 1, true, 0, 2);
+        #endif
+
+
+        #if NOT_EXCLUDED(OP_Assert)
+        DECLARE_OP(Assert, 1, 1, false);
         #endif
 
     }
