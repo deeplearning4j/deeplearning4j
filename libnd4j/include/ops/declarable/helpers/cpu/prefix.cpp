@@ -134,8 +134,6 @@ namespace nd4j {
                 for (int e = 0; e < t; e++) {
                     auto tx = xTads->at(e);
                     auto tz = zTads->at(e);
-                    auto xl = tx->lengthOf();
-                    auto zl = tz->lengthOf();
 
                     __prefix<T>(op, tx->buffer(), tx->shapeInfo(), tz->buffer(), tz->shapeInfo(), exclusive, reverse);
                 }

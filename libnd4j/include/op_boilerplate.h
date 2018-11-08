@@ -1379,9 +1379,9 @@
                                                                                         Nd4jLong* newshape; \
                                                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), Nd4jLong); \
                                                                                         if (shape::order(inputShape->at(e)) == 'c') \
-                                                                                            shape::shapeBuffer(shape::rank(inputShape->at(e)), block.dataType(e), shape::shapeOf(inputShape->at(e)), newshape);\
+                                                                                            shape::shapeBuffer(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
                                                                                         else \
-                                                                                            shape::shapeBufferFortran(shape::rank(inputShape->at(e)), block.dataType(e),  shape::shapeOf(inputShape->at(e)), newshape);\
+                                                                                            shape::shapeBufferFortran(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)),  shape::shapeOf(inputShape->at(e)), newshape);\
                                                                                         shapeList->push_back(newshape); \
                                                                                     } \
                                                                                     return shapeList; \
