@@ -63,6 +63,9 @@ public class TensorFlowImportValidator {
                 GraphDef graphDef = m.parseGraphFrom(is);
                 List<NodeDef> nodes = m.getNodeList(graphDef);
                 for (NodeDef nd : nodes) {
+                    if(m.isVariableNode(nd) || m.isPlaceHolderNode(nd))
+                        continue;
+
                     String op = nd.getOp();
 //                System.out.println(op);
                     opNames.add(op);
