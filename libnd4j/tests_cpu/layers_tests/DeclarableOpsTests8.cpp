@@ -2626,12 +2626,13 @@ TEST_F(DeclarableOpsTests8, ones_as_test2) {
 
     nd4j::ops::ones_as op;
 
-    auto result = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    auto y = result->at(0);
+    auto results = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    auto y = results->at(0);
     ASSERT_TRUE(y->isSameShape(exp));
     ASSERT_TRUE(y->equalsTo(exp));
 
+    delete results;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

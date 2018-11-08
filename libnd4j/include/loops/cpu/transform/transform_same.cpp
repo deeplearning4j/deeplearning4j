@@ -54,14 +54,10 @@ namespace functions {
 
         template <typename X>
         template<typename OpType>
-		void _CUDA_H TransformSame<X>::exec(
-                    void *vx,
-                    Nd4jLong *xShapeInfo,
-                    void *vz,
-                    Nd4jLong *zShapeInfo,
-                    void *vextraParams,
-                    Nd4jLong *tadShapeInfo,
-                    Nd4jLong *tadOffsets) {
+		void _CUDA_H TransformSame<X>::exec(void *vx, Nd4jLong *xShapeInfo,
+                                            void *vz, Nd4jLong *zShapeInfo,
+                                            void *vextraParams,
+                                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 		        auto x = reinterpret_cast<X *>(vx);
 		        auto z = reinterpret_cast<X *>(vz);
@@ -116,9 +112,9 @@ namespace functions {
                     }
                     else {
                         #pragma omp parallel for schedule(guided)
-                        for(Nd4jLong i = 0; i < len; ++i) 
+                        for(Nd4jLong i = 0; i < len; ++i)
                             z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams);
-                    }                                         
+                    }
                 }
             }
 

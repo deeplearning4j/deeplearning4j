@@ -27,7 +27,7 @@
 using namespace simdOps;
 
 namespace functions {
-    namespace scalar {
+namespace scalar    {
 
 
         template<typename X, typename Y, typename Z>
@@ -110,199 +110,124 @@ namespace functions {
         void ScalarTransform<X, Y, Z>::transform(const int opNum,
                 void *x,
                 Nd4jLong xStride,
-                void *result,
-                Nd4jLong resultStride,
+                void *z,
+                Nd4jLong zStride,
                 void *scalar,
                 void *extraParams,
                 const Nd4jLong n) {
-            DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xStride, result, resultStride, scalar, extraParams, n), SCALAR_OPS);
+            DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xStride, z, zStride, scalar, extraParams, n), SCALAR_OPS);
         }
 
         template<typename X, typename Y, typename Z>
         void ScalarTransform<X, Y, Z>::transform(const int opNum,
                 void *x,
                 Nd4jLong *xShapeInfo,
-                void *result,
-                Nd4jLong *resultShapeInfo,
+                void *z,
+                Nd4jLong *zShapeInfo,
                 void *scalar,
                 void *extraParams) {
-            DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), SCALAR_OPS);
+            DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams), SCALAR_OPS);
         }
 
-        template<typename X, typename Y, typename Z>
-        template<typename OpType>
-        void ScalarTransform<X, Y, Z>::transform(void *vx,
-                               Nd4jLong *xShapeInfo,
-                               void *vz,
-                               Nd4jLong *resultShapeInfo,
-                               void *vscalar,
-                               void *vextraParams) {
-            auto x = reinterpret_cast<X *>(vx);
-            auto result = reinterpret_cast<Z *>(vz);
-            auto scalar = reinterpret_cast<Y *>(vscalar)[0];
-            auto extraParams = reinterpret_cast<Z *>(vextraParams);
+////////////////////////////////////////////////////////////////////////
+template<typename X, typename Y, typename Z>
+template<typename OpType>
+void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
+                                        void *vz, Nd4jLong *zShapeInfo,
+                                        void *vscalar,
+                                        void *vextraParams) {
 
-            char xOrdering = shape::order(xShapeInfo);
-            char resultOrdering = shape::order(resultShapeInfo);
-            int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+    auto x = reinterpret_cast<X *>(vx);
+    auto z = reinterpret_cast<Z *>(vz);
+    auto scalar = reinterpret_cast<Y *>(vscalar)[0];
+    auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-            // nd4j_logger("Launching scalar: xOrder: %i; zOrder: %i; xEWS: %i\n", xOrdering, resultOrdering, xElementWiseStride);
+    const auto len = shape::length(xShapeInfo);
+    const auto xEws = shape::elementWiseStride(xShapeInfo);
+    const auto zEws = shape::elementWiseStride(zShapeInfo);
+    const auto xOrder = shape::order(xShapeInfo);
+    const auto zOrder = shape::order(zShapeInfo);
 
-            if (xElementWiseStride == 1 && shape::elementWiseStride(resultShapeInfo) == 1 && xOrdering == resultOrdering) {
-                transform<OpType>(x, 1, result, 1, vscalar, extraParams, shape::length(xShapeInfo));
-                return;
-            }
-
-            int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
-            if(xOrdering != resultOrdering || xElementWiseStride < 1 || resultElementWiseStride < 0) {
-                Nd4jLong shapeIter[MAX_RANK];
-                Nd4jLong coord[MAX_RANK];
-                int dim;
-                Nd4jLong xStridesIter[MAX_RANK];
-                Nd4jLong resultStridesIter[MAX_RANK];
-                auto xShape = shape::shapeOf(xShapeInfo);
-                auto xStride = shape::stride(xShapeInfo);
-                auto resultStride = shape::stride(resultShapeInfo);
-                int rank = shape::rank(xShapeInfo);
-                if(PrepareTwoRawArrayIter<X, Z>(rank,
-                                             xShape,
-                                             x,
-                                             xStride,
-                                             result,
-                                             resultStride,
-                                             &rank,
-                                             shapeIter,
-                                             &x,
-                                             xStridesIter,
-                                             &result,
-                                             resultStridesIter) >= 0) {
-                    ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                            /* Process the innermost dimension */
-                            auto xIter = x;
-                            auto resultIter = result;
-                            resultIter[0] = OpType::op(xIter[0],scalar,extraParams);
-                        } ND4J_RAW_ITER_TWO_NEXT(dim,
-                                                 rank,
-                                                 coord,
-                                                 shapeIter,
-                                                 x,
-                                                 xStridesIter,
-                                                 result,
-                                                 resultStridesIter);
-                }
-                else {
-                    printf("Unable to prepare array\n");
-                }
-
+    if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
+        transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len);              
+    }
+    else {
+                
+        const bool xSimpe = shape::isStrideSimple(xShapeInfo);
+        const bool zSimpe = shape::isStrideSimple(zShapeInfo);
+                   
+        if(xSimpe) {
+                        
+            if(xEws == 1) {
+                #pragma omp parallel for schedule(guided) if (len > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
+                for(Nd4jLong i = 0; i < len; ++i)
+                    z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[i], scalar, extraParams);                       
             }
             else {
-                const Nd4jLong n = shape::length(xShapeInfo);
-
-                if(xElementWiseStride >= 1 && resultElementWiseStride >= 1) {
-                    transform<OpType>(x,xElementWiseStride,result,resultElementWiseStride,vscalar,extraParams,n);
-                }
-                else {
-                    Nd4jLong xIdx[MAX_RANK];
-                    Nd4jLong resultIdx[MAX_RANK];
-
-                    auto xShape = shape::shapeOf(xShapeInfo);
-                    auto resultShape = shape::shapeOf(resultShapeInfo);
-
-                    auto xStride = shape::stride(xShapeInfo);
-                    auto resultStride = shape::stride(resultShapeInfo);
-                    int xRank = shape::rank(xShapeInfo);
-                    int resultRank = shape::rank(resultShapeInfo);
-                    if (vx == vz) {
-#pragma omp parallel for schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
-                        for (Nd4jLong i = 0; i < n; i++) {
-                            shape::ind2sub(xRank, xShape, i, n, xIdx);
-
-                            auto xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-
-                            result[xOffset2] = OpType::op(x[xOffset2], scalar, extraParams);
-                        }
-                    } else {
-#pragma omp parallel for schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
-                        for (Nd4jLong i = 0; i < n; i++) {
-                            shape::ind2sub(xRank, xShape, i, n, xIdx);
-                            shape::ind2sub(resultRank, resultShape, i, n, resultIdx);
-
-                            auto xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-                            auto resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
-
-                            result[resultOffset2] = OpType::op(x[xOffset2], scalar, extraParams);
-                        }
-                    }
-                }
-
-                }
+                #pragma omp parallel for schedule(guided) if (len > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
+                for(Nd4jLong i = 0; i < len; ++i)
+                    z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[i*xEws], scalar, extraParams);
             }
+        }
+        else if(zSimpe) {
+
+            if(zEws == 1) {
+                #pragma omp parallel for schedule(guided) if (len > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
+                for(Nd4jLong i = 0; i < len; ++i)                                
+                    z[i] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], scalar, extraParams);         
+            }
+            else {
+                #pragma omp parallel for schedule(guided) if (len > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
+                for(Nd4jLong i = 0; i < len; ++i)                                
+                    z[i*zEws] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], scalar, extraParams);
+            }
+        }
+        else {
+            #pragma omp parallel for schedule(guided) if (len > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
+            for(Nd4jLong i = 0; i < len; ++i) 
+                z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], scalar, extraParams);
+        }
+    }                        
+}
 
 
             template<typename X, typename Y, typename Z>
             template<typename OpType>
             void ScalarTransform<X, Y, Z>::transform(void *vx,
-                    Nd4jLong xStride,
+                    Nd4jLong xEws,
                     void *vz,
-                    Nd4jLong resultStride,
+                    Nd4jLong zEws,
                     void *vscalar,
                     void *vextraParams,
-                    const Nd4jLong n) {
+                    const Nd4jLong len) {
+               
                 auto x = reinterpret_cast<X *>(vx);
-                auto result = reinterpret_cast<Z *>(vz);
+                auto z = reinterpret_cast<Z *>(vz);
                 auto scalar = reinterpret_cast<Y *>(vscalar)[0];
                 auto extraParams = reinterpret_cast<Z *>(vextraParams);
 /*
-                Nd4jLong elementsPerThread = n / ELEMENT_THRESHOLD;
+                Nd4jLong elementsPerThread = len / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 */
-                int num_threads = 1;
-                Nd4jLong span = 100;// (n / num_threads) + 8;
-
-                if (xStride == 1 && resultStride == 1) {
-                    if (num_threads > 1) {
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
-                        {
-                            Nd4jLong tid = omp_get_thread_num();
-                            Nd4jLong start = span * tid;
-                            Nd4jLong end = span * (tid + 1);
-                            if (end > n) end = n;
-#pragma omp simd
-                            for (Nd4jLong i = start; i < end; i++) {
-                                result[i] = OpType::op(x[i], scalar, extraParams);
-                            }
-                        }
-                    } else {
-//#pragma omp simd
-                        for (Nd4jLong i = 0; i < n; i++) {
-                            auto x_ = x[i];
-                            auto r_ = OpType::op(x_, scalar, extraParams);;
-                            result[i] = r_;
-                        }
-                    }
+                if (len < ELEMENT_THRESHOLD) {
+                    for (Nd4jLong i = 0; i < len; i++) 
+                        z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
+                    return;
                 }
-
-                else {
-                    if (num_threads > 1) {
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY) default(shared)
-                        {
-                            Nd4jLong tid = omp_get_thread_num();
-                            Nd4jLong start = span * tid;
-                            Nd4jLong end = span * (tid + 1);
-                            if (end > n) end = n;
-#pragma omp simd
-                            for (Nd4jLong i = start; i < end; i++) {
-                                result[i * resultStride] = OpType::op(x[i * xStride], scalar, extraParams);
-                            }
-                        }
-                    } else {
-#pragma omp simd
-                        for (Nd4jLong i = 0; i < n; i++) {
-                            result[i * resultStride] = OpType::op(x[i * xStride], scalar, extraParams);
-                        }
-                    }
+         
+                BlockInformation info(len, ELEMENT_THRESHOLD);
+                #pragma omp parallel num_threads(info.threads) if (info.threads > 1) default(shared)
+                {                
+                    auto i = omp_get_thread_num();            
+                    Nd4jLong itemsToLoop = (i < info.threads-1) ? info.items : info.items + info.remainder;
+                    Nd4jLong index = i * info.items;
+                    auto xi = x + xEws * index;
+                    auto zi = z + zEws * index;
+                    #pragma omp simd
+                    for (Nd4jLong j = 0; j < itemsToLoop; j++) 
+                        zi[j * zEws] = OpType::op(xi[j * xEws], scalar, extraParams);
                 }
             }
-    }
+}
 }
