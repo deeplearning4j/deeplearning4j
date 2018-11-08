@@ -37,3 +37,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif
