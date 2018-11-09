@@ -103,9 +103,9 @@ namespace nd4j {
             shape.insert(shape.begin() + axis, 1);
 
             if (order == 'c')
-                shape::shapeBuffer(x_rank+1, block.dataType(), shape.data(), newShape);
+                shape::shapeBuffer(x_rank+1, ArrayOptions::dataType(inShape), shape.data(), newShape);
             else
-                shape::shapeBufferFortran(x_rank+1, block.dataType(), shape.data(), newShape);
+                shape::shapeBufferFortran(x_rank+1, ArrayOptions::dataType(inShape), shape.data(), newShape);
 
 
             return SHAPELIST(newShape);
