@@ -15,7 +15,8 @@
  ******************************************************************************/
 
 //
-// Created by raver on 6/30/2018.
+// @author raver119@gmail.com, created on 6/30/2018
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <helpers/OmpLaunchHelper.h>
@@ -26,7 +27,35 @@
 #endif
 
 namespace nd4j {
-    Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
+
+
+////////////////////////////////////////////////////////////////////////////////
+OmpLaunchHelper::OmpLaunchHelper(const Nd4jLong N, float desiredNumThreads) {            
+
+    auto maxItersPerThread = Environment::getInstance()->elementwiseThreshold();    
+        
+    if(N < maxItersPerThread)
+        _numThreads = 1;
+    else {
+        #ifdef _OPENMP
+            if(desiredNumThreads == -1)
+                desiredNumThreads = omp_get_max_threads();
+            else if(desiredNumThreads < 1) 
+                desiredNumThreads == 1;
+            else
+                desiredNumThreads = nd4j::math::nd4j_min<int>(omp_get_max_threads(), desiredNumThreads);
+        #else
+            desiredNumThreads = 1;
+        #endif
+        _numThreads = nd4j::math::nd4j_min<int>(N / maxItersPerThread, desiredNumThreads);
+    }
+
+    _itersPerThread = N / _numThreads;
+    _remainder = N % _numThreads;  // last thread may contain bigger number of iterations    
+}
+
+
+Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
         return OmpLaunchHelper::betterSpan(N, OmpLaunchHelper::betterThreads(N));
     }
 
@@ -58,4 +87,5 @@ namespace nd4j {
             return static_cast<int>(nd4j::math::nd4j_min<Nd4jLong>(N / t, maxThreads));
         }
     }
+
 }
