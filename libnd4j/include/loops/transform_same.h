@@ -31,7 +31,7 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#include <pairwise_util.h>
+#include <OmpLaunchHelper.h>
 #include <dll.h>
 
 //#include <loops/reduce.h>

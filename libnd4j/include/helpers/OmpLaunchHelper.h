@@ -15,24 +15,52 @@
  ******************************************************************************/
 
 //
-// Created by raver on 6/30/2018.
+// @author raver119@gmail.com, created on 6/30/2018
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #ifndef LIBND4J_OMPLAUNCHHELPER_H
 #define LIBND4J_OMPLAUNCHHELPER_H
 
+#include <vector>
 #include <pointercast.h>
 #include <op_boilerplate.h>
 
 namespace nd4j {
-    class OmpLaunchHelper {
-    public:
+
+class OmpLaunchHelper {
+	
+	public:		
+		int _numThreads;
+		int _itersPerThread;
+		int _remainder;
+        
+		OmpLaunchHelper() = delete;
+        
+        OmpLaunchHelper(const Nd4jLong N, int desiredNumThreads = 0);        
+
+        FORCEINLINE Nd4jLong getThreadOffset(const int threadNum);
+        FORCEINLINE Nd4jLong getItersPerThread(const int threadNum);
+
         static Nd4jLong betterSpan(Nd4jLong N);
         static Nd4jLong betterSpan(Nd4jLong N, Nd4jLong numThreads);
         
         static int betterThreads(Nd4jLong N);
         static int betterThreads(Nd4jLong N, int maxThreads);
-    };
+};
+
+////////////////////////////////////////////////////////////////////////////////
+FORCEINLINE Nd4jLong OmpLaunchHelper::getThreadOffset(const int threadNum) {
+	
+		return threadNum * _itersPerThread;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+FORCEINLINE Nd4jLong OmpLaunchHelper::getItersPerThread(const int threadNum) {
+	
+	return (threadNum == _numThreads - 1) ? _itersPerThread + _remainder : _itersPerThread;		// last thread may contain bigger number of iterations    	 
+}
+
 }
 
 

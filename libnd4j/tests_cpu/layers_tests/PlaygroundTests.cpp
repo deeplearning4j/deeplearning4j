@@ -27,6 +27,7 @@
 #include <type_conversions.h>
 #include <helpers/threshold.h>
 #include <ops/ops.h>
+#include <OmpLaunchHelper.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -791,6 +792,102 @@ TEST_F(PlaygroundTests, loopThroughArrs_test2) {
 
     nd4j_printf("simple time: %lld us;\n", simpleTime);
     nd4j_printf("span   time: %lld us;\n", spanTime);
+
+    ASSERT_TRUE(1);        
+}
+
+void loop1(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
+
+    auto len = shape::length(xShapeInfo);
+    int xEws = shape::elementWiseStride(xShapeInfo);
+    int yEws = shape::elementWiseStride(yShapeInfo);
+    int zEws = shape::elementWiseStride(zShapeInfo);
+            
+    nd4j::OmpLaunchHelper info(len);
+    #pragma omp parallel num_threads(info._numThreads) default(shared)
+    {                
+        auto threadNum = omp_get_thread_num();
+        Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
+        #pragma omp simd
+        for (Nd4jLong j = 0; j < info.getItersPerThread(threadNum); j++)  {
+            Nd4jLong xOffset = shape::getIndexOffset(j+threadOffset, xShapeInfo, len);
+            Nd4jLong yOffset = shape::getIndexOffset(j+threadOffset, yShapeInfo, len);
+            Nd4jLong zOffset = shape::getIndexOffset(j+threadOffset, zShapeInfo, len);
+            z[xOffset] = simdOps::LogPoisonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
+        }
+    }
+}
+
+void loop2(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
+
+    auto len = shape::length(xShapeInfo);
+    int xEws = shape::elementWiseStride(xShapeInfo);
+    int yEws = shape::elementWiseStride(yShapeInfo);
+    int zEws = shape::elementWiseStride(zShapeInfo);
+    int threads = 6;
+    int span_size = len / threads + 1;
+    
+    #pragma omp parallel for simd schedule(static) default(shared)
+    for(Nd4jLong i = 0; i < len; ++i) {
+        Nd4jLong xOffset = shape::getIndexOffset(i, xShapeInfo, len);
+        Nd4jLong yOffset = shape::getIndexOffset(i, yShapeInfo, len);
+        Nd4jLong zOffset = shape::getIndexOffset(i, zShapeInfo, len);
+        z[xOffset] = simdOps::LogPoisonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
+    }
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, loopThroughArrs_test3) {
+    
+    NDArray x('c', {200, 250}, nd4j::DataType::FLOAT32);
+
+    const int iterations = 10000;
+    const int arrays = 100;
+
+    std::vector<NDArray> arrs(arrays);
+    for(auto& arr : arrs)
+        arr = x;
+    
+    //***********************************    
+    auto timeStart = std::chrono::system_clock::now();
+    srand(119);
+    for(Nd4jLong i = 0; i < iterations; ++i) {
+        int xInd = rand() % arrays;
+        int yInd = rand() % arrays;
+        int zInd = rand() % arrays;
+        auto xBuff = arrs[xInd].bufferAsT<float>();
+        auto yBuff = arrs[yInd].bufferAsT<float>();
+        auto zBuff = arrs[zInd].bufferAsT<float>();
+        auto xShapeInfo = arrs[xInd].getShapeInfo();
+        auto yShapeInfo = arrs[yInd].getShapeInfo();
+        auto zShapeInfo = arrs[zInd].getShapeInfo();        
+    
+        loop2(xBuff, xShapeInfo, yBuff, yShapeInfo, zBuff, zShapeInfo);
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+    auto simpleTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+
+    //***********************************
+    timeStart = std::chrono::system_clock::now();
+    for(Nd4jLong i = 0; i < iterations; ++i) {
+        int xInd = rand() % arrays;
+        int yInd = rand() % arrays;
+        int zInd = rand() % arrays;
+        auto xBuff = arrs[xInd].bufferAsT<float>();
+        auto yBuff = arrs[yInd].bufferAsT<float>();
+        auto zBuff = arrs[zInd].bufferAsT<float>();
+        auto xShapeInfo = arrs[xInd].getShapeInfo();
+        auto yShapeInfo = arrs[yInd].getShapeInfo();
+        auto zShapeInfo = arrs[zInd].getShapeInfo();        
+
+        loop1(xBuff, xShapeInfo, yBuff, yShapeInfo, zBuff, zShapeInfo);    
+    }
+    timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+
+    nd4j_printf("simpleTime time: %lld us;\n", simpleTime);
+    nd4j_printf("spanTime   time: %lld us;\n", spanTime);
 
     ASSERT_TRUE(1);        
 }
