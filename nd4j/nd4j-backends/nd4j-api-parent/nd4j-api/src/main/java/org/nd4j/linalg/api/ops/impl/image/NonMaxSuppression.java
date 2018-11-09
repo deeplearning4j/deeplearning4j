@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms;
+package org.nd4j.linalg.api.ops.impl.image;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -30,16 +30,12 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class IdentityN extends DynamicCustomOp {
+public class NonMaxSuppression extends DynamicCustomOp {
 
-    public IdentityN() {}
+    public NonMaxSuppression() {}
 
-    public IdentityN(SameDiff sameDiff, SDVariable[] inputs) {
-        super(null, sameDiff, inputs, false);
-    }
-
-    public IdentityN(SameDiff sameDiff, SDVariable input) {
-        super(null, sameDiff, new SDVariable[] {input}, false);
+    public NonMaxSuppression(SameDiff sameDiff, SDVariable[] input) {
+        super(null, sameDiff, input, false);
     }
 
     @Override
@@ -49,12 +45,17 @@ public class IdentityN extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "IdentityN";
+        return "NonMaxSuppression";
+    }
+
+    @Override
+    public String[] tensorflowNames() {
+        return new String[]{"NonMaxSuppression", "NonMaxSuppressionV2"};
     }
 
     @Override
     public String opName() {
-        return "identity_n";
+        return "non_max_suppression";
     }
 
     @Override
