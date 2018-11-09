@@ -84,7 +84,7 @@ namespace ops {
     DECLARE_TYPES(dilation2d) {
         getOpDescriptor()
                 ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setSameMode(true);
+                ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
     DECLARE_SHAPE_FN(dilation2d) {

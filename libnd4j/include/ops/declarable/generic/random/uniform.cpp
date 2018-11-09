@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_randomuniform)
 
 #include <ops/declarable/CustomOperations.h>
+#include <helpers/RandomLauncher.h>
 
 namespace nd4j {
     namespace ops {
@@ -36,7 +37,7 @@ namespace nd4j {
          */
         CUSTOM_OP_IMPL(randomuniform, 1, 1, true, 2, 0) {
             // uniform distribution
-            auto rng = block.getRNG();
+            auto rng = block.randomGenerator();
 
             // FIXME: to be implemented
             /*
@@ -50,6 +51,9 @@ namespace nd4j {
 
             STORE_RESULT(*z);
 */
+            REQUIRE_TRUE(block.numT() > 1, 0, "RandomUniform: to/from must be set");
+
+            RandomLauncher::fillUniform(rng, OUTPUT_VARIABLE(0), T_ARG(0), T_ARG(1));
             return Status::OK();
         }
 
