@@ -321,7 +321,8 @@
         (32, simdOps::LogicalAnd) ,\
         (92, simdOps::PowDerivative), \
         (93, simdOps::LogPoisonLoss), \
-        (94, simdOps::LogPoisonLossFull)
+        (94, simdOps::LogPoisonLossFull), \
+        (95, simdOps::TruncateMod)
 
 
 
