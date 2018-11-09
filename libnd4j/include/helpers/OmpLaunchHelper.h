@@ -37,7 +37,7 @@ class OmpLaunchHelper {
         
 		OmpLaunchHelper() = delete;
         
-        OmpLaunchHelper(const Nd4jLong N, int desiredNumThreads = 0);        
+        OmpLaunchHelper(const Nd4jLong N, float desiredNumThreads = -1);        
 
         FORCEINLINE Nd4jLong getThreadOffset(const int threadNum);
         FORCEINLINE Nd4jLong getItersPerThread(const int threadNum);

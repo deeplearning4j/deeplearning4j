@@ -30,7 +30,7 @@ namespace nd4j {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-OmpLaunchHelper::OmpLaunchHelper(const Nd4jLong N, int desiredNumThreads) {            
+OmpLaunchHelper::OmpLaunchHelper(const Nd4jLong N, float desiredNumThreads) {            
 
     auto maxItersPerThread = Environment::getInstance()->elementwiseThreshold();    
         
@@ -38,9 +38,11 @@ OmpLaunchHelper::OmpLaunchHelper(const Nd4jLong N, int desiredNumThreads) {
         _numThreads = 1;
     else {
         #ifdef _OPENMP
-            if(desiredNumThreads == 0)
+            if(desiredNumThreads == -1)
                 desiredNumThreads = omp_get_max_threads();
-            else 
+            else if(desiredNumThreads < 1) 
+                desiredNumThreads == 1;
+            else
                 desiredNumThreads = nd4j::math::nd4j_min<int>(omp_get_max_threads(), desiredNumThreads);
         #else
             desiredNumThreads = 1;
