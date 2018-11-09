@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,6 +69,13 @@ public class EqualTo extends BaseDynamicTransformOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], DataType.BOOL));
+        if (args() == null)
+            return Collections.emptyList();
+
+        if (inputArguments.size() == 0)
+            return Collections.emptyList();
+
+
+        return Nd4j.getExecutioner().calculateOutputShape(this);
     }
 }

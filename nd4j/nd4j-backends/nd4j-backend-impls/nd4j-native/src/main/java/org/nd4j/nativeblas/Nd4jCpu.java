@@ -10537,6 +10537,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native OpDescriptor setInputType(int idx, @Cast("nd4j::DataType") int dtype);
             public native OpDescriptor setOutputType(int idx, @Cast("nd4j::DataType") int dtype);
 
+            public native @Cast("nd4j::DataType*") @StdVector IntPointer getOutputTypesForOutput(int index);
+
             public native @Cast("bool") boolean checkInputMatch(int index, @Cast("nd4j::DataType") int dataType);
             public native @Cast("bool") boolean checkOutputMatch(int index, @Cast("nd4j::DataType") int dataType);
             public native @Cast("bool") boolean isSameMode();

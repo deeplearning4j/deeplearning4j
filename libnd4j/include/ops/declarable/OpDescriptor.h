@@ -168,6 +168,8 @@ namespace nd4j {
             OpDescriptor* setInputType(int idx, nd4j::DataType dtype);
             OpDescriptor* setOutputType(int idx, nd4j::DataType dtype);
 
+            std::vector<nd4j::DataType> getOutputTypesForOutput(int index);
+
             bool checkInputMatch(int index, nd4j::DataType dataType);
             bool checkOutputMatch(int index, nd4j::DataType dataType);
             bool isSameMode();

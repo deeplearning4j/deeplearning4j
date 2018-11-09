@@ -474,6 +474,23 @@ TEST_F(ParityOpsTests, Test_GreaterEquals_1) {
     delete result;
 }
 
+TEST_F(ParityOpsTests, Test_GreaterEquals_2) {
+    auto x = NDArrayFactory::create<double>('c', {1, 5}, {1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<double>('c', {1, 5}, {5, 4, 3, 2, 1});
+    auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {0, 0, 1, 1, 1});
+
+    nd4j::ops::greater_equal op;
+    auto result = op.execute({&x, &y}, {}, {}, {}, false);
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
 TEST_F(ParityOpsTests, Test_Greater_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<float>('c', {1, 5}, {5, 4, 3, 2, 1});

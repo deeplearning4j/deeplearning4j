@@ -282,5 +282,12 @@ namespace nd4j {
 
             return false;
         }
+
+        std::vector<nd4j::DataType> OpDescriptor::getOutputTypesForOutput(int index) {
+            if (_outputTypes.count(index) > 0)
+                return _outputTypes.at(index);
+            else
+                return std::vector<nd4j::DataType>();
+        }
     }
 }
