@@ -27,10 +27,13 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    T lup(NDArray<T>* input, NDArray<T>* compound, NDArray<T>* permutation);
+    T lup(NDArray<T>* input, NDArray<T>* compound, NDArray<T>* permutation, T* logDeterminant = nullptr);
 
     template <typename T>
     int determinant(NDArray<T>* input, NDArray<T>* output);
+
+    template <typename T>
+    int log_abs_determinant(NDArray<T>* input, NDArray<T>* output);
 
     template <typename T>
     int inverse(NDArray<T>* input, NDArray<T>* output);

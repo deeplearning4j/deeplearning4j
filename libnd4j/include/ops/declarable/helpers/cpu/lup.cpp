@@ -93,12 +93,12 @@ namespace helpers {
     template void invertUpperMatrix(NDArray<double>* inputMatrix, NDArray<double>* invertedMatrix);
 
     template <typename T>
-    T lup(NDArray<T>* input, NDArray<T>* compound, NDArray<T>* permutation) {
+    T lup(NDArray<T>* input, NDArray<T>* compound, NDArray<T>* permutation, T* logDeterminant) {
 
         const int rowNum = input->rows();
         const int columnNum = input->columns();
 
-        T determinant = (T)1.0;
+        T determinant = (T)1.0f;
         std::unique_ptr<NDArray<T>> compoundMatrix(input->dup()); // copy
         std::unique_ptr<NDArray<T>> permutationMatrix(input->createUninitialized()); //put identity
         permutationMatrix->setIdentity();
@@ -145,13 +145,14 @@ namespace helpers {
             *compound = *compoundMatrix;
         if (permutation != nullptr)
             *permutation = *permutationMatrix;
-
+        if (logDeterminant != nullptr)
+            *logDeterminant = nd4j::math::nd4j_log(nd4j::math::nd4j_abs(determinant));
         return determinant;
     }
 
-    template float lup(NDArray<float>* input, NDArray<float>* output, NDArray<float>* permutation);
-    template float16 lup(NDArray<float16>* input, NDArray<float16>* compound, NDArray<float16>* permutation);
-    template double lup(NDArray<double>* input, NDArray<double>* compound, NDArray<double>* permutation);
+    template float lup(NDArray<float>* input, NDArray<float>* output, NDArray<float>* permutation, float* logDeterminant);
+    template float16 lup(NDArray<float16>* input, NDArray<float16>* compound, NDArray<float16>* permutation, float16* logDeterminant);
+    template double lup(NDArray<double>* input, NDArray<double>* compound, NDArray<double>* permutation, double* logDeterminant);
 
 
     template <typename T>
@@ -167,7 +168,27 @@ namespace helpers {
                 (*matrix)(row) = (*input)(k);
             }
 
-            (*output)(e) = lup(matrix.get(), (NDArray<T>*)nullptr, (NDArray<T>*)nullptr);
+            (*output)(e) = lup(matrix.get(), (NDArray<T>*)nullptr, (NDArray<T>*)nullptr, (T*)nullptr);
+        }
+
+        return ND4J_STATUS_OK;
+    }
+
+    template <typename T>
+    int log_abs_determinant(NDArray<T>* input, NDArray<T>* output) {
+
+        Nd4jLong n = input->sizeAt(-1);
+        Nd4jLong n2 = n * n;
+
+        std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
+//#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        for (int e = 0; e < output->lengthOf(); e++) {
+            for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
+                (*matrix)(row) = (*input)(k);
+            }
+            T logVal;
+            lup(matrix.get(), (NDArray<T>*)nullptr, (NDArray<T>*)nullptr, &logVal);
+            (*output)(e) = logVal;
         }
 
         return ND4J_STATUS_OK;

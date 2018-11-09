@@ -56,6 +56,38 @@ namespace nd4j {
             }
             return SHAPELIST(determinantShape);
         }
+
+        CUSTOM_OP_IMPL(log_matrix_determinant, 1, 1, false, 0, 0) {
+            NDArray<T>* input = INPUT_VARIABLE(0);
+            NDArray<T>* output = OUTPUT_VARIABLE(0);
+
+            REQUIRE_TRUE(input->rankOf() >=2, 0, "log_matrix_determinant: The rank of input array should not less than 2, but %i is given", input->rankOf());
+            REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "log_matrix_determinant: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
+
+            return helpers::log_abs_determinant(input, output);
+        }
+
+        DECLARE_SHAPE_FN(log_matrix_determinant) {
+            auto inShape = inputShape->at(0);
+
+            Nd4jLong* determinantShape;
+            int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
+
+            if (targetRank == 0) { // scalar only
+                determinantShape = ShapeUtils<T>::createScalarShapeInfo(block.getWorkspace());
+            }
+            else if (targetRank == 1) { // vector 
+                determinantShape = ShapeUtils<T>::createVectorShapeInfo(shape::sizeAt(inShape, 0), block.getWorkspace());
+            }
+            else { // only two last dimensions are excluded
+                ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
+                if (shape::order(inShape) == 'c')
+                    shape::shapeBuffer(targetRank, shape::shapeOf(inShape), determinantShape);
+                else
+                    shape::shapeBufferFortran(targetRank, shape::shapeOf(inShape), determinantShape);
+            }
+            return SHAPELIST(determinantShape);
+        }
     }
 }
 
