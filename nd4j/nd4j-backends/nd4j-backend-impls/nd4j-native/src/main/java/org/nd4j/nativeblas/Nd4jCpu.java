@@ -44,6 +44,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_hardsigmoid_bp.class,
         float_identity.class,
         float_identity_bp.class,
+        float_identity_n.class,
         float_crelu.class,
         float_crelu_bp.class,
         float_relu6.class,
@@ -332,6 +333,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_resize_bilinear.class,
         float_matrix_band_part.class,
         float_Assert.class,
+        float_non_max_suppression.class,
         float_set_seed.class,
         float_get_seed.class,
         float_randomuniform.class,
@@ -447,6 +449,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_hardsigmoid_bp.class,
         half_identity.class,
         half_identity_bp.class,
+        half_identity_n.class,
         half_crelu.class,
         half_crelu_bp.class,
         half_relu6.class,
@@ -735,6 +738,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_resize_bilinear.class,
         half_matrix_band_part.class,
         half_Assert.class,
+        half_non_max_suppression.class,
         half_set_seed.class,
         half_get_seed.class,
         half_randomuniform.class,
@@ -850,6 +854,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_hardsigmoid_bp.class,
         double_identity.class,
         double_identity_bp.class,
+        double_identity_n.class,
         double_crelu.class,
         double_crelu_bp.class,
         double_relu6.class,
@@ -1138,6 +1143,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_resize_bilinear.class,
         double_matrix_band_part.class,
         double_Assert.class,
+        double_non_max_suppression.class,
         double_set_seed.class,
         double_get_seed.class,
         double_randomuniform.class,
@@ -20052,6 +20058,57 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+         * This is Indentity operation. It passes signal umodified in both directions.
+         */
+//         #if NOT_EXCLUDED(OP_identity_n)
+        @Name("nd4j::ops::identity_n<float>") public static class float_identity_n extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_identity_n(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_identity_n(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_identity_n position(long position) {
+                return (float_identity_n)super.position(position);
+            }
+        
+                                                                                    public float_identity_n() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::identity_n<float16>") public static class half_identity_n extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_identity_n(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_identity_n(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_identity_n position(long position) {
+                return (half_identity_n)super.position(position);
+            }
+        
+                                                                                    public half_identity_n() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::identity_n<double>") public static class double_identity_n extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_identity_n(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_identity_n(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_identity_n position(long position) {
+                return (double_identity_n)super.position(position);
+            }
+        
+                                                                                    public double_identity_n() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
+        /**
          * This is Concatenated RELU implementation.
          * What happens inside: RELU(Concat((x, -x, {-1})))
          * 
@@ -36391,6 +36448,54 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
+//         #endif
+
+//         #if NOT_EXCLUDED(OP_image_non_max_suppression)
+        @Name("nd4j::ops::non_max_suppression<float>") public static class float_non_max_suppression extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_non_max_suppression(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_non_max_suppression(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_non_max_suppression position(long position) {
+                return (float_non_max_suppression)super.position(position);
+            }
+        
+                                                                                    public float_non_max_suppression() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::non_max_suppression<float16>") public static class half_non_max_suppression extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_non_max_suppression(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_non_max_suppression(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_non_max_suppression position(long position) {
+                return (half_non_max_suppression)super.position(position);
+            }
+        
+                                                                                    public half_non_max_suppression() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::non_max_suppression<double>") public static class double_non_max_suppression extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_non_max_suppression(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_non_max_suppression(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_non_max_suppression position(long position) {
+                return (double_non_max_suppression)super.position(position);
+            }
+        
+                                                                                    public double_non_max_suppression() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
 //         #endif
 
     

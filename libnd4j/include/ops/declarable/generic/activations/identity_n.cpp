@@ -28,14 +28,16 @@ namespace nd4j {
         CUSTOM_OP_IMPL(identity_n, 1, 1, true, 0, 0) {
 
             // just for lulz
-            for (Nd4jLong i = 0; i < block.width(); ++i) {
-                NDArray<T>* x = INPUT_VARIABLE(i);
-                NDArray<T>* z = OUTPUT_VARIABLE(i);
+            if (!block.isInplace()) {
+                for (Nd4jLong i = 0; i < block.width(); ++i) {
+                    auto x = INPUT_VARIABLE(i);
+                    auto z = OUTPUT_VARIABLE(i);
 
-                x->template applyTransform<simdOps::Identity<T>>(z, nullptr);
+                    x->template applyTransform<simdOps::Identity<T>>(z, nullptr);
+                }
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(identity_n) {
