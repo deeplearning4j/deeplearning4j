@@ -571,7 +571,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test1) {
 
 
     nd4j::ops::top_k<double> op;
-    auto result = op.execute({&x}, {}, {4, 0});
+    auto result = op.execute({&x}, {}, {0, 4});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -582,7 +582,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test1) {
     ASSERT_TRUE(expUnsorted.isSameShape(z));
     ASSERT_TRUE(expUnsorted.equalsTo(z));
 
-    auto result2 = op.execute({&x}, {}, {5, 1});
+    auto result2 = op.execute({&x}, {}, {1, 5});
 
     ASSERT_EQ(ND4J_STATUS_OK, result2->status());
 
@@ -606,7 +606,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test2) {
 
 
     nd4j::ops::top_k<double> op;
-    auto result = op.execute({&x}, {}, {5, 0});
+    auto result = op.execute({&x}, {}, {0, 5});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -617,7 +617,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test2) {
     ASSERT_TRUE(expUnsorted.isSameShape(z));
     ASSERT_TRUE(expUnsorted.equalsTo(z));
 
-    auto result2 = op.execute({&x}, {}, {5, 1});
+    auto result2 = op.execute({&x}, {}, {1, 5});
 
     ASSERT_EQ(ND4J_STATUS_OK, result2->status());
 
@@ -874,6 +874,75 @@ TEST_F(DeclarableOpsTests10, histogram_fixed_width_test5) {
 
     ASSERT_TRUE(exp.isSameShape(out));
     ASSERT_TRUE(exp.equalsTo(out));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NthElementTest_1) {
+
+    NDArray<float> input('c', {12});
+    NDArray<float> n({4.f});
+    NDArray<float> exp(5.f);
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element<float> op;
+    auto results = op.execute({&input, &n}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *output = results->at(0);
+    //output->printIndexedBuffer("NTH_ELEMENT output");
+    //output->printShapeInfo("NTH_ELEMENT shape");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NthElementTest_2) {
+
+    NDArray<float> input('c', {3, 4});
+    NDArray<float> n({3.f});
+    NDArray<float> exp({4.f, 8.f, 12.f});
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element<float> op;
+    auto results = op.execute({&input, &n}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *output = results->at(0);
+    //output->printIndexedBuffer("NTH_ELEMENT output");
+    //output->printShapeInfo("NTH_ELEMENT shape");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NthElementTest_3) {
+
+    NDArray<float> input('c', {2, 2, 3});
+    NDArray<float> n({2.f});
+    NDArray<float> exp('c', {2, 2}, {3.f, 6.f, 9.f, 12.f});
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element<float> op;
+    auto results = op.execute({&input, &n}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *output = results->at(0);
+    output->printIndexedBuffer("NTH_ELEMENT output");
+    output->printShapeInfo("NTH_ELEMENT shape");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
 
     delete results;
 }
@@ -2069,6 +2138,48 @@ TEST_F(DeclarableOpsTests10, pad_tests26) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray<float>* result = results->at(0);        
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_1) {
+
+    NDArray<float> boxes   ('c', {3,4});
+    NDArray<float> scales('c', {3}, {1, 2, 3});
+    NDArray<float> expected('c', {3}, {2.,1.,0.});
+    boxes.linspace(1.f);
+
+    nd4j::ops::non_max_suppression<float> op;
+    auto results = op.execute({&boxes, &scales}, {}, {5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
+
+    NDArray<float> boxes   ('c', {6,4}, {0, 0, 1, 1, 0, 0.1f, 1, 1.1f, 0, -0.1f, 1.f, 0.9f,
+                                         0, 10, 1, 11, 0, 10.1f, 1.f, 11.1f, 0, 100, 1, 101});
+    NDArray<float> scales('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray<float> expected('c', {3}, {3.,0.,5.});
+
+    nd4j::ops::non_max_suppression<float> op;
+    auto results = op.execute({&boxes, &scales}, {0.5}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
 
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
