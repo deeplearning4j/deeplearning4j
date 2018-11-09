@@ -41,14 +41,18 @@ namespace nd4j {
         DECLARE_SHAPE_FN(shape_of) {
             auto inShape = inputShape->at(0);
 
-            // always LONG
-            return SHAPELIST(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, shape::rank(inShape), block.workspace()));
+            // LONG by default
+            auto dtype = DataType::INT64;
+            if (block.numI() > 0)
+                dtype = DataTypeUtils::fromInt(INT_ARG(0));
+
+            return SHAPELIST(ShapeBuilders::createVectorShapeInfo(dtype, shape::rank(inShape), block.workspace()));
         };
 
         DECLARE_TYPES(shape_of) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(DataType::INT64);
+                    ->setAllowedOutputTypes({ALL_INTS});
         }
     }
 }

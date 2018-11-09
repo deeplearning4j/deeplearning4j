@@ -97,7 +97,7 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
         if(arr == null)
             return Collections.emptyList();
 
-        ret.add(LongShapeDescriptor.fromShape(arr.shape(), Nd4j.defaultFloatintPointType()));
+        ret.add(LongShapeDescriptor.fromShape(arr.shape(), arr.isR() ? arr.dataType() : Nd4j.defaultFloatintPointType()));
         this.n = arr.length();
         return ret;
     }
