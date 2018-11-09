@@ -86,7 +86,7 @@ public class Relu6 extends BaseScalarOp {
 
     @Override
     public int opNum() {
-        return 42;
+        return 40;
     }
 
     @Override

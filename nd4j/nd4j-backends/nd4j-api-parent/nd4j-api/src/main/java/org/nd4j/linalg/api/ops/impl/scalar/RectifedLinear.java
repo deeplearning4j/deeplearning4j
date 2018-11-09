@@ -77,7 +77,7 @@ public class RectifedLinear extends BaseScalarOp {
 
     @Override
     public int opNum() {
-        return 41;
+        return 39;
     }
 
     @Override
