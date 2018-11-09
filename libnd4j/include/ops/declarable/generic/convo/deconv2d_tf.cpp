@@ -149,6 +149,9 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
     
     ShapeUtils::updateStridesAndType(gradIshapeInfo, gradIShapeShapeInfo, shape::order(gradOShapeInfo));
 
+    // setting datatype equal to weights type
+    ArrayOptions::setDataType(gradIshapeInfo, ArrayOptions::dataType(weightsShapeInfo));
+
     return SHAPELIST(gradIshapeInfo);        
 
 }
