@@ -571,7 +571,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test1) {
 
 
     nd4j::ops::top_k<double> op;
-    auto result = op.execute({&x}, {}, {4, 0});
+    auto result = op.execute({&x}, {}, {0, 4});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -582,7 +582,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test1) {
     ASSERT_TRUE(expUnsorted.isSameShape(z));
     ASSERT_TRUE(expUnsorted.equalsTo(z));
 
-    auto result2 = op.execute({&x}, {}, {5, 1});
+    auto result2 = op.execute({&x}, {}, {1, 5});
 
     ASSERT_EQ(ND4J_STATUS_OK, result2->status());
 
@@ -606,7 +606,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test2) {
 
 
     nd4j::ops::top_k<double> op;
-    auto result = op.execute({&x}, {}, {5, 0});
+    auto result = op.execute({&x}, {}, {0, 5});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -617,7 +617,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test2) {
     ASSERT_TRUE(expUnsorted.isSameShape(z));
     ASSERT_TRUE(expUnsorted.equalsTo(z));
 
-    auto result2 = op.execute({&x}, {}, {5, 1});
+    auto result2 = op.execute({&x}, {}, {1, 5});
 
     ASSERT_EQ(ND4J_STATUS_OK, result2->status());
 

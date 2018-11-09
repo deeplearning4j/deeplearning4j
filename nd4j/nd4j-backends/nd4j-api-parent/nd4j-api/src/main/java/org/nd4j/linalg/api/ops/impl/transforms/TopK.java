@@ -46,7 +46,7 @@ public class TopK extends DynamicCustomOp {
         super(sd, new SDVariable[]{in}, false);
         this.k = k;
         this.sorted = sorted;
-        addIArgument(k, ArrayUtil.fromBoolean(sorted));
+        addIArgument(ArrayUtil.fromBoolean(sorted), k);
     }
 
     @Override
@@ -63,6 +63,8 @@ public class TopK extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
 
         String thisName = nodeDef.getName();
+
+        // FIXME: ????
         String inputName = thisName + "/k";
         NodeDef kNode = null;
         for(int i = 0; i < graph.getNodeCount(); i++) {
@@ -72,13 +74,17 @@ public class TopK extends DynamicCustomOp {
             }
         }
 
-        Preconditions.checkState(kNode != null, "Could not find 'k' parameter node for op: %s", thisName);
-
-        INDArray arr = TFGraphMapper.getInstance().getNDArrayFromTensor(inputName, kNode, graph);
-        this.k = arr.getInt(0);
-
         this.sorted = nodeDef.getAttrOrThrow("sorted").getB();
-        addIArgument(k, ArrayUtil.fromBoolean(sorted));
+
+        if (kNode != null) {
+            Preconditions.checkState(kNode != null, "Could not find 'k' parameter node for op: %s", thisName);
+
+            INDArray arr = TFGraphMapper.getInstance().getNDArrayFromTensor(inputName, kNode, graph);
+            this.k = arr.getInt(0);
+
+            addIArgument(ArrayUtil.fromBoolean(sorted), k);
+        } else
+            addIArgument(ArrayUtil.fromBoolean(sorted));
     }
 
     @Override
