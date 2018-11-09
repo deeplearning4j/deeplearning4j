@@ -1463,9 +1463,20 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_Assert)
         DECLARE_OP(Assert, 1, 1, false);
         #endif
-
+        /*
+         * image.non_max_suppression op.
+         * input:
+         *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
+         *     1 - scales - 1D-tensor with shape (num_boxes) by float type
+         *     2 - output_size - 0D-tensor by int type (optional)
+         * float args:
+         *     0 - threshold - threshold value for overlap checks (optional, by default 0.5)
+         * int args:
+         *     0 - output_size - as arg 2 used for same target. Eigher this or arg 2 should be provided.
+         *
+         * */
         #if NOT_EXCLUDED(OP_image_non_max_suppression)
-        DECLARE_CUSTOM_OP(non_max_suppression, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(non_max_suppression, 2, 1, false, 0, 0);
         #endif
 
     }

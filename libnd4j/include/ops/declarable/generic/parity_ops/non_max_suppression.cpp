@@ -21,13 +21,21 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/image_suppression.h>
 
+#if NOT_EXCLUDED(OP_image_non_max_suppression)
+
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(non_max_suppression, 2, 1, false, 0, 1) {
+        CUSTOM_OP_IMPL(non_max_suppression, 2, 1, false, 0, 0) {
             auto boxes = INPUT_VARIABLE(0);
             auto scales = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
-            int maxOutputSize = INT_ARG(0);
+            int maxOutputSize; // = INT_ARG(0);
+            if (block.width() > 2)
+                maxOutputSize = (int)INPUT_VARIABLE(2)->getScalar(0);
+            else if (block.getIArguments()->size() == 1)
+                maxOutputSize = INT_ARG(0);
+            else
+                REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
 
             REQUIRE_TRUE(boxes->rankOf() == 2, 0, "image.non_max_suppression: The rank of boxes array should be 2, but %i is given", boxes->rankOf());
             REQUIRE_TRUE(scales->rankOf() == 1 && scales->lengthOf() == boxes->sizeAt(0), 0, "image.non_max_suppression: The rank of boxes array should be 2, but %i is given", boxes->rankOf());
@@ -58,3 +66,4 @@ namespace nd4j {
         }
     }
 }
+#endif
