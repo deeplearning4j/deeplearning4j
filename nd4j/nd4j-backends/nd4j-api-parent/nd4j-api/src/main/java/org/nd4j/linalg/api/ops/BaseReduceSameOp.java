@@ -98,10 +98,11 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
             throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
         }
 
-        long[] argShape = arg().getShape();
-        if (argShape == null && x() == null) {
+        if (x == null) {
             return Collections.emptyList();
         }
+
+        long[] argShape = arg().getShape();
         long[] inputShape = (argShape == null ? x().shape() : argShape);
 
         val ret = new ArrayList<LongShapeDescriptor>(1);
