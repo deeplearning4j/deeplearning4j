@@ -14,33 +14,28 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.shape;
+package org.nd4j.linalg.api.ops.impl.image;
 
-import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Returns the size of the input as a rank 0 array
+ * IdentityN op wrapper
  *
- * @author Alex Black
+ * @author raver119@gmail.com
  */
-public class Size extends DynamicCustomOp {
+public class NonMaxSuppression extends DynamicCustomOp {
 
-    public Size() {}
+    public NonMaxSuppression() {}
 
-    public Size(SameDiff sameDiff, SDVariable input) {
-        super(null, sameDiff, new SDVariable[] {input}, false);
+    public NonMaxSuppression(SameDiff sameDiff, SDVariable[] input) {
+        super(null, sameDiff, input, false);
     }
 
     @Override
@@ -50,12 +45,17 @@ public class Size extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "Size";
+        return "NonMaxSuppression";
+    }
+
+    @Override
+    public String[] tensorflowNames() {
+        return new String[]{"NonMaxSuppression", "NonMaxSuppressionV2"};
     }
 
     @Override
     public String opName() {
-        return "size";
+        return "non_max_suppression";
     }
 
     @Override

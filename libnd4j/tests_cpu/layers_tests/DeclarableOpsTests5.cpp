@@ -858,7 +858,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_0) {
     NDArray<float> expI('c', {2, 1}, {4.0f, 3.0f});
 
     nd4j::ops::top_k<float> op;
-    auto result = op.execute({&x}, {}, {1, 0}); // without sorting
+    auto result = op.execute({&x}, {}, {0, 1}); // without sorting
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     ASSERT_EQ(2, result->size());
@@ -885,7 +885,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_0) {
     ASSERT_TRUE(expI.equalsTo(i));
     // repeat res again
     for (int cases = 0; cases < 100; ++cases) {
-        op.execute({&x}, {v, i}, {}, {1, 0}); // without sorting
+        op.execute({&x}, {v, i}, {}, {0, 1}); // without sorting
     }
     delete result;
 }
@@ -897,7 +897,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_1) {
     NDArray<float> expI('c', {2, 1}, {1.0f, 0.0f});
 
     nd4j::ops::top_k<float> op;
-    auto result = op.execute({&x}, {}, {1, 0}); // without sorting
+    auto result = op.execute({&x}, {}, {0, 1}); // without sorting
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     ASSERT_EQ(2, result->size());
@@ -924,7 +924,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_1) {
     ASSERT_TRUE(expI.equalsTo(i));
     // repeat res again
     for (int cases = 0; cases < 100; ++cases) {
-        op.execute({&x}, {v, i}, {}, {1, 0}); // without sorting
+        op.execute({&x}, {v, i}, {}, {0, 1}); // without sorting
     }
     delete result;
 }
@@ -998,7 +998,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_3) {
     NDArray<float> expI('c', {2, 3, 2 }, {2, 0, 1, 3, 0, 3, 1,  3, 2, 1, 0, 2});
 
     nd4j::ops::top_k<float> op;
-    auto result = op.execute({&x}, {}, {2, 1});
+    auto result = op.execute({&x}, {}, {1, 2});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     ASSERT_EQ(2, result->size());
@@ -1033,7 +1033,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_4) {
     NDArray<float> expI('c', {2, 2}, {1.0f, 2.0f, 0.0f, 2.0f});
 
     nd4j::ops::top_k<float> op;
-    auto result = op.execute({&x}, {}, {2, 1});
+    auto result = op.execute({&x}, {}, {1, 2});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     ASSERT_EQ(2, result->size());
@@ -1068,7 +1068,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_5) {
     NDArray<float> expI('f', {2, 2}, {2.0f, 1.0f, 1.0f, 0.0f});
 
     nd4j::ops::top_k<float> op;
-    auto result = op.execute({&x}, {}, {2, 1});
+    auto result = op.execute({&x}, {}, {1, 2});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     ASSERT_EQ(2, result->size());
@@ -1104,7 +1104,7 @@ TEST_F(DeclarableOpsTests5, Test_InTopK_1) {
     NDArray<float> expV('c', {2}, {1, 0});
 
     nd4j::ops::in_top_k<float> op;
-    auto result = op.execute({&x, &y}, {}, {2});
+    auto result = op.execute({&x, &y}, {}, {1, 2});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     ASSERT_EQ(1, result->size());
