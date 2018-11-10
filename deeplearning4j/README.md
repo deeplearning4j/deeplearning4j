@@ -16,7 +16,7 @@ For more info, see: https://docs.skymind.ai/docs
 ---
 ## Using Eclipse Deeplearning4j
 
-To get started using Deeplearning4j, please go to our [Quickstart](http://deeplearning4j.org/quickstart.html). You'll need to be familiar with a Java automated build tool such as Maven and an IDE such as IntelliJ.
+To get started using Deeplearning4j, please go to our [Quickstart](https://deeplearning4j.org/docs/latest/deeplearning4j-quickstart). You'll need to be familiar with a Java automated build tool such as Maven and an IDE such as IntelliJ.
 
 ## Main Features
 - Versatile n-dimensional array class
@@ -46,7 +46,7 @@ We are not supporting Stackoverflow right now. Github issues should focus on bug
 
 ## Installation
 
-To install Deeplearning4J, see our [Quickstart](http://deeplearning4j.org/quickstart.html) and below. More information can be found on the [ND4J web site](http://nd4j.org/getstarted.html) as well as [here](http://deeplearning4j.org/gettingstarted.html).
+To install Deeplearning4J, see our [Quickstart](https://deeplearning4j.org/docs/latest/deeplearning4j-quickstart) and below. More information can be found on the [ND4J web site](http://nd4j.org/getstarted.html) as well as [here](https://deeplearning4j.org/tutorials/00-quickstart-for-deeplearning4j).
 
 #### Use Maven Central Repository
 
