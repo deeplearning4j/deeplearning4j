@@ -795,6 +795,21 @@ TEST_F(JavaInteropTests, Test_IAMax_1) {
     ASSERT_EQ(exp, arrayZ);
 }
 
+TEST_F(JavaInteropTests, Test_Boolean_Broadcastables_1) {
+    auto arrayX = NDArrayFactory::create<double>('c', {10, 10});
+    auto arrayY = NDArrayFactory::create<double>('c', {10, 10});
+
+    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(arrayX.buffer()), reinterpret_cast<Nd4jPointer>(arrayY.buffer())};
+    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(arrayX.shapeInfo()), reinterpret_cast<Nd4jPointer>(arrayY.shapeInfo())};
+
+
+
+    nd4j::ops::greater_equal op;
+    NativeOps ops;
+    auto shapeList = ops.calculateOutputShapes(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0);
+
+    delete shapeList;
+}
 
 /*
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {

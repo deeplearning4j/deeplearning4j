@@ -1899,6 +1899,10 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
         inShapes.push_back(shape_);
     }
 
+    auto status = op->validateDataTypes(block);
+    if (status != Status::OK())
+        throw std::runtime_error("Data types validation failed");
+
     auto shapeList = op->calculateOutputShape(&inShapes, block);
 
     if (varSpace.workspace() != nullptr)
