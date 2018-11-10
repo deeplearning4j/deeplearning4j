@@ -21,17 +21,17 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.BasicNDArrayCompressor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
 import org.nd4j.tensorflow.conversion.graphrunner.SavedModelConfig;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.InputStream;
+import java.util.*;
 
 import static org.bytedeco.javacpp.tensorflow.ConfigProto;
 import static org.junit.Assert.assertEquals;
@@ -112,6 +112,19 @@ public class GraphRunnerTest {
 
     }
 
+
+    @Test
+    public void testYolo() throws Exception {
+        ClassPathResource classPathResource = new ClassPathResource("/tf_graphs/examples/yolov2_608x608/frozen_model.pb");
+        File f  = classPathResource.getFile();
+        INDArray randomIntArray = Nd4j.cast(Nd4j.rand(new int[]{1,608,608,3}), DataBuffer.Type.FLOAT);
+        assertEquals(DataBuffer.Type.FLOAT,randomIntArray.data().dataType());
+        try(GraphRunner graphRunner = new GraphRunner(f.getAbsolutePath(),Arrays.asList("input"),Arrays.asList("output"))) {
+            Map<String,INDArray> run = new HashMap<>();
+            run.put("input",randomIntArray);
+            graphRunner.run(run);
+        }
+    }
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

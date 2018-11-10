@@ -33,6 +33,29 @@ public class DataTypeUtil {
     private static final ReadWriteLock lock = new ReentrantReadWriteLock();
 
 
+
+    /**
+     * Convert a data buffer type to a
+     * {@link DataBuffer.TypeEx}
+     * @param type the input type
+     * @return the converted type
+     */
+    public static DataBuffer.TypeEx convertType(DataBuffer.Type type) {
+        if (type == DataBuffer.Type.HALF) {
+            return DataBuffer.TypeEx.FLOAT16;
+        } else if (type == DataBuffer.Type.FLOAT) {
+            return DataBuffer.TypeEx.FLOAT;
+        } else if (type == DataBuffer.Type.DOUBLE) {
+            return DataBuffer.TypeEx.DOUBLE;
+
+        } else if(type == DataBuffer.Type.INT) {
+            return DataBuffer.TypeEx.INT8;
+        } else if(type == DataBuffer.Type.LONG) {
+            return DataBuffer.TypeEx.INT16;
+
+        } else
+            throw new IllegalStateException("Unknown dataType: [" + type + "]");
+    }
     /**
      * Returns the length for the given data opType
      * @param type

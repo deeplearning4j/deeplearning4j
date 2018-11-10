@@ -33,6 +33,7 @@ import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -2746,54 +2747,54 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
         Nd4j.getCompressor().autoDecompress(this);
-       if(columnVector.isScalar()) {
-           switch (operation) {
-               case 'a':
-                   addi(columnVector.getDouble(0));
-                   break;
-               case 'p':
-                   assign(columnVector.getDouble(0));
-                   break;
-               case 's':
-                   subi(columnVector.getDouble(0));
-                   break;
-               case 'm':
-                   muli(columnVector.getDouble(0));
-                   break;
-               case 'd':
-                   divi(columnVector.getDouble(0));
-                   break;
-               case 'h':
-                   rsubi(columnVector.getDouble(0));
-                   break;
-               case 't':
-                   rdivi(columnVector.getDouble(0));
-                   break;
+        if(columnVector.isScalar()) {
+            switch (operation) {
+                case 'a':
+                    addi(columnVector.getDouble(0));
+                    break;
+                case 'p':
+                    assign(columnVector.getDouble(0));
+                    break;
+                case 's':
+                    subi(columnVector.getDouble(0));
+                    break;
+                case 'm':
+                    muli(columnVector.getDouble(0));
+                    break;
+                case 'd':
+                    divi(columnVector.getDouble(0));
+                    break;
+                case 'h':
+                    rsubi(columnVector.getDouble(0));
+                    break;
+                case 't':
+                    rdivi(columnVector.getDouble(0));
+                    break;
 
-           }
+            }
 
-           return this;
-       }
+            return this;
+        }
 
-       else if(isScalar()) {
-           switch (operation) {
-               case 'a':
-                   return columnVector.addi(getDouble(0));
-               case 'p':
-                   return columnVector.assign(getDouble(0));
-               case 's':
-                   return columnVector.subi(getDouble(0));
-               case 'm':
-                   return columnVector.muli(getDouble(0));
-               case 'd':
-                   return columnVector.divi(getDouble(0));
-               case 'h':
-                   return columnVector.rsubi(getDouble(0));
-               case 't':
-                   return columnVector.rdivi(getDouble(0));
+        else if(isScalar()) {
+            switch (operation) {
+                case 'a':
+                    return columnVector.addi(getDouble(0));
+                case 'p':
+                    return columnVector.assign(getDouble(0));
+                case 's':
+                    return columnVector.subi(getDouble(0));
+                case 'm':
+                    return columnVector.muli(getDouble(0));
+                case 'd':
+                    return columnVector.divi(getDouble(0));
+                case 'h':
+                    return columnVector.rsubi(getDouble(0));
+                case 't':
+                    return columnVector.rdivi(getDouble(0));
 
-           }
-       }
+            }
+        }
 
         //Input validation: require (a) columnVector to actually be a column vector, and (b) this.size(0) to match columnVector.size(0)
         //Or, simply require it to be a rank 1 vector
@@ -5419,7 +5420,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray broadcast(long... shape) {
-      return broadcast(Nd4j.createUninitialized(shape));
+        return broadcast(Nd4j.createUninitialized(shape));
     }
 
     @Override
@@ -6339,59 +6340,21 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray convertToHalfs() {
-        if (data.dataType() == DataBuffer.Type.HALF)
-            return this;
+        return Nd4j.cast(this, DataBuffer.Type.HALF);
 
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.HALF);
-
-        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataBuffer.TypeEx.FLOAT16, buffer.addressPointer(), buffer.length());
-
-        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
     }
 
     @Override
     public INDArray convertToFloats() {
-        if (data.dataType() == DataBuffer.Type.FLOAT)
-            return this;
+        return Nd4j.cast(this, DataBuffer.Type.FLOAT);
 
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.FLOAT);
-
-        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataBuffer.TypeEx.FLOAT, buffer.addressPointer(), buffer.length());
-
-        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
     }
 
     @Override
     public INDArray convertToDoubles() {
-        if (data.dataType() == DataBuffer.Type.DOUBLE)
-            return this;
-
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.DOUBLE);
-
-        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataBuffer.TypeEx.DOUBLE, buffer.addressPointer(), buffer.length());
-
-        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
+        return Nd4j.cast(this, DataBuffer.Type.DOUBLE);
     }
 
-    protected static DataBuffer.TypeEx convertType(DataBuffer.Type type) {
-        if (type == DataBuffer.Type.HALF) {
-            return DataBuffer.TypeEx.FLOAT16;
-        } else if (type == DataBuffer.Type.FLOAT) {
-            return DataBuffer.TypeEx.FLOAT;
-        } else if (type == DataBuffer.Type.DOUBLE) {
-            return DataBuffer.TypeEx.DOUBLE;
-
-        } else if(type == DataBuffer.Type.INT) {
-            return DataBuffer.TypeEx.INT8;
-        } else if(type == DataBuffer.Type.LONG) {
-            return DataBuffer.TypeEx.INT16;
-
-        } else
-            throw new IllegalStateException("Unknown dataType: [" + type + "]");
-    }
 
     /**
      * This method returns true if this INDArray is special case: no-value INDArray

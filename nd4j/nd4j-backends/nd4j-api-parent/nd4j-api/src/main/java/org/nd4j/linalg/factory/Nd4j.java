@@ -6172,6 +6172,7 @@ public class Nd4j {
     }
 
 
+
     /**
      * Create an {@link INDArray}
      * from a flatbuffers {@link FlatArray}
@@ -6238,6 +6239,30 @@ public class Nd4j {
         else
             return v;
     }
+
+    /**
+     * Cast the ndarray to a new type.
+     * IF the array is the same type,
+     * the input array will be returned,
+     * otherwise a new array will be created.
+     * @param input the input array
+     * @param typeTo the type to convert to
+     * @return
+     */
+    public static INDArray cast(INDArray input,DataBuffer.Type typeTo) {
+        if (input.data().dataType() == typeTo)
+            return input;
+
+        val factory = Nd4j.getNDArrayFactory();
+        val buffer = Nd4j.createBuffer(new long[]{input.length()}, typeTo);
+
+        factory.convertDataEx(DataTypeUtil.convertType(input.dataType()), input.data().addressPointer(), DataTypeUtil.convertType(typeTo), buffer.addressPointer(), buffer.length());
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, input.shapeInfoDataBuffer());
+    }
+
+
+
 
     /**
      * This method sets maximal allowed number of threads for Nd4j
