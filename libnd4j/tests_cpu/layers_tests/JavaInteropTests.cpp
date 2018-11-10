@@ -811,6 +811,27 @@ TEST_F(JavaInteropTests, Test_Boolean_Broadcastables_1) {
     delete shapeList;
 }
 
+TEST_F(JavaInteropTests, Test_L2_Loss_3) {
+    auto x = NDArrayFactory::create<double>(0.7787855863571167);
+    auto e = NDArrayFactory::create<double>(0.303254);
+    auto z = NDArrayFactory::create<double>(0.0);
+
+    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(x.buffer())};
+    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(x.shapeInfo())};
+
+    Nd4jPointer ptrsOutBuffer[] = {reinterpret_cast<Nd4jPointer>(z.buffer())};
+    Nd4jPointer ptrsOutShapes[] = {reinterpret_cast<Nd4jPointer>(z.shapeInfo())};
+
+    nd4j::ops::l2_loss op;
+    NativeOps ops;
+    auto status = ops.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffer, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+    ASSERT_EQ(Status::OK(), status);
+
+    z.printIndexedBuffer("z");
+
+    ASSERT_EQ(e, z);
+}
+
 /*
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     NativeOps ops;

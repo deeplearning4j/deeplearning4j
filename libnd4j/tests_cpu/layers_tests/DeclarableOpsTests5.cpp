@@ -2453,6 +2453,33 @@ TEST_F(DeclarableOpsTests5, L2_Loss_1) {
     delete results;
 }
 
+TEST_F(DeclarableOpsTests5, L2_Loss_2) {
+    auto x = NDArrayFactory::create<double>(0.7787855863571167);
+    auto e = NDArrayFactory::create<double>(0.303254);
+
+    nd4j::ops::l2_loss op;
+    auto results = op.execute({&x}, {}, {});
+    ASSERT_EQ(Status::OK(), results->status());
+
+    auto z = results->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests5, L2_Loss_3) {
+    auto x = NDArrayFactory::create<double>(0.7787855863571167);
+    auto e = NDArrayFactory::create<double>(0.303254);
+    auto z = NDArrayFactory::create<double>(0.0);
+
+    nd4j::ops::l2_loss op;
+    auto status = op.execute({&x}, {&z} , {}, {}, {});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, LogPoisonLoss_1) {
 
