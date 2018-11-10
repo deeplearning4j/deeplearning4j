@@ -180,7 +180,7 @@ public class VoidConfiguration implements Serializable {
      * This variable defines max chunk size for INDArray splits
      */
     @Builder.Default
-    private int maxChunkSize = 65536;
+    private int maxChunkSize = 1310720;
 
     /**
      * This variable defines max number of allowed reconnects per node
