@@ -36449,7 +36449,18 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
 //         #endif
-
+        /*
+         * image.non_max_suppression op.
+         * input:
+         *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
+         *     1 - scales - 1D-tensor with shape (num_boxes) by float type
+         *     2 - output_size - 0D-tensor by int type (optional)
+         * float args:
+         *     0 - threshold - threshold value for overlap checks (optional, by default 0.5)
+         * int args:
+         *     0 - output_size - as arg 2 used for same target. Eigher this or arg 2 should be provided.
+         *
+         * */
 //         #if NOT_EXCLUDED(OP_image_non_max_suppression)
         @Name("nd4j::ops::non_max_suppression<float>") public static class float_non_max_suppression extends FloatDeclarableCustomOp {
             static { Loader.load(); }
