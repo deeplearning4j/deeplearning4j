@@ -1427,7 +1427,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         if (isS())
             throw std::runtime_error("NDArray::reduceNumber FloatOps: you can't use this method on String array!");
 
-        auto shape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(dataType()), this->_workspace);
+        auto shape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(_dataType), this->_workspace);
         NDArray result(shape, true, this->_workspace);
         RELEASE(shape, this->_workspace);
 
@@ -1468,7 +1468,48 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         return result;
     }
 
+//////////////////////////////////////////////////////////////////////////
+    void NDArray::reduceNumber(nd4j::reduce::FloatOps op, NDArray& target, void *extraParams) const {
+        
+        if (isS())
+            throw std::runtime_error("NDArray::reduceNumber FloatOps: you can't use this method on String array!");
+        if(!target.isScalar() || target._dataType != DataTypeUtils::pickFloatingType(_dataType))
+            throw std::invalid_argument("NDArray::reduceNumber FloatOps: target array should be scalar and have corresponding float type!");
 
+        NativeOpExcutioner::execReduceFloatScalar(op, _buffer, _shapeInfo, extraParams, target._buffer, target._shapeInfo);        
+    }
+
+    void NDArray::reduceNumber(nd4j::reduce::SameOps op, NDArray& target, void *extraParams) const {
+
+        if (isS())
+            throw std::runtime_error("NDArray::reduceNumber SameOps: you can't use this method on String array!");
+        if(!target.isScalar() || target._dataType != _dataType)
+            throw std::invalid_argument("NDArray::reduceNumber SameOps: target array should be scalar and have same type as this array!");
+        
+        NativeOpExcutioner::execReduceSameScalar(op, _buffer, _shapeInfo, extraParams, target._buffer, target._shapeInfo);
+    }
+
+    void NDArray::reduceNumber(nd4j::reduce::BoolOps op, NDArray& target, void *extraParams) const {
+        
+        if (isS())
+            throw std::runtime_error("NDArray::reduceNumber BoolOps: you can't use this method on String array!");
+        if(!target.isScalar() || target._dataType != DataType::BOOL)
+            throw std::invalid_argument("NDArray::reduceNumber BoolOps: target array should be scalar and have bool type!");
+        
+        NativeOpExcutioner::execReduceBoolScalar(op, _buffer, _shapeInfo, extraParams, target._buffer, target._shapeInfo);
+    }
+
+    void NDArray::reduceNumber(nd4j::reduce::LongOps op, NDArray& target, void *extraParams) const {
+
+        if (isS())
+            throw std::runtime_error("NDArray::reduceNumber LongOps: you can't use this method on String array!");
+        if(!target.isScalar() || target._dataType != DataType::INT64)
+            throw std::invalid_argument("NDArray::reduceNumber LongOps: target array should be scalar and have long type!");        
+
+        NativeOpExcutioner::execReduceLongScalar(op, _buffer, _shapeInfo, extraParams, target._buffer, target._shapeInfo);
+    }
+
+//////////////////////////////////////////////////////////////////////////
     NDArray NDArray::indexReduceNumber(nd4j::indexreduce::Ops op, void *extraParams) {
         if (isS())
             throw std::runtime_error("NDArray::indexReduceNumber: you can't use this method on String array!");

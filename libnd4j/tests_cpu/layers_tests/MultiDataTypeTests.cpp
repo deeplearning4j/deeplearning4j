@@ -747,14 +747,22 @@ TEST_F(MultiDataTypeTests, ndarray_reduceNumberFloat_test1) {
     
     NDArray scalar = x1.reduceNumber(reduce::Mean);
     ASSERT_EQ(scalar, exp1);
+    x1.reduceNumber(reduce::Mean, scalar);
+    ASSERT_EQ(scalar, exp1);
 
     scalar = x2.reduceNumber(reduce::Mean);
+    ASSERT_EQ(scalar, exp2);
+    x2.reduceNumber(reduce::Mean, scalar);
     ASSERT_EQ(scalar, exp2);
     
     scalar = x3.reduceNumber(reduce::Mean);
     ASSERT_EQ(scalar, exp3);
+    x3.reduceNumber(reduce::Mean,scalar);
+    ASSERT_EQ(scalar, exp3);
 
     scalar = x4.reduceNumber(reduce::Mean);
+    ASSERT_EQ(scalar, exp4);
+    x4.reduceNumber(reduce::Mean, scalar);
     ASSERT_EQ(scalar, exp4);
 }
 
@@ -774,14 +782,22 @@ TEST_F(MultiDataTypeTests, ndarray_reduceNumberSame_test1) {
     
     NDArray scalar = x1.reduceNumber(reduce::Sum);
     ASSERT_EQ(scalar, exp1);
+    x1.reduceNumber(reduce::Sum, scalar);
+    ASSERT_EQ(scalar, exp1);
 
     scalar = x2.reduceNumber(reduce::Sum);
+    ASSERT_EQ(scalar, exp2);
+    x2.reduceNumber(reduce::Sum, scalar);
     ASSERT_EQ(scalar, exp2);
     
     scalar = x3.reduceNumber(reduce::Sum);
     ASSERT_EQ(scalar, exp3);
+    x3.reduceNumber(reduce::Sum, scalar);
+    ASSERT_EQ(scalar, exp3);
 
     scalar = x4.reduceNumber(reduce::Sum);
+    ASSERT_EQ(scalar, exp4);
+    x4.reduceNumber(reduce::Sum, scalar);
     ASSERT_EQ(scalar, exp4);
 }
 
@@ -797,14 +813,22 @@ TEST_F(MultiDataTypeTests, ndarray_reduceNumberBool_test1) {
      
     NDArray scalar = x1.reduceNumber(reduce::IsFinite);
     ASSERT_EQ(scalar, exp1);
+    x1.reduceNumber(reduce::IsFinite, scalar);
+    ASSERT_EQ(scalar, exp1);
 
     scalar = x2.reduceNumber(reduce::IsFinite);
+    ASSERT_EQ(scalar, exp1);
+    x2.reduceNumber(reduce::IsFinite, scalar);
     ASSERT_EQ(scalar, exp1);
     
     scalar = x3.reduceNumber(reduce::IsFinite);
     ASSERT_EQ(scalar, exp1);
+    x3.reduceNumber(reduce::IsFinite, scalar);
+    ASSERT_EQ(scalar, exp1);
 
     scalar = x4.reduceNumber(reduce::IsFinite);
+    ASSERT_EQ(scalar, exp1);
+    x4.reduceNumber(reduce::IsFinite, scalar);
     ASSERT_EQ(scalar, exp1);
 }
 
@@ -823,14 +847,22 @@ TEST_F(MultiDataTypeTests, ndarray_reduceNumberLong_test1) {
         
     NDArray scalar = x1.reduceNumber(reduce::CountNonZero);
     ASSERT_EQ(scalar, exp1);
+    x1.reduceNumber(reduce::CountNonZero, scalar);
+    ASSERT_EQ(scalar, exp1);
 
     scalar = x2.reduceNumber(reduce::CountNonZero);
+    ASSERT_EQ(scalar, exp2);
+    x2.reduceNumber(reduce::CountNonZero, scalar);
     ASSERT_EQ(scalar, exp2);
     
     scalar = x3.reduceNumber(reduce::CountNonZero);
     ASSERT_EQ(scalar, exp3);
+    x3.reduceNumber(reduce::CountNonZero, scalar);
+    ASSERT_EQ(scalar, exp3);
 
     scalar = x4.reduceNumber(reduce::CountNonZero);    
+    ASSERT_EQ(scalar, exp4);
+    x4.reduceNumber(reduce::CountNonZero, scalar);
     ASSERT_EQ(scalar, exp4);
 }
 

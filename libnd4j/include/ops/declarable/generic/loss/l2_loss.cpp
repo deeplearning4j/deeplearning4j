@@ -32,7 +32,7 @@ namespace nd4j {
             REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
             // FIXME: output should be used directly here, to avoid sum
-            (*output) = input->reduceNumber(reduce::SquaredNorm);
+            input->reduceNumber(reduce::SquaredNorm, *output);
             (*output) /= 2.;
 
             return Status::OK();

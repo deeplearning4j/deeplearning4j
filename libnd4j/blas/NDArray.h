@@ -499,9 +499,14 @@ namespace nd4j {
         *  extraParams - extra parameters for operation
         */  
         NDArray reduceNumber(nd4j::reduce::FloatOps ops, void *extraParams = nullptr) const;
-        NDArray reduceNumber(nd4j::reduce::SameOps ops, void *extraParams = nullptr) const;
-        NDArray reduceNumber(nd4j::reduce::BoolOps ops, void *extraParams = nullptr) const;
-        NDArray reduceNumber(nd4j::reduce::LongOps ops, void *extraParams = nullptr) const;
+        NDArray reduceNumber(nd4j::reduce::SameOps  ops, void *extraParams = nullptr) const;
+        NDArray reduceNumber(nd4j::reduce::BoolOps  ops, void *extraParams = nullptr) const;
+        NDArray reduceNumber(nd4j::reduce::LongOps  ops, void *extraParams = nullptr) const;
+
+        void reduceNumber(nd4j::reduce::FloatOps ops, NDArray& target, void *extraParams = nullptr) const;
+        void reduceNumber(nd4j::reduce::SameOps  ops, NDArray& target, void *extraParams = nullptr) const;
+        void reduceNumber(nd4j::reduce::BoolOps  ops, NDArray& target, void *extraParams = nullptr) const;
+        void reduceNumber(nd4j::reduce::LongOps  ops, NDArray& target, void *extraParams = nullptr) const;
 
         /**
         *  returns element index which corresponds to some condition imposed by operation
