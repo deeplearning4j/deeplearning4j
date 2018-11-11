@@ -71,6 +71,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // this map holds outgoing connections, basically
     protected Map<String, RemoteConnection> remoteConnections = new ConcurrentHashMap<>();
 
+    // these 3 variables define number of threads used to serve message queues
     protected final int SENDER_THREADS = 2;
     protected final int MESSAGE_THREADS = 2;
     protected final int SUBSCRIPTION_THREADS = 1;
@@ -85,7 +86,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // TODO: move this to singleton holder
     protected MediaDriver driver;
 
-    private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,27); //32MB
+    private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,27); //128MB
 
     // this is intermediate buffer for incoming messages
     protected BlockingQueue<VoidMessage> messageQueue = new LinkedTransferQueue<>();
