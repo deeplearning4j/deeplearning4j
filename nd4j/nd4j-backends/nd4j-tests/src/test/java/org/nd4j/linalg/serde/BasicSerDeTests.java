@@ -17,6 +17,7 @@
 package org.nd4j.linalg.serde;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,11 +27,13 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.util.SerializationUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 
 /**
  * Created by raver119 on 21.12.16.
@@ -77,6 +80,35 @@ public class BasicSerDeTests extends BaseNd4jTest {
 
 
         Nd4j.setDataType(initialType);
+    }
+
+    @Test
+    public void testSerDe_Threshold_1() throws Exception {
+        val original = Nd4j.create(1000000);
+        val target = Nd4j.create(1000000);
+
+        for (int e = 0; e < 16; e++)
+            original.putScalar(e+ 100, 1e-3);
+
+        val exp = original.dup();
+
+        Nd4j.getExecutioner().commit();
+
+        val encoded = Nd4j.getExecutioner().thresholdEncode(original, 1e-3);
+
+        val bos = new ByteArrayOutputStream();
+        SerializationUtils.serialize(encoded, bos);
+        log.info("Serialized size: {} bytes", bos.size());
+
+
+        INDArray deserialized = SerializationUtils.deserialize(bos.toByteArray());
+
+
+        Nd4j.getExecutioner().thresholdDecode(deserialized, target);
+
+        Nd4j.getExecutioner().commit();
+
+        assertArrayEquals(exp.data().asDouble(), target.data().asDouble(), 1e-5);
     }
 
     @Override

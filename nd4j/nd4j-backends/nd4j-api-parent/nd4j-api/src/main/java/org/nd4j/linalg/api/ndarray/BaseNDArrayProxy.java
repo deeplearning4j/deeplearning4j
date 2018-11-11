@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
@@ -44,7 +45,8 @@ public class BaseNDArrayProxy implements java.io.Serializable {
             anInstance = anInstance.dup(anInstance.ordering());
         }
         this.arrayShape = anInstance.shape();
-        this.length = anInstance.length();
+        boolean isCompressed = anInstance.isCompressed() || anInstance.data().dataType() == DataBuffer.Type.INT;
+        this.length = isCompressed ? anInstance.data().length() : anInstance.length();
         this.arrayOrdering = anInstance.ordering();
         this.data = anInstance.data();
     }
