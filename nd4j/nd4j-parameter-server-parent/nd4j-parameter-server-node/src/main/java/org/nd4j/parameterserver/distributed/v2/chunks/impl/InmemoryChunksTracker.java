@@ -106,7 +106,7 @@ public class InmemoryChunksTracker<T extends VoidMessage> implements ChunksTrack
         if (!isComplete())
             throw new ND4JIllegalStateException("Message isn't ready for concatenation");
 
-        log.info("Deserializing buffer of {} bytes", buffer.length);
+        log.info("Deserializing buffer [{}] of {} bytes", originId, buffer.length);
 
         try (val bais = new ByteArrayInputStream(buffer)) {
             return SerializationUtils.deserialize(bais);
