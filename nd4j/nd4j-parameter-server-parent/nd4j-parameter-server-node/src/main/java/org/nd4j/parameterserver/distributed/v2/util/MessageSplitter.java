@@ -17,6 +17,7 @@
 package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.AtomicBoolean;
@@ -26,6 +27,7 @@ import org.nd4j.parameterserver.distributed.v2.chunks.ChunksTracker;
 import org.nd4j.parameterserver.distributed.v2.chunks.impl.FileChunksTracker;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.chunks.impl.InmemoryChunksTracker;
+import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.linalg.primitives.Optional;
 
@@ -42,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class MessageSplitter {
     private static final MessageSplitter INSTANCE = new MessageSplitter();
 
@@ -68,20 +71,22 @@ public class MessageSplitter {
      * @param message
      * @return
      */
-    public Collection<VoidChunk> split(@NonNull VoidMessage message, int maxBytes) throws IOException {
+    public Collection<VoidChunk> split(@NonNull INDArrayMessage message, int maxBytes) throws IOException {
         if (maxBytes <= 0)
             throw new ND4JIllegalStateException("MaxBytes must be > 0");
 
-        val tempFile = ND4JFileUtils.createTempFile("messageSplitter","temp");
+        //val tempFile = ND4JFileUtils.createTempFile("messageSplitter","temp");
         val result = new ArrayList<VoidChunk>();
 
-        try (val fos = new FileOutputStream(tempFile); val bos = new BufferedOutputStream(fos)) {
+        try (val bos = new ByteArrayOutputStream()) {
             // serializing original message to disc
-            SerializationUtils.serialize(message, fos);
+            SerializationUtils.serialize(message, bos);
 
-            val length = tempFile.length();
+            val length = bos.size();
+            log.info("Serialized INDArrayMessage size: {} bytes", length);
+
             int numChunks = (int) (length /  maxBytes + (length % maxBytes > 0 ? 1 : 0));
-            try (val fis = new FileInputStream(tempFile); val bis = new BufferedInputStream(fis)) {
+            try (val bis = new ByteArrayInputStream(bos.toByteArray())) {
                 // now we'll be reading serialized message into
                 val bytes = new byte[maxBytes];
                 int cnt = 0;
@@ -109,7 +114,7 @@ public class MessageSplitter {
             }
         }
 
-        tempFile.delete();
+        //tempFile.delete();
         return result;
     }
 
