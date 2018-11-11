@@ -155,7 +155,7 @@ public class VoidConfiguration implements Serializable {
      * Measured in milliseconds.
      */
     @Builder.Default
-    private long retransmitTimeout = 1000;
+    private long retransmitTimeout = 500;
 
     /**
      * This variable defines, how long transport should wait for response on specific messages.
