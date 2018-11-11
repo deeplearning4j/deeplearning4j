@@ -86,6 +86,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // TODO: move this to singleton holder
     protected MediaDriver driver;
 
+    // this variable defines aeron.term.buffer.length - aeron buffer size for messages
     private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,27); //128MB
 
     // this is intermediate buffer for incoming messages
