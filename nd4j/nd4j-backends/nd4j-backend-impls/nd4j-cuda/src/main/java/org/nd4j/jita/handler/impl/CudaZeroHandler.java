@@ -338,6 +338,14 @@ public class CudaZeroHandler implements MemoryHandler {
                         } else {
                             log.warn("Out of [DEVICE] memory, host memory will be used instead: deviceId: [{}], requested bytes: [{}]",
                                             deviceId, reqMemory);
+
+                            val trace = Thread.currentThread().getStackTrace();
+                            val builder = new StringBuilder();
+                            for (val t:trace) {
+                                builder.append(t.toString()).append("\n");
+                            }
+
+                            log.warn("Stack trace for thread {}: {}", Thread.currentThread().getName(), builder.toString());
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
 
                             returnPair.setDevicePointer(tmpPair.getHostPointer());
