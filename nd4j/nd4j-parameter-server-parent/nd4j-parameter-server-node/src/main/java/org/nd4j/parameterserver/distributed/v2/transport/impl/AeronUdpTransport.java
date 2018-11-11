@@ -84,7 +84,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // TODO: move this to singleton holder
     protected MediaDriver driver;
 
-    private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,25); //32MB
+    private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,27); //32MB
 
     // this is intermediate buffer for incoming messages
     protected BlockingQueue<VoidMessage> messageQueue = new LinkedTransferQueue<>();
