@@ -408,7 +408,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
         if (message instanceof INDArrayMessage) {
             try {
-                val splits = splitter.split(message, voidConfiguration.getMaxChunkSize());
+                val splits = splitter.split((INDArrayMessage) message, voidConfiguration.getMaxChunkSize());
 
                 for(val m:splits) {
                     sendMessage(m, id);
