@@ -483,6 +483,11 @@ public class GraphRunner implements Closeable {
             //reset the position of the pointer for execution
             inputOut.position(0);
 
+            if(outputOrder.isEmpty()) {
+                throw new IllegalStateException("Number of outputs is zero!");
+            }
+
+
             TF_Output outputOut = new tensorflow.TF_Output(outputOrder.size());
             //only setup the output ops
             for(int i = 0; i < outputOrder.size(); i++) {
@@ -503,6 +508,7 @@ public class GraphRunner implements Closeable {
 
             //these are references to the nd4j ndarrays wrapped for tensorflow
             PointerPointer<TF_Tensor> inputTensorsPointer = new PointerPointer<>(inputTensors);
+
             //note that these are the result pointers
             //the result pointers are null, and will be populated automatically by the session run
             PointerPointer<TF_Tensor> outputTensorsPointer = new PointerPointer<>(outputOrder.size());
