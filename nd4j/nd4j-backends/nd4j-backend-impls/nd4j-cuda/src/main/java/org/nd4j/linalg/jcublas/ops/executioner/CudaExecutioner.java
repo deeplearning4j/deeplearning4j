@@ -2198,6 +2198,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
+        Nd4j.getExecutioner().commit();
+
         DataBuffer buffer = input.data();
 
         int numThreads = 1024;
