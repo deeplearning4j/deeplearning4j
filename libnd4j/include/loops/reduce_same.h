@@ -61,6 +61,12 @@ namespace functions {
         class ReduceSameFunction {
         public:
 #ifdef __CUDACC__
+
+            template<typename OpType>
+            static __device__ void aggregatePartials(void *sPartials, Nd4jLong tid, Nd4jLong numItems, void *extraParams);
+
+
+            
             template<typename OpType>
 			static __device__ void transformCuda1D(void *dx,
 				Nd4jLong *xShapeInfo,
@@ -112,9 +118,7 @@ namespace functions {
 			 * @param sPartialsRef
 			 * @param tid
 			 * @param extraParams
-			 */
-            template<typename OpType>
-			static __device__ void aggregatePartials(void *sPartials, Nd4jLong tid, Nd4jLong numItems, void *extraParams);
+			 */            
 
             static __host__ void execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo);
 

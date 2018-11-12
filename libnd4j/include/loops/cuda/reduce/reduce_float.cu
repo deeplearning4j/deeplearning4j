@@ -94,7 +94,7 @@ __device__ void reduceScalarGeneric(
 };
 
     template <typename X, typename Z, typename OpType>
-    __global__ void _simpleScalar(
+    __global__ void simpleScalar(
         void *dx,
         Nd4jLong *xShapeInfo,
         void *extraParams,
@@ -112,7 +112,7 @@ __device__ void reduceScalarGeneric(
 // DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, float16, INPUT(float16 *x, Nd4jLong *xShapeInfo, float16 *extraParams, float16 *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
 	template <typename X, typename Z, typename OpType>
-	__global__ void _simpleReduce(
+	__global__ void simpleReduce(
 		void *dx,
 		Nd4jLong *xShapeInfo,
 		void *extraParams,
@@ -138,13 +138,13 @@ namespace functions {
 			template <typename X, typename Z>
 			template<typename OpType>
 			__host__ void ReduceFloatFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, void *extraParams, void *z, Nd4jLong *zShape, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-				_simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets);
+				simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets);
 			}
 
             template <typename X, typename Z>
             template<typename OpType>
             __host__ void ReduceFloatFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
-                _simpleScalar<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
+                simpleScalar<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
             }
 
 			template <typename X, typename Y>
@@ -324,19 +324,16 @@ namespace functions {
 					tadShape = shape::shapeOf(tadOnlyShapeInfo);
 					tadStride = shape::stride(tadOnlyShapeInfo);
 				}
-				__syncthreads();
-
-				Nd4jLong xCoord[MAX_RANK];
+				__syncthreads();				
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+					
 					Nd4jLong tadOffsetForBlock = tadOffsets[r];
-
 					sPartials[threadIdx.x] = OpType::startingValue(dx + tadOffsetForBlock);
 
-					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-						shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
-						auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
-
+					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {						
+						
+						auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					}
 					__syncthreads();
@@ -344,8 +341,8 @@ namespace functions {
 					// aggregate. do NOT reduce for elements > tadLength
 					aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
-
 					__syncthreads();
+
 					if (threadIdx.x == 0)
 						result[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
 				}
