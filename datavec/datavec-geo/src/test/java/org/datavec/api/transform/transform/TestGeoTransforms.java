@@ -79,7 +79,7 @@ public class TestGeoTransforms {
 
         String in = "128.101.101.101";
         double latitude = 44.9733;
-        double longitude = -93.2323;
+        double longitude = -93.4865;
 
         List<Writable> writables = transform.map(Collections.singletonList((Writable) new Text(in)));
         assertEquals(1, writables.size());
@@ -114,7 +114,7 @@ public class TestGeoTransforms {
         LocationType[] locationTypes = LocationType.values();
         String in = "128.101.101.101";
         String[] locations = {"Minneapolis", "5037649", "North America", "6255149", "United States", "6252001",
-                        "44.9733:-93.2323", "55455", "Minnesota", "5037779"};
+                        "44.9733:-93.4865", "55446", "Minnesota", "5037779"};
 
         for (int i = 0; i < locationTypes.length; i++) {
             LocationType locationType = locationTypes[i];
