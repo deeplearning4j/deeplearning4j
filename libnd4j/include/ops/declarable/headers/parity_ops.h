@@ -1428,13 +1428,34 @@ namespace nd4j {
         *   1 - new height
         *
         * output array:
-        *   the tensor with calculated backproped dots
+        *   the 4D-Tensor with calculated backproped dots
         *
         * CAUTION: either size tensor or a pair of int params should be provided.
         */
 
         #if NOT_EXCLUDED(OP_resize_bilinear)
         DECLARE_CUSTOM_OP(resize_bilinear, 1, 1, false, 0, -2);
+        #endif
+
+        /**
+        * This op make nearest neighbor interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
+        *
+        * int arguments: (optional)
+        *   0 - new width
+        *   1 - new height
+        *
+        * output array:
+        *   the 4D-Tensor with calculated backproped dots
+        *
+        * CAUTION: either size tensor or a pair of int params should be provided.
+        */
+
+        #if NOT_EXCLUDED(OP_resize_bilinear)
+        DECLARE_CUSTOM_OP(resize_nearest_neighbor, 1, 1, false, 0, -2);
         #endif
 
         /**
