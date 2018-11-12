@@ -30,10 +30,7 @@ import org.nd4j.linalg.primitives.SynchronizedObject;
 import org.nd4j.util.StringUtils;
 
 import java.lang.ref.ReferenceQueue;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -183,9 +180,11 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     public void destroyAllWorkspacesForCurrentThread() {
         ensureThreadExistense();
 
-        List<MemoryWorkspace> workspaces = new ArrayList<>();
-        workspaces.addAll(backingMap.get().values());
+        Collection<MemoryWorkspace> origWorkspaces = backingMap.get().values();
+        if(origWorkspaces.isEmpty())
+            return; //No op - no workspaces to destroy
 
+        List<MemoryWorkspace> workspaces = new ArrayList<>(origWorkspaces);
         for (MemoryWorkspace workspace : workspaces) {
             destroyWorkspace(workspace);
         }
