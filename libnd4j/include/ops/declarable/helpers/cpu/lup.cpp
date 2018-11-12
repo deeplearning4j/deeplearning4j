@@ -232,6 +232,63 @@ namespace helpers {
     template int inverse(NDArray<float>* input, NDArray<float>* output);
     template int inverse(NDArray<float16>* input, NDArray<float16>* output);
     template int inverse(NDArray<double>* input, NDArray<double>* output);
+
+    template <typename T>
+    int cholesky(NDArray<T>* input, NDArray<T>* output) {
+
+        auto n = input->sizeAt(-1);
+        auto n2 = n * n;
+        auto totalCount = output->lengthOf() / n2;
+        
+        output->assign((T)0.0); // fill up output tensor with zeros
+        std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
+        std::unique_ptr<NDArray<T>> compound(new NDArray<T>({n, n})); //, block.getWorkspace());
+        std::unique_ptr<NDArray<T>> permutation(new NDArray<T>({n, n}));
+        std::unique_ptr<NDArray<T>> lowerMatrix(new NDArray<T>({n, n}));
+        std::unique_ptr<NDArray<T>> upperMatrix(new NDArray<T>({n, n}));
+
+        for (int e = 0; e < totalCount; e++) {
+            if (e)
+                matrix->assign((T)0.0);
+
+            for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
+                (*matrix)(row++) = (*input)(k);
+            }
+            T det = lup(matrix.get(), compound.get(), permutation.get());
+
+            if (nd4j::math::nd4j_abs(det) < T(0.0000001)) {
+                nd4j_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", e, det);
+                matrix->printIndexedBuffer("Wrong matrix");
+                ND4J_STATUS_VALIDATION;
+            }
+            lowerMatrix->setIdentity(); // set up U to identity matrix
+            for (int k = 1; k < n; k++) {  // and then put all values under main diagonal on to it
+                for (int j = 0; j < k; j++)
+                    (*lowerMatrix)(k, j) = (*compound)(k, j);
+            }
+            upperMatrix->setIdentity(); // set up U to identity matrix
+            for (int k = 0; k < n; k++) {  // and then put all values under main diagonal on to it
+                for (int j = k; j < n; j++)
+                    (*upperMatrix)(k, j) = (*compound)(k, j);
+            }
+            invertUpperMatrix(upperMatrix.get(), matrix.get());
+
+            invertLowerMatrix(lowerMatrix.get(), upperMatrix.get());
+
+            nd4j::MmulHelper<T>::mmul(matrix.get(), upperMatrix.get(), compound.get(), T(1.0f), T(0.0f));
+            nd4j::MmulHelper<T>::mmul(compound.get(), permutation.get(), matrix.get(), T(1.0f), T(0.0f));
+            for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
+                (*output)(k) = (*matrix)(row++);
+            }
+        }
+
+        return ND4J_STATUS_OK;
+    }
+
+    template int cholesky(NDArray<float>* input, NDArray<float>* output);
+    template int cholesky(NDArray<float16>* input, NDArray<float16>* output);
+    template int cholesky(NDArray<double>* input, NDArray<double>* output);
+
 }
 }
 }

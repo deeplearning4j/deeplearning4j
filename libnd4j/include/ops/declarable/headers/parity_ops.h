@@ -1479,6 +1479,17 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(non_max_suppression, 2, 1, false, 0, 0);
         #endif
 
+        /*
+         * cholesky op - decomposite positive square symetric matrix (or matricies when rank > 2).
+         * input:
+         *     0 - matricies - tensor with shape (..., N, N) by float type
+         *
+         * output - lower triangular matrix (matricies when rank > 2) with the same shape as input.
+         * */
+#if NOT_EXCLUDED(OP_cholesky)
+        DECLARE_OP(cholesky, 1, 1, true);
+#endif
+
     }
 }
 
