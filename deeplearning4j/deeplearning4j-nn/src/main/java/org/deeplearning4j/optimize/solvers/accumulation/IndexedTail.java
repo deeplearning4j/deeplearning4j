@@ -278,7 +278,11 @@ public class IndexedTail {
 
         // now we decompress all arrays within delta into provided array
         for (val u:sessionUpdates) {
-            smartDecompress(u.unsafeDuplication(true), array);
+            // we're skipping unsafeDuplication() if updates are on the same device as we are at this moment
+            if (Nd4j.getAffinityManager().getDeviceForCurrentThread().intValue() == Nd4j.getAffinityManager().getDeviceForArray(u).intValue())
+                smartDecompress(u, array);
+            else
+                smartDecompress(u.unsafeDuplication(true), array);
         }
 
 
