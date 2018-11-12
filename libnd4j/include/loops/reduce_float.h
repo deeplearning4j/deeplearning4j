@@ -59,32 +59,15 @@ namespace functions {
  */
         template<typename X, typename Z>
         class ReduceFloatFunction {
+        
         public:
+
 #ifdef __CUDACC__
             template<typename OpType>
-			static __device__ void execScalarCuda(
-				void *dx,
-				Nd4jLong *xShapeInfo,
-				void *extraParams,
-				void *result,
-				Nd4jLong *resultShapeInfo,
-				void *reductionBuffer,
-				UnifiedSharedMemory *manager,
-				Nd4jLong *tadOnlyShapeInfo);
+			static __device__ void execScalarCuda( void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
 
-            template<typename OpType>
-			static __device__ void transformCudaXD(
-				void *dx,
-				Nd4jLong *xShapeInfo,
-				void *extraParams,
-				void *result,
-				Nd4jLong *resultShapeInfo,
-				int *dimension,
-				int dimensionLength,
-				void *reductionBuffer,
-				UnifiedSharedMemory *manager,
-				Nd4jLong *tadOnlyShapeInfo,
-				Nd4jLong *tadOffsets);
+            template<typename OpType> 
+            static __device__ void transformCudaXD( void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
 
 			/**
 			 *
