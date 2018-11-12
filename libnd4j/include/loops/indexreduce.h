@@ -29,6 +29,7 @@
 #include <dll.h>
 #include <ops/ops.h>
 #include <op_boilerplate.h>
+#include <OmpLaunchHelper.h>
 
 #ifdef __CUDACC__
 #include <helper_cuda.h>

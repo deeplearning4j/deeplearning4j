@@ -23,6 +23,7 @@
 
 #ifndef SCALAR_H_
 #define SCALAR_H_
+#include <OmpLaunchHelper.h>
 #include <dll.h>
 
 #ifdef __JNI__

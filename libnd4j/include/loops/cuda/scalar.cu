@@ -53,7 +53,7 @@ __device__ void scalarSimpleGeneric(
         void* x,
         void *y,
         Nd4jLong yEWS, void *params,
-        void *z, Nd4jLong zEWS, int *allocationBuffer) {
+        void *z, Nd4jLong zEws, int *allocationBuffer) {
 
     functions::scalar::ScalarTransform<X,Y,Z>::template transformCuda<OpType>(
             n,
@@ -62,7 +62,7 @@ __device__ void scalarSimpleGeneric(
             yEWS,
             params,
             z,
-            zEWS,
+            zEws,
             allocationBuffer,
             NULL);
 }
@@ -229,7 +229,7 @@ __device__ void ScalarTransform<X,Y,Z>::transformCuda(void* vscalar,
     auto yStride = shape::stride(yShapeInfo);        
     
     auto zRank   = shape::rank(zShapeInfo);
-    auto zEWS    = shape::elementWiseStride(zShapeInfo);
+    auto zEws    = shape::elementWiseStride(zShapeInfo);
     auto zShape  = shape::shapeOf(zShapeInfo);
     auto zStride = shape::stride(zShapeInfo);
 
@@ -241,8 +241,8 @@ __device__ void ScalarTransform<X,Y,Z>::transformCuda(void* vscalar,
         length = shape::length(yShapeInfo);
     __syncthreads();
 
-    if(yEWS >= 1 && zEWS >= 1 && shape::order(yShapeInfo) == shape::order(zShapeInfo))
-            transformCuda<OpType>(length, vscalar, vy, yEWS, vparams, vz, zEWS, allocationBuffer, manager);
+    if(yEWS >= 1 && zEws >= 1 && shape::order(yShapeInfo) == shape::order(zShapeInfo))
+            transformCuda<OpType>(length, vscalar, vy, yEWS, vparams, vz, zEws, allocationBuffer, manager);
     else {
         for (Nd4jLong i = tid; i < length; i+= totalThreads)                        
             z[shape::getIndexOffset(i, zShapeInfo, length)] = OpType::op(y[shape::getIndexOffset(i, yShapeInfo, length)], scalar, params);
@@ -272,26 +272,24 @@ void __device__ ScalarTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xShape
     }
 
     // tad preparation
-    auto tadEWS = shape::elementWiseStride(tadShapeInfo);
-    auto zEWS = shape::elementWiseStride(tadShapeInfo);
+    auto tadEws = shape::elementWiseStride(tadShapeInfo);
+    auto zEws = shape::elementWiseStride(tadShapeInfo);
     auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
     auto numTads =shape::length(xShapeInfo) / tadLength;
 
+    if(tadEws < 1 || zEws < 1) {
+        printf("ScalarTransform<X,Y,Z>::transformCuda: super-bad loop visited. Shouldn't ever happen\n");
+        return;
+    }
+
     // main loop, rolling over tads
     for (int r = blockIdx.x; r < numTads; r+=gridDim.x) {
-        auto offset = tadOffsets[r];
-        auto offsetZ = tadOffsetsZ[r];
-        Y scalar = scalars[r];
+        
+        Z *oZ = z + tadOffsetsZ[r];
+        X *oX = x + tadOffsets[r];
 
-        if (tadEWS >= 1 && zEWS >= 1) {
-            Z *oZ = z + offsetZ;
-            X *oX = x + offset;
-
-            for (int f = threadIdx.x; f < tadLength; f+= blockDim.x)
-                oZ[f] = OpType::op(oX[f], scalar, extraParams);
-        } 
-        else        
-            printf("Super-bad loop visited. Shouldn't ever happen\n");
+        for (int f = threadIdx.x; f < tadLength; f+= blockDim.x)
+            oZ[f] = OpType::op(oX[f], scalars[r], extraParams);         
     }
 }
 
@@ -313,27 +311,24 @@ __device__ void ScalarTransform<X,Y,Z>::transformCuda( Nd4jLong n,
                                                     void* vx,
                                                     void *vy, Nd4jLong yEWS,
                                                     void *vparams,
-                                                    void *vz, Nd4jLong zEWS,
+                                                    void *vz, Nd4jLong zEws,
                                                     int *allocationBuffer, UnifiedSharedMemory *manager) {
 
-            auto x = reinterpret_cast<X*>(vx)[0];
-            auto y = reinterpret_cast<Y*>(vy);
-            auto z = reinterpret_cast<Z*>(vz);
-            auto params = reinterpret_cast<Z*>(vparams);
+    auto x = reinterpret_cast<X*>(vx)[0];
+    auto y = reinterpret_cast<Y*>(vy);
+    auto z = reinterpret_cast<Z*>(vz);
+    auto params = reinterpret_cast<Z*>(vparams);
 
-            int totalThreads = gridDim.x * blockDim.x;
-            int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int totalThreads = gridDim.x * blockDim.x;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;            
+            
+    for (Nd4jLong i = tid; i < n; i += totalThreads)
+        z[i * zEws] = OpType::op(y[i * yEWS], x, params);
+            
+}
 
-            Nd4jLong i = tid;
-            if(yEWS == 1 && zEWS == 1) {
-                for (; i < n; i += totalThreads)
-                    z[i] = OpType::op(y[i], x, params);
-            } else {
-                for (; i < n; i += totalThreads)
-                    z[i * zEWS] = OpType::op(y[i * yEWS], x, params);
-            }
-        }
-    }
+
+}
 }
 
 
