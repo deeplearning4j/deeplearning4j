@@ -2339,6 +2339,7 @@ TEST_F(DeclarableOpsTests9, Cholesky_test1) {
     auto result = op.execute({&x}, {}, {});
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
     auto res = result->at(0);
+    res->printIndexedBuffer("Output for Cholesky");
     ASSERT_TRUE(exp.equalsTo(res));
     delete result;
 }
