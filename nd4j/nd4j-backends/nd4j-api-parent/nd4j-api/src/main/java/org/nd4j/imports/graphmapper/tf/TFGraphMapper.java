@@ -899,7 +899,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     return Nd4j.scalar(ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()), fa[0]);
 
                 if (arrayShape.length == 1)
-                    return Nd4j.trueVector(fa);
+                    return Nd4j.create(fa, new long[]{fa.length}, new long[]{1}, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
 
                 val array = Nd4j.create(Nd4j.createTypedBuffer(fa, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype())), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
                 //log.debug("SUM1: {}", array.sumNumber());

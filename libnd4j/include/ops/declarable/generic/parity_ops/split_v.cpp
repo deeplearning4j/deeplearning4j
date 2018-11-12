@@ -56,6 +56,7 @@ namespace ops {
             }
 
             auto output = OUTPUT_VARIABLE(e);
+            REQUIRE_TRUE(output->dataType() == input->dataType(), 0, "SplitV: all outputs must have same data type as input");
 
             auto sub = input->subarray(indices);
 
@@ -71,8 +72,10 @@ namespace ops {
 
     DECLARE_TYPES(split_v) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setSameMode(true);
+                ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+                ->setAllowedInputTypes(1, {ALL_INTS})
+                ->setAllowedInputTypes(2, {ALL_INTS})
+                ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
     }
 
     DECLARE_SHAPE_FN(split_v) {

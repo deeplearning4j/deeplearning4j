@@ -1920,6 +1920,19 @@ TEST_F(DeclarableOpsTests3, zeta_test7) {
     delete results;
 }
 
+TEST_F(DeclarableOpsTests3, Test_SplitV_Validation_1) {
+    auto x = NDArrayFactory::create<float>('c', {8, 7});
+    auto indices = NDArrayFactory::create<int>('c',{2}, {5, 3});
+    auto axis = NDArrayFactory::create<int>(-2);
+
+    auto z0 = NDArrayFactory::create<float>('c', {5, 7});
+    auto z1 = NDArrayFactory::create<float>('c', {3, 7});
+
+    nd4j::ops::split_v op;
+    auto status = op.execute({&x, &indices, &axis}, {&z0, &z1}, {}, {}, {});
+    ASSERT_EQ(Status::OK(), status);
+}
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, polygamma_test1) {
 
