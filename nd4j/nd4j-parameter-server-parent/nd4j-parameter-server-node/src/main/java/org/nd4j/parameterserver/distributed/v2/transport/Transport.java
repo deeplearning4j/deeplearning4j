@@ -185,4 +185,10 @@ public interface Transport {
      * @param id
      */
     void ensureConnection(String id);
+
+    /**
+     * This method removes connection (if any
+     * @param id
+     */
+    void removeConnection(String id);
 }
