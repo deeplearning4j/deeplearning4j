@@ -26,6 +26,10 @@ namespace nd4j {
         CUSTOM_OP_IMPL(nth_element, 2, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
             int n = (int)INPUT_VARIABLE(1)->getScalar(0);
+            bool reverse = false;
+            if (block.getIArguments()->size() > 0)
+                reverse = (bool)INT_ARG(0);
+
             auto output = OUTPUT_VARIABLE(0);
             Nd4jLong lastDim = input->sizeAt(-1);
             REQUIRE_TRUE(n < lastDim && n > 0, 0, "nth_element: n should be positive and less than last dimension size, but %i was given.", lastDim);
@@ -33,6 +37,8 @@ namespace nd4j {
             if (output->lengthOf() == input->lengthOf())
                 memcpy(output->buffer(), input->getBuffer(), sizeof(T) * input->lengthOf());
             else {
+                if (reverse)
+                    n = lastDim - n - 1;
                 helpers::nthElementFunctor(input, n, output);
             }
             return ND4J_STATUS_OK;

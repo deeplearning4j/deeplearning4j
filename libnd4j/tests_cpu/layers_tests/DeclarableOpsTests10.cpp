@@ -901,6 +901,72 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_1) {
 }
 
 ///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
+
+    NDArray<float> input('c', {3,4});
+    NDArray<float> n(3.f);
+    NDArray<float> exp({4.f, 8.f, 12.f});
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element<float> op;
+    auto results = op.execute({&input, &n}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *output = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
+
+    NDArray<float> input('c', {3,4});
+    NDArray<float> n(3.f);
+    NDArray<float> exp({1.f, 5.f, 9.f});
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element<float> op;
+    auto results = op.execute({&input, &n}, {}, {1}); // with reverse = true
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *output = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_4) {
+
+    NDArray<float> input('c', {2, 2, 3});
+    NDArray<float> n(2.f);
+    NDArray<float> exp('c', {2,2}, {3.f, 6.f, 9.f, 12.f});
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element<float> op;
+    auto results = op.execute({&input, &n}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *output = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, broadcast_to_test1) {
     
     NDArray<float> input('c', {3});
