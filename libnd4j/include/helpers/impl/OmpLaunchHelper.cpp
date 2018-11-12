@@ -19,7 +19,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <helpers/OmpLaunchHelper.h>
+#include <OmpLaunchHelper.h>
 #include <Environment.h>
 #include <templatemath.h>
 #ifdef _OPENMP

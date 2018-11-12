@@ -30,10 +30,7 @@ namespace nd4j {
 
 class OmpLaunchHelper {
 	
-	public:		
-		int _numThreads;
-		int _itersPerThread;
-		int _remainder;
+	public:				
         
 		OmpLaunchHelper() = delete;
         
@@ -47,6 +44,10 @@ class OmpLaunchHelper {
         
         static int betterThreads(Nd4jLong N);
         static int betterThreads(Nd4jLong N, int maxThreads);
+
+        int _numThreads;
+		int _itersPerThread;
+		int _remainder;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
