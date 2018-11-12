@@ -243,13 +243,11 @@ public class CudaMemoryManager extends BasicMemoryManager {
             CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
             NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(AtomicAllocator.getInstance().getPointer(array, context),0, array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()),0, context.getOldStream());
 
-            // we also memset host pointer
-            Pointer.memset(AtomicAllocator.getInstance().getHostPointer(array), 0, array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()));
-
             // better be safe then sorry
             context.getOldStream().synchronize();
+
+            // we dont' memset host pointer, just tag it as outdated
             point.tickDeviceWrite();
-            point.tickHostRead();
         } else if (point.getAllocationStatus() == AllocationStatus.HOST) {
             Nd4j.getExecutioner().commit();
 
