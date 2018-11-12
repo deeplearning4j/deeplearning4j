@@ -81,7 +81,7 @@ public class MessageSplitter {
 
         // if array is too small - just send it as is
         val array = message.getPayload();
-        if (array.length() * Nd4j.sizeOfDataType(array.dataType()) < maxBytes) {
+        if (array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()) < maxBytes) {
             result.add(message);
             return result;
         }
@@ -91,7 +91,7 @@ public class MessageSplitter {
             SerializationUtils.serialize(message, bos);
 
             val length = bos.size();
-            log.info("Serialized INDArrayMessage size: {} bytes", length);
+            log.info("Serialized INDArrayMessage size: {} bytes; maxChunkSize:", length, maxBytes);
 
             int numChunks = (int) (length /  maxBytes + (length % maxBytes > 0 ? 1 : 0));
             try (val bis = new ByteArrayInputStream(bos.toByteArray())) {
