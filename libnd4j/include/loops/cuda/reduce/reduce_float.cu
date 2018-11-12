@@ -161,16 +161,7 @@ namespace functions {
                 DISPATCH_BY_OPNUM_TT(intermediateXD, PARAMS(launchDims, stream, x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_FLOAT_OPS));
 
                 DEBUG_KERNEL(stream, opNum);
-            }
-
-            template <typename T>
-            __device__ void initializeShared(T *extraParams, T **sPartials, int sMemSize) {
-                int sPartialsLength = sMemSize / sizeof(T);
-                T *sPartialsDeref = (T *) *sPartials;
-                for (int i = 0; i < sPartialsLength; i++) {
-                    sPartialsDeref[i] = extraParams[0];
-                }
-            }
+            }            
 
             template <typename X, typename Z>
             template <typename OpType>
@@ -377,6 +368,15 @@ namespace functions {
 					}
                     __syncthreads();
 				}
+			}
+
+			template <typename X>
+			__device__ void initializeShared(X *extraParams, X **sPartials, int sMemSize) {
+			    
+			    int sPartialsLength = sMemSize / sizeof(X);
+			    X *sPartialsDeref = (X *) *sPartials;
+			    for (int i = 0; i < sPartialsLength; i++)
+			        sPartialsDeref[i] = extraParams[0];			
 			}
 
 
