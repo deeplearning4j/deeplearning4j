@@ -2329,10 +2329,26 @@ TEST_F(DeclarableOpsTests9, gru_cell_bp_test3) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, Cholesky_test1) {
+TEST_F(DeclarableOpsTests9, Cholesky_Test_1) {
 
     NDArray<double> x('c', {3, 3}, {4,12,-16, 12 ,37,-43, -16, -43, 98});
     NDArray<double> exp('c', {3,3}, {2.,  0.,  0., 6., 1.,  0., -8.,  5.,  3.});
+
+    nd4j::ops::cholesky<double> op;
+
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto res = result->at(0);
+    //res->printIndexedBuffer("Output for Cholesky");
+    ASSERT_TRUE(exp.equalsTo(res));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, Cholesky_Test_2) {
+
+    NDArray<double> x('c', {2, 3, 3}, {4, 12,-16, 12 ,37,-43, -16, -43, 98, 1, 1, 1, 1, 2, 2, 1, 2., 6});
+    NDArray<double> exp('c', {2, 3, 3}, {2.,  0.,  0., 6., 1.,  0., -8.,  5.,  3., 1., 0., 0., 1., 1., 0,1., 1., 2.});
 
     nd4j::ops::cholesky<double> op;
 

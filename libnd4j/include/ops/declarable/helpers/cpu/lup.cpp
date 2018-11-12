@@ -251,22 +251,22 @@ namespace helpers {
             for (int k = e * n2, l = 0; k < (e + 1) * n2; k++) {
                 (*matrix)(l++) = (*input)(k);
             }
-            if (e) // from the second loop need to zero matrix
-                lowerMatrix->assign(T(0.f));
+            //if (e) // from the second loop need to zero matrix
+            lowerMatrix->assign(T(0.f));
 
-            for (Nd4jLong row = 0; row < n; row++) {
-                T diagonalSum = 0;
-                for (Nd4jLong k = 0; k < row - 1; ++k)
-                    diagonalSum += (*lowerMatrix)(row, k) * (*lowerMatrix)(row, k);
-                (*lowerMatrix)(row, row) = nd4j::math::nd4j_sqrt((*matrix)(row, row) - diagonalSum);
-                nd4j_printf("%i: ", row);
-                lowerMatrix->printIndexedBuffer("Lower matrix");
-                for (Nd4jLong col = 0; col < row - 1; col++) {
+            for (Nd4jLong col = 0; col < n; col++) {
+                for (Nd4jLong row = 0; row < col; row++) {
                     T rowSum = 0;
-                    for (Nd4jLong k = 0; k < col - 1; ++k)
-                        rowSum += (*lowerMatrix)(row, k) * (*lowerMatrix)(col, k);
-                    (*lowerMatrix)(row, col) = ((*matrix)(row, col) - rowSum) / (*lowerMatrix)(col, col);
+                    for (Nd4jLong k = 0; k < row; ++k)
+                        rowSum += (*lowerMatrix)(col, k) * (*lowerMatrix)(row, k);
+                    (*lowerMatrix)(col, row) = ((*matrix)(row, col) - rowSum) / (*lowerMatrix)(row, row);
                 }
+                T diagonalSum = 0;
+                for (Nd4jLong k = 0; k < col;  ++k)
+                    diagonalSum += (*lowerMatrix)(col, k) * (*lowerMatrix)(col, k);
+                (*lowerMatrix)(col, col) = nd4j::math::nd4j_sqrt((*matrix)(col, col) - diagonalSum);
+                //nd4j_printf("%i: ", col);
+                //lowerMatrix->printIndexedBuffer("Lower matrix");
             }
             for (int k = e * n2, l = 0; k < (e + 1) * n2; k++) {
                 (*output)(k) = (*lowerMatrix)(l++);
