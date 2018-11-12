@@ -61,9 +61,9 @@ namespace ops {
     DECLARE_TYPES(scatter_nd) {
         getOpDescriptor()
             ->setAllowedInputTypes(0, {ALL_INTS})
-            ->setAllowedInputTypes(1, DataType::ANY)
+            ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
             ->setAllowedInputTypes(2, {ALL_INTS})
-            ->setAllowedOutputTypes(DataType::ANY);
+            ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
     }
 
 ////////////////////////////////////////////////////////////////////////7

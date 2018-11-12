@@ -76,10 +76,10 @@ DECLARE_SYN(ScatterMin, scatter_min);
 
     DECLARE_TYPES(scatter_min) {
         getOpDescriptor()
-            ->setAllowedInputTypes(0, DataType::ANY)
+            ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
             ->setAllowedInputTypes(1, {ALL_INTS})
-            ->setAllowedInputTypes(2, DataType::ANY)
-            ->setAllowedOutputTypes(DataType::ANY);
+            ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
+            ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
     }
 
 }
