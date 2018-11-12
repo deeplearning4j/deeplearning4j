@@ -24,6 +24,7 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
@@ -774,7 +775,7 @@ public class JCublasNDArray extends BaseNDArray {
         val factory = Nd4j.getNDArrayFactory();
         val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.HALF);
 
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()),
+        factory.convertDataEx(DataTypeUtil.convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()),
                 DataBuffer.TypeEx.FLOAT16, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
@@ -791,7 +792,7 @@ public class JCublasNDArray extends BaseNDArray {
         val factory = Nd4j.getNDArrayFactory();
         val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.FLOAT);
 
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.FLOAT, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
+        factory.convertDataEx(DataTypeUtil.convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.FLOAT, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
@@ -806,7 +807,7 @@ public class JCublasNDArray extends BaseNDArray {
         val factory = Nd4j.getNDArrayFactory();
         val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.DOUBLE);
 
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.DOUBLE, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
+        factory.convertDataEx(DataTypeUtil.convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.DOUBLE, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
