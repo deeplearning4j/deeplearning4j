@@ -329,7 +329,7 @@ namespace ops {
        *    0: loss values, type float. Has the same shape as labels
        */      
         #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
-        DECLARE_OP(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false);  
+        DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);
         #endif
 
 

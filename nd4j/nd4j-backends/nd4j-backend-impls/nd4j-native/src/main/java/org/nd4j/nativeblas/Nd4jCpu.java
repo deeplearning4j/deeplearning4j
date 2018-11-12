@@ -20568,7 +20568,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    0: loss values, type float. Has the same shape as labels
        */      
 //         #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
-        @Namespace("nd4j::ops") public static class sparse_softmax_cross_entropy_loss_with_logits extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class sparse_softmax_cross_entropy_loss_with_logits extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public sparse_softmax_cross_entropy_loss_with_logits(Pointer p) { super(p); }
@@ -20579,10 +20579,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                 return (sparse_softmax_cross_entropy_loss_with_logits)super.position(position);
             }
         
-                                                    public sparse_softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                }  
+                                                                                    public sparse_softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
 

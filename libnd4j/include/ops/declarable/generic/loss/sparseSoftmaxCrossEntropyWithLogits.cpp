@@ -29,7 +29,7 @@ namespace ops  {
 
 
 //////////////////////////////////////////////////////////////////////////
-OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false) {
+CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
   	auto labels  = INPUT_VARIABLE(0);
     auto logits  = INPUT_VARIABLE(1);
 
@@ -57,6 +57,13 @@ OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false) {
     return Status::OK();
 }
 
+
+DECLARE_SHAPE_FN(sparse_softmax_cross_entropy_loss_with_logits) {
+    Nd4jLong *newShape;
+    COPY_SHAPE(inputShape->at(0), newShape);
+    ArrayOptions::copyDataType(newShape, inputShape->at(1));
+    return SHAPELIST(newShape);
+}
 
 DECLARE_TYPES(sparse_softmax_cross_entropy_loss_with_logits) {
     getOpDescriptor()
