@@ -1479,6 +1479,16 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(non_max_suppression, 2, 1, false, 0, 0);
         #endif
 
+        /*
+         * nth_element - apply nth_element for last dimension of input tensor
+         * input array:
+         *     0 - input array
+         *     1 - scalar tensor with n for operation. n should be less than last dimension
+         *
+         */
+        #if NOT_EXCLUDED(OP_nth_element)
+        DECLARE_CUSTOM_OP(nth_element, 2, 1, false, 0, 0);
+        #endif
     }
 }
 
