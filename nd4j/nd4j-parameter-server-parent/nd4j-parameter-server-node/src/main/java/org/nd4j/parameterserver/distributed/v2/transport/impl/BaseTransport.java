@@ -32,6 +32,7 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
+import org.nd4j.parameterserver.distributed.v2.exceptions.ND4JNotConnectedException;
 import org.nd4j.parameterserver.distributed.v2.messages.*;
 import org.nd4j.parameterserver.distributed.v2.messages.history.HashHistoryHolder;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.MeshUpdateMessage;
@@ -241,13 +242,34 @@ public abstract  class BaseTransport  implements Transport {
         // TODO: make chunk size configurable
         val chunks = splitter.split(message, voidConfiguration.getMaxChunkSize());
         // send chunks to the upstream
-        if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode))
-            chunks.forEach(c -> sendMessage(c, upstream.getId()));
+        if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode)) {
+            try {
+                for (val c : chunks) {
+                    sendMessage(c, upstream.getId());
+                }
+            } catch (ND4JNotConnectedException e) {
+                // TODO: provide proper implementation here
+                /**
+                 * This code runs in worker context only
+                 */
+                throw new RuntimeException(e);
+            }
+        }
 
         // and send chunks to all downstreams
         if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode)
             downstreams.parallelStream().forEach(n -> {
-                chunks.forEach(c -> sendMessage(c, n.getId()));
+                try {
+                    for (val c:chunks) {
+                        sendMessage(c, n.getId());
+                    }
+                } catch (ND4JNotConnectedException e) {
+                    // TODO: provide proper implementation here
+                    /**
+                     * This code runs in both driver & worker contexts
+                     */
+                    throw new RuntimeException(e);
+                }
             });
     }
 
@@ -281,12 +303,31 @@ public abstract  class BaseTransport  implements Transport {
             propagateArrayMessage((INDArrayMessage) voidMessage, mode);
         } else {
             // send message to the upstream
-            if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode))
-                sendMessage(voidMessage, upstream.getId());
+            if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode)) {
+                try {
+                    sendMessage(voidMessage, upstream.getId());
+                } catch (ND4JNotConnectedException e) {
+                    // TODO: provide proper implementation here
+                    /**
+                     * This code runs only in worker context
+                     */
+                    throw new RuntimeException(e);
+                }
+            }
 
             // and send message for all downstreams
             if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode)
-                downstreams.forEach(n -> sendMessage(voidMessage, n.getId()));
+                for (val n: downstreams) {
+                    try {
+                        sendMessage(voidMessage, n.getId());
+                    } catch (ND4JNotConnectedException e) {
+                        // TODO: provide proper implementation here
+                        /**
+                         * This code runs in both driver & worker contexts
+                         */
+                        throw new RuntimeException(e);
+                    }
+                };
         }
     }
 
@@ -319,7 +360,15 @@ public abstract  class BaseTransport  implements Transport {
         // we never send to the original node
         if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode) && !isLoopedNode(upstream, originatorId, relayId)) {
             if (!isLoopedNode(upstream, originatorId, relayId)) {
-                sendMessage(voidMessage, upstreamId);
+                try {
+                    sendMessage(voidMessage, upstreamId);
+                } catch (ND4JNotConnectedException e) {
+                    // TODO: provide proper implementation here
+                    /**
+                     * This code runs only in worker context
+                     */
+                    throw new RuntimeException(e);
+                }
             }
         }
 
@@ -327,7 +376,15 @@ public abstract  class BaseTransport  implements Transport {
         if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode) {
             for (val n:downstreams) {
                 if (!isLoopedNode(n, originatorId, relayId)) {
-                    sendMessage(voidMessage, n.getId());
+                    try {
+                        sendMessage(voidMessage, n.getId());
+                    } catch (ND4JNotConnectedException e) {
+                        // TODO: provide proper implementation here
+                        /**
+                         * This code runs in both driver & worker contexts
+                         */
+                        throw new RuntimeException(e);
+                    }
                 }
             };
         }
@@ -524,10 +581,19 @@ public abstract  class BaseTransport  implements Transport {
     public void propagateMessageDirect(@NonNull BroadcastableMessage message) {
         synchronized (mesh) {
             val nodes = mesh.get().flatNodes();
-            nodes.stream().forEach(n -> {
-                if (!n.isRootNode())
-                    sendMessage(message, n.getId());
-            });
+            for (val n:nodes){
+                if (!n.isRootNode()) {
+                    try {
+                        sendMessage(message, n.getId());
+                    } catch (ND4JNotConnectedException e) {
+                        // TODO: provide
+                        /**
+                         * This method is called from driver context only
+                         */
+                        throw new RuntimeException(e);
+                    }
+                }
+            };
         }
     }
 
@@ -600,8 +666,6 @@ public abstract  class BaseTransport  implements Transport {
 
             LockSupport.parkNanos(5000);
         }
-
-
 
         // remove response from holder
         replies.remove(message.getRequestId());
@@ -728,6 +792,11 @@ public abstract  class BaseTransport  implements Transport {
 
     @Override
     public void ensureConnection(String id) {
+        // no-op for local transports
+    }
+
+    @Override
+    public void removeConnection(String id) {
         // no-op for local transports
     }
 }

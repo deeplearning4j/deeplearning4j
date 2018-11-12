@@ -40,6 +40,7 @@ import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
+import org.nd4j.parameterserver.distributed.v2.exceptions.ND4JNotConnectedException;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
@@ -162,6 +163,12 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         }
     });
 
+
+    @Override
+    public void removeConnection(String id) {
+        // TODO: to be implemented
+        throw new UnsupportedOperationException();
+    }
 
     protected void createSubscription() {
         // create subscription
@@ -411,7 +418,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             try {
                 val splits = splitter.split((INDArrayMessage) message, voidConfiguration.getMaxChunkSize());
 
-                for(val m:splits) {
+                for (val m : splits) {
                     sendMessage(m, id);
                 }
             } catch (IOException e) {
@@ -469,16 +476,9 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                     }
                     break;
                 case NOT_CONNECTED: {
-                            log.info("NOT_CONNECTED: [{}]", id);
-                            addConnection(id);
-                            try {
-                                // in case of backpressure we're just sleeping for a while, and message out again
-                                Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                            } catch (InterruptedException e) {
-                                //
-                            }
+                            log.warn("NOT_CONNECTED: [{}]", id);
+                            throw new ND4JNotConnectedException("Not connected to [" + id + "]");
                         }
-                        break;
                 case BACK_PRESSURED: {
                     log.info("BACK_PRESSURED: [{}]", id);
                     try {
