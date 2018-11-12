@@ -474,8 +474,9 @@ public class TFGraphTestAllHelper {
                                     for (val s:stringList) {
                                         val split = s.split("\\ ");
 
+                                        val okey = split[0].replaceAll("____", "/");;
                                         // adopt / in names
-                                        val key = split[0].replaceAll("____", "/");
+                                        val key = modelDir + "/" + okey;
 
                                         // parse type directly
                                         val value = ArrayOptionsHelper.dataType(split[1]);
@@ -484,7 +485,8 @@ public class TFGraphTestAllHelper {
                                         //if (dtypes.containsKey(key))
                                         //    throw new ND4JIllegalStateException("Specified key already exist: [" + key + "]");
                                         //else
-                                            dtypes.put(key, value);
+
+                                        dtypes.put(key, value);
 
                                         // adding zero output duplicate (if it doesn't exist)
                                         if (key.endsWith(".0")) {
@@ -493,7 +495,7 @@ public class TFGraphTestAllHelper {
                                                 dtypes.put(nkey, value);
                                             }
                                         } else if (key.endsWith(":0")) {
-                                            val nkey = key.replaceAll("\\:0$","");
+                                            val nkey = key.replaceAll(":0$","");
                                             if (!dtypes.containsKey(nkey)) {
                                                 dtypes.put(nkey, value);
                                             }
@@ -530,7 +532,7 @@ public class TFGraphTestAllHelper {
             varName = varName.replaceAll(".prediction.shape","");
             varName = varName.replaceAll(".prediction_inbw.shape","");
 
-            val type = dtypes.get(varName);
+            val type = dtypes.get(modelDir + "/" + varName);
 
             List<String> lines; //= FileUtils.readLines(new ClassPathResource(varPath).getFile(), Charset.forName("UTF-8"));
             try(InputStream is = new BufferedInputStream(resources.get(i).getFirst().getInputStream())){
@@ -552,7 +554,10 @@ public class TFGraphTestAllHelper {
                     varContents = Nd4j.readNumpy(is, ",").data().asFloat();
                 }
                 Preconditions.checkState(varContents.length == 1, "Expected length 1 content for scalar shape; got length %s", varContents.length);
-                varValue = Nd4j.trueScalar(varContents[0]);
+                if (type == null)
+                    varValue = Nd4j.trueScalar(varContents[0]);
+                else
+                    varValue = Nd4j.scalar(type, varContents[0]);
             } else {
                 int[] varShape = new int[filtered.size()];
                 for( int j=0; j<filtered.size(); j++ ){
