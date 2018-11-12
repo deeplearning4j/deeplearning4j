@@ -203,7 +203,7 @@ namespace nd4j {
         Variable* Context::getVariable(int idx) {
             if (idx >= this->_inputs.size()) {
                 nd4j_printf("Node %i; Variable [%i] requested, but only %i inputs available\n", this->_nodeId, idx, this->_inputs.size());
-                throw std::runtime_error("Bad index");
+                throw std::runtime_error("Context: bad Variable index");
             }
 
             auto p = this->_inputs[idx];

@@ -481,14 +481,19 @@ public class TFGraphTestAllHelper {
                                         val value = ArrayOptionsHelper.dataType(split[1]);
 
                                         // adding key directly
-                                        if (dtypes.containsKey(key))
-                                            throw new ND4JIllegalStateException("Specified key already exist: [" + key + "]");
-                                        else
+                                        //if (dtypes.containsKey(key))
+                                        //    throw new ND4JIllegalStateException("Specified key already exist: [" + key + "]");
+                                        //else
                                             dtypes.put(key, value);
 
                                         // adding zero output duplicate (if it doesn't exist)
                                         if (key.endsWith(".0")) {
                                             val nkey = key.replaceAll("\\.0$","");
+                                            if (!dtypes.containsKey(nkey)) {
+                                                dtypes.put(nkey, value);
+                                            }
+                                        } else if (key.endsWith(":0")) {
+                                            val nkey = key.replaceAll("\\:0$","");
                                             if (!dtypes.containsKey(nkey)) {
                                                 dtypes.put(nkey, value);
                                             }
