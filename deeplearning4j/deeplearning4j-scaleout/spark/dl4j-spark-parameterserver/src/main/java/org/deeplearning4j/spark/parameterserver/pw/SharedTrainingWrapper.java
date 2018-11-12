@@ -193,6 +193,16 @@ public class SharedTrainingWrapper {
     }
 
     public SharedTrainingResult run(SharedTrainingWorker worker) {
+        try{
+            return runHelper(worker);
+        } finally {
+            //Clear workspaces (if any) to avoid excessive memory use if not using PW and master thread is reused
+            // in a later epoch
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        }
+    }
+
+    protected SharedTrainingResult runHelper(SharedTrainingWorker worker) {
 
 
 
