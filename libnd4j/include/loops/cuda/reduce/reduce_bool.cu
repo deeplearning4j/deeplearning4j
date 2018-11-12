@@ -16,10 +16,11 @@
 
 //
 //  @author raver119@gmail.com
+//  @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
-#include <loops/reduce_float.h>
+#include <loops/reduce_bool.h>
 #include <loops/legacy_ops.h>
 #include <helpers/DebugHelper.h>
 #include <types/types.h>
@@ -40,12 +41,12 @@ __device__ void reduceSimpleGeneric(void *x,  Nd4jLong *xShapeInfo,
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceFloatFunction<X,Z>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceBoolFunction<X,Z>), sizeof(shape::TAD), shape::rank(xShapeInfo));
     }
 
     __syncthreads();
 
-    functions::reduce::ReduceFloatFunction<X,Z>::template transformCudaXD<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
+    functions::reduce::ReduceBoolFunction<X,Z>::template transformCudaXD<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -61,11 +62,11 @@ __device__ void reduceScalarGeneric(void *x, Nd4jLong *xShapeInfo,
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceFloatFunction<X,Z>), sizeof(shape::TAD), 0);
+        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceBoolFunction<X,Z>), sizeof(shape::TAD), 0);
     }
     __syncthreads();
 
-    functions::reduce::ReduceFloatFunction<X, Z>::template execScalarCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, reductionBuffer, manager, tadOnlyShapeInfo);
+    functions::reduce::ReduceBoolFunction<X, Z>::template execScalarCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, reductionBuffer, manager, tadOnlyShapeInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -91,20 +92,21 @@ __global__ void simpleScalar(void *x, Nd4jLong *xShapeInfo,
     reduceScalarGeneric<X, Z, OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
 }
 
+
 namespace functions {
 namespace reduce    {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-__device__ void ReduceFloatFunction<X,Z>::aggregatePartials(void *vsPartials, Nd4jLong tid, Nd4jLong numItems, void *vextraParams) {
+__device__ void ReduceBoolFunction<X,Z>::aggregatePartials(void *vsPartials, Nd4jLong tid, Nd4jLong numItems, void *vextraParams) {
     
     // start the shared memory loop on the next power of 2 less
     // than the block size.  If block size is not a power of 2,
     // accumulate the intermediate sums in the remainder range.
     
     auto sPartials = reinterpret_cast<Z*>(vsPartials);
-    auto extraParams = reinterpret_cast<Z*>(vextraParams);
+    auto extraParams = reinterpret_cast<X*>(vextraParams);
 
     Nd4jLong floorPow2 = numItems;
 
@@ -130,7 +132,7 @@ __device__ void ReduceFloatFunction<X,Z>::aggregatePartials(void *vsPartials, Nd
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-__device__ void ReduceFloatFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xShapeInfo,
+__device__ void ReduceBoolFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xShapeInfo,
                                                         void *vextraParams,
                                                         void *vz, Nd4jLong *zShapeInfo,
                                                         int *dimension,  int dimensionLength,
@@ -140,16 +142,14 @@ __device__ void ReduceFloatFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *x
 
     auto x = reinterpret_cast<X*>(vx);
     auto z = reinterpret_cast<Z*>(vz);
-    auto extraParams = reinterpret_cast<Z*>(vextraParams);
+    auto extraParams = reinterpret_cast<X*>(vextraParams);
     auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
 
     //shared memory space for storing intermediate results
     __shared__ Z* sPartials;
-
     //  __shared__ shape::TAD *tad;
     __shared__ int tadLength;
     __shared__ int numTads;
-
     
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -184,7 +184,7 @@ __device__ void ReduceFloatFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *x
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-__device__ void ReduceFloatFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xShapeInfo,
+__device__ void ReduceBoolFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xShapeInfo,
                                                         void *vextraParams,
                                                         void *vz, Nd4jLong *zShapeInfo,
                                                         void *vreductionBuffer,
@@ -193,7 +193,7 @@ __device__ void ReduceFloatFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSh
 
     auto x = reinterpret_cast<X*>(vx);
     auto z = reinterpret_cast<Z*>(vz);
-    auto extraParams = reinterpret_cast<Z*>(vextraParams);
+    auto extraParams = reinterpret_cast<X*>(vextraParams);
     auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
     
     int xEws = shape::elementWiseStride(xShapeInfo);
@@ -265,7 +265,7 @@ __device__ void ReduceFloatFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSh
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-__host__ void ReduceFloatFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, void *extraParams, void *z, Nd4jLong *zShape, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+__host__ void ReduceBoolFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, void *extraParams, void *z, Nd4jLong *zShape, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
         
     simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets);
 }
@@ -273,24 +273,24 @@ __host__ void ReduceFloatFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStre
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-__host__ void ReduceFloatFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
+__host__ void ReduceBoolFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
 
     simpleScalar<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-_CUDA_H void ReduceFloatFunction<X,Y>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
+_CUDA_H void ReduceBoolFunction<X,Y>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
         
-        DISPATCH_BY_OPNUM_TT(intermediateScalar, PARAMS(launchDims, stream, x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_FLOAT_OPS));
+        DISPATCH_BY_OPNUM_TT(intermediateScalar, PARAMS(launchDims, stream, x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_BOOL_OPS));
         nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-_CUDA_H void ReduceFloatFunction<X,Y>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, void *x, Nd4jLong *xShape, void *extraParams, void *z, Nd4jLong *zShape, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+_CUDA_H void ReduceBoolFunction<X,Y>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, void *x, Nd4jLong *xShape, void *extraParams, void *z, Nd4jLong *zShape, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
     
-    DISPATCH_BY_OPNUM_TT(intermediateXD, PARAMS(launchDims, stream, x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_FLOAT_OPS));
+    DISPATCH_BY_OPNUM_TT(intermediateXD, PARAMS(launchDims, stream, x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_BOOL_OPS));
     DEBUG_KERNEL(stream, opNum);
 }
 
@@ -305,7 +305,7 @@ __device__ void initializeShared(X *extraParams, X **sPartials, int sMemSize) {
 }
 
         
-BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceFloatFunction, , LIBND4J_TYPES, FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceBoolFunction, , LIBND4J_TYPES, BOOL_TYPES);
 
 }
 }

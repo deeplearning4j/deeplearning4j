@@ -62,11 +62,11 @@ __device__ void reduceScalarGeneric(void *x, Nd4jLong *xShapeInfo,
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceSameFunction<X,Z>), sizeof(shape::TAD), 0);
+        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceSameFunction<X>), sizeof(shape::TAD), 0);
     }
     __syncthreads();
 
-    functions::reduce::ReduceSameFunction<X, Z>::template execScalarCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, reductionBuffer, manager, tadOnlyShapeInfo);
+    functions::reduce::ReduceSameFunction<X>::template execScalarCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, reductionBuffer, manager, tadOnlyShapeInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -293,15 +293,15 @@ __host__ void ReduceSameFunction<X>::intermediateScalar(dim3 launchDims, cudaStr
 template <typename X>
 _CUDA_H void ReduceSameFunction<X>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
         
-        DISPATCH_BY_OPNUM_T(intermediateScalar, PARAMS(launchDims, stream, x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), RREDUCE_SAME_OPS);
-        nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
+        DISPATCH_BY_OPNUM_T(intermediateScalar, PARAMS(launchDims, stream, x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), REDUCE_SAME_OPS);
+        nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarSame(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 _CUDA_H void ReduceSameFunction<X>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, void *x, Nd4jLong *xShape, void *extraParams, void *z, Nd4jLong *zShape, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
     
-    DISPATCH_BY_OPNUM_T(intermediateXD, PARAMS(launchDims, stream, x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), RREDUCE_SAME_OPS);
+    DISPATCH_BY_OPNUM_T(intermediateXD, PARAMS(launchDims, stream, x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), REDUCE_SAME_OPS);
     DEBUG_KERNEL(stream, opNum);
 }
 

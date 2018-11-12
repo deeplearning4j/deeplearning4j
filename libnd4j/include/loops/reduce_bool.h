@@ -61,64 +61,24 @@ namespace functions {
         class ReduceBoolFunction {
         public:
 #ifdef __CUDACC__
-            template<typename OpType>
-			static __device__ void transformCuda1D(T *dx,
-				Nd4jLong *xShapeInfo,
-				T *extraParams,
-				T *result,
-				Nd4jLong *resultShapeInfo,
-				int *dimension,
-				int dimensionLength,
-				T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
+           template<typename OpType>
+            static __device__ void aggregatePartials(void *sPartials, Nd4jLong tid, Nd4jLong numItems, void *extraParams);
 
             template<typename OpType>
-			static __device__ void execScalarCuda(
-				T *dx,
-				Nd4jLong *xShapeInfo,
-				T *extraParams,
-				T *result,
-				Nd4jLong *resultShapeInfo,
-				T *reductionBuffer,
-				UnifiedSharedMemory *manager,
-				Nd4jLong *tadOnlyShapeInfo);
+            static __device__ void execScalarCuda( void *vx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
+
+            template<typename OpType> 
+            static __device__ void transformCudaXD( void *vx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
 
             template<typename OpType>
-			static __device__ void transformCuda3D(
-				T *dx,
-				Nd4jLong *xShapeInfo,
-				T *extraParams,
-				T *result,
-				Nd4jLong *resultShapeInfo,
-				int *dimension,
-				int dimensionLength,
-				T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
+            static __host__ void intermediateScalar(dim3 launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo);
 
             template<typename OpType>
-			static __device__ void transformCudaXD(
-				T *dx,
-				Nd4jLong *xShapeInfo,
-				T *extraParams,
-				T *result,
-				Nd4jLong *resultShapeInfo,
-				int *dimension,
-				int dimensionLength,
-				T *reductionBuffer,
-				UnifiedSharedMemory *manager,
-				Nd4jLong *tadOnlyShapeInfo,
-				Nd4jLong *tadOffsets);
+            static __host__ void intermediateXD(dim3 launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShape, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
-			/**
-			 *
-			 * @param sPartialsRef
-			 * @param tid
-			 * @param extraParams
-			 */
-            template<typename OpType>
-			static __device__ void aggregatePartials(T *sPartials, Nd4jLong tid, Nd4jLong numItems, T *extraParams);
+            static __host__ void execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo);
 
-            static __host__ void execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, T *reductionBuffer, Nd4jLong *tadOnlyShapeInfo);
-
-            static __host__ void execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, T *x, Nd4jLong *xShape, T *extraParams, T *z, Nd4jLong *zShape, int *dimension, int dimensionLength, T *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+            static __host__ void execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, void *vx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShape, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 #endif
 
             /**
