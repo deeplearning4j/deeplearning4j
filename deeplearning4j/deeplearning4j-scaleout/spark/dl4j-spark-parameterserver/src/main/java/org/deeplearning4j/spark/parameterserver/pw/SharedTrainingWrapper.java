@@ -193,10 +193,14 @@ public class SharedTrainingWrapper {
     }
 
     public SharedTrainingResult run(SharedTrainingWorker worker) {
+
+
+
         /*
             first call instantiates pw, messenger etc, and gets in charge here.
          */
         if (isFirst.compareAndSet(false, true)) {
+            logThreadAndWorkspaces(true, true);
             //Reset past exception encountered in case we're doing correct fit after incorrect...
             exceptionEncountered.set(false);
             exception = null;
@@ -521,6 +525,7 @@ public class SharedTrainingWrapper {
             ThresholdAlgorithm taAveraged = mh.getAverageThresholdAlgorithm();
 
             // FIXME: fill stats here
+            logThreadAndWorkspaces(false, true);
             return SharedTrainingResult.builder().aggregationsCount(1).scoreSum(originalModel.score())
                             .updaterStateArray(updaterState).listenerMetaData(new ArrayList<>())
                             .listenerStaticInfo(new ArrayList<>()).listenerUpdates(new ArrayList<>())
@@ -528,6 +533,7 @@ public class SharedTrainingWrapper {
                             .thresholdAlgorithm(taAveraged)
                             .build();
         } else {
+            logThreadAndWorkspaces(true, false);
             // blocking call right here, all non-master threads will be blocked here
             try {
                 observer.get().waitTillDone();
@@ -548,6 +554,7 @@ public class SharedTrainingWrapper {
                 }
 
                 //  nothing to do here, just give away empty result (other than iterator count)
+                logThreadAndWorkspaces(false, false);
                 return SharedTrainingResult.builder().minibatchesPerExecutor(Collections.singletonMap(SparkUtils.getSparkExecutorId(), iteratorDataSetCount.get().get())).build();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -571,5 +578,12 @@ public class SharedTrainingWrapper {
             observer.get().wait();
         else
             throw new IllegalStateException("This method can't be called before iterators initialization");
+    }
+
+
+    public static synchronized void logThreadAndWorkspaces(boolean start, boolean isMaster){
+        log.info("{}: thread {}, {}", (start ? "STARTING" : "FINISHED"), Thread.currentThread().getId(), (isMaster ? "MASTER" : "FEEDER"));
+        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+        log.info("-------------------------------------");
     }
 }
