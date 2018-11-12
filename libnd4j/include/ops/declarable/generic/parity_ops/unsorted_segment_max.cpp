@@ -71,8 +71,8 @@ namespace nd4j {
 
         DECLARE_TYPES(unsorted_segment_max_bp) {
             getOpDescriptor()
-                    ->setAllowedOutputTypes({ALL_FLOATS})
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
                     ->setSameMode(false);
         }
 
