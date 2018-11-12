@@ -58,7 +58,7 @@ namespace nd4j {
                 shape::updateStrides(outputShape, shape::order(in));
             }
             else if (outRank == 1) {
-                outputShape = ShapeUtils<T>::createVectorShapeInfo(shape::sizeAt(in, 0));
+                outputShape = ShapeUtils<T>::createVectorShapeInfo(shape::sizeAt(in, 0), block.workspace());
             }
             else {
                 //outputShape = shape::createScalarShapeInfo();
