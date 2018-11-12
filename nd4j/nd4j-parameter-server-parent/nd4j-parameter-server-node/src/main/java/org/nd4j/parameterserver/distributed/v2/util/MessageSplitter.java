@@ -81,8 +81,10 @@ public class MessageSplitter {
 
         // if array is too small - just send it as is
         val array = message.getPayload();
-        if (array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()) < maxBytes) {
+        val originalSize = array.data().length() * Nd4j.sizeOfDataType(array.data().dataType());
+        if (originalSize < maxBytes) {
             result.add(message);
+            log.info("Sending out original array with size of [{}] bytes", originalSize);
             return result;
         }
 
