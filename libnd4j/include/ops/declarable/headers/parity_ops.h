@@ -739,8 +739,30 @@ namespace nd4j {
         DECLARE_OP(stop_gradient, 1, 1, true);
         #endif
 
+        /**
+         * l2_loss op.
+         * compute a l2 norm for given array.
+         *
+         * input param - an array (tensor)
+         * output value - a real number with given type (e.g. float or double)
+         */
+        #if NOT_EXCLUDED(OP_l2_loss)
+        DECLARE_CUSTOM_OP(l2_loss, 1, 1, false, 0, 0);
+        #endif
+
         #if NOT_EXCLUDED(OP_parallel_stack)
         DECLARE_CUSTOM_OP(parallel_stack, -1, 1, false, 0, 0);
+        #endif
+
+	/**
+         * This op calculates logarithmic loss of poison distributed input
+         * Input arguments
+         *  0 - target
+         *  1 - input
+         *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
+         */
+        #if NOT_EXCLUDED(OP_log_poison_loss)
+        DECLARE_CONFIGURABLE_OP(log_poison_loss, 2, 1, true, 0, 0);
         #endif
 
         /**
@@ -793,8 +815,6 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_weighted_cross_entropy_with_logits)
         DECLARE_OP(weighted_cross_entropy_with_logits, 3, 1, true);
         #endif
-
-
 
         /**
          * This op calculates dropout of input
@@ -1568,6 +1588,8 @@ namespace nd4j {
          *     0 - input array
          *     1 - scalar tensor with n for operation. n should be less than last dimension
          *
+         * output:
+         *    0 - NDArray with the same shape as input
          */
         #if NOT_EXCLUDED(OP_nth_element)
         DECLARE_CUSTOM_OP(nth_element, 2, 1, false, 0, 0);
