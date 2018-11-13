@@ -65,10 +65,20 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
         boolean any = iteratorsToProcess.size() > 0;
         assignIteratorsToThreads();
 
+        //Check iterators, restart any async iterators if required
+        for( int i=0; i<asyncIters.length; i++ ){
+            if(virtualIters[i].hasNext()){
+                if(!asyncIters[i].hasNext()){
+                    //Async iterator probably finished just before virtual iterator had more data added
+                    asyncIters[i].softReset();
+                }
+            }
+        }
+
         if(any)
             return true;
 
-        //Check async iterators
+        //Check async iterators for next elements
         for(AsyncDataSetIterator iter : asyncIters){
             if(iter.hasNext())
                 return true;

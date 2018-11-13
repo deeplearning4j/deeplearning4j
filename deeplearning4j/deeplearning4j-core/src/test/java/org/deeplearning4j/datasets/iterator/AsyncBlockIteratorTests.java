@@ -58,14 +58,13 @@ public class AsyncBlockIteratorTests {
 
     @Test
     public void testSimpleNThreads(){
-        DataSetIterator iris3 = new IrisDataSetIterator(30, 150);
+        DataSetIterator iris = new IrisDataSetIterator(30, 150);
         List<DataSet> irisAsList = new ArrayList<>();
-        while (iris3.hasNext()) {
-            irisAsList.add(iris3.next());
+        while (iris.hasNext()) {
+            irisAsList.add(iris.next());
         }
 
         for( int numThreads : new int[]{2, 4}) {
-//        for( int numThreads : new int[]{4}) {
             System.out.println("---------------------------------------------");
             List<DataSetIterator> initalIters = new ArrayList<>();
             for( int i=0; i<2*numThreads; i++ ){
@@ -112,7 +111,60 @@ public class AsyncBlockIteratorTests {
 
     @Test
     public void testAdditionAfterAllConsumed(){
+        DataSetIterator iris3 = new IrisDataSetIterator(30, 150);
+        List<DataSet> irisAsList = new ArrayList<>();
+        while (iris3.hasNext()) {
+            irisAsList.add(iris3.next());
+        }
 
+        for( int numThreads : new int[]{2, 4}) {
+            System.out.println("---------------------------------------------");
+            List<DataSetIterator> initalIters = new ArrayList<>();
+            for( int i=0; i<2*numThreads; i++ ){
+                initalIters.add(new IrisDataSetIterator(30, 150));
+            }
+
+            int[] deviceThreadAffinity = new int[numThreads];    //Simple test: all device 0
+            AsyncBlockIterator iter = new AsyncBlockIterator(deviceThreadAffinity, 2, initalIters);
+            int count = 0;
+            while(iter.hasAnything()){
+                DataSet[] arrs = iter.next(numThreads);
+                assertEquals(numThreads, arrs.length);
+                count++;
+            }
+            assertEquals(10, count);    //2 iterators for each thread
+            assertFalse(iter.hasAnything());
+
+            //Add new iters
+            List<DataSetIterator> newIters = new ArrayList<>();
+            for( int i=0; i<2*numThreads; i++ ){
+                newIters.add(new IrisDataSetIterator(30, 150));
+            }
+            iter.attach(newIters);
+
+            assertTrue(iter.hasAnything());
+            assertTrue(iter.hasAnything());
+
+            //N threads, 2 more iterators each, x5 DataSets per epoch
+            for(int i=0; i<10; i++ ){
+                assertTrue(iter.hasAnything());
+                DataSet[] arr = iter.next(numThreads);
+                assertEquals(numThreads, arr.length);
+                for( int j=0; j<numThreads; j++ ) {
+                    assertEquals(irisAsList.get(i % 5), arr[j]);
+                }
+            }
+            assertFalse(iter.hasAnything());
+
+            //Check that expected number of iterators were allocated to each thread (expected 4 each)
+            int pos = 0;
+            for(VirtualDataSetIterator vi : iter.getVirtualIters()){
+                String s = String.valueOf(pos);
+                assertEquals(s, 4, vi.getIterators().size());
+            }
+        }
+
+        System.out.println("---------------------------------------------");
 
     }
 }
