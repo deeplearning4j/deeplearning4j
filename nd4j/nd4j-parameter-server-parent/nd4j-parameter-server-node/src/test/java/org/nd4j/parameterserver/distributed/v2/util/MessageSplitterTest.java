@@ -22,6 +22,9 @@ import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.Optional;
+import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
+import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
+import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 
 import java.util.ArrayList;
@@ -45,12 +48,14 @@ public class MessageSplitterTest {
 
         log.info("Number of messages: {}" , messages.size());
 
-        for (val m:messages)
-            assertEquals("123", m.getOriginalId());
+        for (val m:messages) {
+            assertTrue(m instanceof VoidChunk);
+            assertEquals("123", ((VoidChunk) m).getOriginalId());
+        }
 
         Optional<GradientsUpdateMessage> dec = null;
         for (val m:messages)
-            dec = splitter.merge(m);
+            dec = splitter.merge((VoidChunk) m);
 
         assertNotNull(dec);
         assertTrue(dec.isPresent());
@@ -68,13 +73,9 @@ public class MessageSplitterTest {
         assertNotNull(messages);
         assertEquals(1, messages.size());
 
-        for (val m:messages)
-            assertEquals("123", m.getOriginalId());
-
-        Optional<GradientsUpdateMessage> dec = splitter.merge(new ArrayList<>(messages).get(0));
-
-        assertNotNull(dec);
-        assertTrue(dec.isPresent());
+        val m = new ArrayList<VoidMessage>(messages).get(0);
+        assertTrue(m instanceof INDArrayMessage);
+        assertTrue(m instanceof GradientsUpdateMessage);
     }
 
     @Test
@@ -87,7 +88,7 @@ public class MessageSplitterTest {
             val ref = new Atomic<GradientsUpdateMessage>();
 
             chunks.parallelStream().forEach(c -> {
-                val o = splitter.merge(c);
+                val o = splitter.merge((VoidChunk) c);
                 if (o.isPresent())
                     ref.set((GradientsUpdateMessage) o.get());
             });
