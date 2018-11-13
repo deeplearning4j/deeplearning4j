@@ -337,7 +337,36 @@ public class MeshOrganizerTest {
                 MeshOrganizer mesh2 = SerializationUtils.deserialize(bais);
                 assertEquals(mesh1, mesh2);
 
-                assertEquals(lastNode.status(), mesh2.getNodeById(lastNode.getId()).status());
+
+                for (val n:mesh2.flatNodes()) {
+                    assertEquals(mesh1.getNodeById(n.getId()).status(), n.status());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testSerialization_2() throws Exception {
+        val mesh1 = new MeshOrganizer(MeshBuildMode.PLAIN);
+
+        for (int e = 0; e < 1000; e++)
+            mesh1.addNode(java.util.UUID.randomUUID().toString());
+
+        val lastNode = mesh1.addNode(java.util.UUID.randomUUID().toString());
+        lastNode.status(NodeStatus.OFFLINE);
+
+        try(val baos = new ByteArrayOutputStream();) {
+            SerializationUtils.serialize(mesh1, baos);
+
+            try(val bais = new ByteArrayInputStream(baos.toByteArray())) {
+
+                MeshOrganizer mesh2 = SerializationUtils.deserialize(bais);
+                assertEquals(mesh1, mesh2);
+
+
+                for (val n:mesh2.flatNodes()) {
+                    assertEquals(mesh1.getNodeById(n.getId()).status(), n.status());
+                }
             }
         }
     }
