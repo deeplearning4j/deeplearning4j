@@ -25,6 +25,7 @@ import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.DummyBlockDataSetIterator;
 import org.deeplearning4j.datasets.iterator.DummyBlockMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.callbacks.InterleavedDataSetCallback;
+import org.deeplearning4j.datasets.iterator.parallel.AsyncBlockIterator;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
@@ -45,8 +46,9 @@ import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.BlockDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -54,10 +56,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Supplier;
 
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -507,16 +506,37 @@ public class ParallelWrapper implements AutoCloseable {
             if (isMQ) {
                 if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
-                                    Nd4j.getAffinityManager().getNumberOfDevices());
+                            Nd4j.getAffinityManager().getNumberOfDevices());
 
                 iterator = new AsyncDataSetIterator(source, prefetchSize,
-                                new LinkedBlockingQueue<>(prefetchSize * workers), true,
-                                new InterleavedDataSetCallback(prefetchSize * 2));
+                        new LinkedBlockingQueue<>(prefetchSize * workers), true,
+                        new InterleavedDataSetCallback(prefetchSize * 2));
 
             } else
                 iterator = new AsyncDataSetIterator(source, prefetchSize);
         }
 
+        fit(new DummyBlockDataSetIterator(iterator));
+
+        if (prefetchSize > 0 && source.asyncSupported())
+            ((AsyncDataSetIterator) iterator).shutdown();
+    }
+
+    public synchronized void fit(@NonNull List<Iterator<DataSet>> iteratorQueue){
+        //First: determine thread/device affinity
+        int[] threadDeviceAffinity = new int[zoo.length];
+        for( int i=0; i<zoo.length; i++ ){
+            //Thread device affinity: determined in init() method
+            threadDeviceAffinity[i] = i % Nd4j.getAffinityManager().getNumberOfDevices();
+        }
+
+
+        BlockDataSetIterator blockIter = new AsyncBlockIterator(threadDeviceAffinity, prefetchSize, iteratorQueue);
+        fit(blockIter);
+    }
+
+    public synchronized void fit(@NonNull BlockDataSetIterator blockWrapper) {
+//        val blockWrapper = new DummyBlockDataSetIterator(iterator);
 
         val nanos = new ArrayList<Long>();
         val locker = new AtomicInteger(0);
@@ -524,7 +544,7 @@ public class ParallelWrapper implements AutoCloseable {
         log.info("Starting ParallelWrapper training round...");
         long intcnt = 0;
 
-        val blockWrapper = new DummyBlockDataSetIterator(iterator);
+
 
         while (blockWrapper.hasAnything() && !stopFit.get()) {
             if (modelParamsSupplier != null) {
@@ -552,7 +572,7 @@ public class ParallelWrapper implements AutoCloseable {
             }
 
             intcnt++;
-            val dataSets = blockWrapper.next(workers);
+            org.nd4j.linalg.dataset.api.DataSet[] dataSets = blockWrapper.next(workers);
             var time2 = System.currentTimeMillis();
             var lastEtlTime = time2 - time1;
 
@@ -627,9 +647,6 @@ public class ParallelWrapper implements AutoCloseable {
 
         if (debug)
             log.info("Shutting down iterator...");
-
-        if (prefetchSize > 0 && source.asyncSupported())
-            ((AsyncDataSetIterator) iterator).shutdown();
 
         try {
             close();

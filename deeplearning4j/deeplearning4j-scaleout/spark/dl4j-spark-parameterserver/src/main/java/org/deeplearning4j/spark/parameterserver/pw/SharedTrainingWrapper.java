@@ -52,6 +52,9 @@ import org.deeplearning4j.spark.util.SparkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.BlockDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.BlockMultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
@@ -60,10 +63,8 @@ import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
 import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvider;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -82,7 +83,6 @@ public class SharedTrainingWrapper {
     protected ParallelWrapper wrapper;
     protected VirtualDataSetIterator iteratorDS;
     protected VirtualMultiDataSetIterator iteratorMDS;
-
     protected List<Iterator<DataSet>> iteratorsDS;
     protected List<Iterator<MultiDataSet>> iteratorsMDS;
 
@@ -119,8 +119,8 @@ public class SharedTrainingWrapper {
                 INSTANCE.wrapper.shutdown();
                 INSTANCE.wrapper = null;
             }
-            INSTANCE.iteratorsDS.clear();
-            INSTANCE.iteratorsMDS.clear();
+            INSTANCE.iteratorDS.clear();
+            INSTANCE.queueMDS.clear();
             INSTANCE.exceptionEncountered.set(false);
             INSTANCE.iteratorDataSetCount = new ThreadLocal<>();
             INSTANCE.accumulator = null;
@@ -158,7 +158,7 @@ public class SharedTrainingWrapper {
         wrapped.addObserver(obs);
 
         // putting that "somewhere"
-        iteratorsDS.add(wrapped);
+        iteratorDS.add(wrapped);
 
         // storing observer into ThreadLocal, since we're going to use that later
         observer.set(obs);
@@ -186,7 +186,7 @@ public class SharedTrainingWrapper {
         wrapped.addObserver(obs);
 
         // putting that "somewhere"
-        iteratorsMDS.add(wrapped);
+        queueMDS.add(wrapped);
 
         // storing observer into ThreadLocal, since we're going to use that later
         observer.set(obs);
@@ -203,9 +203,6 @@ public class SharedTrainingWrapper {
     }
 
     protected SharedTrainingResult runHelper(SharedTrainingWorker worker) {
-
-
-
         /*
             first call instantiates pw, messenger etc, and gets in charge here.
          */
@@ -220,9 +217,9 @@ public class SharedTrainingWrapper {
             Model model = null;
 
             /*
-                    Plan is simple here: if there's defined field in SharedTrainingConfiguration - use that.
-                    If no - try to guess something
-                 */
+            Plan is simple here: if there's defined field in SharedTrainingConfiguration - use that.
+            If no - try to guess something
+            */
             int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
             int numCores = Loader.totalCores();
@@ -234,8 +231,8 @@ public class SharedTrainingWrapper {
              * 3) otherwise, let's assume that's regular multi-core node, so we'll use 1..6 workers, depending on number of cores/4
              */
             int numWorkers = trainingConfiguration.getNumberOfWorkersPerNode() > 0
-                            ? trainingConfiguration.getNumberOfWorkersPerNode()
-                            : numDevices > 1 ? numDevices : Math.min(6, Math.max(1, numCores / 4));
+                    ? trainingConfiguration.getNumberOfWorkersPerNode()
+                    : numDevices > 1 ? numDevices : Math.min(6, Math.max(1, numCores / 4));
 
             if (numDevices > 1 && numWorkers > numDevices)
                 log.warn("WARNING! Using more workers then number of available computational devices!");
@@ -456,18 +453,19 @@ public class SharedTrainingWrapper {
                 consumer.bypassMode(false);
 
             // now we're just calling for fit
-            if(iteratorDS == null && iteratorMDS == null)
+            if(iteratorDS == null && iteratorMDS == null) //Should never happen
                 throw new DL4JInvalidConfigException("No iterators were defined for training");
 
             try {
-                while((iteratorDS != null && iteratorDS.hasNext()) || (iteratorMDS != null && iteratorMDS.hasNext())) {
+                while((iteratorDS != null && !iteratorsDS.isEmpty()) || (iteratorMDS != null && iteratorMDS.isEmpty())) {
                     //Loop as a guard against concurrent modifications and RCs
 
                     if (wrapper != null) {
                         if (iteratorDS != null)
-                            wrapper.fit(iteratorDS);
+                            wrapper.fit(iteratorsDS);
                         else
-                            wrapper.fit(iteratorMDS);
+                            throw new UnsupportedOperationException("Not yet reimplemented");
+//                            wrapper.fit(iteratorMDS);
                     } else {
                         // if wrapper is null, we're fitting standalone model then
                         if (iteratorDS != null) {
