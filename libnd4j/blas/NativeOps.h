@@ -1169,6 +1169,7 @@ public:
      * @param scalarA
      * @param scalarB
      */
+     /*
     void execMetaPredicateShape(Nd4jPointer *extras,
                                       const int opTypeA,
                                       const int opNumA,
@@ -1186,7 +1187,7 @@ public:
                                       double scalarA,
                                       double scalarB);
 
-
+*/
 /**
  *
  * @param data

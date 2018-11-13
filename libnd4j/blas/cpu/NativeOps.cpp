@@ -1467,7 +1467,7 @@ void NativeOps::setOmpMinThreads(int threads) {
     // TODO: to be implemented
 }
 
-
+/*
 void NativeOps::execMetaPredicateShape(Nd4jPointer *extras, 
                                         const int opTypeA, 
                                         const int opNumA, 
@@ -1486,6 +1486,7 @@ void NativeOps::execMetaPredicateShape(Nd4jPointer *extras,
                                         double scalarB) {    
     // no-op;
 }
+*/
 
 int NativeOps::getDevice() {
     return 0;

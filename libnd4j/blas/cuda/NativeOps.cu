@@ -46,8 +46,8 @@
 #include <stdlib.h>
 #include <loops/type_conversions.h>
 #include <op_boilerplate.h>
-#include <loops/grid_shaped.h>
-#include <loops/grid_strided.h>
+#include <loops/grid_shaped.legacy>
+#include <loops/grid_strided.legacy>
 #include <loops/aggregates.h>
 #include <helpers/threshold.h>
 #include <ShapeList.h>
@@ -2117,6 +2117,7 @@ void NativeOps::shuffle(Nd4jPointer *extras,
 	DEBUG_KERNEL(stream, 0);
 }
 
+/*
 void NativeOps::execMetaPredicateShape(Nd4jPointer *extras, 
 	                                  const int opTypeA, 
 	                                  const int opNumA, 
@@ -2141,6 +2142,7 @@ void NativeOps::execMetaPredicateShape(Nd4jPointer *extras,
 
 	DEBUG_KERNEL(stream, opNumA);
 }
+*/
 
 bool NativeOps::isExperimentalEnabled() {
     return experimentalSupport;
