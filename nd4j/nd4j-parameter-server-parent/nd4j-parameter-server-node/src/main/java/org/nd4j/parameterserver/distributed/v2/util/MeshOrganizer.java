@@ -407,8 +407,8 @@ public class MeshOrganizer implements Serializable {
 
         private AtomicInteger position = new AtomicInteger(0);
 
-        @Getter(AccessLevel.NONE)
-        @Setter(AccessLevel.NONE)
+        @Getter(AccessLevel.PRIVATE)
+        @Setter(AccessLevel.PRIVATE)
         @Builder.Default
         private NodeStatus status = NodeStatus.ONLINE;
 

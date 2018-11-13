@@ -336,6 +336,7 @@ public class MeshOrganizerTest {
 
                 MeshOrganizer mesh2 = SerializationUtils.deserialize(bais);
                 assertEquals(mesh1, mesh2);
+                assertEquals(mesh1.flatNodes().size(), mesh2.flatNodes().size());
 
 
                 for (val n:mesh2.flatNodes()) {
@@ -363,7 +364,7 @@ public class MeshOrganizerTest {
 
                 MeshOrganizer mesh2 = SerializationUtils.deserialize(bais);
                 assertEquals(mesh1, mesh2);
-
+                assertEquals(mesh1.flatNodes().size(), mesh2.flatNodes().size());
 
                 for (val n:mesh2.flatNodes()) {
                     assertNotNull(n.status());
