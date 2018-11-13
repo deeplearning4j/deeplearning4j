@@ -62,27 +62,8 @@ namespace functions {
 
 #ifdef __CUDACC__
 
-	template<typename OpType>
+			template<typename OpType>
 	static  __device__ void transformCuda(
-			void *dy,
-			Nd4jLong *shapeInfo,
-			void *params,
-			void *result,
-			Nd4jLong *resultShapeInfo,
-			int *allocationPointer, void *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
-	template<typename OpType>
-	static  __device__ void transformCuda(
-			Nd4jLong n,
-			void *dy,
-			Nd4jLong incy,
-			void *params,
-			void *result,
-			Nd4jLong resultStride,
-			int *allocationPointer, void *reductionPointer, UnifiedSharedMemory *manager);
-
-	static  __device__ void transformCuda(
-			const int opNum,
 			void *dy,
 			Nd4jLong *shapeInfo,
 			void *params,
@@ -90,11 +71,12 @@ namespace functions {
 			Nd4jLong *resultShapeInfo,
 			int *allocationPointer,
 			void *reductionPointer,
-			UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+			UnifiedSharedMemory *manager,
+			Nd4jLong *tadShapeInfo,
+			Nd4jLong *tadOffsets);
 
-
+	template<typename OpType>
 	static  __device__ void transformCuda(
-			const int opNum,
 			Nd4jLong n,
 			void *dy,
 			Nd4jLong incy,
@@ -105,8 +87,10 @@ namespace functions {
 			void *reductionPointer,
 			UnifiedSharedMemory *manager);
 
-	static _CUDA_H void executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, Nd4jLong n, void *x, Nd4jLong xStride, void *extraParams, void *z, Nd4jLong zStride, int *allocationPointer, void *reductionPointer);
-	
+
+	template <typename OpType>
+	static _CUDA_H void intermediateShaped(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+
 	static _CUDA_H void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 #endif

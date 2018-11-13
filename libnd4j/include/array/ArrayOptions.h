@@ -84,34 +84,34 @@ namespace nd4j {
     class ND4J_EXPORT ArrayOptions {
 
     public:
-        static bool isNewFormat(const Nd4jLong *shapeInfo);
-        static bool hasPropertyBitSet(const Nd4jLong *shapeInfo, int property);
-        static bool togglePropertyBit(Nd4jLong *shapeInfo, int property);
-        static void unsetPropertyBit(Nd4jLong *shapeInfo, int property);
-        static void setPropertyBit(Nd4jLong *shapeInfo, int property);
-        static void setPropertyBits(Nd4jLong *shapeInfo, std::initializer_list<int> properties);
+        static _CUDA_HD bool isNewFormat(const Nd4jLong *shapeInfo);
+        static _CUDA_HD bool hasPropertyBitSet(const Nd4jLong *shapeInfo, int property);
+        static _CUDA_HD bool togglePropertyBit(Nd4jLong *shapeInfo, int property);
+        static _CUDA_HD void unsetPropertyBit(Nd4jLong *shapeInfo, int property);
+        static _CUDA_HD void setPropertyBit(Nd4jLong *shapeInfo, int property);
+        static _CUDA_HD void setPropertyBits(Nd4jLong *shapeInfo, std::initializer_list<int> properties);
 
-        static bool isSparseArray(Nd4jLong *shapeInfo);
-        static bool isUnsigned(Nd4jLong *shapeInfo);
+        static _CUDA_HD bool isSparseArray(Nd4jLong *shapeInfo);
+        static _CUDA_HD bool isUnsigned(Nd4jLong *shapeInfo);
 
-        static nd4j::DataType dataType(const Nd4jLong *shapeInfo);
+        static _CUDA_HD nd4j::DataType dataType(const Nd4jLong *shapeInfo);
 
-        static SpaceType spaceType(Nd4jLong *shapeInfo);
-        static SpaceType spaceType(const Nd4jLong *shapeInfo);
+        static _CUDA_HD SpaceType spaceType(Nd4jLong *shapeInfo);
+        static _CUDA_HD SpaceType spaceType(const Nd4jLong *shapeInfo);
 
-        static ArrayType arrayType(Nd4jLong *shapeInfo);
-        static ArrayType arrayType(const Nd4jLong *shapeInfo);
+        static _CUDA_HD ArrayType arrayType(Nd4jLong *shapeInfo);
+        static _CUDA_HD ArrayType arrayType(const Nd4jLong *shapeInfo);
 
-        static SparseType sparseType(Nd4jLong *shapeInfo);
-        static SparseType sparseType(const Nd4jLong *shapeInfo);
+        static _CUDA_HD SparseType sparseType(Nd4jLong *shapeInfo);
+        static _CUDA_HD SparseType sparseType(const Nd4jLong *shapeInfo);
 
-        static bool hasExtraProperties(Nd4jLong *shapeInfo);
+        static _CUDA_HD bool hasExtraProperties(Nd4jLong *shapeInfo);
 
 
-        static void resetDataType(Nd4jLong *shapeInfo);
-        static void setDataType(Nd4jLong *shapeInfo, const nd4j::DataType dataType);
+        static _CUDA_HD void resetDataType(Nd4jLong *shapeInfo);
+        static _CUDA_HD void setDataType(Nd4jLong *shapeInfo, const nd4j::DataType dataType);
 
-        static void copyDataType(Nd4jLong* to, const Nd4jLong* from);
+        static _CUDA_HD void copyDataType(Nd4jLong* to, const Nd4jLong* from);
     };
 }
 

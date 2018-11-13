@@ -64,50 +64,34 @@ namespace functions {
 
 	template<typename OpType>
 	static  __device__ void transformCuda(
-			T *dy,
+			void *dy,
 			Nd4jLong *shapeInfo,
-			T *params,
-			T *result,
+			void *params,
+			void *result,
 			Nd4jLong *resultShapeInfo,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+			int *allocationPointer,
+			void *reductionPointer,
+			UnifiedSharedMemory *manager,
+			Nd4jLong *tadShapeInfo,
+			Nd4jLong *tadOffsets);
 
 	template<typename OpType>
 	static  __device__ void transformCuda(
 			Nd4jLong n,
-			T *dy,
+			void *dy,
 			Nd4jLong incy,
-			T *params,
-			T *result,
-			Nd4jLong resultStride,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager);
-
-	static  __device__ void transformCuda(
-			const int opNum,
-			T *dy,
-			Nd4jLong *shapeInfo,
-			T *params,
-			T *result,
-			Nd4jLong *resultShapeInfo,
-			int *allocationPointer,
-			T *reductionPointer,
-			UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
-
-	static  __device__ void transformCuda(
-			const int opNum,
-			Nd4jLong n,
-			T *dy,
-			Nd4jLong incy,
-			T *params,
-			T *result,
+			void *params,
+			void *result,
 			Nd4jLong resultStride,
 			int *allocationPointer,
-			T *reductionPointer,
+			void *reductionPointer,
 			UnifiedSharedMemory *manager);
 
-	static _CUDA_H void executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, Nd4jLong n, T *x, Nd4jLong xStride, T *extraParams, T *z, Nd4jLong zStride, int *allocationPointer, T *reductionPointer);
-	
-	static _CUDA_H void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, T *x, Nd4jLong *xShape, int xRank, T *extraParams, T *z, Nd4jLong *zShape, int zRank, int *allocationPointer, T *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+
+	template <typename OpType>
+	static _CUDA_H void intermediateShaped(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+
+	static _CUDA_H void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 #endif
 

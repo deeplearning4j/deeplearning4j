@@ -19,34 +19,34 @@
 #include <stdexcept>
 
 namespace nd4j {
-    bool ArrayOptions::isNewFormat(const Nd4jLong *shapeInfo) {
+    _CUDA_HD bool ArrayOptions::isNewFormat(const Nd4jLong *shapeInfo) {
         return (shape::extra(const_cast<Nd4jLong*>(shapeInfo)) != 0);
     }
 
 
-    bool ArrayOptions::isSparseArray(Nd4jLong *shapeInfo) {
+    _CUDA_HD bool ArrayOptions::isSparseArray(Nd4jLong *shapeInfo) {
         return hasPropertyBitSet(shapeInfo, ARRAY_SPARSE);
     }
 
-    bool ArrayOptions::hasExtraProperties(Nd4jLong *shapeInfo) {
+    _CUDA_HD bool ArrayOptions::hasExtraProperties(Nd4jLong *shapeInfo) {
         return hasPropertyBitSet(shapeInfo, ARRAY_EXTRAS);
     }
 
-    bool ArrayOptions::hasPropertyBitSet(const Nd4jLong *shapeInfo, int property) {
+    _CUDA_HD bool ArrayOptions::hasPropertyBitSet(const Nd4jLong *shapeInfo, int property) {
         if (!isNewFormat(shapeInfo))
             return false;
 
         return ((shape::extra(const_cast<Nd4jLong*>(shapeInfo)) & property) == property);
     }
 
-    bool ArrayOptions::isUnsigned(Nd4jLong *shapeInfo) {
+    _CUDA_HD bool ArrayOptions::isUnsigned(Nd4jLong *shapeInfo) {
         if (!isNewFormat(shapeInfo))
             return false;
 
         return hasPropertyBitSet(shapeInfo, ARRAY_UNSIGNED);
     }
 
-    nd4j::DataType ArrayOptions::dataType(const Nd4jLong *shapeInfo) {
+    _CUDA_HD nd4j::DataType ArrayOptions::dataType(const Nd4jLong *shapeInfo) {
         /*if (hasPropertyBitSet(shapeInfo, ARRAY_QUANTIZED))
             return nd4j::DataType::QINT8;
         else */if (hasPropertyBitSet(shapeInfo, ARRAY_FLOAT))
@@ -89,11 +89,11 @@ namespace nd4j {
         }
     }
 
-    SpaceType ArrayOptions::spaceType(const Nd4jLong *shapeInfo) {
+    _CUDA_HD SpaceType ArrayOptions::spaceType(const Nd4jLong *shapeInfo) {
         return spaceType(const_cast<Nd4jLong *>(shapeInfo));
     }
 
-    SpaceType ArrayOptions::spaceType(Nd4jLong *shapeInfo) {
+    _CUDA_HD SpaceType ArrayOptions::spaceType(Nd4jLong *shapeInfo) {
         if (hasPropertyBitSet(shapeInfo, ARRAY_QUANTIZED))
             return SpaceType::QUANTIZED;
         if (hasPropertyBitSet(shapeInfo, ARRAY_COMPLEX))
@@ -102,11 +102,11 @@ namespace nd4j {
             return SpaceType::CONTINUOUS;
     }
 
-    ArrayType ArrayOptions::arrayType(const Nd4jLong *shapeInfo) {
+    _CUDA_HD ArrayType ArrayOptions::arrayType(const Nd4jLong *shapeInfo) {
         return arrayType(const_cast<Nd4jLong *>(shapeInfo));
     }
 
-    ArrayType ArrayOptions::arrayType(Nd4jLong *shapeInfo) {
+    _CUDA_HD ArrayType ArrayOptions::arrayType(Nd4jLong *shapeInfo) {
         if (hasPropertyBitSet(shapeInfo, ARRAY_SPARSE))
             return ArrayType::SPARSE;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_COMPRESSED))
@@ -117,25 +117,25 @@ namespace nd4j {
             return ArrayType::DENSE;
     }
 
-    bool ArrayOptions::togglePropertyBit(Nd4jLong *shapeInfo, int property) {
+    _CUDA_HD bool ArrayOptions::togglePropertyBit(Nd4jLong *shapeInfo, int property) {
         shape::extra(shapeInfo) ^= property;
 
         return hasPropertyBitSet(shapeInfo, property);
     }
 
-    void ArrayOptions::setPropertyBit(Nd4jLong *shapeInfo, int property) {
+    _CUDA_HD void ArrayOptions::setPropertyBit(Nd4jLong *shapeInfo, int property) {
         shape::extra(shapeInfo) |= property;
     }
 
-    void ArrayOptions::unsetPropertyBit(Nd4jLong *shapeInfo, int property) {
+    _CUDA_HD void ArrayOptions::unsetPropertyBit(Nd4jLong *shapeInfo, int property) {
         shape::extra(shapeInfo) &= property;
     }
 
-    SparseType ArrayOptions::sparseType(const Nd4jLong *shapeInfo) {
+    _CUDA_HD SparseType ArrayOptions::sparseType(const Nd4jLong *shapeInfo) {
         return sparseType(const_cast<Nd4jLong *>(shapeInfo));
     }
 
-    SparseType ArrayOptions::sparseType(Nd4jLong *shapeInfo) {
+    _CUDA_HD SparseType ArrayOptions::sparseType(Nd4jLong *shapeInfo) {
         if (!isSparseArray(shapeInfo))
             throw std::runtime_error("Not a sparse array");
 
@@ -149,14 +149,14 @@ namespace nd4j {
             return SparseType::LIL;
     }
 
-    void ArrayOptions::setPropertyBits(Nd4jLong *shapeInfo, std::initializer_list<int> properties) {
+    _CUDA_HD void ArrayOptions::setPropertyBits(Nd4jLong *shapeInfo, std::initializer_list<int> properties) {
         for (auto v: properties) {
             if (!hasPropertyBitSet(shapeInfo, v))
                 setPropertyBit(shapeInfo, v);
         }
     }
 
-    void ArrayOptions::resetDataType(Nd4jLong *shapeInfo) {
+    _CUDA_HD void ArrayOptions::resetDataType(Nd4jLong *shapeInfo) {
         unsetPropertyBit(shapeInfo, ARRAY_BOOL);
         unsetPropertyBit(shapeInfo, ARRAY_HALF);
         unsetPropertyBit(shapeInfo, ARRAY_FLOAT);
@@ -168,7 +168,7 @@ namespace nd4j {
         unsetPropertyBit(shapeInfo, ARRAY_UNSIGNED);
     }
 
-    void ArrayOptions::setDataType(Nd4jLong *shapeInfo, const nd4j::DataType dataType) {
+    _CUDA_HD void ArrayOptions::setDataType(Nd4jLong *shapeInfo, const nd4j::DataType dataType) {
         resetDataType(shapeInfo);
         if (dataType == nd4j::DataType::UINT8 ||
                 dataType == nd4j::DataType::UINT16 ||
@@ -224,7 +224,7 @@ namespace nd4j {
     }
 
 ////////////////////////////////////////////////////////////////////////////////
-void ArrayOptions::copyDataType(Nd4jLong* to, const Nd4jLong* from) {
+    _CUDA_HD void ArrayOptions::copyDataType(Nd4jLong* to, const Nd4jLong* from) {
 
     setDataType(to, dataType(from));
 }

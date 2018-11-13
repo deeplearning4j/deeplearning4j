@@ -69,18 +69,13 @@ namespace functions {
 			void *params,
 			void *result,
 			Nd4jLong *resultShapeInfo,
-			int *allocationPointer, void *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+			int *allocationPointer,
+			void *reductionPointer,
+			UnifiedSharedMemory *manager,
+			Nd4jLong *tadShapeInfo,
+			Nd4jLong *tadOffsets);
 
 	template<typename OpType>
-	static  __device__ void transformCuda(
-			Nd4jLong n,
-			void *dy,
-			Nd4jLong incy,
-			void *params,
-			void *result,
-			Nd4jLong resultStride,
-			int *allocationPointer, void *reductionPointer, UnifiedSharedMemory *manager);
-
 	static  __device__ void transformCuda(
 			Nd4jLong n,
 			void *dy,
@@ -91,6 +86,7 @@ namespace functions {
 			int *allocationPointer,
 			void *reductionPointer,
 			UnifiedSharedMemory *manager);
+
 
 	template <typename OpType>
 	static _CUDA_H void intermediateShaped(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);

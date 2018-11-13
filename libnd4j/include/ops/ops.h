@@ -44,7 +44,7 @@
 #define no_op_exec_special_accumulation_same 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
 #ifdef __CUDACC__
 #include <helpers/sharedmem.h>
-#define no_op_exec_special_bool_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer,Z *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_bool_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_same_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, X *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, X *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer,Z *result, Nd4jLong *resultShapeBuffer,Z *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}																							    
 #define no_op_exec_special_accumulation_same_cuda static inline __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, X *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {}
@@ -1265,7 +1265,7 @@ namespace simdOps {
 	class IsNan {
 	public:
 		no_op_exec_special_bool
-		no_op_exec_special_cuda
+		no_op_exec_special_bool_cuda
 
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
@@ -1309,7 +1309,7 @@ namespace simdOps {
 	class IsPositive {
 	public:
 		no_op_exec_special_bool
-		no_op_exec_special_cuda
+		no_op_exec_special_bool_cuda
 
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
@@ -1341,7 +1341,7 @@ namespace simdOps {
 	class IsInf {
 	public:
 		no_op_exec_special_bool
-		no_op_exec_special_cuda
+		no_op_exec_special_bool_cuda
 
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
@@ -1374,7 +1374,7 @@ namespace simdOps {
 	class IsInfOrNan{
 	public:
 		no_op_exec_special_bool
-		no_op_exec_special_cuda
+		no_op_exec_special_bool_cuda
 
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
@@ -1407,7 +1407,7 @@ namespace simdOps {
 	class IsFinite {
 	public:
 		no_op_exec_special_bool
-		no_op_exec_special_cuda
+		no_op_exec_special_bool_cuda
 
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda

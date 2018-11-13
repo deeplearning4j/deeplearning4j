@@ -29,6 +29,7 @@
 #include <Environment.h>
 #include <ArrayOptions.h> 
 #include <templatemath.h>
+#include <helpers/logger.h>
 
 namespace nd4j {
     class ND4J_EXPORT DataTypeUtils {
@@ -39,8 +40,8 @@ namespace nd4j {
         FORCEINLINE static std::string  asString(DataType dataType);
 
         template <typename T>
-        static DataType fromT();
-        static size_t sizeOfElement(DataType type);
+        static FORCEINLINE _CUDA_HD DataType fromT();
+        static FORCEINLINE _CUDA_HD size_t sizeOfElement(DataType type);
 
         // returns the smallest finite value of the given type
         template <typename T>
@@ -54,18 +55,18 @@ namespace nd4j {
         template <typename T>
         FORCEINLINE static T eps();
 
-        FORCEINLINE static size_t sizeOf(DataType type);
-        FORCEINLINE static size_t sizeOf(const Nd4jLong* shapeInfo);
+        FORCEINLINE static _CUDA_HD size_t sizeOf(DataType type);
+        FORCEINLINE static _CUDA_HD size_t sizeOf(const Nd4jLong* shapeInfo);
 
-        FORCEINLINE static bool isR(nd4j::DataType dataType);
+        FORCEINLINE static _CUDA_HD bool isR(nd4j::DataType dataType);
 
-        FORCEINLINE static bool isZ(nd4j::DataType dataType);
+        FORCEINLINE static _CUDA_HD bool isZ(nd4j::DataType dataType);
 
-        FORCEINLINE static bool isB(nd4j::DataType dataType);
+        FORCEINLINE static _CUDA_HD bool isB(nd4j::DataType dataType);
 
-        FORCEINLINE static bool isU(nd4j::DataType dataType);
+        FORCEINLINE static _CUDA_HD bool isU(nd4j::DataType dataType);
 
-        FORCEINLINE static bool isS(nd4j::DataType dataType);
+        FORCEINLINE static _CUDA_HD bool isS(nd4j::DataType dataType);
 
         FORCEINLINE static nd4j::DataType pickPairwiseResultType(nd4j::DataType typeX, nd4j::DataType typeY);
 
@@ -326,6 +327,68 @@ FORCEINLINE T DataTypeUtils::eps() {
         return result;
     }
 
+    FORCEINLINE _CUDA_HD size_t DataTypeUtils::sizeOfElement(nd4j::DataType type) {
+        switch (type) {
+            case nd4j::DataType::UINT8:
+            case nd4j::DataType::INT8:
+            case nd4j::DataType::FLOAT8:
+            case nd4j::DataType::QINT8:
+            case nd4j::DataType::BOOL: return (size_t) 1;
+
+            case nd4j::DataType::HALF:
+            case nd4j::DataType::INT16:
+            case nd4j::DataType::QINT16:
+            case nd4j::DataType::UINT16: return (size_t) 2;
+
+            case nd4j::DataType::UTF8:
+            case nd4j::DataType::INT32:
+            case nd4j::DataType::UINT32:
+            case nd4j::DataType::HALF2:
+            case nd4j::DataType::FLOAT32: return (size_t) 4;
+
+            case nd4j::DataType::UINT64:
+            case nd4j::DataType::INT64:
+            case nd4j::DataType::DOUBLE: return (size_t) 8;
+
+            default: {
+                nd4j_printf("Unknown DataType used: [%i]\n", asInt(type));
+#ifndef __CUDA_ARCH__
+                throw std::runtime_error("Unknown DataType requested");
+#endif
+            }
+        }
+    }
+
+    template <typename T>
+    FORCEINLINE _CUDA_HD nd4j::DataType nd4j::DataTypeUtils::fromT() {
+        if (std::is_same<T, bool>::value) {
+            return nd4j::DataType::BOOL;
+        } else if (std::is_same<T, std::string>::value) {
+            return nd4j::DataType::UTF8;
+        } else if (std::is_same<T, float>::value) {
+            return nd4j::DataType::FLOAT32;
+        } else if (std::is_same<T, float16>::value) {
+            return nd4j::DataType::HALF;
+        } else if (std::is_same<T, double>::value) {
+            return nd4j::DataType::DOUBLE;
+        } else if (std::is_same<T, int8_t >::value) {
+            return nd4j::DataType::INT8;
+        } else if (std::is_same<T, int16_t >::value) {
+            return nd4j::DataType::INT16;
+        } else if (std::is_same<T, int>::value) {
+            return nd4j::DataType::INT32;
+        } else if (std::is_same<T, Nd4jLong>::value) {
+            return nd4j::DataType::INT64;
+        } else if (std::is_same<T, uint8_t>::value) {
+            return nd4j::DataType::UINT8;
+        } else if (std::is_same<T, uint16_t>::value) {
+            return nd4j::DataType::UINT16;
+        } else if (std::is_same<T, uint32_t>::value) {
+            return nd4j::DataType::UINT32;
+        } else if (std::is_same<T, Nd4jULong>::value) {
+            return nd4j::DataType::UINT64;
+        }
+    }
 }
 
 #endif //DATATYPEUTILS_H
