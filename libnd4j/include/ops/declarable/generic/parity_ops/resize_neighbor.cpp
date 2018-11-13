@@ -29,8 +29,8 @@ namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(resize_nearest_neighbor, 1, 1, false, 0, -2) {
 
-            NDArray<T>* image = INPUT_VARIABLE(0);
-            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            auto image = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
             int width;
             int height;
             bool center = false; // - default value
