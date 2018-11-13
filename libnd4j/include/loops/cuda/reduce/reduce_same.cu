@@ -192,15 +192,16 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
     }
 }
 
-    template <typename X>
-    __device__ void ReduceSameFunction<X>::execScalarCudaLegacy(int opNum, void *vx, Nd4jLong *xShapeInfo,
+////////////////////////////////////////////////////////////////////////
+template <typename X>
+__device__ void ReduceSameFunction<X>::execScalarCudaLegacy(int opNum, void *vx, Nd4jLong *xShapeInfo,
                                                           void *vextraParams,
                                                           void *vz, Nd4jLong *zShapeInfo,
                                                           void *vreductionBuffer,
                                                           UnifiedSharedMemory *manager,
                                                           Nd4jLong *tadOnlyShapeInfo) {
-        DISPATCH_BY_OPNUM_T(execScalarCuda, PARAMS(vx, xShapeInfo, vextraParams, vz, zShapeInfo, vreductionBuffer, manager, tadOnlyShapeInfo), REDUCE_SAME_OPS);
-    }
+    DISPATCH_BY_OPNUM_T(execScalarCuda, PARAMS(vx, xShapeInfo, vextraParams, vz, zShapeInfo, vreductionBuffer, manager, tadOnlyShapeInfo), REDUCE_SAME_OPS);
+}
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
