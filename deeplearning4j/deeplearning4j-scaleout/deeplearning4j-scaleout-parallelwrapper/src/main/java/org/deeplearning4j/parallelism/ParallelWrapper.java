@@ -524,6 +524,10 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     public synchronized void fit(@NonNull List<Iterator<DataSet>> iteratorQueue){
+        log.info("Using workspaceMode {} for training", workspaceMode.name());
+        stopFit.set(false);
+        createZooIfNeccessary(false);
+
         //First: determine thread/device affinity
         int[] threadDeviceAffinity = new int[zoo.length];
         for( int i=0; i<zoo.length; i++ ){

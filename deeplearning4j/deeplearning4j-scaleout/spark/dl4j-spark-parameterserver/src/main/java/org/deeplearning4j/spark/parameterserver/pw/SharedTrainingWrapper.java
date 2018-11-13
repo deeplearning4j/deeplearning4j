@@ -32,9 +32,8 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
-import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
+import org.deeplearning4j.optimize.solvers.accumulation.IndexedTail;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
-import org.deeplearning4j.optimize.solvers.accumulation.SmartFancyBlockingQueue;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
@@ -52,9 +51,6 @@ import org.deeplearning4j.spark.util.SparkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.iterator.BlockDataSetIterator;
-import org.nd4j.linalg.dataset.api.iterator.BlockMultiDataSetIterator;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
@@ -63,8 +59,10 @@ import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
 import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvider;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.AeronUdpTransport;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -120,8 +118,8 @@ public class SharedTrainingWrapper {
                 INSTANCE.wrapper.shutdown();
                 INSTANCE.wrapper = null;
             }
-            INSTANCE.iteratorDS.clear();
-            INSTANCE.queueMDS.clear();
+            INSTANCE.iteratorsDS.clear();
+            INSTANCE.iteratorsMDS.clear();
             INSTANCE.exceptionEncountered.set(false);
             INSTANCE.iteratorDataSetCount = new ThreadLocal<>();
             INSTANCE.accumulator = null;
@@ -143,7 +141,7 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachDS(Iterator<DataSet> iterator) {
-        log.debug("Attaching thread...");
+        log.info("Attaching thread...");
 
         //Count the number of minibatches - used for reporting/debugging purposes
         if(iteratorDataSetCount.get() == null)
@@ -159,7 +157,7 @@ public class SharedTrainingWrapper {
         wrapped.addObserver(obs);
 
         // putting that "somewhere"
-        iteratorDS.add(wrapped);
+        iteratorsDS.add(wrapped);
 
         // storing observer into ThreadLocal, since we're going to use that later
         observer.set(obs);
@@ -171,7 +169,7 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachMDS(Iterator<MultiDataSet> iterator) {
-        log.debug("Attaching thread...");
+        log.info("Attaching thread...");
 
         //Count the number of minibatches - used for reporting/debugging purposes
         if(iteratorDataSetCount.get() == null)
@@ -187,7 +185,7 @@ public class SharedTrainingWrapper {
         wrapped.addObserver(obs);
 
         // putting that "somewhere"
-        queueMDS.add(wrapped);
+        iteratorsMDS.add(wrapped);
 
         // storing observer into ThreadLocal, since we're going to use that later
         observer.set(obs);
@@ -458,11 +456,12 @@ public class SharedTrainingWrapper {
                 throw new DL4JInvalidConfigException("No iterators were defined for training");
 
             try {
-                while((iteratorDS != null && !iteratorsDS.isEmpty()) || (iteratorMDS != null && iteratorMDS.isEmpty())) {
+                while((iteratorsDS != null && !iteratorsDS.isEmpty()) || (iteratorsMDS != null && iteratorsMDS.isEmpty())) {
                     //Loop as a guard against concurrent modifications and RCs
 
+                    System.out.println("iteratorsDS: " + (iteratorsDS == null ? "null" : iteratorsDS.size()));
                     if (wrapper != null) {
-                        if (iteratorDS != null)
+                        if (iteratorsDS != null)
                             wrapper.fit(iteratorsDS);
                         else
                             throw new UnsupportedOperationException("Not yet reimplemented");
@@ -484,7 +483,8 @@ public class SharedTrainingWrapper {
                         }
                     }
 
-                    consumer.getUpdatesQueue().purge();
+                    if(consumer != null)
+                        consumer.getUpdatesQueue().purge();
                 }
             } catch (Throwable t){
                 log.warn("Exception encountered during fit operation", t);
