@@ -69,27 +69,18 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
 
     @Override
     public boolean hasAnything() {
-        boolean any = iteratorsToProcess.size() > 0 && iteratorsToProcess.get(0).hasNext();     //Second condition to guard against empty iterators
         assignIteratorsToThreads();
 
-        //Check iterators, restart any async iterators if required
+        //Check iterators, restart any async iterators if required (i.e., if underlying got new data after async shut down)
         for( int i=0; i<asyncIters.length; i++ ){
-            if(virtualIters[i] != null && virtualIters[i].hasNext()){   //May be null: example 2 threads, from 1 source iterator
-                if(!asyncIters[i].hasNext()){
-                    //Async iterator probably finished just before virtual iterator had more data added
-                    asyncIters[i].softReset();
-                    log.info("SOFT RESET: " + i);
-                }
-            }
+            softResetIfRequired(i);
         }
 
         //Check async iterators for next elements
-        int iterNum = 0;
         for(AsyncDataSetIterator iter : asyncIters){
             if(iter != null && iter.hasNext()) {  //May be null: example 2 threads, from 1 source iterator
                 return true;
             }
-            iterNum++;
         }
 
         return false;
@@ -106,17 +97,17 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
         org.nd4j.linalg.dataset.api.DataSet[] out = new org.nd4j.linalg.dataset.api.DataSet[maxDataSets];
         int count = 0;
         for( int i=0; i<maxDataSets; i++ ){
-            if(asyncIters[i] != null){//){   //May be null: example 2 threads, from 1 source iterator
-                if(!asyncIters[i].hasNext() && virtualIters[i].hasNext()){
-                    //Soft reset
-                    log.info("SOFT RESET -- " + i);
-                    asyncIters[i].softReset();;
-                }
+            if(asyncIters[i] != null){ //May be null: example 2 threads, from 1 source iterator
+                softResetIfRequired(i); //Avoid RC: async iterator might have shut down before more data was added to backing iterator
+
                 if(asyncIters[i].hasNext()) {
                     out[i] = asyncIters[i].next();
                     count++;
                 }
             }
+
+            //AsyncDataSetIterator iter = asyncIters[i];
+            //log.info( "FIRST LOOP: " + i + " - " + (iter == null ? "NULL" : "Has next: " + iter.hasNext()) + " (backing iter: " + (virtualIters[i] == null ? "NULL" : virtualIters[i].hasNext()) + ")");
         }
 
         if(count == maxDataSets)
@@ -131,11 +122,14 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
             }
 
             boolean anyElementsRemaining = false;
-            for(AsyncDataSetIterator iter : asyncIters){        //TODO let's not always iterate in this order - other async iters could have ready elements
+            for( int j=0; j<asyncIters.length; j++ ){   //TODO let's not always iterate in this order - other async iters could have immediately ready elements
+                AsyncDataSetIterator iter = asyncIters[j];
                 if(iter == null)    //May be null: example 2 threads, from 1 source iterator
                     continue;
+                softResetIfRequired(j); //Avoid RC: async iterator might have shut down before more data was added to backing iterator
+
                 if(iter.hasNext()){
-                    out[i] = iter.next();
+                    out[j] = iter.next();
                     count++;
                 }
 
@@ -171,6 +165,13 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
 
         log.info("RETURNING: " + out2.length + " DATASETS (FEWER THAN REQUESTED) - QUEUE SIZE: " + iteratorsToProcess.size());
         return out2;
+    }
+
+    protected void softResetIfRequired(int iteratorNum){
+        if(asyncIters[iteratorNum] != null && !asyncIters[iteratorNum].hasNext() && asyncIters[iteratorNum].hasNext()){
+            log.info("Soft reset of iterator {}", iteratorNum);
+            asyncIters[iteratorNum].softReset();
+        }
     }
 
 
