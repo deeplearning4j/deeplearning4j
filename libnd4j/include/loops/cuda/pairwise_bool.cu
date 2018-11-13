@@ -15,13 +15,13 @@
  ******************************************************************************/
 
 //  @author raver119@gmail.com
-//  @author Yurii Shyrma (iuriish@yahoo.com)
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 08.11.2018
 
-#ifndef PAIRWISE_CU
-#define PAIRWISE_CU
+#ifndef PAIRWISE_BOOL_CU
+#define PAIRWISE_BOOL_CU
 
 
-#include "../pairwise_transform.h"
+#include "../pairwise_bool.h"
 
 
 using namespace simdOps;
@@ -34,7 +34,7 @@ __device__ void pairwiseSimpleGeneric(void* x, Nd4jLong *xShapeInfo,
 									void *params, 
 									int *allocationBuffer) {
    
-    functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer, nullptr, nullptr);
+    functions::pairwise_transforms::PairWiseBoolTransform<X,Z>::template transformCuda<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer, nullptr, nullptr);
 }
 
 
@@ -46,7 +46,7 @@ __global__ void pairwiseSimpleShaped(void* x, Nd4jLong *xShapeInfo,
 									void *params, 
 									int *allocationBuffer) {
         
-	pairwiseSimpleGeneric<X, Y, Z, OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer);
+	pairwiseSimpleGeneric<X, Z, OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer);
 }
 
 
@@ -55,22 +55,22 @@ namespace functions           {
 namespace pairwise_transforms {
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z>
+template<typename X, typename Z>
 template<typename OpType>
-void _CUDA_H PairWiseTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, 
+void _CUDA_H PairWiseBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, 
 														void *vx, Nd4jLong *xShapeInfo, 
 														void *vy, Nd4jLong *yShapeInfo, 
 														void *vz, Nd4jLong *zShapeInfo, 
 														void *vextraParams, 
 														int *allocPointer){
 
-	pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
+	pairwiseSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z>
+template<typename X, typename Z>
 template<typename OpType>
-__device__ void PairWiseTransform<X,Y,Z>::transform(void *vx, Nd4jLong *xShapeInfo, 
+__device__ void PairWiseBoolTransform<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo, 
 													void *vy, Nd4jLong *yShapeInfo, 
 													void *vz, Nd4jLong *zShapeInfo, 
 													void *vextraParams, 
@@ -78,8 +78,9 @@ __device__ void PairWiseTransform<X,Y,Z>::transform(void *vx, Nd4jLong *xShapeIn
 													int *allocPointer, 
 													UnifiedSharedMemory *manager, 
 													Nd4jLong *tadOnlyShapeInfo){
+	       
 	auto x = reinterpret_cast<X*>(vx);
-	auto y = reinterpret_cast<Y*>(vy);
+	auto y = reinterpret_cast<X*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
     auto extraParams = reinterpret_cast<Z*>(vextraParams);    
 
@@ -91,9 +92,9 @@ __device__ void PairWiseTransform<X,Y,Z>::transform(void *vx, Nd4jLong *xShapeIn
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename T, typename Y, typename Z>
+template<typename X, typename Z>
 template<typename OpType>
-__device__ void PairWiseTransform<T,Y,Z>::transformCuda(Nd4jLong len,
+__device__ void PairWiseBoolTransform<X,Z>::transformCuda(Nd4jLong len,
 														void *vx, void *vy,
 														Nd4jLong xEws, Nd4jLong yEws,
 														void *vparams,
@@ -101,8 +102,8 @@ __device__ void PairWiseTransform<T,Y,Z>::transformCuda(Nd4jLong len,
 														int *allocPointer, 
 														UnifiedSharedMemory *manager,
 														Nd4jLong *tadOnlyShapeInfo) {
-	auto x = reinterpret_cast<T*>(vx);
-	auto y = reinterpret_cast<Y*>(vy);
+	auto x = reinterpret_cast<X*>(vx);
+	auto y = reinterpret_cast<X*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
 	auto params = reinterpret_cast<Z*>(vparams);
 
@@ -119,9 +120,9 @@ __device__ void PairWiseTransform<T,Y,Z>::transformCuda(Nd4jLong len,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z>
+template<typename X, typename Z>
 template<typename OpType>
-__device__ void PairWiseTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xShapeInfo, 
+__device__ void PairWiseBoolTransform<X,Z>::transformCuda(void *vx, Nd4jLong *xShapeInfo, 
 														void *vy, Nd4jLong *yShapeInfo, 
 														void *vz, Nd4jLong *zShapeInfo, 
 														void *vextraParams, 
@@ -130,7 +131,7 @@ __device__ void PairWiseTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xSha
 														Nd4jLong *tadOnlyShapeInfo) {
 
 	auto x = reinterpret_cast<X*>(vx);
-	auto y = reinterpret_cast<Y*>(vy);
+	auto y = reinterpret_cast<X*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
 	auto extraParams = reinterpret_cast<Z*>(vextraParams);
 
@@ -195,22 +196,21 @@ __device__ void PairWiseTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xSha
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z>
-void PairWiseTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams) {
+template<typename X, typename Y>
+void PairWiseBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams) {
 	
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	auto allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
     auto xType = nd4j::DataTypeUtils::fromT<X>();
-    auto yType = nd4j::DataTypeUtils::fromT<Y>();
-    auto zType = nd4j::DataTypeUtils::fromT<Z>();
+    auto yType = nd4j::DataTypeUtils::fromT<Y>();    
 
-	DISPATCH_BY_OPNUM_TTT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer), PAIRWISE_TRANSFORM_OPS);
+	DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer), PAIRWISE_BOOL_OPS);
 }
       
 
 }
 }
 
-#endif // PAIRWISE_CU
+#endif // PAIRWISE_BOOL_CU
