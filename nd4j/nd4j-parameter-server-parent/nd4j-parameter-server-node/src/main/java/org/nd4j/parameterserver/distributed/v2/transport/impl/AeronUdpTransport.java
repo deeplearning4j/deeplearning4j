@@ -399,6 +399,26 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         return true;
     }
 
+
+    @Override
+    protected boolean isOnline(@NonNull String nodeId) {
+        try {
+            val s = super.isOnline(nodeId);;
+            return s;
+        } catch (NoSuchElementException e) {
+            try {
+                aeronLock.lock();
+
+                if (remoteConnections.containsKey(nodeId))
+                    return remoteConnections.get(nodeId).getPublication().isConnected();
+                else
+                    throw new NoSuchElementException("No such connection: [" + nodeId + "]");
+            } finally {
+                aeronLock.unlock();
+            }
+        }
+    }
+
     @Override
     public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
         synchronized (mesh) {
@@ -408,7 +428,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                     return;
                 }
             } catch (NoSuchElementException e) {
-                // just return on unknown node
+                    // just return on unknown node
                 log.warn("Stepping over node [{}]", id);
                 return;
             }
