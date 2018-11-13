@@ -339,6 +339,7 @@ public class MeshOrganizerTest {
 
 
                 for (val n:mesh2.flatNodes()) {
+                    assertNotNull(n.status());
                     assertEquals(mesh1.getNodeById(n.getId()).status(), n.status());
                 }
             }
@@ -365,6 +366,7 @@ public class MeshOrganizerTest {
 
 
                 for (val n:mesh2.flatNodes()) {
+                    assertNotNull(n.status());
                     assertEquals(mesh1.getNodeById(n.getId()).status(), n.status());
                 }
             }
