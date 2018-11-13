@@ -421,7 +421,9 @@ public abstract  class BaseTransport  implements Transport {
             meshClone = mesh.get().clone();
         }
 
-        propagateMessageDirect(new MeshUpdateMessage(meshClone));
+        // if we're on master - we'll update other nodes
+        if (masterMode)
+            propagateMessageDirect(new MeshUpdateMessage(meshClone));
     }
 
     /**
@@ -642,7 +644,11 @@ public abstract  class BaseTransport  implements Transport {
                         /**
                          * This method is called from driver context only
                          */
-                        throw new RuntimeException(e);
+                        if (masterMode) {
+                            markNodeOffline(n.getId());
+                        } else {
+                            // no-op for workers
+                        }
                     }
                 }
             };
