@@ -277,9 +277,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
         this.thread = new AsyncPrefetchThread(buffer, backedIterator, terminator, null);
         Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
         thread.setDaemon(true);
-        this.thread.start();
         hasDepleted.set(false);
-        //log.info("SOFT RESET COMPLETE. HAS NEXT: " + hasNext());
+        this.thread.start();
+        log.info("SOFT RESET COMPLETE. HAS NEXT: " + hasNext());
     }
 
 
@@ -375,7 +375,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
             return true;
         } catch (Exception e) {
-            log.error("Premature end of loop!");
+            log.error("Premature end of AsyncDataSetIterator loop!");
             throw new RuntimeException(e);
         }
     }
