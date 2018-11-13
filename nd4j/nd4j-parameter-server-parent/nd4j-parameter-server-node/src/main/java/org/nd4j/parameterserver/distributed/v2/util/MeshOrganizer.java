@@ -410,14 +410,14 @@ public class MeshOrganizer implements Serializable {
         @Getter(AccessLevel.NONE)
         @Setter(AccessLevel.NONE)
         @Builder.Default
-        private Atomic<NodeStatus> status = new Atomic<>(NodeStatus.ONLINE);
+        private NodeStatus status = NodeStatus.ONLINE;
 
         /**
          * This method returns current status of this node
          * @return
          */
         public synchronized NodeStatus status() {
-            return status.get();
+            return status;
         }
 
         /**
@@ -425,7 +425,7 @@ public class MeshOrganizer implements Serializable {
          * @param status
          */
         public synchronized void status(@NonNull NodeStatus status) {
-            this.status.set(status);
+            this.status = status;
         }
 
 
