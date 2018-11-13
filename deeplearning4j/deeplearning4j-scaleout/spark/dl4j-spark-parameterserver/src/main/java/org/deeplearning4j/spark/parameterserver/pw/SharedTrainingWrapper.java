@@ -455,10 +455,11 @@ public class SharedTrainingWrapper {
                 throw new DL4JInvalidConfigException("No iterators were defined for training");
 
             try {
-                while((iteratorsDS != null && !iteratorsDS.isEmpty()) || (iteratorsMDS != null && !iteratorsMDS.isEmpty())) {
+                while( (numWorkers == 1 && (iteratorDS != null && iteratorDS.hasNext()) || (iteratorMDS != null && iteratorMDS.hasNext())) ||
+                        (numWorkers > 1 && (iteratorsDS != null && !iteratorsDS.isEmpty()) || (iteratorsMDS != null && !iteratorsMDS.isEmpty()))) {
                     //Loop as a guard against concurrent modifications and RCs
 
-                    System.out.println("iteratorsDS: " + (iteratorsDS == null ? "null" : iteratorsDS.size()));
+                    //System.out.println("iteratorsDS: " + (iteratorsDS == null ? "null" : iteratorsDS.size()));
                     if (wrapper != null) {
                         if (iteratorsDS != null)
                             wrapper.fit(iteratorsDS);
