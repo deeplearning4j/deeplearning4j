@@ -550,8 +550,9 @@ public class ParallelWrapper implements AutoCloseable {
         long intcnt = 0;
 
 
-
-        while (blockWrapper.hasAnything() && !stopFit.get()) {
+        boolean any = false;
+        while ((any = blockWrapper.hasAnything()) && !stopFit.get()) {
+            System.out.println("INITIAL ANY");
             if (modelParamsSupplier != null) {
                 val params = modelParamsSupplier.get();
                 if (params != null) {
@@ -577,12 +578,18 @@ public class ParallelWrapper implements AutoCloseable {
             }
 
             intcnt++;
+            boolean any2 = blockWrapper.hasAnything();
+            if(any != any2){
+                throw new RuntimeException();
+            }
+            System.out.println("ANY: " + any + ", " + any2);
             org.nd4j.linalg.dataset.api.DataSet[] dataSets = blockWrapper.next(workers);
+            System.out.println("GOT: " + dataSets.length);
             var time2 = System.currentTimeMillis();
             var lastEtlTime = time2 - time1;
 
-            if (dataSets == null)
-                throw new ND4JIllegalStateException("You can't have NULL as DataSet");
+            if (dataSets == null || dataSets.length == 0)
+                throw new ND4JIllegalStateException("You can't have NULL or length 0 as DataSet: got " + (dataSets == null ? "null" : "length " + dataSets.length));
 
             if (zoo == null)
                 throw new IllegalStateException(
@@ -600,7 +607,7 @@ public class ParallelWrapper implements AutoCloseable {
 
             // feeding datasets
             for (int pos = 0; pos < dataSets.length; pos++) {
-                if (debug)
+//                if (debug)
                     log.info("Feeding dataset {} to worker {}", intcnt, pos);
 
                 zoo[pos].feedDataSet(dataSets[pos], lastEtlTime);

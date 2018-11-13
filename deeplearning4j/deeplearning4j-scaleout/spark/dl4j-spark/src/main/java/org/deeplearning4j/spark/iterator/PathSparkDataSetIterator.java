@@ -23,6 +23,7 @@ import org.datavec.spark.util.DefaultHadoopConfig;
 import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.spark.data.loader.RemoteFileSource;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.OutputStream;
@@ -59,6 +60,7 @@ public class PathSparkDataSetIterator extends BaseDataSetIterator<String> {
 
     @Override
     public DataSet next() {
+        Preconditions.checkState(hasNext(), "No next element available");
         DataSet ds;
         if (preloadedDataSet != null) {
             ds = preloadedDataSet;

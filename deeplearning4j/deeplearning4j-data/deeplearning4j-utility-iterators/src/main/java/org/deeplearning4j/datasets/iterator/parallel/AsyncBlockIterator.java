@@ -60,12 +60,16 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
     }
 
     public void attach(@NonNull Collection<DataSetIterator> newIters){
+        int count = 0;
+        for(DataSetIterator iter : newIters){
+            System.out.println("ADDING ITER: " + (count++) + " - hasNext: " + iter.hasNext());
+        }
         iteratorsToProcess.addAll(newIters);
     }
 
     @Override
     public boolean hasAnything() {
-        boolean any = iteratorsToProcess.size() > 0;
+        boolean any = iteratorsToProcess.size() > 0 && iteratorsToProcess.get(0).hasNext();     //Second condition to guard against empty iterators
         assignIteratorsToThreads();
 
         //Check iterators, restart any async iterators if required
@@ -74,17 +78,18 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
                 if(!asyncIters[i].hasNext()){
                     //Async iterator probably finished just before virtual iterator had more data added
                     asyncIters[i].softReset();
+                    System.out.println("SOFT RESET: " + i);
                 }
             }
         }
 
-        if(any)
-            return true;
-
         //Check async iterators for next elements
+        int iterNum = 0;
         for(AsyncDataSetIterator iter : asyncIters){
-            if(iter != null && iter.hasNext())  //May be null: example 2 threads, from 1 source iterator
+            if(iter != null && iter.hasNext()) {  //May be null: example 2 threads, from 1 source iterator
                 return true;
+            }
+            iterNum++;
         }
 
         return false;
@@ -132,12 +137,19 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
 
             if(!anyElementsRemaining){
                 //No iters have any elements left
+                System.out.println("NO ITERS HAVE ANY REMAINING");
+                int c = 0;
+                for(AsyncDataSetIterator iter : asyncIters){
+                    System.out.println( (c++) + " - " + (iter == null ? "NULL" : "Has next: " + iter.hasNext()));
+                }
                 break;
             }
         }
 
-        if(count == maxDataSets )
+        if(count == maxDataSets ) {
+            System.out.println("RETURNING: " + count + " DATASETS");
             return out;
+        }
 
         //Otherwise, compact array (remove null elements)...
         // TODO do this in a way that keeps device affinity intact as best we can
@@ -148,6 +160,8 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
                 continue;
             out2[x++] = ds;
         }
+
+        System.out.println("RETURNING: " + out2.length + " DATASETS (FEWER THAN REQUESTED)");
         return out2;
     }
 
@@ -166,11 +180,16 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
             int smallestQueueThread = -1;
             for (int i = 0; i < workerThreadDeviceAffinity.length; i++) {
                 if (!virtualIters[i].hasNext()) {
-                    //Empty
-                    log.info("Assigning iterator to device {}", i);
-                    virtualIters[i].getIterators().add(iteratorsToProcess.remove(0));
-                    if(asyncIters[i] == null){
-                        asyncIters[i] = new AsyncDataSetIterator(virtualIters[i], prefetchSize, true, workerThreadDeviceAffinity[i]);
+                    log.debug("Assigning iterator to device {}", i);
+                    Iterator<DataSet> iter = iteratorsToProcess.remove(0);
+                    if(iter.hasNext()){
+                        virtualIters[i].getIterators().add(iter);
+                        if(asyncIters[i] == null){
+                            asyncIters[i] = new AsyncDataSetIterator(virtualIters[i], prefetchSize, true, workerThreadDeviceAffinity[i]);
+                        }
+                    } else {
+                        log.warn("Skipping iterator that doesn't have any data");
+                        continue;
                     }
                     break;
                 } else {
@@ -182,12 +201,18 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
                 }
             }
 
-            if(smallestQueueThread >= 0){
-                virtualIters[smallestQueueThread].getIterators().add((Iterator<DataSet>) iteratorsToProcess.remove(0));
-                if(asyncIters[smallestQueueThread] == null){
-                    asyncIters[smallestQueueThread] = new AsyncDataSetIterator(virtualIters[smallestQueueThread], prefetchSize, true, workerThreadDeviceAffinity[smallestQueueThread]);
+            if(!iteratorsToProcess.isEmpty() && smallestQueueThread >= 0){
+                Iterator<DataSet> iter = iteratorsToProcess.remove(0);
+                if(iter.hasNext()){
+                    virtualIters[smallestQueueThread].getIterators().add(iter);
+                    if(asyncIters[smallestQueueThread] == null){
+                        asyncIters[smallestQueueThread] = new AsyncDataSetIterator(virtualIters[smallestQueueThread], prefetchSize, true, workerThreadDeviceAffinity[smallestQueueThread]);
+                    }
+                } else {
+                    log.warn("Skipping iterator that doesn't have any data");
+                    continue;
                 }
-                log.info("Assigning iterator to device {}", smallestQueueThread);
+                log.debug("Assigning iterator to device {}", smallestQueueThread);
             }
         }
     }
