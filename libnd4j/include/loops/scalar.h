@@ -78,6 +78,9 @@ namespace functions {
             __device__
             static void transformCuda(void* scalar, void *dy, Nd4jLong *shapeInfo, void *params, void *result,Nd4jLong *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
 
+
+            static __device__ void transformCudaLegacy(int opNum, void* scalar, void *dy, Nd4jLong *shapeInfo, void *params, void *result,Nd4jLong *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
+
             template<typename OpType>
             __device__
             static void transform(Nd4jLong n, void* scalar, void *dy, void *params, void *result, Nd4jLong *indexes, int *allocationBuffer, UnifiedSharedMemory *manager);

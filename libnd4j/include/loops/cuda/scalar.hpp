@@ -199,6 +199,15 @@ __device__ void ScalarTransform<X,Y,Z>::transform(Nd4jLong n,
         z[indexes[i]] = OpType::op(y[indexes[i]], scalar, params);
 }
 
+        template<typename X, typename Y, typename Z>
+        __device__ void ScalarTransform<X,Y,Z>::transformCudaLegacy(int opNum, void* vscalar,
+                                                              void *vy, Nd4jLong *yShapeInfo,
+                                                              void *vparams,
+                                                              void *vz, Nd4jLong *zShapeInfo,
+                                                              int *allocationBuffer,
+                                                              UnifiedSharedMemory *manager) {
+            DISPATCH_BY_OPNUM_TTT(transformCuda, PARAMS(vscalar, vy, yShapeInfo, vparams, vz, zShapeInfo, allocationBuffer, manager), SCALAR_OPS);
+        }
 ////////////////////////////////////////////////////////////////////////////////
 /**
 * Cuda implementation of transform

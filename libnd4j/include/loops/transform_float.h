@@ -75,6 +75,19 @@ namespace functions {
 			Nd4jLong *tadShapeInfo,
 			Nd4jLong *tadOffsets);
 
+	static  __device__ void transformCudaLegacy(
+			int opNum,
+			void *dy,
+			Nd4jLong *shapeInfo,
+			void *params,
+			void *result,
+			Nd4jLong *resultShapeInfo,
+			int *allocationPointer,
+			void *reductionPointer,
+			UnifiedSharedMemory *manager,
+			Nd4jLong *tadShapeInfo,
+			Nd4jLong *tadOffsets);
+
 	template<typename OpType>
 	static  __device__ void transformCuda(
 			Nd4jLong n,

@@ -164,6 +164,22 @@ namespace functions {
 	        }
 	    };
 
+        template<typename X, typename Y>
+        __device__ void TransformFloat<X,Y>::transformCudaLegacy(
+                int opNum,
+                void *dy,
+                Nd4jLong *shapeInfo,
+                void *params,
+                void *result,
+                Nd4jLong *resultShapeInfo,
+                int *allocationPointer,
+                void *reductionPointer,
+                UnifiedSharedMemory *manager,
+                Nd4jLong *tadShapeInfo,
+                Nd4jLong *tadOffsets) {
+            DISPATCH_BY_OPNUM_TT(transformCuda, PARAMS(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
+        }
+
         template<typename X, typename Z>
         template <typename OpType>
 	    __device__ void TransformFloat<X,Z>::transformCuda(
