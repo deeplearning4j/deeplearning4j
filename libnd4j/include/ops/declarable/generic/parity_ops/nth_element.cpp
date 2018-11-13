@@ -35,7 +35,7 @@ namespace nd4j {
             REQUIRE_TRUE(n < lastDim && n > 0, 0, "nth_element: n should be positive and less than last dimension size, but %i was given.", lastDim);
             REQUIRE_TRUE(input->rankOf() > 0, 0, "nth_element: The rank of input array should be at least 1, but %i is given", input->rankOf());            //
             if (output->lengthOf() == input->lengthOf())
-                memcpy(output->buffer(), input->getBuffer(), sizeof(T) * input->lengthOf());
+                output->assign(input);
             else {
                 if (reverse)
                     n = lastDim - n - 1;
