@@ -38,6 +38,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.enums.NodeStatus;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
 import org.nd4j.parameterserver.distributed.v2.exceptions.ND4JNotConnectedException;
@@ -51,6 +52,7 @@ import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -399,6 +401,19 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
     @Override
     public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
+        synchronized (mesh) {
+            try {
+                if (!isOnline(id)) {
+                    log.warn("Skipping node [{}]", id);
+                    return;
+                }
+            } catch (NoSuchElementException e) {
+                // just return on unknown node
+                log.warn("Stepping over node [{}]", id);
+                return;
+            }
+        }
+
         if (message.getOriginatorId() == null)
             message.setOriginatorId(this.id());
 

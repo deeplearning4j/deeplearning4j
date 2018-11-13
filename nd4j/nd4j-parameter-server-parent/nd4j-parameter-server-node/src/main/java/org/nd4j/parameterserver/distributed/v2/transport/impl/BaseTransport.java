@@ -29,6 +29,7 @@ import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.enums.NodeStatus;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
@@ -367,7 +368,15 @@ public abstract  class BaseTransport  implements Transport {
                     /**
                      * This code runs only in worker context
                      */
-                    throw new RuntimeException(e);
+                    // if root node is unreachable - just terminate
+                    if (mesh.get().getRootNode().getId().equals(upstreamId)) {
+                        log.error("Lost connection to root node:", e);
+                        throw new ND4JIllegalStateException("Lost connection to root node", e);
+                    } else {
+                        // if that's not root node - we'll change upstream here
+                        markNodeOffline(upstreamId);
+                    }
+                    //throw new RuntimeException(e);
                 }
             }
         }
@@ -383,10 +392,48 @@ public abstract  class BaseTransport  implements Transport {
                         /**
                          * This code runs in both driver & worker contexts
                          */
-                        throw new RuntimeException(e);
+                        if (masterMode) {
+                            // driver context
+                            // we should mark this node as offline
+                            // and skip it in future
+                            markNodeOffline(n.getId());
+                        } else {
+                            // just no-op, we'll ignore this node
+                        }
                     }
                 }
             };
+        }
+    }
+
+    /**
+     * This method marks node with given id as offline
+     * @param nodeId
+     */
+    protected void markNodeOffline(@NonNull String nodeId) {
+        MeshOrganizer meshClone;
+        synchronized (mesh) {
+            log.warn("Marking node [{}] offline. Remapping.", nodeId);
+
+            val node = mesh.get().getNodeById(nodeId);
+            node.status(NodeStatus.OFFLINE);
+
+            mesh.get().remapDownstreams(node);
+            meshClone = mesh.get().clone();
+        }
+
+        propagateMessageDirect(new MeshUpdateMessage(meshClone));
+    }
+
+    /**
+     * This method checks if node with given ID is online
+     * @param nodeId
+     * @return
+     */
+    protected boolean isOnline(String nodeId) {
+        synchronized (mesh) {
+            val node = mesh.get().getNodeById(nodeId);
+            return node.status() == NodeStatus.ONLINE;
         }
     }
 
@@ -450,6 +497,7 @@ public abstract  class BaseTransport  implements Transport {
             val response = HandshakeResponse.builder()
                     .build();
 
+            MeshOrganizer meshClone;
             synchronized (mesh) {
                 if (mesh.get().isKnownNode(message.getOriginatorId())) {
                     log.warn("Got request from known node [{}]. Remapping.", message.getOriginatorId());
@@ -457,7 +505,10 @@ public abstract  class BaseTransport  implements Transport {
                     // notifying transport implementation about node reconnect
                     onRemap(message.getOriginatorId());
 
-                    mesh.get().remapNodeAndDownstreams(message.getOriginatorId());
+                    val node = mesh.get().getNodeById(message.getOriginatorId());
+                    node.status(NodeStatus.ONLINE);
+
+                    mesh.get().remapNodeAndDownstreams(node);
                     // we say that this model has restarted
                     response.setRestart(true);
                 } else {
@@ -466,7 +517,9 @@ public abstract  class BaseTransport  implements Transport {
                     numerOfNodes.incrementAndGet();
                 }
 
-                response.setMesh(mesh.get().clone());
+
+                meshClone = mesh.get().clone();
+                response.setMesh(meshClone);
             }
 
             response.setRequestId(((HandshakeRequest) message).getRequestId());
@@ -475,7 +528,7 @@ public abstract  class BaseTransport  implements Transport {
             // update all other nodes with new mesh
             // this message is called only from  spark driver context probably
             try {
-                propagateMessageDirect(new MeshUpdateMessage(mesh.get()));
+                propagateMessageDirect(new MeshUpdateMessage(meshClone));
             } catch (Exception e) {
                 log.error("Wasn't able to propagate message from [{}]", id());
                 log.error("MeshUpdateMessage propagation failed:", e);

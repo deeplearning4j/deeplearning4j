@@ -200,12 +200,32 @@ public class MeshOrganizer implements Serializable {
     }
 
     /**
+     * This method reconnects given node to another node
+     */
+    public void remapDownstreams(@NonNull String ip) {
+        remapDownstreams(getNodeById(ip));
+    }
+
+    /**
      * This method remaps node and its downstreams somewhere
      * @param node
      */
     public synchronized void remapNodeAndDownstreams(@NonNull Node node) {
         version++;
         node.setUpstreamNode(this.rootNode);
+
+        for (val n: node.getDownstreamNodes()) {
+            this.rootNode.addDownstreamNode(n);
+            node.removeFromDownstreams(n);
+        }
+    }
+
+    /**
+     * This method remaps node and its downstreams somewhere
+     * @param node
+     */
+    public synchronized void remapDownstreams(@NonNull Node node) {
+        version++;
 
         for (val n: node.getDownstreamNodes()) {
             this.rootNode.addDownstreamNode(n);
@@ -401,10 +421,10 @@ public class MeshOrganizer implements Serializable {
         }
 
         /**
-         * This method ret
+         * This method allows to set status of this node
          * @param status
          */
-        protected synchronized void status(@NonNull NodeStatus status) {
+        public synchronized void status(@NonNull NodeStatus status) {
             this.status.set(status);
         }
 
