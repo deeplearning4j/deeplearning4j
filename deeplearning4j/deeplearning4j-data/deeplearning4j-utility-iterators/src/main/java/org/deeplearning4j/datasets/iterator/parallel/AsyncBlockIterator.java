@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.datasets.iterator.parallel;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -31,26 +32,23 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class AsyncBlockIterator implements BlockDataSetIterator {
 
     private final int[] workerThreadDeviceAffinity;
+    private final int prefetchSize;
     private final Queue<DataSetIterator> iteratorsToProcess = new ConcurrentLinkedQueue<>();
 
-    //Array index: device number
+    //Array index: thread number
+    @Getter
     private final AsyncDataSetIterator[] asyncIters;
+    @Getter
     private final VirtualDataSetIterator[] virtualIters;
 
-    public AsyncBlockIterator(@NonNull int[] workerThreadDeviceAffinity, List<DataSetIterator> initialIterators ){
+    public AsyncBlockIterator(@NonNull int[] workerThreadDeviceAffinity, int prefetchSize, List<DataSetIterator> initialIterators ){
         Preconditions.checkState(workerThreadDeviceAffinity.length > 0, "Number of devices (workerThreadDeviceAffinity.length) must be > 0 - got %s", workerThreadDeviceAffinity.length);
         this.workerThreadDeviceAffinity = workerThreadDeviceAffinity;
+        this.prefetchSize = prefetchSize;
         if(initialIterators != null){
             iteratorsToProcess.addAll(initialIterators);
         }
 
-        Set<Integer> set = new HashSet<>();
-        for( int i : workerThreadDeviceAffinity){
-            Preconditions.checkState(!set.contains(i), "Encountered device %s multiple times", i);
-            set.add(i);
-        }
-
-        //One async thread per device
         asyncIters = new AsyncDataSetIterator[workerThreadDeviceAffinity.length];
         virtualIters = new VirtualDataSetIterator[workerThreadDeviceAffinity.length];
         for( int i=0; i<workerThreadDeviceAffinity.length; i++ ){
@@ -58,10 +56,14 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
         }
     }
 
+    public void attach(@NonNull Collection<DataSetIterator> newIters){
+        iteratorsToProcess.addAll(newIters);
+    }
+
     @Override
     public boolean hasAnything() {
         boolean any = iteratorsToProcess.size() > 0;
-        assignIteratorsToDevices();
+        assignIteratorsToThreads();
 
         if(any)
             return true;
@@ -80,15 +82,14 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
         if(!hasAnything())
             throw new NoSuchElementException("No remaining elements");
         Preconditions.checkState(maxDataSets > 0 && maxDataSets <= workerThreadDeviceAffinity.length, "Max data sets must be in" +
-                " range 1 to %s inclusive, got %s", workerThreadDeviceAffinity.length-1, maxDataSets);
+                " range 1 to %s inclusive, got %s", workerThreadDeviceAffinity.length, maxDataSets);
 
         //Try to maintain existing thread-device affinity by fetching DataSets from corresponding iterators
         org.nd4j.linalg.dataset.api.DataSet[] out = new org.nd4j.linalg.dataset.api.DataSet[maxDataSets];
         int count = 0;
         for( int i=0; i<maxDataSets; i++ ){
-            int deviceForThread = workerThreadDeviceAffinity[i];
-            if(asyncIters[deviceForThread].hasNext()){
-                out[i] = asyncIters[deviceForThread].next();
+            if(asyncIters[i].hasNext()){
+                out[i] = asyncIters[i].next();
                 count++;
             }
         }
@@ -137,35 +138,41 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
 
 
 
-    protected synchronized void assignIteratorsToDevices(){
+    protected synchronized void assignIteratorsToThreads(){
         if(iteratorsToProcess.isEmpty())
             return;
 
         //Challenge 1: Workers may be feeding at different rates
         //Challenge 2: DataSetIterators may have different number of examples in each
 
-        //Assignment algorithm: assign to the device with the smallest queue (or empty queue)
+        //Assignment algorithm: assign to the thread with the smallest queue (or empty queue)
         while(!iteratorsToProcess.isEmpty()) {
             int smallestQueueSize = Integer.MAX_VALUE;
-            int smallestQueueDevice = -1;
+            int smallestQueueThread = -1;
             for (int i = 0; i < workerThreadDeviceAffinity.length; i++) {
                 if (!virtualIters[i].hasNext()) {
                     //Empty
                     log.info("Assigning iterator to device {}", i);
                     virtualIters[i].getIterators().add(iteratorsToProcess.remove());
+                    if(asyncIters[i] == null){
+                        asyncIters[i] = new AsyncDataSetIterator(virtualIters[i], prefetchSize, true, workerThreadDeviceAffinity[i]);
+                    }
                     break;
                 } else {
                     int currQueueSize = virtualIters[i].getIterators().size() - virtualIters[i].getPosition().get();
                     if(currQueueSize < smallestQueueSize){
                         smallestQueueSize = currQueueSize;
-                        smallestQueueDevice = i;
+                        smallestQueueThread = i;
                     }
                 }
             }
 
-            if(smallestQueueDevice >= 0){
-                virtualIters[smallestQueueDevice].getIterators().add(iteratorsToProcess.remove());
-                log.info("Assigning iterator to device {}", smallestQueueDevice);
+            if(smallestQueueThread >= 0){
+                virtualIters[smallestQueueThread].getIterators().add(iteratorsToProcess.remove());
+                if(asyncIters[smallestQueueThread] == null){
+                    asyncIters[smallestQueueThread] = new AsyncDataSetIterator(virtualIters[smallestQueueThread], prefetchSize, true, workerThreadDeviceAffinity[smallestQueueThread]);
+                }
+                log.info("Assigning iterator to device {}", smallestQueueThread);
             }
         }
     }
