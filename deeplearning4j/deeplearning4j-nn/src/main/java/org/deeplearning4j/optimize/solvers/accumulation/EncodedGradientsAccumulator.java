@@ -505,6 +505,9 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
                     INDArray compressed = array.unsafeDuplication();
                     try {
+                        System.out.println("ABOUT TO GET MESSAGES");
+                        System.out.println("MESSAGES SIZE: " + messages.get(i).size());
+                        System.out.println("QUEUE SIZE: " + queueSize);
                         messages.get(i).put(compressed);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();

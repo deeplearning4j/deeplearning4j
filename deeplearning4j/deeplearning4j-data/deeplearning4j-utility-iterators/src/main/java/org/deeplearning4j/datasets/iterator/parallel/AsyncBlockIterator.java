@@ -62,7 +62,7 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
     public void attach(@NonNull Collection<DataSetIterator> newIters){
         int count = 0;
         for(DataSetIterator iter : newIters){
-            System.out.println("ADDING ITER: " + (count++) + " - hasNext: " + iter.hasNext());
+            log.info("ADDING ITER: " + (count++) + " - hasNext: " + iter.hasNext());
         }
         iteratorsToProcess.addAll(newIters);
     }
@@ -78,7 +78,7 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
                 if(!asyncIters[i].hasNext()){
                     //Async iterator probably finished just before virtual iterator had more data added
                     asyncIters[i].softReset();
-                    System.out.println("SOFT RESET: " + i);
+                    log.info("SOFT RESET: " + i);
                 }
             }
         }
@@ -106,9 +106,16 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
         org.nd4j.linalg.dataset.api.DataSet[] out = new org.nd4j.linalg.dataset.api.DataSet[maxDataSets];
         int count = 0;
         for( int i=0; i<maxDataSets; i++ ){
-            if(asyncIters[i] != null && asyncIters[i].hasNext()){   //May be null: example 2 threads, from 1 source iterator
-                out[i] = asyncIters[i].next();
-                count++;
+            if(asyncIters[i] != null){//){   //May be null: example 2 threads, from 1 source iterator
+                if(!asyncIters[i].hasNext() && virtualIters[i].hasNext()){
+                    //Soft reset
+                    log.info("SOFT RESET -- " + i);
+                    asyncIters[i].softReset();;
+                }
+                if(asyncIters[i].hasNext()) {
+                    out[i] = asyncIters[i].next();
+                    count++;
+                }
             }
         }
 
@@ -137,17 +144,18 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
 
             if(!anyElementsRemaining){
                 //No iters have any elements left
-                System.out.println("NO ITERS HAVE ANY REMAINING");
+                log.info("NO ITERS HAVE ANY REMAINING");
                 int c = 0;
                 for(AsyncDataSetIterator iter : asyncIters){
-                    System.out.println( (c++) + " - " + (iter == null ? "NULL" : "Has next: " + iter.hasNext()));
+                    log.info( c + " - " + (iter == null ? "NULL" : "Has next: " + iter.hasNext()) + " (backing iter: " + (virtualIters[c] == null ? "NULL" : virtualIters[c].hasNext()) + ")");
+                    c++;
                 }
                 break;
             }
         }
 
         if(count == maxDataSets ) {
-            System.out.println("RETURNING: " + count + " DATASETS");
+            log.info("RETURNING: " + count + " DATASETS");
             return out;
         }
 
@@ -161,7 +169,7 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
             out2[x++] = ds;
         }
 
-        System.out.println("RETURNING: " + out2.length + " DATASETS (FEWER THAN REQUESTED)");
+        log.info("RETURNING: " + out2.length + " DATASETS (FEWER THAN REQUESTED) - QUEUE SIZE: " + iteratorsToProcess.size());
         return out2;
     }
 

@@ -550,9 +550,7 @@ public class ParallelWrapper implements AutoCloseable {
         long intcnt = 0;
 
 
-        boolean any = false;
-        while ((any = blockWrapper.hasAnything()) && !stopFit.get()) {
-            System.out.println("INITIAL ANY");
+        while (blockWrapper.hasAnything() && !stopFit.get()) {
             if (modelParamsSupplier != null) {
                 val params = modelParamsSupplier.get();
                 if (params != null) {
@@ -578,13 +576,8 @@ public class ParallelWrapper implements AutoCloseable {
             }
 
             intcnt++;
-            boolean any2 = blockWrapper.hasAnything();
-            if(any != any2){
-                throw new RuntimeException();
-            }
-            System.out.println("ANY: " + any + ", " + any2);
             org.nd4j.linalg.dataset.api.DataSet[] dataSets = blockWrapper.next(workers);
-            System.out.println("GOT: " + dataSets.length);
+            System.out.println("GOT " + dataSets.length + " DATASETS");
             var time2 = System.currentTimeMillis();
             var lastEtlTime = time2 - time1;
 
