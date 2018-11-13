@@ -61,7 +61,7 @@ namespace functions {
         class ReduceBoolFunction {
         public:
 #ifdef __CUDACC__
-           template<typename OpType>
+            template<typename OpType>
             static __device__ void aggregatePartials(void *sPartials, Nd4jLong tid, Nd4jLong numItems, void *extraParams);
 
             template<typename OpType>
