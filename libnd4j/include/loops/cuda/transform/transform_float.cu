@@ -16,11 +16,11 @@
 
 //
 // @author raver119@gmail.com
-// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <Environment.h>
 #include <loops/transform_float.h>
+#include <types/types.h>
 #include <op_boilerplate.h>
 
 #include <loops/legacy_ops.h>
@@ -28,28 +28,6 @@
 
 using namespace simdOps;
 
-template<typename X, typename Z>
-__device__ void transformGeneric(
-		int opNum,
-		Nd4jLong n,
-		void *dy,
-		Nd4jLong incy,
-		void *params,
-		void *result,
-		Nd4jLong resultStride, int *allocationPointer, void *reductionPointer) {
-
-	functions::transform::TransformFloat<X,Z>::transformCuda(
-		opNum,
-		n,
-		dy,
-		incy,
-		params,
-		result,
-		resultStride,
-		allocationPointer,
-		reductionPointer,
-		nullptr);
-}
 
 template<typename X, typename Z, typename OpClass>
 __device__ void transformSimpleGeneric(
@@ -70,30 +48,6 @@ __device__ void transformSimpleGeneric(
 		allocationPointer,
 		reductionPointer,
 		nullptr);
-}
-
-
-
-template<typename X, typename Z>
-__device__ void transformGeneric(
-		int opNum,
-		void *dy,
-		Nd4jLong *xShapeInfo, int xRank,
-		void *params,
-		void *result,Nd4jLong *resultShapeInfo, int zRank, int *allocationPointer, void *reductionPointer) {
-
-	functions::transform::TransformFloat<X,Z>::transformCuda(
-	    opNum,
-	    dy,
-	    xShapeInfo,
-	    params,
-	    result,
-	    resultShapeInfo,
-	    allocationPointer,
-	    reductionPointer,
-	    nullptr);
-
-
 }
 
 template<typename X, typename Z, typename OpClass>
@@ -128,6 +82,17 @@ __device__ void transformSimpleGeneric(
 // DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, double, INPUT(Nd4jLong n, double *x, Nd4jLong xStride, double *extraParams, double *z, Nd4jLong zStride, int *allocationPointer, double *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 // DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, float16, INPUT(Nd4jLong n, float16 *x, Nd4jLong xStride, float16 *extraParams, float16 *z, Nd4jLong zStride, int *allocationPointer, float16 *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
+
+template <typename X, typename Z, typename OpType>
+__global__ void transformSimple(void *dy, Nd4jLong *xShapeInfo, int xRank,
+								void *params,
+								void *result, Nd4jLong *resultShapeInfo, int zRank,
+								int *allocationPointer,
+								void *reductionPointer,
+								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+	transformSimpleGeneric<X, Z, OpType>(dy, xShapeInfo, xRank, params, result, resultShapeInfo, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+}
+
 // transform shaped
 // DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float, INPUT(float *x, Nd4jLong *xShape, int xRank, float *extraParams, float *z, Nd4jLong *zShape, int zRank, int *allocationPointer, float *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
 // DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, double, INPUT(double *x, Nd4jLong *xShape, int xRank, double *extraParams, double *z, Nd4jLong *zShape, int zRank, int *allocationPointer, double *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
@@ -138,51 +103,13 @@ __device__ void transformSimpleGeneric(
 namespace functions {
     namespace transform {
 
-        template<typename X, typename Z>
-        _CUDA_H void TransformFloat<X,Z>::executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, Nd4jLong n, void *x, Nd4jLong xStride, void *extraParams, void *z, Nd4jLong zStride, int *allocationPointer, void *reductionPointer) {
-            // DISPATCH_SIMPLE(transformStrided, float, PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
-
-            DEBUG_KERNEL(stream, opNum);
-        };
-
-        // template <>
-        // _CUDA_H void Transform<double>::executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, Nd4jLong n, double *x, Nd4jLong xStride, double *extraParams, double *z, Nd4jLong zStride, int *allocationPointer, double *reductionPointer) {
-        //     DISPATCH_SIMPLE(transformStrided, double, PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
-
-        //     DEBUG_KERNEL(stream, opNum);
-        // };
-
-        // template <>
-        // _CUDA_H void Transform<float16>::executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, Nd4jLong n, float16 *x, Nd4jLong xStride, float16 *extraParams, float16 *z, Nd4jLong zStride, int *allocationPointer, float16 *reductionPointer) {
-        //     DISPATCH_SIMPLE(transformStrided, float16, PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
-
-        //     DEBUG_KERNEL(stream, opNum);
-        // };
-
-        template<typename X, typename Z>
-        _CUDA_H void TransformFloat<X,Z>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-            
-            // DISPATCH_SIMPLE(transformShaped, float, PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
+        template<typename X, typename Y>
+        _CUDA_H void TransformFloat<X,Y>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+			DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
 
             DEBUG_KERNEL(stream, opNum);
         }
 
-        // template <>
-        // _CUDA_H void Transform<float16>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, float16 *x, Nd4jLong *xShape, int xRank, float16 *extraParams, float16 *z, Nd4jLong *zShape, int zRank, int *allocationPointer, float16 *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-            
-        //     DISPATCH_SIMPLE(transformShaped, float16, PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
-            
-        //     if (nd4j::Environment::getInstance()->isDebug())
-		      //   checkCudaErrors(cudaStreamSynchronize(*stream));
-        // }
-
-        // template <>
-        // _CUDA_H void Transform<double>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, double *x, Nd4jLong *xShape, int xRank, double *extraParams, double *z, Nd4jLong *zShape, int zRank, int *allocationPointer, double *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-            
-        //     DISPATCH_SIMPLE(transformShaped, double, PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
-
-        //     DEBUG_KERNEL(stream, opNum);
-        // }
 
         template<typename X, typename Z>
         template <typename OpType>
@@ -232,7 +159,7 @@ namespace functions {
 			        Nd4jLong xCoord[MAX_RANK];
 			
 		    	    for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-						shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, length, xCoord);
+						shape::ind2subC(xRank,shape::shapeOf(shapeInfo),i, length, xCoord);
 						
 				        auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
 						auto resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xCoord,xRank);
@@ -276,42 +203,12 @@ namespace functions {
 	    }
 
 
-        template<typename X, typename Z>
-        __device__ void TransformFloat<X,Z>::transformCuda(
-			const int opNum,
-			void *dy,
-			Nd4jLong *shapeInfo,
-			void *params,
-			void *result,
-			Nd4jLong *resultShapeInfo,
-			int *allocationPointer,
-			void *reductionPointer,
-			UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-                // DISPATCH_BY_OPNUM(transformCuda, PARAMS(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
-	    }
+		template<typename X, typename Z>
+		template <typename OpType>
+		_CUDA_H void TransformFloat<X,Z>::intermediateShaped(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+			transformSimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+		}
 
-        template<typename X, typename Z>
-        __device__ void TransformFloat<X,Z>::transformCuda(
-			const int opNum,
-			Nd4jLong n,
-			void *dy,
-			Nd4jLong incy,
-			void *params,
-			void *result,
-			Nd4jLong resultStride,
-			int *allocationPointer,
-			void *reductionPointer,
-			UnifiedSharedMemory *manager) {
-                // DISPATCH_BY_OPNUM(transformCuda, PARAMS(n, dy, incy, params, result, resultStride, allocationPointer, reductionPointer, manager), TRANSFORM_OPS);
-	    }
-
-
-        //template class ND4J_EXPORT Transform<float>;
-        //template class ND4J_EXPORT Transform<float16>;
-        //template class ND4J_EXPORT Transform<double>;
-
-        // BUILD_CALL_1(template __device__ void Transform<float>::transformCuda, float, (float*, Nd4jLong*, float*, float*,Nd4jLong*, int*,float*, UnifiedSharedMemory*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
-        // BUILD_CALL_1(template __device__ void Transform<float16>::transformCuda, float16, (float16*, Nd4jLong*, float16*, float16*,Nd4jLong*, int*, float16*, UnifiedSharedMemory*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
-        // BUILD_CALL_1(template __device__ void Transform<double>::transformCuda, double, (double*, Nd4jLong*, double*, double*,Nd4jLong*, int*, double*, UnifiedSharedMemory*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformFloat, , LIBND4J_TYPES, FLOAT_TYPES);
     }
 }
