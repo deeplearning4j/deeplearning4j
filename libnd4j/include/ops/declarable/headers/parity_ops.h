@@ -1443,7 +1443,31 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_reduce_dot_bp)
         DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 2, false, 0, 0);
         #endif
-
+        /**
+         * reduce_logsumexp - tf.reduce_logsumexe operation
+         * 
+         * input params:
+         *    0 - NDArray (input)
+         *    1 - 1D NDArray (axis) (optional) - integer array
+         *
+         * T_ARG param (optional):
+         * 0 - keep_dims != 0.
+         *
+         * int params (optional):
+         *    0 - axe 1
+         *    1 - axe 2
+         *    ...
+         *    N-1 axe N 
+         *
+         *  CAUTION: All axes are optional and should be between 0 and input->rankOf() - 1
+         *  and put either with second param or as integers but not both
+         *
+         * output:
+         *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
+         */
+        #if NOT_EXCLUDED(OP_reduce_logsumexp)
+        DECLARE_CUSTOM_OP(reduce_logsumexp, 1, 1, false, 0, 0);
+        #endif
         /**
         * This op make bilinear interpolated resize for given tensor
         *
