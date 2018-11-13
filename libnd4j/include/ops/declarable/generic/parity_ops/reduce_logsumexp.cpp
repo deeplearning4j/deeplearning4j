@@ -40,7 +40,9 @@ namespace ops {
             REQUIRE_TRUE(item > -input->shapeInfo()[0] || item <input->shapeInfo()[0], 0, "reduce_logsumexp: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-        input->template reduceAlongDimension<simdOps::LogSumExp<T>>(output, axes, keepDims);
+        Nd4jLong maxI = input->argMax();
+        T maxVals = input->getScalar(maxI);
+        input->template reduceAlongDimension<simdOps::LogSumExp<T>>(output, axes, keepDims, false, &maxVals);
 
         return ND4J_STATUS_OK;
     }
