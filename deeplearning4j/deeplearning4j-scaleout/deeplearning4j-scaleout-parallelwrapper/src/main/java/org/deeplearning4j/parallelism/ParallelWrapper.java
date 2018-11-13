@@ -553,7 +553,7 @@ public class ParallelWrapper implements AutoCloseable {
             }
 
             intcnt++;
-            val dataSets = blockWrapper.next(workers);
+            DataSet[] dataSets = blockWrapper.next(workers);
             var time2 = System.currentTimeMillis();
             var lastEtlTime = time2 - time1;
 

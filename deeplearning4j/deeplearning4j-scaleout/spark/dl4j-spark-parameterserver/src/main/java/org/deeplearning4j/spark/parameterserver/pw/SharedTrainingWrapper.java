@@ -109,6 +109,7 @@ public class SharedTrainingWrapper {
 
         // now we're creating DataSetIterators, to feed ParallelWrapper
         iteratorDS = new VirtualDataSetIterator(iteratorsDS);
+        iteratorMDS = new VirtualMultiDataSetIterator(iteratorsMDS);
     }
 
     public static synchronized SharedTrainingWrapper getInstance(long id) {

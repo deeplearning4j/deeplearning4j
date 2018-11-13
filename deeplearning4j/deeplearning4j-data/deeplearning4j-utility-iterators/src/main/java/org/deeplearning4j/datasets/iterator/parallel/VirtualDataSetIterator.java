@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.spark.parameterserver.iterators;
+package org.deeplearning4j.datasets.iterator.parallel;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -39,6 +39,7 @@ public class VirtualDataSetIterator implements DataSetIterator {
      * and will push them is round-robin manner to ParallelWrapper workers
      */
 
+    @Getter
     protected final List<Iterator<DataSet>> iterators;
     @Getter
     protected final AtomicInteger position;
