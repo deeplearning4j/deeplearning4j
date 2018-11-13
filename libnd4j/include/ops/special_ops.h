@@ -191,7 +191,7 @@ namespace simdOps {
                 }
     			int pool_size = (int)(nd4j::math::nd4j_ceil<double,T>((double) (hend-hstart) / (double) dH) * (int) nd4j::math::nd4j_ceil<double,T>((double) (wend-wstart) / (double) dW));	//Accounts for dilation
 
-    			T sum = poolingMode == 0 ? -nd4j::DataTypeUtils::max<Z>() : static_cast<T>(0.f);
+    			T sum = poolingMode == 0 ? -nd4j::DataTypeUtils::max<T>() : static_cast<T>(0.f);
 
     			T *input_slice = dx + (n * strideB + c * strideC);
     			if (poolingMode == 0) {

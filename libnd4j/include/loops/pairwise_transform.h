@@ -28,16 +28,17 @@
 #endif
 
 #include <helper_cuda.h>
-#include <pairwise_util.h>
 #include <dll.h>
 #include <stdio.h>
+#include <ops/ops.h>
+#include <op_boilerplate.h>
+#include <types/types.h>
 #include "legacy_ops.h"
-
 
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <helpers/sharedmem.h>
+#include <types/float16.h>
 #endif
 
 #ifndef _OPENMP
@@ -57,30 +58,25 @@ namespace functions {
         class PairWiseTransform {
         public:
 
-#ifdef __CUDACC__
+#ifdef __CUDACC__            
 
-
-            template<typename OpType>
-            static __device__ void transformCuda(Nd4jLong len, void *x, void *y, Nd4jLong xEws, Nd4jLong yEws, void *params, void *z, Nd4jLong incz, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
-
-
-
-            static __device__ void transformCuda(const int opNum, Nd4jLong len, void *x, void *y, Nd4jLong xEws, Nd4jLong yEws, void *extraParams, void *z, Nd4jLong incz, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
-
-            static __host__ void execudaCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong xStride, void *y, Nd4jLong yStride, void *z, Nd4jLong resultStride, void *extraParams, Nd4jLong len);
-
-            static __host__ void execudaCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *resultShapeInfo, void *extraParams);            
-
-            static __device__ void transformCuda(const int opNum, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *resultShapeBuffer, void *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
-
-            static __device__ void transformCuda(const int opNum, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *resultShapeBuffer, void *extraParams, Nd4jLong *indexes, Nd4jLong *yIndexes, Nd4jLong *resultIndexes, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
+            template <typename OpType>            
+            static __host__ void intermediateShaped(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams, int *allocationPointer);
 
             template<typename OpType>
-	        static __device__ void transformCuda(void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *resultShapeBuffer, void *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);            
+            static __device__ void transform(void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, Nd4jLong *indexes, Nd4jLong *yIndexes, Nd4jLong *resultIndexes,  int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
 
             template<typename OpType>
-	        static __device__ void transform(void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *resultShapeBuffer, void *extraParams, Nd4jLong *indexes, Nd4jLong *yIndexes, Nd4jLong *resultIndexes,  int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
+            static __device__ void transformCuda(Nd4jLong len, void *x, void *y, Nd4jLong xEws, Nd4jLong yEws, void *params, void *z, Nd4jLong zEws, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
 
+            template<typename OpType>
+            static __device__ void transformCuda(void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
+
+            static __device__ void transformCuda(const int opNum, Nd4jLong len, void *x, void *y, Nd4jLong xEws, Nd4jLong yEws, void *extraParams, void *z, Nd4jLong zEws, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
+
+            static __device__ void transformCuda(const int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
+
+            static __host__ void executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *resultShapeInfo, void *extraParams);            
 
 #endif
         public:
@@ -88,11 +84,11 @@ namespace functions {
             static void exec(
 				const int opNum,
 				void *x,
-				Nd4jLong *xShapeBuffer,
+				Nd4jLong *xShapeInfo,
 				void *y,
-				Nd4jLong *yShapeBuffer,
+				Nd4jLong *yShapeInfo,
 				void *z,
-				Nd4jLong *resultShapeBuffer,
+				Nd4jLong *zShapeInfo,
 				void *extraParams);
 			
 			static void exec(
@@ -110,11 +106,11 @@ namespace functions {
 			template<typename OpType>
 			static void exec(
                     void *vx,
-                    Nd4jLong* xShapeBuffer,
+                    Nd4jLong* xShapeInfo,
                     void *vy,
-                    Nd4jLong* yShapeBuffer,
+                    Nd4jLong* yShapeInfo,
                     void *vresult,
-                    Nd4jLong* resultShapeBuffer,
+                    Nd4jLong* zShapeInfo,
                     void *vextraParams);
 
             template<typename OpType>

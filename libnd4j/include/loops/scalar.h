@@ -83,11 +83,11 @@ namespace functions {
 
             template<typename OpType>
             __device__
-            static void transform(Nd4jLong n, void* scalar, void *dy, void *params, void *result, Nd4jLong *indexes, int *allocationBuffer, UnifiedSharedMemory *manager);
+            static void transform(Nd4jLong len, void* scalar, void *dy, void *params, void *result, Nd4jLong *indexes, int *allocationBuffer, UnifiedSharedMemory *manager);
 
             template<typename OpType>
             __device__
-	        static void transformCuda(Nd4jLong n, void* dx, void *dy, Nd4jLong incy, void *params, void *result, Nd4jLong resultStride, int *allocationBuffer, UnifiedSharedMemory *manager);
+	        static void transformCuda(Nd4jLong len, void* dx, void *dy, Nd4jLong incy, void *params, void *result, Nd4jLong resultStride, int *allocationBuffer, UnifiedSharedMemory *manager);
 
 #endif
             template <typename OpType>
@@ -97,7 +97,7 @@ namespace functions {
 
             static void transform(const int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo,  void *scalar,  void *extraParams);
 
-            static void transform(const int opNum, void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *scalar, void *extraParams, const Nd4jLong n);
+            static void transform(const int opNum, void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *scalar, void *extraParams, const Nd4jLong len);
 
 
 
@@ -116,7 +116,7 @@ namespace functions {
          * @param scalar the scalar to apply
          * @param extraParams the extra parameters where
          * neccssary
-         * @param n the number of elements to loop over
+         * @param len the number of elements to loop over
          */
 
             template<typename OpType>
@@ -132,11 +132,11 @@ namespace functions {
              * @param scalar the scalar to apply
              * @param extraParams the extra parameters where
              * neccssary
-             * @param n the number of elements to loop over
+             * @param len the number of elements to loop over
              */
 
             template<typename OpType>
-            static void transform(void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *scalar, void *extraParams, const Nd4jLong n);
+            static void transform(void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *scalar, void *extraParams, const Nd4jLong len);
         };
     }
 }
