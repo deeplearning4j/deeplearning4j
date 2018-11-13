@@ -1433,7 +1433,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			}
 			__syncthreads();
 
-			functions::reduce::ReduceSameFunction<X>::template execScalarCuda<Max<X>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
@@ -1445,7 +1445,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameFunction<X>::template execScalarCuda<Sum<X>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
@@ -1589,7 +1589,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape, tempBuffer);
 			__syncthreads();
 
-			functions::reduce::ReduceSameFunction<X>::template execScalarCuda<Max<X>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
@@ -1601,7 +1601,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameFunction<X>::template execScalarCuda<Sum<X>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
@@ -1759,7 +1759,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape, tempBuffer);
 			__syncthreads();
 
-			functions::reduce::ReduceSameFunction<X>::template execScalarCuda<Max<X>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
@@ -1771,7 +1771,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameFunction<X>::template execScalarCuda<Sum<X>>(result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
