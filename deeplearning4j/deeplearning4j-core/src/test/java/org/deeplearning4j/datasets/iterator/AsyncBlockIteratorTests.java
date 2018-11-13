@@ -20,16 +20,14 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.parallel.AsyncBlockIterator;
 import org.deeplearning4j.datasets.iterator.parallel.VirtualDataSetIterator;
 import org.junit.Test;
-import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class AsyncBlockIteratorTests {
 
@@ -45,11 +43,14 @@ public class AsyncBlockIteratorTests {
             irisAsList.add(iris3.next());
         }
 
-        AsyncBlockIterator iter = new AsyncBlockIterator(new int[]{0}, 2, Arrays.asList(iris, iris2));
+        List<Iterator<DataSet>> list = new ArrayList<>();
+        list.add(iris);
+        list.add(iris2);
+        AsyncBlockIterator iter = new AsyncBlockIterator(new int[]{0}, 2, list);
 
         for( int i=0; i<10; i++ ) {
             assertTrue(iter.hasAnything());
-            DataSet[] arr = iter.next(1);
+            org.nd4j.linalg.dataset.api.DataSet[] arr = iter.next(1);
             assertEquals(1, arr.length);
             assertEquals(irisAsList.get(i%5), arr[0]);
         }
@@ -66,14 +67,14 @@ public class AsyncBlockIteratorTests {
 
         for( int numThreads : new int[]{2, 4}) {
             System.out.println("---------------------------------------------");
-            List<DataSetIterator> initalIters = new ArrayList<>();
+            List<Iterator<DataSet>> initalIters = new ArrayList<>();
             for( int i=0; i<2*numThreads; i++ ){
                 initalIters.add(new IrisDataSetIterator(30, 150));
             }
 
             int[] deviceThreadAffinity = new int[numThreads];    //Simple test: all device 0
             AsyncBlockIterator iter = new AsyncBlockIterator(deviceThreadAffinity, 2, initalIters);
-            DataSet[] first = iter.next(numThreads);
+            org.nd4j.linalg.dataset.api.DataSet[] first = iter.next(numThreads);
             assertEquals(numThreads, first.length);
             for( int i=0; i<numThreads; i++ ){
                 //All N threads should get first DataSet from their respective copies of the iris iterator
@@ -90,7 +91,7 @@ public class AsyncBlockIteratorTests {
             //N threads, 4 iterators each, x5 DataSets per epoch
             for(int i=1; i<20; i++ ){
                 assertTrue(iter.hasAnything());
-                DataSet[] arr = iter.next(numThreads);
+                org.nd4j.linalg.dataset.api.DataSet[] arr = iter.next(numThreads);
                 assertEquals(numThreads, arr.length);
                 for( int j=0; j<numThreads; j++ ) {
                     assertEquals(irisAsList.get(i % 5), arr[j]);
@@ -119,7 +120,7 @@ public class AsyncBlockIteratorTests {
 
         for( int numThreads : new int[]{2, 4}) {
             System.out.println("---------------------------------------------");
-            List<DataSetIterator> initalIters = new ArrayList<>();
+            List<Iterator<DataSet>> initalIters = new ArrayList<>();
             for( int i=0; i<2*numThreads; i++ ){
                 initalIters.add(new IrisDataSetIterator(30, 150));
             }
@@ -128,7 +129,7 @@ public class AsyncBlockIteratorTests {
             AsyncBlockIterator iter = new AsyncBlockIterator(deviceThreadAffinity, 2, initalIters);
             int count = 0;
             while(iter.hasAnything()){
-                DataSet[] arrs = iter.next(numThreads);
+                org.nd4j.linalg.dataset.api.DataSet[] arrs = iter.next(numThreads);
                 assertEquals(numThreads, arrs.length);
                 count++;
             }
@@ -148,7 +149,7 @@ public class AsyncBlockIteratorTests {
             //N threads, 2 more iterators each, x5 DataSets per epoch
             for(int i=0; i<10; i++ ){
                 assertTrue(iter.hasAnything());
-                DataSet[] arr = iter.next(numThreads);
+                org.nd4j.linalg.dataset.api.DataSet[] arr = iter.next(numThreads);
                 assertEquals(numThreads, arr.length);
                 for( int j=0; j<numThreads; j++ ) {
                     assertEquals(irisAsList.get(i % 5), arr[j]);

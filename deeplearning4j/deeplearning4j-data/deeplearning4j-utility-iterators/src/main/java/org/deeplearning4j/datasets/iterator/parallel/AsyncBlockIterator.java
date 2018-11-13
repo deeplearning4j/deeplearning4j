@@ -27,13 +27,14 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Slf4j
 public class AsyncBlockIterator implements BlockDataSetIterator {
 
     private final int[] workerThreadDeviceAffinity;
     private final int prefetchSize;
-    private final Queue<DataSetIterator> iteratorsToProcess = new ConcurrentLinkedQueue<>();
+    private final List<Iterator<DataSet>> iteratorsToProcess;
 
     //Array index: thread number
     @Getter
@@ -41,13 +42,16 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
     @Getter
     private final VirtualDataSetIterator[] virtualIters;
 
-    public AsyncBlockIterator(@NonNull int[] workerThreadDeviceAffinity, int prefetchSize, List<DataSetIterator> initialIterators ){
+    public AsyncBlockIterator(@NonNull int[] workerThreadDeviceAffinity, int prefetchSize, List<Iterator<DataSet>> backingList ){
         Preconditions.checkState(workerThreadDeviceAffinity.length > 0, "Number of devices (workerThreadDeviceAffinity.length) must be > 0 - got %s", workerThreadDeviceAffinity.length);
         this.workerThreadDeviceAffinity = workerThreadDeviceAffinity;
         this.prefetchSize = prefetchSize;
-        if(initialIterators != null){
-            iteratorsToProcess.addAll(initialIterators);
+        if(backingList == null){
+            this.iteratorsToProcess = new CopyOnWriteArrayList<>();
+        } else {
+            this.iteratorsToProcess = backingList;
         }
+
 
         asyncIters = new AsyncDataSetIterator[workerThreadDeviceAffinity.length];
         virtualIters = new VirtualDataSetIterator[workerThreadDeviceAffinity.length];
@@ -163,7 +167,7 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
                 if (!virtualIters[i].hasNext()) {
                     //Empty
                     log.info("Assigning iterator to device {}", i);
-                    virtualIters[i].getIterators().add(iteratorsToProcess.remove());
+                    virtualIters[i].getIterators().add((Iterator<DataSet>) iteratorsToProcess.remove(0));
                     if(asyncIters[i] == null){
                         asyncIters[i] = new AsyncDataSetIterator(virtualIters[i], prefetchSize, true, workerThreadDeviceAffinity[i]);
                     }
@@ -178,7 +182,7 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
             }
 
             if(smallestQueueThread >= 0){
-                virtualIters[smallestQueueThread].getIterators().add(iteratorsToProcess.remove());
+                virtualIters[smallestQueueThread].getIterators().add((Iterator<DataSet>) iteratorsToProcess.remove(0));
                 if(asyncIters[smallestQueueThread] == null){
                     asyncIters[smallestQueueThread] = new AsyncDataSetIterator(virtualIters[smallestQueueThread], prefetchSize, true, workerThreadDeviceAffinity[smallestQueueThread]);
                 }
