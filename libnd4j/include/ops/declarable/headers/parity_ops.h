@@ -1488,6 +1488,7 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_reduce_logsumexp)
         DECLARE_CUSTOM_OP(reduce_logsumexp, 1, 1, false, 0, 0);
         #endif
+
         /**
         * This op make bilinear interpolated resize for given tensor
         *
@@ -1593,6 +1594,10 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_nth_element)
         DECLARE_CUSTOM_OP(nth_element, 2, 1, false, 0, 0);
+        #endif
+
+	#if NOT_EXCLUDED(OP_fake_quant_with_min_max_vals)
+        DECLARE_CONFIGURABLE_OP(fake_quant_with_min_max_vals, 3, 1, true, 0, 2);
         #endif
     }
 }
