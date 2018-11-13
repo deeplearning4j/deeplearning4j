@@ -59,7 +59,7 @@ namespace helpers {
     }
 
     int randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), _randomCropFunctor, (context, input, shape, output, seed), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return _randomCropFunctor, (context, input, shape, output, seed), FLOAT_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template int _randomCropFunctor, (graph::Context& context, NDArray* input, NDArray* shape, NDArray* output,  int seed), FLOAT_TYPES);
