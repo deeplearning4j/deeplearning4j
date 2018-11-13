@@ -26,7 +26,6 @@ import org.nd4j.linalg.dataset.api.iterator.BlockDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Slf4j
@@ -71,7 +70,7 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
 
         //Check iterators, restart any async iterators if required
         for( int i=0; i<asyncIters.length; i++ ){
-            if(virtualIters[i].hasNext()){
+            if(virtualIters[i] != null && virtualIters[i].hasNext()){   //May be null: example 2 threads, from 1 source iterator
                 if(!asyncIters[i].hasNext()){
                     //Async iterator probably finished just before virtual iterator had more data added
                     asyncIters[i].softReset();
@@ -84,7 +83,7 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
 
         //Check async iterators for next elements
         for(AsyncDataSetIterator iter : asyncIters){
-            if(iter.hasNext())
+            if(iter != null && iter.hasNext())  //May be null: example 2 threads, from 1 source iterator
                 return true;
         }
 
@@ -102,7 +101,7 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
         org.nd4j.linalg.dataset.api.DataSet[] out = new org.nd4j.linalg.dataset.api.DataSet[maxDataSets];
         int count = 0;
         for( int i=0; i<maxDataSets; i++ ){
-            if(asyncIters[i].hasNext()){
+            if(asyncIters[i] != null && asyncIters[i].hasNext()){   //May be null: example 2 threads, from 1 source iterator
                 out[i] = asyncIters[i].next();
                 count++;
             }
@@ -121,6 +120,8 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
 
             boolean anyElementsRemaining = false;
             for(AsyncDataSetIterator iter : asyncIters){        //TODO let's not always iterate in this order - other async iters could have ready elements
+                if(iter == null)    //May be null: example 2 threads, from 1 source iterator
+                    continue;
                 if(iter.hasNext()){
                     out[i] = iter.next();
                     count++;
@@ -167,7 +168,7 @@ public class AsyncBlockIterator implements BlockDataSetIterator {
                 if (!virtualIters[i].hasNext()) {
                     //Empty
                     log.info("Assigning iterator to device {}", i);
-                    virtualIters[i].getIterators().add((Iterator<DataSet>) iteratorsToProcess.remove(0));
+                    virtualIters[i].getIterators().add(iteratorsToProcess.remove(0));
                     if(asyncIters[i] == null){
                         asyncIters[i] = new AsyncDataSetIterator(virtualIters[i], prefetchSize, true, workerThreadDeviceAffinity[i]);
                     }

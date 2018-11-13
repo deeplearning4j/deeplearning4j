@@ -24,6 +24,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -166,6 +167,22 @@ public class AsyncBlockIteratorTests {
         }
 
         System.out.println("---------------------------------------------");
+    }
 
+    @Test
+    public void testFewerItersThanThreads(){
+        List<Iterator<DataSet>> iters = new ArrayList<>(Arrays.<Iterator<DataSet>>asList(new IrisDataSetIterator(30, 150)));
+        AsyncBlockIterator iter = new AsyncBlockIterator(new int[]{0, 0}, 2, iters);
+        assertTrue(iter.hasAnything());
+        for( int i=0; i<3; i++ ){
+            assertTrue(iter.hasAnything());
+            org.nd4j.linalg.dataset.api.DataSet[] data = iter.next(2);
+            //5 minibatches total, expect 2 + 2 + 1 returned
+            if(i < 2){
+                assertEquals(2, data.length);
+            } else {
+                assertEquals(1, data.length);
+            }
+        }
     }
 }
