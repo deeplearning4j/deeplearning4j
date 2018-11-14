@@ -31,6 +31,10 @@
 
 using namespace simdOps;
 
+static __device__ Nd4jLong getIndexOffset(Nd4jLong index, Nd4jLong* shapeInfo, Nd4jLong length) {
+  return shape::getIndexOffset(index, shapeInfo, length);
+}
+
 template<typename X, typename Y, typename Z, typename OpClass>
 __device__ void broadcastSimpleGeneric(
 		void *x,
@@ -112,18 +116,9 @@ namespace functions {
 		//permuted version of the x shape info for setting up the tad problem
 	  __shared__ Nd4jLong tadLength;
       __shared__ Nd4jLong tadEWS;
-      __shared__ int tadRank;
       __shared__ int numTads;
-      __shared__ Nd4jLong *tadShape;
-      __shared__ Nd4jLong *tadStride;
       __shared__ Nd4jLong yEWS;
       __shared__ Nd4jLong zEWS;
-      __shared__ int zRank;
-      __shared__ Nd4jLong *zShape;
-      __shared__ Nd4jLong *zStride;
-      __shared__ int yRank;
-      __shared__ Nd4jLong *yShape;
-      __shared__ Nd4jLong *yStride;
 
       __shared__ Nd4jLong tadOffsetForBlock;
       __shared__ Nd4jLong tadOffsetForBlockZ;
@@ -140,18 +135,6 @@ namespace functions {
         numTads = shape::length(xShapeInfo) / tadLength;
         yEWS = shape::elementWiseStride(yShapeInfo);
       	zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
-
-        if (tadEWS < 1 || zEWS < 1 || yEWS < 1 || dimensionLength > 1) {
-            tadRank = shape::rank(tadOnlyShapeInfo);
-            tadShape = shape::shapeOf(tadOnlyShapeInfo);
-      	    tadStride = shape::stride(tadOnlyShapeInfo);
-      	    zRank = shape::rank(tadOnlyShapeInfoZ);
-      	    zShape = shape::shapeOf(tadOnlyShapeInfoZ);
-      	    zStride = shape::stride(tadOnlyShapeInfoZ);
-      	    yRank = shape::rank(yShapeInfo);
-      	    yShape = shape::shapeOf(yShapeInfo);
-      	    yStride = shape::stride(yShapeInfo);
-        }
       }
       __syncthreads();
 
@@ -177,28 +160,13 @@ namespace functions {
                 }
             }
             else {
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong yCoord[MAX_RANK];
-                Nd4jLong zCoord[MAX_RANK];
 
                 for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
 
-                    if (shape::order(tadOnlyShapeInfo) == 'c') {
-                        shape::ind2subC(tadRank,tadShape, i, tadLength, xCoord);
-                        shape::ind2subC(yRank, yShape, i, tadLength, yCoord);
-                    } else {
-                        shape::ind2sub(tadRank,tadShape, i, tadLength, xCoord);
-                        shape::ind2sub(yRank, yShape, i, tadLength, yCoord);
-                    }
-
-                    if (shape::order(tadOnlyShapeInfoZ) == 'c')
-                        shape::ind2subC(zRank,zShape, i, tadLength, zCoord);
-                    else
-                        shape::ind2sub(zRank,zShape, i, tadLength, zCoord);
-
-                    auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
-                    auto zOffset = shape::getOffset(tadOffsetForBlockZ, zShape, zStride, zCoord, zRank);
-                    auto yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                    auto xOffset = tadOffsetForBlock  + getIndexOffset(i, tadOnlyShapeInfo,  tadLength);
+                    auto zOffset = tadOffsetForBlockZ + getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
+                    auto yOffset = getIndexOffset(i, yShapeInfo, tadLength);
+ 
                     result[zOffset] = OpType::op(x[xOffset], y[yOffset]);
                 }
             }
