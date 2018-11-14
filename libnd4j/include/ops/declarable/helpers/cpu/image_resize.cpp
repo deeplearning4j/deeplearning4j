@@ -173,6 +173,49 @@ namespace helpers {
     template int resizeBilinearFunctor(NDArray<float16> const* image, int width, int height, bool center, NDArray<float16>* output);
     template int resizeBilinearFunctor(NDArray<double> const* image, int width, int height, bool center, NDArray<double>* output);
 
+    template <typename T>
+    int resizeNeighborFunctor(NDArray<T> const* images, int width, int height, bool center, NDArray<T>* output) {
+        const Nd4jLong batchSize = images->sizeAt(0);
+        const Nd4jLong inHeight  = images->sizeAt(1);
+        const Nd4jLong inWidth   = images->sizeAt(2);
+        const Nd4jLong channels  = images->sizeAt(3);
+
+        const Nd4jLong outHeight = output->sizeAt(1);
+        const Nd4jLong outWidth = output->sizeAt(2);
+
+        // Handle no-op resizes efficiently.
+        if (outHeight == inHeight && outWidth == inWidth) {
+            output->assign(images);
+            return ND4J_STATUS_OK;
+        }
+
+        if ((center && inHeight < 2) || (inHeight < 1) || (outHeight < 1) || (center && outHeight < 2) ||
+            (center && inWidth < 2) || (inWidth < 1) || (outWidth < 1) || (center && outWidth < 2)) {
+            // wrong input data
+            nd4j_printf("image.resize_nearest_neighbor: Wrong input or output size to resize\n", "");
+            return ND4J_STATUS_BAD_ARGUMENTS;
+        }
+        double heightScale = center? (inHeight - 1.) / double(outHeight - 1.0): (inHeight / double(outHeight));
+        double widthScale = center? (inWidth - 1.) / double(outWidth - 1.0): (inWidth / double(outWidth));
+
+        for (int b = 0; b < batchSize; ++b) {
+          for (int y = 0; y < outHeight; ++y) {
+            Nd4jLong inY = std::min((center) ? static_cast<Nd4jLong>(roundf(y * heightScale)): static_cast<Nd4jLong>(floorf(y * heightScale)), inHeight - 1);
+            for (int x = 0; x < outWidth; ++x) {
+              Nd4jLong inX = std::min((center) ? static_cast<Nd4jLong>(roundf(x * widthScale)) : static_cast<Nd4jLong>(floorf(x * widthScale)), inWidth - 1);
+              for (Nd4jLong e = 0; e < channels; e++)
+                  (*output)(b, y, x, e) = (*images)(b, inY, inX, e);
+//              std::copy_n(&input(b, in_y, in_x, 0), channels, &output(b, y, x, 0));
+            }
+          }
+        }
+
+        return ND4J_STATUS_OK;
+    }
+    template int resizeNeighborFunctor(NDArray<float> const* image, int width, int height, bool center, NDArray<float>* output);
+    template int resizeNeighborFunctor(NDArray<float16> const* image, int width, int height, bool center, NDArray<float16>* output);
+    template int resizeNeighborFunctor(NDArray<double> const* image, int width, int height, bool center, NDArray<double>* output);
+
 }
 }
 }

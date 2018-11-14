@@ -879,6 +879,94 @@ TEST_F(DeclarableOpsTests10, histogram_fixed_width_test5) {
 }
 
 ///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_1) {
+
+    NDArray<float> input('c', {12});
+    NDArray<float> n(4.f);
+    NDArray<float> exp(5.f);
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element<float> op;
+    auto results = op.execute({&input, &n}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *output = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
+
+    NDArray<float> input('c', {3,4});
+    NDArray<float> n(3.f);
+    NDArray<float> exp({4.f, 8.f, 12.f});
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element<float> op;
+    auto results = op.execute({&input, &n}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *output = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
+
+    NDArray<float> input('c', {3,4});
+    NDArray<float> n(3.f);
+    NDArray<float> exp({1.f, 5.f, 9.f});
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element<float> op;
+    auto results = op.execute({&input, &n}, {}, {1}); // with reverse = true
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *output = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_4) {
+
+    NDArray<float> input('c', {2, 2, 3});
+    NDArray<float> n(2.f);
+    NDArray<float> exp('c', {2,2}, {3.f, 6.f, 9.f, 12.f});
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element<float> op;
+    auto results = op.execute({&input, &n}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float> *output = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, broadcast_to_test1) {
     
     NDArray<float> input('c', {3});
@@ -1695,6 +1783,53 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test4) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
+
+    NDArray<float> input   ('c', {1, 2, 3, 4});
+    //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
+    //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
+    NDArray<float> expected('c', {1, 4, 5, 4}, { 1,  2,  3,  4,
+     1,  2,  3,  4,
+     5,  6,  7,  8,
+     5,  6,  7,  8,
+     9, 10, 11, 12,
+
+     1,  2,  3,  4,
+     1,  2,  3,  4,
+     5,  6,  7,  8,
+     5,  6,  7,  8,
+     9, 10, 11, 12,
+
+    13, 14, 15, 16,
+    13, 14, 15, 16,
+    17, 18, 19, 20,
+    17, 18, 19, 20,
+    21, 22, 23, 24,
+
+    13, 14, 15, 16,
+    13, 14, 15, 16,
+    17, 18, 19, 20,
+    17, 18, 19, 20,
+    21, 22, 23, 24
+    });
+    //input = 1.f;
+    input.linspace(1);
+
+    nd4j::ops::resize_nearest_neighbor<float> op;
+    auto results = op.execute({&input}, {}, {4, 5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+
+    //result->printIndexedBuffer("Resized to 4x5");
+    //expected.printIndexedBuffer("Expect for 4x5");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
     delete results;
 }
 
