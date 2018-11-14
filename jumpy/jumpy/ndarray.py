@@ -18,6 +18,7 @@
 from .java_classes import *
 import numpy as np
 import ctypes
+import warnings
 
 
 # Java instance initializations
@@ -42,7 +43,7 @@ def set_context_dtype(dtype):
     dtype_ = DataTypeUtil.getDtypeFromContext(dtype)
     DataTypeUtil.setDTypeForContext(dtype_)
     if get_context_dtype() != dtype:
-        raise RuntimeError("Can not set context dtype now. Set it at the beginning of your program.")
+        warnings.warn("Can not set context dtype now. Set it at the beginning of your program.")
 
 
 def get_context_dtype():
