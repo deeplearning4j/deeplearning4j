@@ -72,12 +72,6 @@ static __global__ void broadcastSimple(
     broadcastSimpleGeneric<X, Y, Z, OpClass>(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
 }
 
-// broadcast kernel call
-// DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, float, INPUT(float *x, Nd4jLong *xShapeInfo, float *y, Nd4jLong *yShapeInfo, float *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
-// DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, double, INPUT(double *x, Nd4jLong *xShapeInfo, double *y, Nd4jLong *yShapeInfo, double *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
-// DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, float16, INPUT(float16 *x, Nd4jLong *xShapeInfo, float16 *y, Nd4jLong *yShapeInfo, float16 *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
-
-
 namespace functions {
     namespace broadcast {
 
@@ -130,6 +124,11 @@ namespace functions {
       __shared__ int yRank;
       __shared__ Nd4jLong *yShape;
       __shared__ Nd4jLong *yStride;
+
+      __shared__ Nd4jLong tadOffsetForBlock;
+      __shared__ Nd4jLong tadOffsetForBlockZ;
+      __shared__ Z *rR;
+      __shared__ X *rX;
       if (threadIdx.x == 0) {
         if (tadOnlyShapeInfoZ == nullptr) {
             tadOnlyShapeInfoZ = tadOnlyShapeInfo;
@@ -157,12 +156,6 @@ namespace functions {
       __syncthreads();
 
 		for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-
-
-            __shared__ Nd4jLong tadOffsetForBlock;
-            __shared__ Nd4jLong tadOffsetForBlockZ;
-            __shared__ Z *rR;
-            __shared__ X *rX;
             if (threadIdx.x == 0) {
                 tadOffsetForBlockZ = tadOffsetsZ[r];
                 auto vr = reinterpret_cast<void *>(result);
@@ -179,14 +172,8 @@ namespace functions {
 
 
             if(tadEWS > 0 && zEWS > 0 && yEWS > 0 && dimensionLength == 1) {
-            	if (tadEWS == 1 && yEWS == 1 && zEWS == 1) {
-                	for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                    	rR[i] = OpType::op(rX[i], y[i]);
-                	}
-                } else {
-					for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                    	rR[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS]);
-                	}
+                for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) {
+                    rR[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS]);
                 }
             }
             else {
