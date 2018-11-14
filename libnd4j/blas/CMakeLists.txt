@@ -118,7 +118,7 @@ if(CUDA_BLAS)
         # make NVCC more verbose to prevent timeouts on CI servers
         #list(APPEND CUDA_NVCC_FLAGS -v)
         if ("${EXPERIMENTAL}" STREQUAL "yes")
-            list(APPEND CUDA_NVCC_FLAGS -DEXPERIMENTAL)
+            list(APPEND CUDA_NVCC_FLAGS -D__ND4J_EXPERIMENTAL__=true)
         endif()
         if (CMAKE_BUILD_TYPE STREQUAL "Release")
             if(CUDA_VERSION VERSION_GREATER "9.0") # cuda 10
@@ -216,6 +216,11 @@ if(CUDA_BLAS)
         install(TARGETS ${LIBND4J_NAME} DESTINATION .)
     endif(CUDA_FOUND)
 elseif(CPU_BLAS)
+
+    if ("${EXPERIMENTAL}" STREQUAL "yes")
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
+    endif()
 
     file(GLOB_RECURSE TYPES_SOURCES false ../include/types/*.cpp ../include/types/*.h)
     file(GLOB_RECURSE ARRAY_SOURCES false ../include/array/*.cpp ../include/array/*.h)
