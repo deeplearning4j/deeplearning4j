@@ -802,6 +802,20 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         return dt == DataType.DT_BOOL;
     }
 
+    @Override
+    public boolean isStringType(NodeDef tensorProto){
+        DataType dt = null;
+        if(tensorProto.containsAttr("dtype")){
+            dt = tensorProto.getAttrOrThrow("dtype").getType();
+        } else if(tensorProto.containsAttr("T")){
+            dt = tensorProto.getAttrOrThrow("T").getType();
+        } else if(tensorProto.containsAttr("Tidx")){
+            dt = tensorProto.getAttrOrThrow("Tidx").getType();
+        }
+
+        return dt == DataType.DT_STRING || dt == DataType.DT_STRING_REF;
+    }
+
 
     @Override
     public String getAttrValueFromNode(NodeDef nodeDef, String key) {

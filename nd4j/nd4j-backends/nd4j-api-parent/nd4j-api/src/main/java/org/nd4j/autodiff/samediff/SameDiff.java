@@ -496,6 +496,9 @@ public class SameDiff {
         return functionInstancesById.containsKey(id);
     }
 
+    public List<DifferentialFunction> functionOutputFor(String varName){
+        return functionOutputFor.get(varName);
+    }
 
     /**
      * Get the function by the {@link DifferentialFunction#getOwnName()}
@@ -12260,10 +12263,10 @@ public class SameDiff {
                         boolean first = true;
                         for (String in : incomingArgsReverse.get(e.getKey())) {
                             if (!seen.contains(in)) {
-                                sb.append(in);
                                 if(!first){
                                     sb.append(", ");
                                 }
+                                sb.append(in);
                                 first = false;
                             }
                         }

@@ -154,14 +154,9 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-//        if(!modelName.equals("mobilenet_v1_0.5_128")){
-//        if(!modelName.equals("nasnet_mobile_2018_04_27")){
-//        if(!modelName.equals("resnetv2_imagenet_frozen_graph")){
-//        if(!modelName.equals("mobilenet_v2_1.0_224")){
-//        if(!modelName.equals("densenet_2018_04_27")){
-//        if(!modelName.equals("inception_resnet_v2_2018_04_27")){
-//            OpValidationSuite.ignoreFailing();
-//        }
+        if(!modelName.equals("ssd_mobilenet_v1_coco_2018_01_28")){
+            OpValidationSuite.ignoreFailing();
+        }
         currentTestDir = testDir.newFolder();
 
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);

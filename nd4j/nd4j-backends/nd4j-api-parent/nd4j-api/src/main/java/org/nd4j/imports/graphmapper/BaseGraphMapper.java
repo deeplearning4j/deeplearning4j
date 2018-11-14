@@ -28,6 +28,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.io.*;
@@ -177,12 +178,12 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         importState.setVariables(variablesForGraph);
 
 
-        //map the names of the nodes while accumulating the vertex ids
-        //for each variable
+        //map the names of the nodes while accumulating the vertex ids for each variable
+        Map<String,Boolean> stringNodes = new HashMap<>();      //Key: name of string variable. Value: if it's a constant
         for (Map.Entry<String, TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
             DataBuffer.Type dt = dataTypeForTensor(entry.getValue());
             if (dt == DataBuffer.Type.UNKNOWN && !unknownTypeNodeImportable(entry.getValue())) {
-                val var = importState.getSameDiff().var(entry.getKey(), null, new ZeroInitScheme('c'));
+                val var = importState.getSameDiff().var(entry.getKey(), new ZeroInitScheme('c'), (long[])null);
                 //mark as place holder for validating resolution later.
                 if (isPlaceHolder(entry.getValue())) {
                     importState.getSameDiff().addAsPlaceHolder(var.getVarName());
@@ -191,6 +192,17 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                 } else {
                     //Not a placeholder, but SameDiff.var(String, shape=null, ZeroInitScheme()) above marked it as such due to null shape
                     importState.getSameDiff().removeAsPlaceholder(var.getVarName());
+                }
+
+                boolean isConst = isConstant(entry.getValue());
+                if(isStringType(entry.getValue())){
+                    stringNodes.put(entry.getKey(), isConst);
+                }
+                if(isConst){
+                    if (diff.getImportedConstants() == null) {
+                        diff.setImportedConstants(new LinkedHashSet<String>());
+                    }
+                    diff.getImportedConstants().add(entry.getKey());
                 }
 
                 continue;
@@ -246,17 +258,28 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
         }
 
-        //setup vertex ids for  names
-
-
         //handle mapping vertex ids properly
-
-
         val tfNodesList = getNodeList(tfGraph);
         for (NODE_TYPE tfNode : tfNodesList) {
             if(!opsToIgnore().contains(getOpType(tfNode)) || isOpIgnoreException(tfNode))
                 mapNodeType(tfNode,importState);
         }
+
+        //Handle edge case until multi datatypes is merged: import String constant variables as fixed value 0 variables
+        // This is used in assertions and the like - the exact String values aren't important for inference, but we
+        // can't perform inference without them
+        //Specifically: any string values that aren't the output of an op get a scalar 0 array
+        if(!stringNodes.isEmpty()){
+            for(Map.Entry<String,Boolean> e : stringNodes.entrySet()){
+                if(e.getValue()){
+                    //Is a constant String node - can't import, but probably need it for execution...
+                    //TODO fix this once dtypes are done
+                    diff.getVariable(e.getKey()).setArray(Nd4j.trueScalar(0));
+                }
+            }
+
+        }
+
 
         //We aren't guaranteed to have ops imported in the order that they can be executed, so check + fix that
         diff.validateExecutionOrder();
