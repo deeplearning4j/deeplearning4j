@@ -68,7 +68,7 @@ half1 cpu_float2half_rn(float f);
 
 float cpu_half2float(half1 h);
 
-#ifdef CUDA_9
+#ifndef CUDA_8
 static local_def int ishnan_(unsigned short h)
 {
     // When input is NaN, exponent is all ones and mantissa is non-zero.

@@ -36,7 +36,7 @@
 #ifdef __CUDACC__
 #include <fp16_conversion.hpp>
 
-#ifdef CUDA_9
+#ifndef CUDA_8
 
 struct ihalf : public __half {
     public:
