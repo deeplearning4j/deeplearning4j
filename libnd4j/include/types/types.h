@@ -69,6 +69,15 @@
         (nd4j::DataType::FLOAT32, float), \
         (nd4j::DataType::DOUBLE, double)
 
+#define FLOAT_TYPES_0 \
+        (nd4j::DataType::HALF, float16)
+
+#define FLOAT_TYPES_1 \
+        (nd4j::DataType::FLOAT32, float)
+
+#define FLOAT_TYPES_2 \
+        (nd4j::DataType::DOUBLE, double)
+
 #define INTEGER_TYPES \
         (nd4j::DataType::INT8, int8_t), \
         (nd4j::DataType::UINT8, uint8_t), \
