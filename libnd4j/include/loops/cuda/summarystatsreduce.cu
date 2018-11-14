@@ -275,24 +275,16 @@ namespace functions {
 
                 __shared__ int tadLength;
                 __shared__ int tadEWS;
-                __shared__ int tadRank;
                 __shared__ int numTads;
-                __shared__ Nd4jLong *tadShape;
-                __shared__ Nd4jLong *tadStride;
 
                 if (threadIdx.x == 0) {
                     tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                    tadRank = shape::rank(tadOnlyShapeInfo);
                     numTads = shape::length(xShapeInfo) / tadLength;
-
-                    tadShape = shape::shapeOf(tadOnlyShapeInfo);
-                    tadStride = shape::stride(tadOnlyShapeInfo);
                 }
                 __syncthreads();
 
-                if (dimensionLength > 1) {
-                    Nd4jLong xCoord[MAX_RANK];
+                if (dimensionLength > 1) {                    
 
                     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
                         auto tadOffsetForBlock = tadOffsets[r];
@@ -301,10 +293,9 @@ namespace functions {
                         val.n = 0;
                         sPartials[threadIdx.x] = val;
 
-                        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-                            shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
-                            Nd4jLong xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+                        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {                            
 
+                            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
                             SummaryStatsData<X> indexVal2;
                             indexVal2.initWithValue(dx[xOffset]);
 
@@ -371,22 +362,10 @@ namespace functions {
                     }
                 }
                 else {
-                    __shared__ int rank;
-                    __shared__ Nd4jLong *xShape;
-                    __shared__ Nd4jLong *xStride;
-                    if (threadIdx.x == 0) {
-                        rank = shape::rank(xShapeInfo);
-                        xShape = shape::shapeOf(xShapeInfo);
-                        xStride = shape::stride(xShapeInfo);
-                    }
-                    __syncthreads();
-
-                    Nd4jLong ind2sub[MAX_RANK];
 
                     for (Nd4jLong i = tid; i < n; i += blockDim.x * gridDim.x) {
-                        shape::ind2sub(rank, shape::shapeOf(xShapeInfo), i, n, ind2sub);
-                        auto offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
-
+                        
+                        auto offset = shape::getIndexOffset(i, xShapeInfo, n);                        
                         SummaryStatsData<X> indexVal2;
                         indexVal2.initWithValue(dx[offset]);
                         reduction = update(reduction, indexVal2, extraParams);
@@ -396,13 +375,11 @@ namespace functions {
 
                 __syncthreads();
                 aggregatePartials<OpType>(&sPartials, threadIdx.x, blockDim.x, extraParams);
-
-
                 __syncthreads();
+
                 if (gridDim.x > 1) {
                     __shared__ bool amLast;
-                    unsigned int *tc = (unsigned int *)reductionBuffer;
-                    int rank = shape::rank(xShapeInfo);
+                    unsigned int *tc = (unsigned int *)reductionBuffer;                    
                     tid = threadIdx.x;
                     if (threadIdx.x == 0) {
                         SummaryStatsData<X> *pBuffer = (SummaryStatsData<X>*) reductionBuffer;
@@ -433,11 +410,10 @@ namespace functions {
                             sPartials[threadIdx.x] = update(sPartials[threadIdx.x], pBuffer[i], extraParams);
                         }
 
-
                         __syncthreads();
                         aggregatePartials<OpType>(&sPartials, threadIdx.x, gridDim.x, extraParams);
-
                         __syncthreads();
+
                         if (tid == 0) {
                             result[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
                         }

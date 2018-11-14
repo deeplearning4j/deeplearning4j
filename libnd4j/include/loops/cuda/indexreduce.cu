@@ -28,6 +28,7 @@
 
 using namespace simdOps;
 
+
 template <typename T>
 static __device__ void indexReduceGeneric(
         const int op,
@@ -279,38 +280,25 @@ namespace functions {
 
                 __shared__ Nd4jLong tadLength;
                 __shared__ int tadEWS;
-                __shared__ int tadRank;
                 __shared__ int numTads;
-                __shared__ Nd4jLong *tadShape;
-                __shared__ Nd4jLong *tadStride;
-                __shared__ char tadOrder;
 
                 if (threadIdx.x == 0) {
                     tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                    tadRank = shape::rank(tadOnlyShapeInfo);
                     numTads = shape::length(xShapeInfo) / tadLength;
-
-                    tadShape = shape::shapeOf(tadOnlyShapeInfo);
-                    tadStride = shape::stride(tadOnlyShapeInfo);
-                    tadOrder = shape::order(tadOnlyShapeInfo);
                 }
                 __syncthreads();
 
                 if (dimensionLength > 1 || tadEWS < 1) {
-                    Nd4jLong xCoord[MAX_RANK];
 
                     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+                        
                         Nd4jLong tadOffsetForBlock = tadOffsets[r];
-
                         sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
-                        for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
-                            shape::ind2subC(tadRank,tadShape, i, tadLength, xCoord);
-
-                            auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+                        for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {                            
+                            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
                             IndexValue<T> comp {dx[xOffset], i};
-
                             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], comp, extraParams);
                         }
 
@@ -357,13 +345,9 @@ namespace functions {
                         reduction = OpType::update(reduction, indexVal, extraParams);
                     }
                 } else {
-                    auto rank = shape::rank(xShapeInfo);
-                    Nd4jLong ind2sub[MAX_RANK];
-
-                    for(Nd4jLong i = tid;i < n; i += blockDim.x * gridDim.x) {
-                        shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i, n, ind2sub);
-
-                        Nd4jLong offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
+                                        
+                    for(Nd4jLong i = tid;i < n; i += blockDim.x * gridDim.x) {                                                
+                        auto offset = shape::getIndexOffset(i, xShapeInfo, n);
                         IndexValue <T> indexVal = {dx[offset], i};
                         reduction = OpType::update(reduction, indexVal, extraParams);
                     }
@@ -379,7 +363,6 @@ namespace functions {
                 if (gridDim.x > 1) {
                     __shared__ bool amLast;
                     unsigned int *tc = (unsigned int *) reductionBuffer;
-                    int rank = shape::rank(xShapeInfo);
                     tid = threadIdx.x;
                     if (threadIdx.x == 0) {
                         IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
@@ -399,14 +382,11 @@ namespace functions {
                         tc[16384] = 0;
                         IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
 
-
                         sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
                         for (Nd4jLong i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
                             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], pBuffer[i], extraParams);
                         }
-
-
 
                         __syncthreads();
                         aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x),extraParams);

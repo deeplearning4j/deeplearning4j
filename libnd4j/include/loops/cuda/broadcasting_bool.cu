@@ -31,10 +31,6 @@
 
 using namespace simdOps;
 
-static __device__ Nd4jLong getIndexOffset(Nd4jLong index, Nd4jLong* shapeInfo, Nd4jLong length) {
-  return shape::getIndexOffset(index, shapeInfo, length);
-}
-
 template<typename X, typename Z, typename OpClass>
 static __device__ void broadcastBoolSimpleGeneric(
 		void *x,
@@ -112,9 +108,9 @@ namespace functions {
 		int *dimension,
 		int dimensionLength, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
-      auto x = static_cast<X*>(vx);
-      auto y = static_cast<X*>(vy);
-      auto result = static_cast<Z*>(vresult);
+      auto x = reinterpret_cast<X*>(vx);
+      auto y = reinterpret_cast<X*>(vy);
+      auto result = reinterpret_cast<Z*>(vresult);
 
 		//decompose in to several sub tads after
 		//moving all dimensions (in sorted order)
@@ -178,9 +174,9 @@ namespace functions {
 
                 for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     
-                    auto xOffset = tadOffsetForBlock  + getIndexOffset(i, tadOnlyShapeInfo,  tadLength);
-                    auto zOffset = tadOffsetForBlockZ + getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
-                    auto yOffset = getIndexOffset(i, yShapeInfo, tadLength);
+                    auto xOffset = tadOffsetForBlock  + shape::getIndexOffset(i, tadOnlyShapeInfo,  tadLength);
+                    auto zOffset = tadOffsetForBlockZ + shape::getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
+                    auto yOffset = shape::getIndexOffset(i, yShapeInfo, tadLength);
  
                     result[zOffset] = OpType::op(x[xOffset], y[yOffset]);
                 }
