@@ -449,17 +449,21 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         }
 
         if (message instanceof INDArrayMessage) {
-            try {
-                val splits = splitter.split((INDArrayMessage) message, voidConfiguration.getMaxChunkSize());
+            // we're skipping split if message is small enough
+            val imessage = (INDArrayMessage) message;
+            if (imessage.getPayload().data().length() * Nd4j.sizeOfDataType(imessage.getPayload().dataType()) > voidConfiguration.getMaxChunkSize()) {
+                try {
+                    val splits = splitter.split(imessage, voidConfiguration.getMaxChunkSize());
 
-                for (val m : splits) {
-                    sendMessage(m, id);
+                    for (val m : splits) {
+                        sendMessage(m, id);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
 
-            return;
+                return;
+            }
         }
 
         // serialize out of locks
