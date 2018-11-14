@@ -117,24 +117,6 @@
 
 
 
-///
-#define LIBND4J_TYPES_0 \
-        (nd4j::DataType::HALF, float16), \
-        (nd4j::DataType::FLOAT32, float), \
-        (nd4j::DataType::DOUBLE, double)
-
-#define LIBND4J_TYPES_1 \
-        (nd4j::DataType::BOOL, bool), \
-        (nd4j::DataType::INT8, int8_t), \
-        (nd4j::DataType::UINT8, uint8_t)
-
-#define LIBND4J_TYPES_2 \
-        (nd4j::DataType::INT16, int16_t), \
-        (nd4j::DataType::INT32, int32_t), \
-        (nd4j::DataType::INT64, Nd4jLong)
-
-
-
 #ifdef __ND4J_EXPERIMENTAL__
 
 #define PAIRWISE_TYPES_0 \
