@@ -22,6 +22,6 @@
 
 namespace functions {
     namespace scalar {
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_7);
+        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_6);
     }
 }
