@@ -123,10 +123,6 @@ __device__ void PairWiseTransform<T,Y,Z>::transformCuda(Nd4jLong len,
 
 }
 
-static __device__ Nd4jLong getIndexOffset(Nd4jLong index, Nd4jLong* shapeInfo, Nd4jLong length) {
-	return shape::getIndexOffset(index, shapeInfo, length);
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 template<typename OpType>
@@ -149,16 +145,16 @@ __device__ void PairWiseTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xSha
 
 	if (vx == vz) {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
-			auto xOffset = getIndexOffset(i, xShapeInfo, len);
-			auto yOffset = getIndexOffset(i, yShapeInfo, len);
+			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
+			auto yOffset = shape::getIndexOffset(i, yShapeInfo, len);
 				
 			z[xOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
 		}
 	} else {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
-			auto xOffset = getIndexOffset(i, xShapeInfo, len);
-			auto yOffset = getIndexOffset(i, yShapeInfo, len);
-			auto zOffset = getIndexOffset(i, zShapeInfo, len);
+			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
+			auto yOffset = shape::getIndexOffset(i, yShapeInfo, len);
+			auto zOffset = shape::getIndexOffset(i, zShapeInfo, len);
 
 			z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
 		}

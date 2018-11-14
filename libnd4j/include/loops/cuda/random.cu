@@ -109,10 +109,10 @@ namespace functions {
             template<typename OpClass>
             void _CUDA_D RandomFunction<T>::execTransformCuda(Nd4jPointer state, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
 
-                auto x = static_cast<T*>(vx);
-                auto y = static_cast<T*>(vy);
-                auto z = static_cast<T*>(vz);
-                auto extraArguments = static_cast<T*>(vextraArguments);
+                auto x = reinterpret_cast<T*>(vx);
+                auto y = reinterpret_cast<T*>(vy);
+                auto z = reinterpret_cast<T*>(vz);
+                auto extraArguments = reinterpret_cast<T*>(vextraArguments);
                 
                 if (OpClass::requiresSpecial) {
                     OpClass::specialOpCuda(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
@@ -156,31 +156,12 @@ namespace functions {
                         z[e * zEWS];// = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, buffer, extraArguments);
                     }
                 } else {
-                    // negative ews
-                    Nd4jLong xCoord[MAX_RANK];
-                    Nd4jLong yCoord[MAX_RANK];
-                    Nd4jLong zCoord[MAX_RANK];
-
-                    int xRank = shape::rank(xShapeBuffer);
-                    int yRank = shape::rank(yShapeBuffer);
-                    int zRank = shape::rank(zShapeBuffer);
-
-                    auto xShape = shape::shapeOf(xShapeBuffer);
-                    auto yShape = shape::shapeOf(yShapeBuffer);
-                    auto zShape = shape::shapeOf(zShapeBuffer);
-
-                    auto xStride = shape::stride(xShapeBuffer);
-                    auto yStride = shape::stride(yShapeBuffer);
-                    auto zStride = shape::stride(zShapeBuffer);
 
                     for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {
-                        shape::ind2sub(xRank, xShape, i, length, xCoord);
-                        shape::ind2sub(yRank, yShape, i, length, yCoord);
-                        shape::ind2sub(zRank, zShape, i, length, zCoord);
-
-                        auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                        auto yOffset2 = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-                        auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+                        
+                        auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer, length);
+                        auto yOffset2 = shape::getIndexOffset(i, yShapeBuffer, length);
+                        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, length);                        
 
                         z[zOffset2];// = OpClass::op(x[xOffset2], y[yOffset2], i, length, buffer, extraArguments);
                     }
@@ -196,9 +177,9 @@ namespace functions {
             template<typename OpClass>
             void _CUDA_D RandomFunction<T>::execTransformCuda(Nd4jPointer state, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
 
-                auto x = static_cast<T*>(vx);
-                auto z = static_cast<T*>(vz);
-                auto extraArguments = static_cast<T*>(vextraArguments);
+                auto x = reinterpret_cast<T*>(vx);
+                auto z = reinterpret_cast<T*>(vz);
+                auto extraArguments = reinterpret_cast<T*>(vextraArguments);
 
                 __shared__ Nd4jLong length;
                 __shared__ int xEWS;
@@ -233,25 +214,11 @@ namespace functions {
                         z[e * zEWS];// = OpClass::op(x[e * xEWS], e, length, buffer, extraArguments);
                     }
                 } else {
-                    // ind2sub branch
-                    Nd4jLong xCoord[MAX_RANK];
-                    Nd4jLong zCoord[MAX_RANK];
-
-                    int xRank = shape::rank(xShapeBuffer);
-                    int zRank = shape::rank(zShapeBuffer);
-
-                    auto xShape = shape::shapeOf(xShapeBuffer);
-                    auto zShape = shape::shapeOf(zShapeBuffer);
-
-                    auto xStride = shape::stride(xShapeBuffer);
-                    auto zStride = shape::stride(zShapeBuffer);
-
+                    
                     for (Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x) {
-                        shape::ind2sub(xRank, xShape, i, length, xCoord);
-                        shape::ind2sub(zRank, zShape, i, length, zCoord);
-
-                        auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                        auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+                        
+                        auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer, length);
+                        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, length);
 
                         z[zOffset2];// = OpClass::op(x[xOffset2], i, length, buffer, extraArguments);
                     }
@@ -266,8 +233,8 @@ namespace functions {
             template<typename OpClass>
             void _CUDA_D RandomFunction<T>::execTransformCuda(Nd4jPointer state, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
 
-                auto z = static_cast<T*>(vz);
-                auto extraArguments = static_cast<T*>(vextraArguments);
+                auto z = reinterpret_cast<T*>(vz);
+                auto extraArguments = reinterpret_cast<T*>(vextraArguments);
 
                 Nd4jLong length = shape::length(zShapeBuffer);
                 int ews = shape::elementWiseStride(zShapeBuffer);
@@ -298,18 +265,9 @@ namespace functions {
                         z[x * ews];// = OpClass::op(x, length, buffer, extraArguments);
                     }
                 } else {
-                    // ind2sub branch
-                    Nd4jLong zCoord[MAX_RANK];
-
-                    int zRank = shape::rank(zShapeBuffer);
-                    auto zShape = shape::shapeOf(zShapeBuffer);
-                    auto zStride = shape::stride(zShapeBuffer);
-
-                    for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {
-                        shape::ind2sub(zRank, zShape, i, length, zCoord);
-
-                        auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-
+                    
+                    for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {                        
+                        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, length);
                         z[zOffset2];// = OpClass::op(i, length, buffer,  extraArguments);
                     }
                 }
@@ -321,8 +279,8 @@ namespace functions {
         template <>
         _CUDA_H void RandomFunction<float>::executeCudaSingle(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
 
-            auto z = static_cast<float*>(vz);
-            auto extraArguments = static_cast<float*>(vextraArguments);
+            auto z = reinterpret_cast<float*>(vz);
+            auto extraArguments = reinterpret_cast<float*>(vextraArguments);
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -338,8 +296,8 @@ namespace functions {
         template <>
         _CUDA_H void RandomFunction<float16>::executeCudaSingle(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
             
-            auto z = static_cast<float16*>(vz);
-            auto extraArguments = static_cast<float16*>(vextraArguments);
+            auto z = reinterpret_cast<float16*>(vz);
+            auto extraArguments = reinterpret_cast<float16*>(vextraArguments);
             
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -355,8 +313,8 @@ namespace functions {
         template <>
         _CUDA_H void RandomFunction<double>::executeCudaSingle(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
             
-            auto z = static_cast<double*>(vz);
-            auto extraArguments = static_cast<double*>(vextraArguments);
+            auto z = reinterpret_cast<double*>(vz);
+            auto extraArguments = reinterpret_cast<double*>(vextraArguments);
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -372,9 +330,9 @@ namespace functions {
         template <>
         _CUDA_H void RandomFunction<float>::executeCudaDouble(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
             
-            auto x = static_cast<float*>(vx);
-            auto z = static_cast<float*>(vz);
-            auto extraArguments = static_cast<float*>(vextraArguments);
+            auto x = reinterpret_cast<float*>(vx);
+            auto z = reinterpret_cast<float*>(vz);
+            auto extraArguments = reinterpret_cast<float*>(vextraArguments);
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -391,9 +349,9 @@ namespace functions {
         template <>
         _CUDA_H void RandomFunction<float16>::executeCudaDouble(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
             
-            auto x = static_cast<float16*>(vx);
-            auto z = static_cast<float16*>(vz);
-            auto extraArguments = static_cast<float16*>(vextraArguments);
+            auto x = reinterpret_cast<float16*>(vx);
+            auto z = reinterpret_cast<float16*>(vz);
+            auto extraArguments = reinterpret_cast<float16*>(vextraArguments);
             
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -409,9 +367,9 @@ namespace functions {
         template <>
         _CUDA_H void RandomFunction<double>::executeCudaDouble(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
             
-            auto x = static_cast<double*>(vx);
-            auto z = static_cast<double*>(vz);
-            auto extraArguments = static_cast<double*>(vextraArguments);
+            auto x = reinterpret_cast<double*>(vx);
+            auto z = reinterpret_cast<double*>(vz);
+            auto extraArguments = reinterpret_cast<double*>(vextraArguments);
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -428,10 +386,10 @@ namespace functions {
         _CUDA_H void RandomFunction<float>::executeCudaTriple(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
             
 
-            auto x = static_cast<float*>(vx);
-            auto y = static_cast<float*>(vy);
-            auto z = static_cast<float*>(vz);
-            auto extraArguments = static_cast<float*>(vextraArguments);
+            auto x = reinterpret_cast<float*>(vx);
+            auto y = reinterpret_cast<float*>(vy);
+            auto z = reinterpret_cast<float*>(vz);
+            auto extraArguments = reinterpret_cast<float*>(vextraArguments);
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -447,10 +405,10 @@ namespace functions {
         template <>
         _CUDA_H void RandomFunction<float16>::executeCudaTriple(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
             
-            auto x = static_cast<float16*>(vx);
-            auto y = static_cast<float16*>(vy);
-            auto z = static_cast<float16*>(vz);
-            auto extraArguments = static_cast<float16*>(vextraArguments);
+            auto x = reinterpret_cast<float16*>(vx);
+            auto y = reinterpret_cast<float16*>(vy);
+            auto z = reinterpret_cast<float16*>(vz);
+            auto extraArguments = reinterpret_cast<float16*>(vextraArguments);
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -468,10 +426,10 @@ namespace functions {
         template <>
         _CUDA_H void RandomFunction<double>::executeCudaTriple(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
 
-            auto x = static_cast<double*>(vx);
-            auto y = static_cast<double*>(vy);
-            auto z = static_cast<double*>(vz);
-            auto extraArguments = static_cast<double*>(vextraArguments);
+            auto x = reinterpret_cast<double*>(vx);
+            auto y = reinterpret_cast<double*>(vy);
+            auto z = reinterpret_cast<double*>(vz);
+            auto extraArguments = reinterpret_cast<double*>(vextraArguments);
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
