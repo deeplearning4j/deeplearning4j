@@ -39,6 +39,12 @@ namespace nd4j{
         std::atomic<bool> _precBoost;
         std::atomic<bool> _useMKLDNN{true};
 
+#ifdef __ND4J_EXPERIMENTAL__
+        const bool _experimental = true;
+#else
+        const bool _experimental = false;
+#endif
+
         static Environment* _instance;
 
         Environment();
@@ -71,6 +77,8 @@ namespace nd4j{
 
         bool precisionBoostAllowed();
         void allowPrecisionBoost(bool reallyAllow);
+
+        bool isExperimentalBuild();
     };
 }
 

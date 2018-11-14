@@ -67,6 +67,10 @@ namespace nd4j {
         return _verbose.load();
     }
 
+    bool Environment::isExperimentalBuild() {
+        return _experimental;
+    }
+
     nd4j::DataType Environment::defaultFloatDataType() {
         return _dataType.load();
     }
