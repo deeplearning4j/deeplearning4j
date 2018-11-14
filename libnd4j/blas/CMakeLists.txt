@@ -121,7 +121,17 @@ if(CUDA_BLAS)
             list(APPEND CUDA_NVCC_FLAGS -DEXPERIMENTAL)
         endif()
         if (CMAKE_BUILD_TYPE STREQUAL "Release")
-            if(CUDA_VERSION VERSION_GREATER "8.0") # cuda 9
+            if(CUDA_VERSION VERSION_GREATER "9.0") # cuda 10
+                if ("${COMPUTE}" STREQUAL "all")
+                    if (APPLE)
+                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 -w --cudart=static -O3 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62)
+                    else()
+                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 -w --cudart=static -O3 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_72,code=sm_72 -gencode arch=compute_75,code=sm_75)
+                    endif()
+                else()
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 -w --cudart=static -O3 -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
+                endif()
+            elseif(CUDA_VERSION VERSION_GREATER "8.0") # cuda 9
                 if ("${COMPUTE}" STREQUAL "all")
                     if (APPLE)
                         list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 -w --cudart=static -O3 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62)
