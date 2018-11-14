@@ -58,14 +58,14 @@ namespace functions {
 
             template <typename OpType>
             __host__
-            static void intermediateShaped(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void* vscalar, void *vextraParams, int *allocPointer);
+            static void intermediateShaped(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void* vscalar, void *vextraParams, int *allocPointer);
 
             template <typename OpType>
             __host__
             static void intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
             __host__
-            static void executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void* scalar, void *extraParams);
+            static void executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *result, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, void* scalar, void *extraParams);
 
             __host__
             static void executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength);
@@ -80,10 +80,6 @@ namespace functions {
 
 
             static __device__ void transformCudaLegacy(int opNum, void* scalar, void *dy, Nd4jLong *shapeInfo, void *params, void *result,Nd4jLong *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
-
-            template<typename OpType>
-            __device__
-            static void transform(Nd4jLong len, void* scalar, void *dy, void *params, void *result, Nd4jLong *indexes, int *allocationBuffer, UnifiedSharedMemory *manager);
 
             template<typename OpType>
             __device__
