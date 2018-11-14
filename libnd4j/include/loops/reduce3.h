@@ -139,15 +139,11 @@ template<typename OpType>
 					extraZ[1] = (Y) 0.;
 				}
 				sPartials[threadIdx.x] = startingVal;
-				__syncthreads();
+				__syncthreads();                
 
-                Nd4jLong idx[MAX_RANK];
-
-				for(Nd4jLong i = blockIdx.x * gridDim.x + threadIdx.x; i < n; i += gridDim.x * blockDim.x) {
-					shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i, idx);
-					auto offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
-					auto yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
-					
+				for(Nd4jLong i = blockIdx.x * gridDim.x + threadIdx.x; i < n; i += gridDim.x * blockDim.x) {					
+					auto offset  = shape::getIndexOffset(i, xShapeInfo, n);
+					auto yOffset = shape::getIndexOffset(i, yShapeInfo, n);
 					sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], extraZ), extraZ);
 				}
 
@@ -226,36 +222,14 @@ template<typename OpType>
 
 					sPartials[threadIdx.x] = startingVal;
 				} else {
-				    __shared__ Nd4jLong *xShape;
-				    __shared__ Nd4jLong *yShape;
-				    __shared__ Nd4jLong *xStride;
-				    __shared__ Nd4jLong *yStride;
-				    __shared__ int rank;
-				    if (threadIdx.x == 0) {
 
-					    xShape = shape::shapeOf(xShapeInfo);
-					    yShape = shape::shapeOf(yShapeInfo);
-					    xStride = shape::stride(xShapeInfo);
-					    yStride = shape::stride(yShapeInfo);
-					    rank = shape::rank(xShapeInfo);
-					}
-					__syncthreads();
 					Y startingVal = OpType::startingValue(dx);
-
 					Y *sPartials = (Y *) manager->getSharedReductionBuffer();
-
-					Nd4jLong xCoords[MAX_RANK];
-					Nd4jLong yCoords[MAX_RANK];
-
 					sPartials[threadIdx.x] = startingVal;
 
 					for(Nd4jLong i = tid ;i < length; i += gridDim.x * blockDim.x) {
-						shape::ind2subC(rank,xShape,i,xCoords);
-						shape::ind2subC(rank,yShape,i,yCoords);
-
-						auto offset = shape::getOffset(0, xShape, xStride, xCoords,rank);
-						auto yOffset = shape::getOffset(0,yShape, yStride, yCoords,rank);
-
+						auto offset  = shape::getIndexOffset(i, xShapeInfo, length);
+						auto yOffset = shape::getIndexOffset(i, yShapeInfo, length);
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[offset], dy[yOffset], extraZ), extraZ);
 					}
 				}
@@ -367,15 +341,7 @@ template<typename OpType>
                         __shared__ int yTadLength;
 
                         __shared__ int xTads;
-                        __shared__ int yTads;
-
-                        __shared__ Nd4jLong *xShape;
-                        __shared__ Nd4jLong *xStride;
-                        __shared__ int xRank;
-
-                        __shared__ Nd4jLong *yShape;
-                        __shared__ Nd4jLong *yStride;
-                        __shared__ int yRank;
+                        __shared__ int yTads;                        
 
                         //reading initial data
                         if (threadIdx.x == 0) {
@@ -384,21 +350,8 @@ template<typename OpType>
 
                             xTads = shape::length(xShapeInfo) / xTadLength;
                             yTads = shape::length(yShapeInfo) / yTadLength;
-
-                            xShape = shape::shapeOf(xTadShapeInfo);
-                            xStride = shape::stride(xTadShapeInfo);
-                            xRank = shape::rank(xTadShapeInfo);
-
-                            yShape = shape::shapeOf(yTadShapeInfo);
-                            yStride = shape::stride(yTadShapeInfo);
-                            yRank = shape::rank(yTadShapeInfo);
                         }
                         __syncthreads();
-
-
-                        Nd4jLong xCoord[MAX_RANK];
-                        Nd4jLong yCoord[MAX_RANK];
-
 
                         int limit = xTadLength / maxBlock;
 				        if (xTadLength % maxBlock > 0)
@@ -408,15 +361,8 @@ template<typename OpType>
                         for (int r = blockIdx.x; r < xTads; r += blockDim.x * gridDim.x) {
                             X *x = dx + xOffsets[r];
 
-                            if (threadIdx.x < xTadLength && threadIdx.x < maxBlock) {
-                                if (shape::order(xTadShapeInfo) == 'c') {
-                                    shape::ind2subC(xRank, xShape, threadIdx.x, xCoord);
-                                } else {
-                                    shape::ind2sub(xRank, xShape, threadIdx.x, xCoord);
-                                }
-
-                                auto xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-
+                            if (threadIdx.x < xTadLength && threadIdx.x < maxBlock) {                                
+                                auto xO = shape::getIndexOffset(threadIdx.x, xTadShapeInfo, shape::length(xTadShapeInfo));
                                 tempX[threadIdx.x] = x[xO];
                             }
 
@@ -436,28 +382,14 @@ template<typename OpType>
 
                                     // we reset tempX IF we have >1 tiles
                                     if (t >= 1 || (limit > 1 && g > 0))
-                                        if (threadIdx.x + (t * maxBlock) < xTadLength) {
-                                            if (shape::order(xTadShapeInfo) == 'c') {
-                                                shape::ind2subC(xRank, xShape, threadIdx.x + (t * maxBlock), xCoord);
-                                            } else {
-                                                shape::ind2sub(xRank, xShape, threadIdx.x + (t * maxBlock), xCoord);
-                                            }
-
-                                            Nd4jLong xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-
+                                        if (threadIdx.x + (t * maxBlock) < xTadLength) {                                            
+                                            auto xO = shape::getIndexOffset(threadIdx.x + (t * maxBlock), xTadShapeInfo, shape::length(xTadShapeInfo));
                                             tempX[threadIdx.x] = x[xO];
             //                                tempX[threadIdx.x] = x[threadIdx.x + (t * maxBlock)];
                                         }
 
-                                    for (int f = threadIdx.x + (t * maxBlock); f < xTadLength && f < threadIdx.x + ((t + 1) * maxBlock); f += blockDim.x * gridDim.x) {
-                                        if (shape::order(yTadShapeInfo) == 'c') {
-                                            shape::ind2subC(yRank, yShape, f, yCoord);
-                                        } else {
-                                            shape::ind2sub(yRank, yShape, f, yCoord);
-                                        }
-
-                                        Nd4jLong yO = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-
+                                    for (int f = threadIdx.x + (t * maxBlock); f < xTadLength && f < threadIdx.x + ((t + 1) * maxBlock); f += blockDim.x * gridDim.x) {                                        
+                                        auto yO = shape::getIndexOffset(f, xTadShapeInfo, shape::length(xTadShapeInfo));
                                         sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(tempX[threadIdx.x], y[yO], extraZ), extraZ);
                                     }
 
@@ -569,17 +501,7 @@ template<typename OpType>
 				__syncthreads();
 
                 // code branch for TAD vs full array
-                if (tadLength == yLength) {
-                    Nd4jLong xCoord[MAX_RANK];
-                    Nd4jLong yCoord[MAX_RANK];
-
-                    auto yShape = shape::shapeOf(yShapeInfo);
-					auto yStride = shape::stride(yShapeInfo);
-					auto xShape = shape::shapeOf(tadOnlyShapeInfo);
-					auto xStride = shape::stride(tadOnlyShapeInfo);
-					int yRank = shape::rank(yShapeInfo);
-					int xRank = shape::rank(tadOnlyShapeInfo);
-
+                if (tadLength == yLength) {                    
 
 					for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
 					    int xOffsetForTad = tadOffsets[i];
@@ -590,12 +512,8 @@ template<typename OpType>
 				        __syncthreads();
 
 						for(int j = threadIdx.x; j < tadLength; j += blockDim.x) {
-                            shape::ind2subC(xRank,xShape, j, xCoord);
-                            shape::ind2subC(yRank,yShape, j, yCoord);
-
-                            Nd4jLong xOffset = shape::getOffset(xOffsetForTad, xShape, xStride, xCoord, xRank);
-                            Nd4jLong yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-
+                            Nd4jLong xOffset = shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
+                            Nd4jLong yOffset = shape::getIndexOffset(j, yShapeInfo, tadLength);                            
 							sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(dx[xOffset],dy[yOffset], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[xOffset],dy[yOffset], extraZ), extraZ);
 						}
 						__syncthreads();
@@ -671,18 +589,6 @@ template<typename OpType>
                         }
 
 */
-
-                        Nd4jLong xCoord[MAX_RANK];
-                        Nd4jLong yCoord[MAX_RANK];
-
-                        auto yShape = shape::shapeOf(yTadOnlyShapeInfo);
-						auto yStride = shape::stride(yTadOnlyShapeInfo);
-						auto xShape = shape::shapeOf(tadOnlyShapeInfo);
-						auto xStride = shape::stride(tadOnlyShapeInfo);
-						int yRank = shape::rank(yTadOnlyShapeInfo);
-						int xRank = shape::rank(tadOnlyShapeInfo);
-
-
 						for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
 							auto xOffsetForTad = tadOffsets[i];
 							auto yOffsetForTad = yTadOffsets[i];
@@ -693,12 +599,8 @@ template<typename OpType>
 				            __syncthreads();
 
 							for(int j = threadIdx.x; j < tadLength; j += blockDim.x) {
-                                shape::ind2subC(xRank,xShape, j, xCoord);
-                                shape::ind2subC(yRank,yShape, j, yCoord);
-
-                                auto xOffset = shape::getOffset(xOffsetForTad, xShape, xStride, xCoord, xRank);
-                                auto yOffset = shape::getOffset(yOffsetForTad, yShape, yStride, yCoord, yRank);
-
+                                auto xOffset = xOffsetForTad + shape::getIndexOffset(j, tadOnlyShapeInfo,  tadLength);
+                                auto yOffset = yOffsetForTad + shape::getIndexOffset(j, yTadOnlyShapeInfo, tadLength);
 								sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(dx[xOffset],dy[yOffset], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[xOffset],dy[yOffset], extraZ), extraZ);
 							}
 							__syncthreads();
@@ -925,24 +827,9 @@ template<typename OpType>
 
 
                 else {
-                    Nd4jLong xCoords[MAX_RANK];
-                    Nd4jLong yCoords[MAX_RANK];
-
-                    int xRank = shape::rank(xShapeInfo);
-                    int yRank = shape::rank(yShapeInfo);
-
-                    auto xShape = shape::shapeOf(xShapeInfo);
-                    auto xStride = shape::stride(xShapeInfo);
-                    auto yShape = shape::shapeOf(yShapeInfo);
-                    auto yStride = shape::stride(yShapeInfo);
-
                     for(unsigned int i = 0 ;i < length; i++) {
-                        shape::ind2subC(xRank, xShape, i, xCoords);
-                        shape::ind2subC(yRank, yShape, i, yCoords);
-
-                        auto offset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
-                        auto yOffset = shape::getOffset(0, yShape, yStride, yCoords, yRank);
-
+                        auto offset  = shape::getIndexOffset(i, xShapeInfo, length);
+                        auto yOffset = shape::getIndexOffset(i, yShapeInfo, length);
                         startingVal = OpType::update(startingVal, OpType::op(x[offset], y[yOffset], extraParamsVals), extraParamsVals);
                     }
                 }
@@ -973,22 +860,9 @@ template<typename OpType>
 
                 auto xTads = shape::length(xShapeInfo) / xTadLength;
                 auto yTads = shape::length(yShapeInfo) / yTadLength;
-
-                auto xShape = shape::shapeOf(xTadShapeInfo);
-                auto xStride = shape::stride(xTadShapeInfo);
-                int xRank = shape::rank(xTadShapeInfo);
-
-                auto yShape = shape::shapeOf(yTadShapeInfo);
-                auto yStride = shape::stride(yTadShapeInfo);
-                int yRank = shape::rank(yTadShapeInfo);
-
-
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong yCoord[MAX_RANK];
-
                 auto startingVal = OpType::startingValue(x);
 
-#pragma  omp parallel for proc_bind(AFFINITY) default(shared) private(xCoord, yCoord)
+#pragma  omp parallel for proc_bind(AFFINITY) default(shared)
                 for (Nd4jLong r = 0; r < xTads; r++) {
                     Nd4jLong xOffset = xOffsets[r];
 
@@ -1007,22 +881,9 @@ template<typename OpType>
                             localExtraParams[extraParamsIdx] = startingVal;
                         }
 
-                        for (int f = 0; f < xTadLength; f++) {
-                            if (shape::order(yTadShapeInfo) == 'c') {
-                                shape::ind2subC(yRank, yShape, f, yCoord);
-                            } else {
-                                shape::ind2sub(yRank, yShape, f, yCoord);
-                            }
-
-                            if (shape::order(xTadShapeInfo) == 'c') {
-                                shape::ind2subC(xRank, xShape, f, xCoord);
-                            } else {
-                                shape::ind2sub(xRank, xShape, f, xCoord);
-                            }
-
-                            auto xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                            auto yO = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-
+                        for (int f = 0; f < xTadLength; f++) {                            
+                            auto xO = shape::getIndexOffset(f, xTadShapeInfo, xTadLength);
+                            auto yO = shape::getIndexOffset(f, yTadShapeInfo, xTadLength);
                             result[ri] = OpType::update(result[ri], OpType::op(lX[xO], lY[yO], localExtraParams), localExtraParams);
                         }
 
@@ -1080,21 +941,10 @@ template<typename OpType>
                 auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 auto tads = shape::length(xShapeInfo) / tadLength;
 
-                auto *xShape = shape::shapeOf(tadShapeInfo);
-                auto *xStride = shape::stride(tadShapeInfo);
-                int xRank = shape::rank(tadShapeInfo);
-
-                auto *yShape = shape::shapeOf(yShapeInfo);
-                auto *yStride = shape::stride(yShapeInfo);
-                int yRank = shape::rank(yShapeInfo);
-
                 //shape::printShapeInfoLinear(xShapeInfo);
                 //shape::printShapeInfoLinear(yShapeInfo);
                 //shape::printShapeInfoLinear(resultShapeInfoBuffer);
                 //shape::printShapeInfoLinear(tadShapeInfo);
-
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong yCoord[MAX_RANK];
 
 //#pragma  omp parallel for proc_bind(AFFINITY) default(shared)
                 for (Nd4jLong r = 0; r < tads; r++) {
@@ -1108,17 +958,9 @@ template<typename OpType>
                     }
 
                     for (Nd4jLong f = 0; f < tadLength; f++) {
-                        if (shape::order(tadShapeInfo) == 'c') {
-                            shape::ind2subC(xRank, xShape, f, xCoord);
-                            shape::ind2subC(yRank, yShape, f, yCoord);
-                        } else {
-                            shape::ind2sub(xRank, xShape, f, xCoord);
-                            shape::ind2sub(yRank, yShape, f, yCoord);
-                        }
 
-                        auto xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
-                        auto yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-
+                        auto xOffset = shape::getIndexOffset(f, tadShapeInfo, tadLength);
+                        auto yOffset = shape::getIndexOffset(f, yShapeInfo,   tadLength);                        
                         result[r] = OpType::update(result[r], OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
                     }
 
@@ -1327,33 +1169,14 @@ template<typename OpType>
                             for (int i = 0; i < resultLength; i++) {
                                 Nd4jLong xOffset = xTadBigger ? xTad.tadOffsets[i] : 0;
                                 Nd4jLong yOffset = !xTadBigger ? yTad.tadOffsets[i] : 0;
-                                auto xShape = xTadBigger ? xTad.tadShape : shape::shapeOf(xShapeInfo);
-                                auto yShape = !xTadBigger ? yTad.tadShape : shape::shapeOf(yShapeInfo);
-                                auto xStride = xTadBigger ? xTad.tadStride : shape::stride(xShapeInfo);
-                                auto yStride = !xTadBigger ? yTad.tadStride : shape::stride(yShapeInfo);
-                                int xRank = xTadBigger ? shape::rank(xTad.tadOnlyShapeInfo) : shape::rank(xShapeInfo);
-                                int yRank = !xTadBigger ? shape::rank(yTad.tadOnlyShapeInfo) : shape::rank(yShapeInfo);
-                                Nd4jLong coord[MAX_RANK];
-                                Nd4jLong yCoord[MAX_RANK];
+                                auto xShapeInf = xTadBigger ? xTad.tadOnlyShapeInfo : xShapeInfo;
+                                auto yShapeInf = !xTadBigger ? yTad.tadOnlyShapeInfo : yShapeInfo;
                                 auto start = OpType::startingValue(x);
 
                                 for (int j = 0; j < tadLength; j++) {
-                                    if(xTadBigger) {
-                                        shape::ind2subC(shape::rank(xTad.tadOnlyShapeInfo),
-                                                        xTad.tadStride, j, coord);
-                                        shape::ind2subC(shape::rank(yShapeInfo),
-                                                        shape::shapeOf(yShapeInfo), j, yCoord);
-                                    }
-                                    else {
-                                        shape::ind2subC(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), j, coord);
-                                        shape::ind2subC(shape::rank(yTad.tadOnlyShapeInfo),
-                                                        yTad.tadShape, j, yCoord);
-                                    }
 
-
-
-                                    int xOffset2 =  shape::getOffset(xOffset,xShape,xStride,coord,xRank);
-                                    int yOffset2 =  shape::getOffset(yOffset,yShape,yStride,yCoord,yRank);
+                                    int xOffset2 =  xOffset + shape::getIndexOffset(j, xShapeInf, tadLength);
+                                    int yOffset2 =  yOffset + shape::getIndexOffset(j, yShapeInf, tadLength);                                    
                                     start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2],extraParams), extraParamsVals);
                                 }
 
@@ -1374,8 +1197,6 @@ template<typename OpType>
                         int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                         num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-                        Nd4jLong coord[MAX_RANK];
-
 //#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared) private(coord)
                         for (int i = 0; i < resultLength; i++) {
                             Nd4jLong xOffset = xTad.tadOffsets[i];
@@ -1385,9 +1206,8 @@ template<typename OpType>
                             auto start = OpType::startingValue(x + xOffset);
 
                             for (int j = 0; j < tadLength; j++) {
-                                shape::ind2subC(shape::rank(iterationTadInfo), shape::shapeOf(iterationTadInfo), j, coord);
-                                Nd4jLong xOffset2 = shape::getOffset(xOffset,shape::shapeOf(xTad.tadOnlyShapeInfo),shape::stride(xTad.tadOnlyShapeInfo),coord,shape::rank(xTad.tadOnlyShapeInfo));
-                                Nd4jLong yOffset2 = shape::getOffset(yOffset,shape::shapeOf(yTad.tadOnlyShapeInfo),shape::stride(yTad.tadOnlyShapeInfo),coord,shape::rank(yTad.tadOnlyShapeInfo));
+                                Nd4jLong xOffset2 = xOffset + shape::getIndexOffset(j, xTad.tadOnlyShapeInfo, tadLength);
+                                Nd4jLong yOffset2 = yOffset + shape::getIndexOffset(j, yTad.tadOnlyShapeInfo, tadLength);
                                 start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2],extraParamsVals), extraParamsVals);
                             }
 
