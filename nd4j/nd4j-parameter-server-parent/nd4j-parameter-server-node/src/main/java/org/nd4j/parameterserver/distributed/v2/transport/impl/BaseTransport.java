@@ -205,6 +205,11 @@ public abstract  class BaseTransport  implements Transport {
         // now we're going for Handshake with master
         if (!masterMode) {
             try {
+                if (mesh.get() == null) {
+                    mesh.set(new MeshOrganizer(meshBuildMode));
+                    mesh.get().setVersion(-5);
+                }
+
                 mesh.get().getRootNode().setId(rootId);
                 sendMessageBlocking(new HandshakeRequest(), rootId);
             } catch (Exception e) {

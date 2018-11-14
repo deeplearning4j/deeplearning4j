@@ -81,6 +81,10 @@ public class MeshOrganizer implements Serializable {
         return version;
     }
 
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
     /**
      * This method adds new node to the network
      *
