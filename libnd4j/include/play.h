@@ -40,7 +40,7 @@
     (float, long, long)        
 
 
-BUILD_PAIRWISE_TEMPLATE(template class functionName, , PWT_LIST);
+BUILD_SINGLE_SELECTOR_THRICE(xType, template class functionName, , DATA_TYPES);
 
 //BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES);
 
