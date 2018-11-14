@@ -205,6 +205,7 @@ public abstract  class BaseTransport  implements Transport {
         // now we're going for Handshake with master
         if (!masterMode) {
             try {
+                mesh.get().getRootNode().setId(rootId);
                 sendMessageBlocking(new HandshakeRequest(), rootId);
             } catch (Exception e) {
                 throw new ND4JIllegalStateException("Can't proceed with handshake from [" + this.id() + "] to [" + rootId + "]", e);
@@ -433,6 +434,11 @@ public abstract  class BaseTransport  implements Transport {
      */
     protected boolean isOnline(String nodeId) {
         synchronized (mesh) {
+            val rootNode = mesh.get().getRootNode();
+            // root node is always online.
+            if (rootNode.getId().equals(nodeId))
+                return true;
+
             val node = mesh.get().getNodeById(nodeId);
             return node.status() == NodeStatus.ONLINE;
         }

@@ -322,7 +322,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                 try {
                     Thread.sleep(100);
                     if (cnt ++ > 100)
-                        throw new ND4JIllegalStateException("Can't establish connection afet 10 seconds. Terminating...");
+                        throw new ND4JIllegalStateException("Can't establish connection to [" + ipAndPort + "] afet 10 seconds. Terminating...");
                 } catch (InterruptedException e) {
                     //
                 }
