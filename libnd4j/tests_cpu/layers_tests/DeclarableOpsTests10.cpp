@@ -1787,6 +1787,53 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test4) {
 }
 
 ////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
+
+    NDArray<float> input   ('c', {1, 2, 3, 4});
+    //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
+    //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
+    NDArray<float> expected('c', {1, 4, 5, 4}, { 1,  2,  3,  4,
+     1,  2,  3,  4,
+     5,  6,  7,  8,
+     5,  6,  7,  8,
+     9, 10, 11, 12,
+
+     1,  2,  3,  4,
+     1,  2,  3,  4,
+     5,  6,  7,  8,
+     5,  6,  7,  8,
+     9, 10, 11, 12,
+
+    13, 14, 15, 16,
+    13, 14, 15, 16,
+    17, 18, 19, 20,
+    17, 18, 19, 20,
+    21, 22, 23, 24,
+
+    13, 14, 15, 16,
+    13, 14, 15, 16,
+    17, 18, 19, 20,
+    17, 18, 19, 20,
+    21, 22, 23, 24
+    });
+    //input = 1.f;
+    input.linspace(1);
+
+    nd4j::ops::resize_nearest_neighbor<float> op;
+    auto results = op.execute({&input}, {}, {4, 5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+
+    //result->printIndexedBuffer("Resized to 4x5");
+    //expected.printIndexedBuffer("Expect for 4x5");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, pad_tests10) {
 
     NDArray<float> input   ('c', {2,3,4});
