@@ -23,6 +23,6 @@
 namespace functions           {
 namespace transform {
 
-	BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformFloat, , LIBND4J_TYPES, FLOAT_TYPES_1);
+	BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformFloat, , LIBND4J_TYPES_1, FLOAT_TYPES);
 }
 }
