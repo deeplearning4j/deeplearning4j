@@ -28,7 +28,7 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z, typename OpType>
-__device__ void pairwiseSimpleGeneric(void* x, Nd4jLong *xShapeInfo, 
+__device__ void pairwiseSimpleShapedGeneric(void* x, Nd4jLong *xShapeInfo,
 									void *y, Nd4jLong *yShapeInfo, 
 									void *z, Nd4jLong *zShapeInfo, 
 									void *params, 
@@ -37,6 +37,15 @@ __device__ void pairwiseSimpleGeneric(void* x, Nd4jLong *xShapeInfo,
     functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer, nullptr, nullptr);
 }
 
+template<typename X, typename Y, typename Z, typename OpType>
+__device__ void pairwiseSimpleStridedGeneric(Nd4jLong length, void* x, Nd4jLong xEws,
+									  void *y, Nd4jLong yEws,
+									  void *z, Nd4jLong zEws,
+									  void *params,
+									  int *allocationBuffer) {
+
+	functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<OpType>(length, x, y, xEws, yEws,  params, z, zEws, allocationBuffer, nullptr, nullptr);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
@@ -46,9 +55,18 @@ __global__ void pairwiseSimpleShaped(void* x, Nd4jLong *xShapeInfo,
 									void *params, 
 									int *allocationBuffer) {
         
-	pairwiseSimpleGeneric<X, Y, Z, OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer);
+	pairwiseSimpleShapedGeneric<X, Y, Z, OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer);
 }
 
+template <typename X, typename Y, typename Z, typename OpType>
+__global__ void pairwiseSimpleStrided(Nd4jLong length, void* x, Nd4jLong xEws,
+									 void *y, Nd4jLong yEws,
+									 void *z, Nd4jLong zEws,
+									 void *params,
+									 int *allocationBuffer) {
+
+	pairwiseSimpleStridedGeneric<X, Y, Z, OpType>(length, x, xEws, y, yEws, z, zEws, params, allocationBuffer);
+}
 
 
 namespace functions           {
@@ -58,36 +76,27 @@ namespace pairwise_transforms {
 template<typename X, typename Y, typename Z>
 template<typename OpType>
 void _CUDA_H PairWiseTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, 
-														void *vx, Nd4jLong *xShapeInfo, 
-														void *vy, Nd4jLong *yShapeInfo, 
-														void *vz, Nd4jLong *zShapeInfo, 
-														void *vextraParams, 
+														void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo,
+														void *vy, Nd4jLong *yShapeInfo, Nd4jLong *hyShapeInfo,
+														void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo,
+														void *vextraParams,
 														int *allocPointer){
 
-	pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
-}
+    auto length = shape::length(hxShapeInfo);
+	auto xEWS = shape::elementWiseStride(hxShapeInfo);
+	auto xOrder = shape::order(hxShapeInfo);
 
-////////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z>
-template<typename OpType>
-__device__ void PairWiseTransform<X,Y,Z>::transform(void *vx, Nd4jLong *xShapeInfo, 
-													void *vy, Nd4jLong *yShapeInfo, 
-													void *vz, Nd4jLong *zShapeInfo, 
-													void *vextraParams, 
-													Nd4jLong *xIndexes, Nd4jLong *yIndexes, Nd4jLong *zIndexes, 
-													int *allocPointer, 
-													UnifiedSharedMemory *manager, 
-													Nd4jLong *tadOnlyShapeInfo){
-	auto x = reinterpret_cast<X*>(vx);
-	auto y = reinterpret_cast<Y*>(vy);
-	auto z = reinterpret_cast<Z*>(vz);
-    auto extraParams = reinterpret_cast<Z*>(vextraParams);    
+	auto yEWS = shape::elementWiseStride(hyShapeInfo);
+	auto yOrder = shape::order(hyShapeInfo);
 
-	int tid = blockIdx.x * blockDim.x + threadIdx.x;
-	Nd4jLong len = shape::length(xShapeInfo);
+	auto zEWS = shape::elementWiseStride(hzShapeInfo);
+	auto zOrder = shape::order(hzShapeInfo);
 
-	for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) 
-		z[zIndexes[i]] = OpType::op(x[xIndexes[i]], y[yIndexes[i]], extraParams);	
+	if (xEWS >= 1 && zEWS >= 1 && yEWS >= 1 && xOrder == yOrder && xOrder == zOrder) {
+		pairwiseSimpleStrided<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(length, vx, xEWS, vy, yEWS, vz, zEWS, vextraParams, allocPointer);
+	} else {
+		pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -108,14 +117,14 @@ __device__ void PairWiseTransform<T,Y,Z>::transformCuda(Nd4jLong len,
 
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if(xEws == yEws && yEws == zEws && xEws == 1) {
-		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) 
-				z[i] = OpType::op(x[i], y[i], params);
+	for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
+		z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], params);
 	}
-	else {
-		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) 
-			z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], params);			
-	}
+
+}
+
+static __device__ Nd4jLong getIndexOffset(Nd4jLong index, Nd4jLong* shapeInfo, Nd4jLong length) {
+	return shape::getIndexOffset(index, shapeInfo, length);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -136,67 +145,29 @@ __device__ void PairWiseTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xSha
 
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-	__shared__ int xEWS;
-	__shared__ int yEWS;
-	__shared__ int zEWS;
-
-	__shared__ char xOrder;
-	__shared__ char yOrder;
-	__shared__ char zOrder;
-
-	__shared__ bool xRow;
-	__shared__ bool yRow;
-	__shared__ bool zRow;
-
-	if (threadIdx.x == 0) {
-		
-		xEWS = shape::elementWiseStride(xShapeInfo);
-		yEWS = shape::elementWiseStride(yShapeInfo);
-    	zEWS = shape::elementWiseStride(zShapeInfo);
-		xOrder = shape::order(xShapeInfo);
-		yOrder = shape::order(yShapeInfo);
-		zOrder = shape::order(zShapeInfo);
-		xRow = shape::isRowVector(xShapeInfo);
-		yRow = shape::isRowVector(yShapeInfo);
-		zRow = shape::isRowVector(zShapeInfo);
-	}
-	
-	__syncthreads();
-
 	Nd4jLong len = shape::length(xShapeInfo);
-	if((xEWS >= 1 && yEWS == xEWS && zEWS == xEWS &&  xOrder == yOrder && zOrder == xOrder) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
-		// TODO: this is wrong, and should be moved to host side
-		transformCuda<OpType>(len, x, y, xEWS, yEWS, extraParams, z, zEWS, allocPointer, manager, tadOnlyShapeInfo);
-    } 
-    else {
 
-    	if (vx == vz) {
-			
-			for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
-
-				auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
-				auto yOffset = shape::getIndexOffset(i, yShapeInfo, len);
+	if (vx == vz) {
+		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
+			auto xOffset = getIndexOffset(i, xShapeInfo, len);
+			auto yOffset = getIndexOffset(i, yShapeInfo, len);
 				
-				z[xOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
-	    	}
-		} 
-		else {
-			
-			for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
-	    		
-	    		auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
-				auto yOffset = shape::getIndexOffset(i, yShapeInfo, len);
-				auto zOffset = shape::getIndexOffset(i, zShapeInfo, len);
+			z[xOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
+		}
+	} else {
+		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
+			auto xOffset = getIndexOffset(i, xShapeInfo, len);
+			auto yOffset = getIndexOffset(i, yShapeInfo, len);
+			auto zOffset = getIndexOffset(i, zShapeInfo, len);
 
-				z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
-    		}
-    	}
-    }
+			z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
-void PairWiseTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams) {
+void PairWiseTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vy, Nd4jLong *yShapeInfo, Nd4jLong *hyShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void *vextraParams) {
 	
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -206,7 +177,7 @@ void PairWiseTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, Nd4jPointer *
     auto yType = nd4j::DataTypeUtils::fromT<Y>();
     auto zType = nd4j::DataTypeUtils::fromT<Z>();
 
-	DISPATCH_BY_OPNUM_TTT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer), PAIRWISE_TRANSFORM_OPS);
+	DISPATCH_BY_OPNUM_TTT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vy, yShapeInfo, hyShapeInfo, vz, zShapeInfo, hzShapeInfo, vextraParams, allocPointer), PAIRWISE_TRANSFORM_OPS);
 }
       
 
