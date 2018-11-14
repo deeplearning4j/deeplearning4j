@@ -27,7 +27,7 @@ jp.disable_gc()
 
 class Benchmark(object):
     def __init__(self, n=1000):
-        print 'Running tests with [',n,'x',n,'] dimensionality'
+        print 'Running tests with [', n, 'x', n, '] dimensionality'
         self.n = n
         self.m = 200
         self.np_arr = []

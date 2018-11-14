@@ -81,8 +81,8 @@ def get_np_dtype(nd4j_dtype):
     Gets the equivalent numpy data type
     for a given nd4j data type.
     # Arguments:
-        nd4j_dtype : Nd4j data type. One of 
-        ['double', 'float', 'half']
+        nd4j_dtype : Nd4j data type. One of
+         ['double', 'float', 'half']
     '''
     mapping = {
         'double': np.float64,
@@ -308,7 +308,6 @@ class ndarray(object):
     def ndim(self):
         return len(self.array.shape())
 
-
     def __getitem__(self, key):
         if type(key) is int:
             return ndarray(self.array.get(NDArrayIndex.point(key)))
@@ -444,7 +443,7 @@ class ndarray(object):
             x, y = broadcast(self.array, other)
             self.array = Transforms.pow(x, y)
         return self
-    
+
     def __getattr__(self, attr):
         import ops
         f = getattr(ops, attr)
