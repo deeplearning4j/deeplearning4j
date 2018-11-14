@@ -334,6 +334,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_matrix_band_part.class,
         float_Assert.class,
         float_non_max_suppression.class,
+        float_nth_element.class,
         float_set_seed.class,
         float_get_seed.class,
         float_randomuniform.class,
@@ -739,6 +740,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_matrix_band_part.class,
         half_Assert.class,
         half_non_max_suppression.class,
+        half_nth_element.class,
         half_set_seed.class,
         half_get_seed.class,
         half_randomuniform.class,
@@ -1144,6 +1146,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_matrix_band_part.class,
         double_Assert.class,
         double_non_max_suppression.class,
+        double_nth_element.class,
         double_set_seed.class,
         double_get_seed.class,
         double_randomuniform.class,
@@ -36449,7 +36452,18 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                 }
 //         #endif
-
+        /*
+         * image.non_max_suppression op.
+         * input:
+         *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
+         *     1 - scales - 1D-tensor with shape (num_boxes) by float type
+         *     2 - output_size - 0D-tensor by int type (optional)
+         * float args:
+         *     0 - threshold - threshold value for overlap checks (optional, by default 0.5)
+         * int args:
+         *     0 - output_size - as arg 2 used for same target. Eigher this or arg 2 should be provided.
+         *
+         * */
 //         #if NOT_EXCLUDED(OP_image_non_max_suppression)
         @Name("nd4j::ops::non_max_suppression<float>") public static class float_non_max_suppression extends FloatDeclarableCustomOp {
             static { Loader.load(); }
@@ -36498,6 +36512,60 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+        /*
+         * nth_element - apply nth_element for last dimension of input tensor
+         * input array:
+         *     0 - input array
+         *     1 - scalar tensor with n for operation. n should be less than last dimension
+         *
+         */
+//         #if NOT_EXCLUDED(OP_nth_element)
+        @Name("nd4j::ops::nth_element<float>") public static class float_nth_element extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_nth_element(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_nth_element(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_nth_element position(long position) {
+                return (float_nth_element)super.position(position);
+            }
+        
+                                                                                    public float_nth_element() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::nth_element<float16>") public static class half_nth_element extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_nth_element(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_nth_element(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_nth_element position(long position) {
+                return (half_nth_element)super.position(position);
+            }
+        
+                                                                                    public half_nth_element() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::nth_element<double>") public static class double_nth_element extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_nth_element(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_nth_element(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_nth_element position(long position) {
+                return (double_nth_element)super.position(position);
+            }
+        
+                                                                                    public double_nth_element() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
     
 
 
