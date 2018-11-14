@@ -79,22 +79,30 @@
         (nd4j::DataType::DOUBLE, double)
 
 #define LIBND4J_TYPES_0 \
-        (nd4j::DataType::HALF, float16), \
-        (nd4j::DataType::FLOAT32, float)
+        (nd4j::DataType::HALF, float16)
 
 #define LIBND4J_TYPES_1 \
-        (nd4j::DataType::DOUBLE, double), \
-        (nd4j::DataType::BOOL, bool)
+        (nd4j::DataType::FLOAT32, float)
 
 #define LIBND4J_TYPES_2 \
-        (nd4j::DataType::INT8, int8_t), \
-        (nd4j::DataType::UINT8, uint8_t)
+        (nd4j::DataType::DOUBLE, double)
 
 #define LIBND4J_TYPES_3 \
-        (nd4j::DataType::INT16, int16_t), \
-        (nd4j::DataType::INT32, int32_t)
+        (nd4j::DataType::BOOL, bool)
 
 #define LIBND4J_TYPES_4 \
+        (nd4j::DataType::INT8, int8_t)
+
+#define LIBND4J_TYPES_5 \
+        (nd4j::DataType::UINT8, uint8_t)
+
+#define LIBND4J_TYPES_6 \
+        (nd4j::DataType::INT16, int16_t)
+
+#define LIBND4J_TYPES_7 \
+        (nd4j::DataType::INT32, int32_t)
+
+#define LIBND4J_TYPES_8 \
         (nd4j::DataType::INT64, Nd4jLong)
 
 #define INTEGER_TYPES \
@@ -289,8 +297,6 @@
 (int, double, double), \
 (double, int, double), \
 (double, float16, double)
-
-
 
 #else
 
