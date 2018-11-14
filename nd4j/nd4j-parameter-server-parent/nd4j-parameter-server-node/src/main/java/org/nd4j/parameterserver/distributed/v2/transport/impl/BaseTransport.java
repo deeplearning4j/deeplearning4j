@@ -525,7 +525,9 @@ public abstract  class BaseTransport  implements Transport {
                     response.setRestart(true);
                 } else {
                     // first we add new node to the mesh
-                    mesh.get().addNode(message.getOriginatorId());
+                    val node = mesh.get().addNode(message.getOriginatorId());
+                    node.status(NodeStatus.ONLINE);
+
                     numerOfNodes.incrementAndGet();
                 }
 
