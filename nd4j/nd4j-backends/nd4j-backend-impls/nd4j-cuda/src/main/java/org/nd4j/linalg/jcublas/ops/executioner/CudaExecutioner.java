@@ -318,34 +318,84 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context));
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 } else {
-                    nativeOps.execReduce3Double(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
-                            (LongPointer) xShapeInfo, (DoublePointer) extraArgs,
-                            (DoublePointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
-                            (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),
-                                    context),
-                            (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                            (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
-                                    context),
+                    nativeOps.execReduce3(xShapeInfoHostPointer, op.opNum(),
+                            null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                            extraArgs,
+                            null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.y(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
+                            null, (LongPointer) hostZShapeInfo, (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                             (IntPointer) dimensionPointer, dimension.length);
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 }
             } else {
                 if (ret.isScalar()) {
-                    double res = nativeOps.execReduceScalarDouble(xShapeInfoHostPointer, op.opNum(),
-                            (DoublePointer) x, (LongPointer) xShapeInfo, (DoublePointer) extraArgs);
+                    switch (op.getOpType()) {
+                        case REDUCE_FLOAT:
+                            nativeOps.execReduceFloat(xShapeInfoHostPointer, op.opNum(),
+                                    null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                                    extraArgs,
+                                    null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
+                            break;
+                        case REDUCE_BOOL:
+                            nativeOps.execReduceBool(xShapeInfoHostPointer, op.opNum(),
+                                    null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                                    extraArgs,
+                                    null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
+                            break;
+                        case REDUCE_LONG:
+                            nativeOps.execReduceLong(xShapeInfoHostPointer, op.opNum(),
+                                    null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                                    extraArgs,
+                                    null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
+                            break;
+                        case REDUCE_SAME:
+                            nativeOps.execReduceSame(xShapeInfoHostPointer, op.opNum(),
+                                    null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                                    extraArgs,
+                                    null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer()));
+                            break;
+                        default:
+                            throw new UnsupportedOperationException();
+                    }
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
-
-                    ret.assign(res);
-                    op.setFinalResult(res);
                 } else {
-                    nativeOps.execReduceDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
-                            (LongPointer) xShapeInfo, (DoublePointer) extraArgs,
-                            (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                            (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
-                                    context),
-                            (IntPointer) dimensionPointer, dimension.length);
+                    switch (op.getOpType()) {
+                        case REDUCE_FLOAT:
+                            nativeOps.execReduceFloat(xShapeInfoHostPointer, op.opNum(),
+                                    null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                                    extraArgs,
+                                    null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                                    (IntPointer) dimensionPointer,
+                                    dimension.length);
+                            break;
+                        case REDUCE_BOOL:
+                            nativeOps.execReduceBool(xShapeInfoHostPointer, op.opNum(),
+                                    null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                                    extraArgs,
+                                    null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                                    (IntPointer) dimensionPointer,
+                                    dimension.length);
+                            break;
+                        case REDUCE_SAME:
+                            nativeOps.execReduceSame(xShapeInfoHostPointer, op.opNum(),
+                                    null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                                    extraArgs,
+                                    null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                                    (IntPointer) dimensionPointer,
+                                    dimension.length);
+                            break;
+                        case REDUCE_LONG:
+                            nativeOps.execReduceLong(xShapeInfoHostPointer, op.opNum(),
+                                    null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                                    extraArgs,
+                                    null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                                    (IntPointer) dimensionPointer,
+                                    dimension.length);
+                            break;
+                        default:
+                            throw new UnsupportedOperationException();
+                    }
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 }

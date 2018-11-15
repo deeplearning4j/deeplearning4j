@@ -1459,7 +1459,7 @@ void NativeOps::shuffle(Nd4jPointer *extras,
 
 
 bool NativeOps::isExperimentalEnabled() {
-    return experimentalSupport;
+    return nd4j::Environment::getInstance()->isExperimentalBuild();
 }
 
 
