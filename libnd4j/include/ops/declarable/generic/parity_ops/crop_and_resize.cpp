@@ -38,11 +38,11 @@ namespace nd4j {
             int method = 0; // bilinear
             T extrapolationVal = (T)0.f; 
 
-            auto newImageSize = INPUT_VARIABLE(1);
+            auto newImageSize = INPUT_VARIABLE(3);
             REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_linear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
             REQUIRE_TRUE(block.numI() <= 1, 0, "resize_linear: Resize params already given by the second param. Int params are expensive.");
-            width = int(newImageSize->getScalar(0));
-            height = int(newImageSize->getScalar(1));
+            //width = int(newImageSize->getScalar(0));
+            //height = int(newImageSize->getScalar(1));
             if (block.numI() == 1) {
                 method = INT_ARG(0);
             }
@@ -51,9 +51,7 @@ namespace nd4j {
                 extrapolationVal = T_ARG(0);
             }
 
-            if (method == 0)
-                return helpers::resizeBilinearFunctor(image, width, height, false, output);
-            return helpers::resizeNeighborFunctor(image, width, height, false, output);
+            helpers::cropAndResizeFunctor(image, boxes, boxIndexes, newImageSize, method, extrapolationVal, output);
             return ND4J_STATUS_OK;
         }
 

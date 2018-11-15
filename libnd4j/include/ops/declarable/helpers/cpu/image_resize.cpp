@@ -115,6 +115,24 @@ namespace helpers {
         }
     }
 
+    template void resizeImage(NDArray<float> const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
+                            Nd4jLong outWidth, Nd4jLong channels,
+                            std::vector<BilinearInterpolationData> const& xs,
+                            std::vector<BilinearInterpolationData> const& ys,
+                            NDArray<float>* output);
+
+    template void resizeImage(NDArray<float16> const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
+                     Nd4jLong outWidth, Nd4jLong channels,
+                     std::vector<BilinearInterpolationData> const& xs,
+                     std::vector<BilinearInterpolationData> const& ys,
+                     NDArray<float16>* output);
+
+    template void resizeImage(NDArray<double> const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
+                     Nd4jLong outWidth, Nd4jLong channels,
+                     std::vector<BilinearInterpolationData> const& xs,
+                     std::vector<BilinearInterpolationData> const& ys,
+                     NDArray<double>* output);
+
     template <typename T>
     static int resizeBilinearFunctor_(NDArray const* images, int width, int height, bool center, NDArray* output) {
         const Nd4jLong batchSize = images->sizeAt(0);
@@ -157,9 +175,12 @@ namespace helpers {
         resizeImage(images, batchSize, inHeight, inWidth, outHeight,  outWidth, channels, xs, ys, output);
         return ND4J_STATUS_OK;
     }
+    template int resizeBilinearFunctor(NDArray<float> const* image, int width, int height, bool center, NDArray<float>* output);
+    template int resizeBilinearFunctor(NDArray<float16> const* image, int width, int height, bool center, NDArray<float16>* output);
+    template int resizeBilinearFunctor(NDArray<double> const* image, int width, int height, bool center, NDArray<double>* output);
 
     template <typename T>
-    int resizeNeighborFunctor_(NDArray const* images, int width, int height, bool center, NDArray* output) {
+    int resizeNeighborFunctor(NDArray<T> const* images, int width, int height, bool center, NDArray<T>* output) {
         const Nd4jLong batchSize = images->sizeAt(0);
         const Nd4jLong inHeight  = images->sizeAt(1);
         const Nd4jLong inWidth   = images->sizeAt(2);
