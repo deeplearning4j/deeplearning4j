@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
 import org.bytedeco.javacpp.*;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -1498,25 +1499,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         extraArgs.put(3, new CudaPointer(batch.getSample().getThreadsPerInstance()));
         extraArgs.put(4, new CudaPointer(batch.getSample().getSharedMemorySize()));
 
-        if (Nd4j.dataType() == DataType.FLOAT) {
-            nativeOps.execAggregateBatchFloat(extraArgs, batch.getNumAggregates(), batch.opNum(),
+
+        nativeOps.execAggregateBatch(extraArgs, batch.getNumAggregates(), batch.opNum(),
                     batch.getSample().maxArguments(), batch.getSample().maxShapes(),
                     batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
                     batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(),
-                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context));
-        } else if (Nd4j.dataType() == DataType.DOUBLE) {
-            nativeOps.execAggregateBatchDouble(extraArgs, batch.getNumAggregates(), batch.opNum(),
-                    batch.getSample().maxArguments(), batch.getSample().maxShapes(),
-                    batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
-                    batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(),
-                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context));
-        } else if (Nd4j.dataType() == DataType.HALF) {
-            nativeOps.execAggregateBatchHalf(extraArgs, batch.getNumAggregates(), batch.opNum(),
-                    batch.getSample().maxArguments(), batch.getSample().maxShapes(),
-                    batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
-                    batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(),
-                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context));
-        }
+                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context), SameDiff.getDataTypeAsByte(DataType.FLOAT));
 
         surfacePoint.tickHostWrite();
     }
@@ -1605,26 +1593,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         INDArray realsBuffer = Nd4j.create(reals);
 
-
-        if (Nd4j.dataType() == DataType.FLOAT) {
-            nativeOps.execAggregateFloat(extraArgs, op.opNum(), xPtr, numArguments, sPtr, numShapeArguments,
+        nativeOps.execAggregate(extraArgs, op.opNum(), xPtr, numArguments, sPtr, numShapeArguments,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
                     numIndexArguments, iPtr, numIntArrays,
                     (FloatPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
-                    numRealArguments);
-        } else if (Nd4j.dataType() == DataType.DOUBLE) {
-            nativeOps.execAggregateDouble(extraArgs, op.opNum(), xPtr, numArguments, sPtr, numShapeArguments,
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
-                    numIndexArguments, iPtr, numIntArrays,
-                    (DoublePointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
-                    numRealArguments);
-        } else if (Nd4j.dataType() == DataType.HALF) {
-            nativeOps.execAggregateHalf(extraArgs, op.opNum(), xPtr, numArguments, sPtr, numShapeArguments,
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
-                    numIndexArguments, iPtr, numIntArrays,
-                    (ShortPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
-                    numRealArguments);
-        }
+                    numRealArguments, SameDiff.getDataTypeAsByte(DataType.FLOAT));
     }
 
     /**
@@ -1646,7 +1619,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         validateDataType(Nd4j.dataType(), op);
 
-        if (rng.getStateBuffer() == null)
+        if (rng.getStatePointer() == null)
             throw new IllegalStateException(
                     "You should use one of NativeRandom classes for NativeOperations execution");
 
@@ -1661,106 +1634,31 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         PointerPointer extraZZ = extraz.get().put(AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer()),
                 context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer());
 
+        val hostXShapeInfo = op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
+        val hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
+        val hostZShapeInfo = op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
+
         if (op.x() != null && op.y() != null && op.z() != null) {
             // triple arg call
-            if (Nd4j.dataType() == DataType.FLOAT) {
-                nativeOps.execRandomFloat(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(),
-                                context),
-                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),
-                                context),
-                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
-                                context),
-                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
-                                context));
-            } else if (Nd4j.dataType() == DataType.DOUBLE) {
-                nativeOps.execRandomDouble(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        (DoublePointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context),
-                        (DoublePointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),
-                                context),
-                        (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
-                                context),
-                        (DoublePointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
-                                context));
-            } else if (Nd4j.dataType() == DataType.HALF) {
-                nativeOps.execRandomHalf(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        (ShortPointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(),
-                                context),
-                        (ShortPointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),
-                                context),
-                        (ShortPointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
-                                context),
-                        (ShortPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
-                                context));
-            }
+            nativeOps.execRandom(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
+                        null, (LongPointer) hostXShapeInfo, AtomicAllocator.getInstance().getPointer(op.x(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context),
+                        null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.y(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
+                        null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                        AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context));
+
         } else if (op.x() != null && op.z() != null) {
             //double arg call
-            if (Nd4j.dataType() == DataType.FLOAT) {
-                nativeOps.execRandomFloat(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(),
-                                context),
-                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
-                                context),
-                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
-                                context));
-            } else if (Nd4j.dataType() == DataType.DOUBLE) {
-                nativeOps.execRandomDouble(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        (DoublePointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(),
-                                context),
-                        (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
-                                context),
-                        (DoublePointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
-                                context));
-            } else if (Nd4j.dataType() == DataType.HALF) {
-                nativeOps.execRandomHalf(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        (ShortPointer) AtomicAllocator.getInstance().getPointer(op.x(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(),
-                                context),
-                        (ShortPointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
-                                context),
-                        (ShortPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
-                                context));
-            }
+            nativeOps.execRandom(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
+                        null, (LongPointer) hostXShapeInfo, (FloatPointer) AtomicAllocator.getInstance().getPointer(op.x(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context),
+                        null, (LongPointer) hostZShapeInfo, (FloatPointer) AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()),context));
+
 
         } else {
             // single arg call
-
-            if (Nd4j.dataType() == DataType.FLOAT) {
-                nativeOps.execRandomFloat(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
-                                context),
-                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
-                                context));
-            } else if (Nd4j.dataType() == DataType.DOUBLE) {
-                nativeOps.execRandomDouble(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
-                                context),
-                        (DoublePointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
-                                context));
-            } else if (Nd4j.dataType() == DataType.HALF) {
-                nativeOps.execRandomHalf(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        (ShortPointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                        (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(),
-                                context),
-                        (ShortPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(),
-                                context));
-            }
+            nativeOps.execRandom(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
+                        null, (LongPointer) hostZShapeInfo, (FloatPointer) AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context));
         }
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
