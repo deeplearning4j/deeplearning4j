@@ -227,7 +227,7 @@ public abstract  class BaseTransport  implements Transport {
         mesh.get().getRootNode().setId(this.id());
 
         // launching heartbeat thread, that will monitor offline nodes
-        executorService.submit(new HeartbeatThread(120000, this, mesh));
+        //executorService.submit(new HeartbeatThread(120000, this, mesh));
 
         this.launch();
     }
