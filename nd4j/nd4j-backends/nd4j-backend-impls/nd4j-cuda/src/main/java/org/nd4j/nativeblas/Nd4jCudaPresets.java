@@ -28,6 +28,8 @@ import org.bytedeco.javacpp.tools.InfoMapper;
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCuda",
                 value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
+                        "array/DataType.h",
+                        "types/utf8string.h",
                         "NativeOps.h",
                         "memory/ExternalWorkspace.h",
                         "memory/Workspace.h",
@@ -56,7 +58,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "graph/ResultWrapper.h",
                         "helpers/shape.h",
                         "array/ShapeList.h",
-                        "op_boilerplate.h",
+                        //"op_boilerplate.h",
                         "ops/InputType.h",
                         "ops/declarable/OpDescriptor.h",
                         "ops/declarable/BroadcastableOp.h",                        
@@ -69,7 +71,25 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "ops/declarable/LogicOp.h",
                         "ops/declarable/OpRegistrator.h",
                         "ops/declarable/CustomOperations.h"},
-                        exclude = {"cnpy/cnpy.h"},
+                        exclude = {"ops/declarable/headers/activations.h",
+                                "ops/declarable/headers/boolean.h",
+                                "ops/declarable/headers/broadcastable.h",
+                                "ops/declarable/headers/convo.h",
+                                "ops/declarable/headers/list.h",
+                                "ops/declarable/headers/recurrent.h",
+                                "ops/declarable/headers/transforms.h",
+                                "ops/declarable/headers/parity_ops.h",
+                                "ops/declarable/headers/shape.h",
+                                "ops/declarable/headers/random.h",
+                                "ops/declarable/headers/nn.h",
+                                "ops/declarable/headers/blas.h",
+                                "ops/declarable/headers/bitwise.h",
+                                "ops/declarable/headers/tests.h",
+                                "ops/declarable/headers/loss.h",
+                                "ops/declarable/headers/datatypes.h",
+                                "ops/declarable/headers/third_party.h",
+                                "cnpy/cnpy.h"
+                        },
                                 compiler = {"cpp11", "nowarnings"},
                                 library = "jnind4jcuda", link = "nd4jcuda", preload = "libnd4jcuda"),
                                 @Platform(value = "linux", preload = "gomp@.1",
@@ -101,12 +121,11 @@ public class Nd4jCudaPresets implements InfoMapper {
                .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
                .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
                 .put(new Info("std::vector<std::vector<Nd4jLong> >").pointerTypes("LongVectorVector").define())
-               .put(new Info("std::vector<nd4j::NDArray<float>*>").pointerTypes("FloatNDArrayVector").define())
-               .put(new Info("std::vector<nd4j::NDArray<float16>*>").pointerTypes("HalfNDArrayVector").define())
-               .put(new Info("std::vector<nd4j::NDArray<double>*>").pointerTypes("DoubleNDArrayVector").define())
+               .put(new Info("std::vector<nd4j::NDArray*>").pointerTypes("NDArrayVector").define())
+                .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
                 .put(new Info("nd4j::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                .put(new Info("nd4j::IndicesList").purify());
-
+/*
         String classTemplates[] = {
                 "nd4j::NDArray",
                 "nd4j::NDArrayList",
@@ -133,7 +152,7 @@ public class Nd4jCudaPresets implements InfoMapper {
                     .put(new Info(t + "<double>").pointerTypes("Double" + s));
 
         }
-
+*/
         infoMap.put(new Info("nd4j::ops::OpRegistrator::updateMSVC").skip());
     }
 }
