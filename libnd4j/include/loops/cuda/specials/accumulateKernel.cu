@@ -76,9 +76,7 @@ __global__ void execAccumulateKernel(void **vx, void *vz, int n, const Nd4jLong 
 
 ///////////////////////////////////////////////////////////////////////
 template<typename T>
-__host__ void accumulateKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers, void **vx, void *vz, int n, const Nd4jLong length) {
-
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+__host__ void accumulateKernelGeneric(dim3& launchDims, cudaStream_t *stream, void **vx, void *vz, int n, const Nd4jLong length) {     
     
-    execAccumulateKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(vx, vz, n, length);
+    execAccumulateKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vz, n, length);
 }

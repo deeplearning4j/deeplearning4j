@@ -214,7 +214,7 @@ __global__ void execConcatKernel(int dimension,
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__host__ void concatKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers,
+__host__ void concatKernelGeneric(dim3& launchDims, cudaStream_t *stream,
  							int dimension,
 							int numArrays,
 							Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
@@ -223,7 +223,5 @@ __host__ void concatKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers,
 							Nd4jLong *zTadShape, 
 							Nd4jLong *zOffsets) {
 
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	execConcatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(dimension, numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
+	execConcatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dimension, numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
 }

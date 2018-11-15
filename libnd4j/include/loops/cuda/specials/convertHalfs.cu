@@ -42,9 +42,7 @@ __global__ void execConvertHalfs(half *dx, Nd4jLong n, void *dz) {
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__host__ void convertHalfsToGeneric(dim3& launchDims, Nd4jPointer* extraPointers, half *dx, Nd4jLong n, void *dz) {
+__host__ void convertHalfsToGeneric(dim3& launchDims, cudaStream_t *stream, half *dx, Nd4jLong n, void *dz) {
 
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-	
-	execConvertHalfs<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(dx, n, dz);
+	execConvertHalfs<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, n, dz);
 }

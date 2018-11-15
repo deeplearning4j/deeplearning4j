@@ -139,9 +139,9 @@ namespace functions {
         auto length = shape::length(hxShapeInfo);
 
         if (xEws >= 0 && zEws >= 0 && xOrder == zOrder) {
-            scalarSimpleStrided<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(length, vx, vscalar, xEws, vextraParams, vz, zEws, allocPointer);
+            scalarSimpleStrided<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(length, vx, vscalar, xEws, vextraParams, vz, zEws, allocPointer);
         } else {
-            scalarSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
+            scalarSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
         }
     }
 

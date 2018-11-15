@@ -220,7 +220,7 @@ _CUDA_H void ScalarBoolTransform<X, Z>::intermediateAlongDimension(dim3& launchD
                                                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, 
                                                                 Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
-    scalarAlongDimension<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+    scalarAlongDimension<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -232,7 +232,7 @@ void _CUDA_H ScalarBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cuda
                                                             void* vscalar, 
                                                             void *vextraParams, int *allocPointer){
     
-    scalarSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);    
+    scalarSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);    
 }
 
 ////////////////////////////////////////////////////////////////////////

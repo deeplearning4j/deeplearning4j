@@ -77,11 +77,10 @@ __global__ void execTearKernel(void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *targ
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
-__host__ void tearKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers, 
+__host__ void tearKernelGeneric(dim3& launchDims, cudaStream_t *stream, 
                                 void *vx, Nd4jLong *xShapeInfo, 
                                 Nd4jPointer *targets, Nd4jLong *zShapeInfo, 
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    execTearKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(vx, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
+    execTearKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
 }

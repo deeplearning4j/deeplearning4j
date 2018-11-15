@@ -37,10 +37,8 @@ __global__ void execFillIsMax(bool* dx, long length, long idx) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-__host__ void fillIsMaxGeneric(dim3& launchDims, Nd4jPointer* extraPointers, bool* dx, long length, long idx) {
-
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+__host__ void fillIsMaxGeneric(dim3& launchDims, cudaStream_t *stream, bool* dx, long length, long idx) {	
 	
-	execFillIsMax<<<launchDims.x, launchDims.y, launchDims.z, stream>>>(dx, length, idx);
+	execFillIsMax<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, length, idx);
 }
 

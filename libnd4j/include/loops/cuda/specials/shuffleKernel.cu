@@ -109,14 +109,12 @@ __global__ void execShuffleKernel(void **vdX, Nd4jLong **xShapeInfo,
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
-__host__ void shuffleKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers,
+__host__ void shuffleKernelGeneric(dim3& launchDims, cudaStream_t *stream,
                             void **vdX, Nd4jLong **xShapeInfo, 
                             void **vdZ, Nd4jLong **zShapeInfo, 
                             int N, 
                             int *shuffleMap, 
                             Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-    execShuffleKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(vdX, xShapeInfo, vdZ, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+    execShuffleKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdX, xShapeInfo, vdZ, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
