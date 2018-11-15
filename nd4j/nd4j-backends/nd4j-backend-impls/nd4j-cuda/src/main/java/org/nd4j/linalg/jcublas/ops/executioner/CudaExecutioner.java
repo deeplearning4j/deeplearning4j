@@ -1772,14 +1772,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         PointerPointer extras = extraz.get().put(1, context.getOldStream());
 
 
-        if (Nd4j.dataType() == DataType.FLOAT) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Float(extras, (FloatPointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), (float) threshold);
-        } else if (Nd4j.dataType() == DataType.DOUBLE) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Double(extras, (DoublePointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), (float) threshold);
-        } else if (Nd4j.dataType() == DataType.HALF) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Half(extras, (ShortPointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), (float) threshold);
-        }
 
+        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1(extras,
+                AtomicAllocator.getInstance().getPointer(buffer),
+                (LongPointer) AtomicAllocator.getInstance().getHostPointer(input.shapeInfoDataBuffer()),
+                buffer.length(),
+                (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer),
+                (float) threshold);
 
         AtomicAllocator.getInstance().getAllocationPoint(blocksBuffer).tickDeviceWrite();
 
@@ -1856,15 +1855,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP2Int(extras, (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), numBlocks, (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer) );
         AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickDeviceWrite();
 
-        //log.info("Offsets: {}", Arrays.toString(offsetsBuffer.asInt()));
 
-        if (Nd4j.dataType() == DataType.FLOAT) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3Float(extras, (FloatPointer) AtomicAllocator.getInstance().getPointer(buffer), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
-        } else if (Nd4j.dataType() == DataType.DOUBLE) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3Double(extras, (DoublePointer) AtomicAllocator.getInstance().getPointer(buffer), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
-        } else if (Nd4j.dataType() == DataType.HALF) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3Half(extras, (ShortPointer) AtomicAllocator.getInstance().getPointer(buffer), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
-        }
+        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3(extras, AtomicAllocator.getInstance().getPointer(buffer), (LongPointer) AtomicAllocator.getInstance().getHostPointer(input.shapeInfoDataBuffer()), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
 
         AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickDeviceWrite();
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
