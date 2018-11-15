@@ -445,7 +445,12 @@ public abstract  class BaseTransport  implements Transport {
                 return true;
 
             val node = mesh.get().getNodeById(nodeId);
-            return node.status() == NodeStatus.ONLINE;
+            if (node.status() == NodeStatus.ONLINE)
+                return true;
+            else {
+                log.info("Node [{}] has status {}", nodeId, node.status());
+                return false;
+            }
         }
     }
 

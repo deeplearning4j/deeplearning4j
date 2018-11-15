@@ -403,13 +403,21 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected boolean isOnline(@NonNull String nodeId) {
         try {
             val s = super.isOnline(nodeId);;
+            if (!s)
+                log.info("Node [{} ]is offline", nodeId);
+
             return s;
         } catch (NoSuchElementException e) {
             try {
                 aeronLock.lock();
 
-                if (remoteConnections.containsKey(nodeId))
-                    return remoteConnections.get(nodeId).getPublication().isConnected();
+                if (remoteConnections.containsKey(nodeId)) {
+                    val f = remoteConnections.get(nodeId).getPublication().isConnected();
+                    if (!f) {
+                        log.info("Connection [{} ]is offline", nodeId);
+                    }
+                    return f;
+                }
                 else
                     throw new NoSuchElementException("No such connection: [" + nodeId + "]");
             } finally {
