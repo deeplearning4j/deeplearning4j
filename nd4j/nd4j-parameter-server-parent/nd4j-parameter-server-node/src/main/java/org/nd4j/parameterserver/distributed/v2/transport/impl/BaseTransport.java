@@ -21,7 +21,6 @@ import io.reactivex.functions.Consumer;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -108,7 +107,7 @@ public abstract  class BaseTransport  implements Transport {
 
     protected final ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()), new ThreadFactory() {
         @Override
-        public Thread newThread(@NotNull Runnable r) {
+        public Thread newThread(@NonNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
             Nd4j.getAffinityManager().attachThreadToDevice(t, 0);

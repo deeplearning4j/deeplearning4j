@@ -17,8 +17,8 @@
 //
 //  @author sgazeos@gmail.com
 //
-#ifndef __IMAGE_RESIZE_HELPERS__
-#define __IMAGE_RESIZE_HELPERS__
+#ifndef __NTH_ELEMENT__H_HELPERS__
+#define __NTH_ELEMENT__H_HELPERS__
 #include <op_boilerplate.h>
 #include <NDArray.h>
 
@@ -27,9 +27,8 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    int resizeBilinearFunctor(NDArray<T> const* image, int width, int height, bool center, NDArray<T>* output);
-    template <typename T>
-    int resizeNeighborFunctor(NDArray<T> const* image, int width, int height, bool center, NDArray<T>* output);
+    void nthElementFunctor(NDArray<T>* input, int n, NDArray<T>* output);
+
 }
 }
 }
