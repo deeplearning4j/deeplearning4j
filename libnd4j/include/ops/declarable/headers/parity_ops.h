@@ -1516,6 +1516,16 @@ namespace nd4j {
         #endif
 
         /*
+         * cholesky op - decomposite positive square symetric matrix (or matricies when rank > 2).
+         * input:
+         *     0 - matricies - tensor with shape (..., N, N) by float type
+         *
+         * output - lower triangular matrix (matricies when rank > 2) with the same shape as input.
+         * */
+#if NOT_EXCLUDED(OP_cholesky)
+        DECLARE_OP(cholesky, 1, 1, true);
+#endif
+        /*
          * nth_element - apply nth_element for last dimension of input tensor
          * input array:
          *     0 - input array
