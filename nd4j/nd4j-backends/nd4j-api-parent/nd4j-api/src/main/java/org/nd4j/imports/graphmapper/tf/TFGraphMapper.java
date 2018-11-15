@@ -1008,7 +1008,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         } else if (tfTensor.getDtype() == DataType.DT_INT64) {
             if (tfTensor.getInt64ValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
-                if (tfTensor.getDoubleValCount() < 1)
+                if (tfTensor.getInt64ValCount() < 1)
                     return Nd4j.trueScalar(0.0);
 
                 double val = (double) tfTensor.getInt64Val(0);
