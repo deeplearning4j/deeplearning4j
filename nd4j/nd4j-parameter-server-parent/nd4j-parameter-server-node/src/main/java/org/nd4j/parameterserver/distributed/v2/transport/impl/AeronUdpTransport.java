@@ -404,7 +404,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         try {
             val s = super.isOnline(nodeId);;
             if (!s)
-                log.info("Node [{} ]is offline", nodeId);
+                log.info("Node [{}] is offline", nodeId);
 
             return s;
         } catch (NoSuchElementException e) {
@@ -414,7 +414,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                 if (remoteConnections.containsKey(nodeId)) {
                     val f = remoteConnections.get(nodeId).getPublication().isConnected();
                     if (!f) {
-                        log.info("Connection [{} ]is offline", nodeId);
+                        log.info("Connection [{}] is offline", nodeId);
                     }
                     return f;
                 }

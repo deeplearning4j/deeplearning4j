@@ -93,7 +93,7 @@ public class MessageSplitter {
             SerializationUtils.serialize(message, bos);
 
             val length = bos.size();
-            log.info("Serialized INDArrayMessage size: {} bytes; maxChunkSize:", length, maxBytes);
+            log.info("Serialized INDArrayMessage size: {} bytes; maxChunkSize: {} bytes", length, maxBytes);
 
             int numChunks = (int) (length /  maxBytes + (length % maxBytes > 0 ? 1 : 0));
             try (val bis = new ByteArrayInputStream(bos.toByteArray())) {
