@@ -21,11 +21,26 @@
 
 #include <loops/special_kernels.h>
 
-template <typename T>
-__device__ void convertHalfsToGeneric(half *dx, Nd4jLong n, T *dz) {
-    
-    int tid = threadIdx.x + blockIdx.x * gridDim.x;
+////////////////////////////////////////////////////////////////////////
+__device__ void fillIsMax(bool* dx, long length, long idx) {
 
-    for (Nd4jLong i = tid; i < n; i += blockDim.x * gridDim.x) 
-        dz[i] = (T) __half2float(dx[i]);
+   int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+   for (long i = tid; i < length; i+= blockDim.x * gridDim.x) 
+        dx[i] = (i == idx? true : false);
 }
+
+////////////////////////////////////////////////////////////////////////
+__global__ void execFillIsMax(bool* dx, long length, long idx) {
+
+	fillIsMax(dx, length, idx);
+}
+
+////////////////////////////////////////////////////////////////////////
+__host__ void fillIsMaxGeneric(dim3& launchDims, Nd4jPointer* extraPointers, bool* dx, long length, long idx) {
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+	
+	execFillIsMax<<<launchDims.x, launchDims.y, launchDims.z, stream>>>(dx, length, idx);
+}
+

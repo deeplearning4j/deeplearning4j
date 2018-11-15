@@ -21,12 +21,21 @@
 
 #include <loops/special_kernels.h>
 
+///////////////////////////////////////////////////////////////////////
+/**
+ * This kernel accumulates X arrays, and stores z into Z
+ *
+ * @tparam T
+ * @param x
+ * @param z
+ * @param n
+ * @param length
+ */
+template<typename T>
+__device__ void accumulateKernel(void **vx, void *vz, int n, const Nd4jLong length) {
 
-template <typename T>
-__device__ void averagingKernelGeneric(void **vdx, void *vdz, int n, Nd4jLong length, bool propagate) {
-
-	auto dx = reinterpret_cast<T**>(vdx);
-	auto dz = reinterpret_cast<T*>(vdz);
+	auto x = reinterpret_cast<T**>(vx);
+	auto z = reinterpret_cast<T*>(vz);
 
     __shared__ T *shmem;
 
@@ -36,44 +45,40 @@ __device__ void averagingKernelGeneric(void **vdx, void *vdz, int n, Nd4jLong le
     }
     __syncthreads();
 
-
-    // each block cycles over it's own part of arrays
     for (int r = blockDim.x * blockIdx.x; r < length; r += blockDim.x * gridDim.x) {
-        shmem[threadIdx.x] = (T) 0.0f;
+        shmem[threadIdx.x] = 0.0f;
 
         Nd4jLong baseIdx = r;
 
         // aggregation step, we roll over all arrays
         for (int ar = 0; ar < n; ar++) {
-            T *cdata = (T *) dx[ar];
+            T *cdata = (T *) x[ar];
             cdata += baseIdx;
 
             if (baseIdx + threadIdx.x < length)
                 shmem[threadIdx.x] += cdata[threadIdx.x];
         }
 
-
-        // average data in shared memory
-        if (baseIdx + threadIdx.x < length)
-            shmem[threadIdx.x] /= n;
-
-        // div step & write out step
-        if (dz != nullptr) {
-            T *wdata = dz + baseIdx;
-
-            if (baseIdx + threadIdx.x < length) {
-                wdata[threadIdx.x] = shmem[threadIdx.x];
-            }
-        }
-
-        // propagate averaged data to all arrays
-        if (propagate)
-            for (int ar = 0; ar < n; ar++) {
-                T *cdata = (T *) dx[ar];
-                cdata += baseIdx;
-
-                if (baseIdx + threadIdx.x < length)
-                    cdata[threadIdx.x] = shmem[threadIdx.x];
-            }
+        T *wdata = z + baseIdx;
+        
+        // saving accumulated values
+    	if (baseIdx + threadIdx.x < length) 
+    		wdata[threadIdx.x] = shmem[threadIdx.x];       
     }
+}
+
+///////////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ void execAccumulateKernel(void **vx, void *vz, int n, const Nd4jLong length) {
+
+    accumulateKernel<T>(vx, vz, n, length);
+}
+
+///////////////////////////////////////////////////////////////////////
+template<typename T>
+__host__ void accumulateKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers, void **vx, void *vz, int n, const Nd4jLong length) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    
+    execAccumulateKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(vx, vz, n, length);
 }

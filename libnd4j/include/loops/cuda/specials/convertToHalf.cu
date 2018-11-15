@@ -21,11 +21,29 @@
 
 #include <loops/special_kernels.h>
 
+////////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ void convertToHalfGeneric(T *dx, Nd4jLong n, half *dz) {
+__device__ void convertToHalf(void *dx, Nd4jLong n, half *dz) {
     
+    auto x = reinterpret_cast<T*>(dx);
     int tid = threadIdx.x + blockIdx.x * gridDim.x;
 
     for (Nd4jLong i = tid; i < n; i += blockDim.x * gridDim.x )
-        dz[i] = __float2half((float) dx[i]);
+        dz[i] = __float2half(static_cast<T>(x[i]));
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+__global__ void execConvertToHalf(void *dx, Nd4jLong n, half *dz) {
+
+	convertToHalf<T>(dx, n, dz);
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+__host__ void convertToHalfGeneric(dim3& launchDims, Nd4jPointer* extraPointers, void *dx, Nd4jLong n, half *dz) {
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+	
+	execConvertToHalf<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(dx, n, dz);
 }

@@ -29,40 +29,39 @@
 #include <cuda_device_runtime_api.h>
 #include <device_launch_parameters.h>
 
-template <typename T>
-__device__ void fillIsMaxGeneric(T *dx, long length, long idx);
+__host__ void fillIsMaxGeneric(dim3& launchDims, Nd4jPointer* extraPointers, bool* dx, long length, long idx);
 
-
-template <typename T>
-__device__ void fillDimensionalIsMaxGeneric(T *dX, Nd4jLong *xShapeInfo, T *dZ, Nd4jLong *zShapeInfo, Nd4jLong *tadOnlyShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOffsets);
-
+__host__ void fillDimensionalIsMaxGeneric(dim3& launchDims, Nd4jPointer* extraPointers, void *dX, Nd4jLong *xShapeInfo, bool *dZ, Nd4jLong *zShapeInfo, Nd4jLong *tadOnlyShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOffsets);
 
 template <typename T>
-__device__ void concatKernelGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, Nd4jLong *zTadShape, Nd4jLong *zOffsets);
+__host__ void convertToHalfGeneric(dim3& launchDims, Nd4jPointer* extraPointers, void *dx, Nd4jLong n, half *dz);
 
+template<typename T>
+__host__ void tearKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers, void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
-template <typename T>
-__device__ void concatKernelScalarGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
-
-
-template <typename T>
-__device__ void concatKernelHStackGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
-
+template<typename T>
+__host__ void shuffleKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers, void **vdX, Nd4jLong **xShapeInfo,  void **vdZ, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets);
 
 template <typename T>
-__device__ void concatKernelVStackGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
-
-
-template <typename T>
-__device__ void pullRowsKernelGeneric(void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong n, Nd4jLong *indexes, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets);
-
+__host__ void convertHalfsToGeneric(dim3& launchDims, Nd4jPointer* extraPointers, half *dx, Nd4jLong n, void *dz);
 
 template <typename T>
-__device__ void convertToHalfGeneric(T *dx, Nd4jLong n, half *dz);
-
+__host__ void concatKernelVStackGeneric(dim3& launchDims, Nd4jPointer* extraPointers, int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vz, Nd4jLong *zShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
 
 template <typename T>
-__device__ void convertHalfsToGeneric(half *dx, Nd4jLong n, T *dz);
+__host__ void concatKernelScalarGeneric(dim3& launchDims, Nd4jPointer* extraPointers, int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
+
+template <typename T>
+__host__ void concatKernelHStackGeneric(dim3& launchDims, Nd4jPointer* extraPointers, int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
+
+template <typename T>
+__host__ void concatKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers, int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, Nd4jLong *zTadShape, Nd4jLong *zOffsets);
+
+template <typename T>
+__device__ void pullRowsKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong n, Nd4jLong *indexes, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets);
+
+template <typename T>
+__device__ void averagingKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers, void **vdx, void *vdz, int n, Nd4jLong length, bool propagate);
 
 /**
  * This kernel accumulates X arrays, and stores z into Z
@@ -74,19 +73,9 @@ __device__ void convertHalfsToGeneric(half *dx, Nd4jLong n, T *dz);
  * @param length
  */
 template<typename T>
-__device__ void accumulateKernelGeneric(void **vx, void *vz, int n, const Nd4jLong length);
+__host__ void accumulateKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers, void **vx, void *vz, int n, const Nd4jLong length);
 
 
-template <typename T>
-__device__ void averagingKernelGeneric(void **vdx, void *vdz, int n, Nd4jLong length, bool propagate);
-
-
-template<typename T>
-__device__ void tearKernelGeneric(void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
-
-template<typename T>
-__device__ void shuffleKernelGeneric(void **vdX, Nd4jLong **xShapeInfo, void **vdZ, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets);
 
 
 // extern "C" __global__ void prepareDimensionalShapeBuffer(Nd4jLong *xShapeInfoBuffer, float *extraParams, Nd4jLong *zShapeInfo) {
