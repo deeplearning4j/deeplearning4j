@@ -53,7 +53,7 @@ namespace nd4j {
 
             if (method == 0)
                 return helpers::resizeBilinearFunctor(image, width, height, false, output);
-            //return helpers::resizeNeighborFunctor(image, width, height, false, output);
+            return helpers::resizeNeighborFunctor(image, width, height, false, output);
             return ND4J_STATUS_OK;
         }
 
