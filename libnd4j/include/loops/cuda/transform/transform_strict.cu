@@ -32,18 +32,18 @@ using namespace simdOps;
 template<typename X, typename OpClass>
 __device__ void transformStrictSimpleGeneric(
 		Nd4jLong n,
-		void *dy,
+		void *y,
 		Nd4jLong incy,
 		void *params,
-		void *result,
+		void *z,
 		Nd4jLong resultStride, int *allocationPointer, void *reductionPointer) {
 
 	functions::transform::TransformStrict<X>::template transformCuda<OpClass>(
 		n,
-		dy,
+		y,
 		incy,
 		params,
-		result,
+		z,
 		resultStride,
 		allocationPointer,
 		reductionPointer,
@@ -52,10 +52,10 @@ __device__ void transformStrictSimpleGeneric(
 
 template<typename X, typename OpClass>
 __device__ void transformStrictSimpleGeneric(
-		void *dy,
+		void *y,
 		Nd4jLong *xShapeInfo, int xRank,
 		void *params,
-		void *result, Nd4jLong *resultShapeInfo, int zRank, int *allocationPointer, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+		void *z, Nd4jLong *zShapeInfo, int zRank, int *allocationPointer, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -67,11 +67,11 @@ __device__ void transformStrictSimpleGeneric(
 	__syncthreads();
 	
     functions::transform::TransformStrict<X>::template transformCuda<OpClass>(
-	    dy,
+	    y,
 	    xShapeInfo,
 	    params,
-	    result,
-	    resultShapeInfo,
+	    z,
+	    zShapeInfo,
 	    allocationPointer,
 	    reductionPointer,
 		manager, tadShapeInfo, tadOffsets);
@@ -79,13 +79,13 @@ __device__ void transformStrictSimpleGeneric(
 
 
 template <typename X, typename OpType>
-__global__ void transformStrictSimple(void *dy, Nd4jLong *xShapeInfo, int xRank,
+__global__ void transformStrictSimple(void *y, Nd4jLong *xShapeInfo, int xRank,
 								void *params,
-								void *result, Nd4jLong *resultShapeInfo, int zRank,
+								void *z, Nd4jLong *zShapeInfo, int zRank,
 								int *allocationPointer,
 								void *reductionPointer,
 								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-	transformStrictSimpleGeneric<X, OpType>(dy, xShapeInfo, xRank, params, result, resultShapeInfo, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+	transformStrictSimpleGeneric<X, OpType>(y, xShapeInfo, xRank, params, z, zShapeInfo, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 }
 
 
@@ -103,31 +103,28 @@ namespace functions {
         template<typename X>
         template <typename OpType>
         __device__ void TransformStrict<X>::transformCuda(
-			void *vdy,
+			void *vy,
 			Nd4jLong *shapeInfo,
 			void *vparams,
-			void *vresult,
-			Nd4jLong *resultShapeInfo,
+			void *vz,
+			Nd4jLong *zShapeInfo,
 			int *allocationPointer, void *vreductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-        	auto dy = static_cast<X*>(vdy);
-		    auto result = static_cast<X*>(vresult);
+        	auto y = static_cast<X*>(vy);
+		    auto z = static_cast<X*>(vz);
 		    auto params = static_cast<X*>(vparams);
 		    auto reductionPointer = static_cast<X*>(vreductionPointer);
 
 		    if(OpType::requiresSpecial) {
-			    OpType::execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			    OpType::execSpecialCuda(y,shapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
 			    return;
 		    } else {
 
-    		    auto xShape = shape::shapeOf(shapeInfo);
-	    	    auto xStride = shape::stride(shapeInfo);
 		        auto xOrder = shape::order(shapeInfo);
-		        auto resultOrder = shape::order(resultShapeInfo);
-    		    auto xRank = shape::rank(shapeInfo);
+		        auto zOrder = shape::order(zShapeInfo);
 
-		        auto xElementWiseStride = shape::elementWiseStride(shapeInfo);
-    		    auto resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+		        auto xEws = shape::elementWiseStride(shapeInfo);
+    		    auto zEws = shape::elementWiseStride(zShapeInfo);
 	    	    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
                 __shared__ Nd4jLong length;
@@ -135,25 +132,22 @@ namespace functions {
 			        length = shape::length(shapeInfo);
 		        __syncthreads();
 
-		        if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == resultOrder) {
+		        if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
 			        transformCuda<OpType>(
 				    	length,
-				    	dy,
-				    	xElementWiseStride,
+				    	y,
+				    	xEws,
 				    	params,
-				    	result,
-				    	resultElementWiseStride, allocationPointer, reductionPointer, manager);
+				    	z,
+				    	zEws, allocationPointer, reductionPointer, manager);
 		        }
-		        else {
-			        Nd4jLong xCoord[MAX_RANK];
+		        else {			
 			
 		    	    for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-						shape::ind2subC(xRank,shape::shapeOf(shapeInfo),i, length, xCoord);
-						
-				        auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-						auto resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xCoord,xRank);
-						
-	    			    result[resultOffset2] = OpType::op(dy[xOffset2], params);
+
+		    	    	auto xOffset2 = shape::getIndexOffset(i, shapeInfo,  length);
+						auto zOffset2 = shape::getIndexOffset(i, zShapeInfo, length);
+	    			    z[zOffset2] = OpType::op(y[xOffset2], params);
 		    	    }
 		        }
 	        }
@@ -163,15 +157,15 @@ namespace functions {
         template <typename OpType>
 	    __device__ void TransformStrict<X>::transformCuda(
 			Nd4jLong n,
-			void *vdy,
+			void *vy,
 			Nd4jLong incy,
 			void *vparams,
-			void *vresult,
+			void *vz,
 			Nd4jLong resultStride,
 			int *allocationPointer, void *vreductionPointer, UnifiedSharedMemory *manager) {
 		
-        	auto dy = static_cast<X*>(vdy);
-		    auto result = static_cast<X*>(vresult);
+        	auto y = static_cast<X*>(vy);
+		    auto z = static_cast<X*>(vz);
 		    auto params = static_cast<X*>(vparams);
 		    auto reductionPointer = static_cast<X*>(vreductionPointer);
 
@@ -181,12 +175,12 @@ namespace functions {
     		if(incy == 1 && resultStride == 1) {
 	    		/* equal, positive, non-unit increments. */
 			    for (; i < n; i += totalThreads) {
-				    result[i] = OpType::op(dy[i], params);
+				    z[i] = OpType::op(y[i], params);
 			    }
 		    }
 		    else {
 			    for (; i < n; i += totalThreads) {
-				    result[i * resultStride] = OpType::op(dy[i * incy], params);
+				    z[i * resultStride] = OpType::op(y[i * incy], params);
 			    }
 		    }
 	    }

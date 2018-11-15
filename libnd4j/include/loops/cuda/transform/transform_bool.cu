@@ -55,7 +55,7 @@ __device__ void transformBoolSimpleGeneric(
 		void *dy,
 		Nd4jLong *xShapeInfo, int xRank,
 		void *params,
-		void *result, Nd4jLong *resultShapeInfo, int zRank, int *allocationPointer, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+		void *result, Nd4jLong *zShapeInfo, int zRank, int *allocationPointer, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -71,7 +71,7 @@ __device__ void transformBoolSimpleGeneric(
 	    xShapeInfo,
 	    params,
 	    result,
-	    resultShapeInfo,
+	    zShapeInfo,
 	    allocationPointer,
 	    reductionPointer,
 		manager, tadShapeInfo, tadOffsets);
@@ -81,11 +81,11 @@ __device__ void transformBoolSimpleGeneric(
 template <typename X, typename Z, typename OpType>
 __global__ void transformBoolSimple(void *dy, Nd4jLong *xShapeInfo, int xRank,
 								void *params,
-								void *result, Nd4jLong *resultShapeInfo, int zRank,
+								void *result, Nd4jLong *zShapeInfo, int zRank,
 								int *allocationPointer,
 								void *reductionPointer,
 								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-	transformBoolSimpleGeneric<X, Z, OpType>(dy, xShapeInfo, xRank, params, result, resultShapeInfo, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+	transformBoolSimpleGeneric<X, Z, OpType>(dy, xShapeInfo, xRank, params, result, zShapeInfo, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 }
 
 
@@ -107,7 +107,7 @@ namespace functions {
 			Nd4jLong *shapeInfo,
 			void *vparams,
 			void *vresult,
-			Nd4jLong *resultShapeInfo,
+			Nd4jLong *zShapeInfo,
 			int *allocationPointer, void *vreductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
         	auto dy = static_cast<X*>(vdy);
@@ -116,18 +116,15 @@ namespace functions {
 		    auto reductionPointer = static_cast<Z*>(vreductionPointer);
 
 		    if(OpType::requiresSpecial) {
-			    OpType::execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			    OpType::execSpecialCuda(dy,shapeInfo,result,zShapeInfo,params, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
 			    return;
 		    } else {
 
-    		    auto xShape = shape::shapeOf(shapeInfo);
-	    	    auto xStride = shape::stride(shapeInfo);
 		        auto xOrder = shape::order(shapeInfo);
-		        auto resultOrder = shape::order(resultShapeInfo);
-    		    auto xRank = shape::rank(shapeInfo);
+		        auto zOrder = shape::order(zShapeInfo);
 
-		        auto xElementWiseStride = shape::elementWiseStride(shapeInfo);
-    		    auto resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+		        auto xEws = shape::elementWiseStride(shapeInfo);
+    		    auto zEws = shape::elementWiseStride(zShapeInfo);
 	    	    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
                 __shared__ Nd4jLong length;
@@ -135,25 +132,21 @@ namespace functions {
 			        length = shape::length(shapeInfo);
 		        __syncthreads();
 
-		        if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && xOrder == resultOrder) {
+		        if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
 			        transformCuda<OpType>(
 				    	length,
 				    	dy,
-				    	xElementWiseStride,
+				    	xEws,
 				    	params,
 				    	result,
-				    	resultElementWiseStride, allocationPointer, reductionPointer, manager);
+				    	zEws, allocationPointer, reductionPointer, manager);
 		        }
 		        else {
-			        Nd4jLong xCoord[MAX_RANK];
 			
 		    	    for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-						shape::ind2subC(xRank,shape::shapeOf(shapeInfo),i, length, xCoord);
-						
-				        auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-						auto resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xCoord,xRank);
-						
-	    			    result[resultOffset2] = OpType::op(dy[xOffset2], params);
+						auto xOffset2 = shape::getIndexOffset(i, shapeInfo,  length);
+						auto zOffset2 = shape::getIndexOffset(i, zShapeInfo, length);						
+	    			    result[zOffset2] = OpType::op(dy[xOffset2], params);
 		    	    }
 		        }
 	        }
