@@ -227,7 +227,7 @@ public abstract  class BaseTransport  implements Transport {
         mesh.get().getRootNode().setId(this.id());
 
         // launching heartbeat thread, that will monitor offline nodes
-        //executorService.submit(new HeartbeatThread(120000, this, mesh));
+        executorService.submit(new HeartbeatThread(30000, this, mesh));
 
         this.launch();
     }
@@ -814,13 +814,13 @@ public abstract  class BaseTransport  implements Transport {
                         if (transport.id().equals(n.getId()))
                             continue;
 
-                        PongMessage m = transport.sendMessageBlocking(new PingMessage(), n.getId(), 100, TimeUnit.MILLISECONDS);
+                        PongMessage m = transport.sendMessageBlocking(new PingMessage(), n.getId(), 200, TimeUnit.MILLISECONDS);
 
                         // if we're not getting response in reasonable time - we're considering this node as failed
                         if (m == null) {
-                            mesh.get().remapNode(n);
-                            mesh.get().markNodeOffline(n);
-                            remapped.set(true);
+                            //mesh.get().remapNode(n);
+                            //mesh.get().markNodeOffline(n);
+                            //remapped.set(true);
                         }
                     }
 
