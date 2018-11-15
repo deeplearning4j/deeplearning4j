@@ -18,6 +18,15 @@ if(WIN32)
     foreach(dir ${dirs})
         message(STATUS "dir='${dir}'")
     endforeach()
+
+    # workaround for long command lines
+    SET(CMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS 1)
+    SET(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS 1)
+
+    SET(CMAKE_C_RESPONSE_FILE_LINK_FLAG "@")
+    SET(CMAKE_CXX_RESPONSE_FILE_LINK_FLAG "@")
+
+    SET(CMAKE_NINJA_FORCE_RESPONSE_FILE 1 CACHE INTERNAL "")
 endif()
 
 if ("${LIBND4J_ALL_OPS}")
