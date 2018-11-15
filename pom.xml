@@ -395,6 +395,7 @@
 
         <libnd4j.tests>--tests</libnd4j.tests>
         <libnd4j.test.skip>false</libnd4j.test.skip>
+        <jumpy.test.skip>false</jumpy.test.skip>
         <skipBackendChoice>false</skipBackendChoice>
         <skipTestResourceEnforcement>false
         </skipTestResourceEnforcement> <!-- Test resource profile must be enabled unless using -DskipTests etc -->
@@ -640,6 +641,7 @@
             <properties>
                 <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
+                <jumpy.test.skip>true</jumpy.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
@@ -654,6 +656,7 @@
             <properties>
                 <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
+                <jumpy.test.skip>true</jumpy.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
