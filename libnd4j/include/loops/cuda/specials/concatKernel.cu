@@ -22,14 +22,15 @@
 #include <loops/special_kernels.h>
 
 
+///////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ void concatKernelGeneric(int dimension,
-									int numArrays,
-									Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
-									void *vz, Nd4jLong *zShapeInfo, 
-									Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, 
-									Nd4jLong *zTadShape, 
-									Nd4jLong *zOffsets) {
+__device__ void concatKernel(int dimension,
+							int numArrays,
+							Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
+							void *vz, Nd4jLong *zShapeInfo, 
+							Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, 
+							Nd4jLong *zTadShape, 
+							Nd4jLong *zOffsets) {
 	
 	auto z = static_cast<T*>(vz);
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -195,4 +196,34 @@ __device__ void concatKernelGeneric(int dimension,
 		}
 		__syncthreads();
 	}
+}
+
+///////////////////////////////////////////////////////////////////////
+template <typename T>
+__global__ void execConcatKernel(int dimension,
+							int numArrays,
+							Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
+							void *vz, Nd4jLong *zShapeInfo, 
+							Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, 
+							Nd4jLong *zTadShape, 
+							Nd4jLong *zOffsets) {
+
+	concatKernel<T>(dimension, numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
+}
+
+
+///////////////////////////////////////////////////////////////////////
+template <typename T>
+__host__ void concatKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers,
+ 							int dimension,
+							int numArrays,
+							Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
+							void *vz, Nd4jLong *zShapeInfo, 
+							Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, 
+							Nd4jLong *zTadShape, 
+							Nd4jLong *zOffsets) {
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	execConcatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(dimension, numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
 }

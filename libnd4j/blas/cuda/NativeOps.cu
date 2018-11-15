@@ -1088,8 +1088,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						else
 							targetIdx = maxIdx * shape::stride(hXShapeInfo)[shape::rank(hXShapeInfo) - 1];
 
-						// FIXME (float*)dZ - is wrong 
-						// !!!!!!!!!!!!!!fillIsMaxFloat<<< 1, 128, 1536, *stream >>>((float*)dZ, shape::length(hXShapeInfo), targetIdx);
+						fillIsMaxGeneric(launchDims,extraPointers, static_cast<bool*>(dZ), shape::length(hXShapeInfo), targetIdx);
 
                         nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
 					} else {
@@ -1110,8 +1109,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 						DEBUG_KERNEL(stream, opNum);
 
 						// at this point, all IMax indexes are gathered, and we execute
-						// FIXME (float*)dZ, (float*)special - are wrong 
-						// !!!!!!!!!!! fillDimensionalIsMaxFloat<<<blockLimit, 64, funcAttributes[36].sharedSizeBytes, *stream>>>((float*)special, hYShapeInfo, (float*)dZ, dZShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets );
+						fillDimensionalIsMaxGeneric(launchDims, extraPointers, special, hYShapeInfo, static_cast<bool*>(dZ), dZShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets);
 
                         nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
 
@@ -1401,129 +1399,7 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	// enabling p2p gpu access if it's supported
 	if (supportedP2P && devCnt > 1)
-    	enableP2P(allowedP2P);
-
-	//cudaFuncGetAttributes(&funcAttributes[0], (void *)transformFloatIndexes);
-
-	//void (*transformFloatPointer1)(int opNum, float *dy,int *shapeInfo, int xRank, float *params, float *dZ,int *dZShapeInfo, int zRank, int *allocationPointer, float *reductionPointer) = transformFloat;
-	// FIXME
-    //cudaFuncGetAttributes(&funcAttributes[1], transformFloatIndexes);
-
-	//void (*transformFloatPointer2)(int opNum, Nd4jLong n, float *dy, int incy, float *params, float *dZ,int resultStride, int *allocationPointer, float *reductionPointer) = transformFloat;
-	// FIXME
-    //cudaFuncGetAttributes(&funcAttributes[2], transformFloatIndexes);
-
-	//cudaFuncGetAttributes(&funcAttributes[3], (void *)functions::summarystats::summaryStatsReduceFloat);
-
-	//cudaFuncGetAttributes(&funcAttributes[4], (void *)scalarFloatIndexes);
-
-//	void (*scalarFloatPointer1)(int opNum, float dX,float *dy, int *shapeInfo, int xRank, float *params, float *dZ,int *dZShapeInfo, int zRank, int *allocPointer) = scalarFloat;
-//	cudaFuncGetAttributes(&funcAttributes[5], scalarFloatIndexes);
-
-//	void (*scalarFloatPointer2)(int opNum, Nd4jLong n,float dX, float *dy, int incy, float *params, float *dZ,int resultStride, int *allocPointer) = scalarFloat;
-//	cudaFuncGetAttributes(&funcAttributes[6], scalarFloatIndexes);
-
-	cudaFuncGetAttributes(&funcAttributes[7], reduce3Float);
-
-	cudaFuncGetAttributes(&funcAttributes[8], reduce3Float);
-//	printf("reduceFloat regs: [%i], static shmem: [%i]\n", funcAttributes[8].numRegs, funcAttributes[8].sharedSizeBytes);
-
-	cudaFuncGetAttributes(&funcAttributes[28], reduce3Float); // 1D
-//	printf("reduceFloat1D regs: [%i], static shmem: [%i]\n", funcAttributes[28].numRegs, funcAttributes[28].sharedSizeBytes);
-
-	cudaFuncGetAttributes(&funcAttributes[29], reduce3Float); // 6D
-//	printf("reduceFloat6D regs: [%i], static shmem: [%i]\n", funcAttributes[29].numRegs, funcAttributes[29].sharedSizeBytes);
-
-	// cudaFuncGetAttributes(&funcAttributes[30], flattenKernelFloat);
-
-	// !!!!!!!!!!!!cudaFuncGetAttributes(&funcAttributes[31], concatKernelFloat);
-
-//	cudaFuncGetAttributes(&funcAttributes[9], pairWiseTransformFloat);
-
-//  cudaFuncGetAttributes(&funcAttributes[10], pairWiseTransformFloatIndex);
-
-//	cudaFuncGetAttributes(&funcAttributes[11], pairWiseTransformStridedFloat);
-
-	cudaFuncGetAttributes(&funcAttributes[12], reduce3Float);
-
-	cudaFuncGetAttributes(&funcAttributes[13], reduce3Float);
-
-	///////////////////////////////////////// Doubles are separate, just in case of...
-
-	//cudaFuncGetAttributes(&funcAttributes[14], transformDoubleIndexes);
-
-//	void (*transformDoublePointer1)(int opNum, double *dy, int *shapeInfo, int xRank, double *params, double *dZ,int *dZShapeInfo, int zRank, int *allocationPointer, double *reductionPointer) = transformDouble;
-	// FIXME
-    //cudaFuncGetAttributes(&funcAttributes[15], transformDoubleIndexes);
-
-	//void (*transformDoublePointer2)(int opNum, Nd4jLong n, double *dy, int incy, double *params, double *dZ,int resultStride, int *allocationPointer, double *reductionPointer) = transformDouble;
-	// FIXME
-    //cudaFuncGetAttributes(&funcAttributes[16], transformDoubleIndexes);
-
-	//cudaFuncGetAttributes(&funcAttributes[17], functions::summarystats::summaryStatsReduceDouble);
-
-//	cudaFuncGetAttributes(&funcAttributes[18], scalarDoubleIndexes);
-
-	//void (*scalarDoublePointer1)(int opNum, double dX,double *dy, int *shapeInfo, int xRank, double *params, double *dZ,int *dZShapeInfo, int zRank, int *allocPointer) = scalarDouble;
-//	cudaFuncGetAttributes(&funcAttributes[19], scalarDoubleIndexes);
-
-
-	//void (*scalarDoublePointer2)(int opNum, Nd4jLong n,double dX, double *dy, int incy, double *params, double *dZ,int resultStride, int *allocPointer) = scalarDouble;
-//	cudaFuncGetAttributes(&funcAttributes[20], scalarDoubleIndexes);
-
-	cudaFuncGetAttributes(&funcAttributes[21], reduce3Double);
-
-	cudaFuncGetAttributes(&funcAttributes[22], reduce3Float);
-
-//	cudaFuncGetAttributes(&funcAttributes[23], pairWiseTransformDouble);
-
-//	cudaFuncGetAttributes(&funcAttributes[24], pairWiseTransformDoubleIndex);
-
-//	cudaFuncGetAttributes(&funcAttributes[25], pairWiseTransformStridedDouble);
-
-	cudaFuncGetAttributes(&funcAttributes[26], reduce3Double);
-
-	cudaFuncGetAttributes(&funcAttributes[27], reduce3Double);
-
-	cudaFuncGetAttributes(&funcAttributes[32], reduce3Float); // 1D
-
-	cudaFuncGetAttributes(&funcAttributes[33], reduce3Float); // 6D
-
-	// cudaFuncGetAttributes(&funcAttributes[34], flattenKernelDouble);
-
-	// !!!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[35], concatKernelDouble);
-
-	// !!!!!!!!! cudaFuncGetAttributes(&funcAttributes[36], fillDimensionalIsMaxFloat);
-
-	// !!!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[37], fillDimensionalIsMaxDouble);
-
-
-	// !!!!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[38], concatKernelScalarFloat);
-
-	// !!!!!!!!!!!cudaFuncGetAttributes(&funcAttributes[39], concatKernelScalarDouble);
-
-	// !!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[40], concatKernelVStackFloat);
-
-	// !!!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[41], concatKernelVStackDouble);
-
-	// !!!!!!!!!!!1 cudaFuncGetAttributes(&funcAttributes[42], concatKernelHStackFloat);
-
-	// !!!!!!!!!!!1 cudaFuncGetAttributes(&funcAttributes[43], concatKernelHStackDouble);
-
-    /////////////////////////
-
-    // !!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[44], averagingKernelHalf);
-
-    // !!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[45], averagingKernelFloat);
-
-    // !!!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[46], averagingKernelDouble);
-
-
-    //
-
-    //cudaFuncGetAttributes(&funcAttributes[47], scalarAlongDimension_0_float);
-    //cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_float16);
-    //cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_double);
+    	enableP2P(allowedP2P);	
 }
 
 void NativeOps::initializeFunctions(Nd4jPointer *functions) {

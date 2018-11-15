@@ -21,8 +21,9 @@
 
 #include <loops/special_kernels.h>
 
+///////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ void concatKernelScalarGeneric(int dimension,
+__device__ void concatKernelScalar(int dimension,
 									int numArrays,
 									Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
 									void *vz, Nd4jLong *zShapeInfo, 
@@ -33,6 +34,30 @@ __device__ void concatKernelScalarGeneric(int dimension,
     T **input = (T **) data;
 
     for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x)
-			z[i] = input[i][0];
+		z[i] = input[i][0];
 }
 
+///////////////////////////////////////////////////////////////////////
+template <typename T>
+__global__ void execConcatKernelScalar(int dimension,
+									int numArrays,
+									Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
+									void *vz, Nd4jLong *zShapeInfo, 
+									Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+
+	concatKernelScalar<T>(dimension, numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers);
+}
+
+///////////////////////////////////////////////////////////////////////
+template <typename T>
+__host__ void concatKernelScalarGeneric(dim3& launchDims, Nd4jPointer* extraPointers,
+									int dimension,
+									int numArrays,
+									Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
+									void *vz, Nd4jLong *zShapeInfo, 
+									Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+	concatKernelScalar<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(dimension, numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers);
+}

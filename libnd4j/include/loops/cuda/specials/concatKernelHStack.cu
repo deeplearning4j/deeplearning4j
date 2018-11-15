@@ -21,9 +21,9 @@
 
 #include <loops/special_kernels.h>
 
-
+///////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ void concatKernelHStackGeneric(int dimension,
+__device__ void concatKernelHStack(int dimension,
 									int numArrays,
 									Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
 									void *vz, Nd4jLong *zShapeInfo, 
@@ -70,3 +70,38 @@ __device__ void concatKernelHStackGeneric(int dimension,
         __syncthreads();
      }
 }
+
+///////////////////////////////////////////////////////////////////////
+template <typename T>
+__global__ void execConcatKernelHStack(int dimension,
+                                    int numArrays,
+                                    Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
+                                    void *vz, Nd4jLong *zShapeInfo, 
+                                    Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    
+    concatKernelHStack<T>(dimension, numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers);
+}
+
+///////////////////////////////////////////////////////////////////////
+template <typename T>
+__host__ void concatKernelHStackGeneric(dim3& launchDims, Nd4jPointer* extraPointers,
+                                    int dimension,
+                                    int numArrays,
+                                    Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
+                                    void *vz, Nd4jLong *zShapeInfo, 
+                                    Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    execConcatKernelHStack<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(dimension, numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers);
+}
+
+
+
+
+
+
+
+
+
+

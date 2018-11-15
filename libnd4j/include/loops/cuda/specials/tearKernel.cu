@@ -22,9 +22,9 @@
 #include <loops/special_kernels.h>
 
 
-
+////////////////////////////////////////////////////////////////////////
 template<typename T>
-__device__ void tearKernelGeneric(void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+__device__ void tearKernel(void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 	auto x = static_cast<T*>(vx);
 
@@ -65,4 +65,23 @@ __device__ void tearKernelGeneric(void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *t
             }
         }
     }
+}
+
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ void execTearKernel(void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
+    tearKernel<T>(vx, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
+}
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+__host__ void tearKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers, 
+                                void *vx, Nd4jLong *xShapeInfo, 
+                                Nd4jPointer *targets, Nd4jLong *zShapeInfo, 
+                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    execTearKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(vx, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
 }
