@@ -75,14 +75,12 @@ __global__ void execConcatKernelVStack(int dimension,
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__host__ void concatKernelVStackGeneric(dim3& launchDims, Nd4jPointer* extraPointers,
+__host__ void concatKernelVStackGeneric(dim3& launchDims, cudaStream_t *stream,
                                     int dimension,
                                     int numArrays,
                                     Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
                                     void *vz, Nd4jLong *zShapeInfo, 
                                     Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     
-    execConcatKernelVStack<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(dimension, numArrays, *data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers);
+    execConcatKernelVStack<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dimension, numArrays, *data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers);
 }

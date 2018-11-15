@@ -89,11 +89,8 @@ __global__ void execAveragingKernel(void **vdx, void *vdz, int n, Nd4jLong lengt
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__host__ void averagingKernelGeneric(dim3& launchDims, Nd4jPointer* extraPointers, void **vdx, void *vdz, int n, Nd4jLong length, bool propagate) {
+__host__ void averagingKernelGeneric(dim3& launchDims, cudaStream_t *stream, void **vdx, void *vdz, int n, Nd4jLong length, bool propagate) {
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-    execAveragingKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(vdx, vdz, n, length, propagate);
+    execAveragingKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdx, vdz, n, length, propagate);
 }
-
 

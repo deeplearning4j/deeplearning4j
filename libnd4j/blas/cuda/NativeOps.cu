@@ -920,7 +920,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
     dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hZShapeInfo, funcAttributes[1]);
     auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);    
+    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);	
 
 	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
 		printf("AF20 opNum:[%i]\n", opNum);
@@ -1087,8 +1087,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 							targetIdx = maxIdx;
 						else
 							targetIdx = maxIdx * shape::stride(hXShapeInfo)[shape::rank(hXShapeInfo) - 1];
-
-						fillIsMaxGeneric(launchDims,extraPointers, static_cast<bool*>(dZ), shape::length(hXShapeInfo), targetIdx);
+						
+						fillIsMaxGeneric(launchDims, stream, static_cast<bool*>(dZ), shape::length(hXShapeInfo), targetIdx);
 
                         nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
 					} else {
@@ -1108,8 +1108,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
 						DEBUG_KERNEL(stream, opNum);
 
-						// at this point, all IMax indexes are gathered, and we execute
-						fillDimensionalIsMaxGeneric(launchDims, extraPointers, special, hYShapeInfo, static_cast<bool*>(dZ), dZShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets);
+						// at this point, all IMax indexes are gathered, and we execute						
+						fillDimensionalIsMaxGeneric(launchDims, stream, special, hYShapeInfo, static_cast<bool*>(dZ), dZShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets);
 
                         nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
 

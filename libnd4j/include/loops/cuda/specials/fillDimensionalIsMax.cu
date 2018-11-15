@@ -76,14 +76,12 @@ __global__ void execfillDimensionalIsMax(void *dX, Nd4jLong *xShapeInfo,
 }
 
 ////////////////////////////////////////////////////////////////////////
-__host__ void fillDimensionalIsMaxGeneric(dim3& launchDims, Nd4jPointer* extraPointers,
+__host__ void fillDimensionalIsMaxGeneric(dim3& launchDims, cudaStream_t *stream,
                                     void *dX, Nd4jLong *xShapeInfo, 
                                     bool *dZ, Nd4jLong *zShapeInfo, 
                                     Nd4jLong *tadOnlyShapeInfo, 
                                     int *dimension, int dimensionLength, 
                                     Nd4jLong *tadOffsets) {
-
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     
-    execfillDimensionalIsMax<<<launchDims.x, launchDims.y, launchDims.z, stream>>>(dX, xShapeInfo, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
+    execfillDimensionalIsMax<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dX, xShapeInfo, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
 }

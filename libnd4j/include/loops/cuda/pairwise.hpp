@@ -93,9 +93,9 @@ void _CUDA_H PairWiseTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cuda
 	auto zOrder = shape::order(hzShapeInfo);
 
 	if (xEWS >= 1 && zEWS >= 1 && yEWS >= 1 && xOrder == yOrder && xOrder == zOrder) {
-		pairwiseSimpleStrided<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(length, vx, xEWS, vy, yEWS, vz, zEWS, vextraParams, allocPointer);
+		pairwiseSimpleStrided<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(length, vx, xEWS, vy, yEWS, vz, zEWS, vextraParams, allocPointer);
 	} else {
-		pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
+		pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
 	}
 }
 
