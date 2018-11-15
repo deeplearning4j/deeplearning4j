@@ -108,6 +108,30 @@ typedef struct {
 
 typedef __syncInfo SyncInfo;
 
+/**
+* This is utility kernel, that updates given special buffer with proper values in device memory
+*/
+extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension, Nd4jLong *specialPointer, int rows) {
+    Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid > 0)
+        return;
+
+    dimension[0] = 0;
+    maxDimension[0] = 1;
+
+    specialPointer[0] = 2;
+    specialPointer[1] = rows;
+    specialPointer[2] = 1;
+    specialPointer[3] = 1;
+    specialPointer[4] = 1;
+    specialPointer[5] = 0;
+    specialPointer[6] = 1;
+    specialPointer[7] = 99;
+
+    //printf("special[0]: [%lld]\n", (long long) specialPointer[0]);
+    //shape::printShapeInfoLinear("prepareShapeBuffer", specialPointer);
+}
+
 
 // this method isn't used, left here for legacy and caution purposes
 // TLDR: don't use this way, it sucks
@@ -1065,7 +1089,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 							targetIdx = maxIdx * shape::stride(hXShapeInfo)[shape::rank(hXShapeInfo) - 1];
 
 						// FIXME (float*)dZ - is wrong 
-						fillIsMaxFloat<<< 1, 128, 1536, *stream >>>((float*)dZ, shape::length(hXShapeInfo), targetIdx);
+						// !!!!!!!!!!!!!!fillIsMaxFloat<<< 1, 128, 1536, *stream >>>((float*)dZ, shape::length(hXShapeInfo), targetIdx);
 
                         nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
 					} else {
@@ -1087,7 +1111,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
 						// at this point, all IMax indexes are gathered, and we execute
 						// FIXME (float*)dZ, (float*)special - are wrong 
-						fillDimensionalIsMaxFloat<<<blockLimit, 64, funcAttributes[36].sharedSizeBytes, *stream>>>((float*)special, hYShapeInfo, (float*)dZ, dZShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets );
+						// !!!!!!!!!!! fillDimensionalIsMaxFloat<<<blockLimit, 64, funcAttributes[36].sharedSizeBytes, *stream>>>((float*)special, hYShapeInfo, (float*)dZ, dZShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets );
 
                         nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
 
@@ -1412,7 +1436,7 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	// cudaFuncGetAttributes(&funcAttributes[30], flattenKernelFloat);
 
-	cudaFuncGetAttributes(&funcAttributes[31], concatKernelFloat);
+	// !!!!!!!!!!!!cudaFuncGetAttributes(&funcAttributes[31], concatKernelFloat);
 
 //	cudaFuncGetAttributes(&funcAttributes[9], pairWiseTransformFloat);
 
@@ -1467,32 +1491,32 @@ void NativeOps::initializeDevicesAndFunctions() {
 
 	// cudaFuncGetAttributes(&funcAttributes[34], flattenKernelDouble);
 
-	cudaFuncGetAttributes(&funcAttributes[35], concatKernelDouble);
+	// !!!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[35], concatKernelDouble);
 
-	cudaFuncGetAttributes(&funcAttributes[36], fillDimensionalIsMaxFloat);
+	// !!!!!!!!! cudaFuncGetAttributes(&funcAttributes[36], fillDimensionalIsMaxFloat);
 
-	cudaFuncGetAttributes(&funcAttributes[37], fillDimensionalIsMaxDouble);
+	// !!!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[37], fillDimensionalIsMaxDouble);
 
 
-	cudaFuncGetAttributes(&funcAttributes[38], concatKernelScalarFloat);
+	// !!!!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[38], concatKernelScalarFloat);
 
-	cudaFuncGetAttributes(&funcAttributes[39], concatKernelScalarDouble);
+	// !!!!!!!!!!!cudaFuncGetAttributes(&funcAttributes[39], concatKernelScalarDouble);
 
-	cudaFuncGetAttributes(&funcAttributes[40], concatKernelVStackFloat);
+	// !!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[40], concatKernelVStackFloat);
 
-	cudaFuncGetAttributes(&funcAttributes[41], concatKernelVStackDouble);
+	// !!!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[41], concatKernelVStackDouble);
 
-	cudaFuncGetAttributes(&funcAttributes[42], concatKernelHStackFloat);
+	// !!!!!!!!!!!1 cudaFuncGetAttributes(&funcAttributes[42], concatKernelHStackFloat);
 
-	cudaFuncGetAttributes(&funcAttributes[43], concatKernelHStackDouble);
+	// !!!!!!!!!!!1 cudaFuncGetAttributes(&funcAttributes[43], concatKernelHStackDouble);
 
     /////////////////////////
 
-    cudaFuncGetAttributes(&funcAttributes[44], averagingKernelHalf);
+    // !!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[44], averagingKernelHalf);
 
-    cudaFuncGetAttributes(&funcAttributes[45], averagingKernelFloat);
+    // !!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[45], averagingKernelFloat);
 
-    cudaFuncGetAttributes(&funcAttributes[46], averagingKernelDouble);
+    // !!!!!!!!!!! cudaFuncGetAttributes(&funcAttributes[46], averagingKernelDouble);
 
 
     //
