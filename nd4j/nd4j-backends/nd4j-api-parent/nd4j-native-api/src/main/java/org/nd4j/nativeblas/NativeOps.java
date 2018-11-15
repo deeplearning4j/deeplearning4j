@@ -792,7 +792,7 @@ public abstract class NativeOps extends Pointer {
 
     // GridOps
 
-
+/*
     // MetaOps
     public abstract void execMetaPredicateShape(PointerPointer extras,
                                                 int opTypeA, int opNumA,
@@ -807,7 +807,7 @@ public abstract class NativeOps extends Pointer {
                                                 Pointer extraA, Pointer extraB, double scalarA,
                                                 double scalarB);
 
-
+*/
     /////////////////////////
 
     public abstract void execAggregate(PointerPointer extras, int opNum,

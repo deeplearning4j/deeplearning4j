@@ -2218,56 +2218,25 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param scalarA
      * @param scalarB
      */
-    public native void execMetaPredicateShape(@Cast("Nd4jPointer*") PointerPointer extras,
-                                          int opTypeA,
-                                          int opNumA,
-                                          int opTypeB,
-                                          int opNumB,
-                                          @Cast("Nd4jLong") long N,
-                                          Pointer hX, @Cast("Nd4jLong*") LongPointer hXShapeBuffer,
-                                          Pointer dX, @Cast("Nd4jLong*") LongPointer dXShapeBuffer,
-                                          Pointer hY, @Cast("Nd4jLong*") LongPointer hYShapeBuffer,
-                                          Pointer dY, @Cast("Nd4jLong*") LongPointer dYShapeBuffer,
-                                          Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeBuffer,
-                                          Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeBuffer,
-                                          Pointer extraA,
-                                          Pointer extraB,
-                                          double scalarA,
-                                          double scalarB);
-    public native void execMetaPredicateShape(@Cast("Nd4jPointer*") PointerPointer extras,
-                                          int opTypeA,
-                                          int opNumA,
-                                          int opTypeB,
-                                          int opNumB,
-                                          @Cast("Nd4jLong") long N,
-                                          Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeBuffer,
-                                          Pointer dX, @Cast("Nd4jLong*") LongBuffer dXShapeBuffer,
-                                          Pointer hY, @Cast("Nd4jLong*") LongBuffer hYShapeBuffer,
-                                          Pointer dY, @Cast("Nd4jLong*") LongBuffer dYShapeBuffer,
-                                          Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeBuffer,
-                                          Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeBuffer,
-                                          Pointer extraA,
-                                          Pointer extraB,
-                                          double scalarA,
-                                          double scalarB);
-    public native void execMetaPredicateShape(@Cast("Nd4jPointer*") PointerPointer extras,
-                                          int opTypeA,
-                                          int opNumA,
-                                          int opTypeB,
-                                          int opNumB,
-                                          @Cast("Nd4jLong") long N,
-                                          Pointer hX, @Cast("Nd4jLong*") long[] hXShapeBuffer,
-                                          Pointer dX, @Cast("Nd4jLong*") long[] dXShapeBuffer,
-                                          Pointer hY, @Cast("Nd4jLong*") long[] hYShapeBuffer,
-                                          Pointer dY, @Cast("Nd4jLong*") long[] dYShapeBuffer,
-                                          Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeBuffer,
-                                          Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeBuffer,
-                                          Pointer extraA,
-                                          Pointer extraB,
-                                          double scalarA,
-                                          double scalarB);
+     /*
+    void execMetaPredicateShape(Nd4jPointer *extras,
+                                      const int opTypeA,
+                                      const int opNumA,
+                                      const int opTypeB,
+                                      const int opNumB,
+                                      Nd4jLong N,
+                                      void *hX, Nd4jLong *hXShapeBuffer,
+                                      void *dX, Nd4jLong *dXShapeBuffer,
+                                      void *hY, Nd4jLong *hYShapeBuffer,
+                                      void *dY, Nd4jLong *dYShapeBuffer,
+                                      void *hZ, Nd4jLong *hZShapeBuffer,
+                                      void *dZ, Nd4jLong *dZShapeBuffer,
+                                      void *extraA,
+                                      void *extraB,
+                                      double scalarA,
+                                      double scalarB);
 
-
+*/
 /**
  *
  * @param data
@@ -8774,6 +8743,7 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define BUILD_SINGLE_TEMPLATE(NAME, SIGNATURE, TYPES) EVAL(_EXEC_SINGLE_T(RANDOMSINGLE, NAME, (SIGNATURE), TYPES))
 // #define BUILD_DOUBLE_TEMPLATE(NAME, SIGNATURE, TYPES_A, TYPES_B) EVAL(_EXEC_DOUBLE_T(RANDOMDOUBLE, NAME, (SIGNATURE), (TYPES_A), TYPES_B))
 // #define BUILD_SINGLE_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES) switch(XTYPE) { EVAL(_EXEC_SELECTOR_T(SELECTOR_SINGLE, NAME, SIGNATURE, TYPES)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type");}}
+// #define BUILD_SINGLE_SELECTOR_THRICE(XTYPE, NAME, SIGNATURE, TYPES) switch(XTYPE) { EVAL(_EXEC_SELECTOR_T(SELECTOR_SINGLE_THRICE, NAME, SIGNATURE, TYPES)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type");}}
 
 // #define BUILD_SINGLE_PARTIAL_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES) switch(XTYPE) { EVAL(_EXEC_SELECTOR_T(SELECTOR_PARTIAL_SINGLE, NAME, SIGNATURE, TYPES)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type"); }}
 // #define BUILD_DOUBLE_SELECTOR(XTYPE, YTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B) switch(XTYPE) { EVAL(_EXEC_SELECTOR_TT_1(SELECTOR_DOUBLE, YTYPE, NAME, (SIGNATURE), (TYPES_B), TYPES_A)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); fflush(stdout); throw std::runtime_error("bad data type");}}
@@ -8782,10 +8752,11 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define BUILD_PAIRWISE_TEMPLATE(NAME, SIGNATURE, TYPES_A) EVAL(_EXEC_DOUBLE_P(RANDOMPAIRWISE, NAME, (SIGNATURE), TYPES_A))
 // #define BUILD_PAIRWISE_SELECTOR(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B) switch(XTYPE) { EVAL(_EXEC_SELECTOR_P_1(SELECTOR_PAIRWISE, XTYPE, YTYPE, ZTYPE, NAME, (SIGNATURE), (TYPES_B), TYPES_A)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type"); }}
 // #else
-// #define BUILD_SINGLE_UNCHAINED_TEMPLATE(NAME, SIGNATURE, TYPES) 
+// #define BUILD_SINGLE_UNCHAINED_TEMPLATE(NAME, SIGNATURE, TYPES)
 // #define BUILD_SINGLE_TEMPLATE(NAME, SIGNATURE, TYPES)
 // #define BUILD_DOUBLE_TEMPLATE(NAME, SIGNATURE, TYPES_A, TYPES_B)
 // #define BUILD_SINGLE_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES)
+// #define BUILD_SINGLE_SELECTOR_THRICE(XTYPE, NAME, SIGNATURE, TYPES)
 // #define BUILD_SINGLE_PARTIAL_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES)
 // #define BUILD_DOUBLE_SELECTOR(XTYPE, YTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B)
 // #define BUILD_TRIPLE_SELECTOR(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPES_Z)
@@ -8816,6 +8787,9 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #define _SELECTOR_SINGLE(A, B, C, D) case C: {A<D>B; break;};
 // #define SELECTOR_SINGLE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE(A, B, UNPAREN(C)))
+
+// #define _SELECTOR_SINGLE_THRICE(A, B, C, D) case C: {A<D, D, D>B; break;};
+// #define SELECTOR_SINGLE_THRICE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE_THRICE(A, B, UNPAREN(C)))
 
 // #define _SELECTOR_PARTIAL_SINGLE(A, B, C, D) case C: {A D, UNPAREN2(B); break;};
 // #define SELECTOR_PARTIAL_SINGLE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_PARTIAL_SINGLE(A, B, UNPAREN(C)))
