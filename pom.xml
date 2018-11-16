@@ -82,7 +82,11 @@
             <id>turambar</id>
             <name>Dave kale</name>
         </developer>
-        <!--current & previous core contributers and company developers-->
+        <developer>
+            <id>maxpumperla</id>
+            <name>Max Pumperla</name>
+        </developer>
+        <!--current & previous core contributors and company developers-->
         <developer>
             <id>rubenfiszel</id>
             <name>Ruben Fiszel</name>
@@ -133,6 +137,7 @@
         <module>scalnet</module>
         <module>jumpy</module>
         <module>pydatavec</module>
+        <module>pydl4j</module>
     </modules>
 
     <scm>
@@ -398,6 +403,7 @@
         <libnd4j.test.skip>false</libnd4j.test.skip>
         <jumpy.test.skip>false</jumpy.test.skip>
         <pydatavec.test.skip>false</pydatavec.test.skip>
+        <pydl4j.test.skip>false</pydl4j.test.skip>
         <skipBackendChoice>false</skipBackendChoice>
         <skipTestResourceEnforcement>false
         </skipTestResourceEnforcement> <!-- Test resource profile must be enabled unless using -DskipTests etc -->
@@ -645,6 +651,7 @@
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <jumpy.test.skip>true</jumpy.test.skip>
                 <pydatavec.test.skip>true</pydatavec.test.skip>
+                <pydl4j.test.skip>true</pydl4j.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
@@ -661,6 +668,7 @@
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <jumpy.test.skip>true</jumpy.test.skip>
                 <pydatavec.test.skip>true</pydatavec.test.skip>
+                <pydl4j.test.skip>true</pydl4j.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
