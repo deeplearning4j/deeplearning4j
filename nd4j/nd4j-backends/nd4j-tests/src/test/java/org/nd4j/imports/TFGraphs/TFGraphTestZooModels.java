@@ -43,6 +43,9 @@ public class TFGraphTestZooModels {
             "inception_v4_2018_04_27",
             "inception_resnet_v2_2018_04_27"
 
+            //New models - ignore until fixes merged
+            "ssd_.*",
+            "resnetv2.*"
     };
 
     @Rule
