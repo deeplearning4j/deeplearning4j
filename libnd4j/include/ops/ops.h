@@ -392,7 +392,7 @@ namespace simdOps {
             return static_cast<Z>(i1 % i2);
         }
 
-        op_def static Z op(X d1, Y d2, Y *params) {
+        op_def static Z op(X d1, Y d2, Z *params) {
             auto i1 = static_cast<int>(d1);
             auto i2 = static_cast<int>(d2);
             return static_cast<Z>(i1 % i2);
