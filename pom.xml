@@ -132,6 +132,7 @@
         <module>rl4j</module>
         <module>scalnet</module>
         <module>jumpy</module>
+        <module>pydatavec</module>
     </modules>
 
     <scm>
@@ -396,6 +397,7 @@
         <libnd4j.tests>--tests</libnd4j.tests>
         <libnd4j.test.skip>false</libnd4j.test.skip>
         <jumpy.test.skip>false</jumpy.test.skip>
+        <pydatavec.test.skip>false</pydatavec.test.skip>
         <skipBackendChoice>false</skipBackendChoice>
         <skipTestResourceEnforcement>false
         </skipTestResourceEnforcement> <!-- Test resource profile must be enabled unless using -DskipTests etc -->
@@ -642,6 +644,7 @@
                 <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <jumpy.test.skip>true</jumpy.test.skip>
+                <pydatavec.test.skip>true</pydatavec.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
@@ -657,6 +660,7 @@
                 <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <jumpy.test.skip>true</jumpy.test.skip>
+                <pydatavec.test.skip>true</pydatavec.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
