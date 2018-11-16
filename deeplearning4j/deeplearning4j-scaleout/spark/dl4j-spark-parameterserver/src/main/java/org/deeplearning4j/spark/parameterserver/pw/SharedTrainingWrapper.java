@@ -31,7 +31,10 @@ import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
+import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
 import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.SmartFancyBlockingQueue;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
@@ -251,10 +254,7 @@ public class SharedTrainingWrapper {
                     }
                 }
 
-                val handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(),
-                                trainingConfiguration.getMinThreshold(), trainingConfiguration.getThresholdStep(),
-                                trainingConfiguration.getStepTrigger(), trainingConfiguration.getStepDelay(),
-                                trainingConfiguration.getShakeFrequency(), trainingConfiguration.isEncodingDebugMode());
+                val handler = new WiredEncodingHandler(trainingConfiguration.getThresholdAlgorithm(), trainingConfiguration.getResidualPostProcessor(), null, trainingConfiguration.isEncodingDebugMode());
 
                 // TODO: if there will be no code difference - use the same class instead of 2 different classes
                 val modelParamsSupplier = new ModelParamsConsumer();
@@ -276,9 +276,10 @@ public class SharedTrainingWrapper {
                                     : EncodedGradientsAccumulator.getOptimalBufferSize(model, numWorkers, 2);
 
                     accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
-                                    .encodingThreshold(trainingConfiguration.getThreshold())
-                                    .memoryParameters(bufferSize, queueSize)
-                                    .encodingDebugMode(trainingConfiguration.isEncodingDebugMode())
+                            .thresholdAlgorithm(trainingConfiguration.getThresholdAlgorithm())
+                            .residualPostProcessor(trainingConfiguration.getResidualPostProcessor())
+                            .memoryParameters(bufferSize, queueSize)
+                            .encodingDebugMode(trainingConfiguration.isEncodingDebugMode())
                             .build();
 
                     // we should introduce ourselves to controller
@@ -320,6 +321,7 @@ public class SharedTrainingWrapper {
                                     "No Transport implementation was defined for this training session!");
 
                         consumer = UpdatesConsumer.builder()
+                                .numWorkers(numWorkers)
                                 .accumulator(accumulator)
                                 .params(model.params())
                                 .build();
@@ -403,6 +405,8 @@ public class SharedTrainingWrapper {
                                     .prefetchBuffer(trainingConfiguration.getPrefetchSize())
                                     .modelParamsSupplier(modelParamsSupplier)
                                     .updaterParamsSupplier(updateParamsSupplier)
+                                    .thresholdAlgorithm(trainingConfiguration.getThresholdAlgorithm())
+                                    .residualPostProcessor(trainingConfiguration.getResidualPostProcessor())
                                     .build();
                     wrapper.setExceptionEncountered(exceptionEncountered);
                 } else {
@@ -467,6 +471,8 @@ public class SharedTrainingWrapper {
                             }
                         }
                     }
+
+                    consumer.getUpdatesQueue().purge();
                 }
             } catch (Throwable t){
                 log.warn("Exception encountered during fit operation", t);
@@ -476,6 +482,12 @@ public class SharedTrainingWrapper {
 
 
             // conditionally shutdown & reset ParallelWrapper
+            EncodedGradientsAccumulator accum;
+            if(wrapper != null){
+                accum = (EncodedGradientsAccumulator) wrapper.getGradientsAccumulator();        //Store before possible shutdown for below
+            } else {
+                accum = accumulator;
+            }
             if (trainingConfiguration.isEpochReset()) {
                 wrapper.shutdown();
                 wrapper = null;
@@ -503,12 +515,18 @@ public class SharedTrainingWrapper {
                 updaterState = ((MultiLayerNetwork) originalModel).getUpdater().getStateViewArray();
             }
 
+            //Get threshold algorithm instances from each thread, and average them - they may have state that needs
+            // to be averaged and persisted, to avoid starting threshold adaption from scratch
+            EncodingHandler mh = (EncodingHandler) accum.getHandler();
+            ThresholdAlgorithm taAveraged = mh.getAverageThresholdAlgorithm();
+
             // FIXME: fill stats here
             return SharedTrainingResult.builder().aggregationsCount(1).scoreSum(originalModel.score())
                             .updaterStateArray(updaterState).listenerMetaData(new ArrayList<>())
                             .listenerStaticInfo(new ArrayList<>()).listenerUpdates(new ArrayList<>())
                             .minibatchesPerExecutor(Collections.singletonMap(SparkUtils.getSparkExecutorId(), iteratorDataSetCount.get().get()))
-                    .build();
+                            .thresholdAlgorithm(taAveraged)
+                            .build();
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {

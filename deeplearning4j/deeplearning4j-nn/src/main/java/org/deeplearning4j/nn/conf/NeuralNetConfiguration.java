@@ -272,7 +272,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
                             .trainingWorkspaceMode(wsmTrain).cacheMode(globalConfig.cacheMode)
-                            .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig).build();
+                            .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig)
+                            .legacyBatchScaledL2(legacyBatchScaledL2).build();
         }
 
         /** Helper class for setting input types */
@@ -504,6 +505,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected List<LayerConstraint> allParamConstraints;
         protected List<LayerConstraint> weightConstraints;
         protected List<LayerConstraint> biasConstraints;
+        protected boolean legacyBatchScaledL2 = false;
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.ENABLED;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
@@ -1030,6 +1032,19 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Not recommended for use. Disabled (false) by default, provided for backward compatibility for mainining same
+         * behaviour as nets trained in 1.0.0-beta2 and earlier.<br>
+         * When disabled (default): Use {@code loss = average(example_loss) + lambda * l2(weights) )<br>
+         * When enabled: Use {@code loss = average(example_loss) + 1/N * lambda * l2(weights) ) where N is minibatch size<br>
+         * Impacts how both L1 and L2 regularization is applied
+         * @param legacyBatchScaledL2 False: default - use standard l1/l2 calculation. True: use l1/l2 as per DL4J 1.0.0-beta2 and earlier.
+         */
+        public Builder legacyBatchScaledL2(boolean legacyBatchScaledL2){
+            this.legacyBatchScaledL2 = legacyBatchScaledL2;
+            return this;
+        }
+
+        /**
          * Return a configuration based on this builder
          *
          * @return
@@ -1163,6 +1178,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 ActivationLayer al = (ActivationLayer)layer;
                 if(al.getActivationFn() == null)
                     al.setActivationFn(activationFn);
+            }
+
+            if(layer instanceof BaseOutputLayer){
+                BaseOutputLayer bol = (BaseOutputLayer)layer;
+                bol.setLegacyBatchScaledL2(legacyBatchScaledL2);
             }
         }
     }

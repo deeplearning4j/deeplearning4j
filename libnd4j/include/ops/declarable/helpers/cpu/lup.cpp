@@ -251,6 +251,48 @@ namespace helpers {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _inverse, (input, output), LIBND4J_TYPES);
     }
 
+    template <typename T>
+    int cholesky(NDArray<T>* input, NDArray<T>* output, bool inplace) {
+
+        auto n = input->sizeAt(-1);
+        auto n2 = n * n;
+        auto totalCount = output->lengthOf() / n2;
+        if (!inplace)
+             output->assign((T)0.0); // fill up output tensor with zeros only inplace=false
+
+        std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
+        std::unique_ptr<NDArray<T>> lowerMatrix(new NDArray<T>({n, n}));
+
+        for (int e = 0; e < totalCount; e++) {
+
+            // fill up matrix
+            for (int k = e * n2, l = 0; k < (e + 1) * n2; k++) {
+                (*matrix)(l++) = (*input)(k);
+            }
+            //if (e) // from the second loop need to zero matrix
+            lowerMatrix->assign(T(0.f));
+
+            for (Nd4jLong col = 0; col < n; col++) {
+                for (Nd4jLong row = 0; row < col; row++) {
+                    T rowSum = 0;
+                    for (Nd4jLong k = 0; k < row; ++k)
+                        rowSum += (*lowerMatrix)(col, k) * (*lowerMatrix)(row, k);
+                    (*lowerMatrix)(col, row) = ((*matrix)(row, col) - rowSum) / (*lowerMatrix)(row, row);
+                }
+                T diagonalSum = 0;
+                for (Nd4jLong k = 0; k < col;  ++k)
+                    diagonalSum += (*lowerMatrix)(col, k) * (*lowerMatrix)(col, k);
+                (*lowerMatrix)(col, col) = nd4j::math::nd4j_sqrt((*matrix)(col, col) - diagonalSum);
+                //nd4j_printf("%i: ", col);
+                //lowerMatrix->printIndexedBuffer("Lower matrix");
+            }
+            for (int k = e * n2, l = 0; k < (e + 1) * n2; k++) {
+                (*output)(k) = (*lowerMatrix)(l++);
+            }
+        }
+
+        return ND4J_STATUS_OK;
+    }
 
 
     BUILD_SINGLE_TEMPLATE(template int _inverse, (NDArray* input, NDArray* output), LIBND4J_TYPES);

@@ -6402,6 +6402,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(120, array.length());
         assertArrayEquals(new long[]{2, 3, 4, 5}, array.shape());
         assertEquals(exp, array);
+
+        val bos = new ByteArrayOutputStream();
+        Nd4j.write(bos, array);
+
+        val bis = new ByteArrayInputStream(bos.toByteArray());
+        val array2 = Nd4j.read(bis);
+
+        assertEquals(exp, array2);
     }
 
     @Test

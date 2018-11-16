@@ -141,6 +141,7 @@ __device__ void reduceScalarGeneric(
             tadOnlyShapeInfo);
 };
 
+#ifndef __CLION_IDE__
 // reduceScalar
 DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, float, INPUT(float *x, Nd4jLong *xShapeInfo, float *extraParams, float *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, float *reductionBuffer, Nd4jLong *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, double, INPUT(double *x, Nd4jLong *xShapeInfo, double *extraParams, double *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
@@ -161,6 +162,7 @@ DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float, INPUT
 DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, double, INPUT(double *x, Nd4jLong *xShape, double *extraParams, double *z, Nd4jLong *zShape, int *dimension, int dimensionLength, double *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float16, INPUT(float16 *x, Nd4jLong *xShape, float16 *extraParams, float16 *z, Nd4jLong *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 
+#endif
 
 namespace functions {
     namespace reduce {
@@ -568,6 +570,7 @@ namespace functions {
 				}
 			}
 
+#ifndef __CLION_IDE__
         BUILD_CALL_1(template __device__ void ReduceFunction<float>::execScalarCuda, float, (float*, Nd4jLong*, float*, float*, Nd4jLong*, float*, UnifiedSharedMemory *, Nd4jLong*), REDUCE_OPS)
         BUILD_CALL_1(template __device__ void ReduceFunction<float16>::execScalarCuda, float16, (float16*, Nd4jLong*, float16*, float16*, Nd4jLong*, float16*, UnifiedSharedMemory *, Nd4jLong*), REDUCE_OPS)
         BUILD_CALL_1(template __device__ void ReduceFunction<double>::execScalarCuda, double, (double*, Nd4jLong*, double*, double*, Nd4jLong*, double*, UnifiedSharedMemory *, Nd4jLong*), REDUCE_OPS)
@@ -575,5 +578,6 @@ namespace functions {
         BUILD_CALL_1(template __device__ void ReduceFunction<float>::aggregatePartials, float, (float*, Nd4jLong, Nd4jLong, float*), REDUCE_OPS)
         BUILD_CALL_1(template __device__ void ReduceFunction<float16>::aggregatePartials, float16, (float16*, Nd4jLong, Nd4jLong, float16*), REDUCE_OPS)
         BUILD_CALL_1(template __device__ void ReduceFunction<double>::aggregatePartials, double, (double*, Nd4jLong, Nd4jLong, double*), REDUCE_OPS)
+#endif
     }
 }

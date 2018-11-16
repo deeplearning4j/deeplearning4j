@@ -33,6 +33,9 @@ namespace helpers {
 
     int inverse(NDArray* input, NDArray* output);
 
+    template <typename T>
+    int cholesky(NDArray<T>* input, NDArray<T>* output, bool inplace = false);
+
 }
 }
 }

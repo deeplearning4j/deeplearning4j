@@ -795,8 +795,13 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         if (arrays == null || arrays.length == 0)
             throw new RuntimeException("Input arrays are missing");
 
-        if (arrays.length == 1)
+        if (arrays.length == 1) {
+            //Edge case - average 1 array - no op
+            if(target == null){
+                return null;
+            }
             return target.assign(arrays[0]);
+        }
 
         // we do averaging on GPU only if ALL devices have p2p links
         if (nativeOps.isP2PAvailable() && CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed()) {

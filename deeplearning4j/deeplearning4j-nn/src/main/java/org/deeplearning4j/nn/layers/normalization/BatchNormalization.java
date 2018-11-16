@@ -525,4 +525,13 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             throw new IllegalStateException("Unable to process input of rank " + x.rank() + " " + layerId());
     }
 
+    @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        //Majority of params's gradients should be... Exception: batch norm mean/variance estimate
+        if(BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(paramName) || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(paramName)){
+            return false;
+        }
+        return true;
+    }
+
 }

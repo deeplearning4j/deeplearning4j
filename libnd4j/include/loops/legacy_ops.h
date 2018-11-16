@@ -347,7 +347,8 @@
         (32, LogPoisonLoss), \
         (33, LogPoisonLossFull) , \
         (34, AMaxPairwise), \
-        (35, AMinPairwise)
+        (35, AMinPairwise) ,\
+        (36, simdOps::TruncateMod)
 
 
 

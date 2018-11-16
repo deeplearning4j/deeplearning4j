@@ -22,7 +22,6 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 
-
 def _test_reduction_op(op, shape):
     for axis in range(len(shape)):
         x_np = np.random.random(shape)
@@ -37,8 +36,8 @@ def _test_reduction_op(op, shape):
 
 
 def test_reduction_ops():
-    shapes = [(2, 3), (2, 3, 4), (2, 3, 4, 5)]   
-    reduction_ops = ['max', 'min', 'sum', 'prod', 'mean', 
+    shapes = [(2, 3), (2, 3, 4), (2, 3, 4, 5)]
+    reduction_ops = ['max', 'min', 'sum', 'prod', 'mean',
                      'std', 'var', 'argmax', 'argmin']
 
     for op in reduction_ops:

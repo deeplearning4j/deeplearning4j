@@ -380,7 +380,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
      * @return the number of parameters for the model
      */
     @Override
-    public int numParams() {
+    public long numParams() {
         int ret = 0;
         for (INDArray val : params.values())
             ret += val.length();

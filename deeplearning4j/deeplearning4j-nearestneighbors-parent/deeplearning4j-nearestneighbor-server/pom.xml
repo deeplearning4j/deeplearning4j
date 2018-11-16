@@ -180,11 +180,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-base64</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-json_2.11</artifactId>
             <version>${playframework.version}</version>

@@ -17,7 +17,7 @@
 package org.deeplearning4j.spark.impl.multilayer.evaluation;
 
 import org.apache.spark.api.java.function.Function2;
-import org.deeplearning4j.eval.IEvaluation;
+import org.nd4j.evaluation.IEvaluation;
 
 /**
  * A simple function to merge IEvaluation instances

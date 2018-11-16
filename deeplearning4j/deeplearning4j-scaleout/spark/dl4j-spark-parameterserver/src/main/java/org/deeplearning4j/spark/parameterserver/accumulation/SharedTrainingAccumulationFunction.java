@@ -19,6 +19,7 @@ package org.deeplearning4j.spark.parameterserver.accumulation;
 import org.apache.spark.api.java.function.Function2;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -112,10 +113,25 @@ public class SharedTrainingAccumulationFunction implements
             }
         }
 
+        ThresholdAlgorithmReducer thresholdAlgorithmReducer = null;
+        if(tuple1.getThresholdAlgorithmReducer() != null){
+            thresholdAlgorithmReducer = tuple1.getThresholdAlgorithmReducer();
+        }
+        if(tuple2.getThresholdAlgorithmReducer() != null){
+            if(thresholdAlgorithmReducer == null){
+                thresholdAlgorithmReducer = tuple2.getThresholdAlgorithmReducer();
+            } else {
+                //Merge threshold algorithm reducers
+                thresholdAlgorithmReducer = thresholdAlgorithmReducer.merge(tuple2.getThresholdAlgorithmReducer());
+            }
+        }
+
         return SharedTrainingAccumulationTuple.builder().scoreSum(score).updaterStateArray(stateView)
-                        .aggregationsCount(aggregationsCount).sparkTrainingStats(stats)
-                        .listenerMetaData(listenerMetaData).listenerUpdates(listenerUpdates)
-                        .listenerStaticInfo(listenerStaticInfo)
-                        .minibatchesPerExecutor(minibatchesPerExecutor).build();
+                .aggregationsCount(aggregationsCount).sparkTrainingStats(stats)
+                .listenerMetaData(listenerMetaData).listenerUpdates(listenerUpdates)
+                .listenerStaticInfo(listenerStaticInfo)
+                .minibatchesPerExecutor(minibatchesPerExecutor)
+                .thresholdAlgorithmReducer(thresholdAlgorithmReducer)
+                .build();
     }
 }

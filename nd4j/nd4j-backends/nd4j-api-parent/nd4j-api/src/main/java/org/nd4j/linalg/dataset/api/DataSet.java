@@ -329,4 +329,6 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
      * @return true if the DataSet object is empty (no features, labels, or masks)
      */
     boolean isEmpty();
+
+    MultiDataSet toMultiDataSet();
 }

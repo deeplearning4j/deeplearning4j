@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1370,6 +1371,21 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public boolean isEmpty() {
         return features == null && labels == null && featuresMask == null && labelsMask == null;
+    }
+
+    @Override
+    public MultiDataSet toMultiDataSet() {
+        INDArray f = getFeatures();
+        INDArray l = getLabels();
+        INDArray fMask = getFeaturesMaskArray();
+        INDArray lMask = getLabelsMaskArray();
+
+        INDArray[] fNew = f == null ? null : new INDArray[] {f};
+        INDArray[] lNew = l == null ? null : new INDArray[] {l};
+        INDArray[] fMaskNew = (fMask != null ? new INDArray[] {fMask} : null);
+        INDArray[] lMaskNew = (lMask != null ? new INDArray[] {lMask} : null);
+
+        return new org.nd4j.linalg.dataset.MultiDataSet(fNew, lNew, fMaskNew, lMaskNew);
     }
 
 

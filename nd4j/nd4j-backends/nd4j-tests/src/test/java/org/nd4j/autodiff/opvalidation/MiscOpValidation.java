@@ -701,8 +701,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testBatchMmulBasic() {
-        //OpValidationSuite.ignoreFailing();
-
         int M = 5;
         int N = 3;
         int K = 4;

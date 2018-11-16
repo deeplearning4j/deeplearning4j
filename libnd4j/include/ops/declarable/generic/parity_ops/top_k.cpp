@@ -31,19 +31,24 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             int k = 1;// from params
             bool needSort = true;
+
             auto values = OUTPUT_VARIABLE(0);
             auto indeces = OUTPUT_VARIABLE(1);
-            if (block.numI() > 0) {
+
+            if (block.width() == 1) {
                 if (block.numI() > 1) {
-                k = INT_ARG(0);
-                needSort = INT_ARG(1);
-                }
-                else 
-                    k = INT_ARG(0);
+                    k = INT_ARG(1);
+                    needSort = INT_ARG(0) == 1;
+                } else if (block.numI() == 1)
+                    needSort = INT_ARG(0) == 1;
+            } else {
+                k = (int) INPUT_VARIABLE(1)->getScalar(0);
+                if (block.numI() == 1)
+                    needSort = INT_ARG(0) == 1;
             }
 
             REQUIRE_TRUE(k <= x->sizeAt(-1), 0, "top_k: k should not be greater than last dimension");
-            REQUIRE_TRUE(k >=0, 0, "top_k: k should be non-negative");
+            REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive");
 
             int res =  helpers::topKFunctor(x, values, indeces, k, needSort);
             values->printIndexedBuffer("Values");
@@ -57,9 +62,13 @@ namespace nd4j {
             int shapeRank = shape::rank(in);
             int k = 1; // default output shape is size 1
 
-            if (block.numI() > 0) {
-                k = INT_ARG(0);
+            if (block.width() == 2) {
+                k = (int) INPUT_VARIABLE(1)->getScalar(0);
+            } else if (block.numI() > 0) {
+                k = INT_ARG(1 );
             }
+
+            REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive");
 
             for (int e = 0; e < 2; e++) { // 2 element tuple at output
                 Nd4jLong* aShape;

@@ -277,6 +277,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer dimensionPointer = AtomicAllocator.getInstance()
                 .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
 
+        //log.info("Reduce Device: {}; Op.X address: {};", Nd4j.getAffinityManager().getDeviceForCurrentThread(), x.address());
+
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
                     nativeOps.execSummaryStatsScalar(xShapeInfoHostPointer, op.opNum(),
@@ -942,6 +944,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val z = AtomicAllocator.getInstance().getPointer(op.z(), context);
         val zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context);
+
+        //log.info("Op.X address: {};", x.address());
 
         if (op.z().isScalar()) {
             if (op instanceof Variance) {

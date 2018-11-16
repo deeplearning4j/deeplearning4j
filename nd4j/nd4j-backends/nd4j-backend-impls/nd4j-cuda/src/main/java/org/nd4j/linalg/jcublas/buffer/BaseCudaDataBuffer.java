@@ -863,11 +863,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public void read(DataInputStream s) {
         try {
-            allocationMode = AllocationMode.valueOf(s.readUTF());
+            val savedMode = AllocationMode.valueOf(s.readUTF());
+            allocationMode = AllocationMode.LONG_SHAPE;
 
             long locLength = 0;
 
-            if (allocationMode.ordinal() < 3)
+            if (savedMode.ordinal() < 3)
                 locLength = s.readInt();
             else
                 locLength = s.readLong();

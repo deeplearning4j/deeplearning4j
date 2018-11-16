@@ -833,8 +833,13 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         if (arrays == null || arrays.length == 0)
             throw new RuntimeException("Input arrays are missing");
 
-        if (arrays.length == 1)
+        if (arrays.length == 1) {
+            //Edge case - average 1 array - no op
+            if(target == null){
+                return null;
+            }
             return target.assign(arrays[0]);
+        }
 
         long len = target != null ? target.lengthLong() : arrays[0].length();
 

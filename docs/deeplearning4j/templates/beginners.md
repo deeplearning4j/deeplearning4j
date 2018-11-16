@@ -30,6 +30,7 @@ Below you'll find a list of resources. The sections are roughly organized in the
 
 The math involved with deep learning is basically linear algebra, calculus and probility, and if you have studied those at the undergraduate level, you will be able to understand most of the ideas and notation in deep-learning papers. If haven't studied those in college, never fear. There are many free resources available (and some on this website).
 
+* [Calculus Made Easy, by Silvanus P. Thompson](http://www.gutenberg.org/ebooks/33283?msg=welcome_stranger)
 * [Seeing Theory: A Visual Introduction to Probability and Statistics](http://students.brown.edu/seeing-theory/)
 * [Andrew Ng's 6-Part Review of Linear Algebra](https://www.youtube.com/playlist?list=PLnnr1O8OWc6boN4WHeuisJWmeQHH9D_Vg)
 * [Khan Academy's Linear Algebra Course](https://www.khanacademy.org/math/linear-algebra)
@@ -48,18 +49,27 @@ The math involved with deep learning is basically linear algebra, calculus and p
 
 If you do not know how to program yet, you can start with Java, but you might find other languages easier. Python and Ruby resources can convey the basic ideas in a faster feedback loop. "Learn Python the Hard Way" and "Learn to Program (Ruby)" are two great places to start. 
 
-* [Learn Java The Hard Way](https://learnjavathehardway.org/)
-* [Learn Python the Hard Way](http://learnpythonthehardway.org/)
-* [Pyret: A Python Learning Environment](https://www.pyret.org/)
 * [Scratch: A Visual Programming Environment From MIT](https://scratch.mit.edu/)
 * [Learn to Program (Ruby)](https://pine.fm/LearnToProgram/)
+* [Grasshopper: A Mobile App to Learn Basic Coding (Javascript)](https://grasshopper.codes/)
 * [Intro to the Command Line](http://cli.learncodethehardway.org/book/)
 * [Additional command-line tutorial](http://www.learnenough.com/command-line)
 * [A Vim Tutorial and Primer](https://danielmiessler.com/study/vim/) (Vim is an editor accessible from the command line.)
 * [Intro to Computer Science (CS50 @Harvard edX)](https://www.edx.org/course/introduction-computer-science-harvardx-cs50x)
 * [A Gentle Introduction to Machine Fundamentals](https://marijnhaverbeke.nl/turtle/)
+* [Teaching C](https://blog.regehr.org/archives/1393)
 
 If you want to jump into deep-learning from here without Java, we recommend [Theano](http://deeplearning.net/) and the various Python frameworks built atop it, including [Keras](https://github.com/fchollet/keras) and [Lasagne](https://github.com/Lasagne/Lasagne).
+
+## Python
+
+* [Learn Python the Hard Way](http://learnpythonthehardway.org/)
+* [Google's Python Class](https://developers.google.com/edu/python/)
+* [Udemy: Complete Python 3 Masterclass Journey](https://www.udemy.com/complete-python-3-masterclass-journey/)
+* [MIT: Introduction to Computer Science and Python Programming](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-0001-introduction-to-computer-science-and-programming-in-python-fall-2016/) 
+* [David Beazley: Python Tutorials](http://www.dabeaz.com/tutorials.html)
+* [CS231n: Python Numpy Tutorial](http://cs231n.github.io/python-numpy-tutorial/)
+* [Pyret: A Python Learning Environment](https://www.pyret.org/)
 
 ## Java
 
@@ -67,6 +77,8 @@ Once you have programming basics down, tackle Java, the world's most widely used
 
 * [Think Java: Interactive Web-based Dev Environment](https://books.trinket.io/thinkjava/)
 * [Learn Java The Hard Way](https://learnjavathehardway.org/)
+* [Introduction to JShell](https://docs.oracle.com/javase/10/jshell/introduction-jshell.htm#JSHEL-GUID-630F27C8-1195-4989-9F6B-2C51D46F52C8)
+* [JShell in 5 Minutes](https://dzone.com/articles/jshell-in-five-minutes)
 * [Java Resources](http://wiht.link/java-resources)
 * [Java Ranch: A Community for Java Beginners](http://javaranch.com/)
 * [Intro to Programming in Java @Princeton](http://introcs.cs.princeton.edu/java/home/)

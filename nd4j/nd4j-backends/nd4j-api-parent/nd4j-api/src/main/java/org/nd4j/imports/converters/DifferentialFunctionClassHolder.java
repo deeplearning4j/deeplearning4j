@@ -299,7 +299,7 @@ public class DifferentialFunctionClassHolder {
         set.removeAll(nodeConverters.keySet());
         missingOps.addAll(set);
         Collections.sort(missingOps);
-        log.warn("Missing " + set.size() + " ops!");
+        //log.debug("Missing " + set.size() + " ops!");
 
         countTotalTfOps = tensorflowOpDescriptors.size();
         countTotalMappedOps = nodeConverters.size();

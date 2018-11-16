@@ -255,4 +255,9 @@ public class DummyWorkspace implements MemoryWorkspace {
     public void setPreviousWorkspace(MemoryWorkspace memoryWorkspace) {
         parentWorkspace = memoryWorkspace;
     }
+
+    @Override
+    public long getCurrentOffset() {
+        return 0;
+    }
 }
