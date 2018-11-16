@@ -172,10 +172,10 @@ void ConvolutionUtils::calcOutSizeDeconv3D(int& oD, int& oH, int& oW, const int 
 //////////////////////////////////////////////////////////////////////////
 // calculation of output height and width in 2D pooling procedure
 void ConvolutionUtils::calcOutSizePool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode) {
-    
-    if(isSameMode > 0) {
-        oH = (int) math::nd4j_ceil<double, int>(iH * 1.f / sH);
-        oW = (int) math::nd4j_ceil<double, int>(iW * 1.f / sW);
+
+    if(isSameMode > 0) {        
+        oH = (int) math::nd4j_ceil<double, double>(iH * 1. / sH);
+        oW = (int) math::nd4j_ceil<double, double>(iW * 1. / sW);        
     }
     else {
         oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
@@ -195,10 +195,10 @@ void ConvolutionUtils::calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD
     }
     else {                                                      // same
 
-        oD = (int) nd4j::math::nd4j_ceil<double, int>(iD * 1.f / sD);
-        oH = (int) nd4j::math::nd4j_ceil<double, int>(iH * 1.f / sH);
-        oW = (int) nd4j::math::nd4j_ceil<double, int>(iW * 1.f / sW);
-        }
+        oD = (int) nd4j::math::nd4j_ceil<double, double>(iD * 1. / sD);
+        oH = (int) nd4j::math::nd4j_ceil<double, double>(iH * 1. / sH);
+        oW = (int) nd4j::math::nd4j_ceil<double, double>(iW * 1. / sW);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////

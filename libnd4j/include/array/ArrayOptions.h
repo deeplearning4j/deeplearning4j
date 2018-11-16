@@ -118,8 +118,7 @@ namespace nd4j {
     };
 
     FORCEINLINE _CUDA_HD Nd4jLong& ArrayOptions::extra(Nd4jLong* shape) {
-        auto length = shape[shape[0] * 2 + 3];
-        return shape[length - 3];
+        return shape[shape[0] + shape[0] + 1];
     }
 
     FORCEINLINE _CUDA_HD bool ArrayOptions::isNewFormat(const Nd4jLong *shapeInfo) {

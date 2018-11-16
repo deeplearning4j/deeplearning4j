@@ -383,7 +383,7 @@ TEST_F(DeclarableOpsTests4, Test_Gemv_Transpose_1) {
 
 TEST_F(DeclarableOpsTests4, Test_Split_1) {
     auto x = NDArrayFactory::create<double>('c', {5, 30});
-    auto sizes = NDArrayFactory::create<double>('c', {1, 3}, {4, 15, 11});
+    auto sizes = NDArrayFactory::create<int>('c', {1, 3}, {4, 15, 11});
 
     IndicesList list0({NDIndex::all(), NDIndex::interval(0, 4)});
     IndicesList list1({NDIndex::all(), NDIndex::interval(4, 19)});
