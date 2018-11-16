@@ -24,6 +24,12 @@
 #include <loops/transform_float.h>
 #include <op_enums.h>
 
+#ifdef __CUDACC__
+#include <loops/cuda/inplace_loops/reduce_same_inplace.h>
+#include <loops/cuda/inplace_loops/transform_float_inplace.h>
+#include <loops/cuda/inplace_loops/scalar_inplace.h>
+#endif
+
 namespace functions {
 	namespace broadcast {
 		template <typename X, typename Y, typename Z>
@@ -1433,23 +1439,23 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			}
 			__syncthreads();
 
-			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
-			functions::scalar::ScalarTransform<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::TransformFloat<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			functions::scalar::ScalarTransform<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 
 		}
 #endif
@@ -1589,26 +1595,26 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape, tempBuffer);
 			__syncthreads();
 
-			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
-			functions::scalar::ScalarTransform<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::TransformFloat<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			functions::scalar::ScalarTransform<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 			__syncthreads();
 
-			functions::transform::TransformFloat<X,X>::transformCudaLegacy(nd4j::transform::Log, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Log, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
 
 		}
 #endif
@@ -1759,23 +1765,23 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape, tempBuffer);
 			__syncthreads();
 
-			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
-			functions::scalar::ScalarTransform<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::TransformFloat<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameFunction<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			functions::scalar::ScalarTransform<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 			__syncthreads();
 
 			if (resultEWS >= 1) {

@@ -121,7 +121,7 @@ if(CUDA_BLAS)
         message("CUDA found!")
         set( CUDA_ARCHITECTURE_MINIMUM "3.0" CACHE STRING "Minimum required CUDA compute capability" )
         SET(CUDA_VERBOSE_BUILD ON)
-        SET(CUDA_SEPARABLE_COMPILATION ON)
+        SET(CUDA_SEPARABLE_COMPILATION OFF)
         #set(CUDA_COMPUTE_CAPABILITY "61")
         set(CUDA_COMPUTE_CAPABILITY "35")
         # make NVCC more verbose to prevent timeouts on CI servers
