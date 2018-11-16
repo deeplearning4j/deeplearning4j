@@ -21,7 +21,9 @@ import com.github.os72.protobuf351.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -32,6 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -277,8 +280,30 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                     diff.getVariable(e.getKey()).setArray(Nd4j.trueScalar(0));
                 }
             }
-
         }
+
+        //Build functionOutputFor - i.e., map from SDVariable -> functions it's an output for (should only ever be 1)
+        Map<String,List<DifferentialFunction>> fnOutputsFor = new LinkedHashMap<>();
+        for(DifferentialFunction df : diff.getFunctionInstancesById().values()){
+            String[] fnOutputs = df.outputVariablesNames();
+            for(String s : fnOutputs){
+                if(!fnOutputsFor.containsKey(s)){
+                    fnOutputsFor.put(s, new ArrayList<DifferentialFunction>());
+                }
+                fnOutputsFor.get(s).add(df);
+            }
+        }
+        //Set using reflection, we don't want a public getter that users can break the internal state with
+        try {
+            Field f = SameDiff.class.getDeclaredField("functionOutputFor");
+            f.setAccessible(true);
+            f.set(diff, fnOutputsFor);
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
+
+        //Validate the graph structure
+        validateGraphStructure(diff);
 
 
         //We aren't guaranteed to have ops imported in the order that they can be executed, so check + fix that
@@ -295,6 +320,37 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
     @Override
     public boolean validTensorDataType(TENSOR_TYPE tensorType) {
         return dataTypeForTensor(tensorType) != DataBuffer.Type.UNKNOWN;
+    }
+
+    public void validateGraphStructure(SameDiff sameDiff){
+        //First: Check placeholders. When SDVariables are added with null shapes, these can be interpreted as a placeholder
+        // but null shapes might simply mean shape isn't available during import right when the variable is added
+        //Idea here: if a "placeholder" is the output of any function, it's not really a placeholder
+        for(SDVariable v : sameDiff.variables()){
+            String name = v.getVarName();
+            if(sameDiff.isPlaceHolder(name)){
+                List<DifferentialFunction> l = sameDiff.functionOutputFor(name);
+                if(l != null && !l.isEmpty()){
+                    //Output of a function - can't be a placeholder
+                    sameDiff.removeAsPlaceholder(name);
+                }
+            }
+        }
+
+        //Second: check that all op inputs actually exist in the graph
+        Map<String,DifferentialFunction> opMap = sameDiff.getFunctionInstancesById();
+        for(Map.Entry<String,DifferentialFunction> e : opMap.entrySet()){
+            String[] inputs = sameDiff.getInputsForFunction(e.getValue());
+            if(inputs == null)
+                continue;
+
+            for(String s : inputs){
+                if(sameDiff.getVariable(s) == null){
+                    throw new IllegalStateException("Import validation failed: op \"" + e.getKey() + "\" of type " + e.getValue().getClass().getSimpleName()
+                            + " has input \"" + s + "\" that does not have a corresponding variable in the graph");
+                }
+            }
+        }
     }
 
 }
