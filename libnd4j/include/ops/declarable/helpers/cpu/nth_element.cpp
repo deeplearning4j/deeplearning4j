@@ -25,12 +25,13 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void nthElementFunctor(NDArray<T>* input, int n, NDArray<T>* output) {
+    void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output) {
+        Nd4jLong n = nVal->e<Nd4jLong>(0);
         if (input->isVector()) {
             std::vector<T> data(input->lengthOf());
-            memcpy(&data[0], input->getBuffer(), sizeof(T) * data.size());
+            memcpy(&data[0], reinterpret_cast<T const*>(input->getBuffer()), sizeof(T) * data.size());
             std::nth_element(data.begin(), data.begin() + n, data.end());
-            output->putScalar(0, data[n]);
+            output->p<T>(0, data[n]);
         }
         else { // rank greater than 1
             std::vector<int> lastDims({input->rankOf() - 1});
@@ -38,16 +39,18 @@ namespace helpers {
             for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
                 auto row = rows->at(e);
                 std::vector<T> data(row->lengthOf());
-                memcpy(&data[0], row->getBuffer(), sizeof(T) * data.size());
+                memcpy(&data[0], reinterpret_cast<T const*>(row->getBuffer()), sizeof(T) * data.size());
                 std::nth_element(data.begin(), data.begin() + n, data.end());
                 output->putScalar(e, data[n]);
             }
         }
     }
+    void nthElementFunctor_(NDArray* input, NDArray* n, NDArray* output) {
+    BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output), LIBND4J_TYPES);
 
-    template void nthElementFunctor(NDArray<float>* input, int n, NDArray<float>* output);
-    template void nthElementFunctor(NDArray<float16>* input, int n, NDArray<float16>* output);
-    template void nthElementFunctor(NDArray<double>* input, int n, NDArray<double>* output);
+    }
+    BUILD_SINGLE_TEMPLATE(template void nthElemenFunctor_, (NDArray* input, NDArray* n, NDArray* output), LIBND4J_TYPES);
+    
 }
 }
 }

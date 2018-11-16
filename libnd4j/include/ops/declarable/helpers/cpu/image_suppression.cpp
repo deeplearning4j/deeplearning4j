@@ -26,7 +26,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void nonMaxSuppressionV2(NDArray<T>* boxes, NDArray<T>* scales, int maxSize, T threshold, NDArray<T>* output) {
+    static void nonMaxSuppressionV2_(NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
         std::vector<Nd4jLong> indices(scales->lengthOf());
         for (size_t i = 0; i < indices.size(); ++i)
             indices[i] = i;
@@ -80,9 +80,11 @@ namespace helpers {
             output->putScalar(e, selected[e]);
     }
 
-    template void nonMaxSuppressionV2(NDArray<float>* boxes, NDArray<float>* scales, int maxSize, float threshold, NDArray<float>* output);
-    template void nonMaxSuppressionV2(NDArray<float16>* boxes, NDArray<float16>* scales, int maxSize, float16 threshold, NDArray<float16>* output);
-    template void nonMaxSuppressionV2(NDArray<double>* boxes, NDArray<double>* scales, int maxSize, double threshold, NDArray<double>* output);
+    void nonMaxSuppressionV2(NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(output->dataType(), nonMaxSuppressionV2_, (boxes, scales, maxSize, threshold, output), NUMERIC_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template void nonMaxSuppressionV2_, (NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output), NUMERIC_TYPES);
+
 }
 }
 }

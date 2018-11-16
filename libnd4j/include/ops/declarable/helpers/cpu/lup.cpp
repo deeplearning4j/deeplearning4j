@@ -252,7 +252,7 @@ namespace helpers {
     }
 
     template <typename T>
-    int cholesky(NDArray<T>* input, NDArray<T>* output, bool inplace) {
+    int cholesky_(NDArray* input, NDArray* output, bool inplace) {
 
         auto n = input->sizeAt(-1);
         auto n2 = n * n;
@@ -260,8 +260,8 @@ namespace helpers {
         if (!inplace)
              output->assign((T)0.0); // fill up output tensor with zeros only inplace=false
 
-        std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
-        std::unique_ptr<NDArray<T>> lowerMatrix(new NDArray<T>({n, n}));
+        std::unique_ptr<NDArray> matrix(new NDArray({n, n}, input->dataType())); //, block.getWorkspace());
+        std::unique_ptr<NDArray> lowerMatrix(new NDArray({n, n}, input->dataType()));
 
         for (int e = 0; e < totalCount; e++) {
 
@@ -294,6 +294,11 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
+    int cholesky(NDArray* input, NDArray* output, bool inplace) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return _cholesky, (input, output, inplace), LIBND4J_TYPES);
+    }    
+    BUILD_SINGLE_TEMPLATE(template int _cholesky, (NDArray* input, NDArray* output, bool inplace), LIBND4J_TYPES);
+    
 
     BUILD_SINGLE_TEMPLATE(template int _inverse, (NDArray* input, NDArray* output), LIBND4J_TYPES);
 

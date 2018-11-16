@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void nthElementFunctor(NDArray<T>* input, int n, NDArray<T>* output);
+    void nthElementFunctor(NDArray* input, NDArray* n, NDArray* output);
 
 }
 }

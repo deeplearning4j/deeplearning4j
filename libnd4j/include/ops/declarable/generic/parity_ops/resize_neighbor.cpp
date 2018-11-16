@@ -38,8 +38,8 @@ namespace nd4j {
                 auto newImageSize = INPUT_VARIABLE(1);
                 REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_nearest_neighbor: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
                 REQUIRE_TRUE(block.numI() <= 1, 0, "resize_nearest_neighbor: Resize params already given by the second param. Int params are expensive.");
-                width = int(newImageSize->getScalar(0));
-                height = int(newImageSize->getScalar(1));
+                width = newImageSize->e<int>(0);
+                height = newImageSize->e<int>(1);
                 if (block.numI() == 1) {
                     center = 0 != INT_ARG(0);
                 }
@@ -67,8 +67,8 @@ namespace nd4j {
                 auto newImageSize = INPUT_VARIABLE(1);
                 REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_nearest_neighbor: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
                 REQUIRE_TRUE(block.numI() <= 1, 0, "resize_nearest_neighbor: Resize params already given by the second param. Int params are expensive.");
-                width = int(newImageSize->getScalar(0));
-                height = int(newImageSize->getScalar(1));
+                width = newImageSize->e<int>(0);
+                height = newImageSize->e<int>(1);
             }
             else {
                 REQUIRE_TRUE(block.numI() <= 3, 0, "resize_nearest_neighbor: Neither resize width nor height are provided.");
@@ -82,7 +82,7 @@ namespace nd4j {
             outputShape[2] = width;
             outputShape[3] = height;
             outputShape[4] = in[4];
-            shape::updateStrides(outputShape, shape::order(in));
+            ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
             shapeList->push_back(outputShape); 
             return shapeList;

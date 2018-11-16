@@ -31,7 +31,7 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
             int maxOutputSize; // = INT_ARG(0);
             if (block.width() > 2)
-                maxOutputSize = (int)INPUT_VARIABLE(2)->getScalar(0);
+                maxOutputSize = INPUT_VARIABLE(2)->e<int>(0);
             else if (block.getIArguments()->size() == 1)
                 maxOutputSize = INT_ARG(0);
             else
@@ -42,7 +42,7 @@ namespace nd4j {
 
             if (scales->lengthOf() < maxOutputSize)
                 maxOutputSize = scales->lengthOf();
-            T threshold = 0.5f;
+            double threshold = 0.5;
             if (block.getTArguments()->size() > 0)
                 threshold = T_ARG(0);
 
@@ -60,7 +60,7 @@ namespace nd4j {
             if (boxSize < maxOutputSize) 
                 maxOutputSize = boxSize;
 
-            outputShape = ShapeUtils<T>::createVectorShapeInfo(maxOutputSize, block.getWorkspace());
+            outputShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(in), maxOutputSize, block.getWorkspace());
 
             return SHAPELIST(outputShape);
         }

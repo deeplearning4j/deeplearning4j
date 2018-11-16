@@ -42,7 +42,7 @@ namespace nd4j {
                 } else if (block.numI() == 1)
                     needSort = INT_ARG(0) == 1;
             } else {
-                k = (int) INPUT_VARIABLE(1)->getScalar(0);
+                k = INPUT_VARIABLE(1)->e<int>(0);
                 if (block.numI() == 1)
                     needSort = INT_ARG(0) == 1;
             }
@@ -63,7 +63,7 @@ namespace nd4j {
             int k = 1; // default output shape is size 1
 
             if (block.width() == 2) {
-                k = (int) INPUT_VARIABLE(1)->getScalar(0);
+                k = INPUT_VARIABLE(1)->e<int>(0);
             } else if (block.numI() > 0) {
                 k = INT_ARG(1 );
             }
