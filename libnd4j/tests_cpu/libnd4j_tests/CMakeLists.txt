@@ -46,6 +46,11 @@ else()
     endif()
 endif()
 
+if ("${EXPERIMENTAL}" STREQUAL "yes")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
+endif()
+
 # tests are always compiled with all ops included
 SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
 
