@@ -29,6 +29,26 @@ namespace helpers {
         int lowIntBound = narrowed?1:0;
         int upperIntBound = 1 << numBits - 1;
         
+  const float quant_min_float = static_cast<float>(lowIntBound);
+  const float quant_max_float = static_cast<float>(upperIntBound);
+  float scale = (max - min) / (quant_max_float - quant_min_float);
+  const float zero_point_from_min = quant_min_float - min / scale;
+  const uint16 nudged_zero_point = [zero_point_from_min, quant_min,
+                                    quant_min_float, quant_max,
+                                    quant_max_float] {
+    if (zero_point_from_min < quant_min_float) {
+      return static_cast<uint16>(quant_min);
+    }
+    if (zero_point_from_min > quant_max_float) {
+      return static_cast<uint16>(quant_max);
+    }
+    return static_cast<uint16>(StdRound(zero_point_from_min));
+  }();
+  float nudged_min = (quant_min_float - nudged_zero_point) * (scale);
+  float nudged_max = (quant_max_float - nudged_zero_point) * (scale);
+
+
+
     }
 
     template void fakeQuantWithMinMaxVars(NDArray<float>* input, float min, float max, int numBits, bool narrowed, NDArray<float>* output);
