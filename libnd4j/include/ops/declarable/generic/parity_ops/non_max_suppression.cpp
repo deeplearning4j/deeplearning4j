@@ -64,6 +64,12 @@ namespace nd4j {
 
             return SHAPELIST(outputShape);
         }
+        DECLARE_TYPES(non_max_suppression) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
     }
 }
 #endif

@@ -35,6 +35,11 @@ namespace nd4j {
 
             return Status::OK();
         }
+        DECLARE_TYPES(Assert) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

@@ -34,6 +34,12 @@ namespace nd4j {
 
             return helpers::cholesky(input, output);
         }
+        DECLARE_TYPES(cholesky) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
     }
 }
 

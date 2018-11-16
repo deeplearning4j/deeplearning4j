@@ -55,16 +55,22 @@ namespace nd4j {
                 for (Nd4jLong e = 0; e < outRank; e++)
                 outputShape[e + 1] = in[e + 1];
 
-                shape::updateStrides(outputShape, shape::order(in));
+                ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
             }
             else if (outRank == 1) {
-                outputShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, shape::sizeAt(in, 0), block.workspace());
+                outputShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(in), shape::sizeAt(in, 0), block.workspace());
             }
             else {
                 //outputShape = shape::createScalarShapeInfo();
-                outputShape = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.workspace());
+                outputShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(in), block.workspace());
             }
             return SHAPELIST(outputShape);
         }
+        DECLARE_TYPES(nth_element) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
+        }
+
     }
 }

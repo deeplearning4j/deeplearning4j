@@ -49,6 +49,13 @@ namespace nd4j {
             }
             return shapes;
         }
+
+        DECLARE_TYPES(identity_n) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
+        }
+
     }
 }
 

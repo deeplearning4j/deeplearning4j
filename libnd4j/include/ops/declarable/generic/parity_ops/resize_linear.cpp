@@ -86,6 +86,11 @@ namespace nd4j {
             shapeList->push_back(outputShape); 
             return shapeList;
         }
+        DECLARE_TYPES(resize_bilinear) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
     }
 }

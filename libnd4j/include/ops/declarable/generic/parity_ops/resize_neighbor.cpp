@@ -87,6 +87,11 @@ namespace nd4j {
             shapeList->push_back(outputShape); 
             return shapeList;
         }
+        DECLARE_TYPES(resize_nearest_neighbor) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
     }
 }

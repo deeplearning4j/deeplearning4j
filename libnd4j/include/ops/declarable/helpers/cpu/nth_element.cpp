@@ -52,11 +52,11 @@ namespace helpers {
                 auto nthPos = internalData.begin();
                 nthPos += n;
                 std::nth_element(internalData.begin(), nthPos, internalData.end());
-                output->p(e, internalData[n]);
+                output->p<T>(e, internalData[n]);
             }
         }
     }
-    void nthElementFunctor_(NDArray* input, NDArray* n, NDArray* output) {
+    void nthElementFunctor(NDArray* input, NDArray* n, NDArray* output) {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output), LIBND4J_TYPES);
 
     }
