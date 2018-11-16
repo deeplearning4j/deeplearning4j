@@ -69,8 +69,14 @@ namespace helpers {
         return top + (bottom - top) * yVal;
     }
 
-    template <typename T>
     static void resizeImage(NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
+                     Nd4jLong outWidth, Nd4jLong channels,
+                     std::vector<BilinearInterpolationData> const& xs,
+                     std::vector<BilinearInterpolationData> const& ys,
+                     NDArray* output);
+
+    template <typename T>
+    static void resizeImage_(NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
                      Nd4jLong outWidth, Nd4jLong channels,
                      std::vector<BilinearInterpolationData> const& xs,
                      std::vector<BilinearInterpolationData> const& ys,
@@ -110,7 +116,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static int resizeBilinearFunctor_(NDArray<T> const* images, int width, int height, bool center, NDArray<T>* output) {
+    static int resizeBilinearFunctor_(NDArray const* images, int width, int height, bool center, NDArray* output) {
         const Nd4jLong batchSize = images->sizeAt(0);
         const Nd4jLong inHeight  = images->sizeAt(1);
         const Nd4jLong inWidth   = images->sizeAt(2);
@@ -148,12 +154,12 @@ namespace helpers {
             xs[i].topIndex    *= channels;
         }
 
-        resizeImage<T>(images, batchSize, inHeight, inWidth, outHeight,  outWidth, channels, xs, ys, output);
+        resizeImage(images, batchSize, inHeight, inWidth, outHeight,  outWidth, channels, xs, ys, output);
         return ND4J_STATUS_OK;
     }
 
     template <typename T>
-    int resizeNeighborFunctor(NDArray<T> const* images, int width, int height, bool center, NDArray<T>* output) {
+    int resizeNeighborFunctor_(NDArray const* images, int width, int height, bool center, NDArray* output) {
         const Nd4jLong batchSize = images->sizeAt(0);
         const Nd4jLong inHeight  = images->sizeAt(1);
         const Nd4jLong inWidth   = images->sizeAt(2);
@@ -183,7 +189,7 @@ namespace helpers {
             for (int x = 0; x < outWidth; ++x) {
               Nd4jLong inX = std::min((center) ? static_cast<Nd4jLong>(roundf(x * widthScale)) : static_cast<Nd4jLong>(floorf(x * widthScale)), inWidth - 1);
               for (Nd4jLong e = 0; e < channels; e++)
-                  (*output)(b, y, x, e) = (*images)(b, inY, inX, e);
+                  output->p(b, y, x, e, images->e<T>(b, inY, inX, e));
 //              std::copy_n(&input(b, in_y, in_x, 0), channels, &output(b, y, x, 0));
             }
           }
@@ -196,7 +202,7 @@ namespace helpers {
                      std::vector<BilinearInterpolationData> const& xs,
                      std::vector<BilinearInterpolationData> const& ys,
                      NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), resizeImage_, (images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs, ys, output), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(images->dataType(), resizeImage_, (images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs, ys, output), LIBND4J_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template void resizeImage_,(NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
@@ -204,6 +210,16 @@ namespace helpers {
                      std::vector<BilinearInterpolationData> const& xs,
                      std::vector<BilinearInterpolationData> const& ys,
                      NDArray* output), LIBND4J_TYPES);
+
+    int resizeBilinearFunctor(NDArray const* images, int width, int height, bool center, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(images->dataType(), return resizeBilinearFunctor_, (images, width, height, center, output), LIBND4J_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template int resizeBilinearFunctor_, (NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
+
+    int resizeNeighborFunctor(NDArray const* images, int width, int height, bool center, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_, (images, width, height, center, output), LIBND4J_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template int resizeNeighborFunctor_, (NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
 
 }
 }

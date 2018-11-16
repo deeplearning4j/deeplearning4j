@@ -30,19 +30,19 @@ namespace helpers {
         std::vector<Nd4jLong> indices(scales->lengthOf());
         for (size_t i = 0; i < indices.size(); ++i)
             indices[i] = i;
-        std::sort(indices.begin(), indices.end(), [scales](int i, int j) {return (*scales)(i) > (*scales)(j);});
+        std::sort(indices.begin(), indices.end(), [scales](int i, int j) {return scales->e<T>(i) > scales->e<T>(j);});
 
         std::vector<int> selected;
         std::vector<int> selectedIndices(output->lengthOf(), 0);
-        auto needToSuppressWithThreshold = [threshold] (NDArray<T>& boxes, int previousIndex, int nextIndex) -> bool {
-            T minYPrev = nd4j::math::nd4j_min(boxes(previousIndex, 0), boxes(previousIndex, 2));
-            T minXPrev = nd4j::math::nd4j_min(boxes(previousIndex, 1), boxes(previousIndex, 3));
-            T maxYPrev = nd4j::math::nd4j_max(boxes(previousIndex, 0), boxes(previousIndex, 2));
-            T maxXPrev = nd4j::math::nd4j_max(boxes(previousIndex, 1), boxes(previousIndex, 3));
-            T minYNext = nd4j::math::nd4j_min(boxes(nextIndex, 0), boxes(nextIndex, 2));
-            T minXNext = nd4j::math::nd4j_min(boxes(nextIndex, 1), boxes(nextIndex, 3));
-            T maxYNext = nd4j::math::nd4j_max(boxes(nextIndex, 0), boxes(nextIndex, 2));
-            T maxXNext = nd4j::math::nd4j_max(boxes(nextIndex, 1), boxes(nextIndex, 3));
+        auto needToSuppressWithThreshold = [threshold] (NDArray& boxes, int previousIndex, int nextIndex) -> bool {
+            T minYPrev = nd4j::math::nd4j_min(boxes.e<T>(previousIndex, 0), boxes.e<T>(previousIndex, 2));
+            T minXPrev = nd4j::math::nd4j_min(boxes.e<T>(previousIndex, 1), boxes.e<T>(previousIndex, 3));
+            T maxYPrev = nd4j::math::nd4j_max(boxes.e<T>(previousIndex, 0), boxes.e<T>(previousIndex, 2));
+            T maxXPrev = nd4j::math::nd4j_max(boxes.e<T>(previousIndex, 1), boxes.e<T>(previousIndex, 3));
+            T minYNext = nd4j::math::nd4j_min(boxes.e<T>(nextIndex, 0), boxes.e<T>(nextIndex, 2));
+            T minXNext = nd4j::math::nd4j_min(boxes.e<T>(nextIndex, 1), boxes.e<T>(nextIndex, 3));
+            T maxYNext = nd4j::math::nd4j_max(boxes.e<T>(nextIndex, 0), boxes.e<T>(nextIndex, 2));
+            T maxXNext = nd4j::math::nd4j_max(boxes.e<T>(nextIndex, 1), boxes.e<T>(nextIndex, 3));
             T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
             T areaNext = (maxYNext - minYNext) * (maxXNext - minXNext);
 
@@ -53,8 +53,8 @@ namespace helpers {
             T maxIntersectionY = nd4j::math::nd4j_min(maxYPrev, maxYNext);
             T maxIntersectionX = nd4j::math::nd4j_min(maxXPrev, maxXNext);
             T intersectionArea =
-                    nd4j::math::nd4j_max(maxIntersectionY - minIntersectionY, T(0.0f)) *
-                            nd4j::math::nd4j_max(maxIntersectionX - minIntersectionX, T(0.0f));
+                    nd4j::math::nd4j_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
+                            nd4j::math::nd4j_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
             T intersectionValue = intersectionArea / (areaPrev + areaNext - intersectionArea);
             return intersectionValue > threshold;
 
@@ -77,7 +77,7 @@ namespace helpers {
             }
         }
         for (size_t e = 0; e < selected.size(); ++e)
-            output->putScalar(e, selected[e]);
+            output->p<int>(e, selected[e]);
     }
 
     void nonMaxSuppressionV2(NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {

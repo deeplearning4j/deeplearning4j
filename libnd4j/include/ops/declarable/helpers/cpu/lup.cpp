@@ -39,10 +39,10 @@ namespace helpers {
                 matrix->p<T>(theSecond, i, _e0);
             }
     }
-    BUILD_SINGLE_TEMPLATE(template void _swapRows, (NDArray* matrix, int theFirst, int theSecond), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _swapRows, (NDArray* matrix, int theFirst, int theSecond), FLOAT_TYPES);
 
     void swapRows(NDArray* matrix, int theFirst, int theSecond) {
-        BUILD_SINGLE_SELECTOR(matrix->dataType(), _swapRows, (matrix, theFirst, theSecond), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(matrix->dataType(), _swapRows, (matrix, theFirst, theSecond), FLOAT_TYPES);
     }
 
     template <typename T>
@@ -67,10 +67,10 @@ namespace helpers {
         }
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _invertLowerMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _invertLowerMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, FLOAT_TYPES);
 
     void invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
-        BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertLowerMatrix, (inputMatrix, invertedMatrix), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertLowerMatrix, (inputMatrix, invertedMatrix), FLOAT_TYPES);
     }
 
     template <typename T>
@@ -98,10 +98,10 @@ namespace helpers {
         }
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _invertUpperMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _invertUpperMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, FLOAT_TYPES);
 
     void invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
-        BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertUpperMatrix, (inputMatrix, invertedMatrix), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertUpperMatrix, (inputMatrix, invertedMatrix), FLOAT_TYPES);
     }
 
 
@@ -164,7 +164,7 @@ namespace helpers {
         return NDArrayFactory::create<T>(determinant, input->getWorkspace());
     }
 
-    BUILD_SINGLE_TEMPLATE(template NDArray _lup, (NDArray* input, NDArray* output, NDArray* permutation), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template NDArray _lup, (NDArray* input, NDArray* output, NDArray* permutation), FLOAT_TYPES);
 
 
 
@@ -187,10 +187,10 @@ namespace helpers {
         return Status::OK();
     }
 
-    BUILD_SINGLE_TEMPLATE(template int _determinant, (NDArray* input, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int _determinant, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
     int determinant(NDArray* input, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return _determinant, (input, output), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return _determinant, (input, output), FLOAT_TYPES);
     }
 
 
@@ -248,7 +248,7 @@ namespace helpers {
     }
 
     int inverse(NDArray* input, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return _inverse, (input, output), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return _inverse, (input, output), FLOAT_TYPES);
     }
 
     template <typename T>
@@ -260,14 +260,14 @@ namespace helpers {
         if (!inplace)
              output->assign((T)0.0); // fill up output tensor with zeros only inplace=false
 
-        std::unique_ptr<NDArray> matrix(new NDArray({n, n}, input->dataType())); //, block.getWorkspace());
-        std::unique_ptr<NDArray> lowerMatrix(new NDArray({n, n}, input->dataType()));
+        std::unique_ptr<NDArray> matrix(NDArrayFactory::create_('c', {n, n}, input->dataType())); //, block.getWorkspace());
+        std::unique_ptr<NDArray> lowerMatrix(NDArrayFactory::create_('c',{n, n}, input->dataType()));
 
         for (int e = 0; e < totalCount; e++) {
 
             // fill up matrix
             for (int k = e * n2, l = 0; k < (e + 1) * n2; k++) {
-                (*matrix)(l++) = (*input)(k);
+                matrix->p(l++, input->e<T>(k));
             }
             //if (e) // from the second loop need to zero matrix
             lowerMatrix->assign(T(0.f));
@@ -276,18 +276,18 @@ namespace helpers {
                 for (Nd4jLong row = 0; row < col; row++) {
                     T rowSum = 0;
                     for (Nd4jLong k = 0; k < row; ++k)
-                        rowSum += (*lowerMatrix)(col, k) * (*lowerMatrix)(row, k);
-                    (*lowerMatrix)(col, row) = ((*matrix)(row, col) - rowSum) / (*lowerMatrix)(row, row);
+                        rowSum += (lowerMatrix->e<T>(col, k) * lowerMatrix->e<T>(row, k));
+                    lowerMatrix->p(col, row, (matrix->e<T>(row, col) - rowSum) / lowerMatrix->e<double>(row, row));
                 }
                 T diagonalSum = 0;
                 for (Nd4jLong k = 0; k < col;  ++k)
-                    diagonalSum += (*lowerMatrix)(col, k) * (*lowerMatrix)(col, k);
-                (*lowerMatrix)(col, col) = nd4j::math::nd4j_sqrt((*matrix)(col, col) - diagonalSum);
+                    diagonalSum += lowerMatrix->e<T>(col, k) * lowerMatrix->e<T>(col, k);
+                lowerMatrix->p(col, col, nd4j::math::nd4j_sqrt<T, T>(matrix->e<T>(col, col) - diagonalSum));
                 //nd4j_printf("%i: ", col);
                 //lowerMatrix->printIndexedBuffer("Lower matrix");
             }
             for (int k = e * n2, l = 0; k < (e + 1) * n2; k++) {
-                (*output)(k) = (*lowerMatrix)(l++);
+                output->p(k, lowerMatrix->e<T>(l++));
             }
         }
 
@@ -295,12 +295,10 @@ namespace helpers {
     }
 
     int cholesky(NDArray* input, NDArray* output, bool inplace) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return _cholesky, (input, output, inplace), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (input, output, inplace), FLOAT_TYPES);
     }    
-    BUILD_SINGLE_TEMPLATE(template int _cholesky, (NDArray* input, NDArray* output, bool inplace), LIBND4J_TYPES);
-    
-
-    BUILD_SINGLE_TEMPLATE(template int _inverse, (NDArray* input, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int cholesky_, (NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int _inverse, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
 }
 }

@@ -29,19 +29,30 @@ namespace helpers {
         Nd4jLong n = nVal->e<Nd4jLong>(0);
         if (input->isVector()) {
             std::vector<T> data(input->lengthOf());
-            memcpy(&data[0], reinterpret_cast<T const*>(input->getBuffer()), sizeof(T) * data.size());
-            std::nth_element(data.begin(), data.begin() + n, data.end());
+            //memcpy(&data[0], input->getBuffer(), sizeof(T) * data.size());
+            size_t l = 0;
+            for (size_t l = 0; l < data.size(); ++l)
+                data[l] = input->e<T>(l);
+            auto nthPos = data.begin();
+            nthPos += n;
+            std::nth_element(data.begin(), nthPos, data.end());
             output->p<T>(0, data[n]);
         }
         else { // rank greater than 1
             std::vector<int> lastDims({input->rankOf() - 1});
-            std::unique_ptr<ResultSet<T>> rows(input->allTensorsAlongDimension(lastDims));
+            std::unique_ptr<ResultSet> rows(input->allTensorsAlongDimension(lastDims));
             for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
                 auto row = rows->at(e);
-                std::vector<T> data(row->lengthOf());
-                memcpy(&data[0], reinterpret_cast<T const*>(row->getBuffer()), sizeof(T) * data.size());
-                std::nth_element(data.begin(), data.begin() + n, data.end());
-                output->putScalar(e, data[n]);
+                std::vector<T> internalData(row->lengthOf());
+                //T* internalP = const_cast<T*>(internalData.data());
+                for (size_t l = 0; l < internalData.size(); ++l)
+                    internalData[l] = input->e<T>(l);
+
+                //memcpy(&internalData[0], row->getBuffer(), sizeof(T) * internalData.size());
+                auto nthPos = internalData.begin();
+                nthPos += n;
+                std::nth_element(internalData.begin(), nthPos, internalData.end());
+                output->p(e, internalData[n]);
             }
         }
     }
@@ -49,7 +60,7 @@ namespace helpers {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output), LIBND4J_TYPES);
 
     }
-    BUILD_SINGLE_TEMPLATE(template void nthElemenFunctor_, (NDArray* input, NDArray* n, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (NDArray* input, NDArray* n, NDArray* output), LIBND4J_TYPES);
     
 }
 }
