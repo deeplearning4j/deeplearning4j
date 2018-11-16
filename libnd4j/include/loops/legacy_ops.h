@@ -222,7 +222,8 @@
         (39, RELU), \
         (40, RELU6), \
         (41, Step), \
-        (42, LstmClip)
+        (42, LstmClip), \
+        (43, TruncateMod)
 
 
 
@@ -348,7 +349,7 @@
         (33, LogPoisonLossFull) , \
         (34, AMaxPairwise), \
         (35, AMinPairwise) ,\
-        (36, simdOps::TruncateMod)
+        (36, TruncateMod)
 
 
 
