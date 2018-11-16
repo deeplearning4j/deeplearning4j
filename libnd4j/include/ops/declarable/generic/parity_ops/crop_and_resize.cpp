@@ -26,7 +26,7 @@
 #include <ops/declarable/helpers/image_resize.h>
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(crop_and_resize, 4, 1, false, -1, -1) {
+        CUSTOM_OP_IMPL(crop_and_resize, 4, 1, false, 0, 0) {
 
             auto image = INPUT_VARIABLE(0);
             auto boxes = INPUT_VARIABLE(1);
@@ -39,8 +39,8 @@ namespace nd4j {
             T extrapolationVal = (T)0.f; 
 
             auto newImageSize = INPUT_VARIABLE(3);
-            REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_linear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
-            REQUIRE_TRUE(block.numI() <= 1, 0, "resize_linear: Resize params already given by the second param. Int params are expensive.");
+            REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
+            //REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params are expensive.");
             //width = int(newImageSize->getScalar(0));
             //height = int(newImageSize->getScalar(1));
             if (block.numI() == 1) {
@@ -63,9 +63,9 @@ namespace nd4j {
 
             int width;
             int height;
-            auto newImageSize = INPUT_VARIABLE(4);
+            auto newImageSize = INPUT_VARIABLE(3);
             REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
-            REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params are expensive.");
+            //REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params are expensive.");
             width = int(newImageSize->getScalar(0));
             height = int(newImageSize->getScalar(1));
             
