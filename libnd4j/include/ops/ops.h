@@ -386,31 +386,31 @@ namespace simdOps {
     template <typename X, typename Y, typename Z>
     class TruncateMod {
     public:
-        op_def static T op(T d1, T d2) {
+        op_def static Z op(X d1, Y d2) {
             auto i1 = static_cast<int>(d1);
             auto i2 = static_cast<int>(d2);
-            return static_cast<T>(i1 % i2);
+            return static_cast<Z>(i1 % i2);
         }
 
-        op_def static T op(T d1, T d2, T *params) {
+        op_def static Z op(X d1, Y d2, Y *params) {
             auto i1 = static_cast<int>(d1);
             auto i2 = static_cast<int>(d2);
-            return static_cast<T>(i1 % i2);
+            return static_cast<Z>(i1 % i2);
         }
 
-        op_def static T op(T d1) {
-            return d1;
+        op_def static Z op(X d1) {
+            return static_cast<Z>(d1);
         }
 
         // op for MetaOps
-        op_def static T op(T d1, T *params) {
+        op_def static Z op(X d1, Y *params) {
             auto i1 = static_cast<int>(d1);
             auto i2 = static_cast<int>(params[0]);
-            return static_cast<T>(i1 % i2);
+            return static_cast<Z>(i1 % i2);
         }
     };
 
-    template<typename T>
+    template<typename X, typename Y, typename Z>
     class Remainder {
     public:
         op_def static Z op(X d1, Y d2) {
