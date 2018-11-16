@@ -410,7 +410,7 @@ namespace simdOps {
         }
     };
 
-    template<typename T>
+    template<typename X, typename Y, typename Z>
     class Remainder {
     public:
         op_def static Z op(X d1, Y d2) {
