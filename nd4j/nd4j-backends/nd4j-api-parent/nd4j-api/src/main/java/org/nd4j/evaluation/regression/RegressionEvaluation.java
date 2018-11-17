@@ -21,7 +21,8 @@ import lombok.EqualsAndHashCode;
 import lombok.val;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Abs;
+import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Abs;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
@@ -227,7 +228,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         labelsSumPerColumn.addi(labels.sum(0));
 
         INDArray error = predictions.sub(labels);
-        INDArray absErrorSum = Nd4j.getExecutioner().execAndReturn(new Abs(error.dup())).sum(0);
+        INDArray absErrorSum = Nd4j.getExecutioner().exec(new ASum(error), 0);
         INDArray squaredErrorSum = error.mul(error).sum(0);
 
         sumAbsErrorsPerColumn.addi(absErrorSum);

@@ -23,8 +23,8 @@ import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.curves.Histogram;
 import org.nd4j.evaluation.curves.ReliabilityDiagram;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
-import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.LossUtil;
@@ -335,7 +335,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         double[] fracPositives = countPositiveBins.div(totalCountBins).data().asDouble();
 
         if (excludeEmptyBins) {
-            MatchCondition condition = new MatchCondition(totalCountBins, Conditions.equals(0));
+            val condition = new MatchCondition(totalCountBins, Conditions.equals(0));
             int numZeroBins = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
             if (numZeroBins != 0) {
                 double[] mpb = meanPredictionBins;
