@@ -19,6 +19,7 @@ package org.nd4j.linalg.jcublas.buffer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -79,7 +80,7 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
     @Override
     protected void initTypeAndSize() {
         elementSize = 2;
-        type = Type.HALF;
+        type = DataType.HALF;
     }
 
     public CudaHalfDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
@@ -127,15 +128,15 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaHalfDataBuffer(byte[] data, long length) {
-        super(data, length);
+        super(data, length, DataType.HALF);
     }
 
     public CudaHalfDataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, (int) length);
+        super(buffer, (int) length, DataType.HALF);
     }
 
     public CudaHalfDataBuffer(ByteBuffer buffer, long length, long offset) {
-        super(buffer, length, offset);
+        super(buffer, length, offset, DataType.HALF);
     }
 
 
@@ -226,8 +227,8 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public Type dataType() {
-        return Type.HALF;
+    public DataType dataType() {
+        return DataType.HALF;
     }
 
     @Override

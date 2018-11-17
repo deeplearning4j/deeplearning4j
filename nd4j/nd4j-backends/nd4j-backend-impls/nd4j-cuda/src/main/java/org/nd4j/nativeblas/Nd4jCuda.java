@@ -107,27 +107,27 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
     }
 }
 
-@Name("std::vector<nd4j::NDArray<float>*>") public static class FloatNDArrayVector extends Pointer {
+@Name("std::vector<nd4j::NDArray*>") public static class NDArrayVector extends Pointer {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-    public FloatNDArrayVector(Pointer p) { super(p); }
-    public FloatNDArrayVector(FloatNDArray value) { this(1); put(0, value); }
-    public FloatNDArrayVector(FloatNDArray ... array) { this(array.length); put(array); }
-    public FloatNDArrayVector()       { allocate();  }
-    public FloatNDArrayVector(long n) { allocate(n); }
+    public NDArrayVector(Pointer p) { super(p); }
+    public NDArrayVector(NDArray value) { this(1); put(0, value); }
+    public NDArrayVector(NDArray ... array) { this(array.length); put(array); }
+    public NDArrayVector()       { allocate();  }
+    public NDArrayVector(long n) { allocate(n); }
     private native void allocate();
     private native void allocate(@Cast("size_t") long n);
-    public native @Name("operator=") @ByRef FloatNDArrayVector put(@ByRef FloatNDArrayVector x);
+    public native @Name("operator=") @ByRef NDArrayVector put(@ByRef NDArrayVector x);
 
     public boolean empty() { return size() == 0; }
     public native long size();
     public void clear() { resize(0); }
     public native void resize(@Cast("size_t") long n);
 
-    @Index(function = "at") public native FloatNDArray get(@Cast("size_t") long i);
-    public native FloatNDArrayVector put(@Cast("size_t") long i, FloatNDArray value);
+    @Index(function = "at") public native NDArray get(@Cast("size_t") long i);
+    public native NDArrayVector put(@Cast("size_t") long i, NDArray value);
 
-    public native @ByVal Iterator insert(@ByVal Iterator pos, FloatNDArray value);
+    public native @ByVal Iterator insert(@ByVal Iterator pos, NDArray value);
     public native @ByVal Iterator erase(@ByVal Iterator pos);
     public native @ByVal Iterator begin();
     public native @ByVal Iterator end();
@@ -137,11 +137,11 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 
         public native @Name("operator++") @ByRef Iterator increment();
         public native @Name("operator==") boolean equals(@ByRef Iterator it);
-        public native @Name("operator*") @Const FloatNDArray get();
+        public native @Name("operator*") @Const NDArray get();
     }
 
-    public FloatNDArray[] get() {
-        FloatNDArray[] array = new FloatNDArray[size() < Integer.MAX_VALUE ? (int)size() : Integer.MAX_VALUE];
+    public NDArray[] get() {
+        NDArray[] array = new NDArray[size() < Integer.MAX_VALUE ? (int)size() : Integer.MAX_VALUE];
         for (int i = 0; i < array.length; i++) {
             array[i] = get(i);
         }
@@ -151,158 +151,22 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
         return java.util.Arrays.toString(get());
     }
 
-    public FloatNDArray pop_back() {
+    public NDArray pop_back() {
         long size = size();
-        FloatNDArray value = get(size - 1);
+        NDArray value = get(size - 1);
         resize(size - 1);
         return value;
     }
-    public FloatNDArrayVector push_back(FloatNDArray value) {
+    public NDArrayVector push_back(NDArray value) {
         long size = size();
         resize(size + 1);
         return put(size, value);
     }
-    public FloatNDArrayVector put(FloatNDArray value) {
+    public NDArrayVector put(NDArray value) {
         if (size() != 1) { resize(1); }
         return put(0, value);
     }
-    public FloatNDArrayVector put(FloatNDArray ... array) {
-        if (size() != array.length) { resize(array.length); }
-        for (int i = 0; i < array.length; i++) {
-            put(i, array[i]);
-        }
-        return this;
-    }
-}
-
-@Name("std::vector<nd4j::NDArray<float16>*>") public static class HalfNDArrayVector extends Pointer {
-    static { Loader.load(); }
-    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-    public HalfNDArrayVector(Pointer p) { super(p); }
-    public HalfNDArrayVector(HalfNDArray value) { this(1); put(0, value); }
-    public HalfNDArrayVector(HalfNDArray ... array) { this(array.length); put(array); }
-    public HalfNDArrayVector()       { allocate();  }
-    public HalfNDArrayVector(long n) { allocate(n); }
-    private native void allocate();
-    private native void allocate(@Cast("size_t") long n);
-    public native @Name("operator=") @ByRef HalfNDArrayVector put(@ByRef HalfNDArrayVector x);
-
-    public boolean empty() { return size() == 0; }
-    public native long size();
-    public void clear() { resize(0); }
-    public native void resize(@Cast("size_t") long n);
-
-    @Index(function = "at") public native HalfNDArray get(@Cast("size_t") long i);
-    public native HalfNDArrayVector put(@Cast("size_t") long i, HalfNDArray value);
-
-    public native @ByVal Iterator insert(@ByVal Iterator pos, HalfNDArray value);
-    public native @ByVal Iterator erase(@ByVal Iterator pos);
-    public native @ByVal Iterator begin();
-    public native @ByVal Iterator end();
-    @NoOffset @Name("iterator") public static class Iterator extends Pointer {
-        public Iterator(Pointer p) { super(p); }
-        public Iterator() { }
-
-        public native @Name("operator++") @ByRef Iterator increment();
-        public native @Name("operator==") boolean equals(@ByRef Iterator it);
-        public native @Name("operator*") @Const HalfNDArray get();
-    }
-
-    public HalfNDArray[] get() {
-        HalfNDArray[] array = new HalfNDArray[size() < Integer.MAX_VALUE ? (int)size() : Integer.MAX_VALUE];
-        for (int i = 0; i < array.length; i++) {
-            array[i] = get(i);
-        }
-        return array;
-    }
-    @Override public String toString() {
-        return java.util.Arrays.toString(get());
-    }
-
-    public HalfNDArray pop_back() {
-        long size = size();
-        HalfNDArray value = get(size - 1);
-        resize(size - 1);
-        return value;
-    }
-    public HalfNDArrayVector push_back(HalfNDArray value) {
-        long size = size();
-        resize(size + 1);
-        return put(size, value);
-    }
-    public HalfNDArrayVector put(HalfNDArray value) {
-        if (size() != 1) { resize(1); }
-        return put(0, value);
-    }
-    public HalfNDArrayVector put(HalfNDArray ... array) {
-        if (size() != array.length) { resize(array.length); }
-        for (int i = 0; i < array.length; i++) {
-            put(i, array[i]);
-        }
-        return this;
-    }
-}
-
-@Name("std::vector<nd4j::NDArray<double>*>") public static class DoubleNDArrayVector extends Pointer {
-    static { Loader.load(); }
-    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-    public DoubleNDArrayVector(Pointer p) { super(p); }
-    public DoubleNDArrayVector(DoubleNDArray value) { this(1); put(0, value); }
-    public DoubleNDArrayVector(DoubleNDArray ... array) { this(array.length); put(array); }
-    public DoubleNDArrayVector()       { allocate();  }
-    public DoubleNDArrayVector(long n) { allocate(n); }
-    private native void allocate();
-    private native void allocate(@Cast("size_t") long n);
-    public native @Name("operator=") @ByRef DoubleNDArrayVector put(@ByRef DoubleNDArrayVector x);
-
-    public boolean empty() { return size() == 0; }
-    public native long size();
-    public void clear() { resize(0); }
-    public native void resize(@Cast("size_t") long n);
-
-    @Index(function = "at") public native DoubleNDArray get(@Cast("size_t") long i);
-    public native DoubleNDArrayVector put(@Cast("size_t") long i, DoubleNDArray value);
-
-    public native @ByVal Iterator insert(@ByVal Iterator pos, DoubleNDArray value);
-    public native @ByVal Iterator erase(@ByVal Iterator pos);
-    public native @ByVal Iterator begin();
-    public native @ByVal Iterator end();
-    @NoOffset @Name("iterator") public static class Iterator extends Pointer {
-        public Iterator(Pointer p) { super(p); }
-        public Iterator() { }
-
-        public native @Name("operator++") @ByRef Iterator increment();
-        public native @Name("operator==") boolean equals(@ByRef Iterator it);
-        public native @Name("operator*") @Const DoubleNDArray get();
-    }
-
-    public DoubleNDArray[] get() {
-        DoubleNDArray[] array = new DoubleNDArray[size() < Integer.MAX_VALUE ? (int)size() : Integer.MAX_VALUE];
-        for (int i = 0; i < array.length; i++) {
-            array[i] = get(i);
-        }
-        return array;
-    }
-    @Override public String toString() {
-        return java.util.Arrays.toString(get());
-    }
-
-    public DoubleNDArray pop_back() {
-        long size = size();
-        DoubleNDArray value = get(size - 1);
-        resize(size - 1);
-        return value;
-    }
-    public DoubleNDArrayVector push_back(DoubleNDArray value) {
-        long size = size();
-        resize(size + 1);
-        return put(size, value);
-    }
-    public DoubleNDArrayVector put(DoubleNDArray value) {
-        if (size() != 1) { resize(1); }
-        return put(0, value);
-    }
-    public DoubleNDArrayVector put(DoubleNDArray ... array) {
+    public NDArrayVector put(NDArray ... array) {
         if (size() != array.length) { resize(array.length); }
         for (int i = 0; i < array.length; i++) {
             put(i, array[i]);
@@ -330,6 +194,116 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
         return this;
     }
 }
+
+// Parsed from array/DataType.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef ND4J_DATATYPE_H
+// #define ND4J_DATATYPE_H
+    /** enum nd4j::DataType */
+    public static final int
+        INHERIT = 0,
+        BOOL = 1,
+        FLOAT8 = 2,
+        HALF = 3,
+        HALF2 = 4,
+        FLOAT32 = 5,
+        DOUBLE = 6,
+        INT8 = 7,
+        INT16 = 8,
+        INT32 = 9,
+        INT64 = 10,
+        UINT8 = 11,
+        UINT16 = 12,
+        UINT32 = 13,
+        UINT64 = 14,
+        QINT8 = 15,
+        QINT16 = 16,
+        UTF8 = 50,
+        ANY = 100,
+        AUTO = 200;
+
+
+// #endif
+
+// Parsed from types/utf8string.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef DEV_TESTS_UTF8STRING_H
+// #define DEV_TESTS_UTF8STRING_H
+
+// #include <string>
+// #include <dll.h>
+    @Namespace("nd4j") @NoOffset public static class utf8string extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public utf8string(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public utf8string(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public utf8string position(long position) {
+            return (utf8string)super.position(position);
+        }
+    
+        public native @Cast("char*") String _buffer(); public native utf8string _buffer(String _buffer);
+        public native @Cast("unsigned int") int _length(); public native utf8string _length(int _length);
+
+        public utf8string() { super((Pointer)null); allocate(); }
+        private native void allocate();
+
+        public utf8string(@Cast("char*") String string, int length) { super((Pointer)null); allocate(string, length); }
+        private native void allocate(@Cast("char*") String string, int length);
+        public utf8string(@Cast("char*") BytePointer string, int length) { super((Pointer)null); allocate(string, length); }
+        private native void allocate(@Cast("char*") BytePointer string, int length);
+        public utf8string(@StdString @Cast({"char*", "std::string*"}) BytePointer string) { super((Pointer)null); allocate(string); }
+        private native void allocate(@StdString @Cast({"char*", "std::string*"}) BytePointer string);
+        public utf8string(@Const @ByRef utf8string other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const @ByRef utf8string other);
+        public native @ByRef @Name("operator =") utf8string put(@Const @ByRef utf8string other);
+    }
+
+
+
+// #endif //DEV_TESTS_UTF8STRING_H
+
 
 // Parsed from NativeOps.h
 
@@ -2013,7 +1987,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIntArrays,
                                  Pointer realArguments,
                                  int numRealArguments,
-                                 @ByVal DataType dtype);
+                                 @Cast("nd4j::DataType") int dtype);
     public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  @Cast("void**") @ByPtrPtr Pointer arguments,
@@ -2026,7 +2000,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIntArrays,
                                  Pointer realArguments,
                                  int numRealArguments,
-                                 @ByVal DataType dtype);
+                                 @Cast("nd4j::DataType") int dtype);
     public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  @Cast("void**") @ByPtrPtr Pointer arguments,
@@ -2039,7 +2013,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIntArrays,
                                  Pointer realArguments,
                                  int numRealArguments,
-                                 @ByVal DataType dtype);
+                                 @Cast("nd4j::DataType") int dtype);
     public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  @Cast("void**") @ByPtrPtr Pointer arguments,
@@ -2052,7 +2026,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int numIntArrays,
                                  Pointer realArguments,
                                  int numRealArguments,
-                                 @ByVal DataType dtype);
+                                 @Cast("nd4j::DataType") int dtype);
 
     public native void execAggregateBatch(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                       int numAggregates,
@@ -2064,7 +2038,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                       int maxIdx,
                                       int maxReals,
                                       Pointer ptrToArguments,
-                                      @ByVal DataType dtype);
+                                      @Cast("nd4j::DataType") int dtype);
 
     /**
      * Random operations
@@ -2499,11 +2473,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("char*") String getAllOperations();
 
     // customOp executioner
-    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs, @Cast("bool*") BoolPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
-    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs, @Cast("bool*") BoolPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
-    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs, @Cast("bool*") BoolPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs);
@@ -2516,9 +2490,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     public native int registerGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer") Pointer flatBufferPointer);
 
-    public native FloatVariablesSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
-    public native FloatVariablesSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntBuffer inputIndices, int numInputs);
-    public native FloatVariablesSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int[] inputIndices, int numInputs);
+    public native VariablesSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+    public native VariablesSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntBuffer inputIndices, int numInputs);
+    public native VariablesSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int[] inputIndices, int numInputs);
 
     public native int unregisterGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId);
 
@@ -2834,56 +2808,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #endif //LIBND4J_INDICESLIST_H
 
 
-// Parsed from array/DataType.h
-
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
-
-//
-// @author raver119@gmail.com
-//
-
-// #ifndef ND4J_DATATYPE_H
-// #define ND4J_DATATYPE_H
-    /** enum nd4j::DataType */
-    public static final int
-        INHERIT = 0,
-        BOOL = 1,
-        FLOAT8 = 2,
-        HALF = 3,
-        HALF2 = 4,
-        FLOAT32 = 5,
-        DOUBLE = 6,
-        INT8 = 7,
-        INT16 = 8,
-        INT32 = 9,
-        INT64 = 10,
-        UINT8 = 11,
-        UINT16 = 12,
-        UINT32 = 13,
-        UINT64 = 14,
-        QINT8 = 15,
-        QINT16 = 16,
-        UTF8 = 50,
-        ANY = 100,
-        AUTO = 200;
-
-
-// #endif
-
 // Parsed from graph/VariableType.h
 
 /*******************************************************************************
@@ -3075,63 +2999,63 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <ops/BroadcastBoolOpsTuple.h>
 
 
-    @Namespace("nd4j") public static native @ByVal @Name("operator -") FloatNDArray subtract(float arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator -") FloatNDArray subtract(@Cast("const float16") short arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator -") FloatNDArray subtract(double arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator -") FloatNDArray subtract(int arg0, @Const @ByRef FloatNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(float arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(@Cast("const float16") short arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(double arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(int arg0, @Const @ByRef NDArray arg1);
 
-    @Namespace("nd4j") public static native @ByVal @Name("operator +") FloatNDArray add(float arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator +") FloatNDArray add(@Cast("const float16") short arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator +") FloatNDArray add(double arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator +") FloatNDArray add(int arg0, @Const @ByRef FloatNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator +") NDArray add(float arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator +") NDArray add(@Cast("const float16") short arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator +") NDArray add(double arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator +") NDArray add(int arg0, @Const @ByRef NDArray arg1);
 
-    @Namespace("nd4j") public static native @ByVal @Name("operator *") FloatNDArray multiply(float arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator *") FloatNDArray multiply(@Cast("const float16") short arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator *") FloatNDArray multiply(double arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator *") FloatNDArray multiply(int arg0, @Const @ByRef FloatNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator *") NDArray multiply(float arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator *") NDArray multiply(@Cast("const float16") short arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator *") NDArray multiply(double arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator *") NDArray multiply(int arg0, @Const @ByRef NDArray arg1);
 
-    @Namespace("nd4j") public static native @ByVal @Name("operator /") FloatNDArray divide(float arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator /") FloatNDArray divide(@Cast("const float16") short arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator /") FloatNDArray divide(double arg0, @Const @ByRef FloatNDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator /") FloatNDArray divide(int arg0, @Const @ByRef FloatNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator /") NDArray divide(float arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator /") NDArray divide(@Cast("const float16") short arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator /") NDArray divide(double arg0, @Const @ByRef NDArray arg1);
+    @Namespace("nd4j") public static native @ByVal @Name("operator /") NDArray divide(int arg0, @Const @ByRef NDArray arg1);
 
-    @Namespace("nd4j") public static native @ByVal FloatNDArray mmul(@Const @ByRef FloatNDArray arg0, @Const @ByRef FloatNDArray arg1);
+    @Namespace("nd4j") public static native @ByVal NDArray mmul(@Const @ByRef NDArray arg0, @Const @ByRef NDArray arg1);
 
-    @Name("nd4j::NDArray") @NoOffset public static class FloatNDArray extends Pointer {
+    @Namespace("nd4j") @NoOffset public static class NDArray extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-        public FloatNDArray(Pointer p) { super(p); }
+        public NDArray(Pointer p) { super(p); }
         /** Native array allocator. Access with {@link Pointer#position(long)}. */
-        public FloatNDArray(long size) { super((Pointer)null); allocateArray(size); }
+        public NDArray(long size) { super((Pointer)null); allocateArray(size); }
         private native void allocateArray(long size);
-        @Override public FloatNDArray position(long position) {
-            return (FloatNDArray)super.position(position);
+        @Override public NDArray position(long position) {
+            return (NDArray)super.position(position);
         }
     
-        public FloatNDArray() { super((Pointer)null); allocate(); }
+        public NDArray() { super((Pointer)null); allocate(); }
         private native void allocate();
 
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
-        public FloatNDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace, isBuffAlloc, isShapeAlloc); }
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace, isBuffAlloc, isShapeAlloc); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
-        public FloatNDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo);
-        public FloatNDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace, isBuffAlloc, isShapeAlloc); }
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace, isBuffAlloc, isShapeAlloc); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
-        public FloatNDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo);
-        public FloatNDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace, isBuffAlloc, isShapeAlloc); }
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace, isBuffAlloc, isShapeAlloc); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
-        public FloatNDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo);
 
         /**
         *  copy constructor
         */
-        public FloatNDArray(@Const @ByRef FloatNDArray other) { super((Pointer)null); allocate(other); }
-        private native void allocate(@Const @ByRef FloatNDArray other);
+        public NDArray(@Const @ByRef NDArray other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const @ByRef NDArray other);
 
         /**
         *  move constructor
@@ -3141,103 +3065,103 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  constructor, create empty array stored at given workspace
         */
-        public FloatNDArray(Workspace workspace) { super((Pointer)null); allocate(workspace); }
+        public NDArray(Workspace workspace) { super((Pointer)null); allocate(workspace); }
         private native void allocate(Workspace workspace);
 
 				
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         */
-		public FloatNDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace, isShapeAlloc); }
+		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace, isShapeAlloc); }
 		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
-		public FloatNDArray(@Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo);
-		public FloatNDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace, isShapeAlloc); }
+		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace, isShapeAlloc); }
 		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
-		public FloatNDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-		public FloatNDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace, isShapeAlloc); }
+		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace, isShapeAlloc); }
 		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
-		public FloatNDArray(@Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo);
 
         /**
         *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         *  set dtype as array type
         */
-        public FloatNDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace, isShapeAlloc); }
+        public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace, isShapeAlloc); }
         private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
-        public FloatNDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
         private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype);
-        public FloatNDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace, isShapeAlloc); }
+        public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace, isShapeAlloc); }
         private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
-        public FloatNDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
         private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype);
-        public FloatNDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace, isShapeAlloc); }
+        public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, workspace, isShapeAlloc); }
         private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
-        public FloatNDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
         private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype);
 
         /**
         *  this constructor creates new array using shape information contained in vector argument
         */
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(order, shape, dtype); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(order, shape, dtype); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype);
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(order, shape, dtype); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(order, shape, dtype); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype);
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(order, shape, dtype); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(order, shape, dtype); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype);
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
         */
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data) { super((Pointer)null); allocate(order, shape, data); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data);
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data) { super((Pointer)null); allocate(order, shape, data); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data);
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, dtype, workspace); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data) { super((Pointer)null); allocate(order, shape, data); }
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data);
 
         /**
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
         */
-        public FloatNDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, workspace); }
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, workspace); }
         private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
         private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype);
-        public FloatNDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, workspace); }
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, workspace); }
         private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
         private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype);
-        public FloatNDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, workspace); }
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, workspace); }
         private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
         private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype);
 
         /**
         *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         */
-        public FloatNDArray(@Const FloatNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
-        private native void allocate(@Const FloatNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
+        public NDArray(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
+        private native void allocate(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
 
         /**
         *  this constructor creates scalar and set its value = 0
         */
-        public FloatNDArray(@Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(dtype, workspace); }
+        public NDArray(@Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(dtype, workspace); }
         private native void allocate(@Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(@Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(dtype); }
+        public NDArray(@Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(dtype); }
         private native void allocate(@Cast("nd4j::DataType") int dtype);
 
 
@@ -3252,7 +3176,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  copy assignment operator
         *  in particular, when _dataType != other._dataType and both shapes are the same, there will be allocation of new _buffer and _dataType acquires other._dataType
         */
-        public native @ByRef @Name("operator =") FloatNDArray put(@Const @ByRef FloatNDArray other);
+        public native @ByRef @Name("operator =") NDArray put(@Const @ByRef NDArray other);
 
         /**
         *  move assignment operator
@@ -3287,9 +3211,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  dimension - dimension along which to repeat elements
         *  repeats - number of repetitions
         */        
-        public native FloatNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongPointer repeats);
-        public native FloatNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongBuffer repeats);
-        public native FloatNDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
+        public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongPointer repeats);
+        public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongBuffer repeats);
+        public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
          * This method returns quantized copy of given array
@@ -3297,7 +3221,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
          * @param array
          * @return
          */
-        public static native @ByVal FloatNDArray quantize(@ByRef FloatNDArray array);
+        public static native @ByVal NDArray quantize(@ByRef NDArray array);
 
         /**
          * This method returns quantized copy of given array
@@ -3310,29 +3234,29 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  fill target array by repeating current array 
         *  dimension - dimension along which to repeat elements        
         */
-        public native void repeat(int dimension, @ByRef FloatNDArray target);
+        public native void repeat(int dimension, @ByRef NDArray target);
 
         /**
         *  creates array which is view of this array
         */
-        public native FloatNDArray getView();
+        public native NDArray getView();
 
         /**
         *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
         */
-        public native FloatNDArray subarray(@ByRef IndicesList indices);
-        public native FloatNDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector LongPointer strides);
-        public native FloatNDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector LongBuffer strides);
-        public native FloatNDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector long[] strides);
-        public native FloatNDArray subarray(@Const @ByRef Intervals idx);
+        public native NDArray subarray(@ByRef IndicesList indices);
+        public native NDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector LongPointer strides);
+        public native NDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector LongBuffer strides);
+        public native NDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector long[] strides);
+        public native NDArray subarray(@Const @ByRef Intervals idx);
 
         /**
         *  cast array elements to given dtype
         */
 
-        public native FloatNDArray cast(@Cast("nd4j::DataType") int dtype);
+        public native NDArray cast(@Cast("nd4j::DataType") int dtype);
 
-        public native void cast(FloatNDArray target, @Cast("nd4j::DataType") int dtype);
+        public native void cast(NDArray target, @Cast("nd4j::DataType") int dtype);
 
         /**
         *   returns _workspace
@@ -3397,32 +3321,32 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
         */
-        public native FloatNDArray permute(@StdVector IntPointer dimensions);
-        public native FloatNDArray permute(@StdVector IntBuffer dimensions);
-        public native FloatNDArray permute(@StdVector int[] dimensions);
-        public native FloatNDArray permute(@Const IntPointer dimensions, int rank);
-        public native FloatNDArray permute(@Const IntBuffer dimensions, int rank);
-        public native FloatNDArray permute(@Const int[] dimensions, int rank);
+        public native NDArray permute(@StdVector IntPointer dimensions);
+        public native NDArray permute(@StdVector IntBuffer dimensions);
+        public native NDArray permute(@StdVector int[] dimensions);
+        public native NDArray permute(@Const IntPointer dimensions, int rank);
+        public native NDArray permute(@Const IntBuffer dimensions, int rank);
+        public native NDArray permute(@Const int[] dimensions, int rank);
 
-        public native void permute(@Const IntPointer dimensions, int rank, @ByRef FloatNDArray target);
-        public native void permute(@Const IntBuffer dimensions, int rank, @ByRef FloatNDArray target);
-        public native void permute(@Const int[] dimensions, int rank, @ByRef FloatNDArray target);
-        public native void permute(@StdVector IntPointer dimensions, @ByRef FloatNDArray target);
-        public native void permute(@StdVector IntBuffer dimensions, @ByRef FloatNDArray target);
-        public native void permute(@StdVector int[] dimensions, @ByRef FloatNDArray target);
-        public native FloatNDArray permute(@Cast("Nd4jLong*") @StdVector LongPointer dimensions);
-        public native FloatNDArray permute(@Cast("Nd4jLong*") @StdVector LongBuffer dimensions);
-        public native FloatNDArray permute(@Cast("Nd4jLong*") @StdVector long[] dimensions);
-        public native FloatNDArray permute(@Cast("const Nd4jLong*") LongPointer dimensions, int rank);
-        public native FloatNDArray permute(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank);
-        public native FloatNDArray permute(@Cast("const Nd4jLong*") long[] dimensions, int rank);
+        public native void permute(@Const IntPointer dimensions, int rank, @ByRef NDArray target);
+        public native void permute(@Const IntBuffer dimensions, int rank, @ByRef NDArray target);
+        public native void permute(@Const int[] dimensions, int rank, @ByRef NDArray target);
+        public native void permute(@StdVector IntPointer dimensions, @ByRef NDArray target);
+        public native void permute(@StdVector IntBuffer dimensions, @ByRef NDArray target);
+        public native void permute(@StdVector int[] dimensions, @ByRef NDArray target);
+        public native NDArray permute(@Cast("Nd4jLong*") @StdVector LongPointer dimensions);
+        public native NDArray permute(@Cast("Nd4jLong*") @StdVector LongBuffer dimensions);
+        public native NDArray permute(@Cast("Nd4jLong*") @StdVector long[] dimensions);
+        public native NDArray permute(@Cast("const Nd4jLong*") LongPointer dimensions, int rank);
+        public native NDArray permute(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank);
+        public native NDArray permute(@Cast("const Nd4jLong*") long[] dimensions, int rank);
 
-        public native void permute(@Cast("const Nd4jLong*") LongPointer dimensions, int rank, @ByRef FloatNDArray target);
-        public native void permute(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank, @ByRef FloatNDArray target);
-        public native void permute(@Cast("const Nd4jLong*") long[] dimensions, int rank, @ByRef FloatNDArray target);
-        public native void permute(@Cast("Nd4jLong*") @StdVector LongPointer dimensions, @ByRef FloatNDArray target);
-        public native void permute(@Cast("Nd4jLong*") @StdVector LongBuffer dimensions, @ByRef FloatNDArray target);
-        public native void permute(@Cast("Nd4jLong*") @StdVector long[] dimensions, @ByRef FloatNDArray target);
+        public native void permute(@Cast("const Nd4jLong*") LongPointer dimensions, int rank, @ByRef NDArray target);
+        public native void permute(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank, @ByRef NDArray target);
+        public native void permute(@Cast("const Nd4jLong*") long[] dimensions, int rank, @ByRef NDArray target);
+        public native void permute(@Cast("Nd4jLong*") @StdVector LongPointer dimensions, @ByRef NDArray target);
+        public native void permute(@Cast("Nd4jLong*") @StdVector LongBuffer dimensions, @ByRef NDArray target);
+        public native void permute(@Cast("Nd4jLong*") @StdVector long[] dimensions, @ByRef NDArray target);
 
         /**
          * This method streamlines given view or permuted array, and reallocates buffer
@@ -3469,7 +3393,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  this method assigns values of given array to this one
         */ 
-        public native void assign(@Const FloatNDArray other);
+        public native void assign(@Const NDArray other);
 
         /**
         *  this method assigns values of given array to this one
@@ -3489,18 +3413,18 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  returns new copy of this array, optionally in different order
         */
-        public native FloatNDArray dup(char newOrder/*='a'*/);
-        public native FloatNDArray dup();
+        public native NDArray dup(char newOrder/*='a'*/);
+        public native NDArray dup();
 
         /** 
         *  returns sum of all elements of array
         */
-        public native @ByVal FloatNDArray sumNumber();
+        public native @ByVal NDArray sumNumber();
 
         /**
         *  returns mean number of array
         */
-        public native @ByVal FloatNDArray meanNumber();
+        public native @ByVal NDArray meanNumber();
 
 // #ifndef __JAVACPP_HACK__
 
@@ -3509,14 +3433,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *   apply transpose operation to the copy of this array, that is this array remains unaffected 
         */
-        public native FloatNDArray transpose();
-        public native @ByVal FloatNDArray transp();
+        public native NDArray transpose();
+        public native @ByVal NDArray transp();
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected 
         *  target - where to store result
         */ 
-        public native void transpose(@ByRef FloatNDArray target);
+        public native void transpose(@ByRef NDArray target);
 
         /**
         *  apply in-place transpose operation to this array, so this array becomes transposed 
@@ -3528,9 +3452,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  index - the number of array to be returned among set of possible arrays 
         *  dimensions - array of dimensions to point on
         */
-        public native FloatNDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector IntPointer dimensions);
-        public native FloatNDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector IntBuffer dimensions);
-        public native FloatNDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector int[] dimensions);
+        public native NDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector IntPointer dimensions);
+        public native NDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector IntBuffer dimensions);
+        public native NDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector int[] dimensions);
 
         /**
         *  returns the number of arrays pointing on specified dimension(s)
@@ -3545,61 +3469,61 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  other - input array to compare
         *  eps - epsilon, this value defines the precision of elements comparison
         */
-        public native @Cast("bool") boolean equalsTo(@Const FloatNDArray other, double eps/*=1e-5*/);
-        public native @Cast("bool") boolean equalsTo(@Const FloatNDArray other);
+        public native @Cast("bool") boolean equalsTo(@Const NDArray other, double eps/*=1e-5*/);
+        public native @Cast("bool") boolean equalsTo(@Const NDArray other);
         
         /**
         *  add given row vector to all rows of this array
         *  row - row vector to add
         */
-        public native void addiRowVector(@Const FloatNDArray row);
+        public native void addiRowVector(@Const NDArray row);
 
         /**
         *  add given row vector to all rows of this array, store result in target
         *  row - row vector to add
         *  target - where to store result
         */
-        public native void addRowVector(@Const FloatNDArray row, FloatNDArray target);
+        public native void addRowVector(@Const NDArray row, NDArray target);
 
         /**
         *  subtract given row vector from all rows of this array, store result in target
         *  row - row vector to subtract
         *  target - where to store result
         */
-        public native void subRowVector(@Const FloatNDArray row, FloatNDArray target);
+        public native void subRowVector(@Const NDArray row, NDArray target);
         
         /**
         *  multiply all rows of this array on given row vector, store result in target
         *  row - row vector to multiply on
         *  target - where to store result
         */
-        public native void mulRowVector(@Const FloatNDArray row, FloatNDArray target);
+        public native void mulRowVector(@Const NDArray row, NDArray target);
 
         /**
         *  divide all rows of this array on given row vector, store result in target
         *  row - row vector to divide on
         *  target - where to store result
         */
-        public native void divRowVector(@Const FloatNDArray row, FloatNDArray target);
+        public native void divRowVector(@Const NDArray row, NDArray target);
         
         /**
         *  add given column vector to all columns of this array, store result in target
         *  column - column vector to add
         *  target - where to store result
         */
-        public native void addColumnVector(@Const FloatNDArray column, FloatNDArray target);
+        public native void addColumnVector(@Const NDArray column, NDArray target);
 
         /**
         *  add given column vector to all columns of this array, this array becomes affected (in-place operation)
         *  column - column vector to add
         */
-		public native void addiColumnVector(@Const FloatNDArray column);
+		public native void addiColumnVector(@Const NDArray column);
 
         /**
         *  multiply all columns of this array on given column vector, this array becomes affected (in-place operation)
         *  column - column vector to multiply on
         */
-		public native void muliColumnVector(@Const FloatNDArray column);
+		public native void muliColumnVector(@Const NDArray column);
 
         /**
         *  returns number of bytes used by _buffer & _shapeInfo
@@ -3635,9 +3559,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *
         * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
         */
-		public native FloatNDArray reshape(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
-		public native FloatNDArray reshape(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape);
-		public native FloatNDArray reshape(char order, @Cast("Nd4jLong*") @StdVector long[] shape);
+		public native NDArray reshape(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
+		public native NDArray reshape(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape);
+		public native NDArray reshape(char order, @Cast("Nd4jLong*") @StdVector long[] shape);
 		
         /**
         *  calculate strides and set given order
@@ -3657,30 +3581,30 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  returns new array which is created by repeating of this array the number of times given by reps 
         *  repeats - contains numbers of repetitions
         */
-		public native @ByVal FloatNDArray tile(@Cast("Nd4jLong*") @StdVector LongPointer repeats);
-		public native @ByVal FloatNDArray tile(@Cast("Nd4jLong*") @StdVector LongBuffer repeats);
-		public native @ByVal FloatNDArray tile(@Cast("Nd4jLong*") @StdVector long[] repeats);
+		public native @ByVal NDArray tile(@Cast("Nd4jLong*") @StdVector LongPointer repeats);
+		public native @ByVal NDArray tile(@Cast("Nd4jLong*") @StdVector LongBuffer repeats);
+		public native @ByVal NDArray tile(@Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
         *  change an array by repeating it the number of times given by reps (in-place operation)
         *  repeats - contains numbers of repetitions
         *  target - where to store result
         */
-        public native void tile(@Cast("Nd4jLong*") @StdVector LongPointer repeats, @ByRef FloatNDArray target);
-        public native void tile(@Cast("Nd4jLong*") @StdVector LongBuffer repeats, @ByRef FloatNDArray target);
-        public native void tile(@Cast("Nd4jLong*") @StdVector long[] repeats, @ByRef FloatNDArray target);
+        public native void tile(@Cast("Nd4jLong*") @StdVector LongPointer repeats, @ByRef NDArray target);
+        public native void tile(@Cast("Nd4jLong*") @StdVector LongBuffer repeats, @ByRef NDArray target);
+        public native void tile(@Cast("Nd4jLong*") @StdVector long[] repeats, @ByRef NDArray target);
 
         /**
         *  change an array by repeating it the number of times to acquire the new shape which is the same as target shape        
         *  target - where to store result
         */
-        public native void tile(@ByRef FloatNDArray target);
+        public native void tile(@ByRef NDArray target);
         
         /**
         *  returns an array which is result of broadcasting of this and other arrays 
         *  other - input array
         */
-		public native FloatNDArray broadcast(@Const @ByRef FloatNDArray other);
+		public native NDArray broadcast(@Const @ByRef NDArray other);
 		
         /**
         *  check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
@@ -3705,12 +3629,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx);
 
         /**
         *  evaluates subarray with buffer pointing at this->_buffer and offset defined by given sequential index subArrIdx and dimensions in dimsToExclude
@@ -3718,18 +3642,18 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5], and subArrIdx must be in range [0,7]
         *                  if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
         */ 
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntPointer dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntPointer dimsToExclude);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntPointer dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntPointer dimsToExclude);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude);
 
         /**
         *  addition operator: array + other
         *  other - input array to add
         */
-        public native @ByVal @Name("operator +") FloatNDArray add(@Const @ByRef FloatNDArray other);
+        public native @ByVal @Name("operator +") NDArray add(@Const @ByRef NDArray other);
 
         /**
         *  addition operator: array + scalar
@@ -3748,19 +3672,19 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  addition unary operator array += other
         *  other - input array to add
         */
-        public native @Name("operator +=") void addPut(@Const @ByRef FloatNDArray other);
+        public native @Name("operator +=") void addPut(@Const @ByRef NDArray other);
 
         /**
         *  subtraction unary operator array -= other
         *  other - input array to add
         */
-        public native @Name("operator -=") void subtractPut(@Const @ByRef FloatNDArray other);
+        public native @Name("operator -=") void subtractPut(@Const @ByRef NDArray other);
         
         /**
         *  subtraction operator: array - other
         *  other - input array to subtract
         */
-        public native @ByVal @Name("operator -") FloatNDArray subtract(@Const @ByRef FloatNDArray other);
+        public native @ByVal @Name("operator -") NDArray subtract(@Const @ByRef NDArray other);
         
         /**
         *  subtraction operator: array - scalar
@@ -3770,7 +3694,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  negative operator, it changes sign of all array elements on opposite
         */
-        public native @ByVal @Name("operator -") FloatNDArray subtract();
+        public native @ByVal @Name("operator -") NDArray subtract();
 
         /**
         *  friend functions which implement subtraction operator: scalar - array
@@ -3782,7 +3706,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  pairwise multiplication operator: array * other
         *  other - input array to multiply on
         */
-        public native @ByVal @Name("operator *") FloatNDArray multiply(@Const @ByRef FloatNDArray other);
+        public native @ByVal @Name("operator *") NDArray multiply(@Const @ByRef NDArray other);
     
         /**
         *  multiplication operator: array * scalar
@@ -3793,7 +3717,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  pairwise multiplication unary operator array *= other
         *  other - input array to multiply on
         */
-        public native @Name("operator *=") void multiplyPut(@Const @ByRef FloatNDArray other);
+        public native @Name("operator *=") void multiplyPut(@Const @ByRef NDArray other);
 
         /**
         *  multiplication unary operator array *= scalar
@@ -3804,7 +3728,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  pairwise division operator: array / other
         *  other - input array to divide on
         */
-        public native @ByVal @Name("operator /") FloatNDArray divide(@Const @ByRef FloatNDArray other);
+        public native @ByVal @Name("operator /") NDArray divide(@Const @ByRef NDArray other);
 
         /**
         *  division operator: array / scalar
@@ -3815,7 +3739,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  pairwise division unary operator: array /= other
         *  other - input array to divide on
         */
-        public native @Name("operator /=") void dividePut(@Const @ByRef FloatNDArray other);
+        public native @Name("operator /=") void dividePut(@Const @ByRef NDArray other);
 
         /**
         *  division unary operator: array /= scalar
@@ -3834,7 +3758,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  other - input array to assign elements from
         *  idx - intervals of indexes which define the subarray
         */ 
-        public native void assign(@Const @ByRef FloatNDArray other, @Const @ByRef Intervals idx);
+        public native void assign(@Const @ByRef NDArray other, @Const @ByRef Intervals idx);
 
         /**
         *  return vector containing _buffer as flat binary array
@@ -3850,13 +3774,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  swaps the contents of tow arrays, 
         *  PLEASE NOTE: method doesn't take into account the shapes of arrays, shapes may be different except one condition: arrays lengths must be the same 
         */
-        public native void swapUnsafe(@ByRef FloatNDArray other);
+        public native void swapUnsafe(@ByRef NDArray other);
 
         /**
         *  return vector with buffer which points on corresponding diagonal elements of array
         *  type - means of vector to be returned: column ('c') or row ('r')
         */
-        public native FloatNDArray diagonal(char type );
+        public native NDArray diagonal(char type );
 
         /**
         *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
@@ -3876,14 +3800,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  shape  - contains new shape to broadcast array to 
         *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, FloatNDArray target/*=nullptr*/);
+        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, NDArray target/*=nullptr*/);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape);
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongBuffer shape, FloatNDArray target/*=nullptr*/);
+        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongBuffer shape, NDArray target/*=nullptr*/);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongBuffer shape);
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector long[] shape, FloatNDArray target/*=nullptr*/);
+        public native void tileToShape(@Cast("Nd4jLong*") @StdVector long[] shape, NDArray target/*=nullptr*/);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector long[] shape);
 
-        public native FloatNDArray asT(@Cast("nd4j::DataType") int dtype);
+        public native NDArray asT(@Cast("nd4j::DataType") int dtype);
 
 
         public native void linspace(double start);
@@ -3895,17 +3819,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
         public native double getTrace();
 
-        public native FloatNDArray dupUninitialized();
+        public native NDArray dupUninitialized();
 
-        public native FloatResultSet multipleTensorsAlongDimension(@StdVector IntPointer indices, @StdVector IntPointer dimensions);
-        public native FloatResultSet multipleTensorsAlongDimension(@StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
-        public native FloatResultSet multipleTensorsAlongDimension(@StdVector int[] indices, @StdVector int[] dimensions);
+        public native ResultSet multipleTensorsAlongDimension(@StdVector IntPointer indices, @StdVector IntPointer dimensions);
+        public native ResultSet multipleTensorsAlongDimension(@StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
+        public native ResultSet multipleTensorsAlongDimension(@StdVector int[] indices, @StdVector int[] dimensions);
 
-        public native FloatResultSet allTensorsAlongDimension(@StdVector IntPointer dimensions);
-        public native FloatResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
-        public native FloatResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
+        public native ResultSet allTensorsAlongDimension(@StdVector IntPointer dimensions);
+        public native ResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
+        public native ResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
-        public native FloatResultSet allExamples();
+        public native ResultSet allExamples();
 
         /**
         *  returns absolute offset which corresponds to given sequential index
@@ -3999,16 +3923,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("Nd4jLong") long ews();
 
         // returns true if arrays have same shape
-        public native @Cast("bool") boolean isSameShape(@Const FloatNDArray other);
+        public native @Cast("bool") boolean isSameShape(@Const NDArray other);
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jLong*") @StdVector LongPointer shape);
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jLong*") @StdVector LongBuffer shape);
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jLong*") @StdVector long[] shape);
-        public native @Cast("bool") boolean areSameShapeAndType(@Const @ByRef FloatNDArray other);
+        public native @Cast("bool") boolean areSameShapeAndType(@Const @ByRef NDArray other);
 
         /**
         *  returns true if these two NDArrays have same rank, dimensions, strides, ews and order
         */
-        public native @Cast("bool") boolean isSameShapeStrict(@Const FloatNDArray other);
+        public native @Cast("bool") boolean isSameShapeStrict(@Const NDArray other);
 
         /**
         *  returns true if buffer && shapeInfo were defined (non nullptr)
@@ -4041,7 +3965,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  returns array-scalar containing element of this array with given index
         *  i - element index in array
         */
-        public native @ByVal FloatNDArray e(@Cast("const Nd4jLong") long i);
+        public native @ByVal NDArray e(@Cast("const Nd4jLong") long i);
 
         /** 
         *  assigns given scalar to array element by given index, regards array buffer as linear
@@ -4049,7 +3973,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  value - scalar value to assign
         */
 
-        public native void p(@Cast("const Nd4jLong") long i, @Const @ByRef FloatNDArray value);
+        public native void p(@Cast("const Nd4jLong") long i, @Const @ByRef NDArray value);
 
         /** 
         *  assigns given scalar to 2D array element by given indexes
@@ -4182,9 +4106,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public native @Cast("bool") boolean isAttached();
 
-        public native FloatNDArray detach();
+        public native NDArray detach();
 
-        public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef FloatNDArray other);
+        public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef NDArray other);
 
     }
 
@@ -4548,36 +4472,36 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <NDArray.h>
 // #include <memory/Workspace.h>
 // #include <dll.h>
-    @Name("nd4j::NDArrayList") @NoOffset public static class FloatNDArrayList extends Pointer {
+    @Namespace("nd4j") @NoOffset public static class NDArrayList extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-        public FloatNDArrayList(Pointer p) { super(p); }
+        public NDArrayList(Pointer p) { super(p); }
     
-        public FloatNDArrayList(int height, @Cast("bool") boolean expandable/*=false*/) { super((Pointer)null); allocate(height, expandable); }
+        public NDArrayList(int height, @Cast("bool") boolean expandable/*=false*/) { super((Pointer)null); allocate(height, expandable); }
         private native void allocate(int height, @Cast("bool") boolean expandable/*=false*/);
-        public FloatNDArrayList(int height) { super((Pointer)null); allocate(height); }
+        public NDArrayList(int height) { super((Pointer)null); allocate(height); }
         private native void allocate(int height);
 
         public native @Cast("nd4j::DataType") int dataType();
 
-        public native FloatNDArray read(int idx);
-        public native FloatNDArray readRaw(int idx);
-        public native @Cast("Nd4jStatus") int write(int idx, FloatNDArray array);
-        public native FloatNDArray pick(@StdVector IntPointer indices);
-        public native FloatNDArray pick(@StdVector IntBuffer indices);
-        public native FloatNDArray pick(@StdVector int[] indices);
+        public native NDArray read(int idx);
+        public native NDArray readRaw(int idx);
+        public native @Cast("Nd4jStatus") int write(int idx, NDArray array);
+        public native NDArray pick(@StdVector IntPointer indices);
+        public native NDArray pick(@StdVector IntBuffer indices);
+        public native NDArray pick(@StdVector int[] indices);
         public native @Cast("bool") boolean isWritten(int index);
 
-        public native FloatNDArray stack();
-        public native void unstack(FloatNDArray array, int axis);
+        public native NDArray stack();
+        public native void unstack(NDArray array, int axis);
 
         public native @ByRef IntIntPair id();
         public native @StdString @ByRef @Cast({"char*", "std::string*"}) BytePointer name();
         public native Workspace workspace();
 
-        public native FloatNDArrayList clone();
+        public native NDArrayList clone();
 
-        public native @Cast("bool") boolean equals(@ByRef FloatNDArrayList other);
+        public native @Cast("bool") boolean equals(@ByRef NDArrayList other);
 
         public native int elements();
         public native int height();
@@ -4622,24 +4546,24 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <pointercast.h>
 // #include <dll.h> // forward declaration of template class NDArray
     
-    @Name("nd4j::ResultSet") @NoOffset public static class FloatResultSet extends Pointer {
+    @Namespace("nd4j") @NoOffset public static class ResultSet extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-        public FloatResultSet(Pointer p) { super(p); }
+        public ResultSet(Pointer p) { super(p); }
         /** Native array allocator. Access with {@link Pointer#position(long)}. */
-        public FloatResultSet(long size) { super((Pointer)null); allocateArray(size); }
+        public ResultSet(long size) { super((Pointer)null); allocateArray(size); }
         private native void allocateArray(long size);
-        @Override public FloatResultSet position(long position) {
-            return (FloatResultSet)super.position(position);
+        @Override public ResultSet position(long position) {
+            return (ResultSet)super.position(position);
         }
     
         // default constructor
-        public FloatResultSet() { super((Pointer)null); allocate(); }
+        public ResultSet() { super((Pointer)null); allocate(); }
         private native void allocate();
 
         public native int size();
-        public native FloatNDArray at(@Cast("unsigned long") long idx);
-        public native void push_back(FloatNDArray array);
+        public native NDArray at(@Cast("unsigned long") long idx);
+        public native void push_back(NDArray array);
 
         public native @Cast("Nd4jStatus") int status();
         public native void setStatus(@Cast("Nd4jStatus") int status);
@@ -4650,6 +4574,89 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 // #endif //LIBND4J_RESULTSET_H
 
+
+// Parsed from graph/RandomGenerator.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+//  @author raver119@protonmail.com
+//
+
+// #ifndef LIBND4J_GRAPH_RNG_H
+// #define LIBND4J_GRAPH_RNG_H
+
+// #include <types/u64.h>
+// #include <pointercast.h>
+// #include <op_boilerplate.h>
+// #include <dll.h>
+        @Namespace("nd4j::graph") @NoOffset public static class RandomGenerator extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public RandomGenerator(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public RandomGenerator(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public RandomGenerator position(long position) {
+                return (RandomGenerator)super.position(position);
+            }
+        
+            public RandomGenerator(@Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/) { super((Pointer)null); allocate(rootSeed, nodeSeed); }
+            private native void allocate(@Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/);
+            public RandomGenerator() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            /**
+             * This method allows to change graph-level state in runtime.
+             * PLEASE NOTE: this method will change state of node as well.
+             */
+            public native void setStates(@Cast("Nd4jLong") long rootSeed, @Cast("Nd4jLong") long nodeState/*=0*/);
+            public native void setStates(@Cast("Nd4jLong") long rootSeed);
+
+            
+
+            /**
+             * This method returns T value between from and to
+             */
+
+            /**
+             * This method returns T value between 0 and MAX_T
+             */
+
+            /**
+             * These two methods are made for JVM
+             * @param index
+             * @return
+             */
+            public native int relativeInt(@Cast("Nd4jLong") long index);
+            public native @Cast("Nd4jLong") long relativeLong(@Cast("Nd4jLong") long index);
+
+            public native void rewindH(@Cast("Nd4jLong") long steps);
+
+            /**
+             * These methods set up only node states, with non-changed root ones
+             */
+            public native void setSeed(int seed);
+            public native void setSeed(@Cast("uint64_t") long seed);
+        }
+    
+
+
+// #endif
 
 // Parsed from graph/Variable.h
 
@@ -4683,43 +4690,43 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <graph/generated/array_generated.h>
 // #include <graph/generated/node_generated.h>
 // #include <graph/generated/graph_generated.h>
-        @Name("nd4j::graph::Variable") @NoOffset public static class FloatVariable extends Pointer {
+        @Namespace("nd4j::graph") @NoOffset public static class Variable extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatVariable(Pointer p) { super(p); }
+            public Variable(Pointer p) { super(p); }
             /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public FloatVariable(long size) { super((Pointer)null); allocateArray(size); }
+            public Variable(long size) { super((Pointer)null); allocateArray(size); }
             private native void allocateArray(long size);
-            @Override public FloatVariable position(long position) {
-                return (FloatVariable)super.position(position);
+            @Override public Variable position(long position) {
+                return (Variable)super.position(position);
             }
         
-            public FloatVariable(@Cast("bool") boolean placeHolder) { super((Pointer)null); allocate(placeHolder); }
+            public Variable(@Cast("bool") boolean placeHolder) { super((Pointer)null); allocate(placeHolder); }
             private native void allocate(@Cast("bool") boolean placeHolder);
-            public FloatVariable(FloatNDArray arrayw, @Cast("char*") String name, int id, int idx/*=0*/) { super((Pointer)null); allocate(arrayw, name, id, idx); }
-            private native void allocate(FloatNDArray arrayw, @Cast("char*") String name, int id, int idx/*=0*/);
-            public FloatVariable(FloatNDArray arrayw, @Cast("char*") String name, int id) { super((Pointer)null); allocate(arrayw, name, id); }
-            private native void allocate(FloatNDArray arrayw, @Cast("char*") String name, int id);
-            public FloatVariable(FloatNDArray arrayw, @Cast("char*") BytePointer name, int id, int idx/*=0*/) { super((Pointer)null); allocate(arrayw, name, id, idx); }
-            private native void allocate(FloatNDArray arrayw, @Cast("char*") BytePointer name, int id, int idx/*=0*/);
-            public FloatVariable(FloatNDArray arrayw, @Cast("char*") BytePointer name, int id) { super((Pointer)null); allocate(arrayw, name, id); }
-            private native void allocate(FloatNDArray arrayw, @Cast("char*") BytePointer name, int id);
-            public FloatVariable(FloatNDArray array/*=nullptr*/, @Cast("char*") String name/*=nullptr*/) { super((Pointer)null); allocate(array, name); }
-            private native void allocate(FloatNDArray array/*=nullptr*/, @Cast("char*") String name/*=nullptr*/);
-            public FloatVariable() { super((Pointer)null); allocate(); }
+            public Variable(NDArray arrayw, @Cast("char*") String name, int id, int idx/*=0*/) { super((Pointer)null); allocate(arrayw, name, id, idx); }
+            private native void allocate(NDArray arrayw, @Cast("char*") String name, int id, int idx/*=0*/);
+            public Variable(NDArray arrayw, @Cast("char*") String name, int id) { super((Pointer)null); allocate(arrayw, name, id); }
+            private native void allocate(NDArray arrayw, @Cast("char*") String name, int id);
+            public Variable(NDArray arrayw, @Cast("char*") BytePointer name, int id, int idx/*=0*/) { super((Pointer)null); allocate(arrayw, name, id, idx); }
+            private native void allocate(NDArray arrayw, @Cast("char*") BytePointer name, int id, int idx/*=0*/);
+            public Variable(NDArray arrayw, @Cast("char*") BytePointer name, int id) { super((Pointer)null); allocate(arrayw, name, id); }
+            private native void allocate(NDArray arrayw, @Cast("char*") BytePointer name, int id);
+            public Variable(NDArray array/*=nullptr*/, @Cast("char*") String name/*=nullptr*/) { super((Pointer)null); allocate(array, name); }
+            private native void allocate(NDArray array/*=nullptr*/, @Cast("char*") String name/*=nullptr*/);
+            public Variable() { super((Pointer)null); allocate(); }
             private native void allocate();
-            public FloatVariable(FloatNDArray array/*=nullptr*/, @Cast("char*") BytePointer name/*=nullptr*/) { super((Pointer)null); allocate(array, name); }
-            private native void allocate(FloatNDArray array/*=nullptr*/, @Cast("char*") BytePointer name/*=nullptr*/);
+            public Variable(NDArray array/*=nullptr*/, @Cast("char*") BytePointer name/*=nullptr*/) { super((Pointer)null); allocate(array, name); }
+            private native void allocate(NDArray array/*=nullptr*/, @Cast("char*") BytePointer name/*=nullptr*/);
 
-            public native FloatVariable clone();
+            public native Variable clone();
 
             public native @Cast("bool") boolean hasNDArray();
-            public native FloatNDArray getNDArray();
-            public native void setNDArray(FloatNDArray array);
+            public native NDArray getNDArray();
+            public native void setNDArray(NDArray array);
 
             public native @Cast("bool") boolean hasNDArrayList();
-            public native FloatNDArrayList getNDArrayList();
-            public native void setNDArrayList(FloatNDArrayList list);
+            public native NDArrayList getNDArrayList();
+            public native void setNDArrayList(NDArrayList list);
 
             public native @Cast("bool") boolean isExternal();
             public native @Cast("bool") boolean isReadOnly();
@@ -4791,29 +4798,29 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <pointercast.h>
 // #include <dll.h>
 // #include <graph/Variable.h>
-        @Name("nd4j::graph::VariablesSet") @NoOffset public static class FloatVariablesSet extends Pointer {
+        @Namespace("nd4j::graph") @NoOffset public static class VariablesSet extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatVariablesSet(Pointer p) { super(p); }
+            public VariablesSet(Pointer p) { super(p); }
             /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public FloatVariablesSet(long size) { super((Pointer)null); allocateArray(size); }
+            public VariablesSet(long size) { super((Pointer)null); allocateArray(size); }
             private native void allocateArray(long size);
-            @Override public FloatVariablesSet position(long position) {
-                return (FloatVariablesSet)super.position(position);
+            @Override public VariablesSet position(long position) {
+                return (VariablesSet)super.position(position);
             }
         
-            public FloatVariablesSet(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/) { super((Pointer)null); allocate(status); }
+            public VariablesSet(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/) { super((Pointer)null); allocate(status); }
             private native void allocate(@Cast("Nd4jStatus") int status/*=ND4J_STATUS_OK*/);
-            public FloatVariablesSet() { super((Pointer)null); allocate(); }
+            public VariablesSet() { super((Pointer)null); allocate(); }
             private native void allocate();
 
             public native @Cast("Nd4jStatus") int status();
 
             public native int size();
 
-            public native void push_back(FloatVariable variable);
+            public native void push_back(Variable variable);
 
-            public native FloatVariable at(int index);
+            public native Variable at(int index);
 
         }
     
@@ -5027,31 +5034,31 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native @Cast("bool") @Name("operator <") boolean lessThan(@Const @ByRef KeyPair other);
         }
 
-        @Name("nd4j::graph::Stash") @NoOffset public static class FloatStash extends Pointer {
+        @Namespace("nd4j::graph") @NoOffset public static class Stash extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatStash(Pointer p) { super(p); }
+            public Stash(Pointer p) { super(p); }
             /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public FloatStash(long size) { super((Pointer)null); allocateArray(size); }
+            public Stash(long size) { super((Pointer)null); allocateArray(size); }
             private native void allocateArray(long size);
-            @Override public FloatStash position(long position) {
-                return (FloatStash)super.position(position);
+            @Override public Stash position(long position) {
+                return (Stash)super.position(position);
             }
         
-            public FloatStash() { super((Pointer)null); allocate(); }
+            public Stash() { super((Pointer)null); allocate(); }
             private native void allocate();
 
             //void storeArray(nd4j::graph::Block<T>& block, const char *name, nd4j::NDArray<T> *array);
-            public native void storeArray(int nodeId, @Cast("char*") String name, FloatNDArray array);
-            public native void storeArray(int nodeId, @Cast("char*") BytePointer name, FloatNDArray array);
+            public native void storeArray(int nodeId, @Cast("char*") String name, NDArray array);
+            public native void storeArray(int nodeId, @Cast("char*") BytePointer name, NDArray array);
 
             //bool checkStash(nd4j::graph::Block<T>& block, const char *name);
             public native @Cast("bool") boolean checkStash(int nodeId, @Cast("char*") String name);
             public native @Cast("bool") boolean checkStash(int nodeId, @Cast("char*") BytePointer name);
 
             //nd4j::NDArray<T>* extractArray(nd4j::graph::Block<T>& block, const char *name);
-            public native FloatNDArray extractArray(int nodeId, @Cast("char*") String name);
-            public native FloatNDArray extractArray(int nodeId, @Cast("char*") BytePointer name);
+            public native NDArray extractArray(int nodeId, @Cast("char*") String name);
+            public native NDArray extractArray(int nodeId, @Cast("char*") BytePointer name);
 
             public native void clear();
         }
@@ -5102,12 +5109,12 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <graph/ArgumentsList.h>
 // #include <graph/Graph.h>
 
-    @Name("nd4j::graph::GraphState") @NoOffset public static class FloatGraphState extends Pointer {
+    @Namespace("nd4j::graph") @NoOffset public static class GraphState extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-        public FloatGraphState(Pointer p) { super(p); }
+        public GraphState(Pointer p) { super(p); }
     
-        public FloatGraphState(@Cast("Nd4jLong") long id) { super((Pointer)null); allocate(id); }
+        public GraphState(@Cast("Nd4jLong") long id) { super((Pointer)null); allocate(id); }
         private native void allocate(@Cast("Nd4jLong") long id);
 
         /**
@@ -5169,7 +5176,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
          *
          * @return
          */
-        public native FloatVariableSpace variableSpace();
+        public native VariableSpace variableSpace();
     }
 
 
@@ -5217,21 +5224,21 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <memory/Workspace.h>
 // #include <graph/Stash.h>
 // #include <graph/FlowPath.h>
-        @Name("nd4j::graph::VariableSpace") @NoOffset public static class FloatVariableSpace extends Pointer {
+        @Namespace("nd4j::graph") @NoOffset public static class VariableSpace extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatVariableSpace(Pointer p) { super(p); }
+            public VariableSpace(Pointer p) { super(p); }
             /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public FloatVariableSpace(long size) { super((Pointer)null); allocateArray(size); }
+            public VariableSpace(long size) { super((Pointer)null); allocateArray(size); }
             private native void allocateArray(long size);
-            @Override public FloatVariableSpace position(long position) {
-                return (FloatVariableSpace)super.position(position);
+            @Override public VariableSpace position(long position) {
+                return (VariableSpace)super.position(position);
             }
         
-            public FloatVariableSpace() { super((Pointer)null); allocate(); }
+            public VariableSpace() { super((Pointer)null); allocate(); }
             private native void allocate();
 
-            public native @ByRef @Name("operator =") FloatVariableSpace put(@Const @ByRef FloatVariableSpace other);
+            public native @ByRef @Name("operator =") VariableSpace put(@Const @ByRef VariableSpace other);
 
             public native int numberOfPlaceholders();
             public native @Cast("nd4j::graph::Variable**") @StdVector PointerPointer getPlaceholders();
@@ -5250,28 +5257,28 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native @Cast("bool") boolean hasVariable(@ByRef IntIntPair pair);
             public native @Cast("bool") boolean hasVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
 
-            public native FloatVariable getVariable(int id);
-            public native FloatVariable getVariable(int id, int idx);
-            public native FloatVariable getVariable(@ByRef IntIntPair pair);
-            public native FloatVariable getVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
+            public native Variable getVariable(int id);
+            public native Variable getVariable(int id, int idx);
+            public native Variable getVariable(@ByRef IntIntPair pair);
+            public native Variable getVariable(@StdString @Cast({"char*", "std::string*"}) BytePointer symbol);
 
             public native @Cast("nd4j::graph::Variable**") @StdVector PointerPointer getVariables();
 
-            public native void putVariable(@ByRef IntIntPair pair, FloatNDArray array);
-            public native void putVariable(@ByRef IntIntPair pair, FloatVariable variable);
-            public native void putVariable(int id, FloatVariable variable);
-            public native void putVariable(int id, FloatNDArray array);
-            public native void putVariable(int id, int idx, FloatNDArray array);
-            public native void putVariable(int id, int idx, FloatVariable array);
+            public native void putVariable(@ByRef IntIntPair pair, NDArray array);
+            public native void putVariable(@ByRef IntIntPair pair, Variable variable);
+            public native void putVariable(int id, Variable variable);
+            public native void putVariable(int id, NDArray array);
+            public native void putVariable(int id, int idx, NDArray array);
+            public native void putVariable(int id, int idx, Variable array);
 
             public native void dropVariable(@ByRef IntIntPair pair);
             public native void dropVariable(int id, int idx);
 
-            public native void trackList(FloatNDArrayList list);
+            public native void trackList(NDArrayList list);
 
-            public native void putOutputVariable(FloatVariable variable);
+            public native void putOutputVariable(Variable variable);
 
-            public native void replaceVariable(FloatVariable variable);
+            public native void replaceVariable(Variable variable);
 
             // memory-related statistics
             public native @Cast("Nd4jLong") long externalMemory();
@@ -5282,15 +5289,15 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native int internalEntries();
             public native int totalEntries();
 
-            public native FloatVariableSpace clone();
+            public native VariableSpace clone();
 
             public native @Cast("nd4j::graph::Variable**") @StdVector PointerPointer handles();
 
 
-            public native FloatVariableSpace asT();
-            public native void injectVariable(@ByRef IntIntPair pair, FloatVariable variable);
+            public native VariableSpace asT();
+            public native void injectVariable(@ByRef IntIntPair pair, Variable variable);
 
-            public native FloatStash getStash();
+            public native Stash getStash();
 
             public native @Cast("nd4j::graph::Variable**") @StdVector PointerPointer getExternalVariables();
 
@@ -5777,10 +5784,10 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
         /**
          * This class defines input desired for any given node/operation within graph
          */
-        @Name("nd4j::graph::Context") @NoOffset public static class FloatContext extends FloatContextPrototype {
+        @Namespace("nd4j::graph") @NoOffset public static class Context extends ContextPrototype {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatContext(Pointer p) { super(p); }
+            public Context(Pointer p) { super(p); }
         
             // TODO: maybe override new here as well?
 
@@ -5788,15 +5795,15 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #ifdef __CUDACC__
 // #endif
 
-            public FloatContext(FloatContextPrototype prototype, FloatVariableSpace variableSpace) { super((Pointer)null); allocate(prototype, variableSpace); }
-            private native void allocate(FloatContextPrototype prototype, FloatVariableSpace variableSpace);
+            public Context(ContextPrototype prototype, VariableSpace variableSpace) { super((Pointer)null); allocate(prototype, variableSpace); }
+            private native void allocate(ContextPrototype prototype, VariableSpace variableSpace);
 
-            public FloatContext(int nodeId, FloatVariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
-            private native void allocate(int nodeId, FloatVariableSpace variableSpace/*=nullptr*/);
-            public FloatContext(int nodeId) { super((Pointer)null); allocate(nodeId); }
+            public Context(int nodeId, VariableSpace variableSpace/*=nullptr*/) { super((Pointer)null); allocate(nodeId, variableSpace); }
+            private native void allocate(int nodeId, VariableSpace variableSpace/*=nullptr*/);
+            public Context(int nodeId) { super((Pointer)null); allocate(nodeId); }
             private native void allocate(int nodeId);
-            public FloatContext(int nodeId, FloatVariableSpace variableSpace, @Cast("bool") boolean isInplace) { super((Pointer)null); allocate(nodeId, variableSpace, isInplace); }
-            private native void allocate(int nodeId, FloatVariableSpace variableSpace, @Cast("bool") boolean isInplace);
+            public Context(int nodeId, VariableSpace variableSpace, @Cast("bool") boolean isInplace) { super((Pointer)null); allocate(nodeId, variableSpace, isInplace); }
+            private native void allocate(int nodeId, VariableSpace variableSpace, @Cast("bool") boolean isInplace);
 
             // default destructor
 
@@ -5827,12 +5834,12 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native Workspace oWorkspace();
 
 
-            public native void setVariableSpace(FloatVariableSpace variableSpace);
+            public native void setVariableSpace(VariableSpace variableSpace);
 
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
 
-            public native FloatVariableSpace getVariableSpace();
+            public native VariableSpace getVariableSpace();
 
             // these fields define, if we can execute specific node in-place, without generating new array
 
@@ -5847,12 +5854,12 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
              *
              * @return
              */
-            public native FloatStash getStash();
+            public native Stash getStash();
 
             /**
              *
              */
-            public native void trackList(FloatNDArrayList list);
+            public native void trackList(NDArrayList list);
 
 
             /**
@@ -5860,8 +5867,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
              * @param idx
              * @return
              */
-            public native FloatVariable getVariable(int idx);
-            public native FloatVariable variable(int idx);
+            public native Variable getVariable(int idx);
+            public native Variable variable(int idx);
 
 
             /**
@@ -5869,25 +5876,25 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
              * @param p
              * @return
              */
-            public native FloatVariable variable(int node, int index);
-            public native FloatVariable variable(@ByRef IntIntPair p);
+            public native Variable variable(int node, int index);
+            public native Variable variable(@ByRef IntIntPair p);
 
 
-            public native void pushNDArrayToVariableSpace(int nodeId, int index, FloatNDArray array, @Cast("bool") boolean removable/*=true*/);
-            public native void pushNDArrayToVariableSpace(int nodeId, int index, FloatNDArray array);
-            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, FloatNDArray array, @Cast("bool") boolean removable/*=true*/);
-            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, FloatNDArray array);
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, NDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(int nodeId, int index, NDArray array);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, NDArray array, @Cast("bool") boolean removable/*=true*/);
+            public native void pushNDArrayToVariableSpace(@ByRef IntIntPair pair, NDArray array);
 
-            public native void pushNDArrayListToVariableSpace(int nodeId, int index, FloatNDArrayList list, @Cast("bool") boolean track/*=true*/);
-            public native void pushNDArrayListToVariableSpace(int nodeId, int index, FloatNDArrayList list);
-            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, FloatNDArrayList list, @Cast("bool") boolean track/*=true*/);
-            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, FloatNDArrayList list);
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList list);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, NDArrayList list, @Cast("bool") boolean track/*=true*/);
+            public native void pushNDArrayListToVariableSpace(@ByRef IntIntPair pair, NDArrayList list);
 
             public native @Cast("bool") boolean isValueAvailable(int idx/*=0*/);
             public native @Cast("bool") boolean isValueAvailable();
 
-            public native FloatVariable ensureVariable(int idx/*=0*/);
-            public native FloatVariable ensureVariable();
+            public native Variable ensureVariable(int idx/*=0*/);
+            public native Variable ensureVariable();
         }
     
 
@@ -5928,20 +5935,20 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <RandomGenerator.h>
 // #include <ops/declarable/OpDescriptor.h>
 
-        @Name("nd4j::graph::ContextPrototype") @NoOffset public static class FloatContextPrototype extends Pointer {
+        @Namespace("nd4j::graph") @NoOffset public static class ContextPrototype extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatContextPrototype(Pointer p) { super(p); }
+            public ContextPrototype(Pointer p) { super(p); }
             /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public FloatContextPrototype(long size) { super((Pointer)null); allocateArray(size); }
+            public ContextPrototype(long size) { super((Pointer)null); allocateArray(size); }
             private native void allocateArray(long size);
-            @Override public FloatContextPrototype position(long position) {
-                return (FloatContextPrototype)super.position(position);
+            @Override public ContextPrototype position(long position) {
+                return (ContextPrototype)super.position(position);
             }
         
-            public FloatContextPrototype(OpDescriptor opDescriptor/*=nullptr*/, int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/) { super((Pointer)null); allocate(opDescriptor, nodeId, inPlace); }
+            public ContextPrototype(OpDescriptor opDescriptor/*=nullptr*/, int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/) { super((Pointer)null); allocate(opDescriptor, nodeId, inPlace); }
             private native void allocate(OpDescriptor opDescriptor/*=nullptr*/, int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/);
-            public FloatContextPrototype() { super((Pointer)null); allocate(); }
+            public ContextPrototype() { super((Pointer)null); allocate(); }
             private native void allocate();
 
             public native int getNodeId();
@@ -5969,7 +5976,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             public native @StdVector DoublePointer getTArguments();
             public native @StdVector IntPointer getIArguments();
-            public native @Cast("bool*") @StdVector BoolPointer getBArguments();
+            public native @Cast("bool*") @StdVector BooleanPointer getBArguments();
             public native @StdVector IntPointer getAxis();
 
             public native @Cast("size_t") long numT();
@@ -5991,7 +5998,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native @Cast("unsigned long") long width();
 
             // just a clone
-            public native FloatContextPrototype clone();
+            public native ContextPrototype clone();
 
             public native @ByRef RandomGenerator randomGenerator();
             public native @Const @ByRef RandomGenerator getRng();
@@ -8100,1519 +8107,6 @@ public static final int PREALLOC_SIZE = 33554432;
 // #endif //LIBND4J_SHAPELIST_H
 
 
-// Parsed from op_boilerplate.h
-
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
-
-/*
- * This set of macros is used to generate kernel calls/method calls/cuda kernels on the fly, during precompile phase.
- *
- * Entry macros start with DISPATCH_* name.
- * Basically they are rolling through *_OPS list, building list of kernels.
- * And DISPATCH_KERNEL_META rolls through any two *_OPS list, building meta kernels and their host counterparts
- *
- *
- * Those scary FE_*, FX_*, FZ_*, FM_* etc macro walls are used to give preprocessor ability to loop over list of argument,
- * which emulates forEach() pattern.
- *
- * I.e. here's macro call which generates CUDA kernels for RANDOM_OPS:
- *
- * DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float, INPUT(Nd4jPointer state, float *z, int *zShapeBuffer, float *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
- *
- * we provide arguments:
- *      output method template
- *      target generic kernel
- *      dataType
- *      signature
- *      parameters to be passed into generic kernel
- *      list of operations
- *
- *
- * List of operations used are defined in the same *.h file, i.e. for RandomOps it's defined as:
- * #define RANDOM_OPS \
- *       (0, randomOps::UniformDistribution) ,\
- *       (1, randomOps::DropOut) ,\
- *       (2, randomOps::DropOutInverted) ,\
- *       (3, randomOps::ProbablisticMerge) ,\
- *       (4, randomOps::Linspace) ,\
- *       (5, randomOps::Choice) ,\
- *       (6, randomOps::GaussianDistribution) ,\
- *       (7, randomOps::BernoulliDistribution) ,\
- *       (8, randomOps::BinomialDistribution)
- *
- *
- * So, DISPATCH_KERNEL_SIMPLE call will generate one kernel for each of ops.
- * This allows us easy addition of new operations. Basically one should just add new Op to the list, and recompile libnd4j
- *
- * HINT: To debug macro you might want to use simple trick: open console and run "watch -n 1 gcc -e file.h"
- * This will give you real-time result of macro preprocessing, which will greatly simplify invention process.
- *
- *
- * @author Paul Dubs (@treo)
- * @author raver119@gmail.com
- */
-// #pragma once
-// #ifndef OP_BOILERPLATE_HH
-// #define OP_BOILERPLATE_HH
-
-// #include <type_boilerplate.h>
-
-// #ifdef __CUDACC__
-
-// #elif __JAVACPP_HACK__
-// #define meta_def
-// #define op_def
-// #define op_def_special
-// #elif _MSC_VER
-// #elif __clang__
-// #define op_def inline
-// #define op_def_special inline
-// #define meta_def inline
-// #elif __GNUC__
-// #define meta_def _Pragma("omp declare simd") inline __attribute__((always_inline))
-// #define op_def _Pragma("omp declare simd") inline __attribute__((always_inline))
-// #define op_def_special _Pragma("omp declare simd") inline __attribute__((always_inline))
-// #endif
-
-
-public static native @MemberGetter int ELEMENT_THRESHOLD();
-public static final int ELEMENT_THRESHOLD = ELEMENT_THRESHOLD();
-public static native @MemberGetter int TAD_THRESHOLD();
-public static final int TAD_THRESHOLD = TAD_THRESHOLD();
-
-// #define SHAPELIST(...)  new ShapeList({__VA_ARGS__}, block.workspace() != nullptr)
-
-// #ifdef __CUDA_ARCH__
-// #define PRINT_FIRST(...)    if (threadIdx.x == 0 && blockIdx.x == 0) {printf(__VA_ARGS__); }
-// #else
-// #define PRINT_FIRST(...)    printf(__VA_ARGS__); fflush(stdout)
-// #endif
-
-// #define DEBUG_CALL(STREAM)      if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) { throw std::runtime_error(); }; }
-// #define DEBUG_KERNEL(STREAM, OP_NUM)       if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) {std::string tFile(__FILE__); std::string tOp = "Kernel OpNum failed: [" + nd4j::StringUtils::valueToString<int>(OP_NUM) + std::string("]; File: ") + tFile + std::string(":") + nd4j::StringUtils::valueToString<int>(__LINE__); throw std::runtime_error(tOp.c_str()); }; }
-
-
-// #define LAUNCH(A, B, C, D) <<<A, B, C, D>>>
-
-
-// #define CONCAT2(A,B) A ## B
-// #define CONCAT3(A,B,C) A ## B ## C
-
-// #define ARGMIX3(A,B,C) A ## B ## _## C
-// #define ARGMIX4(A,B,C,D) A ## B ## _## C ## _ ## D
-
-// #define MIX2(A,B) A ## _ ## B
-// #define MIX3(A,B,C) A ## _ ## B ## _## C
-// #define MIX4(A,B,C,D) A ## _ ## B ## _## C ## _ ## D
-
-
-// #define EMPTY()
-// #define DEFER(id) id EMPTY()
-// #define OBSTRUCT(...) __VA_ARGS__ DEFER(EMPTY)()
-
-
-// #define _EXPAND_OP_CALL(FN, SIG, NUM, TYPE) case NUM: { FN<TYPE<X>>SIG; break; };
-// #define _EXPAND_OP_CALL_TT(FN, SIG, NUM, TYPE) case NUM: { FN<TYPE<X,Y>>SIG; break; };
-// #define _EXPAND_OP_CALL_TTT(FN, SIG, NUM, TYPE) case NUM: { FN<TYPE<X,Y,Z>>SIG; break; };
-// #define _EXPAND_RETURNING_OP_CALL(FN, SIG, NUM, TYPE) else if(opNum == NUM){ return FN<TYPE<X>>SIG; }
-// #define _EXPAND_RETURNING_OP_CALL_TT(FN, SIG, NUM, TYPE) else if(opNum == NUM){ return FN<TYPE<X, Y>>SIG; }
-// #define _EXPAND_PACKED_OP_CALL(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL (FN, SIG, UNPAREN(OPNUM_PAIR)))
-// #define _EXPAND_PACKED_OP_CALL_TT(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_TT (FN, SIG, UNPAREN(OPNUM_PAIR)))
-// #define _EXPAND_PACKED_OP_CALL_TTT(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_TTT (FN, SIG, UNPAREN(OPNUM_PAIR)))
-// #define _EXPAND_RETURNING_PACKED_OP_CALL(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _RETURNING_OP_CALL (FN, SIG, UNPAREN(OPNUM_PAIR)))
-// #define _EXPAND_RETURNING_PACKED_OP_CALL_TT(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _RETURNING_OP_CALL_TT (FN, SIG, UNPAREN(OPNUM_PAIR)))
-
-// #define FE_1(WHAT, FN, SIG, OPNUM_PAIR) WHAT(FN, SIG, OPNUM_PAIR)
-// #define FE_2(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_1(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_3(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_2(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_4(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_3(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_5(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_4(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_6(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_5(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_7(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_6(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_8(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_7(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_9(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_8(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_10(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_9(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_11(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_10(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_12(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_11(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_13(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_12(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_14(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_13(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_15(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_14(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_16(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_15(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_17(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_16(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_18(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_17(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_19(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_18(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_20(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_19(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_21(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_20(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_22(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_21(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_23(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_22(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_24(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_23(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_25(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_24(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_26(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_25(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_27(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_26(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_28(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_27(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_29(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_28(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_30(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_29(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_31(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_30(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_32(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_31(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_33(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_32(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_34(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_33(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_35(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_34(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_36(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_35(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_37(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_36(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_38(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_37(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_39(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_38(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_40(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_39(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_41(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_40(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_42(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_41(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_43(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_42(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_44(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_43(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_45(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_44(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_46(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_45(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_47(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_46(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_48(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_47(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_49(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_48(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_50(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_49(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_51(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_50(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_52(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_51(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_53(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_52(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_54(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_53(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_55(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_54(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_56(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_55(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_57(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_56(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_58(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_57(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_59(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_58(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_60(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_59(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_61(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_60(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_62(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_61(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_63(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_62(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_64(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_63(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_65(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_64(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_66(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_65(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_67(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_66(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_68(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_67(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_69(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_68(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_70(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_69(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_71(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_70(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_72(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_71(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_73(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_72(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_74(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_73(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_75(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_74(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_76(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_75(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_77(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_76(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_78(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_77(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_79(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_78(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_80(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_79(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_81(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_80(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_82(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_81(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_83(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_82(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_84(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_83(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_85(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_84(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_86(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_85(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_87(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_86(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_88(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_87(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_89(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_88(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_90(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_89(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_91(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_90(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_92(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_91(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_93(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_92(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_94(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_93(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_95(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_94(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_96(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_95(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_97(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_96(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_98(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_97(WHAT, FN, SIG, __VA_ARGS__))
-// #define FE_99(WHAT, FN, SIG, OPNUM_PAIR, ...) WHAT(FN, SIG, OPNUM_PAIR)EVAL(FE_98(WHAT, FN, SIG, __VA_ARGS__))
-
-
-// #define CL1_1(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)
-// #define CL1_2(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_1(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_3(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_2(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_4(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_3(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_5(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_4(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_6(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_5(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_7(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_6(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_8(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_7(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_9(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_8(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_10(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_9(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_11(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_10(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_12(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_11(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_13(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_12(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_14(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_13(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_15(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_14(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_16(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_15(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_17(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_16(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_18(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_17(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_19(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_18(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_20(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_19(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_21(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_20(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_22(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_21(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_23(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_22(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_24(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_23(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_25(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_24(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_26(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_25(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_27(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_26(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_28(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_27(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_29(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_28(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_30(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_29(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_31(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_30(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_32(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_31(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_33(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_32(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_34(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_33(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_35(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_34(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_36(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_35(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_37(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_36(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_38(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_37(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_39(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_38(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_40(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_39(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_41(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_40(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_42(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_41(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_43(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_42(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_44(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_43(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_45(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_44(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_46(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_45(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_47(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_46(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_48(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_47(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_49(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_48(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_50(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_49(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_51(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_50(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_52(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_51(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_53(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_52(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_54(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_53(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_55(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_54(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_56(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_55(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_57(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_56(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_58(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_57(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_59(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_58(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_60(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_59(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_61(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_60(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_62(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_61(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_63(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_62(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_64(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_63(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_65(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_64(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_66(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_65(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_67(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_66(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_68(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_67(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_69(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_68(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_70(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_69(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_71(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_70(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_72(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_71(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_73(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_72(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_74(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_73(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_75(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_74(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_76(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_75(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_77(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_76(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_78(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_77(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_79(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_78(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_80(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_79(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_81(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_80(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_82(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_81(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_83(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_82(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_84(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_83(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_85(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_84(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_86(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_85(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_87(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_86(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_88(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_87(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_89(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_88(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_90(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_89(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_91(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_90(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_92(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_91(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_93(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_92(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_94(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_93(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_95(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_94(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_96(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_95(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_97(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_96(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_98(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_97(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define CL1_99(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_98(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-
-
-// #define TR_1(WHAT, TYPE, OPNUM_PAIR) WHAT(TYPE, OPNUM_PAIR)
-// #define TR_2(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_1(WHAT, TYPE, __VA_ARGS__))
-// #define TR_3(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_2(WHAT, TYPE, __VA_ARGS__))
-// #define TR_4(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_3(WHAT, TYPE, __VA_ARGS__))
-// #define TR_5(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_4(WHAT, TYPE, __VA_ARGS__))
-// #define TR_6(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_5(WHAT, TYPE, __VA_ARGS__))
-// #define TR_7(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_6(WHAT, TYPE, __VA_ARGS__))
-// #define TR_8(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_7(WHAT, TYPE, __VA_ARGS__))
-// #define TR_9(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_8(WHAT, TYPE, __VA_ARGS__))
-// #define TR_10(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_9(WHAT, TYPE, __VA_ARGS__))
-// #define TR_11(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_10(WHAT, TYPE, __VA_ARGS__))
-// #define TR_12(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_11(WHAT, TYPE, __VA_ARGS__))
-// #define TR_13(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_12(WHAT, TYPE, __VA_ARGS__))
-// #define TR_14(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_13(WHAT, TYPE, __VA_ARGS__))
-// #define TR_15(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_14(WHAT, TYPE, __VA_ARGS__))
-// #define TR_16(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_15(WHAT, TYPE, __VA_ARGS__))
-// #define TR_17(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_16(WHAT, TYPE, __VA_ARGS__))
-// #define TR_18(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_17(WHAT, TYPE, __VA_ARGS__))
-// #define TR_19(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_18(WHAT, TYPE, __VA_ARGS__))
-// #define TR_20(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_19(WHAT, TYPE, __VA_ARGS__))
-// #define TR_21(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_20(WHAT, TYPE, __VA_ARGS__))
-// #define TR_22(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_21(WHAT, TYPE, __VA_ARGS__))
-// #define TR_23(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_22(WHAT, TYPE, __VA_ARGS__))
-// #define TR_24(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_23(WHAT, TYPE, __VA_ARGS__))
-// #define TR_25(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_24(WHAT, TYPE, __VA_ARGS__))
-// #define TR_26(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_25(WHAT, TYPE, __VA_ARGS__))
-// #define TR_27(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_26(WHAT, TYPE, __VA_ARGS__))
-// #define TR_28(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_27(WHAT, TYPE, __VA_ARGS__))
-// #define TR_29(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_28(WHAT, TYPE, __VA_ARGS__))
-// #define TR_30(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_29(WHAT, TYPE, __VA_ARGS__))
-// #define TR_31(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_30(WHAT, TYPE, __VA_ARGS__))
-// #define TR_32(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_31(WHAT, TYPE, __VA_ARGS__))
-// #define TR_33(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_32(WHAT, TYPE, __VA_ARGS__))
-// #define TR_34(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_33(WHAT, TYPE, __VA_ARGS__))
-// #define TR_35(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_34(WHAT, TYPE, __VA_ARGS__))
-// #define TR_36(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_35(WHAT, TYPE, __VA_ARGS__))
-// #define TR_37(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_36(WHAT, TYPE, __VA_ARGS__))
-// #define TR_38(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_37(WHAT, TYPE, __VA_ARGS__))
-// #define TR_39(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_38(WHAT, TYPE, __VA_ARGS__))
-// #define TR_40(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_39(WHAT, TYPE, __VA_ARGS__))
-// #define TR_41(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_40(WHAT, TYPE, __VA_ARGS__))
-// #define TR_42(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_41(WHAT, TYPE, __VA_ARGS__))
-// #define TR_43(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_42(WHAT, TYPE, __VA_ARGS__))
-// #define TR_44(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_43(WHAT, TYPE, __VA_ARGS__))
-// #define TR_45(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_44(WHAT, TYPE, __VA_ARGS__))
-// #define TR_46(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_45(WHAT, TYPE, __VA_ARGS__))
-// #define TR_47(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_46(WHAT, TYPE, __VA_ARGS__))
-// #define TR_48(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_47(WHAT, TYPE, __VA_ARGS__))
-// #define TR_49(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_48(WHAT, TYPE, __VA_ARGS__))
-// #define TR_50(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_49(WHAT, TYPE, __VA_ARGS__))
-// #define TR_51(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_50(WHAT, TYPE, __VA_ARGS__))
-// #define TR_52(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_51(WHAT, TYPE, __VA_ARGS__))
-// #define TR_53(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_52(WHAT, TYPE, __VA_ARGS__))
-// #define TR_54(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_53(WHAT, TYPE, __VA_ARGS__))
-// #define TR_55(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_54(WHAT, TYPE, __VA_ARGS__))
-// #define TR_56(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_55(WHAT, TYPE, __VA_ARGS__))
-// #define TR_57(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_56(WHAT, TYPE, __VA_ARGS__))
-// #define TR_58(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_57(WHAT, TYPE, __VA_ARGS__))
-// #define TR_59(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_58(WHAT, TYPE, __VA_ARGS__))
-// #define TR_60(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_59(WHAT, TYPE, __VA_ARGS__))
-// #define TR_61(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_60(WHAT, TYPE, __VA_ARGS__))
-// #define TR_62(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_61(WHAT, TYPE, __VA_ARGS__))
-// #define TR_63(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_62(WHAT, TYPE, __VA_ARGS__))
-// #define TR_64(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_63(WHAT, TYPE, __VA_ARGS__))
-// #define TR_65(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_64(WHAT, TYPE, __VA_ARGS__))
-// #define TR_66(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_65(WHAT, TYPE, __VA_ARGS__))
-// #define TR_67(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_66(WHAT, TYPE, __VA_ARGS__))
-// #define TR_68(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_67(WHAT, TYPE, __VA_ARGS__))
-// #define TR_69(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_68(WHAT, TYPE, __VA_ARGS__))
-// #define TR_70(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_69(WHAT, TYPE, __VA_ARGS__))
-// #define TR_71(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_70(WHAT, TYPE, __VA_ARGS__))
-// #define TR_72(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_71(WHAT, TYPE, __VA_ARGS__))
-// #define TR_73(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_72(WHAT, TYPE, __VA_ARGS__))
-// #define TR_74(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_73(WHAT, TYPE, __VA_ARGS__))
-// #define TR_75(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_74(WHAT, TYPE, __VA_ARGS__))
-// #define TR_76(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_75(WHAT, TYPE, __VA_ARGS__))
-// #define TR_77(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_76(WHAT, TYPE, __VA_ARGS__))
-// #define TR_78(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_77(WHAT, TYPE, __VA_ARGS__))
-// #define TR_79(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_78(WHAT, TYPE, __VA_ARGS__))
-// #define TR_80(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_79(WHAT, TYPE, __VA_ARGS__))
-// #define TR_81(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_80(WHAT, TYPE, __VA_ARGS__))
-// #define TR_82(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_81(WHAT, TYPE, __VA_ARGS__))
-// #define TR_83(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_82(WHAT, TYPE, __VA_ARGS__))
-// #define TR_84(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_83(WHAT, TYPE, __VA_ARGS__))
-// #define TR_85(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_84(WHAT, TYPE, __VA_ARGS__))
-// #define TR_86(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_85(WHAT, TYPE, __VA_ARGS__))
-// #define TR_87(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_86(WHAT, TYPE, __VA_ARGS__))
-// #define TR_88(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_87(WHAT, TYPE, __VA_ARGS__))
-// #define TR_89(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_88(WHAT, TYPE, __VA_ARGS__))
-// #define TR_90(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_89(WHAT, TYPE, __VA_ARGS__))
-// #define TR_91(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_90(WHAT, TYPE, __VA_ARGS__))
-// #define TR_92(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_91(WHAT, TYPE, __VA_ARGS__))
-// #define TR_93(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_92(WHAT, TYPE, __VA_ARGS__))
-// #define TR_94(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_93(WHAT, TYPE, __VA_ARGS__))
-// #define TR_95(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_94(WHAT, TYPE, __VA_ARGS__))
-// #define TR_96(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_95(WHAT, TYPE, __VA_ARGS__))
-// #define TR_97(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_96(WHAT, TYPE, __VA_ARGS__))
-// #define TR_98(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_97(WHAT, TYPE, __VA_ARGS__))
-// #define TR_99(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_98(WHAT, TYPE, __VA_ARGS__))
-
-// #define DIR_1(WHAT, PARAMS, OPNUM_PAIR) WHAT(PARAMS, OPNUM_PAIR)
-// #define DIR_2(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_1(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_3(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_2(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_4(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_3(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_5(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_4(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_6(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_5(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_7(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_6(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_8(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_7(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_9(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_8(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_10(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_9(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_11(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_10(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_12(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_11(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_13(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_12(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_14(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_13(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_15(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_14(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_16(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_15(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_17(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_16(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_18(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_17(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_19(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_18(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_20(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_19(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_21(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_20(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_22(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_21(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_23(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_22(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_24(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_23(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_25(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_24(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_26(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_25(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_27(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_26(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_28(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_27(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_29(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_28(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_30(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_29(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_31(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_30(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_32(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_31(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_33(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_32(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_34(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_33(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_35(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_34(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_36(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_35(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_37(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_36(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_38(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_37(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_39(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_38(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_40(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_39(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_41(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_40(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_42(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_41(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_43(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_42(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_44(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_43(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_45(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_44(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_46(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_45(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_47(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_46(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_48(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_47(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_49(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_48(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_50(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_49(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_51(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_50(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_52(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_51(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_53(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_52(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_54(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_53(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_55(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_54(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_56(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_55(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_57(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_56(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_58(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_57(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_59(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_58(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_60(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_59(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_61(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_60(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_62(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_61(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_63(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_62(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_64(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_63(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_65(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_64(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_66(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_65(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_67(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_66(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_68(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_67(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_69(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_68(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_70(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_69(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_71(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_70(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_72(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_71(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_73(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_72(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_74(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_73(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_75(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_74(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_76(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_75(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_77(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_76(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_78(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_77(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_79(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_78(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_80(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_79(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_81(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_80(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_82(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_81(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_83(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_82(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_84(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_83(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_85(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_84(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_86(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_85(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_87(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_86(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_88(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_87(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_89(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_88(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_90(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_89(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_91(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_90(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_92(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_91(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_93(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_92(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_94(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_93(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_95(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_94(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_96(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_95(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_97(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_96(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_98(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_97(WHAT, PARAMS, __VA_ARGS__))
-// #define DIR_99(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_98(WHAT, PARAMS, __VA_ARGS__))
-
-
-// #define FZ_1(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)
-// #define FZ_2(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_1(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_3(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_2(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_4(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_3(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_5(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_4(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_6(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_5(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_7(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_6(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_8(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_7(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_9(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_8(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_10(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_9(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_11(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_10(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_12(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_11(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_13(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_12(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_14(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_13(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_15(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_14(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_16(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_15(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_17(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_16(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_18(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_17(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_19(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_18(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_20(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_19(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_21(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_20(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_22(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_21(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_23(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_22(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_24(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_23(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_25(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_24(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_26(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_25(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_27(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_26(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_28(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_27(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_29(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_28(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_30(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_29(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_31(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_30(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_32(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_31(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_33(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_32(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_34(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_33(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_35(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_34(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_36(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_35(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_37(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_36(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_38(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_37(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_39(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_38(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_40(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_39(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_41(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_40(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_42(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_41(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_43(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_42(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_44(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_43(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_45(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_44(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_46(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_45(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_47(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_46(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_48(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_47(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_49(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_48(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_50(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_49(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_51(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_50(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_52(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_51(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_53(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_52(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_54(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_53(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_55(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_54(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_56(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_55(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_57(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_56(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_58(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_57(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_59(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_58(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_60(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_59(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_61(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_60(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_62(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_61(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_63(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_62(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_64(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_63(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_65(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_64(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_66(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_65(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_67(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_66(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_68(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_67(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_69(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_68(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_70(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_69(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_71(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_70(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_72(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_71(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_73(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_72(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_74(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_73(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_75(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_74(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_76(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_75(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_77(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_76(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_78(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_77(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_79(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_78(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_80(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_79(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_81(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_80(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_82(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_81(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_83(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_82(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_84(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_83(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_85(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_84(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_86(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_85(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_87(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_86(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_88(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_87(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_89(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_88(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_90(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_89(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_91(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_90(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_92(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_91(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_93(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_92(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_94(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_93(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_95(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_94(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_96(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_95(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_97(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_96(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_98(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_97(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define FZ_99(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_98(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-
-// #define FF_1(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)
-// #define FF_2(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_1(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_3(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_2(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_4(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_3(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_5(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_4(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_6(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_5(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_7(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_6(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_8(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_7(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_9(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_8(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_10(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_9(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_11(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_10(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_12(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_11(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_13(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_12(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_14(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_13(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_15(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_14(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_16(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_15(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_17(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_16(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_18(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_17(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_19(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_18(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FF_20(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_19(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-
-
-// #define FFI_1(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)
-// #define FFI_2(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_1(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_3(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_2(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_4(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_3(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_5(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_4(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_6(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_5(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_7(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_6(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_8(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_7(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_9(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_8(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_10(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_9(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_11(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_10(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_12(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_11(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_13(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_12(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_14(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_13(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_15(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_14(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_16(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_15(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_17(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_16(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_18(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_17(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_19(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_18(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FFI_20(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_19(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-
-// #define FM_1(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)
-// #define FM_2(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_1(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_3(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_2(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_4(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_3(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_5(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_4(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_6(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_5(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_7(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_6(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_8(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_7(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_9(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_8(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_10(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_9(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_11(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_10(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_12(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_11(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_13(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_12(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_14(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_13(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_15(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_14(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_16(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_15(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_17(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_16(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR,__VA_ARGS__))
-// #define FM_18(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_17(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_19(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_18(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_20(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_19(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_21(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_20(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_22(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_21(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_23(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_22(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_24(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_23(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_25(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_24(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_26(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_25(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_27(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_26(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_28(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_27(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_29(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_28(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_30(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_29(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_31(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_30(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_32(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_31(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_33(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_32(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_34(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_33(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_35(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_34(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_36(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_35(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_37(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_36(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_38(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_37(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_39(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_38(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_40(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_39(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_41(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_40(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_42(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_41(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_43(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_42(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_44(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_43(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_45(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_44(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_46(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_45(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_47(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_46(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_48(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_47(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_49(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_48(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_50(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_49(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_51(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_50(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_52(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_51(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_53(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_52(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_54(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_53(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_55(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_54(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_56(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_55(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_57(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_56(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_58(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_57(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_59(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_58(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_60(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_59(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_61(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_60(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_62(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_61(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_63(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_62(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_64(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_63(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_65(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_64(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_66(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_65(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_67(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_66(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_68(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_67(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_69(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_68(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FM_70(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_69(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-
-
-// #define FX_1(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)
-// #define FX_2(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_1(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_3(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_2(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_4(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_3(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_5(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_4(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_6(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_5(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_7(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_6(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_8(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_7(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_9(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_8(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_10(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_9(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_11(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_10(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_12(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_11(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_13(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_12(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_14(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_13(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_15(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_14(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_16(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_15(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_17(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_16(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_18(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_17(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_19(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_18(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_20(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_19(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_21(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_20(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_22(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_21(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_23(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_22(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_24(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_23(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_25(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_24(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_26(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_25(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_27(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_26(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_28(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_27(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_29(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_28(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_30(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_29(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_31(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_30(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_32(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_31(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_33(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_32(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_34(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_33(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_35(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_34(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_36(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_35(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_37(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_36(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_38(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_37(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_39(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_38(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_40(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_39(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_41(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_40(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_42(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_41(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_43(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_42(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_44(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_43(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_45(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_44(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_46(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_45(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_47(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_46(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_48(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_47(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_49(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_48(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_50(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_49(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_51(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_50(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_52(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_51(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_53(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_52(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_54(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_53(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_55(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_54(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_56(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_55(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_57(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_56(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_58(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_57(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_59(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_58(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_60(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_59(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_61(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_60(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_62(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_61(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_63(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_62(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_64(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_63(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_65(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_64(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_66(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_65(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_67(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_66(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_68(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_67(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_69(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_68(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FX_70(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FX_69(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-
-
-// #define FK_1(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)
-// #define FK_2(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_1(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_3(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_2(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_4(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_3(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_5(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_4(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_6(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_5(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_7(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_6(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_8(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_7(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_9(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_8(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_10(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_9(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_11(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_10(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_12(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_11(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_13(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_12(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_14(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_13(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_15(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_14(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_16(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_15(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_17(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_16(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_18(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_17(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_19(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_18(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_20(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_19(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_21(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_20(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_22(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_21(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_23(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_22(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_24(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_23(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_25(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_24(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_26(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_25(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_27(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_26(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_28(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_27(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_29(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_28(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_30(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_29(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_31(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_30(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_32(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_31(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_33(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_32(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_34(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_33(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_35(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_34(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_36(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_35(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_37(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_36(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_38(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_37(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_39(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_38(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_40(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_39(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_41(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_40(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_42(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_41(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_43(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_42(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_44(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_43(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_45(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_44(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_46(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_45(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_47(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_46(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_48(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_47(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_49(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_48(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_50(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_49(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_51(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_50(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_52(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_51(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_53(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_52(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_54(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_53(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_55(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_54(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_56(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_55(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_57(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_56(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_58(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_57(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_59(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_58(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_60(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_59(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_61(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_60(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_62(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_61(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_63(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_62(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_64(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_63(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_65(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_64(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_66(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_65(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_67(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_66(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_68(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_67(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_69(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_68(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FK_70(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FK_69(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-
-
-
-// #define FI_1(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)
-// #define FI_2(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_1(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_3(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_2(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_4(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_3(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_5(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_4(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_6(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_5(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_7(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_6(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_8(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_7(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_9(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_8(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_10(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_9(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_11(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_10(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_12(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_11(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_13(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_12(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_14(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_13(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_15(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_14(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_16(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_15(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_17(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_16(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_18(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_17(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_19(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_18(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_20(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_19(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_21(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_20(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_22(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_21(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_23(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_22(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_24(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_23(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_25(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_24(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_26(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_25(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_27(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_26(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_28(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_27(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_29(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_28(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_30(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_29(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_31(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_30(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_32(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_31(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_33(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_32(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_34(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_33(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_35(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_34(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_36(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_35(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_37(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_36(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_38(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_37(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_39(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_38(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_40(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_39(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_41(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_40(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_42(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_41(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_43(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_42(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_44(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_43(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_45(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_44(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_46(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_45(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_47(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_46(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_48(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_47(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_49(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_48(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_50(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_49(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_51(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_50(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_52(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_51(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_53(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_52(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_54(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_53(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_55(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_54(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_56(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_55(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_57(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_56(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_58(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_57(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_59(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_58(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_60(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_59(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_61(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_60(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_62(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_61(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_63(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_62(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_64(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_63(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_65(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_64(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_66(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_65(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_67(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_66(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_68(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_67(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_69(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_68(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FI_70(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FI_69(WHAT, FN, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-
-
-// #define FS_1(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)
-// #define FS_2(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_1(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_3(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_2(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_4(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_3(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_5(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_4(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_6(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_5(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_7(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_6(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_8(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_7(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_9(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_8(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_10(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_9(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_11(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_10(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_12(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_11(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_13(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_12(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_14(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_13(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_15(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_14(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_16(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_15(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_17(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_16(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_18(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_17(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_19(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_18(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_20(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_19(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_21(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_20(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_22(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_21(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_23(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_22(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_24(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_23(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_25(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_24(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_26(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_25(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_27(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_26(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_28(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_27(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_29(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_28(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_30(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_29(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_31(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_30(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_32(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_31(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_33(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_32(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_34(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_33(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_35(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_34(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_36(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_35(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_37(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_36(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_38(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_37(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_39(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_38(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_40(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_39(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_41(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_40(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_42(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_41(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_43(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_42(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_44(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_43(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_45(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_44(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_46(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_45(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_47(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_46(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_48(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_47(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_49(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_48(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_50(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_49(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_51(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_50(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_52(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_51(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_53(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_52(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_54(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_53(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_55(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_54(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_56(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_55(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_57(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_56(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_58(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_57(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_59(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_58(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_60(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_59(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_61(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_60(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_62(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_61(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_63(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_62(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_64(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_63(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_65(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_64(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_66(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_65(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_67(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_66(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_68(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_67(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_69(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_68(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_70(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_69(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_71(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_70(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_72(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_71(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_73(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_72(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_74(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_73(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_75(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_74(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_76(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_75(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_77(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_76(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_78(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_77(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_79(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_78(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_80(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_79(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_81(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_80(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_82(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_81(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_83(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_82(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_84(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_83(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_85(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_84(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_86(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_85(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_87(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_86(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_88(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_87(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_89(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_88(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_90(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_89(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_91(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_90(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_92(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_91(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_93(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_92(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_94(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_93(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_95(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_94(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_96(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_95(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_97(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_96(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_98(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_97(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FS_99(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR, ...) WHAT(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR)EVAL(FS_98(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-
-//////////////////////////////
-// #ifdef __clang__
-// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 512, 1024, *stream) SIG; };
-// #elif _MSC_VER
-// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 512, 1024, *stream) SIG; };
-// #elif __GNUC__
-// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) else if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 512, 2048, *stream) SIG; }
-// #elif __CUDACC__
-// #endif
-// #define _EXPAND_OP_SIMPLE(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) case NUM_A: {MIX3(NAME, NUM_A, TYPE) LAUNCH(launchDims.x, launchDims.y, launchDims.z, *stream) PARAMZ;} break;
-
-// #define _EXPAND_OP_CALL_1(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) NAME<TYPE_A<TYPE>>PARAMZ;
-// #define _EXPAND_OP_DIRECT(PARAMZ, NUM_A, TYPE_A)  case NUM_A: { z = TYPE_A<T>::op PARAMZ; break; }
-// #define _EXPAND_OP_CALL_T(TYPE, NUM_A, TYPE_A) OpTracker::getInstance()->storeOperation(TYPE, #TYPE_A, NUM_A);
-
-// #define _EXPAND_FACTORY_CALL(TYPE, LAYER_ID, LAYER_NAME, ACTIVATION_ID, ACTIVATION_NAME) if (activationNum == ACTIVATION_ID && layerNum == LAYER_ID) { return new LAYER_NAME<TYPE, ACTIVATION_NAME<TYPE>>(); };
-
-// #define _EXPAND_PACKED_CALL_1(NAME, TYPE, PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_1(NAME, TYPE, PARAMZ, UNPAREN(OPNUM_PAIR)))
-// #define _EXPAND_PACKED_DIRECT(PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_DIRECT(PARAMZ, UNPAREN(OPNUM_PAIR)))
-// #define _EXPAND_PACKED_CALL_T(TYPE, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_T(TYPE, UNPAREN(OPNUM_PAIR)))
-
-// #define _EXPAND_KERNEL_CALL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, NUM_A, TYPE_A, NUM_B, TYPE_B) extern "C" __global__ void ARGMIX4(NAME, NUM_A, NUM_B, TYPE)INPUTZ {KERNEL<TYPE, OPCLASS<TYPE, TYPE_A<TYPE>, TYPE_B<TYPE>>>PARAMZ ;};
-// #define _EXPAND_KERNEL_SIMPLE(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, NUM_A, TYPE_A) extern "C" __global__ void ARGMIX3(NAME, NUM_A, TYPE)INPUTZ {KERNEL<TYPE, TYPE_A<TYPE>>PARAMZ ;};
-// #define _EXPAND_PACKED_SIMPLE(NAME, TYPE, PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_SIMPLE(NAME, TYPE, PARAMZ, UNPAREN(OPNUM_PAIR)))
-// #define _EXPAND_PACKED_KERNEL_SIMPLE(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _KERNEL_SIMPLE (NAME, KERNEL, TYPE, INPUTZ, PARAMZ, UNPAREN(OPNUM_PAIR)))
-// #define _EXPAND_PACKED_KERNEL_CALL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _KERNEL_CALL (NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A)))
-// #define _EXPAND_PACKED_META_CALL(FN, SIG, OPCLASS, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _META_CALL (FN, SIG, OPCLASS, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A) ))
-
-// #define _EXPAND_PACKED_FACTORY_CALL(TYPE, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _FACTORY_CALL (TYPE, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A)))
-//////////////////////////////
-
-// #define GET_MACROS_1(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
-// #define GET_MACROS_D(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
-// #define GET_MACROS_T(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
-
-// #define  GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
-// #define GET_MACROS(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
-// #define GET_MACROX(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, NAME,...) NAME
-// #define GET_MACROE(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, NAME,...) NAME
-// #define GET_MACROK(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, NAME,...) NAME
-// #define GET_MACROI(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, NAME,...) NAME
-// #define GET_MACROF(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
-// #define FOR_EACH(WHAT, NAME, SIGNATURE, ...) EVAL(GET_MACRO(__VA_ARGS__,  FE_99, FE_98, FE_97, FE_96, FE_95, FE_94, FE_93, FE_92, FE_91, FE_90, FE_89, FE_88, FE_87, FE_86, FE_85, FE_84, FE_83, FE_82, FE_81, FE_80, FE_79, FE_78, FE_77, FE_76, FE_75, FE_74, FE_73, FE_72, FE_71, FE_70, FE_69, FE_68, FE_67, FE_66, FE_65, FE_64, FE_63, FE_62, FE_61, FE_60, FE_59, FE_58, FE_57, FE_56, FE_55, FE_54, FE_53, FE_52, FE_51, FE_50, FE_49, FE_48, FE_47, FE_46, FE_45, FE_44, FE_43, FE_42, FE_41, FE_40, FE_39, FE_38, FE_37, FE_36, FE_35, FE_34, FE_33, FE_32, FE_31, FE_30, FE_29, FE_28, FE_27, FE_26, FE_25, FE_24, FE_23, FE_22, FE_21, FE_20, FE_19, FE_18, FE_17, FE_16, FE_15, FE_14, FE_13, FE_12, FE_11, FE_10, FE_9, FE_8, FE_7, FE_6, FE_5, FE_4, FE_3, FE_2, FE_1)(WHAT, NAME, SIGNATURE, __VA_ARGS__))
-
-// #define FOR_EACH_M(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, ...) EXPAND(GET_MACROX(__VA_ARGS__, FM_70, FM_69, FM_68, FM_67, FM_66, FM_65, FM_64, FM_63, FM_62, FM_61, FM_60, FM_59, FM_58, FM_57, FM_56, FM_55, FM_54, FM_53, FM_52, FM_51, FM_50, FM_49, FM_48, FM_47, FM_46, FM_45, FM_44, FM_43, FM_42, FM_41, FM_40, FM_39, FM_38, FM_37, FM_36, FM_35, FM_34, FM_33, FM_32, FM_31, FM_30, FM_29, FM_28, FM_27, FM_26, FM_25, FM_24, FM_23, FM_22, FM_21, FM_20, FM_19, FM_18, FM_17, FM_16, FM_15, FM_14, FM_13, FM_12, FM_11, FM_10, FM_9, FM_8, FM_7, FM_6, FM_5, FM_4, FM_3, FM_2, FM_1)(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-// #define FOR_EACH_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, ...) EXPAND(GET_MACROE(__VA_ARGS__, FX_70, FX_69, FX_68, FX_67, FX_66, FX_65, FX_64, FX_63, FX_62, FX_61, FX_60, FX_59, FX_58, FX_57, FX_56, FX_55, FX_54, FX_53, FX_52, FX_51, FX_50, FX_49, FX_48, FX_47, FX_46, FX_45, FX_44, FX_43, FX_42, FX_41, FX_40, FX_39, FX_38, FX_37, FX_36, FX_35, FX_34, FX_33, FX_32, FX_31, FX_30, FX_29, FX_28, FX_27, FX_26, FX_25, FX_24, FX_23, FX_22, FX_21, FX_20, FX_19, FX_18, FX_17, FX_16, FX_15, FX_14, FX_13, FX_12, FX_11, FX_10, FX_9, FX_8, FX_7, FX_6, FX_5, FX_4, FX_3, FX_2, FX_1)(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
-
-// #define FOR_EACH_CALL_1(WHAT, NAME, TYPE, PARAMZ, ...) EXPAND(GET_MACROS_1(__VA_ARGS__,  CL1_99, CL1_98, CL1_97, CL1_96, CL1_95, CL1_94, CL1_93, CL1_92, CL1_91, CL1_90, CL1_89, CL1_88, CL1_87, CL1_86, CL1_85, CL1_84, CL1_83, CL1_82, CL1_81, CL1_80, CL1_79, CL1_78, CL1_77, CL1_76, CL1_75, CL1_74, CL1_73, CL1_72, CL1_71, CL1_70, CL1_69, CL1_68, CL1_67, CL1_66, CL1_65, CL1_64, CL1_63, CL1_62, CL1_61, CL1_60, CL1_59, CL1_58, CL1_57, CL1_56, CL1_55, CL1_54, CL1_53, CL1_52, CL1_51, CL1_50, CL1_49, CL1_48, CL1_47, CL1_46, CL1_45, CL1_44, CL1_43, CL1_42, CL1_41, CL1_40, CL1_39, CL1_38, CL1_37, CL1_36, CL1_35, CL1_34, CL1_33, CL1_32, CL1_31, CL1_30, CL1_29, CL1_28, CL1_27, CL1_26, CL1_25, CL1_24, CL1_23, CL1_22, CL1_21, CL1_20, CL1_19, CL1_18, CL1_17, CL1_16, CL1_15, CL1_14, CL1_13, CL1_12, CL1_11, CL1_10, CL1_9, CL1_8, CL1_7, CL1_6, CL1_5, CL1_4, CL1_3, CL1_2, CL1_1)(WHAT, NAME, TYPE, PARAMZ, __VA_ARGS__))
-// #define FOR_EACH_DIRECT(WHAT, PARAMZ, ...) EXPAND(GET_MACROS_D(__VA_ARGS__,  DIR_99, DIR_98, DIR_97, DIR_96, DIR_95, DIR_94, DIR_93, DIR_92, DIR_91, DIR_90, DIR_89, DIR_88, DIR_87, DIR_86, DIR_85, DIR_84, DIR_83, DIR_82, DIR_81, DIR_80, DIR_79, DIR_78, DIR_77, DIR_76, DIR_75, DIR_74, DIR_73, DIR_72, DIR_71, DIR_70, DIR_69, DIR_68, DIR_67, DIR_66, DIR_65, DIR_64, DIR_63, DIR_62, DIR_61, DIR_60, DIR_59, DIR_58, DIR_57, DIR_56, DIR_55, DIR_54, DIR_53, DIR_52, DIR_51, DIR_50, DIR_49, DIR_48, DIR_47, DIR_46, DIR_45, DIR_44, DIR_43, DIR_42, DIR_41, DIR_40, DIR_39, DIR_38, DIR_37, DIR_36, DIR_35, DIR_34, DIR_33, DIR_32, DIR_31, DIR_30, DIR_29, DIR_28, DIR_27, DIR_26, DIR_25, DIR_24, DIR_23, DIR_22, DIR_21, DIR_20, DIR_19, DIR_18, DIR_17, DIR_16, DIR_15, DIR_14, DIR_13, DIR_12, DIR_11, DIR_10, DIR_9, DIR_8, DIR_7, DIR_6, DIR_5, DIR_4, DIR_3, DIR_2, DIR_1)(WHAT, PARAMZ, __VA_ARGS__))
-// #define FOR_EACH_TRACKER(WHAT, TYPE, ...) EXPAND(GET_MACROS_T(__VA_ARGS__,  TR_99, TR_98, TR_97, TR_96, TR_95, TR_94, TR_93, TR_92, TR_91, TR_90, TR_89, TR_88, TR_87, TR_86, TR_85, TR_84, TR_83, TR_82, TR_81, TR_80, TR_79, TR_78, TR_77, TR_76, TR_75, TR_74, TR_73, TR_72, TR_71, TR_70, TR_69, TR_68, TR_67, TR_66, TR_65, TR_64, TR_63, TR_62, TR_61, TR_60, TR_59, TR_58, TR_57, TR_56, TR_55, TR_54, TR_53, TR_52, TR_51, TR_50, TR_49, TR_48, TR_47, TR_46, TR_45, TR_44, TR_43, TR_42, TR_41, TR_40, TR_39, TR_38, TR_37, TR_36, TR_35, TR_34, TR_33, TR_32, TR_31, TR_30, TR_29, TR_28, TR_27, TR_26, TR_25, TR_24, TR_23, TR_22, TR_21, TR_20, TR_19, TR_18, TR_17, TR_16, TR_15, TR_14, TR_13, TR_12, TR_11, TR_10, TR_9, TR_8, TR_7, TR_6, TR_5, TR_4, TR_3, TR_2, TR_1)(WHAT, TYPE, __VA_ARGS__))
-
-// #define FOR_EACH_Z(WHAT, NAME, TYPE, PARAMZ, ...) EXPAND(GET_MACROS(__VA_ARGS__,  FZ_99, FZ_98, FZ_97, FZ_96, FZ_95, FZ_94, FZ_93, FZ_92, FZ_91, FZ_90, FZ_89, FZ_88, FZ_87, FZ_86, FZ_85, FZ_84, FZ_83, FZ_82, FZ_81, FZ_80, FZ_79, FZ_78, FZ_77, FZ_76, FZ_75, FZ_74, FZ_73, FZ_72, FZ_71, FZ_70, FZ_69, FZ_68, FZ_67, FZ_66, FZ_65, FZ_64, FZ_63, FZ_62, FZ_61, FZ_60, FZ_59, FZ_58, FZ_57, FZ_56, FZ_55, FZ_54, FZ_53, FZ_52, FZ_51, FZ_50, FZ_49, FZ_48, FZ_47, FZ_46, FZ_45, FZ_44, FZ_43, FZ_42, FZ_41, FZ_40, FZ_39, FZ_38, FZ_37, FZ_36, FZ_35, FZ_34, FZ_33, FZ_32, FZ_31, FZ_30, FZ_29, FZ_28, FZ_27, FZ_26, FZ_25, FZ_24, FZ_23, FZ_22, FZ_21, FZ_20, FZ_19, FZ_18, FZ_17, FZ_16, FZ_15, FZ_14, FZ_13, FZ_12, FZ_11, FZ_10, FZ_9, FZ_8, FZ_7, FZ_6, FZ_5, FZ_4, FZ_3, FZ_2, FZ_1)(WHAT, NAME, TYPE, PARAMZ, __VA_ARGS__))
-// #define FOR_EACH_S(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, ...) EXPAND(GET_MACROS(__VA_ARGS__,  FS_99, FS_98, FS_97, FS_96, FS_95, FS_94, FS_93, FS_92, FS_91, FS_90, FS_89, FS_88, FS_87, FS_86, FS_85, FS_84, FS_83, FS_82, FS_81, FS_80, FS_79, FS_78, FS_77, FS_76, FS_75, FS_74, FS_73, FS_72, FS_71, FS_70, FS_69, FS_68, FS_67, FS_66, FS_65, FS_64, FS_63, FS_62, FS_61, FS_60, FS_59, FS_58, FS_57, FS_56, FS_55, FS_54, FS_53, FS_52, FS_51, FS_50, FS_49, FS_48, FS_47, FS_46, FS_45, FS_44, FS_43, FS_42, FS_41, FS_40, FS_39, FS_38, FS_37, FS_36, FS_35, FS_34, FS_33, FS_32, FS_31, FS_30, FS_29, FS_28, FS_27, FS_26, FS_25, FS_24, FS_23, FS_22, FS_21, FS_20, FS_19, FS_18, FS_17, FS_16, FS_15, FS_14, FS_13, FS_12, FS_11, FS_10, FS_9, FS_8, FS_7, FS_6, FS_5, FS_4, FS_3, FS_2, FS_1)(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
-// #define FOR_EACH_I(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, ...) EXPAND(GET_MACROI(__VA_ARGS__, FI_70, FI_69, FI_68, FI_67, FI_66, FI_65, FI_64, FI_63, FI_62, FI_61, FI_60, FI_59, FI_58, FI_57, FI_56, FI_55, FI_54, FI_53, FI_52, FI_51, FI_50, FI_49, FI_48, FI_47, FI_46, FI_45, FI_44, FI_43, FI_42, FI_41, FI_40, FI_39, FI_38, FI_37, FI_36, FI_35, FI_34, FI_33, FI_32, FI_31, FI_30, FI_29, FI_28, FI_27, FI_26, FI_25, FI_24, FI_23, FI_22, FI_21, FI_20, FI_19, FI_18, FI_17, FI_16, FI_15, FI_14, FI_13, FI_12, FI_11, FI_10, FI_9, FI_8, FI_7, FI_6, FI_5, FI_4, FI_3, FI_2, FI_1)(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-// #define FOR_EACH_K(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, ...) EXPAND(GET_MACROK(__VA_ARGS__, FK_70, FK_69, FK_68, FK_67, FK_66, FK_65, FK_64, FK_63, FK_62, FK_61, FK_60, FK_59, FK_58, FK_57, FK_56, FK_55, FK_54, FK_53, FK_52, FK_51, FK_50, FK_49, FK_48, FK_47, FK_46, FK_45, FK_44, FK_43, FK_42, FK_41, FK_40, FK_39, FK_38, FK_37, FK_36, FK_35, FK_34, FK_33, FK_32, FK_31, FK_30, FK_29, FK_28, FK_27, FK_26, FK_25, FK_24, FK_23, FK_22, FK_21, FK_20, FK_19, FK_18, FK_17, FK_16, FK_15, FK_14, FK_13, FK_12, FK_11, FK_10, FK_9, FK_8, FK_7, FK_6, FK_5, FK_4, FK_3, FK_2, FK_1)(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
-
-// #define FOR_EACH_F(WHAT, TYPE, OPNUM_PAIR, ...) EXPAND(GET_MACROF(__VA_ARGS__, FF_20, FF_19, FF_18, FF_17, FF_16, FF_15, FF_14, FF_13, FF_12, FF_11, FF_10, FF_9, FF_8, FF_7, FF_6, FF_5, FF_4, FF_3, FF_2, FF_1)(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-// #define FOR_EACH_FI(WHAT, TYPE, OPNUM_PAIR, ...) EXPAND(GET_MACROF(__VA_ARGS__, FFI_20, FFI_19, FFI_18, FFI_17, FFI_16, FFI_15, FFI_14, FFI_13, FFI_12, FFI_11, FFI_10, FFI_9, FFI_8, FFI_7, FFI_6, FFI_5, FFI_4, FFI_3, FFI_2, FFI_1)(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
-
-
-// #define _EXEC_OPS(WHAT, NAME, SIGNATURE, ...) EVAL(FOR_EACH(WHAT, NAME, SIGNATURE, __VA_ARGS__))
-// #define _EXEC_OP_SIMPLE(NAME, TYPE, SIGNATURE, ...) EVAL(FOR_EACH_Z(THETA, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-
-// #define _EXEC_BUILDER_1(NAME, TYPE, SIGNATURE, ...) EVAL(FOR_EACH_CALL_1(CALL_1, NAME, TYPE, SIGNATURE, __VA_ARGS__))
-// #define _EXEC_OP_DIRECT(SIGNATURE, ...) EVAL(FOR_EACH_DIRECT(DIRECT, SIGNATURE, __VA_ARGS__))
-// #define _EXEC_TRACKER(TYPE, ...) EVAL(FOR_EACH_TRACKER(CALL_T, TYPE, __VA_ARGS__))
-
-// #define _EXEC_META_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, ...) EVAL(FOR_EACH_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, __VA_ARGS__))
-// #define _EXEC_META_M(WHAT, NAME, SIGNATURE, OPCLASS, LIST_A, ...) EVAL(FOR_EACH_M(ALPHA, NAME, SIGNATURE, OPCLASS, OPS_A(LIST_A), __VA_ARGS__))
-// #define _EXEC_FACTORY(WHAT, TYPE, LIST_A, ...) EVAL(FOR_EACH_F(PHI, TYPE, OPS_A(LIST_A), __VA_ARGS__))
-// #define _EXEC_FACTORY_INTERNAL(WHAT, TYPE, ACTIVATION, ...) EVAL(FOR_EACH_FI(WHAT, TYPE, ACTIVATION, __VA_ARGS__))
-
-// #define _EXEC_KERNEL_F(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, ...) EVAL(FOR_EACH_S(GAMMA, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__ ))
-// #define _EXEC_KERNEL_M(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, LIST_A, ...) EVAL(FOR_EACH_K(BETA, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPS_A(LIST_A), __VA_ARGS__ ))
-// #define _EXEC_KERNEL_X(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ,  OPNUM_PAIR_A, ...) EVAL(FOR_EACH_I(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_A, __VA_ARGS__))
-//_EXPAND_PACKED_OP_CALL
-// #define DISPATCH_BY_OPNUM_T(NAME, SIGNATURE, ...) switch(opNum) { EVAL(_EXEC_OPS(_EXPAND_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) default: { printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }}
-// #define DISPATCH_BY_OPNUM_TT(NAME, SIGNATURE, ...) switch(opNum) { EVAL(_EXEC_OPS(_EXPAND_PACKED_OP_CALL_TT, NAME, (SIGNATURE), __VA_ARGS__)) default: { printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }}
-// #define DISPATCH_BY_OPNUM_TTT(NAME, SIGNATURE, ...) switch(opNum) { EVAL(_EXEC_OPS(_EXPAND_PACKED_OP_CALL_TTT, NAME, (SIGNATURE), __VA_ARGS__)) default: { printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }}
-
-// #ifdef __clang__
-// #define DISPATCH_METAOP(NAME, SIGNATURE, OPCLASS, LIST_A, LIST_B) EVAL(_EXEC_META_M(RANDOMWHAT, NAME, (SIGNATURE), OPCLASS, (LIST_A), LIST_B))
-// #elif _MSC_VER
-// #define DISPATCH_METAOP(NAME, SIGNATURE, OPCLASS, LIST_A, LIST_B) EVAL(_EXEC_META_M(RANDOMWHAT, NAME, (SIGNATURE), OPCLASS, (LIST_A), LIST_B))
-// #elif __GNUC__
-// #define DISPATCH_METAOP(NAME, SIGNATURE, OPCLASS, LIST_A, LIST_B) if(false){} EVAL(_EXEC_META_M(RANDOMWHAT, NAME, (SIGNATURE), OPCLASS, (LIST_A), LIST_B)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNumA, __FILE__, __LINE__); }
-// #elif __CUDACC__
-// #endif
-
-// #define BUILD_LAYERS_FACTORY(TYPE, LIST_A, LIST_B) EVAL(_EXEC_FACTORY(RANDOMWHAT, TYPE, (LIST_A), LIST_B))
-
-// #define DISPATCH_SIMPLE(NAME, TYPE, SIGNATURE, LIST_A) switch(opNum) { EVAL(_EXEC_OP_SIMPLE(NAME, TYPE, (SIGNATURE), LIST_A)) default: { printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }}
-
-// #define DISPATCH_KERNEL_SIMPLE(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, LIST_A) EVAL(_EXEC_KERNEL_F(NAME, KERNEL, TYPE, (INPUTZ), (PARAMZ), LIST_A))
-// #define DISPATCH_KERNEL_META(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, LIST_A, LIST_B ) EVAL(_EXEC_KERNEL_M(NAME, KERNEL, TYPE, OPCLASS, (INPUTZ), (PARAMZ), (LIST_A), LIST_B))
-// #define DISPATCH_INTERNAL(NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_B, ...) EXPAND(_EXEC_META_X(_EXPAND_PACKED_META_CALL, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_B, __VA_ARGS__))
-
-// #define DISPATCH_FACTORY(TYPE, ACTIVATION, ...) EXPAND(_EXEC_FACTORY_INTERNAL(_EXPAND_PACKED_FACTORY_CALL, TYPE, ACTIVATION, __VA_ARGS__))
-
-// #define DISPATCH_KERNEL_INTERNAL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_B, ...) EXPAND(_EXEC_KERNEL_X(_EXPAND_PACKED_KERNEL_CALL, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_B, __VA_ARGS__))
-
-// #define BUILD_CALL_1(NAME, TYPE, SIGNATURE, OPS) EVAL(_EXEC_BUILDER_1(NAME, TYPE, SIGNATURE, OPS))
-// #define BUILD_TRACKER(TYPE, OPS) EVAL(_EXEC_TRACKER(TYPE, OPS))
-
-// #define EXECUTE_NOE(SIGNATURE, LIST_A) switch(opNum) {EVAL(_EXEC_OP_DIRECT(SIGNATURE, LIST_A)) default: { printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }};
-
-// #define RETURNING_DISPATCH_BY_OPNUM_T(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); return 0; }
-// #define RETURNING_DISPATCH_BY_OPNUM_TT(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL_TT, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); return 0; }
-
-// #define PARAMS(...) __VA_ARGS__
-// #define INPUT(...) __VA_ARGS__
-// #define OPS_A(...) __VA_ARGS__
-// #define OPS_B(...) __VA_ARGS__
-// #define OPS_X(...) __VA_ARGS__
-// #define ALPHA(A, B, C, D, E) EXPAND(DISPATCH_INTERNAL(A, B, C, E, UNPAREN(D)))
-// #define BETA(A, B, C, D, E, F, G, H) EXPAND(DISPATCH_KERNEL_INTERNAL(A, B, C, D, E, F, H, UNPAREN(G)))
-// #define GAMMA(A, B, C, D, E, F) EXPAND(_EXPAND_PACKED_KERNEL_SIMPLE(A, B, C, D, E, F))
-// #define THETA(A, B, C, D) EXPAND(_EXPAND_PACKED_SIMPLE(A, B, C, D))
-// #define PHI(A, B, C) EXPAND(DISPATCH_FACTORY(A, C, UNPAREN(B)))
-
-// #define CALL_1(A, B, C, D) EXPAND(_EXPAND_PACKED_CALL_1(A, B, C, D))
-// #define CALL_T(A, B) EXPAND(_EXPAND_PACKED_CALL_T(A, B))
-// #define DIRECT(A, B) EXPAND(_EXPAND_PACKED_DIRECT(A, B))
-
-
-
-
-/** graph definitions */
-// #define REQUIRE_OK(A)  if (nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ ) != 0) return ND4J_STATUS_VALIDATION;
-// #define REQUIRE_TRUE(...) if (nd4j::ops::conditionHelper(__FILE__, __LINE__, __VA_ARGS__) != 0) throw std::invalid_argument("Op validation failed");
-
-// #define DECLARE_ENTRY(NAME, ...)           template struct ND4J_EXPORT __registratorFloat<NAME<float>>;
-//                                       template struct ND4J_EXPORT __registratorHalf<NAME<float16>>;
-//                                       template struct ND4J_EXPORT __registratorDouble<NAME<double>>;
-//                                       template struct ND4J_EXPORT __registratorSynonymHalf<NAME<float16>>;
-//                                       template struct ND4J_EXPORT __registratorSynonymDouble<NAME<double>>;
-//                                       template struct ND4J_EXPORT __registratorSynonymFloat<NAME<float>>;
-
-
-// #if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__) || defined(__VSCODE__)
-// #define NOT_EXCLUDED(NAME) 1>0
-// #else
-// #define NOT_EXCLUDED(NAME) defined(LIBND4J_ALL_OPS) || defined(NAME)
-// #endif
-
-// #ifdef __JAVACPP_HACK__
-// #define REGISTER_H(NAME)
-// #elif defined(LIBND4J_ALL_OPS)
-// #else
-// #define REGISTER_H(NAME)  template <typename OpName>
-//                         struct __registrator_##NAME {
-//                             __registrator_##NAME() {
-//                                 OpName *ptr = new OpName();
-//                                 OpRegistrator::getInstance()->registerOperation(ptr);
-//                             }
-//                         };
-//                         static nd4j::ops::__registrator_##NAME<NAME> zzz_register_opd_##NAME;
-// #endif
-
-// #ifdef __JAVACPP_HACK__
-// #define REGISTER_C(NAME)
-// #elif defined(LIBND4J_ALL_OPS)
-// #else
-// #define REGISTER_C(NAME)
-// #endif
-
-// #define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   class ND4J_EXPORT NAME: public nd4j::ops::DeclarableOp {
-//                                                 public:
-//                                                     NAME();
-//                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block);
-//                                                 protected:
-//                                                     void registerTypes();
-//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context& block);
-//                                                 };
-//                                                 REGISTER_H(NAME)
-
-// #define DECLARE_BOOLEAN_OP(NAME, NIN, SCALAR)   class ND4J_EXPORT NAME: public nd4j::ops::BooleanOp {
-//                                                 public:
-//                                                     NAME();
-//                                                 protected:
-//                                                     void registerTypes();
-//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context& block);
-//                                                 };
-//                                                 REGISTER_H(NAME)
-
-// #define BOOLEAN_OP_IMPL(NAME, NIN, SCALAR)   NAME::NAME() : nd4j::ops::BooleanOp(#NAME, NIN, SCALAR) { };
-//                                                 REGISTER_C(NAME)
-//                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
-
-// #define DECLARE_LIST_OP(NAME, NIN, NOUT, TARGS, IARGS)      class ND4J_EXPORT  NAME: public nd4j::ops::DeclarableListOp {
-//                                                             public:
-//                                                                 NAME();
-//                                                             protected:
-//                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context& block);
-//                                                             };
-//                                                             REGISTER_H(NAME)
-
-// #define LIST_OP_IMPL(NAME, NIN, NOUT, TARGS, IARGS)         NAME::NAME() : nd4j::ops::DeclarableListOp(NIN, NOUT, #NAME, TARGS, IARGS) { };
-//                                                             REGISTER_C(NAME)
-//                                                             Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
-
-// #define DECLARE_LOGIC_OP(NAME)      class ND4J_EXPORT NAME: public nd4j::ops::LogicOp {
-//                                     public:
-//                                         NAME();
-//                                     protected:
-//                                         Nd4jStatus validateAndExecute(nd4j::graph::Context& block);
-//                                     };
-//                                     REGISTER_H(NAME)
-
-// #define LOGIC_OP_IMPL(NAME)     NAME::NAME() : nd4j::ops::LogicOp(#NAME) { };
-//                                 REGISTER_C(NAME)
-//                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block) { return nd4j::ops::LogicOp::validateAndExecute(block); };
-
-
-
-// #define OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)   NAME::NAME() : nd4j::ops::DeclarableOp(NIN, NOUT, #NAME, INPLACEABLE) { };
-//                                                 REGISTER_C(NAME)
-//                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) {
-//                                                     auto shapeList = SHAPELIST();
-//                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
-//                                                         Nd4jLong* newshape;
-//                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), Nd4jLong);
-//                                                         if (shape::order(inputShape->at(e)) == 'c')
-//                                                             shape::shapeBuffer(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
-//                                                         else
-//                                                             shape::shapeBufferFortran(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
-//                                                         shapeList->push_back(newshape);
-//                                                     }
-//                                                     return shapeList;
-//                                                 }
-//                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
-
-
-// #define DECLARE_SYN(NAME, ORIGINAL) template <typename OpName>
-//                                     struct __registratorSynonym_##NAME {
-//                                         __registratorSynonym_##NAME(const char *name, const char *oname) {
-//                                             auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance()->getOperation(oname));
-//                                             if (ptr == nullptr) {
-//                                                 std::string newName(name);
-//                                                 std::string oldName(oname);
-//                                                 OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
-//                                                 return;
-//                                             }
-//                                             OpRegistrator::getInstance()->registerOperation(name, ptr);
-//                                             }
-//                                         };
-//                                         static nd4j::ops::__registratorSynonym_##NAME<ORIGINAL> zzz_register_opd_##NAME(#NAME, #ORIGINAL)
-
-// #define DECLARE_DIVERGENT_OP(NAME, NIN, NOUT, INPLACEABLE)  class ND4J_EXPORT NAME: public nd4j::ops::DeclarableOp {
-//                                                             public:
-//                                                                 NAME();
-//                                                                 nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block);
-//                                                             protected:
-//                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context& block);
-//                                                             };
-//                                                             REGISTER_H(NAME)
-
-// #define DIVERGENT_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)     NAME::NAME() : nd4j::ops::DeclarableOp(NIN, NOUT, #NAME, INPLACEABLE, true) { };
-//                                                             REGISTER_C(NAME)
-//                                                             nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) {
-//                                                                 auto shapeList = SHAPELIST();
-//                                                                 for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
-//                                                                     Nd4jLong* newshape;
-//                                                                     COPY_SHAPE(inputShape->at(0), newshape);
-//                                                                     shapeList->push_back(newshape);
-//                                                                 }
-//                                                                 return shapeList;
-//                                                             }
-//                                                             Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
-
-// #define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     class ND4J_EXPORT NAME: public nd4j::ops::DeclarableOp {
-//                                                                                 public:
-//                                                                                     NAME();
-//                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block);
-//                                                                                 protected:
-//                                                                                     void registerTypes();
-//                                                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context& block);
-//                                                                                 };
-//                                                                                 REGISTER_H(NAME)
-
-// #define CONFIGURABLE_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        NAME::NAME() : nd4j::ops::DeclarableOp(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
-//                                                                                 REGISTER_C(NAME)
-//                                                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) {
-//                                                                                     auto shapeList = SHAPELIST();
-//                                                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
-//                                                                                         Nd4jLong* newshape;
-//                                                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), Nd4jLong);
-//                                                                                         if (shape::order(inputShape->at(e)) == 'c')
-//                                                                                             shape::shapeBuffer(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
-//                                                                                         else
-//                                                                                             shape::shapeBufferFortran(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)),  shape::shapeOf(inputShape->at(e)), newshape);
-//                                                                                         shapeList->push_back(newshape);
-//                                                                                     }
-//                                                                                     return shapeList;
-//                                                                                 }
-//                                                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(Context& block)
-
-// #define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        class ND4J_EXPORT NAME: public nd4j::ops::DeclarableReductionOp {
-//                                                                                 public:
-//                                                                                     NAME();
-//                                                                                 protected:
-//                                                                                     void registerTypes();
-//                                                                                     Nd4jStatus validateAndExecute(Context& block);
-//                                                                                 };
-//                                                                                 REGISTER_H(NAME)
-
-// #define REDUCTION_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           NAME::NAME() : nd4j::ops::DeclarableReductionOp(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
-//                                                                                 REGISTER_C(NAME)
-//                                                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
-
-
-// #define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           class ND4J_EXPORT NAME: public nd4j::ops::DeclarableCustomOp {
-//                                                                                 protected:
-//                                                                                     void registerTypes();
-//                                                                                     Nd4jStatus validateAndExecute(Context& block);
-//                                                                                 public:
-//                                                                                     NAME();
-//                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block);
-//                                                                                 };
-//                                                                                 REGISTER_H(NAME)
-
-// #define CUSTOM_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)              NAME::NAME(): nd4j::ops::DeclarableCustomOp(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
-//                                                                                 REGISTER_C(NAME)
-//                                                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
-
-// this declaration MUST follow DECLARE_CUSTOM_OP
-// #define DECLARE_SHAPE_FN(NAME)                                                  nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block)
-
-
-// #define DECLARE_SAME_TYPE(NAME)                                                 void nd4j::ops::NAME::registerTypes() {this->getOpDescriptor()->setSameMode(true);}
-
-// #define DECLARE_TYPES(NAME)                                                     void nd4j::ops::NAME::registerTypes()
-
-// #define DECLARE_BROADCASTABLE_OP(NAME,TARGS, IARGS)                             class ND4J_EXPORT NAME: public nd4j::ops::BroadcastableOp {
-//                                                                                 protected:
-//                                                                                     void registerTypes();
-//                                                                                     Nd4jStatus validateAndExecute(Context& block);
-//                                                                                 public:
-//                                                                                     NAME();
-//                                                                                 };
-//                                                                                 REGISTER_H(NAME)
-
-// #define BROADCASTABLE_OP_IMPL(NAME, TARGS, IARGS)                               NAME::NAME(): nd4j::ops::BroadcastableOp(#NAME, TARGS, IARGS) { };
-//                                                                                 REGISTER_C(NAME)
-//                                                                                 Nd4jStatus nd4j::ops::NAME::validateAndExecute(nd4j::graph::Context& block)
-
-
-// #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
-
-// #define REPLICATE_SHAPE(SRC, TGT)   if (shape::order(SRC) == 'c')
-//                                         shape::shapeBuffer(shape::rank(SRC), nd4j::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);
-//                                     else
-//                                         shape::shapeBufferFortran(shape::rank(SRC),  nd4j::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);
-
-
-
-// #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }
-// #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
-
-
-// #define STORE_RESULT(A)     this->storeResult(block, 0, A)
-// #define OVERWRITE_RESULT(A)     this->overwriteResult(block, 0, A)
-// #define OVERWRITE_2_RESULTS(A, B)     this->overwriteResult(block, 0, A); this->overwriteResult(block, 1, B)
-// #define STORE_2_RESULTS(A, B)   this->storeResult(block, 0, A); this->storeResult(block, 1, B)
-// #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
-// #define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
-// #define STORE_5_RESULTS(A, B, C, D, E)      this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
-
-// #define STASH(NAME, ARRAY)  block.getStash()->storeArray(block.getNodeId(), NAME, ARRAY);
-// #define CHECK_STASH(NAME)   block.getStash()->checkStash(block.getNodeId(), NAME);
-// #define UNSTASH(NAME)       block.getStash()->extractArray(block.getNodeId(), NAME);
-
-// #define INPUT_VARIABLE(INDEX)     reinterpret_cast<nd4j::NDArray *>(block.getVariable(INDEX)->getNDArray())
-// #define OUTPUT_VARIABLE(INDEX)    reinterpret_cast<nd4j::NDArray *>(this->getZ(block, INDEX))
-
-// #define INPUT_LIST(INDEX)     reinterpret_cast<nd4j::NDArrayList *>(block.getVariable(INDEX)->getNDArrayList())
-
-// #define INT_ARG(INDEX)     block.getIArguments()->at(INDEX)
-// #define T_ARG(INDEX)     block.getTArguments()->at(INDEX)
-// #define B_ARG(INDEX)     block.getBArguments()->at(INDEX)
-
-
-// #define COPY_SHAPE(SRC, TGT)    ALLOCATE(TGT, block.getWorkspace(), shape::shapeInfoLength(SRC), Nd4jLong);
-//                                 REPLICATE_SHAPE(SRC, TGT);
-
-// #define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    ALLOCATE(TGT, WORKSPACE, shape::shapeInfoLength(SRC), Nd4jLong);
-//                                 REPLICATE_SHAPE(SRC, TGT);
-
-
-// define macros for compiler enforcement to make function inline  
-// #ifdef __clang__
-// #define FORCEINLINE inline 
-// #elif _MSC_VER
-// #define FORCEINLINE __forceinline
-// #elif __GNUC__
-// #define FORCEINLINE __attribute__((always_inline)) inline 
-// #elif __CUDACC__ 
-// #else
-// #define FORCEINLINE inline 
-// #endif
-
-
-// #ifdef __CUDACC__
-
-// #else
-
-// #define _CUDA_H
-// #define _CUDA_D
-// #define _CUDA_G
-// #define _CUDA_HD
-
-// #endif // CUDACC
-
-// #define CHECK_ALLOC(PTR, MSG) if (PTR == nullptr) { nd4j_printf("%s\n", MSG); throw std::bad_alloc(); };
-
-// #define LAMBDA_H(X, ...) [__VA_ARGS__] (float16 X) -> float16
-// #define LAMBDA_HH(X, Y, ...) [__VA_ARGS__] (float16 X, float16 Y) -> float16
-
-// #define ILAMBDA_D(X, ...) [__VA_ARGS__] (Nd4jLong _idx, double X) -> double
-// #define ILAMBDA_DD(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, double X, double Y) -> double
-
-// #define LAMBDA_D(X, ...) [__VA_ARGS__] (double X) -> double
-// #define LAMBDA_DD(X, Y, ...) [__VA_ARGS__] (double X, double Y) -> double
-// #define LAMBDA_DDD(t, u, v, ...) [__VA_ARGS__] (double t, double u, double v) -> double
-
-// #define ILAMBDA_F(X, ...) [__VA_ARGS__] (Nd4jLong _idx, float X) -> float
-// #define ILAMBDA_FF(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, float X, float Y) -> float
-
-// #define LAMBDA_F(X, ...) [__VA_ARGS__] (float X) -> float
-// #define LAMBDA_FF(X, Y, ...) [__VA_ARGS__] (float X, float Y) -> float
-// #define LAMBDA_FFF(t, u, v, ...) [__VA_ARGS__] (float t, float u, float v) -> float
-
-// #define LAMBDA_T(X, ...) [__VA_ARGS__] (T X) -> T
-// #define LAMBDA_TT(X, Y, ...) [__VA_ARGS__] (T X, T Y) -> T
-// #define LAMBDA_TTT(t, u, v, ...) [__VA_ARGS__] (T t, T u, T v) -> T
-
-// #define ILAMBDA_T(X, ...) [__VA_ARGS__] (Nd4jLong _idx, T X) -> T
-// #define ILAMBDA_TT(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, T X, T Y) -> T
-
-// #endif
-
-
 // Parsed from ops/InputType.h
 
 /*******************************************************************************
@@ -9830,13 +8324,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include "OpDescriptor.h"
 // #include "DeclarableOp.h"
 // #include "DeclarableCustomOp.h"
-        @Name("nd4j::ops::BroadcastableOp") public static class FloatBroadcastableOp extends FloatDeclarableCustomOp {
+        @Namespace("nd4j::ops") public static class BroadcastableOp extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatBroadcastableOp(Pointer p) { super(p); }
+            public BroadcastableOp(Pointer p) { super(p); }
         
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
         }
     
 
@@ -9874,40 +8368,38 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <NDArray.h>
 // #include <dll.h>
  
-@Name("nd4j::OpArgsHolder") @NoOffset public static class FloatOpArgsHolder extends Pointer {
+@Namespace("nd4j") @NoOffset public static class OpArgsHolder extends Pointer {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-    public FloatOpArgsHolder(Pointer p) { super(p); }
+    public OpArgsHolder(Pointer p) { super(p); }
 
 
 	
 
-    public FloatOpArgsHolder(@Cast("nd4j::NDArray**") @StdVector PointerPointer inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
-    private native void allocate(@Cast("nd4j::NDArray**") @StdVector PointerPointer inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/);
-    public FloatOpArgsHolder(@StdVector @ByPtrPtr FloatNDArray inArrs) { super((Pointer)null); allocate(inArrs); }
-    private native void allocate(@StdVector @ByPtrPtr FloatNDArray inArrs);
-    public FloatOpArgsHolder(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
-    private native void allocate(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/);
-    public FloatOpArgsHolder(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
-    private native void allocate(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
-    public FloatOpArgsHolder(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
-    private native void allocate(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/);
-    public FloatOpArgsHolder(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
-    private native void allocate(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
-    public FloatOpArgsHolder(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
-    private native void allocate(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/);
-    public FloatOpArgsHolder(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
-    private native void allocate(@StdVector @ByPtrPtr FloatNDArray inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs) { super((Pointer)null); allocate(inArrs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
+    public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
+    private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
 
-    public native @Cast("nd4j::NDArray**") @StdVector PointerPointer getInArrs();
+    public native @Const @ByRef NDArrayVector getInArrs();
 
     public native @StdVector DoublePointer getTArgs();
 
     public native @Cast("Nd4jLong*") @StdVector LongPointer getIArgs();
 
-    public native @Cast("bool*") @StdVector BoolPointer getBArgs();
+    public native @Cast("bool*") @StdVector BooleanPointer getBArgs();
 
-    public native @Cast("bool*") @StdVector BoolPointer getAllocInfo();
+    public native @Cast("bool*") @StdVector BooleanPointer getAllocInfo();
 
     public native int getNumInArrs();
 
@@ -9917,9 +8409,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
     public native int getNumBArgs();
 
-    public native @ByVal FloatOpArgsHolder createArgsHolderForBP(@Cast("nd4j::NDArray**") @StdVector PointerPointer inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
-    public native @ByVal FloatOpArgsHolder createArgsHolderForBP(@StdVector @ByPtrPtr FloatNDArray inGradArrs);
-    public native @ByVal FloatOpArgsHolder createArgsHolderForBP(@StdVector @ByPtrPtr FloatNDArray inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/); 
+    public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
+    public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs); 
     
 }
 
@@ -9981,10 +8472,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This class is the basic building block of Graph Operations. Any CustomOp out there is built on top of this "abstract" class.
          *
          */
-        @Name("nd4j::ops::DeclarableOp") @NoOffset public static class FloatDeclarableOp extends Pointer {
+        @Namespace("nd4j::ops") @NoOffset public static class DeclarableOp extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatDeclarableOp(Pointer p) { super(p); }
+            public DeclarableOp(Pointer p) { super(p); }
         
             // for special cases, like BooleanOps
 
@@ -9997,12 +8488,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             // this method returns OpDescriptor, describing this Op instance
             public native OpDescriptor getOpDescriptor();
 
-            public native @Cast("Nd4jStatus") int validateDataTypes(@ByRef FloatContext block);
+            public native @Cast("Nd4jStatus") int validateDataTypes(@ByRef Context block);
 
             /**
             *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input shape(s)
             */
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
 
             /**
              * Returns opName
@@ -10032,74 +8523,71 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
              * @param block
              * @return 0 if OK, error code otherwise
              */
-            public native @Cast("Nd4jStatus") int execute(FloatContext block);
+            public native @Cast("Nd4jStatus") int execute(Context block);
 
-            public native FloatResultSet execute(@Cast("nd4j::NDArray**") @StdVector PointerPointer inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native FloatResultSet execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
-            public native FloatResultSet execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native FloatResultSet execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native FloatResultSet execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
-            public native FloatResultSet execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native FloatResultSet execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
-            public native FloatResultSet execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native FloatResultSet execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native FloatResultSet execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@Cast("nd4j::NDArray**") @StdVector PointerPointer inputs, @Cast("nd4j::NDArray**") @StdVector PointerPointer outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BoolPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BoolPointer bArgs);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @Cast("nd4j::NDArray**") @StdVector PointerPointer inputs, @Cast("nd4j::NDArray**") @StdVector PointerPointer outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BoolPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BoolPointer bArgs);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BoolPointer bArgs);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
-            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector @ByPtrPtr FloatNDArray outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native ResultSet execute(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoublePointer tArgs, @Cast("Nd4jLong*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector DoubleBuffer tArgs, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs, @Cast("bool") boolean isInplace/*=false*/, @Cast("nd4j::DataType") int type/*=nd4j::DataType::FLOAT32*/);
+            public native @Cast("Nd4jStatus") int execute(@ByRef RandomGenerator rng, @ByRef NDArrayVector inputs, @ByRef NDArrayVector outputs, @StdVector double[] tArgs, @Cast("Nd4jLong*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
 
-            public native FloatResultSet execute(@Const @ByRef FloatOpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
-            public native FloatResultSet execute(@Const @ByRef FloatOpArgsHolder holder);
+            public native ResultSet execute(@Const @ByRef OpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
+            public native ResultSet execute(@Const @ByRef OpArgsHolder holder);
 
             // There methods provide various validation options
-            public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef FloatContext block);
+            public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef Context block);
 
             // this method checks if all input arrays have equal lengths
-            public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef FloatContext block);
+            public native @Cast("Nd4jStatus") int validateInputLengthMatch(@ByRef Context block);
 
             // this method checks if all input arrays have the same shapes (orders/strides are NOT checked)
-            public native @Cast("Nd4jStatus") int validateInputDimensionsMatch(@ByRef FloatContext block);
+            public native @Cast("Nd4jStatus") int validateInputDimensionsMatch(@ByRef Context block);
 
             // this method check if all input arrays have the same orders
-            public native @Cast("Nd4jStatus") int validateOrdersMatch(@ByRef FloatContext block);
+            public native @Cast("Nd4jStatus") int validateOrdersMatch(@ByRef Context block);
 
             // this method checks if all input arrays are 2D
-            public native @Cast("Nd4jStatus") int validateInput2D(@ByRef FloatContext block);
+            public native @Cast("Nd4jStatus") int validateInput2D(@ByRef Context block);
 
             // this method checks if all input arrays are 3D
-            public native @Cast("Nd4jStatus") int validateInput3D(@ByRef FloatContext block);
+            public native @Cast("Nd4jStatus") int validateInput3D(@ByRef Context block);
 
             // this method checks if all input arrays are 4D
-            public native @Cast("Nd4jStatus") int validateInput4D(@ByRef FloatContext block);
+            public native @Cast("Nd4jStatus") int validateInput4D(@ByRef Context block);
 
             // this method checks if all input arrays are ND
-            public native @Cast("Nd4jStatus") int validateInputDimensions(@ByRef FloatContext block, int rank);
+            public native @Cast("Nd4jStatus") int validateInputDimensions(@ByRef Context block, int rank);
 
             // this method checks if number of available arguments matches op expectations
-            public native @Cast("Nd4jStatus") int validateArguments(@ByRef FloatContext block);
+            public native @Cast("Nd4jStatus") int validateArguments(@ByRef Context block);
         }
     
 
@@ -10136,20 +8624,19 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <graph/Context.h>
 // #include <ops/declarable/OpRegistrator.h>
 // #include <ops/declarable/DeclarableOp.h>
-        @Name("nd4j::ops::DeclarableListOp") public static class FloatDeclarableListOp extends FloatDeclarableOp {
+        @Namespace("nd4j::ops") public static class DeclarableListOp extends DeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatDeclarableListOp(Pointer p) { super(p); }
+            public DeclarableListOp(Pointer p) { super(p); }
         
 
             
-            public native @Cast("Nd4jStatus") int execute(FloatContext block);
-            public native FloatResultSet execute(FloatNDArrayList list, @Cast("nd4j::NDArray**") @StdVector PointerPointer inputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs);
-            public native FloatResultSet execute(FloatNDArrayList list, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs);
-            public native FloatResultSet execute(FloatNDArrayList list, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs);
-            public native FloatResultSet execute(FloatNDArrayList list, @StdVector @ByPtrPtr FloatNDArray inputs, @StdVector double[] tArgs, @StdVector int[] iArgs);
+            public native @Cast("Nd4jStatus") int execute(Context block);
+            public native ResultSet execute(NDArrayList list, @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs);
+            public native ResultSet execute(NDArrayList list, @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native ResultSet execute(NDArrayList list, @ByRef NDArrayVector inputs, @StdVector double[] tArgs, @StdVector int[] iArgs);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
         }
     
 
@@ -10182,13 +8669,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define LIBND4J_DECLARABLE_REDUCTION_OP_H
 
 // #include <ops/declarable/DeclarableOp.h>
-        @Name("nd4j::ops::DeclarableReductionOp") public static class FloatDeclarableReductionOp extends FloatDeclarableOp {
+        @Namespace("nd4j::ops") public static class DeclarableReductionOp extends DeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatDeclarableReductionOp(Pointer p) { super(p); }
+            public DeclarableReductionOp(Pointer p) { super(p); }
         
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
         }
     
 
@@ -10222,13 +8709,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define LIBND4J_DECLARABLECUSTOMOP_H
 
 // #include <ops/declarable/DeclarableOp.h>
-        @Name("nd4j::ops::DeclarableCustomOp") public static class FloatDeclarableCustomOp extends FloatDeclarableOp {
+        @Namespace("nd4j::ops") public static class DeclarableCustomOp extends DeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatDeclarableCustomOp(Pointer p) { super(p); }
+            public DeclarableCustomOp(Pointer p) { super(p); }
         
 
-            public native ShapeList calculateOutputShape(ShapeList inputShapes, @ByRef FloatContext block);
+            public native ShapeList calculateOutputShape(ShapeList inputShapes, @ByRef Context block);
         }
     
 
@@ -10264,18 +8751,17 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <graph/Context.h>
 // #include "OpDescriptor.h"
 // #include "DeclarableOp.h"
-        @Name("nd4j::ops::BooleanOp") @NoOffset public static class FloatBooleanOp extends FloatDeclarableOp {
+        @Namespace("nd4j::ops") @NoOffset public static class BooleanOp extends DeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatBooleanOp(Pointer p) { super(p); }
+            public BooleanOp(Pointer p) { super(p); }
         
-            public native @Cast("bool") boolean evaluate(@Cast("nd4j::NDArray**") @StdVector PointerPointer args);
-            public native @Cast("bool") boolean evaluate(@StdVector @ByPtrPtr FloatNDArray args);
-            public native @Cast("bool") boolean evaluate(@ByRef FloatContext block);
+            public native @Cast("bool") boolean evaluate(@ByRef NDArrayVector args);
+            public native @Cast("bool") boolean evaluate(@ByRef Context block);
 
-            public native @Cast("Nd4jStatus") int execute(FloatContext block);
+            public native @Cast("Nd4jStatus") int execute(Context block);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
         }
     
 
@@ -10317,17 +8803,17 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Their code is the part of GraphExecutioner logic. But we still want them to be expressed via Graph
          * \tparam T
          */
-        @Name("nd4j::ops::LogicOp") public static class FloatLogicOp extends FloatDeclarableOp {
+        @Namespace("nd4j::ops") public static class LogicOp extends DeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public FloatLogicOp(Pointer p) { super(p); }
+            public LogicOp(Pointer p) { super(p); }
         
-            public FloatLogicOp(@Cast("char*") String name) { super((Pointer)null); allocate(name); }
+            public LogicOp(@Cast("char*") String name) { super((Pointer)null); allocate(name); }
             private native void allocate(@Cast("char*") String name);
-            public FloatLogicOp(@Cast("char*") BytePointer name) { super((Pointer)null); allocate(name); }
+            public LogicOp(@Cast("char*") BytePointer name) { super((Pointer)null); allocate(name); }
             private native void allocate(@Cast("char*") BytePointer name);
 
-            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
         }
     
 
@@ -10397,13 +8883,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             *
             * @param op
             */
-            public native @Cast("bool") boolean registerOperation(@Cast("char*") String name, FloatDeclarableOp op);
-            public native @Cast("bool") boolean registerOperation(@Cast("char*") BytePointer name, FloatDeclarableOp op);
-            public native @Cast("bool") boolean registerOperation(FloatDeclarableOp op);
+            public native @Cast("bool") boolean registerOperation(@Cast("char*") String name, DeclarableOp op);
+            public native @Cast("bool") boolean registerOperation(@Cast("char*") BytePointer name, DeclarableOp op);
+            public native @Cast("bool") boolean registerOperation(DeclarableOp op);
 
-            public native FloatDeclarableOp getOperation(@Cast("char*") String name);
-            public native FloatDeclarableOp getOperation(@Cast("char*") BytePointer name);
-            public native FloatDeclarableOp getOperation(@Cast("Nd4jLong") long hash);
+            public native DeclarableOp getOperation(@Cast("char*") String name);
+            public native DeclarableOp getOperation(@Cast("char*") BytePointer name);
+            public native DeclarableOp getOperation(@Cast("Nd4jLong") long hash);
 
             public native @Cast("Nd4jLong*") @StdVector LongPointer getAllHashes();
 
@@ -10487,77 +8973,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     }
 
         // logic ops 
-        @Namespace("nd4j::ops") public static class Switch extends FloatDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public Switch(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public Switch(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public Switch position(long position) {
-                return (Switch)super.position(position);
-            }
         
-                                                                public Switch() { super((Pointer)null); allocate(); }
-                                                                private native void allocate();
-                                                                public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
-                                                            }
-        @Namespace("nd4j::ops") public static class While extends FloatLogicOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public While(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public While(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public While position(long position) {
-                return (While)super.position(position);
-            }
         
-                                        public While() { super((Pointer)null); allocate(); }
-                                        private native void allocate();
-                                    }
-        @Namespace("nd4j::ops") public static class Scope extends FloatLogicOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public Scope(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public Scope(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public Scope position(long position) {
-                return (Scope)super.position(position);
-            }
         
-                                        public Scope() { super((Pointer)null); allocate(); }
-                                        private native void allocate();
-                                    }
-        @Namespace("nd4j::ops") public static class Conditional extends FloatLogicOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public Conditional(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public Conditional(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public Conditional position(long position) {
-                return (Conditional)super.position(position);
-            }
         
-                                        public Conditional() { super((Pointer)null); allocate(); }
-                                        private native void allocate();
-                                    }
-        @Namespace("nd4j::ops") public static class Return extends FloatLogicOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public Return(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public Return(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public Return position(long position) {
-                return (Return)super.position(position);
-            }
         
-                                        public Return() { super((Pointer)null); allocate(); }
-                                        private native void allocate();
-                                    }
 
 
         /**
@@ -10566,21 +8986,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *
          * PLEASE NOTE: This operation is internal graph operation, and shouldn't be used directly usually.
          */
-        @Namespace("nd4j::ops") public static class expose extends FloatDeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public expose(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public expose(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public expose position(long position) {
-                return (expose)super.position(position);
-            }
         
-                                                                                    public expose() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
-                                                                                }
     
 
 

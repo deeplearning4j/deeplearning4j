@@ -21,6 +21,7 @@ import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -78,7 +79,7 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
      */
     @Override
     protected void initTypeAndSize() {
-        type = Type.LONG;
+        type = DataType.LONG;
         elementSize = 8;
     }
 
@@ -150,15 +151,15 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaLongDataBuffer(byte[] data, long length) {
-        super(data, length);
+        super(data, length, DataType.LONG);
     }
 
     public CudaLongDataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, (int) length);
+        super(buffer, (int) length, DataType.LONG);
     }
 
     public CudaLongDataBuffer(ByteBuffer buffer, long length, long offset) {
-        super(buffer, length, offset);
+        super(buffer, length, offset, DataType.LONG);
     }
 
 
@@ -267,7 +268,7 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         //wrappedBuffer.order(ByteOrder.nativeOrder());
 
         this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                        new AllocationShape(length, elementSize, Type.DOUBLE), false);
+                        new AllocationShape(length, elementSize, DataType.LONG), false);
         this.trackingPoint = allocationPoint.getObjectId();
         //this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
         //this.wrappedBuffer.order(ByteOrder.nativeOrder());

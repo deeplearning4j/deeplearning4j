@@ -11760,6 +11760,27 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+         * This is Indentity operation. It passes signal umodified in both directions.
+         */
+//         #if NOT_EXCLUDED(OP_identity_n)
+        @Namespace("nd4j::ops") public static class identity_n extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public identity_n(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public identity_n(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public identity_n position(long position) {
+                return (identity_n)super.position(position);
+            }
+        
+                                                                                    public identity_n() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
          * This is Concatenated RELU implementation.
          * What happens inside: RELU(Concat((x, -x, {-1})))
          * 
@@ -18821,6 +18842,76 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+        * This op make bilinear interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
+        *
+        * int arguments: (optional)
+        *   0 - new width
+        *   1 - new height
+        *
+        * output array:
+        *   the 4D-Tensor with calculated backproped dots
+        *
+        * CAUTION: either size tensor or a pair of int params should be provided.
+        */
+
+//         #if NOT_EXCLUDED(OP_resize_bilinear)
+        @Namespace("nd4j::ops") public static class resize_bilinear extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public resize_bilinear(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public resize_bilinear(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public resize_bilinear position(long position) {
+                return (resize_bilinear)super.position(position);
+            }
+        
+                                                                                    public resize_bilinear() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
+        * This op make nearest neighbor interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
+        *
+        * int arguments: (optional)
+        *   0 - new width
+        *   1 - new height
+        *
+        * output array:
+        *   the 4D-Tensor with calculated backproped dots
+        *
+        * CAUTION: either size tensor or a pair of int params should be provided.
+        */
+
+//         #if NOT_EXCLUDED(OP_resize_bilinear)
+        @Namespace("nd4j::ops") public static class resize_nearest_neighbor extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public resize_nearest_neighbor(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public resize_nearest_neighbor(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public resize_nearest_neighbor position(long position) {
+                return (resize_nearest_neighbor)super.position(position);
+            }
+        
+                                                                                    public resize_nearest_neighbor() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
         * This op calculates backprop dot for two tensors along given dimensions
         *
         * input array:
@@ -18856,6 +18947,102 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+
+//         #if NOT_EXCLUDED(OP_Assert)
+        @Namespace("nd4j::ops") public static class Assert extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public Assert(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public Assert(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public Assert position(long position) {
+                return (Assert)super.position(position);
+            }
+        
+                                                    public Assert() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                }
+//         #endif
+        /*
+         * image.non_max_suppression op.
+         * input:
+         *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
+         *     1 - scales - 1D-tensor with shape (num_boxes) by float type
+         *     2 - output_size - 0D-tensor by int type (optional)
+         * float args:
+         *     0 - threshold - threshold value for overlap checks (optional, by default 0.5)
+         * int args:
+         *     0 - output_size - as arg 2 used for same target. Eigher this or arg 2 should be provided.
+         *
+         * */
+//         #if NOT_EXCLUDED(OP_image_non_max_suppression)
+        @Namespace("nd4j::ops") public static class non_max_suppression extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public non_max_suppression(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public non_max_suppression(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public non_max_suppression position(long position) {
+                return (non_max_suppression)super.position(position);
+            }
+        
+                                                                                    public non_max_suppression() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /*
+         * cholesky op - decomposite positive square symetric matrix (or matricies when rank > 2).
+         * input:
+         *     0 - matricies - tensor with shape (..., N, N) by float type
+         *
+         * output - lower triangular matrix (matricies when rank > 2) with the same shape as input.
+         * */
+// #if NOT_EXCLUDED(OP_cholesky)
+        @Namespace("nd4j::ops") public static class cholesky extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public cholesky(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public cholesky(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public cholesky position(long position) {
+                return (cholesky)super.position(position);
+            }
+        
+                                                    public cholesky() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                }
+// #endif
+        /*
+         * nth_element - apply nth_element for last dimension of input tensor
+         * input array:
+         *     0 - input array
+         *     1 - scalar tensor with n for operation. n should be less than last dimension
+         *
+         */
+//         #if NOT_EXCLUDED(OP_nth_element)
+        @Namespace("nd4j::ops") public static class nth_element extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public nth_element(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public nth_element(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public nth_element position(long position) {
+                return (nth_element)super.position(position);
+            }
+        
+                                                                                    public nth_element() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
     
 
 

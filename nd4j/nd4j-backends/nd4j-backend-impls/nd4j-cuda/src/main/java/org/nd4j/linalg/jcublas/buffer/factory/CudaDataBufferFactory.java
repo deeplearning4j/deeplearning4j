@@ -23,6 +23,7 @@ import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.LongBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -329,6 +330,16 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createFloat(long length, boolean initialize, MemoryWorkspace workspace) {
         return new CudaFloatDataBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer create(DataType dataType, long length, boolean initialize) {
+        return null;
+    }
+
+    @Override
+    public DataBuffer create(DataType dataType, long length, boolean initialize, MemoryWorkspace workspace) {
+        return null;
     }
 
     @Override

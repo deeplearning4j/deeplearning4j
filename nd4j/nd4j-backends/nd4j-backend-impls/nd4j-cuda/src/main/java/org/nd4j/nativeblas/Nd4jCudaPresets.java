@@ -43,6 +43,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "NDArray.h",
                         "array/NDArrayList.h",
                         "array/ResultSet.h",
+                        "graph/RandomGenerator.h",
                         "graph/Variable.h",
                         "graph/VariablesSet.h",
                         "graph/FlowPath.h",
