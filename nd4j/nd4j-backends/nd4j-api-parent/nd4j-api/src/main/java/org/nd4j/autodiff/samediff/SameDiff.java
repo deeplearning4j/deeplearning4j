@@ -11720,7 +11720,16 @@ public class SameDiff {
         int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatVariables));
         int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(flatNodes));
 
-        int fg = FlatGraph.createFlatGraph(bufferBuilder, graphId, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder));
+        int[] placeholderOffsets = new int[placeHolderVarNames == null ? 0 : placeHolderVarNames.size()];
+        if(placeHolderVarNames != null){
+            int i=0;
+            for(String s : placeHolderVarNames){
+                placeholderOffsets[i++] = bufferBuilder.createString(s);
+            }
+        }
+        int placeholdersOffset = FlatGraph.createPlaceholdersVector(bufferBuilder, placeholderOffsets);
+
+        int fg = FlatGraph.createFlatGraph(bufferBuilder, graphId, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder), placeholdersOffset);
         bufferBuilder.finish(fg);
 
         synchronized (this) {
@@ -12080,6 +12089,14 @@ public class SameDiff {
                 }
             }
         }
+
+        //Reconstruct placeholders
+        int numPlaceholders = fg.placeholdersLength();
+        Set<String> ph = new LinkedHashSet<>();
+        for(int i=0; i<numPlaceholders; i++ ){
+            ph.add(fg.placeholders(i));
+        }
+        sd.placeHolderVarNames = ph;
 
         return sd;
     }
