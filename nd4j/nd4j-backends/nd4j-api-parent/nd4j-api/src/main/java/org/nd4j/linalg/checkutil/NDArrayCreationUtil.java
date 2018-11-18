@@ -417,6 +417,10 @@ public class NDArrayCreationUtil {
                         "get3dReshapedWithShape(" + seed + "," + Arrays.toString(shape) + ").get(0)"));
     }
 
+    public static List<Pair<INDArray, String>> getAll4dTestArraysWithShape(int seed, long[] shape, DataType dataType) {
+        return getAll4dTestArraysWithShape(seed, ArrayUtil.toInts(shape), dataType);
+    }
+
     public static List<Pair<INDArray, String>> getAll4dTestArraysWithShape(int seed, int[] shape, DataType dataType) {
         if (shape.length != 4)
             throw new IllegalArgumentException("Shape is not length 4");

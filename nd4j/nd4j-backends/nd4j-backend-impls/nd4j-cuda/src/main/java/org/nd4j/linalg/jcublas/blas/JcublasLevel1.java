@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.jcublas.blas;
 
+import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -24,10 +25,11 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.ops.impl.reduce.ASum;
-import org.nd4j.linalg.api.ops.impl.reduce.Dot;
+import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
+import org.nd4j.linalg.api.ops.impl.reduce3.Dot;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.Axpy;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -73,7 +75,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         //        CublasPointer xCPointer = new CublasPointer(X, ctx);
         //        CublasPointer yCPointer = new CublasPointer(Y, ctx);
 
-        Dot dot = new Dot(X, Y);
+        val dot = new Dot(X, Y);
         Nd4j.getExecutioner().exec(dot);
 
         ret = dot.getFinalResult().floatValue();
@@ -208,7 +210,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected float hasum(long N, INDArray X, int incX) {
 
-        ASum asum = new ASum(X);
+        val asum = new ASum(X);
         Nd4j.getExecutioner().exec(asum, Integer.MAX_VALUE);
 
         float ret = asum.getFinalResult().floatValue();

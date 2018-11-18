@@ -23,6 +23,8 @@ import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
@@ -31,6 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.JvmShapeInfo;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
@@ -527,6 +530,11 @@ public class JCublasNDArray extends BaseNDArray {
         return super.permutei(rearrange);
     }
 
+    @Override
+    public LongShapeDescriptor shapeDescriptor() {
+        return null;
+    }
+
     /**
      * This method does direct array copy. Impossible to use on views or mixed orders.
      *
@@ -766,6 +774,7 @@ public class JCublasNDArray extends BaseNDArray {
         return copy;
     }
 
+/*
     @Override
     public INDArray convertToHalfs() {
         if (data.dataType() == DataType.HALF)
@@ -813,5 +822,5 @@ public class JCublasNDArray extends BaseNDArray {
         return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
     }
 
-
+*/
 }
