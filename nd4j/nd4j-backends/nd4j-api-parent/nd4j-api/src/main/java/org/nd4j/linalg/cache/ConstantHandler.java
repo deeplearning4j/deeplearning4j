@@ -89,6 +89,16 @@ public interface ConstantHandler {
     DataBuffer getConstantBuffer(double[] array, DataType dataType);
 
     /**
+     * This method returns DataBuffer with contant equal to input array.
+     *
+     * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer
+     *
+     * @param array
+     * @return
+     */
+    DataBuffer getConstantBuffer(float[] array, DataType dataType);
+
+    /**
      * This method removes all cached constants
      */
     void purgeConstants();
