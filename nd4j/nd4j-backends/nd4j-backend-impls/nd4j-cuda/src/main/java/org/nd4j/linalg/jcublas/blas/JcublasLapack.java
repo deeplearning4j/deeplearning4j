@@ -30,6 +30,7 @@ import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.linalg.api.blas.BlasException;
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -203,7 +204,7 @@ public class JcublasLapack extends BaseLapack {
             r = R.dup('f');
 
         INDArray tau = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createFloat(N),
-                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, N}).getFirst());
+                Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, N}, A.dataType()).getFirst());
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -318,7 +319,7 @@ public class JcublasLapack extends BaseLapack {
             r = R.dup('f');
 
         INDArray tau = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createDouble(N),
-                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, N}));
+                Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, N}, A.dataType()));
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -874,7 +875,7 @@ public class JcublasLapack extends BaseLapack {
 			    Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
 
 			    INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-		  	    Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+		  	    Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, A.dataType()));
 
 
 			    // Do the actual decomp
@@ -951,7 +952,7 @@ public class JcublasLapack extends BaseLapack {
 			    Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
 
 			    INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-			    Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+			    Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, A.dataType()));
 
 
 			    // Do the actual decomp

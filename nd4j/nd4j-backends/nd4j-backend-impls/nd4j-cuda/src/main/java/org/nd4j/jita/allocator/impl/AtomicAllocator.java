@@ -41,6 +41,7 @@ import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.jita.workspace.CudaWorkspace;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -1049,17 +1050,17 @@ public class AtomicAllocator implements Allocator {
 
     @Override
     public DataBuffer getConstantBuffer(int[] array) {
-        return Nd4j.getConstantHandler().getConstantBuffer(array);
+        return Nd4j.getConstantHandler().getConstantBuffer(array, DataType.INT);
     }
 
     @Override
     public DataBuffer getConstantBuffer(float[] array) {
-        return Nd4j.getConstantHandler().getConstantBuffer(array);
+        return Nd4j.getConstantHandler().getConstantBuffer(array, DataType.FLOAT);
     }
 
     @Override
     public DataBuffer getConstantBuffer(double[] array) {
-        return Nd4j.getConstantHandler().getConstantBuffer(array);
+        return Nd4j.getConstantHandler().getConstantBuffer(array, DataType.DOUBLE);
     }
 
     @Override

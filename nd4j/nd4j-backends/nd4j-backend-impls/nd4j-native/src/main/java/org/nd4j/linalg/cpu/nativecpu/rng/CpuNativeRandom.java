@@ -43,7 +43,7 @@ public class CpuNativeRandom extends NativeRandom {
 
     @Override
     public void init() {
-        statePointer = new Nd4jCpu.RandomGenerator(this.seed, this.seed);
+        statePointer = new Nd4jCpu.RandomGenerator(this.seed, this.seed * 2);
     }
 
     @Override

@@ -21,6 +21,7 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.nativeblas.Nd4jCuda;
 import org.nd4j.rng.NativeRandom;
 
 import java.util.List;
@@ -49,18 +50,31 @@ public class CudaNativeRandom extends NativeRandom {
 
     @Override
     public void init() {
-        statePointer = nativeOps.initRandom(getExtraPointers(), seed, numberOfElements,
-                        AtomicAllocator.getInstance().getPointer(stateBuffer));
-
-        AtomicAllocator.getInstance().getAllocationPoint(stateBuffer).tickDeviceWrite();
+        statePointer = new Nd4jCuda.RandomGenerator(seed, seed * 2);
     }
 
     @Override
     public PointerPointer getExtraPointers() {
-        PointerPointer ptr = new PointerPointer(4);
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-        ptr.put(0, AtomicAllocator.getInstance().getHostPointer(stateBuffer));
-        ptr.put(1, context.getOldStream());
-        return ptr;
+        return null;
+    }
+
+    @Override
+    public void setSeed(long seed) {
+
+    }
+
+    @Override
+    public long getSeed() {
+        return 0;
+    }
+
+    @Override
+    public int nextInt() {
+        return 0;
+    }
+
+    @Override
+    public long nextLong() {
+        return 0;
     }
 }
