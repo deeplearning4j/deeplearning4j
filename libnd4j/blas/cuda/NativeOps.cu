@@ -29,11 +29,15 @@
 #include <loops/reduce_float.h>
 #include <loops/indexreduce.h>
 #include <loops/pairwise_transform.h>
-#include <loops/transform_same.h>
 #include <loops/scalar.h>
 #include <loops/broadcasting.h>
 #include <loops/summarystatsreduce.h>
 #include <loops/random.h>
+
+#include <loops/transform_same.h>
+#include <loops/transform_float.h>
+#include <loops/transform_strict.h>
+#include <loops/transform_bool.h>
 
 //#include <thread>
 #include <map>
@@ -46,8 +50,6 @@
 #include <stdlib.h>
 #include <loops/type_conversions.h>
 #include <op_boilerplate.h>
-#include <loops/grid_shaped.legacy>
-#include <loops/grid_strided.legacy>
 #include <loops/aggregates.h>
 #include <helpers/threshold.h>
 #include <ShapeList.h>
@@ -880,6 +882,88 @@ void NativeOps::execIndexReduceScalar(
 //     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformStrided(launchDims, stream, opNum, n, dx, xStride, extraParams, dZ, zStride, allocPointer, reductionPointer), LIBND4J_TYPES, FLOAT_TYPES);
 // }
 
+void NativeOps::execTransformSame(Nd4jPointer *extraPointers,int opNum,
+                                   void *hX, Nd4jLong *hXShapeInfo,
+                                   void *dX, Nd4jLong *dXShapeInfo,
+                                   void *hZ, Nd4jLong *hZShapeInfo,
+                                   void *dZ, Nd4jLong *dZShapeInfo,
+                                   void *extraParams) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    dim3 launchDims(512, 1024, 4096);
+
+    auto xRank = shape::rank(hXShapeInfo);
+	auto zRank = shape::rank(hZShapeInfo);
+	auto xType = ArrayOptions::dataType(hXShapeInfo);
+    auto zType = ArrayOptions::dataType(hZShapeInfo);
+
+    if (xType != zType)
+        throw std::runtime_error("NativeOps::execTransformSame requires X & Z to have same type");
+
+
+    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES);
+}
+
+void NativeOps::execTransformBool(Nd4jPointer *extraPointers,int opNum,
+								  void *hX, Nd4jLong *hXShapeInfo,
+								  void *dX, Nd4jLong *dXShapeInfo,
+								  void *hZ, Nd4jLong *hZShapeInfo,
+								  void *dZ, Nd4jLong *dZShapeInfo,
+								  void *extraParams) {
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+	dim3 launchDims(512, 1024, 8192);
+
+	auto xRank = shape::rank(hXShapeInfo);
+	auto zRank = shape::rank(hZShapeInfo);
+	auto xType = ArrayOptions::dataType(hXShapeInfo);
+    auto zType = ArrayOptions::dataType(hZShapeInfo);
+
+    if (!DataTypeUtils::isB(xType))
+        throw std::runtime_error("NativeOps::execTransformBool requires Z to have same boolean type");
+
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, BOOL_TYPES);
+}
+
+void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
+                                  void *hX, Nd4jLong *hXShapeInfo,
+                                  void *dX, Nd4jLong *dXShapeInfo,
+                                  void *hZ, Nd4jLong *hZShapeInfo,
+                                  void *dZ, Nd4jLong *dZShapeInfo,
+                                  void *extraParams) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    dim3 launchDims(512, 1024, 8192);
+
+    auto xRank = shape::rank(hXShapeInfo);
+    auto zRank = shape::rank(hZShapeInfo);
+    auto xType = ArrayOptions::dataType(hXShapeInfo);
+    auto zType = ArrayOptions::dataType(hZShapeInfo);
+
+    if (xType != zType || !DataTypeUtils::isR(xType))
+        throw std::runtime_error("NativeOps::execTransformStrict requires X & Z to have same floating point type");
+
+    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
+}
+
+void NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
+                                    void *hX, Nd4jLong *hXShapeInfo,
+                                    void *dX, Nd4jLong *dXShapeInfo,
+                                    void *hZ, Nd4jLong *hZShapeInfo,
+                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                    void *extraParams) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    dim3 launchDims(512, 1024, 8192);
+
+    auto xRank = shape::rank(hXShapeInfo);
+    auto zRank = shape::rank(hZShapeInfo);
+    auto xType = ArrayOptions::dataType(hXShapeInfo);
+    auto zType = ArrayOptions::dataType(hZShapeInfo);
+
+    if (!DataTypeUtils::isR(zType))
+        throw std::runtime_error("NativeOps::execTransformFloat requires Z to have floating point type");
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+}
+
 /**
  *
  * @param opNum
@@ -890,6 +974,7 @@ void NativeOps::execIndexReduceScalar(
  * @param extraParams
  * @param n
  */
+ /*
 void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 		void *hX, Nd4jLong *hXShapeInfo,
         void *dX, Nd4jLong *dXShapeInfo,
@@ -1144,11 +1229,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 		if (opNum == 71) {
 			launchDims.z += 512 * DataTypeUtils::sizeOf(zType);
 		}
-/*
-		DISPATCH_SIMPLE(transformShaped, float,
-                        PARAMS(dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dZ, dZShapeInfo,
-                               shape::rank(hZShapeInfo), maskedAllocPointer, reductionPointer, devTadShapeInfo, devTadOffsets), OPS_A(TRANSFORM_OPS))
-*/
+
 		BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dZ, dZShapeInfo, shape::rank(hZShapeInfo), maskedAllocPointer, reductionPointer, devTadShapeInfo, devTadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 
         // we need guaranteed sync here, due to temp memory release
@@ -1164,6 +1245,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 	DEBUG_KERNEL(stream, opNum);
 }
 
+  */
 
 template <typename T>
 __device__ void flattenKernelGeneric(
@@ -3018,6 +3100,10 @@ Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphS
 
     // after some bla-bla-bla we should have Graph and Node for current op
     return Status::OK();
+}
+
+Nd4jStatus NativeOps::execCustomOpWithScope(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs) {
+    return nd4j::Status::OK(); //execCustomOpWithScope<double>(extraPointers, reinterpret_cast<nd4j::graph::GraphState<double> *>(state), opHash, scopes, numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs);
 }
 
 void NativeOps::deleteResultWrapper(Nd4jPointer ptr) {
