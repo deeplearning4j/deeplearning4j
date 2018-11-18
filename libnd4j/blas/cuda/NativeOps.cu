@@ -3212,3 +3212,12 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer dX, N
         nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
     }
 }
+
+Nd4jPointer NativeOps::createUtf8String(Nd4jPointer *extraPointers, const char *string, int length) {
+    auto u = new nd4j::utf8string(string, length);
+    return reinterpret_cast<Nd4jPointer>(u);
+}
+
+void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
+    delete(reinterpret_cast<nd4j::utf8string*>(ptr));
+}
