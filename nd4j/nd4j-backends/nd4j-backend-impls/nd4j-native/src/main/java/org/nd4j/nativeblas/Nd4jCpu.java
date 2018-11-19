@@ -18256,6 +18256,35 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+         * lin_space - op porting from TF (https://www.tensorflow.org/api_docs/python/tf/lin_space)
+         * 
+         * input params:
+         *    0 - startVal - NDArray scalar (float point)
+         *    1 - finishVal - NDArray scalar (float point)
+         *    2 - numOfElements - NDArray scalar (integer)
+         * 
+         * output:
+         *    0 - 1D NDArray with the same type as input and length as given with numOfElements param.
+         */
+//         #if NOT_EXCLUDED(OP_lin_space)
+        @Namespace("nd4j::ops") public static class lin_space extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public lin_space(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public lin_space(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public lin_space position(long position) {
+                return (lin_space)super.position(position);
+            }
+        
+                                                                                    public lin_space() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
          * reduction_sum - tf.reduction_sum operation
          * 
          * input params:
@@ -18668,7 +18697,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-		/**
+        /**
         * This op calculates mean of elements along given dimensions
         *
         * input array:
@@ -18683,6 +18712,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * output array:
         *    reduced tensor with calculated means
         */
+//         #if NOT_EXCLUDED(OP_reduce_mean)
         @Namespace("nd4j::ops") public static class reduce_mean extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -18698,6 +18728,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
+//         #endif
+
+//         #if NOT_EXCLUDED(OP_reduce_mean_bp)
         @Namespace("nd4j::ops") public static class reduce_mean_bp extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -18713,7 +18746,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-                                                                                /**
+                                                                                //         #endif
+        /**
         * This op calculates sample variance of elements along given dimensions
         *
         * input array:
@@ -19002,7 +19036,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *
          * output - lower triangular matrix (matricies when rank > 2) with the same shape as input.
          * */
-// #if NOT_EXCLUDED(OP_cholesky)
+//         #if NOT_EXCLUDED(OP_cholesky)
         @Namespace("nd4j::ops") public static class cholesky extends DeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -19018,7 +19052,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                 }
-// #endif
+//         #endif
         /*
          * nth_element - apply nth_element for last dimension of input tensor
          * input array:

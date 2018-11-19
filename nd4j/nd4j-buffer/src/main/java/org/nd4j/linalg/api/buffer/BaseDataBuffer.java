@@ -1652,7 +1652,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         try {
             //referencing = Collections.synchronizedSet(new HashSet<String>());
             val savedMode = AllocationMode.valueOf(s.readUTF());
-            allocationMode = AllocationMode.LONG_SHAPE;
+            allocationMode = AllocationMode.MIXED_DATA_TYPES;
 
             // old AllocationMode values are: DIRECT, HEAP, JAVACPP. Just using legacy here
             if (savedMode.ordinal() < 3) {
