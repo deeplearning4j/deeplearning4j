@@ -35,8 +35,8 @@ class FlatBuffersTest : public testing::Test {
 public:
     int alpha = 0;
 
-    Nd4jLong *cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 0, 1, 99};
-    Nd4jLong *fShape = new Nd4jLong[8]{2, 2, 2, 1, 2, 0, 1, 102};
+    Nd4jLong *cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 8192, 1, 99};
+    Nd4jLong *fShape = new Nd4jLong[8]{2, 2, 2, 1, 2, 8192, 1, 102};
 
     FlatBuffersTest() {
         Environment::getInstance()->setDebug(false);
@@ -62,7 +62,7 @@ TEST_F(FlatBuffersTest, BasicTest1) {
 
     auto name = builder.CreateString("wow");
 
-    auto node = CreateFlatNode(builder, -1, name, OpType_TRANSFORM_SAME, 26, {0});
+    auto node = CreateFlatNode(builder, -1, name, OpType_TRANSFORM_SAME, transform::Ones, {0});
 
     builder.Finish(node);
 
@@ -116,8 +116,8 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto name1 = builder.CreateString("wow1");
     auto name2 = builder.CreateString("wow2");
 
-    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM_SAME, 0, 0, in1, 0, vec1);
-    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM_SAME, 2, 0, in2, 0, vec2);
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM_SAME, transform::Abs, 0, in1, 0, vec1);
+    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM_SAME, transform::Cosine, 0, in2, 0, vec2);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fVar);
@@ -151,9 +151,9 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_EQ(2, restoredGraph->nodes()->size());
 
     // checking op nodes
-    ASSERT_EQ(0, restoredGraph->nodes()->Get(0)->opNum());
-    ASSERT_EQ(2, restoredGraph->nodes()->Get(1)->opNum());
-    ASSERT_EQ(0, restoredGraph->nodes()->Get(0)->opNum());
+    ASSERT_EQ(transform::Abs, restoredGraph->nodes()->Get(0)->opNum());
+    ASSERT_EQ(transform::Cosine, restoredGraph->nodes()->Get(1)->opNum());
+    ASSERT_EQ(transform::Abs, restoredGraph->nodes()->Get(0)->opNum());
 
     // checking variables
     ASSERT_EQ(1, restoredGraph->variables()->size());
@@ -180,7 +180,6 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto var = vs->getVariable(-1)->getNDArray();
 
     ASSERT_TRUE(var != nullptr);
-
     ASSERT_EQ(-2.0, var->reduceNumber(reduce::Mean).e<float>(0));
 
     nd4j::graph::GraphExecutioner::execute(&graph);
@@ -196,8 +195,9 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     auto var0 = new Variable(flatResults->variables()->Get(0));
     //auto var1 = new Variable<float>(flatResults->variables()->Get(1));
-
-    ASSERT_NEAR(-0.4161468, var0->getNDArray()->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
+    auto avg = var0->getNDArray()->reduceNumber(reduce::Mean);
+    avg.printIndexedBuffer("FBT_1");
+    ASSERT_NEAR(-0.4161468, avg.e<float>(0), 1e-5);
 
     //ASSERT_TRUE(var->equalsTo(var0->getNDArray()));
 
