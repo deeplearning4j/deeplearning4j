@@ -717,9 +717,9 @@ public class RandomTests extends BaseNd4jTest {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
-        INDArray z1 = Nd4j.zeros(1000);
-        INDArray z2 = Nd4j.zeros(1000);
-        INDArray z1Dup = Nd4j.zeros(1000);
+        INDArray z1 = Nd4j.create(DataType.FLOAT, 1000);
+        INDArray z2 = Nd4j.zeros(DataType.FLOAT,1000);
+        INDArray z1Dup = Nd4j.zeros(DataType.FLOAT,1000);
 
         INDArray probs = Nd4j.create(new float[] {0.25f, 0.43f, 0.55f, 0.43f, 0.25f});
 

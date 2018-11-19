@@ -482,15 +482,14 @@ namespace randomOps {
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-            int span = (zLength / _threads) + 8;
+            auto span = (zLength / _threads) + 8;
 
-            //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
-                Nd4jLong start = span * tid;
-                Nd4jLong end = span * (tid + 1);
+                auto start = span * tid;
+                auto end = span * (tid + 1);
                 if (end > zLength) end = zLength;
 
                 T prob = extraArguments[1];

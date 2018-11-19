@@ -17102,7 +17102,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *  will be sorted by the values in descending order.
          *  The first parameter is a NDArray for working.
          *  The second is k (default 1) - optional
-         *  The third is boolean value(default is 1) (0 - as is, 1 - sorted by value) optional
+         *  The third is boolean value(default is true) (0 - as is, 1 - sorted by value) optional
          */
 //         #if NOT_EXCLUDED(OP_top_k)
         @Namespace("nd4j::ops") public static class top_k extends DeclarableCustomOp {
