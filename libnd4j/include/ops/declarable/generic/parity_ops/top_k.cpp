@@ -27,32 +27,29 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(top_k, 1, 2, false, 0, -2) {
+        CUSTOM_OP_IMPL(top_k, 1, 2, false, 0, -1) {
             auto x = INPUT_VARIABLE(0);
             int k = 1;// from params
             bool needSort = true;
 
             auto values = OUTPUT_VARIABLE(0);
-            auto indeces = OUTPUT_VARIABLE(1);
+            auto indices = OUTPUT_VARIABLE(1);
+
+            if (block.numB() == 1)
+                needSort = B_ARG(0);
 
             if (block.width() == 1) {
-                if (block.numI() > 1) {
-                    k = INT_ARG(1);
-                    needSort = INT_ARG(0) == 1;
-                } else if (block.numI() == 1)
-                    needSort = INT_ARG(0) == 1;
+                if (block.numI() > 0) {
+                    k = INT_ARG(0);
+                }
             } else {
                 k = INPUT_VARIABLE(1)->e<int>(0);
-                if (block.numI() == 1)
-                    needSort = INT_ARG(0) == 1;
             }
 
             REQUIRE_TRUE(k <= x->sizeAt(-1), 0, "top_k: k should not be greater than last dimension");
-            REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive");
+            REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive, but %i given.", k);
 
-            int res =  helpers::topKFunctor(x, values, indeces, k, needSort);
-            values->printIndexedBuffer("Values");
-            indeces->printIndexedBuffer("Indeces");
+            int res =  helpers::topKFunctor(x, values, indices, k, needSort);
             return res;
         }
 
@@ -65,10 +62,10 @@ namespace nd4j {
             if (block.width() == 2) {
                 k = INPUT_VARIABLE(1)->e<int>(0);
             } else if (block.numI() > 0) {
-                k = INT_ARG(1 );
+                k = INT_ARG(0);
             }
 
-            REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive");
+            REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive, but %i given.", k);
 
             for (int e = 0; e < 2; e++) { // 2 element tuple at output
                 Nd4jLong* aShape;

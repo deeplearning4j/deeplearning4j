@@ -53,7 +53,7 @@ namespace helpers {
                     auto trial = (*input)(e, dimsToExclude);
                     //int maxPos = //lastDimList->at(e)->argMax();
                     Nd4jLong maxPos = 0;
-                    trial.printIndexedBuffer("TRIAL:");
+                    //trial.printIndexedBuffer("TRIAL:");
                     T maxVal = trial.e<T>(0);
                     for (Nd4jLong pos = 1; pos < trial.lengthOf(); pos++)
                         if (maxVal < trial.e<T>(pos)) {

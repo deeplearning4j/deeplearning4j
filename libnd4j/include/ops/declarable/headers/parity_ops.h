@@ -634,10 +634,10 @@ namespace nd4j {
          *  will be sorted by the values in descending order.
          *  The first parameter is a NDArray for working.
          *  The second is k (default 1) - optional
-         *  The third is boolean value(default is 1) (0 - as is, 1 - sorted by value) optional
+         *  The third is boolean value(default is true) (0 - as is, 1 - sorted by value) optional
          */
         #if NOT_EXCLUDED(OP_top_k)
-        DECLARE_CUSTOM_OP(top_k, 1, 2, false, 0, -2);
+        DECLARE_CUSTOM_OP(top_k, 1, 2, false, 0, -1);
         #endif
 
         /**
