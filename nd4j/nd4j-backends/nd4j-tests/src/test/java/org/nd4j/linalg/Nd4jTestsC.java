@@ -4729,11 +4729,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testHammingDistance3() throws Exception {
-        INDArray x = Nd4j.create(10, 6);
+        INDArray x = Nd4j.create(DataType.DOUBLE, 10, 6);
         for (int r = 0; r < x.rows(); r++) {
-            x.getRow(r).putScalar(r % x.columns(), 1);
+            val p = r % x.columns();
+            x.getRow(r).putScalar(p, 1);
         }
 
+        log.info("X: {}", x);
         INDArray y = Nd4j.create(new double[] {0, 0, 0, 0, 1, 0});
 
         INDArray res = Nd4j.getExecutioner().exec(new HammingDistance(x, y), 1);
@@ -4741,9 +4743,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         for (int r = 0; r < x.rows(); r++) {
             if (r == 4) {
-                assertEquals(0.0, res.getDouble(r), 1e-5);
+                assertEquals("Failed at " + r, 0.0, res.getDouble(r), 1e-5);
             } else {
-                assertEquals(2.0 / 6, res.getDouble(r), 1e-5);
+                assertEquals("Failed at " + r, 2.0 / 6, res.getDouble(r), 1e-5);
             }
         }
     }
