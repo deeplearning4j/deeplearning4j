@@ -969,6 +969,10 @@ void NativeOps::flatten(
         void *input, Nd4jLong *inputShapeInfo,
         void *dinput, Nd4jLong *dinputShapeInfo) {
     auto xType = nd4j::ArrayOptions::dataType(inputShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (xType != zType)
+        throw std::runtime_error("NativeOps::flatten requires all operands to have same data type");
 
     BUILD_SINGLE_SELECTOR(xType, flattenGeneric, (extraPointers, offset, order, hZ, hZShapeInfo, input, inputShapeInfo), LIBND4J_TYPES);
 }
