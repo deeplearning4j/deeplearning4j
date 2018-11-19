@@ -41,12 +41,13 @@ namespace helpers {
         else { // rank greater than 1
             std::vector<int> lastDims({input->rankOf() - 1});
             std::unique_ptr<ResultSet> rows(input->allTensorsAlongDimension(lastDims));
+#pragma omp parallel for
             for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
                 auto row = rows->at(e);
                 std::vector<T> internalData(row->lengthOf());
                 //T* internalP = const_cast<T*>(internalData.data());
                 for (size_t l = 0; l < internalData.size(); ++l)
-                    internalData[l] = input->e<T>(l);
+                    internalData[l] = row->e<T>(l);
 
                 //memcpy(&internalData[0], row->getBuffer(), sizeof(T) * internalData.size());
                 auto nthPos = internalData.begin();

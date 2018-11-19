@@ -917,7 +917,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_1) {
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
 
     NDArray input = NDArrayFactory::create<float>('c', {3,4});
-    NDArray n = NDArrayFactory::create<float>(3.f);
+    NDArray n = NDArrayFactory::create<int>(3);
     NDArray exp = NDArrayFactory::create<float>({4.f, 8.f, 12.f});
 
     input.linspace(1.f);
@@ -928,6 +928,8 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* output = results->at(0);
+    output->printIndexedBuffer("Output 2");
+    exp.printIndexedBuffer("Expect 2");
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -939,7 +941,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
 
     NDArray input = NDArrayFactory::create<float>('c', {3,4});
-    NDArray n = NDArrayFactory::create<float>(3.f);
+    NDArray n = NDArrayFactory::create<int>(3);
     NDArray exp = NDArrayFactory::create<float>({1.f, 5.f, 9.f});
 
     input.linspace(1.f);
@@ -950,7 +952,8 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* output = results->at(0);
-
+    output->printIndexedBuffer("Output 3");
+    exp.printIndexedBuffer("Expect 3");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -961,7 +964,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_4) {
 
     NDArray input = NDArrayFactory::create<float>('c', {2, 2, 3});
-    NDArray n = NDArrayFactory::create<float>(2.f);
+    NDArray n = NDArrayFactory::create<int>(2);
     NDArray exp = NDArrayFactory::create<float>('c', {2,2}, {3.f, 6.f, 9.f, 12.f});
 
     input.linspace(1.f);
@@ -1871,8 +1874,8 @@ TEST_F(DeclarableOpsTests10, pad_tests10) {
     auto paddings = NDArrayFactory::create<int>('c', {3,2}, {0,0, 0,1, 0,0});
     auto expected = NDArrayFactory::create<double>('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
 
-    input = 1.f;
-
+    //input = 1.f;
+    input.assign(1.);
     nd4j::ops::pad op;
     auto results = op.execute({&input, &paddings}, {}, {0});
 
