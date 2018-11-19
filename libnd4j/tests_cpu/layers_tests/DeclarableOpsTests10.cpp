@@ -917,7 +917,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_1) {
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
 
     NDArray input = NDArrayFactory::create<float>('c', {3,4});
-    NDArray n = NDArrayFactory::create<float>(3.f);
+    NDArray n = NDArrayFactory::create<int>(3);
     NDArray exp = NDArrayFactory::create<float>({4.f, 8.f, 12.f});
 
     input.linspace(1.f);
@@ -928,6 +928,8 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* output = results->at(0);
+    output->printIndexedBuffer("Output 2");
+    exp.printIndexedBuffer("Expect 2");
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -939,7 +941,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
 
     NDArray input = NDArrayFactory::create<float>('c', {3,4});
-    NDArray n = NDArrayFactory::create<float>(3.f);
+    NDArray n = NDArrayFactory::create<int>(3);
     NDArray exp = NDArrayFactory::create<float>({1.f, 5.f, 9.f});
 
     input.linspace(1.f);
@@ -950,7 +952,8 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* output = results->at(0);
-
+    output->printIndexedBuffer("Output 3");
+    exp.printIndexedBuffer("Expect 3");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -961,7 +964,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_4) {
 
     NDArray input = NDArrayFactory::create<float>('c', {2, 2, 3});
-    NDArray n = NDArrayFactory::create<float>(2.f);
+    NDArray n = NDArrayFactory::create<int>(2);
     NDArray exp = NDArrayFactory::create<float>('c', {2,2}, {3.f, 6.f, 9.f, 12.f});
 
     input.linspace(1.f);
@@ -1674,8 +1677,7 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test4) {
 
     NDArray input    = NDArrayFactory::create<float>('c', {1, 2,3,4});
     NDArray size = NDArrayFactory::create<int>({10, 10});
-    //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
-    NDArray expected('c', {1, 10, 10, 4},
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 10, 10, 4},
                             { 1.,         2.,         3.,         4. ,
                               1.8888888,  2.8888888,  3.8888888,  4.888889,
                               2.7777777,  3.7777777,  4.7777777,  5.7777777,
@@ -1792,13 +1794,32 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test4) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* result = results->at(0);
-
+    result->printIndexedBuffer("Resized to 10x10");
+    expected.printIndexedBuffer("Expected of 10x10");
+    result->printShapeInfo("Resized to 10x10 shape");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
 }
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, LinSpace_Test1) {
+
+    NDArray start = NDArrayFactory::create<double>(1.);
+    NDArray finish = NDArrayFactory::create<double>(12.);
+    NDArray num = NDArrayFactory::create<int>(23);
+    NDArray expect = NDArrayFactory::create<double>({1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5,
+                                                        8., 8.5, 9., 9.5, 10., 10.5, 11., 11.5, 12.});
+
+    nd4j::ops::lin_space op;
+    auto result = op.execute({&start, &finish, &num}, {}, {});
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto res = result->at(0);
+    res->printIndexedBuffer("from 1 to 24");
+    ASSERT_TRUE(expect.equalsTo(res));
+    delete result;
+}
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
 
@@ -1853,8 +1874,8 @@ TEST_F(DeclarableOpsTests10, pad_tests10) {
     auto paddings = NDArrayFactory::create<int>('c', {3,2}, {0,0, 0,1, 0,0});
     auto expected = NDArrayFactory::create<double>('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
 
-    input = 1.f;
-
+    //input = 1.f;
+    input.assign(1.);
     nd4j::ops::pad op;
     auto results = op.execute({&input, &paddings}, {}, {0});
 

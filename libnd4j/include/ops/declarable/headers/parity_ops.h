@@ -1144,6 +1144,21 @@ namespace nd4j {
         #endif
 
         /**
+         * lin_space - op porting from TF (https://www.tensorflow.org/api_docs/python/tf/lin_space)
+         * 
+         * input params:
+         *    0 - startVal - NDArray scalar (float point)
+         *    1 - finishVal - NDArray scalar (float point)
+         *    2 - numOfElements - NDArray scalar (integer)
+         * 
+         * output:
+         *    0 - 1D NDArray with the same type as input and length as given with numOfElements param.
+         */
+        #if NOT_EXCLUDED(OP_lin_space)
+        DECLARE_CUSTOM_OP(lin_space, 3, 1, false, 0, 0);
+        #endif
+
+        /**
          * reduction_sum - tf.reduction_sum operation
          * 
          * input params:
@@ -1332,7 +1347,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(reduce_norm_max_bp, 2, 1, false, 0, 0);
         #endif
 
-		/**
+        /**
         * This op calculates mean of elements along given dimensions
         *
         * input array:
@@ -1347,9 +1362,13 @@ namespace nd4j {
         * output array:
         *    reduced tensor with calculated means
         */
+        #if NOT_EXCLUDED(OP_reduce_mean)
         DECLARE_CUSTOM_OP(reduce_mean, 1, 1, false, 0, 0);
-        DECLARE_CUSTOM_OP(reduce_mean_bp, 2, 1, false, 0, 0)
+        #endif
 
+        #if NOT_EXCLUDED(OP_reduce_mean_bp)
+        DECLARE_CUSTOM_OP(reduce_mean_bp, 2, 1, false, 0, 0)
+        #endif
         /**
         * This op calculates sample variance of elements along given dimensions
         *
@@ -1501,9 +1520,9 @@ namespace nd4j {
          *
          * output - lower triangular matrix (matricies when rank > 2) with the same shape as input.
          * */
-#if NOT_EXCLUDED(OP_cholesky)
+        #if NOT_EXCLUDED(OP_cholesky)
         DECLARE_OP(cholesky, 1, 1, true);
-#endif
+        #endif
         /*
          * nth_element - apply nth_element for last dimension of input tensor
          * input array:
