@@ -78,7 +78,7 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
             return;
 
         array.markAsCompressed(false);
-        array.setData(decompress(array.data(), array.dataType()));
+        array.setData(decompress(array.data(), ((CompressedDataBuffer)array.data()).getCompressionDescriptor().getOriginalDataType()));
     }
 
     @Override

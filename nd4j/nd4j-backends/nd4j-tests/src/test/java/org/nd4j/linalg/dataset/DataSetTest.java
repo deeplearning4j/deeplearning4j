@@ -720,8 +720,8 @@ public class DataSetTest extends BaseNd4jTest {
         int entries = nSamples * nChannels * imgRows * imgCols;
         int labels = nSamples * nLabels;
 
-        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.DOUBLE).reshape(nSamples, nChannels, imgRows, imgCols);
-        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.DOUBLE).reshape(nSamples, nLabels);
+        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.FLOAT).reshape(nSamples, nChannels, imgRows, imgCols);
+        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.FLOAT).reshape(nSamples, nLabels);
         DataSet ds = new DataSet(ds_data, ds_labels);
         ds.shuffle();
 
@@ -754,8 +754,8 @@ public class DataSetTest extends BaseNd4jTest {
         }
         int labels = shape[0] * nLabels;
 
-        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.DOUBLE).reshape(shape);
-        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.DOUBLE).reshape(shape[0], nLabels);
+        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.FLOAT).reshape(shape);
+        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.FLOAT).reshape(shape[0], nLabels);
 
         DataSet ds = new DataSet(ds_data, ds_labels);
         ds.shuffle();

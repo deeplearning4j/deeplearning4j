@@ -18,6 +18,7 @@ package org.nd4j.linalg.compression;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -249,8 +250,9 @@ public class BasicNDArrayCompressor {
         if (array.data().dataType() != DataType.COMPRESSED)
             return;
 
-        CompressedDataBuffer comp = (CompressedDataBuffer) array.data();
-        CompressionDescriptor descriptor = comp.getCompressionDescriptor();
+        val comp = (CompressedDataBuffer) array.data();
+        val descriptor = comp.getCompressionDescriptor();
+
 
         if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))
             throw new RuntimeException("Non-existent compression algorithm requested: ["
