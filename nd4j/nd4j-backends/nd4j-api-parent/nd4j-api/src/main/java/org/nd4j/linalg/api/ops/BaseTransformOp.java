@@ -177,7 +177,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         super(x, y, z, n);
         if (y != null)
             LinAlgExceptions.assertSameLength(x, y, z);
-        else
+        else if (z != null)
             LinAlgExceptions.assertSameLength(x, z);
 
     }

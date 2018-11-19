@@ -63,6 +63,7 @@ public class CompressionTests extends BaseNd4jTest {
         descriptor.setNumberOfElements(4);
         descriptor.setCompressionAlgorithm("GZIP");
         descriptor.setOriginalLength(4);
+        descriptor.setOriginalDataType(DataType.LONG);
         descriptor.setCompressionType(CompressionType.LOSSY);
         ByteBuffer toByteBuffer = descriptor.toByteBuffer();
         CompressionDescriptor fromByteBuffer = CompressionDescriptor.fromByteBuffer(toByteBuffer);

@@ -1995,7 +1995,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray match(Number comp, Condition condition) {
-        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this,comp.doubleValue(),condition)).z();
+        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this,comp.doubleValue(), condition)).z();
     }
 
     @Override

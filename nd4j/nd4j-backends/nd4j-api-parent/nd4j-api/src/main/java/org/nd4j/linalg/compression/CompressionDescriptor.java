@@ -129,9 +129,9 @@ public class CompressionDescriptor implements Cloneable, Serializable {
      * @return the bytebuffer described above
      */
     public ByteBuffer toByteBuffer() {
-        //2 ints  at 4 bytes a piece, this includes the compression algorithm
+        //3 ints  at 4 bytes a piece, this includes the compression algorithm
         //that we convert to enum
-        int enumSize = 2 * 4;
+        int enumSize = 3 * 4;
         //4 longs at 8 bytes a piece
         int sizesLength = 4 * 8;
         ByteBuffer directAlloc = ByteBuffer.allocateDirect(enumSize + sizesLength).order(ByteOrder.nativeOrder());

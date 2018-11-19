@@ -176,7 +176,7 @@ public class KFoldIteratorTest extends BaseNd4jTest {
 
     @Test
     public void test5974(){
-        DataSet ds = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).transpose(), Nd4j.linspace(1,99,99, DataType.DOUBLE).transpose());
+        DataSet ds = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(1, -1).transpose(), Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(1, -1).transpose());
 
         KFoldIterator iter = new KFoldIterator(10, ds);
 
@@ -188,11 +188,11 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             int countTrain;
             if(count < 9){
                 //Folds 0 to 8: should have 10 examples for test
-                testFold = Nd4j.linspace(10*count+1, 10*count+10, 10, DataType.DOUBLE).transpose();
+                testFold = Nd4j.linspace(10*count+1, 10*count+10, 10, DataType.DOUBLE).reshape(1, -1).transpose();
                 countTrain = 99 - 10;
             } else {
                 //Fold 9 should have 9 examples for test
-                testFold = Nd4j.linspace(10*count+1, 10*count+9, 9, DataType.DOUBLE).transpose();
+                testFold = Nd4j.linspace(10*count+1, 10*count+9, 9, DataType.DOUBLE).reshape(1, -1).transpose();
                 countTrain = 99-9;
             }
             String s = String.valueOf(count);
