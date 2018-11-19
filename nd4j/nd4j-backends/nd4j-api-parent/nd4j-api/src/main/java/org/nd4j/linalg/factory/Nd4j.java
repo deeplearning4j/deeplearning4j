@@ -21,6 +21,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import lombok.NonNull;
 import lombok.val;
+import lombok.var;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -81,6 +82,7 @@ import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.env.EnvironmentalAction;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4JUnknownDataTypeException;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
@@ -2568,10 +2570,24 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(DataInputStream dis) throws IOException {
-        DataBuffer shapeInformation = Nd4j.createBufferDetached(new long[1], DataType.LONG);
+        var shapeInformation = Nd4j.createBufferDetached(new long[1], DataType.LONG);
         shapeInformation.read(dis);
         val length = Shape.length(shapeInformation);
-        DataBuffer data = CompressedDataBuffer.readUnknown(dis, length, ArrayOptionsHelper.dataType(shapeInformation.asLong()));
+        DataType type;
+        DataBuffer data;
+        try {
+            // current version contains dtype in extras
+            type = ArrayOptionsHelper.dataType(shapeInformation.asLong());
+            data = CompressedDataBuffer.readUnknown(dis, length, type);
+        } catch (ND4JUnknownDataTypeException e) {
+            type = Nd4j.dataType();
+            data = CompressedDataBuffer.readUnknown(dis, length, type);
+
+            // manually setting data type
+            long extras = ArrayOptionsHelper.setOptionBit(0L, type);
+            shapeInformation.put(shapeInformation.length() - 3, extras);
+        }
+
         return createArrayFromShapeBuffer(data, shapeInformation);
     }
 

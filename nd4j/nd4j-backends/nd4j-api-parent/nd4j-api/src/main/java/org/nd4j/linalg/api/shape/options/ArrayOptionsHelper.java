@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4JUnknownDataTypeException;
 
 public class ArrayOptionsHelper {
     public static boolean hasBitSet(long[] shapeInfo, long bit) {
@@ -74,7 +75,7 @@ public class ArrayOptionsHelper {
         else if (hasBitSet(opt, 1048576))
             return DataType.UTF8;
         else
-            throw new ND4JIllegalStateException("Unknown extras set: [" + opt + "]");
+            throw new ND4JUnknownDataTypeException("Unknown extras set: [" + opt + "]");
     }
 
     public static DataType dataType(long[] shapeInfo) {

@@ -66,12 +66,12 @@ public class ShapeTestC extends BaseNd4jTest {
 
     @Test
     public void testTile() {
-        INDArray arr = Nd4j.scalar(DataType.DOUBLE, 1.0);
+        INDArray arr = Nd4j.scalar(DataType.DOUBLE, 1.0).reshape(1, 1);
         //INDArray[] inputs, INDArray[] outputs, int[] axis
         INDArray result = Nd4j.createUninitialized(DataType.DOUBLE,  new long[]{2,2});
         Tile tile = new Tile(new INDArray[]{arr},new INDArray[]{result},new int[] {2,2});
         Nd4j.getExecutioner().exec(tile);
-        INDArray tiled = Nd4j.tile(arr,2,2);
+        INDArray tiled = Nd4j.tile(arr,2,2).castTo(DataType.DOUBLE);
         assertEquals(tiled,result);
 
     }
