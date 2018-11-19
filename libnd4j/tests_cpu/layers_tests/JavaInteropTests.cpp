@@ -95,7 +95,7 @@ TEST_F(JavaInteropTests, TestShapeExposure2) {
 
 TEST_F(JavaInteropTests, TestShapeExposure3) {
     auto x = NDArrayFactory::create<float>('c', {5, 30});
-    auto sizes = NDArrayFactory::create<float>('c', {3}, {4, 15, 11});
+    auto sizes = NDArrayFactory::create<int>('c', {3}, {4, 15, 11});
 
     IndicesList list0({NDIndex::all(), NDIndex::interval(0, 4)});
     IndicesList list1({NDIndex::all(), NDIndex::interval(4, 19)});
