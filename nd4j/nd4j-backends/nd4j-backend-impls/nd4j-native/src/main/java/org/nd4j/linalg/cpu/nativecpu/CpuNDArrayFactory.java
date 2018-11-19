@@ -491,59 +491,30 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray toFlattened(char order, Collection<INDArray> matrices) {
+        Preconditions.checkArgument(matrices.size() > 0, "toFlattened expects > 0 operands");
+
         int length = 0;
-        DataType t = Nd4j.dataType();
+        val list = new ArrayList<INDArray>(matrices);
+        val t = list.get(0).dataType();
         for (INDArray m : matrices) {
             length += m.length();
-            t = m.dataType();
+            Preconditions.checkArgument(m.dataType() == t, "All operands must have same data type");
         }
+
         INDArray ret = Nd4j.create(t, new long[] {length}, order);
         int linearIndex = 0;
         PointerPointer dummy = new PointerPointer(new Pointer[] {null});
         for (INDArray m : matrices) {
             Nd4j.getCompressor().autoDecompress(m);
 
-            if (m.ordering() == order && m.data().allocationMode() == DataBuffer.AllocationMode.HEAP
-                    && Shape.strideDescendingCAscendingF(m) && Shape.isContiguousInBuffer(m)) {
-                //Can do array copy
-                int retFrom = linearIndex;
-                long mFrom = m.offset();
-                Object arr = m.data().array();
-                if (arr instanceof float[]) {
-                    float[] mData = (float[]) arr;
-                    float[] retData = (float[]) ret.data().array();
-
-                    // FIXME: LONG
-                    // FIXME: int cast
-                    System.arraycopy(mData, (int) mFrom, retData, retFrom, (int) m.length());
-                } else {
-                    double[] mData = (double[]) arr;
-                    double[] retData = (double[]) ret.data().array();
-
-                    // FIXME: LONG
-                    // FIXME: int cast
-                    System.arraycopy(mData, (int) mFrom, retData, retFrom, (int) m.length());
-                }
-                linearIndex += m.length();
-            } else {
-
-                    nativeOps.flatten(dummy, linearIndex, order,
+            nativeOps.flatten(dummy, linearIndex, order,
                             ret.data().addressPointer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
                             null, null,
                             m.data().addressPointer(),
                             (LongPointer) m.shapeInfoDataBuffer().addressPointer(),
                             null, null);
 
-                //Works for all cases...
-
-                /* NdIndexIterator iter = new NdIndexIterator(order, m.shape());
-                while (iter.hasNext()) {
-                    ret.putScalar(linearIndex++, m.getDouble(iter.next()));
-                }*/
-
-                linearIndex += m.length();
-
-            }
+            linearIndex += m.length();
         }
         return ret;
     }

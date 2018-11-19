@@ -3254,6 +3254,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore //not relevant anymore
     public void testAssignMixedC() {
         int[] shape1 = {3, 2, 2, 2, 2, 2};
         int[] shape2 = {12, 8};

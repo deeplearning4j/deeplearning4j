@@ -450,16 +450,18 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray appendBias(INDArray... vectors) {
+        Preconditions.checkArgument(vectors != null && vectors.length > 0, "vectros must be not null and have at least one element");
         int size = 0;
         for (INDArray vector : vectors) {
             size += vector.rows();
+            Preconditions.checkArgument(vectors[0].dataType() == vector.dataType(), "appendBias: all arrays must have same type");
         }
 
 
-        INDArray result = Nd4j.create(size + 1, vectors[0].columns());
+        INDArray result = Nd4j.create(vectors[0].dataType(), size + 1, vectors[0].columns());
         int index = 0;
         for (INDArray vector : vectors) {
-            INDArray put = toFlattened(vector, Nd4j.ones(1));
+            INDArray put = toFlattened(vector, Nd4j.ones(vector.dataType(), 1));
             result.put(new INDArrayIndex[] {NDArrayIndex.interval(index, index + vector.rows() + 1),
                             NDArrayIndex.interval(0, vectors[0].columns())}, put);
             index += vector.rows();

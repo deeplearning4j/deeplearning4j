@@ -4689,9 +4689,9 @@ public class Nd4j {
         return ret;
     }
 
-    public static INDArray create(DataType dataType, @NonNull long[] shape, char ordering) {
+    public static INDArray create(@NonNull DataType dataType, @NonNull long[] shape, char ordering) {
         if(shape.length == 0)
-            return Nd4j.trueScalar(0.0);
+            return Nd4j.scalar(dataType, 0.0);
         //ensure shapes that wind up being scalar end up with the write shape
 
         checkShapeValues(shape);
