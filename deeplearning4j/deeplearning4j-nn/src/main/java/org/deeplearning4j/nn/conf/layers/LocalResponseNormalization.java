@@ -163,6 +163,10 @@ public class LocalResponseNormalization extends Layer {
         private double beta = 0.75;
         protected boolean cudnnAllowFallback = true;
 
+        public Builder(double k, double n, double alpha, double beta){
+            this(k, n, alpha, beta, true);
+        }
+
         public Builder(double k, double alpha, double beta) {
             this.k = k;
             this.alpha = alpha;
