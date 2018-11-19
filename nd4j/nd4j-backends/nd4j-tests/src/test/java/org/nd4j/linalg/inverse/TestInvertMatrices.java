@@ -103,7 +103,7 @@ public class TestInvertMatrices extends BaseNd4jTest {
         INDArray in = Nd4j.valueArrayOf(new int[]{1,1}, 2);
         INDArray out1 = InvertMatrix.invert(in, false);
         assertEquals(Nd4j.valueArrayOf(new int[]{1,1}, 0.5), out1);
-        assertEquals(Nd4j.valueArrayOf(new int[]{1,1}, 2), out1);
+        assertEquals(Nd4j.valueArrayOf(new int[]{1,1}, 2), in);
 
         INDArray out2 = InvertMatrix.invert(in, true);
         assertTrue(out2 == in);
