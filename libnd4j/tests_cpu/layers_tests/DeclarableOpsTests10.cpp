@@ -1674,8 +1674,7 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test4) {
 
     NDArray input    = NDArrayFactory::create<float>('c', {1, 2,3,4});
     NDArray size = NDArrayFactory::create<int>({10, 10});
-    //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
-    NDArray expected('c', {1, 10, 10, 4},
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 10, 10, 4},
                             { 1.,         2.,         3.,         4. ,
                               1.8888888,  2.8888888,  3.8888888,  4.888889,
                               2.7777777,  3.7777777,  4.7777777,  5.7777777,
@@ -1792,7 +1791,9 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test4) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* result = results->at(0);
-
+    result->printIndexedBuffer("Resized to 10x10");
+    expected.printIndexedBuffer("Expected of 10x10");
+    result->printShapeInfo("Resized to 10x10 shape");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
