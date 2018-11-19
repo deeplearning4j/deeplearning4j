@@ -1065,7 +1065,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                         }
                     }
                     break;
-                case FLOAT:
+            case FLOAT:
                     for (int i = 0; i < length(); i++) {
                         try {
                             dos.writeFloat(getFloat(i));
@@ -1086,7 +1086,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case BOOL:
                 for (int i = 0; i < length(); i++) {
                     try {
-                        dos.writeBoolean(getInt(i) == 1);
+                        dos.writeShort(getInt(i) == 0 ? 0 : 1);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

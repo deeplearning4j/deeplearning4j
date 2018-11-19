@@ -6554,7 +6554,6 @@ public class Nd4j {
         val _order = FlatBuffersMapper.getOrderFromByte(order);
         val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
 
-
         val bb = array.bufferAsByteBuffer();
         switch (_dtype) {
             case DOUBLE: {
@@ -6615,7 +6614,7 @@ public class Nd4j {
             }
             case BOOL: {
                 val doubles = new boolean[prod];
-                val sb = bb.order(_order).asCharBuffer();
+                val sb = bb.order(_order).asShortBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e) == 1;
 
