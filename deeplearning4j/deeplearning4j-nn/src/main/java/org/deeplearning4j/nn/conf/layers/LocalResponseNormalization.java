@@ -46,6 +46,7 @@ public class LocalResponseNormalization extends Layer {
     protected double k = 2; // constant (e.g. scale)
     protected double beta = 0.75; // decay rate
     protected double alpha = 1e-4; // decay rate
+    protected boolean cudnnAllowFallback = true;
 
     private LocalResponseNormalization(Builder builder) {
         super(builder);
@@ -53,6 +54,7 @@ public class LocalResponseNormalization extends Layer {
         this.n = builder.n;
         this.alpha = builder.alpha;
         this.beta = builder.beta;
+        this.cudnnAllowFallback = builder.cudnnAllowFallback;
     }
 
     @Override
@@ -159,6 +161,7 @@ public class LocalResponseNormalization extends Layer {
         private double n = 5;
         private double alpha = 1e-4;
         private double beta = 0.75;
+        protected boolean cudnnAllowFallback = true;
 
         public Builder(double k, double alpha, double beta) {
             this.k = k;
@@ -205,6 +208,18 @@ public class LocalResponseNormalization extends Layer {
          */
         public Builder beta(double beta) {
             this.beta = beta;
+            return this;
+        }
+
+        /**
+         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in (non-CuDNN)
+         * implementation for BatchNormalization will be used
+         *
+         * @param allowFallback Whether fallback to non-CuDNN implementation should be used
+         */
+        public Builder cudnnAllowFallback(boolean allowFallback) {
+            this.cudnnAllowFallback = allowFallback;
             return this;
         }
 
