@@ -649,7 +649,29 @@ void NativeOps::execPairwiseTransformBool(
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::pairwise_transforms::PairWiseBoolTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams), LIBND4J_TYPES, BOOL_TYPES)
 }
 
+void NativeOps::execSummaryStatsScalar(Nd4jPointer *extraPointers,
+                                       int opNum,
+                                       void *hX, Nd4jLong *hXShapeInfo,
+                                       void *dX, Nd4jLong *dXShapeInfo,
+                                       void *extraParams,
+                                       void *hZ, Nd4jLong *hZShapeInfo,
+                                       void *dZ, Nd4jLong *dZShapeInfo,
+                                       bool biasCorrected) {
 
+}
+
+void   NativeOps::execBroadcastBool(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hY, Nd4jLong *hYShapeInfo,
+        void *dY, Nd4jLong *dYShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
+        int *dimension, int dimensionLength){
+
+}
 
 /**
  *
@@ -783,6 +805,30 @@ void   NativeOps::execReduceSame(Nd4jPointer *extraPointers,
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceSame(...) failed");
 }
 
+void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
+                               int opNum,
+                               void *hX, Nd4jLong *hXShapeInfo,
+                               void *dX, Nd4jLong *dXShapeInfo,
+                               void *extraParams,
+                               void *hZ, Nd4jLong *hZShapeInfo,
+                               void *dZ, Nd4jLong *dZShapeInfo,
+                               int *dimension,
+                               int dimensionLength) {
+
+}
+
+void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
+                               int opNum,
+                               void *hX, Nd4jLong *hXShapeInfo,
+                               void *dX, Nd4jLong *dXShapeInfo,
+                               void *extraParams,
+                               void *hZ, Nd4jLong *hZShapeInfo,
+                               void *dZ, Nd4jLong *dZShapeInfo,
+                               int *dimension,
+                               int dimensionLength) {
+
+}
+
 void   NativeOps::execReduceLong(Nd4jPointer *extraPointers,
                                   int opNum,
                                   void *hX, Nd4jLong *hXShapeInfo,
@@ -812,6 +858,18 @@ void   NativeOps::execReduceLong(Nd4jPointer *extraPointers,
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, deviceTADShapeInfo), LIBND4J_TYPES, LONG_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceLong(...) failed");
+}
+
+void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
+                               int opNum,
+                               void *hX, Nd4jLong *hXShapeInfo,
+                               void *dX, Nd4jLong *dXShapeInfo,
+                               void *extraParams,
+                               void *hZ, Nd4jLong *hZShapeInfo,
+                               void *dZ, Nd4jLong *dZShapeInfo,
+                               int *dimension,
+                               int dimensionLength) {
+
 }
 
 void   NativeOps::execReduceBool(Nd4jPointer *extraPointers,
@@ -2332,6 +2390,56 @@ void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
 		throw std::runtime_error("NativeOps::execSummaryStats requires Z operand to be BOOL");
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+}
+
+void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
+                                 int opNum,
+                                 void *hX, Nd4jLong *hXShapeInfo,
+                                 void *dX, Nd4jLong *dXShapeInfo,
+                                 void *extraParams,
+                                 void *hZ, Nd4jLong *hZShapeInfo,
+                                 void *dZ, Nd4jLong *dZShapeInfo,
+                                 int *dimension,
+                                 int dimensionLength,
+                                 bool biasCorrected) {
+
+}
+
+void NativeOps::execReduce3(Nd4jPointer *extraPointers,
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *extraParams,
+                            void *hY, Nd4jLong *hYShapeInfo,
+                            void *dY, Nd4jLong *dYShapeInfo,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo) {
+
+}
+
+void NativeOps::execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
+                                  void *hX, Nd4jLong *hXShapeInfo,
+                                  void *dX, Nd4jLong *dXShapeInfo,
+                                  void *extraParams,
+                                  void *hY, Nd4jLong *hYShapeInfo,
+                                  void *dY, Nd4jLong *dYShapeInfo,
+                                  void *hZ, Nd4jLong *hZShapeInfo,
+                                  void *dZ, Nd4jLong *dZShapeInfo) {
+
+}
+
+void NativeOps::execReduce3(Nd4jPointer *extraPointers,
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *extraParams,
+                            void *hY, Nd4jLong *hYShapeInfo,
+                            void *dY, Nd4jLong *dYShapeInfo,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            int *dimension,
+                            int dimensionLength) {
+
 }
 
 void NativeOps::execScalarBool(
