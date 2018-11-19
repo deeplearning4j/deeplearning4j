@@ -1874,7 +1874,7 @@ TEST_F(DeclarableOpsTests10, pad_tests10) {
     auto paddings = NDArrayFactory::create<int>('c', {3,2}, {0,0, 0,1, 0,0});
     auto expected = NDArrayFactory::create<double>('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
 
-    input = 1.;
+    input = 1.f;
     //input.assign(1.);
     nd4j::ops::pad op;
     auto results = op.execute({&input, &paddings}, {}, {0});

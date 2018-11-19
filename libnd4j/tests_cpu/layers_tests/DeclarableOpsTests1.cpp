@@ -745,9 +745,9 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractMatrices1) {
     auto x = NDArrayFactory::create_<float>('c', {5, 3});
     auto y = NDArrayFactory::create_<float>('c', {5, 3});
     auto exp = NDArrayFactory::create<float>('c', {5, 3});
-    x->assign(3);
-    y->assign(1);
-    exp.assign(-2);
+    x->assign(3.f);
+    y->assign(1.f);
+    exp.assign(-2.f);
 
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, x);
@@ -758,7 +758,7 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractMatrices1) {
     nd4j::ops::reversesubtract subOp;
  
     subOp.execute(block);
-
+    x->printIndexedBuffer("Output Subtract");
     ASSERT_TRUE(x->equalsTo(&exp));
 
     delete variableSpace;
@@ -771,9 +771,9 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 6});
     auto y = NDArrayFactory::create<float>('c', {1, 6});
     auto exp = NDArrayFactory::create<float>('c', {1, 6});
-    x.assign(3);
-    y.assign(1);
-    exp.assign(-2);
+    x.assign(3.f);
+    y.assign(1.f);
+    exp.assign(-2.f);
 
     nd4j::ops::reversesubtract subOp;
 
@@ -793,9 +793,9 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_2) {
     auto y = NDArrayFactory::create<float>('c', {3, 4, 5, 1});
     auto exp = NDArrayFactory::create<float>('c', {3, 4, 5, 6});
     auto z(exp);
-    x.assign(3);
-    y.assign(1);
-    exp.assign(-2);
+    x.assign(3.f);
+    y.assign(1.f);
+    exp.assign(-2.f);
     x.applyTrueBroadcast(BROADCAST(ReverseSubtract), &y, &z, true);
 //    x.printIndexedBuffer("ReverseSubtract Legacy");
     ASSERT_TRUE(exp.equalsTo(&z));
@@ -837,15 +837,15 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_3) {
 TEST_F(DeclarableOpsTests1, ReverseModTest_1) {
 
 //    auto x('c', {1, 6});
-    auto x = NDArrayFactory::create<float>('c', {6});
-    auto y = NDArrayFactory::create<float>('c', {3, 4, 5, 1});
-    auto exp = NDArrayFactory::create<float>('c', {3, 4, 5, 6});
+    auto x = NDArrayFactory::create<double>('c', {6});
+    auto y = NDArrayFactory::create<double>('c', {3, 4, 5, 1});
+    auto exp = NDArrayFactory::create<double>('c', {3, 4, 5, 6});
     auto z(exp);
-    x.assign(2);
-    y.assign(9);
-    exp.assign(1);
+    x.assign(2.f);
+    y.assign(9.f);
+    exp.assign(1.f);
     y.applyTrueBroadcast(BROADCAST(Mod), &x, &z, true);
-//    z.printIndexedBuffer("MOD1");
+    z.printIndexedBuffer("MOD1");
     ASSERT_TRUE(exp.equalsTo(&z));
     x.applyTrueBroadcast(BROADCAST(ReverseMod), &y, &exp, true);
     ASSERT_TRUE(exp.equalsTo(&z));
@@ -869,9 +869,9 @@ TEST_F(DeclarableOpsTests1, ReverseModTest_2) {
     auto y = NDArrayFactory::create<float>('c', {3, 4, 5});
     auto exp = NDArrayFactory::create<float>('c', {3, 4, 5});
     auto z(exp);
-    x.assign(2);
-    y.assign(9);
-    exp.assign(1);
+    x.assign(2.f);
+    y.assign(9.f);
+    exp.assign(1.f);
     x.applyTrueBroadcast(BROADCAST(ReverseMod), &y, &z, true);
     ASSERT_TRUE(z.equalsTo(&exp));
     x.applyTrueBroadcast(BROADCAST(ReverseMod), &y, &exp, true);

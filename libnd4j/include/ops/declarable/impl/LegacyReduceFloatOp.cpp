@@ -120,7 +120,7 @@ namespace nd4j {
 
                     //RELEASE(newShape, x->getWorkspace());
 
-
+                    /* this is waste because output shape already correct and used all needed.
                     // keepDims processing, for TF compatibility
                     if (block.getBArguments()->size() > 0 && B_ARG(0)) {
                         // z->printShapeInfo("z shape before");
@@ -132,7 +132,7 @@ namespace nd4j {
                         z->reshapei(z->ordering(), newshape);
                         // z->printShapeInfo("z shape after");
                     }
-
+                    */
                     //OVERWRITE_RESULT(z);
                 }
             }
@@ -163,7 +163,7 @@ namespace nd4j {
             auto array = new NDArray(nullptr, inShape, block.getWorkspace());
             array->triggerAllocationFlag(false, false);
             newShape = ShapeUtils::evalReduceShapeInfo(shape::order(inShape), axis, *array, keepDims, !newFormat, block.workspace());
-            ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(ArrayOptions::dataType(inShape)));
+            //ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(ArrayOptions::dataType(inShape)));
             delete array;
 
             return SHAPELIST(newShape);

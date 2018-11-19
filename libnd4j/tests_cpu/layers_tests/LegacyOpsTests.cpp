@@ -300,16 +300,18 @@ TEST_F(LegacyOpsTests, ReduceTests_7) {
 TEST_F(LegacyOpsTests, ReduceTests_8) {
     auto x = NDArrayFactory::create<float>('c', {2, 3, 5});
     x.linspace(1);
-    auto indices = NDArrayFactory::create<int>('c', {1,1}, {1});
+    auto indices = NDArrayFactory::create<int>('c', {1}, {1});
 
 
     nd4j::ops::LegacyReduceFloatOp op(reduce::Mean);
-    auto result = op.execute({&x, &indices}, {}, {1});
+    auto result = op.execute({&x, &indices}, {}, {}, {true});
     auto z = result->at(0);
     auto exp = x.reduceAlongDims(reduce::Mean, {1}, true);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
+    z->printIndexedBuffer("Reduce8 output");
+    z->printShapeInfo("Reduce8 shape");
+    exp.printShapeInfo("Reduce8 expected shape");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
