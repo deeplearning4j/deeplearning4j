@@ -17,6 +17,7 @@
 package org.nd4j.compression.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
@@ -83,8 +84,11 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
 
     @Override
     public INDArray decompress(INDArray array) {
-        DataBuffer buffer = decompress(array.data(), array.dataType());
-        DataBuffer shapeInfo = array.shapeInfoDataBuffer();
+        if (!array.isCompressed())
+            return array;
+
+        val buffer = decompress(array.data(), ((CompressedDataBuffer)array.data()).getCompressionDescriptor().getOriginalDataType());
+        val shapeInfo = array.shapeInfoDataBuffer();
         INDArray rest = Nd4j.createArrayFromShapeBuffer(buffer, shapeInfo);
 
         return rest;
