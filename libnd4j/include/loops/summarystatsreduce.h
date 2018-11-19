@@ -49,11 +49,6 @@
 namespace functions {
     namespace summarystats {
 
-
-        static _CUDA_G void summaryStatsReduceDouble(int op, double *dx, Nd4jLong *xShapeInfo, int xRank, double *extraParams, double *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, bool biasCorrected, int *allocationBuffer, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
-        static _CUDA_G void summaryStatsReduceFloat(int op, float *dx, Nd4jLong *xShapeInfo, int xRank, float *extraParams, float *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
-        static _CUDA_G void summaryStatsReduceHalf(int op, float16 *dx, Nd4jLong *xShapeInfo, int xRank, float16 *extraParams, float16 *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
-
         // This example computes several statistical properties of a data
         // series in a single reduction.  The algorithm is described in detail here:
         // http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
@@ -277,7 +272,7 @@ namespace functions {
 #ifdef __CUDACC__
 
             static inline _CUDA_D Z startingValue(X *input) {
-                return 0;
+                return static_cast<Z>(0);
             }
 
             template<typename OpType>
@@ -291,11 +286,10 @@ namespace functions {
 
 
             static _CUDA_D void summaryStatsReduceGeneric(const int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
-            //static _CUDA_G void summaryStatsReduceT(int op, T *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, T *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, T *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
 
             static _CUDA_H Z execSummaryStatsReduceScalar(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, bool biasCorrected);
-            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo,bool biasCorrected);
-            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, bool biasCorrected);
+            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer);
+            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer);
 #endif
 
             static Z execScalar(int opNum,

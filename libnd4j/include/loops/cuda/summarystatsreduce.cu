@@ -81,8 +81,10 @@ namespace functions {
                     tadOffsets);
         }
 
-        _CUDA_G void summaryStatsReduceDouble(int op, double *dx, Nd4jLong *xShapeInfo, int xRank, double *extraParams, double *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, bool biasCorrected, int *allocationBuffer, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            SummaryStatsReduce<double, double>::summaryStatsReduceGeneric(
+
+        template <typename X, typename Z>
+        void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+            functions::summarystats::SummaryStatsReduce<X,Z>::summaryStatsReduceGeneric(
                     op,
                     dx,
                     xShapeInfo, xRank,
@@ -95,50 +97,6 @@ namespace functions {
 
         }
 
-        _CUDA_G void summaryStatsReduceFloat(int op, float *dx, Nd4jLong *xShapeInfo, int xRank, float *extraParams, float *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            SummaryStatsReduce<float,float>::summaryStatsReduceGeneric(
-                    op,
-                    dx,
-                    xShapeInfo, xRank,
-                    extraParams,
-                    result,
-                    resultShapeInfo, zRank,
-                    dimension,
-                    dimensionLength,
-                    postProcessOrNot,biasCorrected, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
-
-        }
-
-        _CUDA_G void summaryStatsReduceHalf(int op, float16 *dx, Nd4jLong *xShapeInfo, int xRank, float16 *extraParams, float16 *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            SummaryStatsReduce<float16,float16>::summaryStatsReduceGeneric(
-                    op,
-                    dx,
-                    xShapeInfo, xRank,
-                    extraParams,
-                    result,
-                    resultShapeInfo, zRank,
-                    dimension,
-                    dimensionLength,
-                    postProcessOrNot,biasCorrected, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
-
-        }
-
-        /*
-        template <typename T>
-        void __global__ SummaryStatsReduce<T>::summaryStatsReduceT(int op, T *dx, int *xShapeInfo, int xRank, T *extraParams, T *result, int *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            summaryStatsReduceGeneric<T>(
-                    op,
-                    dx,
-                    xShapeInfo, xRank,
-                    extraParams,
-                    result,
-                    resultShapeInfo, zRank,
-                    dimension,
-                    dimensionLength,
-                    postProcessOrNot,biasCorrected, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
-
-        }
-        */
 
 
         /**
@@ -458,8 +416,8 @@ namespace functions {
             double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
 
-            functions::summarystats::summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-                    opNum,
+            summaryStatsReduceT<X,Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+                            opNum,
                             x,
                             xShapeInfo, shape::rank(hostXShapeInfo),
                             extraParams,
@@ -476,303 +434,57 @@ namespace functions {
             return result;
         }
 
-        // template <>
-        // _CUDA_H float SummaryStatsReduce<float>::execSummaryStatsReduceScalar(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float *x, Nd4jLong *xShapeInfo, float *extraParams, bool biasCorrected) {
-        //     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-        //     auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-
-        //     auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-        //     auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-        //     auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-
-        //     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        //         printf("F16 opNum:[%i]\n", opNum);
-
-        //     float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
-
-        //     int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-        //     float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
-
-        //     functions::summarystats::summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 2, *stream>>>(
-        //             opNum,
-        //                     x,
-        //                     xShapeInfo, shape::rank(hostXShapeInfo),
-        //                     extraParams,
-        //                     resultPointer,
-        //                     nullptr, 0,
-        //                     nullptr,
-        //                     1,
-        //                     1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
-
-        //     // this is blocking method since method should return scalar
-        //     nd4j::DebugHelper::checkErrorCode(stream, "execSSReduceScalarFloat(...) failed");
-
-        //     double result = resultPointer[0];
-        //     return result;
-        // }
-
-
-        // template <>
-        // _CUDA_H float16 SummaryStatsReduce<float16>::execSummaryStatsReduceScalar(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *x, Nd4jLong *xShapeInfo, float16 *extraParams, bool biasCorrected) {
-        //     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-        //     auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-
-        //     auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-        //     auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-        //     auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-
-        //     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        //         printf("H16 opNum:[%i]\n", opNum);
-
-        //     float16 *resultPointer = reinterpret_cast<float16 *>(extraPointers[5]);
-
-        //     int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-        //     float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
-
-
-        //     functions::summarystats::summaryStatsReduceHalf<<<launchDims.x,launchDims.y,launchDims.z * 4, *stream>>>(
-        //             opNum,
-        //                     x,
-        //                     xShapeInfo, shape::rank(hostXShapeInfo),
-        //                     extraParams,
-        //                     resultPointer,
-        //                     nullptr, 0,
-        //                     nullptr,
-        //                     1,
-        //                     1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
-
-        //     // this is blocking method since method should return scalar
-        //     nd4j::DebugHelper::checkErrorCode(stream, "execSSReduceScalarHalf(...) failed");
-
-        //     double result = resultPointer[0];
-        //     return result;
-        // }
-
-
         template <typename X, typename Z>
-        _CUDA_H void SummaryStatsReduce<X, Z>::execSummaryStatsReduce(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vresult, Nd4jLong *resultShapeInfo,bool biasCorrected) {
+        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vresult, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
 
             auto x = static_cast<X*>(vx);
             auto result = static_cast<Z*>(vresult);
             auto extraParams = static_cast<Z*>(vextraParams);
-
-            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-            auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-            auto hostZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-
-            auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-            auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-            auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
 
             if (nd4j::Environment::getInstance()->isDebugAndVerbose())
                 printf("F17 opNum:[%i]\n", opNum);
 
-            int *allocationPointer = reinterpret_cast<int*>(extraPointers[3]);
-            Z *reductionPointer = reinterpret_cast<Z*>(extraPointers[4]);
+            auto reductionPointerA = reinterpret_cast<Z*>(reductionBuffer);
 
-            if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-                printf("AF17 opNum:[%i]\n", opNum);
-
-            functions::summarystats::summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+            summaryStatsReduceT<X,Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
                     opNum,
                             x,
-                            xShapeInfo, shape::rank(hostXShapeInfo),
+                            xShapeInfo, shape::rank(hxShapeInfo),
                             extraParams,
                             result,
-                            resultShapeInfo, shape::rank(hostZShapeInfo),
+                            resultShapeInfo, shape::rank(hzShapeInfo),
                             nullptr,
                             1,
-                            1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+                            1,biasCorrected, nullptr, reductionPointerA, tadShapeInfo, tadOffsets);
 
             DEBUG_KERNEL(stream, opNum);
         }
 
 
-    // template <>
-    // _CUDA_H void SummaryStatsReduce<float16>::execSummaryStatsReduce(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *x, Nd4jLong *xShapeInfo, float16 *extraParams, float16 *result, Nd4jLong *resultShapeInfo,bool biasCorrected) {
-    //     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-    //     auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    //     auto hostZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-
-    //     auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-    //     auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-    //     auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-
-    //     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-    //         printf("H17 opNum:[%i]\n", opNum);
-
-    //     int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-    //     float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
-
-    //     if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-    //         printf("AH17 opNum:[%i]\n", opNum);
-
-    //     functions::summarystats::summaryStatsReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-    //             opNum,
-    //                     x,
-    //                     xShapeInfo, shape::rank(hostXShapeInfo),
-    //                     extraParams,
-    //                     result,
-    //                     resultShapeInfo, shape::rank(hostZShapeInfo),
-    //                     nullptr,
-    //                     1,
-    //                     1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
-
-    //     DEBUG_KERNEL(stream, opNum);
-    // }
-
-        // template <>
-        // _CUDA_H void SummaryStatsReduce<double>::execSummaryStatsReduce(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, double *x, Nd4jLong *xShapeInfo, double *extraParams, double *result, Nd4jLong *resultShapeInfo,bool biasCorrected) {
-        //     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-        //     auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-        //     auto hostZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-
-        //     auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-        //     auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-        //     auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-
-        //     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        //         printf("D17 opNum:[%i]\n", opNum);
-
-        //     int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-        //     double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
-
-        //     if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-        //         printf("AD17 opNum:[%i]\n", opNum);
-
-        //     functions::summarystats::summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-        //         opNum,
-        //                 x,
-        //                 xShapeInfo, shape::rank(hostXShapeInfo),
-        //                 extraParams,
-        //                 result,
-        //                 resultShapeInfo, shape::rank(hostZShapeInfo),
-        //                 nullptr,
-        //                 1,
-        //                 1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
-
-        //     DEBUG_KERNEL(stream, opNum);
-        // }
-
-
         template<typename X, typename Z>
-        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduce(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vresult, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, bool biasCorrected) {
+        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vresult, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
 
             auto x = static_cast<X*>(vx);
             auto result = static_cast<Z*>(vresult);
             auto extraParams = static_cast<Z*>(vextraParams);
 
-            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-            auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-            auto hostZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-
-            auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-            auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-
-            auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-
             if (nd4j::Environment::getInstance()->isDebugAndVerbose())
                 printf("D18 opNum:[%i]\n", opNum);
 
-            int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-            double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
-
-            functions::summarystats::summaryStatsReduceDouble<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+            summaryStatsReduceT<X, Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
                     opNum,
                             x,
-                            xShapeInfo, shape::rank(hostXShapeInfo),
+                            xShapeInfo, shape::rank(hxShapeInfo),
                             extraParams,
                             result,
-                            resultShapeInfo, shape::rank(hostZShapeInfo),
+                            resultShapeInfo, shape::rank(hzShapeInfo),
                             dimension,
                             dimensionLength,
-                            1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+                            1, biasCorrected, nullptr, reinterpret_cast<Z*>(reductionBuffer), tadShapeInfo, tadOffsets);
 
             DEBUG_KERNEL(stream, opNum);
         }
 
-
-        // template <>
-        // _CUDA_H void SummaryStatsReduce<float>::execSummaryStatsReduce(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float *x, Nd4jLong *xShapeInfo, float *extraParams, float *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength,bool biasCorrected) {
-        //     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-        //     auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-        //     auto hostZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-
-        //     auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-        //     auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-
-        //     auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-
-        //     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        //         printf("F18 opNum:[%i]\n", opNum);
-
-        //     int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-        //     float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
-
-        //     // we need shmem buffer big enough to hold double values
-        //     launchDims.z *= 2;
-
-        //     functions::summarystats::summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-        //             opNum,
-        //                 x,
-        //                 xShapeInfo, shape::rank(hostXShapeInfo),
-        //                 extraParams,
-        //                 result,
-        //                 resultShapeInfo, shape::rank(hostZShapeInfo),
-        //                 dimension,
-        //                 dimensionLength,
-        //                 1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
-
-        //     DEBUG_KERNEL(stream, opNum);
-        // }
-
-
-        // template <>
-        // _CUDA_H void SummaryStatsReduce<float16>::execSummaryStatsReduce(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, float16 *x, Nd4jLong *xShapeInfo, float16 *extraParams, float16 *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength,bool biasCorrected) {
-        //     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-        //     auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-        //     auto hostZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-
-        //     auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-        //     auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-
-        //     auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-
-        //     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        //         printf("H18 opNum:[%i]\n", opNum);
-
-        //     int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-        //     float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
-
-        //     // we need shmem buffer big enough to hold double values
-        //     launchDims.z *= 4;
-
-        //     functions::summarystats::summaryStatsReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-        //             opNum,
-        //                 x,
-        //                 xShapeInfo, shape::rank(hostXShapeInfo),
-        //                 extraParams,
-        //                 result,
-        //                 resultShapeInfo, shape::rank(hostZShapeInfo),
-        //                 dimension,
-        //                 dimensionLength,
-        //                 1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
-
-        //     DEBUG_KERNEL(stream, opNum);
-        // }
-
-
-        // template class ND4J_EXPORT SummaryStatsReduce<float>;
-        // template class ND4J_EXPORT SummaryStatsReduce<float16>;
-        // template class ND4J_EXPORT SummaryStatsReduce<double>;
-        // BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , LIBND4J_TYPES, FLOAT_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , LIBND4J_TYPES, FLOAT_TYPES);
     }
 }

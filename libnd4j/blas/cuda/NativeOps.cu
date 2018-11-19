@@ -2313,6 +2313,27 @@ void NativeOps::setTADThreshold(int num) {
     // this is no-op for CUDA
 }
 
+void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
+                                 int opNum,
+                                 void *hX, Nd4jLong *hXShapeInfo,
+                                 void *dX, Nd4jLong *dXShapeInfo,
+                                 void *extraParams,
+                                 void *hZ, Nd4jLong *hZShapeInfo,
+                                 void *dZ, Nd4jLong *dZShapeInfo,
+                                 bool biasCorrected) {
+    auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    dim3 launchDims = dim3(256, 512, 16384);
+
+	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+	if (!DataTypeUtils::isR(zType))
+		throw std::runtime_error("NativeOps::execSummaryStats requires Z operand to be BOOL");
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+}
+
 void NativeOps::execScalarBool(
 		Nd4jPointer *extraPointers,
 		int opNum,
@@ -2323,7 +2344,7 @@ void NativeOps::execScalarBool(
 		void *hScalar, Nd4jLong *hScalarShapeInfo,
 		void *dScalar, Nd4jLong *dScalarShapeInfo,
 		void *extraParams) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	dim3 launchDims = dim3(256, 512, 8192);
 
