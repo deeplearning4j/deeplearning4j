@@ -55,16 +55,22 @@ __global__ void scalarAlongDimension(void *x, Nd4jLong *xShapeInfo,
 
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Z, typename OpType>
-__device__ void scalarSimpleGeneric(Nd4jLong len, void* x, void *y, Nd4jLong yEWS, void *params, void *z, Nd4jLong zEWS, int *allocationBuffer) {
+__device__ void scalarSimpleStridedGeneric(Nd4jLong len, void* x, void *y, Nd4jLong yEWS, void *params, void *z, Nd4jLong zEWS, int *allocationBuffer) {
 
     functions::scalar::ScalarBoolTransform<X,Z>::template transformCuda<OpType>(len, x, y, yEWS, params, z, zEWS, allocationBuffer, nullptr); 
 }
 
 ////////////////////////////////////////////////////////////////////////
+template<typename X, typename Z, typename OpType>
+__device__ void scalarSimpleShapedGeneric(void* x, void *y, Nd4jLong *xShapeInfo, void *params, void *z, Nd4jLong *zShapeInfo, int *allocationBuffer) {
+    functions::scalar::ScalarBoolTransform<X,Z>::template transformCuda<OpType>(y, x, xShapeInfo, params, z, zShapeInfo, allocationBuffer, nullptr);
+}
+
+////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
 __global__ void scalarSimpleShaped(void* x, void *y, Nd4jLong *xShapeInfo, void *params, void *z, Nd4jLong *zShapeInfo, int *allocationBuffer) {
-    
-    scalarSimpleGeneric<X, Z, OpType>(x, y, xShapeInfo, params, z, zShapeInfo, allocationBuffer);
+
+    scalarSimpleShapedGeneric<X, Z, OpType>(x, y, xShapeInfo, params, z, zShapeInfo, allocationBuffer);
 }
 
 
@@ -86,7 +92,7 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void* vscalar,
                                                         int *allocationBuffer, UnifiedSharedMemory *manager) {
     auto scalar = reinterpret_cast<X*>(vscalar)[0];
     auto y      = reinterpret_cast<X*>(vy);
-    auto params = reinterpret_cast<Z*>(vparams);
+    auto params = reinterpret_cast<X*>(vparams);
     auto z      = reinterpret_cast<Z*>(vz);
 
     auto yRank   = shape::rank(yShapeInfo);
@@ -129,7 +135,7 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(Nd4jLong len,
     auto x = reinterpret_cast<X*>(vx)[0];
     auto y = reinterpret_cast<X*>(vy);
     auto z = reinterpret_cast<Z*>(vz);
-    auto params = reinterpret_cast<Z*>(vparams);
+    auto params = reinterpret_cast<X*>(vparams);
 
     int totalThreads = gridDim.x * blockDim.x;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -159,7 +165,7 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xS
     auto x = reinterpret_cast<X*>(vx);
     auto scalars = reinterpret_cast<X*>(vscalars);
     auto z = reinterpret_cast<Z*>(vz);
-    auto extraParams = reinterpret_cast<Z*>(vextraParams);
+    auto extraParams = reinterpret_cast<X*>(vextraParams);
     
     if (tadShapeInfoZ == nullptr) {
         tadShapeInfoZ = tadShapeInfo;
@@ -190,23 +196,6 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xS
     }
 }
 
-////////////////////////////////////////////////////////////////////////
-template<typename X, typename Z>
-template<typename OpType>
-__device__ void  ScalarBoolTransform<X, Z>::transform(Nd4jLong len, void* vscalar, void *vy, void *vparams, void *vz, Nd4jLong *indexes, int *allocationBuffer, UnifiedSharedMemory *manager) {
-
-    auto scalar = reinterpret_cast<X*>(vscalar)[0];
-    auto y = reinterpret_cast<X*>(vy);
-    auto params = reinterpret_cast<Z*>(vparams);
-    auto z = reinterpret_cast<Z*>(vz);
-
-    int totalThreads = gridDim.x * blockDim.x;    
-    Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    /* equal, positive, non-unit increments. */
-    for (; i < len; i+= totalThreads) 
-        z[indexes[i]] = OpType::op(y[indexes[i]], scalar, params);
-}
 
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Z>
@@ -237,37 +226,26 @@ void _CUDA_H ScalarBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cuda
 
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-void ScalarBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, 
+void ScalarBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream,
                                                 int opNum, 
                                                 void *vx, Nd4jLong *xShapeInfo, 
                                                 void *vz, Nd4jLong *zShapeInfo, 
                                                 void* vscalar, 
                                                 void *vextraParams) {
-        
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
         printf("H14 opNum:[%i]\n", opNum);
 
-    auto allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-    DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalar, vextraParams, allocPointer), SCALAR_BOOL_OPS);
+    DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalar, vextraParams, nullptr), SCALAR_BOOL_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-void ScalarBoolTransform<X,Y>::executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vscalars, void *vextraParams, int *dimension, int dimensionLength) {
-    
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-    auto tadShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
-    auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
-
+void ScalarBoolTransform<X,Y>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vscalars, void *vextraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
     DISPATCH_BY_OPNUM_TT(intermediateAlongDimension, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalars, vextraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_BOOL_OPS);
 }
 
+    BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ScalarBoolTransform, , LIBND4J_TYPES, BOOL_TYPES);
 }
 }
 

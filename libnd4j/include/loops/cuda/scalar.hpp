@@ -153,31 +153,21 @@ namespace functions {
 
 
     template<typename X, typename Y, typename Z>
-    void ScalarTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void* vscalar, void *vextraParams) {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    void ScalarTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void* vscalar, void *vextraParams) {
 
         if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		    printf("H14 opNum:[%i]\n", opNum);
-
-		auto allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
         auto xType = nd4j::DataTypeUtils::fromT<X>();
         auto yType = nd4j::DataTypeUtils::fromT<Y>();
         auto zType = nd4j::DataTypeUtils::fromT<Z>();
 
-        DISPATCH_BY_OPNUM_TTT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vz, zShapeInfo, hzShapeInfo, vscalar, vextraParams, allocPointer), SCALAR_OPS);
+        DISPATCH_BY_OPNUM_TTT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vz, zShapeInfo, hzShapeInfo, vscalar, vextraParams, nullptr), SCALAR_OPS);
     }
 
 
     template<typename X, typename Y, typename Z>
-    void ScalarTransform<X,Y,Z>::executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vscalars, void *vextraParams, int *dimension, int dimensionLength) {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-        auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-        auto tadShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
-        auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
-
+    void ScalarTransform<X,Y,Z>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vscalars, void *vextraParams, int *dimension, int dimensionLength,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
         DISPATCH_BY_OPNUM_TTT(intermediateAlongDimension, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalars, vextraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
     }
 

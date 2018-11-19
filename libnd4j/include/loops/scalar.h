@@ -65,10 +65,10 @@ namespace functions {
             static void intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
             __host__
-            static void executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *result, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, void* scalar, void *extraParams);
+            static void executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *result, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, void* scalar, void *extraParams);
 
             __host__
-            static void executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength);
+            static void executeCudaAlongDimension(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
             template<typename OpType>
             __device__
@@ -77,7 +77,6 @@ namespace functions {
             template<typename OpType>
             __device__
             static void transformCuda(void* scalar, void *dy, Nd4jLong *shapeInfo, void *params, void *result,Nd4jLong *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
-
 
             static __device__ void transformCudaLegacy(int opNum, void* scalar, void *dy, Nd4jLong *shapeInfo, void *params, void *result,Nd4jLong *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
 
