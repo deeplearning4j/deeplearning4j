@@ -581,7 +581,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test1) {
 
 
     nd4j::ops::top_k op;
-    auto result = op.execute({&x}, {}, {4, 0}, {});
+    auto result = op.execute({&x}, {}, {4}, {false});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -592,7 +592,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test1) {
     ASSERT_TRUE(expUnsorted.isSameShape(z));
     ASSERT_TRUE(expUnsorted.equalsTo(z));
 
-    auto result2 = op.execute({&x}, {}, {5, 1});
+    auto result2 = op.execute({&x}, {}, {5}, {true});
 
     ASSERT_EQ(ND4J_STATUS_OK, result2->status());
 
@@ -616,7 +616,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test2) {
 
 
     nd4j::ops::top_k op;
-    auto result = op.execute({&x}, {}, {5, 0},{});
+    auto result = op.execute({&x}, {}, {5}, {false});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -627,7 +627,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test2) {
     ASSERT_TRUE(expUnsorted.isSameShape(z));
     ASSERT_TRUE(expUnsorted.equalsTo(z));
 
-    auto result2 = op.execute({&x}, {}, {5, 1}, {});
+    auto result2 = op.execute({&x}, {}, {5}, {true});
 
     ASSERT_EQ(ND4J_STATUS_OK, result2->status());
 
@@ -1874,8 +1874,8 @@ TEST_F(DeclarableOpsTests10, pad_tests10) {
     auto paddings = NDArrayFactory::create<int>('c', {3,2}, {0,0, 0,1, 0,0});
     auto expected = NDArrayFactory::create<double>('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
 
-    //input = 1.f;
-    input.assign(1.);
+    input = 1.;
+    //input.assign(1.);
     nd4j::ops::pad op;
     auto results = op.execute({&input, &paddings}, {}, {0});
 
