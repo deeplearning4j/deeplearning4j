@@ -163,17 +163,8 @@ __device__ void PairWiseTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xSha
 
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
-void PairWiseTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vy, Nd4jLong *yShapeInfo, Nd4jLong *hyShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void *vextraParams) {
-	
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	auto allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-    auto xType = nd4j::DataTypeUtils::fromT<X>();
-    auto yType = nd4j::DataTypeUtils::fromT<Y>();
-    auto zType = nd4j::DataTypeUtils::fromT<Z>();
-
-	DISPATCH_BY_OPNUM_TTT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vy, yShapeInfo, hyShapeInfo, vz, zShapeInfo, hzShapeInfo, vextraParams, allocPointer), PAIRWISE_TRANSFORM_OPS);
+void PairWiseTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vy, Nd4jLong *yShapeInfo, Nd4jLong *hyShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void *vextraParams) {
+	DISPATCH_BY_OPNUM_TTT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vy, yShapeInfo, hyShapeInfo, vz, zShapeInfo, hzShapeInfo, vextraParams, nullptr), PAIRWISE_TRANSFORM_OPS);
 }
       
 

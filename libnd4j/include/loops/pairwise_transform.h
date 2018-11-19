@@ -71,7 +71,7 @@ namespace functions {
 
             static __device__ void transformCuda(const int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
 
-            static __host__ void executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *y, Nd4jLong *yShapeInfo, Nd4jLong *hyShapeInfo, void *z, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, void *extraParams);
+            static __host__ void executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *y, Nd4jLong *yShapeInfo, Nd4jLong *hyShapeInfo, void *z, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, void *extraParams);
 
 #endif
         public:

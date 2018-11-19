@@ -28,11 +28,18 @@
 #include <loops/reduce3.h>
 
 #include <loops/indexreduce.h>
-#include <loops/pairwise_transform.h>
-#include <loops/scalar.h>
-#include <loops/broadcasting.h>
 #include <loops/summarystatsreduce.h>
 #include <loops/random.h>
+
+
+#include <loops/broadcasting.h>
+#include <loops/broadcasting_bool.h>
+
+#include <loops/scalar.h>
+#include <loops/scalar_bool.h>
+
+#include <loops/pairwise_transform.h>
+#include <loops/pairwise_bool.h>
 
 #include <loops/transform_same.h>
 #include <loops/transform_float.h>
@@ -587,6 +594,61 @@ public:
 		 delete shapeInfo;
 	 }
 };
+
+void NativeOps::execPairwiseTransform(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hY, Nd4jLong *hYShapeInfo,
+        void *dY, Nd4jLong *dYShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
+        void *extraParams) {
+
+    auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(dYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
+
+    dim3 launchDims(256, 1024, 8192);
+
+    if (xType != zType && yType != zType)
+        throw std::runtime_error("NativeOps::execPairwiseTransform requires Z operand to have either X or Y type");
+
+#ifdef __ND4J_EXPERIMENTAL__
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dY, dYShapeInfo, hYShapeInfo, dZ, dZShapeInfo, hZShapeInfo, extraParams), LIBND4J_TYPES, LIBND4J_TYPES)
+#else
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dY, dYShapeInfo, hYShapeInfo, dZ, dZShapeInfo, hZShapeInfo, extraParams), LIBND4J_TYPES)
+#endif
+}
+
+void NativeOps::execPairwiseTransformBool(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hY, Nd4jLong *hYShapeInfo,
+        void *dY, Nd4jLong *dYShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
+        void *extraParams) {
+
+    auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(dYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
+
+    dim3 launchDims(256, 1024, 8192);
+
+    if (!DataTypeUtils::isB(zType))
+        throw std::runtime_error("NativeOps::execPairwiseTransformBool requires Z operand to have BOOL type");
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::pairwise_transforms::PairWiseBoolTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams), LIBND4J_TYPES, BOOL_TYPES)
+}
+
 
 /**
  *

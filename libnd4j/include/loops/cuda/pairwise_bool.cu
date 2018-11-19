@@ -27,7 +27,7 @@
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z, typename OpType>
+template<typename X, typename Z, typename OpType>
 __device__ void pairwiseSimpleGeneric(void* x, Nd4jLong *xShapeInfo, 
 									void *y, Nd4jLong *yShapeInfo, 
 									void *z, Nd4jLong *zShapeInfo, 
@@ -39,7 +39,7 @@ __device__ void pairwiseSimpleGeneric(void* x, Nd4jLong *xShapeInfo,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y, typename Z, typename OpType>
+template <typename X, typename Z, typename OpType>
 __global__ void pairwiseSimpleShaped(void* x, Nd4jLong *xShapeInfo, 
 									void *y, Nd4jLong *yShapeInfo, 
 									void *z, Nd4jLong *zShapeInfo, 
@@ -64,31 +64,7 @@ void _CUDA_H PairWiseBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cu
 														void *vextraParams, 
 														int *allocPointer){
 
-	pairwiseSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Z>
-template<typename OpType>
-__device__ void PairWiseBoolTransform<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo, 
-													void *vy, Nd4jLong *yShapeInfo, 
-													void *vz, Nd4jLong *zShapeInfo, 
-													void *vextraParams, 
-													Nd4jLong *xIndexes, Nd4jLong *yIndexes, Nd4jLong *zIndexes, 
-													int *allocPointer, 
-													UnifiedSharedMemory *manager, 
-													Nd4jLong *tadOnlyShapeInfo){
-	       
-	auto x = reinterpret_cast<X*>(vx);
-	auto y = reinterpret_cast<X*>(vy);
-	auto z = reinterpret_cast<Z*>(vz);
-    auto extraParams = reinterpret_cast<Z*>(vextraParams);    
-
-	int tid = blockIdx.x * blockDim.x + threadIdx.x;
-	Nd4jLong len = shape::length(xShapeInfo);
-
-	for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) 
-		z[zIndexes[i]] = OpType::op(x[xIndexes[i]], y[yIndexes[i]], extraParams);	
+	pairwiseSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,7 +81,7 @@ __device__ void PairWiseBoolTransform<X,Z>::transformCuda(Nd4jLong len,
 	auto x = reinterpret_cast<X*>(vx);
 	auto y = reinterpret_cast<X*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
-	auto params = reinterpret_cast<Z*>(vparams);
+	auto params = reinterpret_cast<X*>(vparams);
 
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -133,7 +109,7 @@ __device__ void PairWiseBoolTransform<X,Z>::transformCuda(void *vx, Nd4jLong *xS
 	auto x = reinterpret_cast<X*>(vx);
 	auto y = reinterpret_cast<X*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
-	auto extraParams = reinterpret_cast<Z*>(vextraParams);
+	auto extraParams = reinterpret_cast<X*>(vextraParams);
 
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -197,19 +173,14 @@ __device__ void PairWiseBoolTransform<X,Z>::transformCuda(void *vx, Nd4jLong *xS
 
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-void PairWiseBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams) {
-	
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	auto allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-
+void PairWiseBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams) {
     auto xType = nd4j::DataTypeUtils::fromT<X>();
     auto yType = nd4j::DataTypeUtils::fromT<Y>();    
 
-	DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer), PAIRWISE_BOOL_OPS);
+	DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, nullptr), PAIRWISE_BOOL_OPS);
 }
       
-
+    BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT PairWiseBoolTransform, , LIBND4J_TYPES, BOOL_TYPES);
 }
 }
 
