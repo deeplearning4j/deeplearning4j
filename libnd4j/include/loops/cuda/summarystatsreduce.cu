@@ -395,43 +395,31 @@ namespace functions {
 
 
         template <typename X, typename Z>
-        _CUDA_H Z SummaryStatsReduce<X,Z>::execSummaryStatsReduceScalar(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vextraParams, bool biasCorrected) {
+        _CUDA_H Z SummaryStatsReduce<X,Z>::execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
             
             auto x = static_cast<X*>(vx);
-            auto extraParams = static_cast<Z*>(vextraParams);
-
-            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-            auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-
-            auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-            auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-            auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
+            auto extraParams = static_cast<Z*>(vextraParams);                                        
+            auto z = reinterpret_cast<Z*>(vz);
+            auto reductionPointerA = reinterpret_cast<Z*>(reductionBuffer);
 
             if (nd4j::Environment::getInstance()->isDebugAndVerbose())
                 printf("D16 opNum:[%i]\n", opNum);
 
-            double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
-
-            int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
-            double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
-
-
             summaryStatsReduceT<X,Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
                             opNum,
                             x,
-                            xShapeInfo, shape::rank(hostXShapeInfo),
+                            xShapeInfo, shape::rank(hxShapeInfo),
                             extraParams,
-                            resultPointer,
-                            nullptr, 0,
+                            z,
+                            zShapeInfo, shape::rank(hzShapeInfo),
                             nullptr,
                             1,
-                            1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
+                            1,biasCorrected, nullptr, reductionPointerA, tadShapeInfo, tadOffsets);
 
             // this is blocking method since method should return scalar
             nd4j::DebugHelper::checkErrorCode(stream, "execSSReduceScalarDouble(...) failed");
 
-            double result = resultPointer[0];
-            return result;
+            return *z;
         }
 
         template <typename X, typename Z>
