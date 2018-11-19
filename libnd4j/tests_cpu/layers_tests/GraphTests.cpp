@@ -420,9 +420,10 @@ TEST_F(GraphTests, IndexReductionsTest1) {
     }
 
     auto z = NDArrayFactory::create_<Nd4jLong>('c', {5, 1});
-
+    auto axis = NDArrayFactory::create_<Nd4jLong>('c', {1}, {1});
     graph->getVariableSpace()->putVariable(-1, x);
     graph->getVariableSpace()->putVariable(-2, z);
+    //graph->getVariableSpace()->putVariable(-3, axis);
 
 
     auto nodeA = new Node(OpType_INDEX_REDUCE, indexreduce::IndexMin, 1, {-1}, {2}, {1});
@@ -520,11 +521,11 @@ TEST_F(GraphTests, AutoOutput2) {
 TEST_F(GraphTests, BroadcastTest1) {
     auto graph = new Graph();
     auto x = NDArrayFactory::create_<float>('c', {5, 5});
-    x->assign(0.0);
+    x->assign(0.f);
 
     auto y = NDArrayFactory::create_<float>('c', {1, 5});
     for (int e = 0; e < y->columns(); e++) {
-        y->p(e, e);
+        y->p(e, (float)e);
     }
 
     auto z = NDArrayFactory::create_<float>('c', {5, 5});
@@ -533,7 +534,7 @@ TEST_F(GraphTests, BroadcastTest1) {
     graph->getVariableSpace()->putVariable(-2, y);
     graph->getVariableSpace()->putVariable(-3, z);
 
-    auto nodeA = new Node(OpType_BROADCAST, 0, broadcast::Subtract, {-1, -2}, {2}, {1});
+    auto nodeA = new Node(OpType_BROADCAST, broadcast::Subtract, 1, {-1, -2}, {2}, {1});
     auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Neg, 2, {1}, {-3});
 
     graph->addNode(nodeA);
