@@ -1801,6 +1801,23 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test4) {
 }
 
 ////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, LinSpace_Test1) {
+
+    NDArray start = NDArrayFactory::create<double>(1.);
+    NDArray finish = NDArrayFactory::create<double>(12.);
+    NDArray num = NDArrayFactory::create<int>(23);
+    NDArray expect = NDArrayFactory::create<double>({1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5,
+                                                        8., 8.5, 9., 9.5, 10., 10.5, 11., 11.5, 12.});
+
+    nd4j::ops::lin_space op;
+    auto result = op.execute({&start, &finish, &num}, {}, {});
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto res = result->at(0);
+    res->printIndexedBuffer("from 1 to 24");
+    ASSERT_TRUE(expect.equalsTo(res));
+    delete result;
+}
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
 
     NDArray input    = NDArrayFactory::create<float>('c', {1, 2, 3, 4});
