@@ -340,21 +340,23 @@ TEST_F(LegacyOpsTests, IndexReduceTests_1) {
 
 TEST_F(LegacyOpsTests, IndexReduceTests_2) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
+    auto indices = NDArrayFactory::create<int>('c', {1}, {1});
     x.linspace(1);
-
+    auto exp = NDArrayFactory::create<Nd4jLong>({4,4,4,4,4});
     nd4j::ops::LegacyIndexReduceOp op(indexreduce::IndexMax);
 
-    auto result = op.execute({&x}, {}, {1});
+    auto result = op.execute({&x, &indices}, {}, {});
 
     ASSERT_EQ(1, result->size());
 
     auto z = result->at(0);
-
-    ASSERT_EQ(4, z->e<int>(0));
-    ASSERT_EQ(4, z->e<int>(1));
-    ASSERT_EQ(4, z->e<int>(2));
-    ASSERT_EQ(4, z->e<int>(3));
-    ASSERT_EQ(4, z->e<int>(4));
+    z->printIndexedBuffer("Hello indexreduce2");
+    ASSERT_TRUE(exp.equalsTo(z));
+    //ASSERT_EQ(4, z->e<int>(0));
+    //ASSERT_EQ(4, z->e<int>(1));
+    //ASSERT_EQ(4, z->e<int>(2));
+    //ASSERT_EQ(4, z->e<int>(3));
+    //ASSERT_EQ(4, z->e<int>(4));
 
     delete result;
 }

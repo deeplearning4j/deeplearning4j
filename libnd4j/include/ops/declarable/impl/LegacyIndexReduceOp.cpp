@@ -42,7 +42,7 @@ namespace nd4j {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;
-            if (block.getAxis()->size() == 0) {
+            if (block.getAxis()->size() == 0 && block.width() == 1) {
                 // in this case we just return scalar
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
                 newShape[0] = 2;
@@ -52,7 +52,7 @@ namespace nd4j {
                 newShape[4] = 1;
                 newShape[6] = 1;
                 newShape[7] = 99;
-            } else {
+            } else if (block.getAxis()->size()){
                 // in this case we're building proper shape for reduction
                 auto array = INPUT_VARIABLE(0); //new NDArray(nullptr, inShape, block.getWorkspace());
                 //array->triggerAllocationFlag(false, false);
@@ -60,6 +60,37 @@ namespace nd4j {
                 newShape = ShapeUtils::evalReduceShapeInfo('c', *block.getAxis(), *array, false, true, block.workspace());
 
                 //delete array;
+            }
+            else {
+                bool allAxes = false;
+                auto indices = INPUT_VARIABLE(1);
+                Nd4jLong rank = shape::rank(inShape);
+                if (indices->lengthOf() == rank)
+                    allAxes = true;
+
+                std::vector<int> axis(indices->lengthOf());
+                for (int e = 0; e < indices->lengthOf(); e++) {
+                    // lol otherwise we segfault on macOS
+                    int f = indices->e<int>(e);
+                    axis[e] = f >= 0 ? f : f += rank;
+                }
+                if (allAxes){
+                        // in this case we just return scalar
+                        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
+                        newShape[0] = 2;
+                        newShape[1] = 1;
+                        newShape[2] = 1;
+                        newShape[3] = 1;
+                        newShape[4] = 1;
+                        newShape[6] = 1;
+                        newShape[7] = 99;
+                } else {
+                    // in this case we're building proper shape for reduction
+                    auto array = INPUT_VARIABLE(0); //new NDArray(nullptr, inShape, block.getWorkspace());
+                    //array->triggerAllocationFlag(false, false);
+
+                    newShape = ShapeUtils::evalReduceShapeInfo('c', axis, *array, false, true, block.workspace());
+                }
             }
 
             ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
@@ -118,6 +149,8 @@ namespace nd4j {
                 }
 
                 if (allAxes) {
+                    NativeOpExcutioner::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(),
+                                                              block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo());
 
                 } else {
                     if (indices->lengthOf() > 1)
