@@ -190,6 +190,8 @@ public class ArrayOptionsHelper {
             case "float64":
             case "double":
                 return DataType.DOUBLE;
+            case "string":
+                return DataType.UTF8;
             default:
                 throw new ND4JIllegalStateException("Unknown data type used: [" + dataType + "]");
         }
