@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -60,8 +61,8 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
 
     @Before
     public void before() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
+        Nd4j.factory().setDType(DataType.DOUBLE);
         Nd4j.EPS_THRESHOLD = 1e-4;
     }
 
