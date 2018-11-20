@@ -130,43 +130,15 @@ namespace functions {
                             }
                         }
                     }
-                    else {
-                        auto zShape = shape::shapeOf(tadShapeInfoZ);
-                        auto zStrides = shape::stride(tadShapeInfoZ);
-                        int zRank = shape::rank(tadShapeInfoZ);
-
-                        auto xShape = shape::shapeOf(tadShapeShapeInfo);
-                        auto xStrides = shape::stride(tadShapeShapeInfo);
-                        int xRank = shape::rank(tadShapeShapeInfo);
-
-                        auto yShape = shape::shapeOf(yShapeInfo);
-                        auto yStrides = shape::stride(yShapeInfo);
-                        int yRank = shape::rank(yShapeInfo);
-
-                        Nd4jLong xCoord[MAX_RANK];
-                        Nd4jLong yCoord[MAX_RANK];
-                        Nd4jLong zCoord[MAX_RANK];
-
+                    else {                        
 
                         // TODO: cover this codebranch with tests
                         // all this stuff already happens within thread
-                        for (int f = 0; f < tadLength; f++) {
-                            if (shape::order(tadShapeShapeInfo) == 'c') {
-                                shape::ind2subC(xRank, xShape, f, tadLength, xCoord);
-                                shape::ind2subC(yRank, yShape, f, tadLength, yCoord);
-                            } else {
-                                shape::ind2sub(xRank, xShape, f, tadLength, xCoord);
-                                shape::ind2sub(yRank, yShape, f, tadLength, yCoord);
-                            }
+                        for (int f = 0; f < tadLength; f++) {                            
 
-                            if (shape::order(tadShapeInfoZ) == 'c')
-                                shape::ind2subC(zRank, zShape, f, tadLength, zCoord);
-                            else
-                                shape::ind2sub(zRank, zShape, f, tadLength, zCoord);
-
-                            auto xOffset = shape::getOffset(offset, xShape, xStrides, xCoord, xRank);
-                            auto zOffset = shape::getOffset(offsetZ, zShape, zStrides, zCoord, zRank);
-                            auto yOffset = shape::getOffset(0, yShape, yStrides, yCoord, yRank);
+                            auto xOffset = offset + shape::getIndexOffset(f, tadShapeShapeInfo, tadLength);
+                            auto zOffset = offsetZ + shape::getIndexOffset(f, tadShapeInfoZ, tadLength);
+                            auto yOffset = shape::getIndexOffset(f, yShapeInfo, tadLength);
 
                             result[zOffset] = OpType::op(x[xOffset], y[yOffset]);
                         }
