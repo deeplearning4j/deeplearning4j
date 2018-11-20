@@ -73,7 +73,7 @@ public class ArrowConverterTest {
         int numRows = 4;
         List<List<Writable>> ret = new ArrayList<>(numRows);
         for(int i = 0; i < numRows; i++) {
-            ret.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.linspace(1,4,4))));
+            ret.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.linspace(1,4,4).reshape(1, 4))));
         }
 
         List<FieldVector> fieldVectors = ArrowConverter.toArrowColumns(bufferAllocator, schema, ret);
