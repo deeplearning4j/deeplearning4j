@@ -19,12 +19,9 @@ package org.deeplearning4j.clustering.lsh;
 import lombok.Getter;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastEqualTo;
-import org.nd4j.linalg.api.ops.impl.transforms.Sign;
-
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
-import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;

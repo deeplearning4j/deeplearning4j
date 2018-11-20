@@ -32,8 +32,9 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -510,7 +511,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 ret[1] = Nd4j.rand(new long[] {labelsShape[0], labelWidth});
                 break;
             case "LossMultiLabel":
-                ret[1] = Nd4j.rand(labelsShape).lti(0.3);
+                ret[1] = Nd4j.rand(labelsShape).lt(0.3);
                 // ensure that there is no example that is all ones or all zeros
                 final INDArray sum = ret[1].sum(0);
                 for (int i = 0; i < labelsShape[0]; i++) {

@@ -143,7 +143,7 @@ public class KDTree implements Serializable {
         if (node == null || rect.minDistance(point) > dist)
             return;
         int _discNext = (_disc + 1) % dims;
-        double distance = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point)).getFinalResult()
+        double distance = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point, Nd4j.scalar(0.0))).getFinalResult()
                         .doubleValue();
         if (distance <= dist) {
             best.add(Pair.of(distance, node.getPoint()));
@@ -171,7 +171,7 @@ public class KDTree implements Serializable {
             return Pair.of(Double.POSITIVE_INFINITY, null);
 
         int _discNext = (_disc + 1) % dims;
-        double dist2 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point)).getFinalResult().doubleValue();
+        double dist2 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point, Nd4j.scalar(0.0))).getFinalResult().doubleValue();
         if (dist2 < dist) {
             best = node.getPoint();
             dist = dist2;

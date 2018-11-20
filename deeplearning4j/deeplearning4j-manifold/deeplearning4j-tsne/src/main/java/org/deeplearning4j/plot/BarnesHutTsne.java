@@ -582,8 +582,8 @@ public class BarnesHutTsne implements Model {
 
             INDArray yGrads = gradient;
 
-            gains = gains.add(.2).muli(sign(yGrads)).neqi(sign(yIncs))
-                    .addi(gains.mul(0.8).muli(sign(yGrads)).neqi(sign(yIncs)));
+            gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs))
+                    .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
 
             BooleanIndexing.applyWhere(gains, Conditions.lessThan(minGain), new Value(minGain));
 
