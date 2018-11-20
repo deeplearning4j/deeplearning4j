@@ -2002,3 +2002,30 @@ TEST_F(DeclarableOpsTests6, maxPool2D_float_test1) {
 
     delete results;
 }
+
+TEST_F(DeclarableOpsTests6, concat_test14) {
+    
+    NDArray x0('c', {1, 40, 60}, nd4j::DataType::DOUBLE);
+    NDArray x1('c', {1, 40, 60}, nd4j::DataType::DOUBLE);
+    
+    x0 = 1.;
+    x1 = 2.;    
+    
+    nd4j::ops::concat op;
+    auto result = op.execute({&x0, &x1}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    
+    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
+    ASSERT_TRUE(2 == numOfTads);
+    
+    for (int e = 0; e < numOfTads; ++e) {
+        NDArray tad  = (*z)(e, {0});
+        auto mean = tad.meanNumber().e<double>(0);
+        ASSERT_NEAR((e+1)*1., mean, 1e-5);
+    }
+    
+    delete result;
+}
+
