@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.buffer.factory;
 
+import lombok.NonNull;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -272,7 +273,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
-    public DataBuffer create(DataType dataType, long length, boolean initialize) {
+    public DataBuffer create(@NonNull DataType dataType, long length, boolean initialize) {
         switch (dataType) {
             case DOUBLE:
                 return new DoubleBuffer(length, initialize);

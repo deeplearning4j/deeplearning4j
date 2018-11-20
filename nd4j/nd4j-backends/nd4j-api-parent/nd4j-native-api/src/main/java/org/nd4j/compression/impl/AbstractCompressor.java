@@ -87,7 +87,8 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
         if (!array.isCompressed())
             return array;
 
-        val buffer = decompress(array.data(), ((CompressedDataBuffer)array.data()).getCompressionDescriptor().getOriginalDataType());
+        val descriptor = ((CompressedDataBuffer)array.data()).getCompressionDescriptor();
+        val buffer = decompress(array.data(), descriptor.getOriginalDataType());
         val shapeInfo = array.shapeInfoDataBuffer();
         INDArray rest = Nd4j.createArrayFromShapeBuffer(buffer, shapeInfo);
 

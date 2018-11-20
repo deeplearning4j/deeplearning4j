@@ -76,6 +76,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         out.writeLong(compressionDescriptor.getCompressedLength());
         out.writeLong(compressionDescriptor.getOriginalLength());
         out.writeLong(compressionDescriptor.getNumberOfElements());
+        out.writeInt(compressionDescriptor.getOriginalDataType().ordinal());
         //        out.write(((BytePointer) pointer).getStringBytes());
         for (int x = 0; x < pointer.capacity() * pointer.sizeof(); x++) {
             byte b = pointer.asByteBuffer().get(x);
@@ -107,6 +108,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
                 long compressedLength = s.readLong();
                 long originalLength = s.readLong();
                 long numberOfElements = s.readLong();
+                DataType originalType = DataType.values()[s.readInt()];
 
                 byte[] temp = new byte[(int) compressedLength];
                 for (int i = 0; i < compressedLength; i++) {
@@ -119,6 +121,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
                 descriptor.setCompressionAlgorithm(compressionAlgorithm);
                 descriptor.setOriginalLength(originalLength);
                 descriptor.setNumberOfElements(numberOfElements);
+                descriptor.setOriginalDataType(originalType);
                 return new CompressedDataBuffer(pointer, descriptor);
             } catch (Exception e) {
                 throw new RuntimeException(e);
