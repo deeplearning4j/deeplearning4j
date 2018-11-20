@@ -247,7 +247,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     public void testSliceAssign1() throws Exception {
         INDArray array = Nd4j.zeros(4, 4);
 
-        INDArray patch = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f});
+        INDArray patch = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f}).reshape(1, -1);
 
         INDArray slice = array.slice(1);
         int[] idx = new int[] {0, 1, 3};
