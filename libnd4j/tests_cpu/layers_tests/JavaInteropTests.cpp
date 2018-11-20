@@ -716,6 +716,27 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_double) {
     ASSERT_TRUE(exp.equalsTo(z));
 }
 
+TEST_F(JavaInteropTests, Test_MaxPool2D_float_1) {
+    auto input = NDArrayFactory::create<float>('c', {1, 1, 4, 5});
+    auto z = NDArrayFactory::create<float>('c', {1, 1, 4, 5});
+
+    input.linspace(1.0);
+
+    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(input.buffer())};
+    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(input.shapeInfo())};
+
+    Nd4jPointer ptrsOutBuffers[] = {reinterpret_cast<Nd4jPointer>(z.buffer())};
+    Nd4jPointer ptrsOutShapes[] = {reinterpret_cast<Nd4jPointer>(z.shapeInfo())};
+
+    Nd4jLong iArgs[] = {2,2,  1,1,  1,1,  2,2,1,  0,0};
+
+    nd4j::ops::maxpool2d op;
+
+    NativeOps nativeOps;
+    auto hash = op.getOpHash();
+    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, nullptr, 0, false);
+    ASSERT_EQ(Status::OK(), status);
+}
 
 TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_float) {
 
