@@ -301,7 +301,9 @@ public:
                             void *hY, Nd4jLong *hYShapeInfo,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo);
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                            Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
 
     /**
      *
@@ -320,7 +322,8 @@ public:
                             void *hY, Nd4jLong *hYShapeInfo,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo);
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            Nd4jLong *tadOnlyShapeInfo);
     /**
      *
      * @param opNum
@@ -344,7 +347,10 @@ public:
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             int *dimension,
-                            int dimensionLength);
+                            int dimensionLength,
+                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                            Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
+
 
     void execReduce3All(Nd4jPointer *extraPointers,
                             int opNum,

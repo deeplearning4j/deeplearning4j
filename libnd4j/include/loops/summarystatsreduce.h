@@ -235,7 +235,7 @@ namespace functions {
                     return y;
                 else if ((long) x.n > 0 && (long) y.n == 0)
                     return x;
-                SummaryStatsData<X> result;
+                SummaryStatsData<X> vz;
                 double n = x.n + y.n;
                 double n2 = n  * n;
                 double n3 = n2 * n;
@@ -247,24 +247,24 @@ namespace functions {
                 double delta4 = delta3 * delta;
 
                 //Basic number of samples (n), min, and max
-                result.n = n;
-                result.min = nd4j::math::nd4j_min(x.min, y.min);
-                result.max = nd4j::math::nd4j_max(x.max, y.max);
+                vz.n = n;
+                vz.min = nd4j::math::nd4j_min(x.min, y.min);
+                vz.max = nd4j::math::nd4j_max(x.max, y.max);
                 double meanD = x.mean + delta * y.n / n;
-                result.mean = meanD;
+                vz.mean = meanD;
                 double M2D = x.M2 + y.M2;
                 M2D += delta2 * x.n * y.n / n;
-                result.M2 = M2D;
-                result.M3 = x.M3 + y.M3;
-                result.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
-                result.M3 += (X) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
+                vz.M2 = M2D;
+                vz.M3 = x.M3 + y.M3;
+                vz.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
+                vz.M3 += (X) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
 
-                result.M4 = x.M4 + y.M4;
-                result.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
-                result.M4 += (X) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
-                result.M4 += (X) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
+                vz.M4 = x.M4 + y.M4;
+                vz.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
+                vz.M4 += (X) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
+                vz.M4 += (X) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
 
-                return result;
+                return vz;
             }
 
 
@@ -280,16 +280,16 @@ namespace functions {
 
 
             template<typename OpType>
-	        static _CUDA_D void transform(void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
+	        static _CUDA_D void transform(void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
 
-            static _CUDA_D void transform(const int opNum, void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
+            static _CUDA_D void transform(const int opNum, void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
 
 
-            static _CUDA_D void summaryStatsReduceGeneric(const int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
+            static _CUDA_D void summaryStatsReduceGeneric(const int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
 
-            static _CUDA_H Z execSummaryStatsReduceScalar(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, bool biasCorrected);
-            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer);
-            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer);
+            static _CUDA_H Z execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer);
+            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer);
+            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer);
 #endif
 
             static Z execScalar(int opNum,
@@ -303,7 +303,7 @@ namespace functions {
                                 void *x,
                                 Nd4jLong *xShapeInfo,
                                 void *extraParams,
-                                void *result,
+                                void *vz,
                                 Nd4jLong *resultShapeInfoBuffer);
 
             static void exec(int opNum,
@@ -311,7 +311,7 @@ namespace functions {
                     void *x,
                     Nd4jLong *xShapeInfo,
                     void *extraParams,
-                    void *result,
+                    void *vz,
                     Nd4jLong *resultShapeInfoBuffer,
                     int *dimension, int dimensionLength);
 
@@ -326,7 +326,7 @@ namespace functions {
                                 void *x,
                                 Nd4jLong *xShapeInfo,
                                 void *extraParams,
-                                void *result,
+                                void *vz,
                                 Nd4jLong *resultShapeInfoBuffer);
 
 
@@ -335,7 +335,7 @@ namespace functions {
                     void *x,
                     Nd4jLong *xShapeInfo,
                     void *extraParams,
-                    void *result,
+                    void *vz,
                     Nd4jLong *resultShapeInfoBuffer,
                     int *dimension,
                     int dimensionLength);
