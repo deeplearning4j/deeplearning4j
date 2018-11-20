@@ -329,7 +329,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             extraArgs,
                             null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.y(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
                             null, (LongPointer) hostZShapeInfo, (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                            (IntPointer) dimensionPointer, dimension.length);
+                            (IntPointer) dimensionPointer, dimension.length, null, null, null, null);
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 }
@@ -1005,7 +1005,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
                             (IntPointer) dimensionPointer,
-                            dimension.length);
+                            dimension.length, null, null, null, null);
             } else {
                 if (op instanceof Variance) {
                     nativeOps.execSummaryStats(xShapeInfoHostPointer, op.opNum(),

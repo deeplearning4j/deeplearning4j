@@ -908,8 +908,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 Pointer hY, @Cast("Nd4jLong*") LongPointer hYShapeInfo,
                                 Pointer dY, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
                                 Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo,
-                                Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                                @Cast("Nd4jLong*") LongPointer tadOnlyShapeInfo);
+                                Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo);
     public native void execReduce3Scalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo,
@@ -918,8 +917,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 Pointer hY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo,
                                 Pointer dY, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
                                 Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo,
-                                Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                                @Cast("Nd4jLong*") LongBuffer tadOnlyShapeInfo);
+                                Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo);
     public native void execReduce3Scalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo,
@@ -928,8 +926,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 Pointer hY, @Cast("Nd4jLong*") long[] hYShapeInfo,
                                 Pointer dY, @Cast("Nd4jLong*") long[] dYShapeInfo,
                                 Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
-                                Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                                @Cast("Nd4jLong*") long[] tadOnlyShapeInfo);
+                                Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo);
     /**
      *
      * @param opNum

@@ -453,7 +453,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
                                 (IntPointer) dimensionAddress,
-                                dimension.length);
+                                dimension.length,
+                                null, null, null, null);
                     } catch (Throwable t){
                         String str = opInfoString(op, Optional.of(dimension));
                         throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
