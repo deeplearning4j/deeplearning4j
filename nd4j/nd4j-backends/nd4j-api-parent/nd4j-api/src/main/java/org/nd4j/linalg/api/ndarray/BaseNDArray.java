@@ -3541,7 +3541,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mul(INDArray other) {
-        return muli(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
+        val z = Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering());
+        return muli(other, z);
     }
 
     /**
