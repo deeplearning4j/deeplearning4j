@@ -1162,9 +1162,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
                     INDArray a = la.get(i).getFirst();
                     INDArray b = lb.get(i).getFirst();
 
-                    INDArray result1 = Nd4j.createUninitialized(DataType.DOUBLE, new long[]{5, 4});
-                    INDArray result2 = Nd4j.createUninitialized(DataType.DOUBLE, new long[]{5, 4});
-                    INDArray result3 = Nd4j.createUninitialized(DataType.DOUBLE, new long[]{5, 4});
+                    INDArray result1 = Nd4j.createUninitialized(DataType.DOUBLE, new long[]{5, 4}, 'f');
+                    INDArray result2 = Nd4j.createUninitialized(DataType.DOUBLE, new long[]{5, 4}, 'f');
+                    INDArray result3 = Nd4j.createUninitialized(DataType.DOUBLE, new long[]{5, 4}, 'f');
 
                     Nd4j.gemm(a.dup('c'), b.dup('c'), result1, false, false, 1.0, 0.0);
                     Nd4j.gemm(a.dup('f'), b.dup('f'), result2, false, false, 1.0, 0.0);
