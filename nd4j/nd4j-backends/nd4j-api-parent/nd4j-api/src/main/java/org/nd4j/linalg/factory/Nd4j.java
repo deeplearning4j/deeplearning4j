@@ -2403,7 +2403,7 @@ public class Nd4j {
             int tensorNum = 0;
             char theOrder = 'c';
             int rank = 0;
-            int[] theShape = null;
+            long[] theShape = null;
             double[] subsetArr = null;
             while (it.hasNext()) {
                 String line = it.nextLine();
@@ -2428,22 +2428,22 @@ public class Nd4j {
                 if (lineNum == 4) {
                     String shapeString = line.split(":")[1].replace("[", "").replace("],", "");
                     if (shapeString.isEmpty()) {
-                        newArr = Nd4j.trueScalar(0);
+                        newArr = Nd4j.scalar(Nd4j.defaultFloatintPointType(), 0);
                     } else {
                         String[] shapeArr = shapeString.split(",");
                         rank = shapeArr.length;
-                        theShape = new int[rank];
+                        theShape = new long[rank];
                         for (int i = 0; i < rank; i++) {
                             theShape[i] = Integer.parseInt(shapeArr[i]);
                         }
                         if (theOrder == 'f' && theShape[rank-1] == 1) {
                             //Hack fix for tad issue with 'f' order and rank-1 dim shape == 1
-                            newArr = Nd4j.zeros(theShape, 'c');
+                            newArr = Nd4j.create(Nd4j.defaultFloatintPointType(), theShape, 'c');
                         }
                         else {
-                            newArr = Nd4j.zeros(theShape, theOrder);
+                            newArr = Nd4j.create(Nd4j.defaultFloatintPointType(), theShape, theOrder);
                         }
-                        subsetArr = new double[theShape[rank - 1]];
+                        subsetArr = new double[(int) theShape[rank - 1]];
                     }
                     continue;
                 }
@@ -2467,7 +2467,7 @@ public class Nd4j {
                                 e.printStackTrace();
                             }
                         }
-                        INDArray subTensor = Nd4j.create(subsetArr);
+                        INDArray subTensor = Nd4j.create(subsetArr, new long[]{subsetArr.length}, Nd4j.defaultFloatintPointType());
                         newArr.tensorAlongDimension(tensorNum, rank - 1).addi(subTensor);
                         tensorNum++;
                     }
@@ -5149,6 +5149,10 @@ public class Nd4j {
 
     public static INDArray zeros(DataType dataType, int columns) {
         return INSTANCE.create(dataType, new long[]{columns}, 'c', Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    public static INDArray zeros(DataType dataType, long... shape) {
+        return INSTANCE.create(dataType, shape, 'c', Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
