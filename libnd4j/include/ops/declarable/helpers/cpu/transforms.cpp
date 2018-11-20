@@ -1255,8 +1255,6 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
         indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
     }
 
-// #pragma omp parallel for if(numOfArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-#pragma omp parallel for schedule(guided)
     for(int i = 0; i < numOfArrs; ++i) {
         auto temp = output(indices[i], true);
         temp.assign(inArrs[i]);
