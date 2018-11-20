@@ -2585,8 +2585,7 @@ void NativeOps::execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
                                   void *hY, Nd4jLong *hYShapeInfo,
                                   void *dY, Nd4jLong *dYShapeInfo,
                                   void *hZ, Nd4jLong *hZShapeInfo,
-                                  void *dZ, Nd4jLong *dZShapeInfo,
-                                  Nd4jLong *tadOnlyShapeInfo) {
+                                  void *dZ, Nd4jLong *dZShapeInfo) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 	auto allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
@@ -2601,7 +2600,7 @@ void NativeOps::execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
     if (xType != yType)
         throw std::runtime_error("NativeOps::execReduce3Scalar requires Y operand to have X type");
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execScalar(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, allocationPointer, reductionPointer, tadOnlyShapeInfo), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execScalar(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, allocationPointer, reductionPointer, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 

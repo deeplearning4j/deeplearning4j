@@ -361,7 +361,9 @@ public abstract class NativeOps extends Pointer {
                                      Pointer y, @Cast("Nd4jLong *") LongPointer yShapeInfo,
                                      Pointer dy, @Cast("Nd4jLong *") LongPointer dyShapeInfo,
                                      Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo,
-                                     Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfo);
+                                     Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
+                                     @Cast("Nd4jLong *") LongPointer tadOnlyShapeInfo, @Cast("Nd4jLong *") LongPointer tadOffsets,
+                                     @Cast("Nd4jLong *") LongPointer yTadOnlyShapeInfo, @Cast("Nd4jLong *") LongPointer yTadOffsets);
 
     /**
      * @param opNum
@@ -402,7 +404,9 @@ public abstract class NativeOps extends Pointer {
                                      Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfoBuffer,
                                      Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfoBuffer,
                                      IntPointer dimension,
-                                     int dimensionLength);
+                                     int dimensionLength,
+                                     @Cast("Nd4jLong *") LongPointer tadOnlyShapeInfo, @Cast("Nd4jLong *") LongPointer tadOffsets,
+                                     @Cast("Nd4jLong *") LongPointer yTadOnlyShapeInfo, @Cast("Nd4jLong *") LongPointer yTadOffsets);
 
     public abstract void execReduce3All(PointerPointer extraPointers,
                                         int opNum,
