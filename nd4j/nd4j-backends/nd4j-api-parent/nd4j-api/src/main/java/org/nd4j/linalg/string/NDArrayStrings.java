@@ -226,19 +226,27 @@ public class NDArrayStrings {
                 // immediately jump to the last elements so we only print ellipsis once
                 i = Math.max(i, (int) l - 4);
             } else {
-                double arrElement = arr.getDouble(i);
-                if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement != 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
-                    //switch to scientific notation
-                    String asString = localeIndifferentDecimalFormat(scientificFormat).format(arrElement);
-                    //from E to small e
-                    asString = asString.replace('E', 'e');
-                    sb.append(String.format("%1$" + padding + "s", asString));
-                } else {
-                    if (arrElement == 0) {
-                        sb.append(String.format("%1$" + padding + "s", 0));
+                if (arr.isR()) {
+                    double arrElement = arr.getDouble(i);
+                    if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement != 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
+                        //switch to scientific notation
+                        String asString = localeIndifferentDecimalFormat(scientificFormat).format(arrElement);
+                        //from E to small e
+                        asString = asString.replace('E', 'e');
+                        sb.append(String.format("%1$" + padding + "s", asString));
                     } else {
-                        sb.append(String.format("%1$" + padding + "s", decimalFormat.format(arrElement)));
+                        if (arrElement == 0) {
+                            sb.append(String.format("%1$" + padding + "s", 0));
+                        } else {
+                            sb.append(String.format("%1$" + padding + "s", decimalFormat.format(arrElement)));
+                        }
                     }
+                } else if (arr.isZ()) {
+                    int arrElement = arr.getInt(i);
+                    sb.append(String.format("%1$" + padding + "s", arrElement));
+                } else if (arr.isB()) {
+                    int arrElement = arr.getInt(i);
+                    sb.append(String.format("%1$" + padding + "s", arrElement == 0 ? "false" : "true"));
                 }
             }
             if (i < l - 1) {

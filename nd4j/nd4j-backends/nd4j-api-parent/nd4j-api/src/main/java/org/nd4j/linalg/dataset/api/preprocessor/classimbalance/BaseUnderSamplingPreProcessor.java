@@ -101,7 +101,7 @@ public abstract class BaseUnderSamplingPreProcessor {
     private INDArray calculateBernoulli(INDArray minorityLabels, INDArray labelMask, double targetMinorityDist) {
 
         INDArray minorityClass = minorityLabels.dup().muli(labelMask);
-        INDArray majorityClass = Transforms.not(minorityLabels).muli(labelMask);
+        INDArray majorityClass = Transforms.not(minorityLabels).mul(labelMask);
 
         //all minorityLabel class, keep masks as is
         //presence of minoriy class and donotmask minority windows set to true return label as is

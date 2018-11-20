@@ -1867,7 +1867,26 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
 
         for (int i = 0; i < max; i++) {
-            ret.append(getNumber(i));
+            switch (dataType()) {
+                case UBYTE:
+                case BYTE:
+                case INT:
+                case SHORT:
+                case LONG:
+                    ret.append(getNumber(i).intValue());
+                    break;
+                case BOOL:
+                    ret.append(getNumber(i).intValue() == 0 ? " false" : " true");
+                    break;
+                case UTF8:
+                    throw new UnsupportedOperationException();
+                case HALF:
+                case FLOAT:
+                case DOUBLE:
+                default:
+                    ret.append(getNumber(i).floatValue());
+                    break;
+            }
             if (i < max - 1)
                 ret.append(",");
         }
