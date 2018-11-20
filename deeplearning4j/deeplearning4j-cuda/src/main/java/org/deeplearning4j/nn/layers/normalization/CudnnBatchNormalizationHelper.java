@@ -32,6 +32,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -145,9 +146,9 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
             for FP64 input tensors."
             >> Last 2 are the meanCache and varCache; first 3 are below
              */
-            gamma = gamma.convertToFloats();
-            dGammaView = dGammaView.convertToFloats();
-            dBetaView = dBetaView.convertToFloats();
+            gamma = gamma.castTo(DataType.FLOAT);
+            dGammaView = dGammaView.castTo(DataType.FLOAT);
+            dBetaView = dBetaView.castTo(DataType.FLOAT);
         }
 
         Gradient retGradient = new DefaultGradient();
@@ -204,9 +205,9 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
         //Convert back and assign, if required:
         if(isHalf){
-            gammaOrig.assign(((JCublasNDArray)gamma).convertToHalfs());
-            dGammaViewOrig.assign(((JCublasNDArray)dGammaView).convertToHalfs());
-            dBetaViewOrig.assign(((JCublasNDArray)dBetaView).convertToHalfs());
+            gammaOrig.assign(gamma.castTo(DataType.HALF));
+            dGammaViewOrig.assign(dGammaView.castTo(DataType.HALF));
+            dBetaViewOrig.assign(dBetaView.castTo(DataType.HALF));
         }
 
         return new Pair<>(retGradient, nextEpsilon);
@@ -223,10 +224,10 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         INDArray origMean = mean;
         INDArray origVar = var;
         if(isHalf) {
-            gamma = gamma.convertToFloats();
-            beta = beta.convertToFloats();
-            mean = mean.convertToFloats();
-            var = var.convertToFloats();
+            gamma = gamma.castTo(DataType.FLOAT);
+            beta = beta.castTo(DataType.FLOAT);
+            mean = mean.castTo(DataType.FLOAT);
+            var = var.castTo(DataType.FLOAT);
         }
 
         //Notation difference between CuDNN and our implementation:
@@ -274,7 +275,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
                 meanCache = Nd4j.createUninitializedDetached((int)mean.length());
                 if(Nd4j.dataType() == DataType.HALF){
                     try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        meanCache = meanCache.convertToFloats();
+                        meanCache = meanCache.castTo(DataType.FLOAT);
                     }
                 }
             }
@@ -282,7 +283,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
                 varCache = Nd4j.createUninitializedDetached((int)mean.length());
                 if(Nd4j.dataType() == DataType.HALF){
                     try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        varCache = varCache.convertToFloats();
+                        varCache = varCache.castTo(DataType.FLOAT);
                     }
                 }
             }
@@ -312,10 +313,10 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
         if(training && isHalf){
             //Update the running mean and variance arrays; also gamma/beta
-            origMean.assign(((JCublasNDArray)mean).convertToHalfs());
-            origVar.assign(((JCublasNDArray)var).convertToHalfs());
-            origGamma.assign(((JCublasNDArray)gamma).convertToHalfs());
-            origBeta.assign(((JCublasNDArray)beta).convertToHalfs());
+            origMean.assign(mean.castTo(DataType.HALF));
+            origVar.assign(var.castTo(DataType.HALF));
+            origGamma.assign(gamma.castTo(DataType.HALF));
+            origBeta.assign(beta.castTo(DataType.HALF));
         }
 
         return activations;
@@ -325,7 +326,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     public INDArray getMeanCache() {
         if(Nd4j.dataType() == DataType.HALF){
             //Buffer is FP32
-            return meanCache.convertToHalfs();
+            return meanCache.castTo(DataType.HALF);
         }
         return meanCache;
     }
@@ -334,14 +335,14 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     public INDArray getVarCache() {
         INDArray ret;
         if(Nd4j.dataType() == DataType.HALF){
-            INDArray vc = varCache.convertToHalfs();
+            INDArray vc = varCache.castTo(DataType.HALF);
             ret = vc.mul(vc).rdivi(1.0).subi(eps);
         } else {
             ret = varCache.mul(varCache).rdivi(1.0).subi(eps);
         }
         if(Nd4j.dataType() == DataType.HALF){
             //Buffer is FP32
-            return ret.convertToHalfs();
+            return ret.castTo(DataType.HALF);
         }
         return ret;
     }

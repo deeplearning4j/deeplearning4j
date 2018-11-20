@@ -22,6 +22,7 @@ import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.TestUtils;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
