@@ -182,10 +182,10 @@ TEST_F(DeclarableOpsTests2, Gather_test_5) {
 }
 
 TEST_F(DeclarableOpsTests2, Test_Concat_3D_1) {
-    auto x0 = NDArrayFactory::create<double>('c', {1, 1000, 150});
-    auto x1 = NDArrayFactory::create<double>('c', {1, 1000, 150});
-    auto x2 = NDArrayFactory::create<double>('c', {1, 1000, 150});
-    auto x3 = NDArrayFactory::create<double>('c', {1, 1000, 150});
+    auto x0 = NDArrayFactory::create<double>('c', {1, 100, 150});
+    auto x1 = NDArrayFactory::create<double>('c', {1, 100, 150});
+    auto x2 = NDArrayFactory::create<double>('c', {1, 100, 150});
+    auto x3 = NDArrayFactory::create<double>('c', {1, 100, 150});
 
     x0.assign(1.0);
     x1.assign(2.0);
@@ -195,19 +195,18 @@ TEST_F(DeclarableOpsTests2, Test_Concat_3D_1) {
     nd4j::ops::concat op;
     auto result = op.execute({&x0, &x1, &x2, &x3}, {}, {0}, {});
     ASSERT_EQ(Status::OK(), result->status());
-
+    
     auto z = result->at(0);
-    auto tads = z->allTensorsAlongDimension({1, 2});
-    ASSERT_EQ(4, tads->size());
-
-    for (int e = 0; e < tads->size(); e++) {
-        auto tad = tads->at(e);
-        auto mean = tad->meanNumber().e<double>(0);
-        nd4j_printf("tad shape: %s; mean value: %f\n", ShapeUtils::shapeAsString(tad).c_str(), mean);
-        ASSERT_NEAR((double) e, mean, 1e-5);
+    
+    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
+    ASSERT_TRUE(4 == numOfTads);
+    
+    for (int e = 0; e < numOfTads; e++) {
+        NDArray tad  = (*z)(e, {0});
+        auto mean = tad.meanNumber().e<double>(0);
+        ASSERT_NEAR((double) e+1, mean, 1e-5);
     }
-
-    delete tads;
+    
     delete result;
 }
 
@@ -217,8 +216,7 @@ TEST_F(DeclarableOpsTests2, Eye_check_119_1) {
     auto result = op.execute({},{},{3, 2});
 
     auto z = result->at(0);
-
-    z->printShapeInfo("z shape");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     delete result;
 }
