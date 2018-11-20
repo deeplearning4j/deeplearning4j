@@ -31,8 +31,8 @@ namespace ops {
         auto list = new NDArrayList(0, true);
         list->unstack(input, 0);
 
-        OVERWRITE_RESULT(list);
-
+        //OVERWRITE_RESULT(list);
+        setupResultList(list, block);
         return Status::OK();
     }
 }

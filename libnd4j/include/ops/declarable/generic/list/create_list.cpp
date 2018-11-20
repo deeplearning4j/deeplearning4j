@@ -42,8 +42,8 @@ namespace nd4j {
 
             // we recieve input array for graph integrity purposes only
             auto input = INPUT_VARIABLE(0);
-
-            OVERWRITE_RESULT(list);
+            setupResultList(list, block);
+//            OVERWRITE_RESULT(list);
 
             auto scalar = NDArrayFactory::create_(list->counter());
             block.pushNDArrayToVariableSpace(block.getNodeId(), 1, scalar);

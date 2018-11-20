@@ -77,7 +77,8 @@ namespace nd4j {
             }
 
             if (!hasList) {
-                OVERWRITE_RESULT(list);
+                //OVERWRITE_RESULT(list);
+                setupResultList(list, block);
             }
 
             return Status::OK();

@@ -51,8 +51,8 @@ namespace nd4j {
                 REQUIRE_TRUE(false, 0, "ReadList: index value should be set either via IntArgs or via second operand");
             }
 
-            OVERWRITE_RESULT(result);
-
+//            OVERWRITE_RESULT(result);
+            setupResult(result, block);
             return Status::OK();
         }
         DECLARE_SYN(TensorArrayReadV3, read_list);

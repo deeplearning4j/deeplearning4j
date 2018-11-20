@@ -64,6 +64,14 @@ namespace nd4j {
             return nullptr;
         }
 
+        void DeclarableListOp::setupResult(NDArray* array, Context& block) {
+            block.pushNDArrayToVariableSpace(block.getNodeId(), 0, array);
+        }
+
+        void DeclarableListOp::setupResultList(NDArrayList* arrayList, Context& block) {
+            block.pushNDArrayListToVariableSpace(block.getNodeId(), 0, arrayList);
+        }
+
         ResultSet* DeclarableListOp::execute(NDArrayList* list, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
             std::vector<NDArray*> ins(inputs);
             std::vector<double> tas(tArgs);

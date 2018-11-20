@@ -67,8 +67,8 @@ namespace nd4j {
                 delete subarray;
             }
 
-            OVERWRITE_RESULT(result);
-
+            //OVERWRITE_RESULT(result);
+            setupResult(result, block);
             return Status::OK();
         }
         DECLARE_SYN(TensorArrayGatherV3, gather_list);

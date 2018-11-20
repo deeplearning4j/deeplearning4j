@@ -35,6 +35,9 @@ namespace nd4j {
             virtual Nd4jStatus validateAndExecute(Context& block) = 0;
 
             nd4j::NDArray* getZ(Context& block, int inputId);
+            void setupResult(NDArray* array, Context& block);
+            void setupResultList(NDArrayList* arrayList, Context& block);
+
         public:
             DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs);
             ~DeclarableListOp();

@@ -30,8 +30,8 @@ namespace nd4j {
 
             auto result = NDArrayFactory::create_<int>(list->height(), block.workspace());
 
-            OVERWRITE_RESULT(result);
-
+            //OVERWRITE_RESULT(result);
+            setupResult(result, block);
             return Status::OK();
         }
         DECLARE_SYN(TensorArraySizeV3, size_list);

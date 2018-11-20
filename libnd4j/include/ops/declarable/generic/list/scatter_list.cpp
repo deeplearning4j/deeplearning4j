@@ -63,8 +63,8 @@ namespace nd4j {
             }
 
             if (!hasList)
-                OVERWRITE_RESULT(list);
-
+                //OVERWRITE_RESULT(list);
+                setupResultList(list, block);
             delete tads;
 
             return Status::OK();

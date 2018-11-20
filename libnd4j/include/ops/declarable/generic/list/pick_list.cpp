@@ -46,8 +46,8 @@ namespace nd4j {
             }
             auto result = list->pick(indices);
 
-            OVERWRITE_RESULT(result);
-
+//            OVERWRITE_RESULT(result);
+            setupResult(result, block);
             return Status::OK();
         }
     }
