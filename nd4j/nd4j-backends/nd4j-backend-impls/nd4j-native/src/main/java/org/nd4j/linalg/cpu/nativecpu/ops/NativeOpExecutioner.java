@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.base.Preconditions;
 import org.nd4j.compression.impl.AbstractCompressor;
@@ -1072,8 +1073,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int argsPos = (realPos + ((batch.getSample().maxRealArguments() * Batch.getBatchLimit())))
                 / (Nd4j.dataType() == DataType.DOUBLE ? 1 : 2);
         int shapesPos = argsPos + (batch.getSample().maxArguments() * Batch.getBatchLimit());
+        DataType dataType = null;
         for (int i = 0; i < batch.getNumAggregates(); i++) {
             T op = batch.getAggregates().get(i);
+
+            if (i == 0)
+                dataType = op.getArguments().get(0).dataType();
 
             // put num arguments
             int idx = i * maxTypes;
@@ -1104,18 +1109,23 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             // TODO: variable datatype should be handled here
             // putting real arguments
 
-            if (Nd4j.dataType() == DataType.FLOAT) {
-                FloatPointer fPtr = new FloatPointer(pointer);
-                for (int e = 0; e < op.getRealArguments().size(); e++) {
-                    idx = realPos + i * op.maxRealArguments();
-                    fPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
-                }
-            } else if (Nd4j.dataType() == DataType.DOUBLE) {
-                DoublePointer dPtr = new DoublePointer(pointer);
-                for (int e = 0; e < op.getRealArguments().size(); e++) {
-                    idx = realPos + (i * op.maxRealArguments());
-                    dPtr.put(idx + e, op.getRealArguments().get(e).doubleValue());
-                }
+            switch (dataType){
+                case FLOAT:
+                    FloatPointer fPtr = new FloatPointer(pointer);
+                    for (int e = 0; e < op.getRealArguments().size(); e++) {
+                        idx = realPos + i * op.maxRealArguments();
+                        fPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
+                    }
+                    break;
+                case DOUBLE:
+                    DoublePointer dPtr = new DoublePointer(pointer);
+                    for (int e = 0; e < op.getRealArguments().size(); e++) {
+                        idx = realPos + (i * op.maxRealArguments());
+                        dPtr.put(idx + e, op.getRealArguments().get(e).doubleValue());
+                    }
+                    break;
+                default:
+                    throw new ND4JIllegalArgumentException("Only FLOAT and DOUBLE datatypes are supported");
             }
 
             if (extraz.get() == null)
@@ -1146,7 +1156,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         loop.execAggregateBatch(null, batch.getNumAggregates(), batch.opNum(),
                     batch.getSample().maxArguments(), batch.getSample().maxShapes(),
                     batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
-                    batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer, 0);
+                    batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer, SameDiff.getDataTypeAsByte(dataType));
 
     }
 
@@ -1200,6 +1210,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         PointerPointer arguments = block.getArgumentsPointer(); //new PointerPointer(numArguments);
         List<IntPointer> pointers = new ArrayList<>();
         PointerPointer intArrays = block.getArraysPointer(); //new PointerPointer(numIntArrays);
+        val dataType = op.getArguments().get(0).dataType();
 
         for (int x = 0; x < numArguments; x++) {
             arguments.put(x, op.getArguments().get(x) == null ? null
@@ -1209,8 +1220,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         PointerPointer shapes = block.getShapesPointer(); //new PointerPointer(numShapes);
 
         for (int x = 0; x < numShapes; x++) {
-            if (op.getShapes().get(x).dataType() != DataType.INT)
-                throw new RuntimeException("ShapeBuffers should have INT data opType");
+            if (op.getShapes().get(x).dataType() != DataType.LONG)
+                throw new RuntimeException("ShapeBuffers should have LONG data opType");
 
             shapes.put(x, op.getShapes().get(x) == null ? null : op.getShapes().get(x).addressPointer());
         }
@@ -1226,10 +1237,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         double[] reals = new double[numRealArguments];
         for (int x = 0; x < numRealArguments; x++) {
             //reals[x] = op.getRealArguments().get(x).doubleValue();
-            if (Nd4j.dataType() == DataType.FLOAT)
-                ((FloatPointer) block.getRealArgumentsPointer()).put(x, op.getRealArguments().get(x).floatValue());
-            else
-                ((DoublePointer) block.getRealArgumentsPointer()).put(x, op.getRealArguments().get(x).doubleValue());
+            switch (dataType) {
+                case FLOAT:
+                    ((FloatPointer) block.getRealArgumentsPointer()).put(x, op.getRealArguments().get(x).floatValue());
+                    break;
+                case DOUBLE:
+                    ((DoublePointer) block.getRealArgumentsPointer()).put(x, op.getRealArguments().get(x).doubleValue());
+                    break;
+                default:
+                    throw new ND4JIllegalArgumentException("Only FLOAT and DOUBLE datatypes are supported");
+            }
         }
 
         for (int x = 0; x < numIntArrays; x++) {
@@ -1244,8 +1261,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         loop.execAggregate(null, op.opNum(), arguments, numArguments, shapes, numShapes, pointer,
-                    numIndexArguments, intArrays, numIntArrays, (DoublePointer) block.getRealArgumentsPointer(),
-                    numRealArguments, 0);
+                    numIndexArguments, intArrays, numIntArrays, block.getRealArgumentsPointer(),
+                    numRealArguments, SameDiff.getDataTypeAsByte(dataType));
 
     }
 
