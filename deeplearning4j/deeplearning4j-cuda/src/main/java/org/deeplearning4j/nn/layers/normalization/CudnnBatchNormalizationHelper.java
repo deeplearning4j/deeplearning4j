@@ -131,7 +131,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         val inH = (int) input.size(2);
         val inW = (int) input.size(3);
 
-        final boolean isHalf = (Nd4j.dataType() == DataBuffer.Type.HALF);
+        final boolean isHalf = (Nd4j.dataType() == DataType.HALF);
         INDArray gammaOrig = null;
         INDArray dGammaViewOrig = null;
         INDArray dBetaViewOrig = null;
@@ -217,7 +217,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
         this.eps = eps;
-        final boolean isHalf = (Nd4j.dataType() == DataBuffer.Type.HALF);
+        final boolean isHalf = (Nd4j.dataType() == DataType.HALF);
         INDArray origGamma = gamma;
         INDArray origBeta = beta;
         INDArray origMean = mean;
@@ -272,7 +272,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         if (training) {
             if(meanCache == null || meanCache.length() < mean.length()){
                 meanCache = Nd4j.createUninitializedDetached((int)mean.length());
-                if(Nd4j.dataType() == DataBuffer.Type.HALF){
+                if(Nd4j.dataType() == DataType.HALF){
                     try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         meanCache = meanCache.convertToFloats();
                     }
@@ -280,7 +280,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
             }
             if(varCache == null || varCache.length() < mean.length()){
                 varCache = Nd4j.createUninitializedDetached((int)mean.length());
-                if(Nd4j.dataType() == DataBuffer.Type.HALF){
+                if(Nd4j.dataType() == DataType.HALF){
                     try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         varCache = varCache.convertToFloats();
                     }
@@ -323,7 +323,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
     @Override
     public INDArray getMeanCache() {
-        if(Nd4j.dataType() == DataBuffer.Type.HALF){
+        if(Nd4j.dataType() == DataType.HALF){
             //Buffer is FP32
             return meanCache.convertToHalfs();
         }
@@ -333,13 +333,13 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public INDArray getVarCache() {
         INDArray ret;
-        if(Nd4j.dataType() == DataBuffer.Type.HALF){
+        if(Nd4j.dataType() == DataType.HALF){
             INDArray vc = varCache.convertToHalfs();
             ret = vc.mul(vc).rdivi(1.0).subi(eps);
         } else {
             ret = varCache.mul(varCache).rdivi(1.0).subi(eps);
         }
-        if(Nd4j.dataType() == DataBuffer.Type.HALF){
+        if(Nd4j.dataType() == DataType.HALF){
             //Buffer is FP32
             return ret.convertToHalfs();
         }

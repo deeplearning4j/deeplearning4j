@@ -58,7 +58,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @Test

@@ -59,7 +59,7 @@ public class OCNNOutputLayerTest {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
 

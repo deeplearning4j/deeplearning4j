@@ -58,7 +58,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-7;
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     private static class GradientCheckSimpleScenario {

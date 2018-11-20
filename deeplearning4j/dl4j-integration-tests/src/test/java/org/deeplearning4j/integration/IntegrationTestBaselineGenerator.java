@@ -61,7 +61,7 @@ public class IntegrationTestBaselineGenerator {
         }
 
         //All integration tests are run with float precision!
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
 
 //        runGeneration(
 //                MLPTestCases.getMLPMnist(),

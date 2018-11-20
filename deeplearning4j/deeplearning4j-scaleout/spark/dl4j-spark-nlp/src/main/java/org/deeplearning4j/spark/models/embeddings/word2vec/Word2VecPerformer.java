@@ -214,19 +214,19 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>, Ato
                                                     this.alpha)
                                     : (label - expTable[(int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))])
                                                     * alpha;
-                if (syn1Neg.data().dataType() == DataBuffer.Type.DOUBLE)
+                if (syn1Neg.data().dataType() == DataType.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g, neu1e, l1);
                 else
                     Nd4j.getBlasWrapper().axpy((float) g, neu1e, l1);
 
-                if (syn1Neg.data().dataType() == DataBuffer.Type.DOUBLE)
+                if (syn1Neg.data().dataType() == DataType.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g, syn1Neg, l1);
                 else
                     Nd4j.getBlasWrapper().axpy((float) g, syn1Neg, l1);
             }
         }
 
-        if (neu1e.data().dataType() == DataBuffer.Type.DOUBLE)
+        if (neu1e.data().dataType() == DataType.DOUBLE)
             Nd4j.getBlasWrapper().axpy(1.0, neu1e, l1);
 
         else

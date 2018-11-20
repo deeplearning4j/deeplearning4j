@@ -33,7 +33,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldSubOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldSubOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;

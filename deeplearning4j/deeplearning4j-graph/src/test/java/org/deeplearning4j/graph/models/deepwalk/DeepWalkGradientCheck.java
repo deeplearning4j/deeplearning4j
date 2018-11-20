@@ -41,7 +41,7 @@ public class DeepWalkGradientCheck {
 
     @Before
     public void before() {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @Test(timeout = 10000L)

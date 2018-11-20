@@ -317,7 +317,7 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
                 double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, alpha, this.alpha) : alpha);
 
 
-                if (neu1e.data().dataType() == DataBuffer.Type.DOUBLE) {
+                if (neu1e.data().dataType() == DataType.DOUBLE) {
                     Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
                     Nd4j.getBlasWrapper().axpy(g, l1, syn1);
                 } else {
@@ -365,19 +365,19 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
                                                     this.alpha)
                                     : (label - expTable[(int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))])
                                                     * alpha;
-                if (syn1Neg.data().dataType() == DataBuffer.Type.DOUBLE)
+                if (syn1Neg.data().dataType() == DataType.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g, neu1e, l1);
                 else
                     Nd4j.getBlasWrapper().axpy((float) g, neu1e, l1);
 
-                if (syn1Neg.data().dataType() == DataBuffer.Type.DOUBLE)
+                if (syn1Neg.data().dataType() == DataType.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g, syn1Neg, l1);
                 else
                     Nd4j.getBlasWrapper().axpy((float) g, syn1Neg, l1);
             }
         }
 
-        if (neu1e.data().dataType() == DataBuffer.Type.DOUBLE)
+        if (neu1e.data().dataType() == DataType.DOUBLE)
             Nd4j.getBlasWrapper().axpy(1.0, neu1e, l1);
 
         else

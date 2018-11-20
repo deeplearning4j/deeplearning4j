@@ -853,7 +853,7 @@ public class KerasModelEndToEndTest {
             }
         }
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         boolean passed = GradientCheckUtil.checkGradients(netToTest, eps, max_rel_error, min_abs_error, true, false,
                 input, labels, null, null, true, 9);
         assertTrue("Gradient check failed", passed);

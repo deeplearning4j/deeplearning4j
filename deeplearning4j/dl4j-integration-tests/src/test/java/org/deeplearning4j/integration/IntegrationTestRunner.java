@@ -45,6 +45,7 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
@@ -148,7 +149,7 @@ public class IntegrationTestRunner {
     }
 
     public static void runTest(TestCase tc, TemporaryFolder testDir) throws Exception {
-        Preconditions.checkState(Nd4j.dataType() == DataBuffer.Type.FLOAT, "Integration tests must be run with float precision!");
+        Preconditions.checkState(Nd4j.dataType() == DataType.FLOAT, "Integration tests must be run with float precision!");
         log.info("Starting test case: {}", tc.getTestName());
         long start = System.currentTimeMillis();
 

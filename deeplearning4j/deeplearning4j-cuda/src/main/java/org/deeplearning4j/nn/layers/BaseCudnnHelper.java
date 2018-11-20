@@ -176,16 +176,16 @@ public abstract class BaseCudnnHelper {
 
     protected static final int TENSOR_FORMAT = CUDNN_TENSOR_NCHW;
 
-    protected int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE
-                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
+    protected int dataType = Nd4j.dataType() == DataType.DOUBLE ? CUDNN_DATA_DOUBLE
+                    : Nd4j.dataType() == DataType.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
     protected int dataTypeSize =
-                    Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2;
+                    Nd4j.dataType() == DataType.DOUBLE ? 8 : Nd4j.dataType() == DataType.FLOAT ? 4 : 2;
     // both CUDNN_DATA_HALF and CUDNN_DATA_FLOAT need a float value for alpha and beta
     protected Pointer alpha = dataType == CUDNN_DATA_DOUBLE ? new DoublePointer(1.0) : new FloatPointer(1.0f);
     protected Pointer beta = dataType == CUDNN_DATA_DOUBLE ? new DoublePointer(0.0) : new FloatPointer(0.0f);
     protected SizeTPointer sizeInBytes = new SizeTPointer(1);
 
-    public static int toCudnnDataType(DataBuffer.Type type){
+    public static int toCudnnDataType(DataType type){
         switch (type){
             case DOUBLE:
                 return CUDNN_DATA_DOUBLE;

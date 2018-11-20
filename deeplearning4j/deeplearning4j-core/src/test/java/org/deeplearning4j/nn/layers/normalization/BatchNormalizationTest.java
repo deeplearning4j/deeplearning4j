@@ -77,7 +77,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
     static {
         //Force Nd4j initialization, then set data type to double:
         Nd4j.zeros(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     protected INDArray dnnInput = Nd4j.linspace(0, 31, 32).reshape(2, 16);

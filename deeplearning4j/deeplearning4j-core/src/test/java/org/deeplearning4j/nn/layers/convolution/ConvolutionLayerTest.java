@@ -60,8 +60,8 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
 
     @Before
     public void before() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
+        Nd4j.factory().setDType(DataType.DOUBLE);
         Nd4j.EPS_THRESHOLD = 1e-4;
     }
 

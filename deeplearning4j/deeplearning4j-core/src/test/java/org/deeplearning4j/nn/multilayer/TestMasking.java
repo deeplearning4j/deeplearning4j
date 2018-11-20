@@ -68,7 +68,7 @@ import static org.junit.Assert.*;
 public class TestMasking extends BaseDL4JTest {
 
     static {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     @Test

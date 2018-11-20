@@ -103,7 +103,7 @@ public class ManualTests {
     @Test
     public void testTsne() throws Exception {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
                         .useAdaGrad(true).build();

@@ -74,7 +74,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-6;
 
     static {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
 

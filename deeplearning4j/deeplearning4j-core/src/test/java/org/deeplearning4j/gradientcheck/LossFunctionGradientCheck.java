@@ -61,7 +61,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 public class LossFunctionGradientCheck extends BaseDL4JTest {
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     private static final boolean PRINT_RESULTS = true;

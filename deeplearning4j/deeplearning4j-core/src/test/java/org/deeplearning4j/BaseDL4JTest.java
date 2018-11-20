@@ -39,8 +39,8 @@ public class BaseDL4JTest {
     /**
      * Override this to set the datatype of the tests defined in the child class
      */
-    public DataBuffer.Type getDataType(){
-        return DataBuffer.Type.DOUBLE;
+    public DataType getDataType(){
+        return DataType.DOUBLE;
     }
 
     @Before
