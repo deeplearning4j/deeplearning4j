@@ -671,7 +671,7 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
     nativeOps.execReduce3(nullptr, 2, x.buffer(), x.shapeInfo(), nullptr, nullptr, nullptr, 
                         y.buffer(), y.shapeInfo(), nullptr, nullptr,
                         z.buffer(), z.shapeInfo(), nullptr, nullptr,
-                        dims.data(), (int) dims.size());
+                        dims.data(), (int) dims.size(), nullptr, nullptr, nullptr, nullptr);
 }
 /*
 TEST_F(JavaInteropTests, Test_SimpleIf_Output) {

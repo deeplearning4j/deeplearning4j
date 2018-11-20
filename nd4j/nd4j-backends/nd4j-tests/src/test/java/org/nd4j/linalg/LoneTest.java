@@ -17,6 +17,7 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -208,15 +209,15 @@ public class LoneTest extends BaseNd4jTest {
 
     @Test
     public void testConcat3D_Vstack_C() throws Exception {
-        int[] shape = new int[]{1, 1000, 150};
-        //INDArray cOrder =  Nd4j.rand(shape,123);
-
+        val shape = new long[]{1, 1000, 150};
 
         List<INDArray> cArrays = new ArrayList<>();
         List<INDArray> fArrays = new ArrayList<>();
 
         for (int e = 0; e < 32; e++) {
-            cArrays.add(Nd4j.create(shape, 'c').assign(e));
+            val arr = Nd4j.create(DataType.FLOAT, shape, 'c').assign(e);
+            log.info("ARR: {}", arr);
+            cArrays.add(arr);
             //            fArrays.add(cOrder.dup('f'));
         }
 
@@ -230,7 +231,8 @@ public class LoneTest extends BaseNd4jTest {
 
         for (int e = 0; e < 32; e++) {
             INDArray tad = res.tensorAlongDimension(e, 1, 2);
-            assertEquals((double) e, tad.meanNumber().doubleValue(), 1e-5);
+            log.info("TAD: {}", tad.shape());
+            assertEquals("Failed for TAD [" + e + "]",(double) e, tad.meanNumber().doubleValue(), 1e-5);
         }
     }
 

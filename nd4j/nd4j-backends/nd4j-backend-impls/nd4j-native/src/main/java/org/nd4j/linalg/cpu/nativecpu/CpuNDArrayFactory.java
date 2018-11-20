@@ -593,6 +593,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             if (toConcat[i].isCompressed())
                 Nd4j.getCompressor().decompressi(toConcat[i]);
 
+            Preconditions.checkArgument(toConcat[i].dataType() == toConcat[0].dataType(), "All operands must have same data type");
+
             allScalars &= toConcat[i].rank() == 0;
 
             shapeInfoPointers.put(i, toConcat[i].shapeInfoDataBuffer().addressPointer());
@@ -616,7 +618,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         //PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
-        INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
+        INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order()).assign(-123);
 
         nativeOps.concat(null, dimension, toConcat.length,
                     dataPointers, shapeInfoPointers,
