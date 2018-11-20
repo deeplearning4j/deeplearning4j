@@ -37,6 +37,8 @@
 #include <ops/declarable/LegacyBroadcastBoolOp.h>
 #include <ops/declarable/LegacyScalarBoolOp.h>
 #include <ops/declarable/LegacyPairwiseTransformBoolOp.h>
+#include <ops/declarable/LegacyTransformStrictOp.h>
+#include <ops/declarable/LegacyTransformBoolOp.h>
 
 namespace nd4j {
     namespace graph {
@@ -308,6 +310,51 @@ namespace nd4j {
             return node;
         }
         BUILD_SINGLE_TEMPLATE(template Node* Node::asT, (), LIBND4J_TYPES);
+
+        nd4j::graph::Node::Node(nd4j::ops::DeclarableOp *customOp, int id, std::initializer_list<int> input, std::initializer_list<int> output,  std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
+            this->_opType = OpType_CUSTOM;
+            this->_id = id;
+            this->_opNum = customOp->getOpHash();
+            this->_extraParams = nullptr;
+            this->_dataType = nd4j::DataType::FLOAT32; // float as default
+            this->_dim = nullptr;
+            this->_customOp = customOp;
+
+            _hasExternalInputs = false;
+            _hasExternalOutputs = false;
+            _hasInternalInputs = false;
+            _hasInternalOutputs = false;
+
+            _scalar = scalar;
+
+            for (auto i: input)
+                pickInput(i);
+
+            for (auto o: output)
+                pickOutput(o);
+
+            if (dimensions.size() > 0) {
+                _dim = new int[dimensions.size()];
+                int cnt = 0;
+                for (auto d: dimensions) {
+                    _dimensions.push_back(d);
+                    _dim[cnt++] = d;
+                }
+            }
+
+            auto block = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id(), false);
+
+            for (auto v: dimensions)
+                block->getAxis()->emplace_back(v);
+
+            for (auto v: iArgs)
+                block->getIArguments()->emplace_back(v);
+
+            for (auto v: tArgs)
+                block->getTArguments()->emplace_back(v);
+
+            this->setContextPrototype(block);
+        }
 
         nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
             this->_opType = opType;
@@ -657,10 +704,14 @@ namespace nd4j {
                     return new nd4j::ops::LegacyPairwiseTransformOp(opNum);
                 case OpType_PAIRWISE_BOOL:
                     return new nd4j::ops::LegacyPairwiseTransformBoolOp(opNum);
+                case OpType_TRANSFORM_STRICT:
+                    return new nd4j::ops::LegacyTransformStrictOp(opNum);
                 case OpType_TRANSFORM_SAME:
                     return new nd4j::ops::LegacyTransformSameOp(opNum);
                 case OpType_TRANSFORM_FLOAT:
                     return new nd4j::ops::LegacyTransformFloatOp(opNum);
+                case OpType_TRANSFORM_BOOL:
+                    return new nd4j::ops::LegacyTransformBoolOp(opNum);
                 case OpType_SCALAR:
                     return new nd4j::ops::LegacyScalarOp(opNum, scalar);
                 case OpType_SCALAR_BOOL:

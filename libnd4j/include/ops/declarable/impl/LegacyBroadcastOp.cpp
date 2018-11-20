@@ -30,7 +30,7 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            std::vector<int> dims(*block.getIArguments());
+            std::vector<int> dims(*block.getAxis());
             if (dims.size() > 0)
                 std::sort(dims.begin(), dims.end());
 

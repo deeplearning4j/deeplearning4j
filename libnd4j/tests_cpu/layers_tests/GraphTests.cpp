@@ -38,13 +38,19 @@ public:
     int cShape[] = {2, 2, 2, 2, 1, 0, 1, 99};
     int fShape[] = {2, 2, 2, 1, 2, 0, 1, 102};
      */
+    GraphTests() {
+        //Environment::getInstance()->setDebug(true);
+        //Environment::getInstance()->setVerbose(true);
+    }
 };
 
 TEST_F(GraphTests, SingleInput1) {
     auto graph = new Graph();
 
     auto x = NDArrayFactory::create_<float>('c', {5, 5});
-    x->assign(-2.0);
+    x->assign(-2.0f);
+
+    x->printIndexedBuffer("x");
 
     graph->getVariableSpace()->putVariable(-1, x);
 
@@ -525,7 +531,7 @@ TEST_F(GraphTests, BroadcastTest1) {
 
     auto y = NDArrayFactory::create_<float>('c', {1, 5});
     for (int e = 0; e < y->columns(); e++) {
-        y->p(e, (float)e);
+        y->p(e, (float)e+1);
     }
 
     auto z = NDArrayFactory::create_<float>('c', {5, 5});
@@ -542,7 +548,7 @@ TEST_F(GraphTests, BroadcastTest1) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_NEAR(-2.0, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
+    ASSERT_NEAR(3.0, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
 }
@@ -908,10 +914,9 @@ TEST_F(GraphTests, TestMultiOutput1) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation("testop2i2o");
 
     // this op will add 1.0 to first input, and 2.0 for second input
-    auto nodeT = new Node(OpType_CUSTOM, 0, 11, {1, 2}, {21, 31}, {}, 0.0f);
+    auto nodeT = new Node(op, 11, {1, 2}, {21, 31}, {}, 0.0f);
     nodeT->setName("TestOp2i2o");
     nodeT->markInplace(false);
-    nodeT->setCustomOp(op);
 
 
     // this op will subtract this value from 1.0
@@ -948,8 +953,7 @@ TEST_F(GraphTests, TestMultiOutput1) {
 
 TEST_F(GraphTests, TestDivergentNode1) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation("Switch");
-    auto nodeY = new Node(OpType_CUSTOM, 0, 1);
-    nodeY->setCustomOp(op);
+    auto nodeY = new Node(op, 1);
 
     ASSERT_TRUE(nodeY->isDivergencePoint());
     ASSERT_TRUE(nodeY->isActive());
@@ -1062,13 +1066,13 @@ TEST_F(GraphTests, MemoryEstimationTest5) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
+    nd4j::ops::testcustom op;
+
     auto nodeA0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
     auto nodeA1 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
-    auto nodeA2 = new Node(OpType_CUSTOM, 0, 3, {2}, {}, {});
+    auto nodeA2 = new Node(&op, 3, {2}, {}, {});
     nodeA1->markInplace(false);
 
-    nd4j::ops::testcustom op;
-    nodeA2->setCustomOp(&op);
 
     graph.addNode(nodeA0);
     graph.addNode(nodeA1);
