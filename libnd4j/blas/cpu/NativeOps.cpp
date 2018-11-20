@@ -453,7 +453,9 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
                                     void *hY, Nd4jLong *hYShapeInfo,
                                     void *dY, Nd4jLong *dYShapeInfo,
                                     void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo) {
+                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                    Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                    Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 
     NativeOpExcutioner::execReduce3(opNum, hX, hXShapeInfo, extraParams, hY, hYShapeInfo, hZ, hZShapeInfo);
 }
@@ -501,7 +503,9 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo,
                                     int *dimension,
-                                    int dimensionLength) {
+                                    int dimensionLength,
+                                    Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                    Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 
     if (extraPointers == nullptr || extraPointers[2] == 0) {
         NativeOpExcutioner::execReduce3(opNum, hX, hXShapeInfo, extraParams, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength);

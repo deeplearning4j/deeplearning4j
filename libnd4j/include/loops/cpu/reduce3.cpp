@@ -110,7 +110,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
     
-    Z extraParamsVals[3] = {(X) 0.0, (X) 0.0, (X) 0.0};
+    Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
 
     if(shape::isScalar(zShapeInfo)) {
         execScalar<OpType>(vx, xShapeInfo, extraParamsVals, vy, yShapeInfo, vz, zShapeInfo);
@@ -128,13 +128,13 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
         {                
             auto threadNum = omp_get_thread_num();         
-            Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+            auto threadOffset = info.getThreadOffset(threadNum);
 
             #pragma omp simd
             for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                Nd4jLong xOffset = shape::getIndexOffset(i+threadOffset, xShapeInfo, zLen);
-                Nd4jLong yOffset = shape::getIndexOffset(i+threadOffset, yShapeInfo, zLen);
-                Nd4jLong zOffset = shape::getIndexOffset(i+threadOffset, zShapeInfo, zLen);
+                auto xOffset = shape::getIndexOffset(i+threadOffset, xShapeInfo, zLen);
+                auto yOffset = shape::getIndexOffset(i+threadOffset, yShapeInfo, zLen);
+                auto zOffset = shape::getIndexOffset(i+threadOffset, zShapeInfo, zLen);
                 z[zOffset] = OpType::update(z[zOffset], OpType::op(x[xOffset], y[yOffset], extraParamsVals), extraParamsVals);
             }
         }

@@ -322,8 +322,7 @@ public:
                             void *hY, Nd4jLong *hYShapeInfo,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            Nd4jLong *tadOnlyShapeInfo);
+                            void *dZ, Nd4jLong *dZShapeInfo);
     /**
      *
      * @param opNum
