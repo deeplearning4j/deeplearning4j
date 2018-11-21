@@ -323,9 +323,9 @@ A network may be poorly designed if:
 * The output number of classes is too large
     - Classification with more than about 10,000 classes can become a performance bottleneck with standard softmax output layers
 * The layers are too large
-    - For CNNs, most layers have kernel sizes in the range 2x2 to 7x7. Much larger than this may cause a performance bottleneck.
+    - For CNNs, most layers have kernel sizes in the range 2x2 to 7x7, with channels equal to 32 to 1024 (with larger number of channels appearing later in the network). Much larger than this may cause a performance bottleneck.
     - For MLPs, most layers have at most 2048 units/neurons (often much smaller). Much larger than this may be too large.
-    - For RNNs such as LSTMs, layers are typically 
+    - For RNNs such as LSTMs, layers are typically in the range of 128 to 512, though the largest RNNs may use around 1024 units per layer.
 * The network has too many parameters
     - This is usually a consequence of the other issues already mentioned - too many layers, too large input, too many output classes
     - For comparison, less than 1 million parameters would be considered small, and more than about 100 million parameters would be considered very large.
