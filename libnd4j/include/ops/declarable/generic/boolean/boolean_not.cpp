@@ -25,25 +25,19 @@
 
 namespace nd4j {
     namespace ops {
-        BROADCASTABLE_OP_IMPL(boolean_not, 0, 0) {
+        OP_IMPL(boolean_not, 1, 1,true) {
             auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::custom(scalar::LogicalNot, pairwise::LogicalNot, broadcast::LogicalNot), x, y, z);
-            if (tZ == nullptr)
-                return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z)
-                throw std::runtime_error("boolean_and: result was overwritten");
+            x->applyTransform(transform::Not, z, nullptr);
 
             return Status::OK();
         }
 
         DECLARE_TYPES(boolean_not) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, DataType::ANY)
-                    ->setAllowedOutputTypes(0, DataType::INHERIT);
+                    ->setAllowedInputTypes(0, DataType::BOOL)
+                    ->setAllowedOutputTypes(0, DataType::BOOL);
         }
     }
 }

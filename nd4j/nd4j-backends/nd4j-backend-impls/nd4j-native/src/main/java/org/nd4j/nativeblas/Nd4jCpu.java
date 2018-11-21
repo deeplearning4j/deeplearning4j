@@ -12267,6 +12267,27 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     private native void allocate();
                                                 }
 //         #endif
+
+        /**
+         *
+         */
+//         #if NOT_EXCLUDED(OP_boolean_not)
+        @Namespace("nd4j::ops") public static class boolean_not extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public boolean_not(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public boolean_not(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public boolean_not position(long position) {
+                return (boolean_not)super.position(position);
+            }
+        
+                                                    public boolean_not() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                }
+//         #endif
     
 
 
@@ -13131,26 +13152,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public boolean_xor() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                }
-//         #endif
-
-        /**
-         *
-         */
-//         #if NOT_EXCLUDED(OP_boolean_not)
-        @Namespace("nd4j::ops") public static class boolean_not extends BroadcastableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public boolean_not(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public boolean_not(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public boolean_not position(long position) {
-                return (boolean_not)super.position(position);
-            }
-        
-                                                                                    public boolean_not() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                 }
 //         #endif
