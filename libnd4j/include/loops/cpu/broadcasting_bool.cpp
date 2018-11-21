@@ -34,8 +34,8 @@ namespace functions {
                              Nd4jLong *xShapeInfo,
                              void *y,
                              Nd4jLong *yShapeInfo,
-                             void *result,
-                             Nd4jLong *resultShapeInfo,
+                             void *z,
+                             Nd4jLong *zShapeInfo,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
@@ -46,8 +46,8 @@ namespace functions {
                                                xShapeInfo,
                                                y,
                                                yShapeInfo,
-                                               result,
-                                               resultShapeInfo,
+                                               z,
+                                               zShapeInfo,
                                                dimension,
                                                dimensionLength,
                                                tadShapeInfo,
@@ -63,7 +63,7 @@ namespace functions {
                              void *vy,
                              Nd4jLong *yShapeInfo,
                              void *vz,
-                             Nd4jLong *resultShapeInfo,
+                             Nd4jLong *zShapeInfo,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
@@ -73,7 +73,7 @@ namespace functions {
 
                 auto x = reinterpret_cast<X *>(vx);
                 auto y = reinterpret_cast<X *>(vy);
-                auto result = reinterpret_cast<Z *>(vz);
+                auto z = reinterpret_cast<Z *>(vz);
 
                 //decompose in to several sub tads after
                 //moving all dimensions (in sorted order)
@@ -115,7 +115,7 @@ namespace functions {
                     auto offsetZ = tadOffsetZ[i];
 
                     if (tadEWS > 0 && yStride > 0 && zEWS > 0 && dimensionLength == 1) {
-                        auto oRes = result + offsetZ;
+                        auto oRes = z + offsetZ;
                         auto oX = x + offset;
 
                         if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
@@ -139,7 +139,7 @@ namespace functions {
                             auto zOffset = offsetZ + shape::getIndexOffset(f, tadShapeInfoZ, tadLength);
                             auto yOffset = shape::getIndexOffset(f, yShapeInfo, tadLength);
 
-                            result[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+                            z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
                         }
                     }
                 }

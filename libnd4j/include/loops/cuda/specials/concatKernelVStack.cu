@@ -24,11 +24,9 @@
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ void concatKernelVStack(int dimension,
-									int numArrays,
+__device__ void concatKernelVStack(int numArrays,
 									Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
-									void *vz, Nd4jLong *zShapeInfo, 
-									Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+									void *vz, Nd4jLong *zShapeInfo) {
 
     /*
      this is special case for concat: we group bunch of vectors into 2D matrix
@@ -63,24 +61,20 @@ __device__ void concatKernelVStack(int dimension,
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void execConcatKernelVStack(int dimension,
-                                    int numArrays,
+__global__ void execConcatKernelVStack(int numArrays,
                                     Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
-                                    void *vz, Nd4jLong *zShapeInfo, 
-                                    Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+                                    void *vz, Nd4jLong *zShapeInfo) {
     
-    concatKernelVStack<T>(dimension, numArrays, *data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers);
+    concatKernelVStack<T>(numArrays, *data, inputShapeInfos, vz, zShapeInfo);
 }
 
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__host__ void concatKernelVStackGeneric(dim3& launchDims, cudaStream_t *stream,
-                                    int dimension,
+__host__ void concatKernelVStackGeneric(dim3& launchDims, cudaStream_t *stream,                                    
                                     int numArrays,
                                     Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
-                                    void *vz, Nd4jLong *zShapeInfo, 
-                                    Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+                                    void *vz, Nd4jLong *zShapeInfo) {
     
-    execConcatKernelVStack<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dimension, numArrays, *data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers);
+    execConcatKernelVStack<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(numArrays, *data, inputShapeInfos, vz, zShapeInfo);
 }

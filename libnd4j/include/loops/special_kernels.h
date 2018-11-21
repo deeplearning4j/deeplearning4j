@@ -31,7 +31,7 @@
 
 __host__ void fillIsMaxGeneric(dim3& launchDims, cudaStream_t *stream, bool* dx, long length, long idx);
 
-__host__ void fillDimensionalIsMaxGeneric(dim3& launchDims, cudaStream_t *stream, void *dX, Nd4jLong *xShapeInfo, bool *dZ, Nd4jLong *zShapeInfo, Nd4jLong *tadOnlyShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOffsets);
+__host__ void fillDimensionalIsMaxGeneric(dim3& launchDims, cudaStream_t *stream, void *dX, bool *dZ, Nd4jLong *zShapeInfo, Nd4jLong *tadOnlyShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOffsets);
 
 template <typename T>
 __host__ void convertToHalfGeneric(dim3& launchDims, cudaStream_t *stream, void *dx, Nd4jLong n, half *dz);
@@ -40,25 +40,25 @@ template<typename T>
 __host__ void tearKernelGeneric(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 template<typename T>
-__host__ void shuffleKernelGeneric(dim3& launchDims, cudaStream_t *stream, void **vdX, Nd4jLong **xShapeInfo,  void **vdZ, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets);
+__host__ void shuffleKernelGeneric(dim3& launchDims, cudaStream_t *stream, void **vdX, Nd4jLong **xShapeInfo,  void **vdZ, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets);
 
 template <typename T>
 __host__ void convertHalfsToGeneric(dim3& launchDims, cudaStream_t *stream, half *dx, Nd4jLong n, void *dz);
 
 template <typename T>
-__host__ void concatKernelVStackGeneric(dim3& launchDims, cudaStream_t *stream, int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vz, Nd4jLong *zShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
+__host__ void concatKernelVStackGeneric(dim3& launchDims, cudaStream_t *stream, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vz, Nd4jLong *zShapeInfo);
 
 template <typename T>
-__host__ void concatKernelScalarGeneric(dim3& launchDims, cudaStream_t *stream, int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
+__host__ void concatKernelScalarGeneric(dim3& launchDims, cudaStream_t *stream, int numArrays, Nd4jPointer *data, void *vresult);
 
 template <typename T>
-__host__ void concatKernelHStackGeneric(dim3& launchDims, cudaStream_t *stream, int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
+__host__ void concatKernelHStackGeneric(dim3& launchDims, cudaStream_t *stream, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo);
 
 template <typename T>
 __host__ void concatKernelGeneric(dim3& launchDims, cudaStream_t *stream, int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, Nd4jLong *zTadShape, Nd4jLong *zOffsets);
 
 template <typename T>
-__device__ void pullRowsKernelGeneric(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong n, Nd4jLong *indexes, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets);
+__device__ void pullRowsKernelGeneric(dim3& launchDims, cudaStream_t *stream, void *vx, void *vz, Nd4jLong n, Nd4jLong *indexes, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets);
 
 template <typename T>
 __device__ void averagingKernelGeneric(dim3& launchDims, cudaStream_t *stream, void **vdx, void *vdz, int n, Nd4jLong length, bool propagate);
