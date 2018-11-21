@@ -1106,9 +1106,14 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     @Test
     public void testBoolImport_1() throws Exception {
         Nd4j.create(1);
-        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/reduce_all/rank2/frozen_model.pb").getInputStream());
+        for (int e = 0; e < 1000; e++){
+            val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/reduce_any/rank0/frozen_model.pb").getInputStream());
 
-        tg.execAndEndResult();
+            val result = tg.execAndEndResult();
+
+            val str = result.toString();
+            log.info("Result: {}", str);
+        }
     }
 
     @Test

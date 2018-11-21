@@ -1034,8 +1034,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 if(tfTensor.getBoolValCount() < 1)
                     return Nd4j.scalar(false);
 
-                boolean val = tfTensor.getBoolVal(0);
-                return Nd4j.scalar(val);
+                val val = tfTensor.getBoolVal(0);
+                val arr = Nd4j.scalar(val);
+                return arr;
             } else if (tfTensor.getBoolValCount() > 0) {
                 val jArray = new boolean[tfTensor.getBoolValCount()];
                 for (int e = 0; e < tfTensor.getBoolValCount(); e++) {
