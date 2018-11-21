@@ -17,6 +17,7 @@
 package org.nd4j.linalg.ops.transforms;
 
 import lombok.NonNull;
+import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,6 +26,7 @@ import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNot;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
@@ -1065,8 +1067,13 @@ public class Transforms {
     }
 
     public static INDArray not(INDArray x) {
-        INDArray z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
-        Nd4j.getExecutioner().exec(new ScalarNot(x, z, x.length(), 0.0f));
+        val z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
+        if (x.isB()) {
+            Nd4j.getExecutioner().exec(new BooleanNot(x, z, x.length()));
+        } else {
+            Nd4j.getExecutioner().exec(new ScalarNot(x, z, x.length(), 0.0f));
+
+        }
         return z;
     }
 

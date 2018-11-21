@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.IsInf;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.IsNaN;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero;
@@ -32,6 +33,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -340,6 +342,19 @@ public class MixedDataTypesTests {
         val restored = Nd4j.createFromFlatArray(flatb);
 
         assertEquals(arrayX, restored);
+    }
+
+    @Test
+    public void testBoolFloatCast2(){
+        val first = Nd4j.zeros(DataType.FLOAT, 3, 5000);
+        INDArray asBool = first.castTo(DataType.BOOL);
+        INDArray not = Transforms.not(asBool);  //
+        INDArray asFloat = not.castTo(DataType.FLOAT);
+
+        System.out.println(not);
+        System.out.println(asFloat);
+        INDArray exp = Nd4j.ones(DataType.FLOAT, 3, 5000);
+        assertEquals(exp, asFloat);
     }
 
 }

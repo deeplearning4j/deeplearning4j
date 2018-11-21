@@ -99,7 +99,8 @@
         (3, IsFinite), \
         (4, IsInfOrNan), \
         (5, MatchConditionBool), \
-        (6, IsPositive)
+        (6, IsPositive) , \
+        (7, Not)
 
 
 #define TRANSFORM_STRICT_OPS \

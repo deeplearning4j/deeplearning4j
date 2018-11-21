@@ -1794,6 +1794,24 @@ TEST_F(MultiDataTypeTests, assign_test2) {
     ASSERT_EQ(x4, exp3);
 }
 
+TEST_F(MultiDataTypeTests, Test_Cast_1) {
+    auto first = NDArrayFactory::create<float>('c', {10});
+    auto asBool = NDArrayFactory::create<bool>('c', {10});
+    auto _not = NDArrayFactory::create<bool>('c', {10});
+    auto asFloat = NDArrayFactory::create<float>('c', {10});
+
+    asBool.assign(first);
+
+    asBool.printIndexedBuffer("asBool");
+    asBool.applyScalar(scalar::Not, 0.0f, &_not);
+
+    _not.printIndexedBuffer("_not");
+
+    asFloat.assign(_not);
+
+    asFloat.printIndexedBuffer("asFloat");
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, divide_bool_test1) {
 

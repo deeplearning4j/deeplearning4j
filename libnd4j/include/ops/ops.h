@@ -673,11 +673,14 @@ namespace simdOps {
 		}
 
 		op_def static Z op(X d1, X d2, X *params) {
-            auto b1 = static_cast<bool>(d1);
-            auto b2 = static_cast<bool>(d2);
-
-			return b1 != b2 ? static_cast<Z>(1) : static_cast<Z>(0);
+			return d1 != d2 ? static_cast<Z>(1) : static_cast<Z>(0);
 		}
+
+		// this transform op should run only on boolean input
+        op_def static Z op(X d1, X *params) {
+		    auto b1 = static_cast<bool>(d1);
+            return !b1;
+        }
 	};
 
 	template <typename X, typename Y, typename Z>
