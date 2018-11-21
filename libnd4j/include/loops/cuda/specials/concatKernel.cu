@@ -24,13 +24,11 @@
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ void concatKernel(int dimension,
-							int numArrays,
+__device__ void concatKernel(int numArrays,
 							Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
 							void *vz, Nd4jLong *zShapeInfo, 
 							Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, 
-							Nd4jLong *zTadShape, 
-							Nd4jLong *zOffsets) {
+							Nd4jLong *zTadShape, Nd4jLong *zOffsets) {
 	
 	auto z = static_cast<T*>(vz);
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -200,22 +198,20 @@ __device__ void concatKernel(int dimension,
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void execConcatKernel(int dimension,
-							int numArrays,
+__global__ void execConcatKernel(int numArrays,
 							Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
 							void *vz, Nd4jLong *zShapeInfo, 
 							Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, 
 							Nd4jLong *zTadShape, 
 							Nd4jLong *zOffsets) {
 
-	concatKernel<T>(dimension, numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
+	concatKernel<T>(numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
 }
 
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__host__ void concatKernelGeneric(dim3& launchDims, cudaStream_t *stream,
- 							int dimension,
+__host__ void concatKernelGeneric(dim3& launchDims, cudaStream_t *stream, 							
 							int numArrays,
 							Nd4jPointer *data, Nd4jPointer *inputShapeInfos,
 							void *vz, Nd4jLong *zShapeInfo, 
@@ -223,5 +219,5 @@ __host__ void concatKernelGeneric(dim3& launchDims, cudaStream_t *stream,
 							Nd4jLong *zTadShape, 
 							Nd4jLong *zOffsets) {
 
-	execConcatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dimension, numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
+	execConcatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
 }

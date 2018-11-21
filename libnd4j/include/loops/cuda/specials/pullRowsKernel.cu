@@ -23,8 +23,8 @@
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__device__ void pullRowsKernel(void *vx, Nd4jLong *xShapeInfo,
-                              void *vz, Nd4jLong *zShapeInfo,
+__device__ void pullRowsKernel(void *vx,
+                              void *vz,
                               Nd4jLong len,
                               Nd4jLong *indexes,
                               Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
@@ -62,27 +62,27 @@ __device__ void pullRowsKernel(void *vx, Nd4jLong *xShapeInfo,
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-__global__ void execPullRowsKernel(void *vx, Nd4jLong *xShapeInfo,
-                              void *vz, Nd4jLong *zShapeInfo,
+__global__ void execPullRowsKernel(void *vx,
+                              void *vz,
                               Nd4jLong len,
                               Nd4jLong *indexes,
                               Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                               Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
 
-    pullRowsKernel<T>(vx, xShapeInfo, vz, zShapeInfo, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
+    pullRowsKernel<T>(vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
 __host__ void pullRowsKernelGeneric(dim3& launchDims, cudaStream_t *stream,
-                                void *vx, Nd4jLong *xShapeInfo,
-                                void *vz, Nd4jLong *zShapeInfo,
+                                void *vx,
+                                void *vz,
                                 Nd4jLong len,
                                 Nd4jLong *indexes,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                                 Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
 
-    execPullRowsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
+    execPullRowsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
 

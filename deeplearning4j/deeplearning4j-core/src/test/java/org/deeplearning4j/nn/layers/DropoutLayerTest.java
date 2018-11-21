@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.dataset.DataSet;
@@ -51,6 +52,11 @@ import static org.junit.Assert.assertNull;
 /**
  */
 public class DropoutLayerTest extends BaseDL4JTest {
+
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
 
     @Test
     public void testInputTypes() {
@@ -117,7 +123,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
             l.allowInputModification(false);
         }
 
-        INDArray in = Nd4j.arange(1, 5);
+        INDArray in = Nd4j.arange(1, 5).reshape(1,4);
         Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainIntegrated = netIntegrated.feedForward(in.dup(), true);
         Nd4j.getRandom().setSeed(12345);

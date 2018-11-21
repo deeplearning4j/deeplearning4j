@@ -22,7 +22,7 @@
 #include <loops/special_kernels.h>
 
 ////////////////////////////////////////////////////////////////////////
-__device__ void fillDimensionalIsMax(void *vdX, Nd4jLong *xShapeInfo, 
+__device__ void fillDimensionalIsMax(void *vdX,
                                     bool *dZ, Nd4jLong *zShapeInfo, 
                                     Nd4jLong *tadOnlyShapeInfo, 
                                     int *dimension, int dimensionLength, 
@@ -66,22 +66,22 @@ __device__ void fillDimensionalIsMax(void *vdX, Nd4jLong *xShapeInfo,
 
 
 ////////////////////////////////////////////////////////////////////////
-__global__ void execfillDimensionalIsMax(void *dX, Nd4jLong *xShapeInfo, 
+__global__ void execfillDimensionalIsMax(void *dX,
                                     bool *dZ, Nd4jLong *zShapeInfo, 
                                     Nd4jLong *tadOnlyShapeInfo, 
                                     int *dimension, int dimensionLength, 
                                     Nd4jLong *tadOffsets) {
 
-    fillDimensionalIsMax(dX, xShapeInfo, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
+    fillDimensionalIsMax(dX, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
 }
 
 ////////////////////////////////////////////////////////////////////////
 __host__ void fillDimensionalIsMaxGeneric(dim3& launchDims, cudaStream_t *stream,
-                                    void *dX, Nd4jLong *xShapeInfo, 
+                                    void *dX,
                                     bool *dZ, Nd4jLong *zShapeInfo, 
                                     Nd4jLong *tadOnlyShapeInfo, 
                                     int *dimension, int dimensionLength, 
                                     Nd4jLong *tadOffsets) {
     
-    execfillDimensionalIsMax<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dX, xShapeInfo, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
+    execfillDimensionalIsMax<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dX, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
 }

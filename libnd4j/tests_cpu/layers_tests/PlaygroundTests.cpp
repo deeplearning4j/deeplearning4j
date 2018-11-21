@@ -744,9 +744,9 @@ void loopSimple(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, 
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, loopThroughArrs_test2) {
     
-    NDArray x('c', {40, 250}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {40, 25}, nd4j::DataType::FLOAT32);
 
-    const int iterations = 100;
+    const int iterations = 10;
     const int arrays = 10;
 
     std::vector<NDArray> arrs(arrays);
@@ -840,9 +840,9 @@ void loop2(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, loopThroughArrs_test3) {
     
-    NDArray x('c', {500, 250}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {50, 250}, nd4j::DataType::FLOAT32);
 
-    const int iterations = 1000;
+    const int iterations = 100;
     const int arrays = 100;
 
     std::vector<NDArray> arrs(arrays);

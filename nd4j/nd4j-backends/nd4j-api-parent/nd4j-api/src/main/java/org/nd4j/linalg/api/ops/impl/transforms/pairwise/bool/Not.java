@@ -82,7 +82,7 @@ public class Not extends BaseTransformBoolOp {
 
     @Override
     public String opName() {
-        return "boolean_not";
+        return "not";
     }
 
     @Override
@@ -92,7 +92,7 @@ public class Not extends BaseTransformBoolOp {
 
     @Override
     public String tensorflowName() {
-        return "LogicalNot";
+        return "Not";
     }
 
     @Override

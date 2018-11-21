@@ -1376,7 +1376,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             case UBYTE:
                 return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, dataType, ws);
             case BOOL:
-                return create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, dataType, ws);
+                val b = value.byteValue();
+                val arr = create(new byte[] {b}, new long[] {}, new long[] {}, dataType, ws);
+                return arr;
             default:
                 throw new UnsupportedOperationException("Unsupported data type used: " + dataType);
         }

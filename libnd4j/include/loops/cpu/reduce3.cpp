@@ -43,8 +43,8 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
 
     auto startingVal = OpType::startingValue(x);
     auto length = shape::length(xShapeInfo);
-    auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-    auto yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+    auto xEws = shape::elementWiseStride(xShapeInfo);
+    auto yEws = shape::elementWiseStride(yShapeInfo);
 
     Z extraParamsVals[3] = {(X) 0.0f, (X) 0.0f, (X) 0.0f};
     // it's possible case for EqualsWithEps op
@@ -53,9 +53,9 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
                 
     auto xOrder = shape::order(xShapeInfo);
     auto yOrder = shape::order(yShapeInfo);
-    if(xOrder == yOrder && (xElementWiseStride  >=1 && yElementWiseStride >= 1) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
+    if(xOrder == yOrder && (xEws  >=1 && yEws >= 1) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
 
-        if (xElementWiseStride == 1 && yElementWiseStride == 1) {
+        if (xEws == 1 && yEws == 1) {
 
             // TODO:: proper reduction required here
             for(int i = 0; i < length; i++) 
@@ -67,7 +67,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
         else {
             // TODO:: proper reduction required here
             for(Nd4jLong i = 0; i < length; i++) 
-                startingVal = OpType::update(startingVal, OpType::op(x[i * xElementWiseStride],y[i * yElementWiseStride], extraParamsVals), extraParamsVals);
+                startingVal = OpType::update(startingVal, OpType::op(x[i * xEws],y[i * yEws], extraParamsVals), extraParamsVals);
                         
             z[0] =  OpType::postProcess(startingVal, length, extraParamsVals);
         }
@@ -167,8 +167,8 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         */
         int largerElementWiseStride;
         int smallerElementWiseStride;
-        auto xElementWiseStride = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
-        auto yElementWiseStride = shape::elementWiseStride(yTad.tadOnlyShapeInfo);
+        auto xEws = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
+        auto yEws = shape::elementWiseStride(yTad.tadOnlyShapeInfo);
         int tadLength;
         Nd4jLong xModLength;
         Nd4jLong yModLength;
@@ -194,7 +194,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             xTadBigger = false;
         }
         
-        if (largerElementWiseStride >= 1 && smallerElementWiseStride >= 1 && xElementWiseStride >= 1 && yElementWiseStride >= 1) {
+        if (largerElementWiseStride >= 1 && smallerElementWiseStride >= 1 && xEws >= 1 && yEws >= 1) {
 
             if(shape::length(xShapeInfo) == shape::length(yShapeInfo)) {
                 
@@ -214,8 +214,8 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                     z[i] = OpType::op(x[offset], y[yOffset], localExtraParams);
                     
                     for (int j = 1; j < tadLength; j++) {
-                        int xIdx = (offset + xElementWiseStride * j);
-                        int yIdx = (yOffset + yElementWiseStride * j);
+                        int xIdx = (offset + xEws * j);
+                        int yIdx = (yOffset + yEws * j);
                         z[i] = OpType::update(z[i], OpType::op(x[xIdx],y[yIdx],localExtraParams), localExtraParams);
                     }
 

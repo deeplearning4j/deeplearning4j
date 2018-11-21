@@ -45,6 +45,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -128,8 +129,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
             double[][] lExpD = new double[][]{{0.2, 0}, {0.2, 0}, {0.2, 0}};
 
-            INDArray fExp = Nd4j.create(fExpD);
-            INDArray lExp = Nd4j.create(lExpD);
+            INDArray fExp = Nd4j.create(fExpD).castTo(DataType.FLOAT);
+            INDArray lExp = Nd4j.create(lExpD).castTo(DataType.FLOAT);
 
             assertEquals(fExp, f);
             assertEquals(lExp, l);
@@ -828,14 +829,14 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
     public void testSeqRRDSIArrayWritableOneReader() {
 
         List<List<Writable>> sequence1 = new ArrayList<>();
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {1, 2, 3})),
+        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {1, 2, 3}, new long[]{1,3})),
                         new IntWritable(0)));
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {4, 5, 6})),
+        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {4, 5, 6}, new long[]{1,3})),
                         new IntWritable(1)));
         List<List<Writable>> sequence2 = new ArrayList<>();
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {7, 8, 9})),
+        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {7, 8, 9}, new long[]{1,3})),
                         new IntWritable(2)));
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {10, 11, 12})),
+        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {10, 11, 12}, new long[]{1,3})),
                         new IntWritable(3)));
 
 
@@ -861,15 +862,15 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
     public void testSeqRRDSIArrayWritableOneReaderRegression() {
         //Regression, where the output is an array writable
         List<List<Writable>> sequence1 = new ArrayList<>();
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {1, 2, 3})),
-                        new NDArrayWritable(Nd4j.create(new double[] {100, 200, 300}))));
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {4, 5, 6})),
-                        new NDArrayWritable(Nd4j.create(new double[] {400, 500, 600}))));
+        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {1, 2, 3}, new long[]{1,3})),
+                        new NDArrayWritable(Nd4j.create(new double[] {100, 200, 300}, new long[]{1,3}))));
+        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {4, 5, 6}, new long[]{1,3})),
+                        new NDArrayWritable(Nd4j.create(new double[] {400, 500, 600}, new long[]{1,3}))));
         List<List<Writable>> sequence2 = new ArrayList<>();
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {7, 8, 9})),
-                        new NDArrayWritable(Nd4j.create(new double[] {700, 800, 900}))));
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {10, 11, 12})),
-                        new NDArrayWritable(Nd4j.create(new double[] {1000, 1100, 1200}))));
+        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {7, 8, 9}, new long[]{1,3})),
+                        new NDArrayWritable(Nd4j.create(new double[] {700, 800, 900}, new long[]{1,3}))));
+        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {10, 11, 12}, new long[]{1,3})),
+                        new NDArrayWritable(Nd4j.create(new double[] {1000, 1100, 1200}, new long[]{1,3}))));
 
 
         SequenceRecordReader rr = new CollectionSequenceRecordReader(Arrays.asList(sequence1, sequence2));
@@ -897,15 +898,15 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         //Input with multiple array writables:
 
         List<List<Writable>> sequence1 = new ArrayList<>();
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {1, 2, 3})),
-                        new NDArrayWritable(Nd4j.create(new double[] {100, 200, 300})), new IntWritable(0)));
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {4, 5, 6})),
-                        new NDArrayWritable(Nd4j.create(new double[] {400, 500, 600})), new IntWritable(1)));
+        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {1, 2, 3}, new long[]{1,3})),
+                        new NDArrayWritable(Nd4j.create(new double[] {100, 200, 300}, new long[]{1,3})), new IntWritable(0)));
+        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {4, 5, 6}, new long[]{1,3})),
+                        new NDArrayWritable(Nd4j.create(new double[] {400, 500, 600}, new long[]{1,3})), new IntWritable(1)));
         List<List<Writable>> sequence2 = new ArrayList<>();
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {7, 8, 9})),
-                        new NDArrayWritable(Nd4j.create(new double[] {700, 800, 900})), new IntWritable(2)));
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {10, 11, 12})),
-                        new NDArrayWritable(Nd4j.create(new double[] {1000, 1100, 1200})), new IntWritable(3)));
+        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {7, 8, 9}, new long[]{1,3})),
+                        new NDArrayWritable(Nd4j.create(new double[] {700, 800, 900}, new long[]{1,3})), new IntWritable(2)));
+        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {10, 11, 12}, new long[]{1,3})),
+                        new NDArrayWritable(Nd4j.create(new double[] {1000, 1100, 1200}, new long[]{1,3})), new IntWritable(3)));
 
 
         SequenceRecordReader rr = new CollectionSequenceRecordReader(Arrays.asList(sequence1, sequence2));
@@ -931,26 +932,26 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
     @Test
     public void testSeqRRDSIArrayWritableTwoReaders() {
         List<List<Writable>> sequence1 = new ArrayList<>();
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {1, 2, 3})),
+        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {1, 2, 3}, new long[]{1,3})),
                         new IntWritable(100)));
-        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {4, 5, 6})),
+        sequence1.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {4, 5, 6}, new long[]{1,3})),
                         new IntWritable(200)));
         List<List<Writable>> sequence2 = new ArrayList<>();
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {7, 8, 9})),
+        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {7, 8, 9}, new long[]{1,3})),
                         new IntWritable(300)));
-        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {10, 11, 12})),
+        sequence2.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {10, 11, 12}, new long[]{1,3})),
                         new IntWritable(400)));
         SequenceRecordReader rrFeatures = new CollectionSequenceRecordReader(Arrays.asList(sequence1, sequence2));
 
         List<List<Writable>> sequence1L = new ArrayList<>();
-        sequence1L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {100, 200, 300})),
+        sequence1L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {100, 200, 300}, new long[]{1,3})),
                         new IntWritable(101)));
-        sequence1L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {400, 500, 600})),
+        sequence1L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {400, 500, 600}, new long[]{1,3})),
                         new IntWritable(201)));
         List<List<Writable>> sequence2L = new ArrayList<>();
-        sequence2L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {700, 800, 900})),
+        sequence2L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {700, 800, 900}, new long[]{1,3})),
                         new IntWritable(301)));
-        sequence2L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {1000, 1100, 1200})),
+        sequence2L.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.create(new double[] {1000, 1100, 1200}, new long[]{1,3})),
                         new IntWritable(401)));
         SequenceRecordReader rrLabels = new CollectionSequenceRecordReader(Arrays.asList(sequence1L, sequence2L));
 
@@ -1036,11 +1037,11 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         Collection<Collection<Writable>> data = new ArrayList<>();
 
         data.add(Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1),
-                        new NDArrayWritable(Nd4j.create(new double[] {1.1, 2.1, 3.1}))));
+                        new NDArrayWritable(Nd4j.create(new double[] {1.1, 2.1, 3.1}, new long[]{1,3}))));
         data.add(Arrays.<Writable>asList(new DoubleWritable(2), new DoubleWritable(3),
-                        new NDArrayWritable(Nd4j.create(new double[] {4.1, 5.1, 6.1}))));
+                        new NDArrayWritable(Nd4j.create(new double[] {4.1, 5.1, 6.1}, new long[]{1,3}))));
         data.add(Arrays.<Writable>asList(new DoubleWritable(4), new DoubleWritable(5),
-                        new NDArrayWritable(Nd4j.create(new double[] {7.1, 8.1, 9.1}))));
+                        new NDArrayWritable(Nd4j.create(new double[] {7.1, 8.1, 9.1}, new long[]{1,3}))));
 
         RecordReader rr = new CollectionRecordReader(data);
         int batchSize = 3;
@@ -1060,12 +1061,12 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         //ALSO: test if we have NDArrayWritables for BOTH the features and the labels
         data = new ArrayList<>();
 
-        data.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[] {0, 1})),
-                        new NDArrayWritable(Nd4j.create(new double[] {1.1, 2.1, 3.1}))));
-        data.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[] {2, 3})),
-                        new NDArrayWritable(Nd4j.create(new double[] {4.1, 5.1, 6.1}))));
-        data.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[] {4, 5})),
-                        new NDArrayWritable(Nd4j.create(new double[] {7.1, 8.1, 9.1}))));
+        data.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[] {0, 1}, new long[]{1,2})),
+                        new NDArrayWritable(Nd4j.create(new double[] {1.1, 2.1, 3.1}, new long[]{1,3}))));
+        data.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[] {2, 3}, new long[]{1,2})),
+                        new NDArrayWritable(Nd4j.create(new double[] {4.1, 5.1, 6.1}, new long[]{1,3}))));
+        data.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[] {4, 5}, new long[]{1,2})),
+                        new NDArrayWritable(Nd4j.create(new double[] {7.1, 8.1, 9.1}, new long[]{1,3}))));
         labelIndexFrom = 1;
         labelIndexTo = 1;
 
@@ -1227,11 +1228,11 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         //Idea: input vector is like [f,f,f,f,l,l,f,f] or similar - i.e., label writables aren't start/end
 
         List<Writable> l = Arrays.<Writable>asList(new DoubleWritable(1),
-                        new NDArrayWritable(Nd4j.create(new double[] {2, 3, 4})), new DoubleWritable(5),
-                        new NDArrayWritable(Nd4j.create(new double[] {6, 7, 8})));
+                        new NDArrayWritable(Nd4j.create(new double[] {2, 3, 4}, new long[]{1,3})), new DoubleWritable(5),
+                        new NDArrayWritable(Nd4j.create(new double[] {6, 7, 8}, new long[]{1,3})));
 
-        INDArray expF = Nd4j.create(new double[] {1, 6, 7, 8});
-        INDArray expL = Nd4j.create(new double[] {2, 3, 4, 5});
+        INDArray expF = Nd4j.create(new double[] {1, 6, 7, 8}, new long[]{1,4});
+        INDArray expL = Nd4j.create(new double[] {2, 3, 4, 5}, new long[]{1,4});
 
         RecordReader rr = new CollectionRecordReader(Collections.singletonList(l));
 

@@ -59,11 +59,9 @@ import static org.junit.Assert.*;
  */
 public class ConvolutionLayerTest extends BaseDL4JTest {
 
-    @Before
-    public void before() {
-        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
-        Nd4j.factory().setDType(DataType.DOUBLE);
-        Nd4j.EPS_THRESHOLD = 1e-4;
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
     }
 
     @Test
@@ -252,11 +250,11 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
     public void testActivateResultsContained() {
         Layer layer = getContainedConfig();
         INDArray input = getContainedData();
-        INDArray expectedOutput = Nd4j.create(new double[] {0.98201379, 0.98201379, 0.98201379, 0.98201379, 0.99966465,
-                        0.99966465, 0.99966465, 0.99966465, 0.98201379, 0.98201379, 0.98201379, 0.98201379, 0.99966465,
-                        0.99966465, 0.99966465, 0.99966465, 0.98201379, 0.98201379, 0.98201379, 0.98201379, 0.99966465,
-                        0.99966465, 0.99966465, 0.99966465, 0.98201379, 0.98201379, 0.98201379, 0.98201379, 0.99966465,
-                        0.99966465, 0.99966465, 0.99966465}, new int[] {1, 2, 4, 4});
+        INDArray expectedOutput = Nd4j.create(new float[] {0.98201379f, 0.98201379f, 0.98201379f, 0.98201379f, 0.99966465f,
+                        0.99966465f, 0.99966465f, 0.99966465f, 0.98201379f, 0.98201379f, 0.98201379f, 0.98201379f, 0.99966465f,
+                        0.99966465f, 0.99966465f, 0.99966465f, 0.98201379f, 0.98201379f, 0.98201379f, 0.98201379f, 0.99966465f,
+                        0.99966465f, 0.99966465f, 0.99966465f, 0.98201379f, 0.98201379f, 0.98201379f, 0.98201379f, 0.99966465f,
+                        0.99966465f, 0.99966465f, 0.99966465f}, new int[] {1, 2, 4, 4});
 
         INDArray convActivations = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
@@ -319,14 +317,14 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
     }
 
     public INDArray getContainedData() {
-        INDArray ret = Nd4j.create(new double[] {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+        INDArray ret = Nd4j.create(new float[] {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
                         4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
                         4, 4, 4, 4, 4, 4, 4, 4}, new int[] {1, 1, 8, 8});
         return ret;
     }
 
     public INDArray getContainedCol() {
-        return Nd4j.create(new double[] {1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1,
+        return Nd4j.create(new float[] {1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1,
                         1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2,
                         2, 2, 4, 4, 4, 4}, new int[] {1, 1, 2, 2, 4, 4});
     }
@@ -634,7 +632,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
 
         //Expected order of weight rows, after reshaping: (kw0,kh0,din0), (kw1,kh0,din0), (kw0,kh1,din0), (kw1,kh1,din0), (kw0,kh0,din1), ...
         INDArray wExp = Nd4j.create(new double[][] {{0, 12}, {1, 13}, {2, 14}, {3, 15}, {4, 16}, {5, 17}, {6, 18},
-                        {7, 19}, {8, 20}, {9, 21}, {10, 22}, {11, 23}});
+                        {7, 19}, {8, 20}, {9, 21}, {10, 22}, {11, 23}}).castTo(DataType.FLOAT);
 
         assertEquals(wExp, w2d);
     }

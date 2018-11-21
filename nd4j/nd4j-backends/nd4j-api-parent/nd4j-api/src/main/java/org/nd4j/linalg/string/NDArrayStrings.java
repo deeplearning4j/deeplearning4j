@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.text.DecimalFormat;
@@ -151,19 +152,27 @@ public class NDArrayStrings {
     private String format(INDArray arr, int offset, boolean summarize) {
         int rank = arr.rank();
         if (arr.isScalar()) {
-            //true scalar i.e shape = [] not legacy which is [1,1]
-            double arrElement = arr.getDouble(0);
-            if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement!= 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
-                //switch to scientific notation
-                String asString = localeIndifferentDecimalFormat(scientificFormat).format(arrElement);
-                //from E to small e
-                asString = asString.replace('E','e');
-                return asString;
-            }
-            else {
-                if (arr.getDouble(0) == 0) return "0";
-                return decimalFormat.format(arr.getDouble(0));
-            }
+            if (arr.isR()) {
+                //true scalar i.e shape = [] not legacy which is [1,1]
+                double arrElement = arr.getDouble(0);
+                if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement != 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
+                    //switch to scientific notation
+                    String asString = localeIndifferentDecimalFormat(scientificFormat).format(arrElement);
+                    //from E to small e
+                    asString = asString.replace('E', 'e');
+                    return asString;
+                } else {
+                    if (arr.getDouble(0) == 0) return "0";
+                    return decimalFormat.format(arr.getDouble(0));
+                }
+            } else if (arr.isZ()) {
+                int arrElement = arr.getInt(0);
+                return String.valueOf(arrElement);
+            } else if (arr.isB()) {
+                int arrElement = arr.getInt(0);
+                return arrElement == 0 ? "false" : "true";
+            } else
+                throw new ND4JIllegalStateException();
         } else if (rank == 1) {
             //true vector
             return vectorToString(arr, summarize);
