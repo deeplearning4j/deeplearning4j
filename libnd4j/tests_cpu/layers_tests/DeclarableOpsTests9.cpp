@@ -1255,6 +1255,30 @@ TEST_F(DeclarableOpsTests9, test_range_empty_1) {
 }
 
 
+TEST_F(DeclarableOpsTests9, test_broadcast_bool_1) {
+    auto x = NDArrayFactory::create<double>('c', {1, 3, 2, 4, 4});
+    auto y = NDArrayFactory::create<double>('c', {1, 2, 4, 4});
+    auto z = NDArrayFactory::create<bool>('c', {1, 3, 2, 4, 4});
+
+    std::vector<int> dims = {0, 2, 3, 4};
+    x.applyBroadcast(broadcast::LessThan, dims, &y, &z, nullptr);
+}
+
+TEST_F(DeclarableOpsTests9, test_broadcast_bool_2) {
+    auto orig = NDArrayFactory::create<double>('c', {1, 7, 4, 4});
+    IndicesList list({NDIndex::all(), NDIndex::interval(0, 2), NDIndex::all(), NDIndex::all()});
+    auto x = NDArrayFactory::create<double>('c', {1, 3, 2, 4, 4});
+
+    auto y = orig.subarray(list);
+
+    auto z = NDArrayFactory::create<bool>('c', {1, 3, 2, 4, 4});
+
+    std::vector<int> dims = {0, 2, 3, 4};
+    x.applyBroadcast(broadcast::LessThan, dims, y, &z, nullptr);
+
+    delete y;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, concat_test10) {
 

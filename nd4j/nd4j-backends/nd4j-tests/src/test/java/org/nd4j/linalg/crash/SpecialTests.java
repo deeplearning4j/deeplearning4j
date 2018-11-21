@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
@@ -31,6 +32,7 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -45,6 +47,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /**
  * @author raver119@gmail.com
@@ -80,7 +84,7 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     protected static INDArray getView(INDArray x, int from, int number) {
-        return x.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(from, from + number));
+        return x.get(all(), all(), interval(from, from + number));
     }
 
     protected static INDArray transform(INDArray a, INDArray b) {
@@ -258,6 +262,31 @@ public class SpecialTests extends BaseNd4jTest {
             }
 
             System.gc();
+        }
+    }
+
+    @Test
+    public void testBroadcastLt(){
+        for( int i=0; i<10; i++) {
+
+            INDArray x = Nd4j.create(DataType.DOUBLE, 1, 3, 2, 4, 4);
+            INDArray y = Nd4j.create(DataType.DOUBLE, 1, 2, 4, 4);
+            INDArray z = Nd4j.create(DataType.BOOL, 1, 3, 2, 4, 4);
+            Broadcast.lt(x, y, z, 0, 2, 3, 4);
+
+        }
+    }
+
+    @Test
+    public void testBroadcastLt2(){
+        for( int i=0; i<10; i++) {
+            INDArray orig = Nd4j.create(DataType.DOUBLE, 1, 7, 4, 4);
+            INDArray y = orig.get(all(), interval(0,2), all(), all());
+
+            INDArray x = Nd4j.create(DataType.DOUBLE, 1, 3, 2, 4, 4);
+            INDArray z = Nd4j.create(DataType.BOOL, 1, 3, 2, 4, 4);
+            Broadcast.lt(x, y, z, 0, 2, 3, 4);
+
         }
     }
 
