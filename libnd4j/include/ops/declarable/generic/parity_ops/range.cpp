@@ -43,7 +43,34 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
     // FIXME: this op should be fully moved to helpers
 
 
-    if (numIArgs > 0) {
+    if (numInArrs > 0) {
+            if(numInArrs == 1) {
+                //limit = (*INPUT_VARIABLE(0))(0.);
+                if (output->isR()) {
+                    s = NDArrayFactory::create_(0.0f, block.workspace());
+                    d = NDArrayFactory::create_(1.0f, block.workspace());
+                } else {
+                    s = NDArrayFactory::create_(0, block.workspace());
+                    d = NDArrayFactory::create_(1, block.workspace());
+                }
+                localS = true;
+                localD = true;
+            } else if(numInArrs == 2) {
+                s = INPUT_VARIABLE(0);
+                //limit = (*INPUT_VARIABLE(1))(0.);
+                if (output->isR()) {
+                    d = NDArrayFactory::create_(1.0f, block.workspace());
+                } else {
+                    d = NDArrayFactory::create_(1, block.workspace());
+                }
+                localD = true;
+            }
+            else {
+                s = INPUT_VARIABLE(0);
+                //limit = (*INPUT_VARIABLE(1))(0.);
+                d = INPUT_VARIABLE(2);
+            }
+    } else if (numIArgs > 0) {
     
         if(numIArgs == 1) {
           //  limit = INT_ARG(0);
@@ -60,8 +87,7 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
 
         localS = true;
         localD = true;
-    }         
-    else if (numTArgs > 0) {
+    } else if (numTArgs > 0) {
 
         if(numTArgs == 1) {
             //limit = T_ARG(0);
@@ -80,37 +106,7 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
 
         localS = true;
         localD = true;
-    } 
-    else if (numInArrs > 0) {
-
-        if(numInArrs == 1) {
-            //limit = (*INPUT_VARIABLE(0))(0.);
-            if (output->isR()) {
-                s = NDArrayFactory::create_(0.0f, block.workspace());
-                d = NDArrayFactory::create_(1.0f, block.workspace());
-            } else {
-                s = NDArrayFactory::create_(0, block.workspace());
-                d = NDArrayFactory::create_(1, block.workspace());
-            }
-            localS = true;
-            localD = true;
-        } else if(numInArrs == 2) {
-            s = INPUT_VARIABLE(0);
-            //limit = (*INPUT_VARIABLE(1))(0.);
-            if (output->isR()) {
-                d = NDArrayFactory::create_(1.0f, block.workspace());
-            } else {
-                d = NDArrayFactory::create_(1, block.workspace());
-            }
-            localD = true;
-        }
-        else {
-            s = INPUT_VARIABLE(0);
-            //limit = (*INPUT_VARIABLE(1))(0.);
-            d = INPUT_VARIABLE(2);
-        }
-    } 
-    else
+    } else
         REQUIRE_TRUE(false, 0, "CUSTOM RANGE OP: op should have inputs defined in any possible way: T_args, INT_args, or INPUT variables!");
 
     helpers::range(*s, *d, *output);
@@ -136,7 +132,56 @@ DECLARE_SHAPE_FN(range) {
     if (numIArgs > 0) {
         Nd4jLong start(0), limit, delta(1);
 
-        if(numIArgs == 1) 
+        if (numInArrs > 0) {
+            auto isR = INPUT_VARIABLE(0)->isR();
+            auto isZ = INPUT_VARIABLE(0)->isZ();
+
+            if (isR) {
+                double start(0), limit, delta(1);
+
+                if (numInArrs == 1)
+                    limit = INPUT_VARIABLE(0)->e<double>(0);
+                else if (numInArrs == 2) {
+                    start = INPUT_VARIABLE(0)->e<double>(0);
+                    limit = INPUT_VARIABLE(1)->e<double>(0);
+                } else {
+                    start = INPUT_VARIABLE(0)->e<double>(0);
+                    limit = INPUT_VARIABLE(1)->e<double>(0);
+                    delta = INPUT_VARIABLE(2)->e<double>(0);
+                }
+
+                REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
+                REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
+
+                steps = static_cast<Nd4jLong >((limit - start) / delta);
+                dataType = INPUT_VARIABLE(0)->dataType();
+
+                if(math::nd4j_abs<double>(start + steps * delta) < math::nd4j_abs<double >(limit))
+                    ++steps;
+            } else if (isZ) {
+                Nd4jLong start(0), limit, delta(1);
+
+                if (numInArrs == 1)
+                    limit = INPUT_VARIABLE(0)->e<Nd4jLong>(0);
+                else if (numInArrs == 2) {
+                    start = INPUT_VARIABLE(0)->e<Nd4jLong>(0);
+                    limit = INPUT_VARIABLE(1)->e<Nd4jLong>(0);
+                } else {
+                    start = INPUT_VARIABLE(0)->e<Nd4jLong>(0);
+                    limit = INPUT_VARIABLE(1)->e<Nd4jLong>(0);
+                    delta = INPUT_VARIABLE(2)->e<Nd4jLong>(0);
+                }
+
+                REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
+                REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
+
+                steps = static_cast<Nd4jLong >((limit - start) / delta);
+                dataType = INPUT_VARIABLE(0)->dataType();
+
+                if(math::nd4j_abs<double>(start + steps * delta) < math::nd4j_abs<double >(limit))
+                    ++steps;
+            }
+        } else if(numIArgs == 1)
             limit = INT_ARG(0);
         else if(numIArgs == 2) {
             start = INT_ARG(0);
@@ -187,56 +232,6 @@ DECLARE_SHAPE_FN(range) {
 
         if(math::nd4j_abs<double>(start + steps * delta) < math::nd4j_abs<double >(limit))
             ++steps;
-    } 
-    else if (numInArrs > 0) {
-        auto isR = INPUT_VARIABLE(0)->isR();
-        auto isZ = INPUT_VARIABLE(0)->isZ();
-
-        if (isR) {
-            double start(0), limit, delta(1);
-
-            if (numInArrs == 1)
-                limit = INPUT_VARIABLE(0)->e<double>(0);
-            else if (numInArrs == 2) {
-                start = INPUT_VARIABLE(0)->e<double>(0);
-                limit = INPUT_VARIABLE(1)->e<double>(0);
-            } else {
-                start = INPUT_VARIABLE(0)->e<double>(0);
-                limit = INPUT_VARIABLE(1)->e<double>(0);
-                delta = INPUT_VARIABLE(2)->e<double>(0);
-            }
-
-            REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
-            REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
-
-            steps = static_cast<Nd4jLong >((limit - start) / delta);
-            dataType = INPUT_VARIABLE(0)->dataType();
-
-            if(math::nd4j_abs<double>(start + steps * delta) < math::nd4j_abs<double >(limit))
-                ++steps;
-        } else if (isZ) {
-            Nd4jLong start(0), limit, delta(1);
-
-            if (numInArrs == 1)
-                limit = INPUT_VARIABLE(0)->e<Nd4jLong>(0);
-            else if (numInArrs == 2) {
-                start = INPUT_VARIABLE(0)->e<Nd4jLong>(0);
-                limit = INPUT_VARIABLE(1)->e<Nd4jLong>(0);
-            } else {
-                start = INPUT_VARIABLE(0)->e<Nd4jLong>(0);
-                limit = INPUT_VARIABLE(1)->e<Nd4jLong>(0);
-                delta = INPUT_VARIABLE(2)->e<Nd4jLong>(0);
-            }
-
-            REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
-            REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
-
-            steps = static_cast<Nd4jLong >((limit - start) / delta);
-            dataType = INPUT_VARIABLE(0)->dataType();
-
-            if(math::nd4j_abs<double>(start + steps * delta) < math::nd4j_abs<double >(limit))
-                ++steps;
-        }
     } else {
         REQUIRE_TRUE(false, 0, "CUSTOM RANGE OP: op should have inputs defined in any possible way: T_args, INT_args, or INPUT variables!");
     }

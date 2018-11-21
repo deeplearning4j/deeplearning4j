@@ -1222,6 +1222,21 @@ TEST_F(DeclarableOpsTests9, matmul_test24) {
     delete results;
 }
 
+TEST_F(DeclarableOpsTests9, test_range_ing_1) {
+    auto x0 = NDArrayFactory::create<int>(0);
+    auto x1 = NDArrayFactory::create<int>(2);
+    auto x2 = NDArrayFactory::create<int>(1);
+
+    nd4j::ops::range op;
+    auto result = op.execute({&x0, &x1, &x2}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    z->printIndexedBuffer("z");
+
+    delete result;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, concat_test10) {

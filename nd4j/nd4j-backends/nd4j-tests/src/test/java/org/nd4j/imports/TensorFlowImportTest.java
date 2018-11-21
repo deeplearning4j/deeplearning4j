@@ -1104,6 +1104,14 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     }
 
     @Test
+    public void testBoolImport_1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/reduce_all/rank2/frozen_model.pb").getInputStream());
+
+        tg.execAndEndResult();
+    }
+
+    @Test
     public void testSSD_1() throws Exception {
         // tf_graphs/examples/ssd_inception_v2_coco_2018_01_28/frozen_inference_graph.pb
         Nd4j.create(1);

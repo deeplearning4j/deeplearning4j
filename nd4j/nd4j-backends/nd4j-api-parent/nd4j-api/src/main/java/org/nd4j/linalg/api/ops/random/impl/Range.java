@@ -164,66 +164,15 @@ public class Range extends DynamicCustomOp {
         int cnt = 0;
 
         if (iArgs.length > 0) {
-            int start = (int) iArgs[0];
-            int stop = (int) iArgs[1];
-            int step = (int) iArgs[2];
-
-            double e = (double) start;
-            if (start > stop) {
-                while (e > (double) stop) {
-                    cnt++;
-                    e = (double) step > 0.0 ? e - step : e + step;
-                }
-            } else {
-                while (e < (double) stop) {
-                    cnt++;
-                    e += step;
-                }
-            }
-
-            return Arrays.asList(LongShapeDescriptor.fromShape(new long[]{cnt}, DataType.LONG));
+            return Nd4j.getExecutioner().calculateOutputShape(this);
         }
 
         else if (tArgs.length > 0) {
-            double start = tArgs[0];
-            double stop = tArgs[1];
-            double step = tArgs[2];
-
-            double e = start;
-            if (start > stop) {
-                while (e > stop) {
-                    cnt++;
-                    e = step > 0.0 ? e - step : e + step;
-                }
-            } else {
-                while (e < stop) {
-                    cnt++;
-                    e += step;
-                }
-            }
-
-            return Arrays.asList(LongShapeDescriptor.fromShape(new long[]{cnt}, Nd4j.defaultFloatintPointType()));
+            return Nd4j.getExecutioner().calculateOutputShape(this);
         }
 
         else if(inputArgs.length > 0) {
-            double start = inputArgs[0].getDouble(0);
-            double stop = inputArgs[1].getDouble(0);
-            double step = inputArgs[2].getDouble(0);
-
-            double e = start;
-            if (start > stop) {
-                while (e > stop) {
-                    cnt++;
-                    e = step > 0.0 ? e - step : e + step;
-                }
-            } else {
-                while (e < stop) {
-                    cnt++;
-                    e += step;
-                }
-            }
-
-            return Arrays.asList(LongShapeDescriptor.fromShape(new long[]{cnt}, inputArgs[1].dataType()));
+            return Nd4j.getExecutioner().calculateOutputShape(this);
         }
 
 
