@@ -435,7 +435,7 @@ public class TFGraphTestAllHelper {
 
             // checking out, if local folder declared
             String localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
-            if(localPath != null && (!localPath.contains("src/main/resources") || !localPath.contains("src\\main\\resources"))){
+            if(localPath != null && (!localPath.contains("src/main/resources") && !localPath.contains("src\\main\\resources"))){
                 localPath = FilenameUtils.concat(localPath, "src/main/resources");
             }
 
