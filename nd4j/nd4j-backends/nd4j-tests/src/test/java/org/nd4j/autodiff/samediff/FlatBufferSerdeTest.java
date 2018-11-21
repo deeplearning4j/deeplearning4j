@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -31,6 +32,7 @@ public class FlatBufferSerdeTest {
     public void testBasic() throws Exception {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        sd.addAsPlaceHolder("in");
         SDVariable tanh = sd.tanh("out", in);
 
         ByteBuffer bb = sd.asFlatBuffers();
@@ -72,6 +74,9 @@ public class FlatBufferSerdeTest {
         assertEquals(2, numVars);
         assertEquals(1, numNodes);
 
+        //Check placeholders:
+        assertEquals(1, fg.placeholdersLength());
+        assertEquals("in", fg.placeholders(0));
     }
 
     @Test
@@ -81,6 +86,7 @@ public class FlatBufferSerdeTest {
                 log.info("Starting test: i={}, execFirst={}", i, execFirst);
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", Nd4j.linspace(1, 12, 12).reshape(3, 4));
+                sd.addAsPlaceHolder("in");
                 SDVariable x;
                 switch (i) {
                     case 0:
@@ -153,6 +159,14 @@ public class FlatBufferSerdeTest {
                 INDArray outRestored = restored.execAndEndResult();
 
                 assertEquals(outOrig, outRestored);
+
+
+                //Check placeholders
+                Set<String> phBefore = sd.getPlaceHolderVarNames();
+                Set<String> phAfter = restored.getPlaceHolderVarNames();
+
+                assertEquals(1, phBefore.size());
+                assertEquals(phBefore, phAfter);
             }
         }
     }

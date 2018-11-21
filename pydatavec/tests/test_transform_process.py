@@ -78,7 +78,7 @@ def test_cat_to_int():
     tp = TransformProcess(schema)
     tp.categorical_to_integer('cat')
 
-    assert tp.final_schema.get_column_type('cat') == 'integer'    
+    assert tp.final_schema.get_column_type('cat') == 'integer'
 
     tp.to_java()
 
