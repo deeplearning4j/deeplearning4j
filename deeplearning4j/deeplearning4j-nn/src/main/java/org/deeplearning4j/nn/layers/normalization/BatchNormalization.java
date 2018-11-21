@@ -156,6 +156,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 ret = helper.backpropGradient(in, eps, ArrayUtil.toInts(shape), gamma, dGammaView, dBetaView,
                         layerConf.getEps(), workspaceMgr);
             } catch (Throwable t){
+                if(t.getMessage().contains("Failed to allocate")){
+                    //This is a memory exception - don't fallback to built-in implementation
+                    throw t;
+                }
+
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
                     log.warn("CuDNN BatchNormalization backprop execution failed - falling back on built-in implementation",t);
@@ -365,6 +370,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
                         globalVarView, decay, layerConf.getEps(), workspaceMgr);
             } catch (Throwable t) {
+                if(t.getMessage().contains("Failed to allocate")){
+                    //This is a memory exception - don't fallback to built-in implementation
+                    throw t;
+                }
+
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
                     log.warn("CuDNN BatchNormalization forward pass execution failed - falling back on built-in implementation",t);
