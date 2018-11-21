@@ -1279,6 +1279,18 @@ TEST_F(DeclarableOpsTests9, test_broadcast_bool_2) {
     delete y;
 }
 
+TEST_F(DeclarableOpsTests9, test_unstack_1) {
+    auto x = NDArrayFactory::create<double>('c', {5, 5});
+    x.linspace(1.0);
+
+    nd4j::ops::unstack op;
+    auto result = op.execute({&x}, {}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(5, result->size());
+
+    delete result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, concat_test10) {
 

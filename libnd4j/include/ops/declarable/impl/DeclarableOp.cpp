@@ -320,12 +320,24 @@ namespace nd4j {
                         auto cType = array->dataType();
 
                         if (_descriptor->isSameMode()) {
-                            // for same mode, output type must be the same as input type
-                            auto iv = block.variable(index);
 
-                            if (iv->getNDArray()->dataType() != cType) {
-                                nd4j_printf("Op [%s] failed check for output [%i], DataType: [%i]\n", _descriptor->getOpName()->data(), index, (int)cType);
-                                return ND4J_STATUS_BAD_ARGUMENTS;
+                            if (index >= block.width()) {
+                                auto iv = block.variable(0);
+
+                                if (iv->getNDArray()->dataType() != cType) {
+                                    nd4j_printf("Op [%s] failed check for output [%i], DataType: [%i]\n",
+                                                _descriptor->getOpName()->data(), index, (int) cType);
+                                    return ND4J_STATUS_BAD_ARGUMENTS;
+                                }
+                            } else {
+                                // for same mode, output type must be the same as input type
+                                auto iv = block.variable(index);
+
+                                if (iv->getNDArray()->dataType() != cType) {
+                                    nd4j_printf("Op [%s] failed check for output [%i], DataType: [%i]\n",
+                                                _descriptor->getOpName()->data(), index, (int) cType);
+                                    return ND4J_STATUS_BAD_ARGUMENTS;
+                                }
                             }
                         } else if (_descriptor->isInherit(index)) {
                             // in inherit mode, output type must be the same as one of input types
