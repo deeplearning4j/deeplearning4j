@@ -790,14 +790,14 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
                 .addOutput("rr", 2, 2)
                 .build();
 
-        INDArray expFeatures = Nd4j.linspace(1,10,10).transpose();
-        INDArray expLabels = Nd4j.linspace(1,10,10).addi(0.5).transpose();
+        INDArray expFeatures = Nd4j.linspace(1,10,10).reshape(1,10).transpose();
+        INDArray expLabels = Nd4j.linspace(1,10,10).addi(0.5).reshape(1,10).transpose();
 
         MultiDataSet mds = rrmdsi.next();
         assertFalse(rrmdsi.hasNext());
 
-        assertEquals(expFeatures, mds.getFeatures(0));
-        assertEquals(expLabels, mds.getLabels(0));
+        assertEquals(expFeatures, mds.getFeatures(0).castTo(expFeatures.dataType()));
+        assertEquals(expLabels, mds.getLabels(0).castTo(expLabels.dataType()));
     }
 
 

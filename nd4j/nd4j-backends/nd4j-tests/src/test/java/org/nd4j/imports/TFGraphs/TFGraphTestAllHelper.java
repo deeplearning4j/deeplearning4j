@@ -434,10 +434,13 @@ public class TFGraphTestAllHelper {
 //            new ClassPathResource(modelDir).copyDirectory(baseDir);
 
             // checking out, if local folder declared
-            val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
+            String localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
+            if(localPath != null && (!localPath.contains("src/main/resources") || !localPath.contains("src\\main\\resources"))){
+                localPath = FilenameUtils.concat(localPath, "src/main/resources");
+            }
 
             // baseDir will differ, depending on run mode
-            File baseDir = localPath == null ? new File(localTestDir, "extracted/" + modelName) : new File(localTestDir, base_dir + "/" + modelName);
+            File baseDir = localPath == null ? new File(localTestDir, "extracted/" + modelName) : new File(localPath, base_dir + "/" + modelName);
             String[] arr = baseDir.list();
 
             if(!baseDir.exists() || arr == null || arr.length == 0){
@@ -447,7 +450,7 @@ public class TFGraphTestAllHelper {
                     baseDir.deleteOnExit();
                     new ClassPathResource(modelDir).copyDirectory(baseDir);
                 } else
-                    throw new IllegalStateException("local directory declared but doesn't exist");
+                    throw new IllegalStateException("local directory declared but doesn't exist: " + localPath);
             }
 
             LinkedList<File> queue = new LinkedList<>();

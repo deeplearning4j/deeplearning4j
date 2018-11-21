@@ -325,7 +325,7 @@ public class TestDropout extends BaseDL4JTest {
 
         }
 
-        assertEquals(100, countValueDropped+ countEqn);
+        assertEquals(100, countValueDropped + countEqn);
         assertTrue(countValueDropped >= 25 && countValueDropped <= 75);
         assertTrue(countEqn >= 25 && countEqn <= 75);
     }
