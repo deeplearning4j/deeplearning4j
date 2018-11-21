@@ -42,6 +42,8 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
     bool localD = false;
     // FIXME: this op should be fully moved to helpers
 
+    if (output->isEmpty())
+        return Status::OK();
 
     if (numInArrs > 0) {
         if(numInArrs == 1) {
@@ -133,6 +135,7 @@ DECLARE_SHAPE_FN(range) {
     if (numInArrs > 0) {
         auto isR = INPUT_VARIABLE(0)->isR();
         auto isZ = INPUT_VARIABLE(0)->isZ();
+        auto dtype = INPUT_VARIABLE(0)->dataType();
 
         if (isR) {
             double start(0), limit, delta(1);
@@ -148,7 +151,9 @@ DECLARE_SHAPE_FN(range) {
                 delta = INPUT_VARIABLE(2)->e<double>(0);
             }
 
-            REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
+            if (limit == start)
+                return SHAPELIST(ShapeBuilders::emptyShapeInfo(dtype, block.workspace()));
+
             REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
             steps = static_cast<Nd4jLong >((limit - start) / delta);
@@ -170,7 +175,9 @@ DECLARE_SHAPE_FN(range) {
                 delta = INPUT_VARIABLE(2)->e<Nd4jLong>(0);
             }
 
-            REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
+            if (limit == start)
+                return SHAPELIST(ShapeBuilders::emptyShapeInfo(dtype, block.workspace()));
+
             REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
             steps = static_cast<Nd4jLong >((limit - start) / delta);

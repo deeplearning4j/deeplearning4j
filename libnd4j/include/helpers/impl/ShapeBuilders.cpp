@@ -90,6 +90,12 @@ namespace nd4j {
         return shapeInfo;
     }
 
+    Nd4jLong* ShapeBuilders::emptyShapeInfo(const nd4j::DataType dataType, memory::Workspace* workspace) {
+        auto shape = createScalarShapeInfo(dataType, workspace);
+        ArrayOptions::setPropertyBit(shape, ARRAY_EMPTY);
+        return shape;
+    }
+
 ////////////////////////////////////////////////////////////////////////////////
 Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, const std::initializer_list<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
 
