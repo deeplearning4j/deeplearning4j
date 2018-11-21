@@ -531,6 +531,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
     protected void finalizeTraining() {
+
+        log.info("finalizeTraining called");
         /*
             Here we basically want to do few things:
             1) update statistics, if any
@@ -639,6 +641,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         Preconditions.checkState(network != null || graph != null, "Both MLN & CG are null");
         Preconditions.checkState(setupDone, "Setup was not completed before trying to process results");
 
+        log.info("Processing results");
 
 
         if (collectTrainingStats)
@@ -728,6 +731,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             // and starting the threshold adaption process from scratch on each epoch
             ThresholdAlgorithm ta = finalResult.getThresholdAlgorithmReducer().getFinalResult();
             this.thresholdAlgorithm = ta;
+            log.info("Final threshold algorithm post reduction: {}", ta);
         }
 
         Nd4j.getExecutioner().commit();

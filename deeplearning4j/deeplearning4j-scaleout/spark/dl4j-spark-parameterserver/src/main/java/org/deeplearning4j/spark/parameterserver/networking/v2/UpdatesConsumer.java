@@ -117,7 +117,7 @@ public class UpdatesConsumer implements UpdatesHandler {
 
                 try {
                     // we're just storing update into buffer, and it'll be consumed by GradientsAccumulator on next cycle
-                    //log.info("Putting update to the queue, current size: [{}]", updatesBuffer.size());
+                    log.info("Putting update to IndexedTail queue, current size: [{}]", updatesBuffer.size());
                     updatesBuffer.put(array);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -125,6 +125,7 @@ public class UpdatesConsumer implements UpdatesHandler {
                 }
             } else if (params != null && stepFunction != null) {
                 synchronized (this) {
+                    log.info("Received updates array: current updates count: {}", updatesCount.get());
                     // threshold decoder is inplace & fast
                     int encoding = array.data().getInt(3);
                     if (encoding == ThresholdCompression.FLEXIBLE_ENCODING) {
@@ -147,12 +148,15 @@ public class UpdatesConsumer implements UpdatesHandler {
                 }
             } else
                 throw new ND4JIllegalStateException("Accumulator & StepFunction is null at the same time");
+        } else {
+            log.info("Skipped updates - bypassMode = true");
         }
     }
 
     public void flush() {
         synchronized (this) {
             if (params != null && updates != null && hasSomething.get()) {
+                log.info("Flushing updates - update count: {}", updatesCount.get());
                 stepFunction.step(params, updates);
                 Nd4j.getExecutioner().commit();
 
@@ -161,7 +165,11 @@ public class UpdatesConsumer implements UpdatesHandler {
                 // once accumulated updates are applied - reset storage, and wait for other messsages
                 Nd4j.getMemoryManager().memset(updates);
                 hasSomething.set(false);
+            } else {
+                log.info("Skipped flushing updates - params: {}, updates: {}, hasSomething: {}", (params == null ? "null" : "not null"),
+                        (updates == null ? "null" : "not null"), hasSomething.get());
             }
+            log.info("Params (first 10) post flush: %nd10", params);
         }
     }
 
@@ -178,6 +186,7 @@ public class UpdatesConsumer implements UpdatesHandler {
     @Override
     public INDArray getParametersArray() {
         synchronized (this) {
+            log.info("Getting parameters array from UpdatesConsumer");
             return params.dup(params.ordering());
         }
     }
