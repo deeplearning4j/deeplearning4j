@@ -95,6 +95,9 @@ public class DefaultGradient implements Gradient {
             //Standard case: flatten all to f order
             flattenedGradient = Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, gradients.values());
         }
+        if(flattenedGradient.rank() == 1){
+            flattenedGradient = flattenedGradient.reshape('c', 1, flattenedGradient.length());
+        }
     }
 
     @Override
