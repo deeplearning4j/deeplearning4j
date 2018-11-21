@@ -107,15 +107,17 @@ TEST_F(DeclarableOpsTests10, Test_Or_1) {
 }
 
 TEST_F(DeclarableOpsTests10, Test_Not_1) {
-    auto x = NDArrayFactory::create<double>('c', {4}, {1, 1, 0, 1});
-    auto y = NDArrayFactory::create<double>('c', {4}, {0, 0, 0, 1});
-    auto e = NDArrayFactory::create<double>('c', {4}, {1, 1, 1, 0});
+    auto x = NDArrayFactory::create<bool>('c', {4}, {1, 1, 0, 1});
+    auto y = NDArrayFactory::create<bool>('c', {4}, {0, 0, 0, 1});
+//    auto e = NDArrayFactory::create<bool>('c', {4}, {1, 1, 1, 0});
+    auto e = NDArrayFactory::create<bool>('c', {4}, {0, 0, 1, 0});
 
     nd4j::ops::boolean_not op;
-    auto result = op.execute({&x, &y}, {}, {}, {});
+    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(Status::OK(), result->status());
-
-    ASSERT_EQ(e, *result->at(0));
+    auto res = result->at(0);
+    res->printBuffer("OUtput NOT");
+    ASSERT_TRUE(e.equalsTo(res));
 
     delete result;
 }
