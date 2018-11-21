@@ -15,12 +15,14 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 15.12.17.
+//  @author raver119@gmail.com, created on 15.12.17.
+//  @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <types/types.h>
 #include <op_boilerplate.h>
 #include <loops/random.h>
+#include <OmpLaunchHelper.h>
 
 using namespace randomOps;
 
@@ -31,11 +33,11 @@ namespace functions {
         template<typename OpClass>
         void RandomFunction<X>::execTransform(Nd4jPointer state,
                 void *vx,
-                Nd4jLong *xShapeBuffer,
+                Nd4jLong *xShapeInfo,
                 void *vy,
-                Nd4jLong *yShapeBuffer,
+                Nd4jLong *yShapeInfo,
                 void *vz,
-                Nd4jLong *zShapeBuffer,
+                Nd4jLong *zShapeInfo,
                 void *vextraArguments) {
 
             auto x = reinterpret_cast<X *>(vx);
@@ -44,68 +46,66 @@ namespace functions {
             auto extraArguments = reinterpret_cast<X *>(vextraArguments);
 
             if (OpClass::requiresSpecial) {
-                OpClass::specialOp(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
+                OpClass::specialOp(state, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraArguments);
                 return;
             }
 
-            auto length = shape::length(zShapeBuffer);
-            auto xEWS = shape::elementWiseStride(xShapeBuffer);
-            auto yEWS = shape::elementWiseStride(yShapeBuffer);
-            auto zEWS = shape::elementWiseStride(zShapeBuffer);
+            auto length = shape::length(zShapeInfo);
+            auto xEWS = shape::elementWiseStride(xShapeInfo);
+            auto yEWS = shape::elementWiseStride(yShapeInfo);
+            auto zEWS = shape::elementWiseStride(zShapeInfo);
 
 //            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
-
-            int elementsPerThread = length / ELEMENT_THRESHOLD;
-            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            nd4j::OmpLaunchHelper info(length);
 
             if (xEWS >= 1 && yEWS >= 1 && zEWS >= 1) {
+                
                 if (xEWS == 1 && yEWS == 1 && zEWS == 1) {
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                    for (Nd4jLong e = 0; e < length; e++) {
-                        z[e] = OpClass::op(x[e], y[e], e, length, rng, extraArguments);
-                    }
 
-                } else {
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                    for (Nd4jLong e = 0; e < length; e++) {
-                        z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, rng, extraArguments);
+                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                    {                
+                        auto threadNum = omp_get_thread_num();
+                        Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
+                        auto xi = x + threadOffset;
+                        auto yi = y + threadOffset;
+                        auto zi = z + threadOffset;
+                        #pragma omp simd
+                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                            zi[i] = OpClass::op(xi[i], yi[i], i, length, rng, extraArguments);
+                    }
+                } 
+                else {
+                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                    {                
+                        auto threadNum = omp_get_thread_num();
+                        Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
+                        auto xi = x + xEWS*threadOffset;
+                        auto yi = y + yEWS*threadOffset;
+                        auto zi = z + zEWS*threadOffset;
+                        #pragma omp simd
+                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                            zi[i*zEWS] = OpClass::op(xi[i*xEWS], yi[i*yEWS], i, length, rng, extraArguments);
                     }
                 }
-            } else {
-                // ind2sub branch
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong yCoord[MAX_RANK];
-                Nd4jLong zCoord[MAX_RANK];
+            } 
+            else {
 
-                int xRank = shape::rank(xShapeBuffer);
-                int yRank = shape::rank(yShapeBuffer);
-                int zRank = shape::rank(zShapeBuffer);
+                #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {                
+                    auto threadNum = omp_get_thread_num();
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
+                     
+                    #pragma omp simd
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {
+                        auto xOffset2 = shape::getIndexOffset(i+threadOffset, xShapeInfo, length);
+                        auto yOffset2 = shape::getIndexOffset(i+threadOffset, yShapeInfo, length);
+                        auto zOffset2 = shape::getIndexOffset(i+threadOffset, zShapeInfo, length);
 
-                auto xShape = shape::shapeOf(xShapeBuffer);
-                auto yShape = shape::shapeOf(yShapeBuffer);
-                auto zShape = shape::shapeOf(zShapeBuffer);
-
-                auto xStride = shape::stride(xShapeBuffer);
-                auto yStride = shape::stride(yShapeBuffer);
-                auto zStride = shape::stride(zShapeBuffer);
-
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided) private(xCoord, yCoord, zCoord)
-                for (Nd4jLong i = 0; i < length; i++) {
-                    shape::ind2sub(xRank, xShape, i, length, xCoord);
-                    shape::ind2sub(yRank, yShape, i, length, yCoord);
-                    shape::ind2sub(zRank, zShape, i, length, zCoord);
-
-                    auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                    auto yOffset2 = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-                    auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-
-
-                    z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, rng, extraArguments);
+                        z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, rng, extraArguments);
+                    }
                 }
             }
-
             // update rng state
             rng->rewindH(length);
         };
@@ -116,60 +116,65 @@ namespace functions {
         template<typename OpClass>
         void RandomFunction<X>::execTransform(Nd4jPointer state,
                 void *vx,
-                Nd4jLong *xShapeBuffer,
+                Nd4jLong *xShapeInfo,
                 void *vz,
-                Nd4jLong *zShapeBuffer,
+                Nd4jLong *zShapeInfo,
                 void *vextraArguments) {
             auto x = reinterpret_cast<X *>(vx);
             auto z = reinterpret_cast<X *>(vz);
             auto extraArguments = reinterpret_cast<X *>(vextraArguments);
 
-            auto length = shape::length(zShapeBuffer);
-            auto xEWS = shape::elementWiseStride(xShapeBuffer);
-            auto zEWS = shape::elementWiseStride(zShapeBuffer);
+            auto length = shape::length(zShapeInfo);
+            auto xEWS = shape::elementWiseStride(xShapeInfo);
+            auto zEWS = shape::elementWiseStride(zShapeInfo);
 
             //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
-            Nd4jLong elementsPerThread = length / ELEMENT_THRESHOLD;
-            Nd4jLong _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            nd4j::OmpLaunchHelper info(length);
 
             if (xEWS >= 1 && zEWS >= 1) {
+                
                 if (xEWS == 1 && zEWS == 1) {
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                    for (Nd4jLong e = 0; e < length; e++) {
-                        z[e] = OpClass::op(x[e], e, length,  rng, extraArguments);
-                    }
 
-                } else {
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                    for (Nd4jLong e = 0; e < length; e++) {
-                        z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, rng, extraArguments);
+                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                    {                
+                        auto threadNum = omp_get_thread_num();
+                        Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
+                        auto xi = x + threadOffset;                        
+                        auto zi = z + threadOffset;
+                        #pragma omp simd
+                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                            zi[i] = OpClass::op(xi[i], i, length, rng, extraArguments);
+                    }
+                } 
+                else {
+
+                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                    {                
+                        auto threadNum = omp_get_thread_num();
+                        Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
+                        auto xi = x + xEWS*threadOffset;
+                        auto zi = z + zEWS*threadOffset;
+                        #pragma omp simd
+                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                            zi[i*zEWS] = OpClass::op(xi[i*xEWS], i, length, rng, extraArguments);
                     }
                 }
-            } else {
-                // ind2sub branch
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong zCoord[MAX_RANK];
+            } 
+            else {
 
-                int xRank = shape::rank(xShapeBuffer);
-                int zRank = shape::rank(zShapeBuffer);
+                #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {                
+                    auto threadNum = omp_get_thread_num();
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
+                     
+                    #pragma omp simd
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {
+                        auto xOffset2 = shape::getIndexOffset(i+threadOffset, xShapeInfo, length);
+                        auto zOffset2 = shape::getIndexOffset(i+threadOffset, zShapeInfo, length);
 
-                auto xShape = shape::shapeOf(xShapeBuffer);
-                auto zShape = shape::shapeOf(zShapeBuffer);
-
-                auto xStride = shape::stride(xShapeBuffer);
-                auto zStride = shape::stride(zShapeBuffer);
-
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided) private(zCoord, xCoord)
-                for (Nd4jLong i = 0; i < length; i++) {
-                    shape::ind2sub(xRank, xShape, i, length, xCoord);
-                    shape::ind2sub(zRank, zShape, i, length, zCoord);
-
-                    auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                    auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-
-                    z[zOffset2] = OpClass::op(x[xOffset2], i, length, rng, extraArguments);
+                        z[zOffset2] = OpClass::op(x[xOffset2], i, length, rng, extraArguments);
+                    }
                 }
             }
 
@@ -180,85 +185,92 @@ namespace functions {
 
         template<typename X>
         template<typename OpClass>
-        void RandomFunction<X>::execTransform(Nd4jPointer state,
-                void *vz,
-                Nd4jLong  *zShapeBuffer,
-                void *vextraArguments) {
+        void RandomFunction<X>::execTransform(Nd4jPointer state, void *vz, Nd4jLong  *zShapeInfo, void *vextraArguments) {
+
             auto z = reinterpret_cast<X *>(vz);
             auto extraArguments = reinterpret_cast<X *>(vextraArguments);
 
-            auto length = shape::length(zShapeBuffer);
-            auto ews = shape::elementWiseStride(zShapeBuffer);
+            auto length = shape::length(zShapeInfo);
+            auto ews = shape::elementWiseStride(zShapeInfo);
 
             //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
-            Nd4jLong elementsPerThread = length / ELEMENT_THRESHOLD;
-            Nd4jLong _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            nd4j::OmpLaunchHelper info(length);
 
             if (ews >= 1) {
+                
                 if (ews == 1) {
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                    for (Nd4jLong x = 0; x < length; x++) {
-                        z[x] = OpClass::op(x, length, rng, extraArguments);
-                    }
 
-                } else {
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
-                    for (Nd4jLong x = 0; x < length; x++) {
-                        z[x * ews] = OpClass::op(x, length, rng, extraArguments);
+                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                    {                
+                        auto threadNum = omp_get_thread_num();
+                        Nd4jLong threadOffset = info.getThreadOffset(threadNum);                            
+                        auto zi = z + threadOffset;
+                        #pragma omp simd
+                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                            zi[i] = OpClass::op(i+threadOffset, length, rng, extraArguments);
+                    }
+                } 
+                else {
+
+                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                    {                
+                        auto threadNum = omp_get_thread_num();
+                        Nd4jLong threadOffset = info.getThreadOffset(threadNum);                            
+                        auto zi = z + ews*threadOffset;
+                        #pragma omp simd
+                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                            zi[i*ews] = OpClass::op(i+threadOffset, length, rng, extraArguments);
                     }
                 }
-            } else {
-                // ind2sub branch
-                Nd4jLong zCoord[MAX_RANK];
+            } 
+            else {
 
-                int zRank = shape::rank(zShapeBuffer);
-                auto zShape = shape::shapeOf(zShapeBuffer);
-                auto zStride = shape::stride(zShapeBuffer);
-
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided) private(zCoord)
-                for (Nd4jLong i = 0; i < length; i++) {
-                    shape::ind2sub(zRank, zShape, i, length, zCoord);
-
-                    auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-                    z[zOffset2] = OpClass::op(i, length, rng,  extraArguments);
+                #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {                
+                    auto threadNum = omp_get_thread_num();
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
+                     
+                    #pragma omp simd
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {                        
+                        auto zOffset2 = shape::getIndexOffset(i+threadOffset, zShapeInfo, length);
+                        z[zOffset2] = OpClass::op(i+threadOffset, length, rng, extraArguments);
+                    }
                 }
             }
-
             // update rng state
             rng->rewindH(length);
         }
 
         template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments) {
-            DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), RANDOM_OPS)
+        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraArguments) {
+            DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeInfo, z, zShapeInfo, extraArguments), RANDOM_OPS)
         }
 
         template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments) {
-            DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), RANDOM_OPS)
+        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraArguments) {
+            DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraArguments), RANDOM_OPS)
         }
 
         template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments) {
-            DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, z, zShapeBuffer, extraArguments), RANDOM_OPS)
+        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *z, Nd4jLong *zShapeInfo, void *extraArguments) {
+            DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, z, zShapeInfo, extraArguments), RANDOM_OPS)
         }
 
         // FIXME: eventually we might want to get rid of that
 #ifndef __CLION_IDE__
 /*
-        BUILD_CALL_1(template void RandomFunction<float>::execTransform, float, (Nd4jPointer state, float *x, Nd4jLong *xShapeBuffer, float *y, Nd4jLong *yShapeBuffer, float *z, Nd4jLong *zShapeBuffer, float *extraArguments), RANDOM_OPS)
-        BUILD_CALL_1(template void RandomFunction<float16>::execTransform, float16, (Nd4jPointer state, float16 *x, Nd4jLong *xShapeBuffer, float16 *y, Nd4jLong *yShapeBuffer, float16 *z, Nd4jLong *zShapeBuffer, float16 *extraArguments), RANDOM_OPS)
-        BUILD_CALL_1(template void RandomFunction<double>::execTransform, double, (Nd4jPointer state, double *x, Nd4jLong *xShapeBuffer, double *y, Nd4jLong *yShapeBuffer, double *z, Nd4jLong *zShapeBuffer, double *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<float>::execTransform, float, (Nd4jPointer state, float *x, Nd4jLong *xShapeInfo, float *y, Nd4jLong *yShapeInfo, float *z, Nd4jLong *zShapeInfo, float *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<float16>::execTransform, float16, (Nd4jPointer state, float16 *x, Nd4jLong *xShapeInfo, float16 *y, Nd4jLong *yShapeInfo, float16 *z, Nd4jLong *zShapeInfo, float16 *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<double>::execTransform, double, (Nd4jPointer state, double *x, Nd4jLong *xShapeInfo, double *y, Nd4jLong *yShapeInfo, double *z, Nd4jLong *zShapeInfo, double *extraArguments), RANDOM_OPS)
 
-        BUILD_CALL_1(template void RandomFunction<float>::execTransform, float, (Nd4jPointer state, float *x, Nd4jLong *xShapeBuffer, float *z, Nd4jLong *zShapeBuffer, float *extraArguments), RANDOM_OPS)
-        BUILD_CALL_1(template void RandomFunction<float16>::execTransform, float16, (Nd4jPointer state, float16 *x, Nd4jLong *xShapeBuffer, float16 *z, Nd4jLong *zShapeBuffer, float16 *extraArguments), RANDOM_OPS)
-        BUILD_CALL_1(template void RandomFunction<double>::execTransform, double, (Nd4jPointer state, double *x, Nd4jLong *xShapeBuffer, double *z, Nd4jLong *zShapeBuffer, double *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<float>::execTransform, float, (Nd4jPointer state, float *x, Nd4jLong *xShapeInfo, float *z, Nd4jLong *zShapeInfo, float *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<float16>::execTransform, float16, (Nd4jPointer state, float16 *x, Nd4jLong *xShapeInfo, float16 *z, Nd4jLong *zShapeInfo, float16 *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<double>::execTransform, double, (Nd4jPointer state, double *x, Nd4jLong *xShapeInfo, double *z, Nd4jLong *zShapeInfo, double *extraArguments), RANDOM_OPS)
 
-        BUILD_CALL_1(template void RandomFunction<float>::execTransform, float, (Nd4jPointer state, float *z, Nd4jLong *zShapeBuffer, float *extraArguments), RANDOM_OPS)
-        BUILD_CALL_1(template void RandomFunction<float16>::execTransform, float16, (Nd4jPointer state, float16 *z, Nd4jLong *zShapeBuffer, float16 *extraArguments), RANDOM_OPS)
-        BUILD_CALL_1(template void RandomFunction<double>::execTransform, double, (Nd4jPointer state, double *z, Nd4jLong *zShapeBuffer, double *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<float>::execTransform, float, (Nd4jPointer state, float *z, Nd4jLong *zShapeInfo, float *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<float16>::execTransform, float16, (Nd4jPointer state, float16 *z, Nd4jLong *zShapeInfo, float16 *extraArguments), RANDOM_OPS)
+        BUILD_CALL_1(template void RandomFunction<double>::execTransform, double, (Nd4jPointer state, double *z, Nd4jLong *zShapeInfo, double *extraArguments), RANDOM_OPS)
 */
 #endif
 

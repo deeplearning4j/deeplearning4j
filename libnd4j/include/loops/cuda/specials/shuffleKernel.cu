@@ -25,7 +25,7 @@
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 __device__ void shuffleKernel(void **vdX, Nd4jLong **xShapeInfo, 
-							 void **vdZ, Nd4jLong **zShapeInfo, 
+							 void **vdZ, 
 							 int N, 
 							 int *shuffleMap, 
 							 Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
@@ -99,22 +99,22 @@ __device__ void shuffleKernel(void **vdX, Nd4jLong **xShapeInfo,
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 __global__ void execShuffleKernel(void **vdX, Nd4jLong **xShapeInfo, 
-                             void **vdZ, Nd4jLong **zShapeInfo, 
+                             void **vdZ,
                              int N, 
                              int *shuffleMap, 
                              Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
 
-    shuffleKernel<T>(vdX, xShapeInfo, vdZ, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+    shuffleKernel<T>(vdX, xShapeInfo, vdZ, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 __host__ void shuffleKernelGeneric(dim3& launchDims, cudaStream_t *stream,
                             void **vdX, Nd4jLong **xShapeInfo, 
-                            void **vdZ, Nd4jLong **zShapeInfo, 
+                            void **vdZ,
                             int N, 
                             int *shuffleMap, 
                             Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
 
-    execShuffleKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdX, xShapeInfo, vdZ, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+    execShuffleKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdX, xShapeInfo, vdZ, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }

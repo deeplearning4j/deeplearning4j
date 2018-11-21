@@ -45,9 +45,9 @@ namespace functions {
                                               void *x,
                                               Nd4jLong *xShapeInfo,
                                               void *extraParams,
-                                              void *result,
+                                              void *z,
                                               Nd4jLong *resultShapeInfoBuffer) {
-            DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer), SUMMARY_STATS_OPS);
+            DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, resultShapeInfoBuffer), SUMMARY_STATS_OPS);
         }
 
         template <typename X, typename Y>
@@ -56,11 +56,11 @@ namespace functions {
                 void *x,
                 Nd4jLong *xShapeInfo,
                 void *extraParams,
-                void *result,
+                void *z,
                 Nd4jLong *resultShapeInfoBuffer,
                 int *dimension,
                 int dimensionLength) {
-            DISPATCH_BY_OPNUM_TT(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
+            DISPATCH_BY_OPNUM_TT(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
         }
 
         template <typename X, typename Z>
@@ -69,18 +69,15 @@ namespace functions {
                                               void *vx,
                                               Nd4jLong *xShapeInfo,
                                               void *vextraParams,
-                                              void *result,
+                                              void *vz,
                                               Nd4jLong *resultShapeInfoBuffer) {
-            auto z = reinterpret_cast<Z*>(result);
+            auto z = reinterpret_cast<Z*>(vz);
             z[0] = execScalar<OpType>(biasCorrected, vx, xShapeInfo, vextraParams);
         }
 
         template <typename X, typename Z>
         template <typename OpType >
-        Z SummaryStatsReduce<X,Z>::execScalar(const bool biasCorrected,
-                void *vx,
-                Nd4jLong *xShapeInfo,
-                void *vextraParams) {
+        Z SummaryStatsReduce<X,Z>::execScalar(const bool biasCorrected, void *vx, Nd4jLong *xShapeInfo, void *vextraParams) {
 
             auto x = reinterpret_cast<X *>(vx);
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
@@ -88,28 +85,21 @@ namespace functions {
             SummaryStatsData<X> startingIndex;
             startingIndex.initialize();
             auto length = shape::length(xShapeInfo);
-            auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-            if (xElementWiseStride == 1) {
+            auto xEws = shape::elementWiseStride(xShapeInfo);
+            if (xEws == 1) {
                 for (Nd4jLong i = 0; i < length; i++) {
                     SummaryStatsData<X> curr;
                     curr.initWithValue(x[i]);
-                    startingIndex = update(startingIndex, curr,
-                                           extraParams);
+                    startingIndex = update(startingIndex, curr, extraParams);
                 }
 
                 return OpType::getValue(biasCorrected, startingIndex);
             }
             else {
-                Nd4jLong xCoords[MAX_RANK];
-
-                auto xShape = shape::shapeOf(xShapeInfo);
-                auto xStride = shape::stride(xShapeInfo);
-                int xRank = shape::rank(xShapeInfo);
-
 
                 for (Nd4jLong i = 0; i < length; i++) {
-                    shape::ind2subC(xRank, xShape, i, length, xCoords);
-                    auto xOffset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
+                                        
+                    auto xOffset = shape::getIndexOffset(i, xShapeInfo, length);
 
                     SummaryStatsData<X> curr;
                     curr.initWithValue(x[xOffset]);
@@ -131,11 +121,11 @@ namespace functions {
                 int *dimension,
                 int dimensionLength) {
             auto x = reinterpret_cast<X *>(vx);
-            auto result = reinterpret_cast<Z *>(vresult);
+            auto z = reinterpret_cast<Z *>(vresult);
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
             if (shape::isScalar(resultShapeInfoBuffer)) {
-                result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
+                z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
                 return;
             }
 
@@ -154,7 +144,7 @@ namespace functions {
             //the squeezed information doesn't render the right strides for
             //tad offset
             if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tad.wholeThing) {
-                result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
+                z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
                 return;
             }
 
@@ -211,7 +201,7 @@ namespace functions {
                         printf("Unable to prepare array\n");
                     }
 
-                    result[i] = OpType::getValue(biasCorrected, comp);
+                    z[i] = OpType::getValue(biasCorrected, comp);
                 }
             }
             else {
@@ -231,35 +221,30 @@ namespace functions {
                             comp = update(comp, comp2, extraParams);
                         }
 
-                        result[i] = OpType::getValue(biasCorrected, comp);
+                        z[i] = OpType::getValue(biasCorrected, comp);
                     }
                 } else {
                     auto tadShapeShapeInfo = tad.tadOnlyShapeInfo;
-
-                    auto tadShape = shape::shapeOf(tadShapeShapeInfo);
-                    auto tadStride = shape::stride(tadShapeShapeInfo);
-                    auto tadRank = shape::rank(tadShapeShapeInfo);
                     auto tadLength = shape::length(tad.tadOnlyShapeInfo);
 
 #pragma omp parallel for schedule(guided) default(shared)
                     for (int r = 0; r < resultLength; r++) {
-                        Nd4jLong xCoord[MAX_RANK];
+                        
                         auto tadOffsetForBlock = tad.tadOffsets[r];
-
                         SummaryStatsData<X> comp;
                         comp.initWithValue(x[tadOffsetForBlock]);
 
 // FIXME: reduction should be fixed
-                        for (int i = 1; i < tadLength; i ++) {
-                            shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
-                            auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+                        for (int i = 1; i < tadLength; i ++) {                            
+                            
+                            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadShapeShapeInfo, tadLength);
 
                             SummaryStatsData <X> indexVal2;
                             indexVal2.initWithValue(x[xOffset]);
 
                             comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
                         }
-                        result[r] = OpType::getValue(biasCorrected, comp);
+                        z[r] = OpType::getValue(biasCorrected, comp);
                     }
                 }
             }

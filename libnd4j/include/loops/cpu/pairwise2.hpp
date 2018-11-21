@@ -24,6 +24,7 @@
 #include <templatemath.h>
 #include <helpers/shape.h>
 #include <op_boilerplate.h>
+#include <OmpLaunchHelper.h>
 
 using namespace simdOps;
 
@@ -33,20 +34,20 @@ namespace functions {
         template <typename X, typename Y, typename Z>
         void PairWiseTransform<X, Y, Z>::exec(
                 const int opNum,
-                void *dx,
-                Nd4jLong xStride,
+                void *x,
+                Nd4jLong xEws,
                 void *y,
-                Nd4jLong yStride,
-                void *result,
-                Nd4jLong resultStride,
+                Nd4jLong yEws,
+                void *z,
+                Nd4jLong zEws,
                 void *extraParams,
                 Nd4jLong n) {
-            DISPATCH_BY_OPNUM_TTT(exec, PARAMS(dx,
-                                              xStride,
+            DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x,
+                                              xEws,
                                               y,
-                                              yStride,
-                                              result,
-                                              resultStride,
+                                              yEws,
+                                              z,
+                                              zEws,
                                               extraParams,
                                               n), PAIRWISE_TRANSFORM_OPS);
         };
@@ -55,64 +56,45 @@ namespace functions {
 
         template <typename X, typename Y, typename Z>
         template <typename OpType>
-        void PairWiseTransform<X, Y, Z>::exec(void *vx,
-                  Nd4jLong xStride,
-                  void *vy,
-                  Nd4jLong yStride,
-                  void *vresult,
-                  Nd4jLong resultStride,
-                  void *vextraParams,
-                  const Nd4jLong n) {
-            auto dx = reinterpret_cast<X *>(vx);
+        void PairWiseTransform<X, Y, Z>::exec(void *vx, Nd4jLong xEws,
+                                            void *vy, Nd4jLong yEws,
+                                            void *vz, Nd4jLong zEws,
+                                            void *vextraParams,
+                                            const Nd4jLong n) {
+
+            auto x = reinterpret_cast<X *>(vx);
             auto y = reinterpret_cast<Y *>(vy);
-            auto result = reinterpret_cast<Z *>(vresult);
+            auto z = reinterpret_cast<Z *>(vz);
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-            int elementsPerThread = n / ELEMENT_THRESHOLD;
-            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            nd4j::OmpLaunchHelper info(n);
 
-            int span = (n / _threads) + 8;
+            if (xEws == 1 && yEws == 1 && zEws == 1) {            
 
-            if (xStride == 1 && yStride == 1 && resultStride == 1) {
-                if (_threads > 1) {
-#pragma omp parallel num_threads(_threads) if (_threads>1) proc_bind(AFFINITY) default(shared)
-                    {
-                        Nd4jLong tid = omp_get_thread_num();
-                        Nd4jLong start = span * tid;
-                        Nd4jLong end = span * (tid + 1);
-                        if (end > n) end = n;
-#pragma omp simd
-                        for (Nd4jLong i = start; i < end; i++) {
-                            result[i] = OpType::op(dx[i], y[i], extraParams);
-                        }
-                    }
-                } else {
-#pragma omp simd
-                    for (Nd4jLong i = 0; i < n; i++) {
-                        result[i] = OpType::op(dx[i], y[i], extraParams);
-                    }
+                #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {                
+                    auto threadNum = omp_get_thread_num();
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
+                    auto xi = x + threadOffset;
+                    auto yi = y + threadOffset;
+                    auto zi = z + threadOffset;
+                    #pragma omp simd
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                        zi[i] = OpType::op(xi[i], yi[i], extraParams);
                 }
             }
             else {
-                if (_threads > 1) {
-#pragma omp parallel num_threads(_threads) if (_threads>1) proc_bind(AFFINITY) default(shared)
-                    {
-                        Nd4jLong tid = omp_get_thread_num();
-                        Nd4jLong start = span * tid;
-                        Nd4jLong end = span * (tid + 1);
-                        if (end > n) end = n;
 
-#pragma omp simd
-                        for (Nd4jLong i = start; i < end; i++) {
-                            result[i * resultStride] = OpType::op(dx[i * xStride], y[i * yStride], extraParams);
-                        }
-                    }
-                } else {
-#pragma omp simd
-                    for (Nd4jLong i = 0; i < n; i++) {
-                        result[i * resultStride] = OpType::op(dx[i * xStride], y[i * yStride], extraParams);
-                    }
+                #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {                
+                    auto threadNum = omp_get_thread_num();
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
+                    auto xi = x + xEws*threadOffset;
+                    auto yi = y + yEws*threadOffset;
+                    auto zi = z + zEws*threadOffset;
+                    #pragma omp simd
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                        zi[i*zEws] = OpType::op(xi[i*xEws], yi[i*yEws], extraParams);
                 }
             }
         }
