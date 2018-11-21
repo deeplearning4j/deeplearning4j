@@ -49,9 +49,9 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
 
 DECLARE_TYPES(gather_nd) {
     getOpDescriptor()
-         ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+         ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
          ->setAllowedInputTypes(1, {ALL_INTS})
-         ->setAllowedOutputTypes(nd4j::DataType::ANY);
+         ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(gather_nd) {
