@@ -587,8 +587,8 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test1) {
 
     auto z = result->at(0);
     auto zI = result->at(1);
-    //z->printIndexedBuffer("TopK(5)");
-    //zI->printIndexedBuffer("TopKI(5)");
+    z->printIndexedBuffer("TopK(5)");
+    zI->printIndexedBuffer("TopKI(5)");
     ASSERT_TRUE(expUnsorted.isSameShape(z));
     ASSERT_TRUE(expUnsorted.equalsTo(z));
 
@@ -598,8 +598,8 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test1) {
 
     z = result2->at(0);
     zI = result2->at(1);
-    //z->printIndexedBuffer("sorted TopK(5)");
-    //zI->printIndexedBuffer("sorted TopKI(5)");
+    z->printIndexedBuffer("sorted TopK(5)");
+    zI->printIndexedBuffer("sorted TopKI(5)");
     ASSERT_TRUE(expSorted.isSameShape(z));
     ASSERT_TRUE(expSorted.equalsTo(z));
 
@@ -622,8 +622,8 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test2) {
 
     auto z = result->at(0);
     auto zI = result->at(1);
-    //z->printIndexedBuffer("TopK(5)");
-    //zI->printIndexedBuffer("TopKI(5)");
+    z->printIndexedBuffer("TopK(5)");
+    zI->printIndexedBuffer("TopKI(5)");
     ASSERT_TRUE(expUnsorted.isSameShape(z));
     ASSERT_TRUE(expUnsorted.equalsTo(z));
 
@@ -633,8 +633,8 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test2) {
 
     z = result2->at(0);
     zI = result2->at(1);
-    //z->printIndexedBuffer("sorted TopK(5)");
-    //zI->printIndexedBuffer("sorted TopKI(5)");
+    z->printIndexedBuffer("sorted TopK(5)");
+    zI->printIndexedBuffer("sorted TopKI(5)");
     ASSERT_TRUE(expSorted.isSameShape(z));
     ASSERT_TRUE(expSorted.equalsTo(z));
 

@@ -77,68 +77,71 @@ namespace helpers {
                     //nd4j_printf("%i: ", e);
                     //trial.printIndexedBuffer("TRIAL:");
                     //trialTo->printIndexedBuffer("TOTRI:");
-                    std::vector<Nd4jLong> topIndices(k);
-                    std::vector<T> topValues(k);
+                    //std::vector<Nd4jLong> topIndices(k);
+                    //std::vector<T> topValues(k);
 
                     // fill up the first k elements
+                    NDArray topValues = NDArrayFactory::create<T>('c', {k});
+                    NDArray sortedVals = NDArrayFactory::create<T>('c', {k});
+                    NDArray topIndices = NDArrayFactory::create<Nd4jLong>('c', {k});
                     for (Nd4jLong pos = 0; pos < k; ++pos) {
-                        topIndices[pos] = pos;
-                        topValues[pos] = trial.e<T>(pos);
+                        topIndices.t<Nd4jLong>(pos) = pos;
+                        topValues.t<T>(pos) = trial.t<T>(pos);
                     }
-                    std::vector<T> sortedVals(topValues);
-                    std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
-                    
+                    //std::vector<T> sortedVals(topValues);
+                    sortedVals.assign(topValues);// = NDArrayFactory::create<T>('c', {k});
+                    //std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
+                    SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), false);
                     for (int i = k; i < width; ++i) {
                         T val = trial.e<T>(i);
-                        if (sortedVals[0] < val) { // value should be inserted to top k
+                        T minTopVal = sortedVals.t<T>(0);
+                        if (minTopVal < val) { // value should be inserted to top k
                             // only if it is not contained in
-                            auto itPos = std::find(sortedVals.begin(), sortedVals.end(), val);
-                            if (sortedVals.end() == itPos) {
+                            T* begin = reinterpret_cast<T*>(sortedVals.buffer());
+                            T* end = begin + k;
+                            bool exists = std::binary_search(begin, end, val);
+                            if (!exists) {
                                 //exchangePos - a distance between begin and minimal existed to be suppressed by val
-                                auto exchangePos = std::distance(topValues.begin(), std::find(topValues.begin(), topValues.end(), sortedVals[0]));
-                                topValues[exchangePos] = val; //*exchangeIt = val;
-                                topIndices[exchangePos] = i;
-                                sortedVals[0] = val; // suppress in sorted
-                                std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
+                                T* topBegin = reinterpret_cast<T*>(topValues.buffer());
+                                T* topEnd = topBegin + k;
+                                auto exchangePos = std::distance(topBegin, std::find(topBegin, topEnd, sortedVals.t<T>(0)));
+                                topValues.t<T>(exchangePos) = val; //*exchangeIt = val;
+                                topIndices.t<Nd4jLong>(exchangePos) = i;
+                                sortedVals.t<T>(0) = val; // suppress in sorted
+                                //std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
+                                SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), false);
                             }
                         }
                     }
-
                     if (needSort) {
-                        std::sort(topValues.begin(), topValues.end(), [](T a, T b) {
-                            return a > b;
-                        });
+                        SpecialMethods<T>::sortGeneric(topValues.buffer(), topValues.shapeInfo(), true);
 
                         for (int j = 0; j < width; j++)
                             for (int pos = 0; pos < k; ++pos)
-                                if (topValues[pos] == trial.e<T>(j))
-                                    topIndices[pos] = j;
+                                if (topValues.t<T>(pos) == trial.t<T>(j))
+                                    topIndices.t<Nd4jLong>(pos) = j;
                     }
                     else { // else sort by indices
-
-                        std::vector<std::pair<int, T>> data(topValues.size());
-                        for (size_t e = 0; e < topValues.size(); ++e) {
-                            data[e].first = topIndices[e];
-                            data[e].second = topValues[e];
+                        std::map<Nd4jLong, T> sortValsMap;
+                        //std::vector<std::pair<int, T>> data(topValues.lengthOf());
+                        for (size_t e = 0; e < topValues.lengthOf(); ++e) {
+                            sortValsMap[topIndices.t<Nd4jLong>(e)] = topValues.t<T>(e);
                         }
 
-                        std::sort(data.begin(), data.end(), [](std::pair<int, T> const& a, std::pair<int, T> const& b) {
-                            return a.first < b.first;
-                        });
-
-                        for (size_t e = 0; e < topValues.size(); ++e) {
-                            topIndices[e] = data[e].first;
-                            topValues[e] = data[e].second;
+                        //std::sort(data.begin(), data.end(), [](std::pair<int, T> const& a, std::pair<int, T> const& b) {
+                        //    return a.first < b.first;
+                        //});
+                        Nd4jLong e = 0;
+                        for (auto it = sortValsMap.begin(); it != sortValsMap.end(); ++it, e++) {
+                            topIndices.t<Nd4jLong>(e) = it->first;
+                            topValues.t<T>(e) = it->second;
                         }
 
                     }
-
-                    for (int pos = 0; pos < k; ++pos, ++nextPos) {
-                        if (values != nullptr)
-                            values->p<T>(nextPos, topValues[pos]);
-
-                        indeces->p<Nd4jLong>(nextPos, topIndices[pos]);
-                    }
+                    if (values)
+                    (*values)(e, dimsToExclude).assign(topValues);
+                    if (indeces)
+                    (*indeces)(e, dimsToExclude).assign(topIndices);
                 }
                 //indeces->printIndexedBuffer("Indices as is");
         }
@@ -149,11 +152,11 @@ namespace helpers {
     template <typename T>
     static int inTopKFunctor_(NDArray* input, NDArray* target, NDArray* result, int k) {
 
-            std::vector<Nd4jLong> shapeV(input->rankOf() + 1);
-            for (int i = 0; i < input->rankOf(); i++)
-                shapeV[i] = input->sizeAt(i);
-            shapeV[input->rankOf()] = k;
-            std::unique_ptr<NDArray> indices(NDArrayFactory::create_<T>(input->ordering(), shapeV));
+            std::vector<Nd4jLong> shapeI(input->rankOf());
+            for (int i = 0; i < input->rankOf() - 1; i++)
+                shapeI[i] = input->sizeAt(i);
+            shapeI[input->rankOf() - 1] = k;
+            std::unique_ptr<NDArray> indices(NDArrayFactory::create_<Nd4jLong>(input->ordering(), shapeI));
             NDArray* values = nullptr;
             int status = topKFunctor(input, values, indices.get(), k, true);
 
@@ -162,13 +165,13 @@ namespace helpers {
                 for (int e = 0; e < target->lengthOf(); e++) {
                     bool found = false;
                     for (int j = 0; j < k; j++) {
-                        if (target->e<T>(e) == indices->e<T>(e * k + j)) {
+                        if (target->e<Nd4jLong>(e) == indices->e<Nd4jLong>(e * k + j)) {
                             found = true;
                             break;
                         }
                     }
                     if (found)
-                        result->p<T>(e, (T)1);
+                        result->p<bool>(e, true);
                 }
             }
             return status; 

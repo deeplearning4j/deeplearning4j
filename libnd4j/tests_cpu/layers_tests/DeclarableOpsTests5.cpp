@@ -1188,7 +1188,7 @@ TEST_F(DeclarableOpsTests5, Test_InTopK_3) {
     // v->printShapeInfo("InTopK: shape v");
     // expV.printShapeInfo("InTopK: shape expV");
 
-    // v->printIndexedBuffer("v");
+    v->printBuffer("V");
     // expV.printIndexedBuffer("expV");
 
     ASSERT_TRUE(expV.isSameShape(v));
