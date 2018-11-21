@@ -106,8 +106,8 @@ public class DataSetIteratorTest extends BaseDL4JTest {
             INDArray fAct = dsAct.getFeatures();
             INDArray lAct = dsAct.getLabels();
 
-            assertEquals(fExp, fAct);
-            assertEquals(lExp, lAct);
+            assertEquals(fExp, fAct.castTo(fExp.dataType()));
+            assertEquals(lExp, lAct.castTo(lExp.dataType()));
         }
         assertFalse(iter.hasNext());
     }

@@ -85,7 +85,7 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
 
         final INDArray positive = labels;
         final INDArray negative = labels.eq(0.0);
-        final INDArray normFactor = negative.sum(1).muli(positive.sum(1));
+        final INDArray normFactor = negative.sum(1).castTo(Nd4j.dataType()).muli(positive.sum(1));
 
 
         long examples = positive.size(0);
