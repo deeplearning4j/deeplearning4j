@@ -1799,17 +1799,41 @@ TEST_F(MultiDataTypeTests, Test_Cast_1) {
     auto asBool = NDArrayFactory::create<bool>('c', {10});
     auto _not = NDArrayFactory::create<bool>('c', {10});
     auto asFloat = NDArrayFactory::create<float>('c', {10});
+    auto exp = NDArrayFactory::create<float>('c', {10});
+    exp.assign(0.0f);
 
     asBool.assign(first);
 
     asBool.printIndexedBuffer("asBool");
-    asBool.applyScalar(scalar::Not, 0.0f, &_not);
+    asBool.applyScalar(scalar::Not, false, &_not);
 
     _not.printIndexedBuffer("_not");
 
     asFloat.assign(_not);
 
     asFloat.printIndexedBuffer("asFloat");
+    ASSERT_EQ(exp, asFloat);
+}
+
+TEST_F(MultiDataTypeTests, Test_Cast_2) {
+    auto first = NDArrayFactory::create<float>('c', {10});
+    auto asBool = NDArrayFactory::create<bool>('c', {10});
+    auto _not = NDArrayFactory::create<bool>('c', {10});
+    auto asFloat = NDArrayFactory::create<float>('c', {10});
+    auto exp = NDArrayFactory::create<float>('c', {10});
+    exp.assign(1.0f);
+
+    asBool.assign(first);
+
+    asBool.printIndexedBuffer("asBool");
+    asBool.applyTransform(transform::Not, &_not);
+
+    _not.printIndexedBuffer("_not");
+
+    asFloat.assign(_not);
+
+    asFloat.printIndexedBuffer("asFloat");
+    ASSERT_EQ(exp, asFloat);
 }
 
 //////////////////////////////////////////////////////////////////////
