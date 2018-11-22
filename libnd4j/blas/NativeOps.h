@@ -486,6 +486,14 @@ public:
                       void *dZ, Nd4jLong *dZShapeInfo,
                       void *extraParams);
 
+    void execTransformAny(Nd4jPointer *extraPointers,
+                           int opNum,
+                           void *hX, Nd4jLong *hXShapeInfo,
+                           void *dX, Nd4jLong *dXShapeInfo,
+                           void *hZ, Nd4jLong *hZShapeInfo,
+                           void *dZ, Nd4jLong *dZShapeInfo,
+                           void *extraParams);
+
     void execTransformStrict(Nd4jPointer *extraPointers,
                           int opNum,
                           void *hX, Nd4jLong *hXShapeInfo,

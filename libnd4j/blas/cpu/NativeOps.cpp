@@ -732,6 +732,26 @@ void NativeOps::execTransformBool(
             tadOffsets);
 }
 
+void NativeOps::execTransformAny(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
+        void *extraParams) {
+
+    NativeOpExcutioner::execTransformAny(
+            opNum,
+            hX,
+            hXShapeInfo,
+            hZ,
+            hZShapeInfo,
+            extraParams,
+            nullptr,
+            nullptr);
+}
+
 void NativeOps::execTransformStrict(
         Nd4jPointer *extraPointers,
         int opNum,

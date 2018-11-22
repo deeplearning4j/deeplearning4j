@@ -35,6 +35,74 @@ namespace functions {
         void PairWiseTransform<X, Y, Z>::exec(
                 const int opNum,
                 void *x,
+                Nd4jLong xEws,
+                void *y,
+                Nd4jLong yEws,
+                void *z,
+                Nd4jLong zEws,
+                void *extraParams,
+                Nd4jLong n) {
+            DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x,
+                                               xEws,
+                                               y,
+                                               yEws,
+                                               z,
+                                               zEws,
+                                               extraParams,
+                                               n), PAIRWISE_TRANSFORM_OPS);
+        };
+
+
+
+        template <typename X, typename Y, typename Z>
+        template <typename OpType>
+        void PairWiseTransform<X, Y, Z>::exec(void *vx, Nd4jLong xEws,
+                                              void *vy, Nd4jLong yEws,
+                                              void *vz, Nd4jLong zEws,
+                                              void *vextraParams,
+                                              const Nd4jLong n) {
+
+            auto x = reinterpret_cast<X *>(vx);
+            auto y = reinterpret_cast<Y *>(vy);
+            auto z = reinterpret_cast<Z *>(vz);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
+
+            nd4j::OmpLaunchHelper info(n);
+
+            if (xEws == 1 && yEws == 1 && zEws == 1) {
+
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {
+                    auto threadNum = omp_get_thread_num();
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+                    auto xi = x + threadOffset;
+                    auto yi = y + threadOffset;
+                    auto zi = z + threadOffset;
+#pragma omp simd
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                        zi[i] = OpType::op(xi[i], yi[i], extraParams);
+                }
+            }
+            else {
+
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {
+                    auto threadNum = omp_get_thread_num();
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+                    auto xi = x + xEws*threadOffset;
+                    auto yi = y + yEws*threadOffset;
+                    auto zi = z + zEws*threadOffset;
+#pragma omp simd
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                        zi[i*zEws] = OpType::op(xi[i*xEws], yi[i*yEws], extraParams);
+                }
+            }
+        }
+
+        template <typename X, typename Y, typename Z>
+        void PairWiseTransform<X, Y, Z>::exec(
+                const int opNum,
+                void *x,
                 Nd4jLong *xShapeInfo,
                 void *y,
                 Nd4jLong *yShapeInfo,

@@ -125,7 +125,7 @@
 
 
 
-#ifdef __ND4J_EXPERIMENTAL__
+#ifndef __ND4J_EXPERIMENTAL__
 
 #define PAIRWISE_TYPES_0 \
 (Nd4jLong, float, Nd4jLong), \

@@ -45,6 +45,7 @@
 #include <loops/transform_float.h>
 #include <loops/transform_strict.h>
 #include <loops/transform_bool.h>
+#include <loops/transform_any.h>
 
 #include <loops/reduce_float.h>
 #include <loops/reduce_same.h>
@@ -617,7 +618,7 @@ void NativeOps::execPairwiseTransform(
     if (xType != zType && yType != zType)
         throw std::runtime_error("NativeOps::execPairwiseTransform requires Z operand to have either X or Y type");
 
-#ifdef __ND4J_EXPERIMENTAL__
+#ifndef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dY, dYShapeInfo, hYShapeInfo, dZ, dZShapeInfo, hZShapeInfo, extraParams), LIBND4J_TYPES, LIBND4J_TYPES)
 #else
     BUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dY, dYShapeInfo, hYShapeInfo, dZ, dZShapeInfo, hZShapeInfo, extraParams), LIBND4J_TYPES)
@@ -761,7 +762,7 @@ void   NativeOps::execBroadcast(
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, DataTypeUtils::sizeOf(zType), 0);
 
-#ifdef __ND4J_EXPERIMENTAL__
+#ifndef __ND4J_EXPERIMENTAL__
 	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
 	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ), LIBND4J_TYPES);
@@ -1242,6 +1243,24 @@ void NativeOps::execTransformBool(Nd4jPointer *extraPointers,int opNum,
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, BOOL_TYPES);
 }
+
+void NativeOps::execTransformAny(Nd4jPointer *extraPointers,int opNum,
+								  void *hX, Nd4jLong *hXShapeInfo,
+								  void *dX, Nd4jLong *dXShapeInfo,
+								  void *hZ, Nd4jLong *hZShapeInfo,
+								  void *dZ, Nd4jLong *dZShapeInfo,
+								  void *extraParams) {
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+	dim3 launchDims(512, 1024, 8192);
+
+	auto xRank = shape::rank(hXShapeInfo);
+	auto zRank = shape::rank(hZShapeInfo);
+	auto xType = ArrayOptions::dataType(hXShapeInfo);
+	auto zType = ArrayOptions::dataType(hZShapeInfo);
+
+	BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, BOOL_TYPES);
+}
+
 
 void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                                   void *hX, Nd4jLong *hXShapeInfo,
@@ -2683,7 +2702,7 @@ void NativeOps::execScalar(
 	auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-#ifdef __ND4J_EXPERIMENTAL__
+#ifndef __ND4J_EXPERIMENTAL__
 	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dZ, dZShapeInfo, hZShapeInfo, dScalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
 	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dZ, dZShapeInfo, hZShapeInfo, dScalar, extraParams), LIBND4J_TYPES);
@@ -2712,7 +2731,7 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
     auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-#ifdef __ND4J_EXPERIMENTAL__
+#ifndef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
 	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES);
