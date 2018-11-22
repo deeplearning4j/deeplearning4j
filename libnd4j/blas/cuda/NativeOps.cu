@@ -479,8 +479,8 @@ dim3 getReduceLaunchParams(int deviceId, Nd4jLong *dXShapeInfo, Nd4jLong *tadSha
  *
  */
 template <typename T>
-dim3 getOptimalLaunchParameters(Nd4jPointer *extraPointers, cudaFuncAttributes attributes, cudaDeviceProp properties) {
-	auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+dim3 getOptimalLaunchParameters(const Nd4jLong *hXShapeInfo, cudaFuncAttributes attributes, cudaDeviceProp properties) {
+	
 	auto n = shape::length(hXShapeInfo);
 
 	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
@@ -682,7 +682,10 @@ void   NativeOps::execBroadcastBool(
         void *dY, Nd4jLong *dYShapeInfo,
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
-        int *dimension, int dimensionLength) {
+        int *dimension, int dimensionLength,
+        Nd4jLong* hTADShapeInfo,
+        Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets,
+        Nd4jLong* dTADShapeInfoZ, Nd4jLong* dTADOffsetsZ) {
 
 	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
 	auto yType = nd4j::ArrayOptions::dataType(dYShapeInfo);
@@ -694,20 +697,14 @@ void   NativeOps::execBroadcastBool(
     if (yType != xType)
         throw std::runtime_error("NativeOps::execBroadcastBool requires both X & Y operands to have same type");
 
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-	auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-	auto deviceTADShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
-	auto deviceTADOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);	
 	
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("F3 opNum:[%i]\n", opNum);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, DataTypeUtils::sizeOf(zType), 0);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[12], 1, DataTypeUtils::sizeOf(zType), 0);
 
-	BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ), LIBND4J_TYPES, BOOL_TYPES)
+	BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, dTADShapeInfo, dTADOffsets, dTADShapeInfoZ, dTADOffsetsZ), LIBND4J_TYPES, BOOL_TYPES)
 
 	DEBUG_KERNEL(stream, opNum);
 }
@@ -733,7 +730,10 @@ void   NativeOps::execBroadcast(
 		void *dY, Nd4jLong *dYShapeInfo,
 		void *hZ, Nd4jLong *hZShapeInfo,
 		void *dZ, Nd4jLong *dZShapeInfo,
-		int *dimension, int dimensionLength){
+		int *dimension, int dimensionLength,
+		Nd4jLong* hTADShapeInfo,
+        Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets,
+        Nd4jLong* dTADShapeInfoZ, Nd4jLong* dTADOffsetsZ) {
 /*
     cudaEvent_t start;
     cudaEventCreateWithFlags(&start, cudaEventDisableTiming);
@@ -743,16 +743,6 @@ void   NativeOps::execBroadcast(
 */
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	// auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-	// auto hYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
-	// auto hZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-
-	auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-	auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-	auto deviceTADShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
-	auto deviceTADOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
-
 	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
 	auto yType = nd4j::ArrayOptions::dataType(dYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
@@ -760,12 +750,12 @@ void   NativeOps::execBroadcast(
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("F3 opNum:[%i]\n", opNum);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[12], 1, DataTypeUtils::sizeOf(zType), 0);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[12], 1, DataTypeUtils::sizeOf(zType), 0);
 
 #ifndef __ND4J_EXPERIMENTAL__
-	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
+	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, dTADShapeInfo, dTADOffsets, dTADShapeInfoZ, dTADOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, deviceTADShapeInfo, deviceTADOffsets, deviceTADShapeInfoZ, deviceTADOffsetsZ), LIBND4J_TYPES);
+	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, dTADShapeInfo, dTADOffsets, dTADShapeInfoZ, dTADOffsetsZ), LIBND4J_TYPES);
 #endif
 
 	DEBUG_KERNEL(stream, opNum);
@@ -781,18 +771,17 @@ void   NativeOps::execBroadcast(
  * @param dZ
  * @param dZShapeInfo
  */
-void   NativeOps::execReduceFloat(Nd4jPointer *extraPointers,
-		int opNum,
-		void *hX, Nd4jLong *hXShapeInfo,
-		void *dX, Nd4jLong *dXShapeInfo,
-		void *extraParams,
-		void *hZ, Nd4jLong *hZShapeInfo,
-		void *dZ, Nd4jLong *dZShapeInfo) {
+void NativeOps::execReduceFloat(Nd4jPointer *extraPointers,
+							int opNum,
+							void *hX, Nd4jLong *hXShapeInfo,
+							void *dX, Nd4jLong *dXShapeInfo,
+							void *extraParams,
+							void *hZ, Nd4jLong *hZShapeInfo,
+							void *dZ, Nd4jLong *dZShapeInfo,
+							Nd4jLong* hTADShapeInfo,
+							Nd4jLong* dTADShapeInfo) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("FF7 opNum:[%i]\n", opNum);
@@ -806,25 +795,24 @@ void   NativeOps::execReduceFloat(Nd4jPointer *extraPointers,
         throw std::runtime_error("NativeOps::execReduceFloat requires Z operand to have floating point type");
 
 
-    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
+    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, deviceTADShapeInfo), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, FLOAT_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceFloat(...) failed");
 }
 
 void   NativeOps::execReduceSame(Nd4jPointer *extraPointers,
-                                  int opNum,
-                                  void *hX, Nd4jLong *hXShapeInfo,
-                                  void *dX, Nd4jLong *dXShapeInfo,
-                                  void *extraParams,
-                                  void *hZ, Nd4jLong *hZShapeInfo,
-                                  void *dZ, Nd4jLong *dZShapeInfo) {
+                                int opNum,
+                                void *hX, Nd4jLong *hXShapeInfo,
+                                void *dX, Nd4jLong *dXShapeInfo,
+                                void *extraParams,
+                                void *hZ, Nd4jLong *hZShapeInfo,
+                                void *dZ, Nd4jLong *dZShapeInfo,
+                                Nd4jLong* hTADShapeInfo,
+								Nd4jLong* dTADShapeInfo) {
 
     auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-    auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-    auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
         printf("SF7 opNum:[%i]\n", opNum);
@@ -837,27 +825,25 @@ void   NativeOps::execReduceSame(Nd4jPointer *extraPointers,
     if (zType != xType)
         throw std::runtime_error("NativeOps::execReduceSame requires both X & Z operands to have same type");
 
-    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
+    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, deviceTADShapeInfo), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, dTADShapeInfo), LIBND4J_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceSame(...) failed");
 }
 
 void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
-                               int opNum,
-                               void *hX, Nd4jLong *hXShapeInfo,
-                               void *dX, Nd4jLong *dXShapeInfo,
-                               void *extraParams,
-                               void *hZ, Nd4jLong *hZShapeInfo,
-                               void *dZ, Nd4jLong *dZShapeInfo,
-                               int *dimension,
-                               int dimensionLength) {
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *extraParams,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            int *dimension, int dimensionLength,
+                            Nd4jLong* hTADShapeInfo,
+							Nd4jLong* dTADShapeInfo) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-    auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-    auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
         printf("SF7 opNum:[%i]\n", opNum);
@@ -870,28 +856,26 @@ void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
     if (zType != xType)
         throw std::runtime_error("NativeOps::execReduceSame requires both X & Z operands to have same type");
 
-    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
+    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo), LIBND4J_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceSame(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
-                               int opNum,
-                               void *hX, Nd4jLong *hXShapeInfo,
-                               void *dX, Nd4jLong *dXShapeInfo,
-                               void *extraParams,
-                               void *hZ, Nd4jLong *hZShapeInfo,
-                               void *dZ, Nd4jLong *dZShapeInfo,
-                               int *dimension,
-                               int dimensionLength) {
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *extraParams,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            int *dimension,int dimensionLength,
+                            Nd4jLong* hTADShapeInfo,
+							Nd4jLong* dTADShapeInfo) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-    auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-    auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
         printf("LF7 opNum:[%i]\n", opNum);
@@ -904,9 +888,9 @@ void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
     if (zType != nd4j::DataType::INT64)
         throw std::runtime_error("NativeOps::execReduceLong requires Z operand to have INT64 type");
 
-    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);                                                            
+    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);                                                            
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo), LIBND4J_TYPES, LONG_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, LONG_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceLong(...) failed");
 
@@ -914,17 +898,16 @@ void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
 
 ////////////////////////////////////////////////////////////////////////
 void   NativeOps::execReduceLong(Nd4jPointer *extraPointers,
-                                  int opNum,
-                                  void *hX, Nd4jLong *hXShapeInfo,
-                                  void *dX, Nd4jLong *dXShapeInfo,
-                                  void *extraParams,
-                                  void *hZ, Nd4jLong *hZShapeInfo,
-                                  void *dZ, Nd4jLong *dZShapeInfo) {
+                                int opNum,
+                                void *hX, Nd4jLong *hXShapeInfo,
+                                void *dX, Nd4jLong *dXShapeInfo,
+                                void *extraParams,
+                                void *hZ, Nd4jLong *hZShapeInfo,
+                                void *dZ, Nd4jLong *dZShapeInfo,
+                                Nd4jLong* hTADShapeInfo,
+								Nd4jLong* dTADShapeInfo) {
 
     auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-    auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-    auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
         printf("LF7 opNum:[%i]\n", opNum);
@@ -937,28 +920,26 @@ void   NativeOps::execReduceLong(Nd4jPointer *extraPointers,
     if (zType != nd4j::DataType::INT64)
         throw std::runtime_error("NativeOps::execReduceLong requires Z operand to have INT64 type");
 
-    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
+    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, deviceTADShapeInfo), LIBND4J_TYPES, LONG_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, LONG_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceLong(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
-                               int opNum,
-                               void *hX, Nd4jLong *hXShapeInfo,
-                               void *dX, Nd4jLong *dXShapeInfo,
-                               void *extraParams,
-                               void *hZ, Nd4jLong *hZShapeInfo,
-                               void *dZ, Nd4jLong *dZShapeInfo,
-                               int *dimension,
-                               int dimensionLength) {
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *extraParams,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            int *dimension, int dimensionLength,
+                            Nd4jLong* hTADShapeInfo,
+							Nd4jLong* dTADShapeInfo) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-    auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-    auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
         printf("BF7 opNum:[%i]\n", opNum);
@@ -971,26 +952,25 @@ void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
     if (zType != nd4j::DataType::BOOL)
         throw std::runtime_error("NativeOps::execReduceBool requires Z operand to have BOOL type");
 
-    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
+    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo), LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, BOOL_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceBool(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
 void   NativeOps::execReduceBool(Nd4jPointer *extraPointers,
-                                 int opNum,
-                                 void *hX, Nd4jLong *hXShapeInfo,
-                                 void *dX, Nd4jLong *dXShapeInfo,
-                                 void *extraParams,
-                                 void *hZ, Nd4jLong *hZShapeInfo,
-                                 void *dZ, Nd4jLong *dZShapeInfo) {
+                                int opNum,
+                                void *hX, Nd4jLong *hXShapeInfo,
+                                void *dX, Nd4jLong *dXShapeInfo,
+                                void *extraParams,
+                                void *hZ, Nd4jLong *hZShapeInfo,
+                                void *dZ, Nd4jLong *dZShapeInfo,
+                                Nd4jLong* hTADShapeInfo,
+								Nd4jLong* dTADShapeInfo) {
 
     auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-    auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-    auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
         printf("BF7 opNum:[%i]\n", opNum);
@@ -1003,9 +983,9 @@ void   NativeOps::execReduceBool(Nd4jPointer *extraPointers,
     if (zType != nd4j::DataType::BOOL)
         throw std::runtime_error("NativeOps::execReduceBool requires Z operand to have BOOL type");
 
-    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
+    auto launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[8], 1, DataTypeUtils::sizeOf(zType), 1);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, deviceTADShapeInfo), LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, BOOL_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceBool(...) failed");
 }
@@ -1029,18 +1009,12 @@ void   NativeOps::execIndexReduce(
         void *extraParams,
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
-		int *dimension,
-		int dimensionLength){
+		int *dimension,int dimensionLength,
+		Nd4jLong* hTADShapeInfo,
+		Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets) {
 	
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-	// auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-	// auto hZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-
-	auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-
-	auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-
+	
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("F2 opNum:[%i]\n", opNum);
 
@@ -1048,13 +1022,13 @@ void   NativeOps::execIndexReduce(
 	void *reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
 	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[13], dimensionLength, DataTypeUtils::sizeOf(xType), 4);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[13], dimensionLength, DataTypeUtils::sizeOf(xType), 4);
 
 	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
 		printf("AF2 opNum:[%i]\n", opNum);
 	
 	auto dz = reinterpret_cast<Nd4jLong*>(dZ);
-	BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce,  ::executeIndexReduce(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, dZShapeInfo, shape::rank(hZShapeInfo), dimension, dimensionLength, 1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), LIBND4J_TYPES);
+	BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce,  ::executeIndexReduce(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, dZShapeInfo, shape::rank(hZShapeInfo), dimension, dimensionLength, 1, allocationPointer, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES);
 }
 
 /**
@@ -1074,42 +1048,42 @@ void   NativeOps::execReduceFloat(
         void *extraParams,
         void *hZ, Nd4jLong *hZShapeInfo,
 		void *dZ, Nd4jLong *dZShapeInfo,
-		int *dimension,int dimensionLength){
+		int *dimension,int dimensionLength,
+		Nd4jLong* hTADShapeInfo,
+		Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets) {
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-	// auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-	auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-	auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-
+	
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("F8 opNum:[%i]\n", opNum);
 
 	void *reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-//	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[8], dimensionLength, sizeof(float), 1);
+//	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[8], dimensionLength, sizeof(float), 1);
 
 	if (opNum == 19)
 		execReduceFloat(extraPointers, 3, 
 			            nullptr, nullptr, dX, dXShapeInfo, 
 			            extraParams, 
 			            nullptr, nullptr, dZ, dZShapeInfo, 
-			            dimension, dimensionLength);
+			            dimension, dimensionLength,
+			            hTADShapeInfo, 
+			            dTADShapeInfo, dTADOffsets);
 
 	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
 
 	if (dimensionLength == 1) {
-        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[32], dimensionLength, DataTypeUtils::sizeOf(zType), 2);
-        BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceXD(launchDims, stream, opNum, 1, dX,dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[32], dimensionLength, DataTypeUtils::sizeOf(zType), 2);
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceXD(launchDims, stream, opNum, 1, dX,dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 	} 
-	else if (shape::rank(hostTADShapeInfo) <= 3) {
-        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[33], dimensionLength, DataTypeUtils::sizeOf(zType), 2);
-        BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceXD(launchDims, stream, opNum, shape::rank(hostTADShapeInfo), dX,dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), LIBND4J_TYPES, FLOAT_TYPES);        
+	else if (shape::rank(hTADShapeInfo) <= 3) {
+        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[33], dimensionLength, DataTypeUtils::sizeOf(zType), 2);
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceXD(launchDims, stream, opNum, shape::rank(hTADShapeInfo), dX,dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES, FLOAT_TYPES);        
 	} 
 	else {
-        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[22], dimensionLength, DataTypeUtils::sizeOf(zType), 2);
-        BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceXD(launchDims, stream, opNum, shape::rank(hostTADShapeInfo), dX,dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), LIBND4J_TYPES, FLOAT_TYPES);        
+        dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[22], dimensionLength, DataTypeUtils::sizeOf(zType), 2);
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceXD(launchDims, stream, opNum, shape::rank(hTADShapeInfo), dX,dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES, FLOAT_TYPES);        
 	}
 }
 
@@ -1127,27 +1101,20 @@ void NativeOps::execIndexReduceScalar(
         void *dX, Nd4jLong *dXShapeInfo,
         void *extraParams,
         void *hZ, Nd4jLong *hZShapeInfo,
-		void *dZ, Nd4jLong *dZShapeInfo){
+		void *dZ, Nd4jLong *dZShapeInfo,
+		Nd4jLong* hTADShapeInfo,
+		Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets){
 
 	if (nd4j::Environment::getInstance()->isDebug())
 		printf("F1 opNum:[%i]\n", opNum);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-	// auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-	// auto hYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
-	// auto hZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-
-	auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto deviceTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-
-	auto deviceTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-
 	// void *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	void *reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[13], 1, sizeof(float), 4);
+	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[13], 1, sizeof(float), 4);
 
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose() && launchDims.x == 1)
 		printf("AF1 opNum:[%i]\n", opNum);
@@ -1155,7 +1122,7 @@ void NativeOps::execIndexReduceScalar(
 	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
     auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, nullptr, 0, nullptr, 1, 1, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, nullptr, 0, nullptr, 1, 1, allocationPointer, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalar(...) failed");
 }
@@ -1686,10 +1653,10 @@ void NativeOps::flatten(Nd4jPointer *extraPointers,
 						void *hZ, Nd4jLong *hZShapeInfo,
 						void *dZ, Nd4jLong *dZShapeInfo,
 						void *hInput, Nd4jLong *hInputShapeInfo,
-						void *dInput, Nd4jLong *dInputShapeInfo) {
+						void *dInput, Nd4jLong *dInputShapeInfo,
+						Nd4jLong* hYShapeInfo) {
 	
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-	auto hYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
 
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("F22 opNum:[7]\n");
@@ -2159,14 +2126,10 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 		Nd4jPointer *ddata, Nd4jPointer *dinputShapeInfo,
 		void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
-		Nd4jPointer *tadPointers,
-		Nd4jPointer *offsetPointers) {
+		Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers,
+		Nd4jLong* hXShapeInfo, Nd4jLong** hShapePointers) {
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-	auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-	auto hostShapePointers = reinterpret_cast<Nd4jLong **>(extraPointers[9]);
-
 	// numArrays will be used as number of TADs, so each block process 1 input
 
 	int smem = 8192;
@@ -2175,7 +2138,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 	bool isHstack = false;
 
 	for (int i = 0; i < numArrays; i++) {
-		if (!shape::isScalar(hostShapePointers[i])) {
+		if (!shape::isScalar(hShapePointers[i])) {
 			isScalar = false;
 			break;
 		}
@@ -2184,8 +2147,8 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 	if (!isScalar && dimension == 0 && shape::rank(hXShapeInfo) == 2 && shape::order(hXShapeInfo) == 'c' ) {
 		isVstack = true;
         for (int i = 0; i < numArrays; i++) {
-			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0 ||
-				shape::order(hostShapePointers[i]) != 'c') {
+			if (!shape::isVector(hShapePointers[i]) || shape::elementWiseStride(hShapePointers[i]) <= 0 ||
+				shape::order(hShapePointers[i]) != 'c') {
 				isVstack = false;
 				break;
 			}
@@ -2194,10 +2157,10 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 
     // let's try to fit N-dimensional vstack
     if (!isVstack && !isScalar && dimension == 0 && shape::order(hXShapeInfo) == 'c') {
-		Nd4jLong length0 = shape::length(hostShapePointers[0]);
+		Nd4jLong length0 = shape::length(hShapePointers[0]);
         isVstack = true;
         for (int i = 0; i < numArrays; i++) {
-            if (shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c' || length0 != shape::length(hostShapePointers[i])) {
+            if (shape::elementWiseStride(hShapePointers[i]) <= 0 || shape::order(hShapePointers[i]) != 'c' || length0 != shape::length(hShapePointers[i])) {
                 isVstack = false;
                 break;
             }
@@ -2207,7 +2170,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hXShapeInfo)) {
 		isHstack = true;
 		for (int i = 0; i < numArrays; i++) {
-			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0) {
+			if (!shape::isVector(hShapePointers[i]) || shape::elementWiseStride(hShapePointers[i]) <= 0) {
 				isHstack = false;
 				break;
 			}
@@ -2634,6 +2597,7 @@ void NativeOps::execScalarBool(
 		void *hScalar, Nd4jLong *hScalarShapeInfo,
 		void *dScalar, Nd4jLong *dScalarShapeInfo,
 		void *extraParams) {
+	
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	dim3 launchDims = dim3(256, 512, 8192);
@@ -2694,6 +2658,7 @@ void NativeOps::execScalar(
 		void *hScalar, Nd4jLong *hScalarShapeInfo,
 		void *dScalar, Nd4jLong *dScalarShapeInfo,
 		void *extraParams) {
+	
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	dim3 launchDims(256, 512, 8192);
@@ -2787,6 +2752,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers,
                           void *hZ, Nd4jLong *hZShapeInfo,
                           void *dZ, Nd4jLong *dZShapeInfo,
                           void *extraArguments) {
+    
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
     dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float)) );
@@ -2802,6 +2768,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
 						   void *hZ, Nd4jLong *hZShapeInfo, 
 						   void *dZ, Nd4jLong *dZShapeInfo, 
 						   void *extraArguments) {
+    
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
     dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float)) );
@@ -2853,6 +2820,7 @@ Nd4jPointer NativeOps::initRandom(Nd4jPointer *extraPointers, long seed, long bu
 
 
 void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
+    
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrBuffer);
 
     // FIXME: it's bad thing, but we can't know in advance, which stream(s) where using this generator in practice
@@ -2862,6 +2830,7 @@ void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
 }
 
 void NativeOps::refreshBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom) {
+    
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRandom);
 
     unsigned long long *ptrHost = reinterpret_cast<unsigned long long *>(extraPointers[0]);
@@ -2884,6 +2853,7 @@ void NativeOps::refreshBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer
 }
 
 void NativeOps::reSeedBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom) {
+    
     nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRandom);
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -2927,6 +2897,7 @@ void NativeOps::tear(Nd4jPointer *extras,
 					 Nd4jLong *zShapeInfo,
 					 Nd4jLong *tadShapeInfo,
 					 Nd4jLong *tadOffsets) {
+    
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
     // tearKernelFloat<<<512, 512, 512, *stream>>>(dX, dXShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
@@ -3016,6 +2987,7 @@ void prescanArrayRecursive(Nd4jPointer *extras, int *dZ, int *dX, int numElement
 
 
 void NativeOps::encodeThresholdP1(Nd4jPointer *extras, void *dx, Nd4jLong *dXShapeInfo, Nd4jLong N, int *dz, float threshold) {
+    
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
     int blockSize = 1024;
@@ -3031,6 +3003,7 @@ void NativeOps::encodeThresholdP1(Nd4jPointer *extras, void *dx, Nd4jLong *dXSha
 
 
 void NativeOps::encodeThresholdP2Int(Nd4jPointer *extraPointers, int *dx, Nd4jLong N, int *dz) {
+    
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     //encoderKernelP2Float<<<numBlocks, blockSize , 1024 * sizeof(float), *stream>>>(dx, N, dz);
 
@@ -3041,6 +3014,7 @@ void NativeOps::encodeThresholdP2Int(Nd4jPointer *extraPointers, int *dx, Nd4jLo
 }
 
 void NativeOps::encodeThresholdP3(Nd4jPointer *extraPointers, void *dx, Nd4jLong *dXShapeInfo, int *offsets, Nd4jLong N, int *dz){
+    
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
     int blockSize = 1024;
@@ -3054,6 +3028,7 @@ void NativeOps::encodeThresholdP3(Nd4jPointer *extraPointers, void *dx, Nd4jLong
 }
 
 void NativeOps::decodeThreshold(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo){
+    
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
     // we probably want to have smaller blocks here, memory writes are misaligned anyway
@@ -3077,19 +3052,12 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
                             		void *dY, Nd4jLong *dYShapeInfo,
                             		void *hZ, Nd4jLong *hZShapeInfo,
                             		void *dZ, Nd4jLong *dZShapeInfo,
-									int *dimension,
-									int dimensionLength,
-									Nd4jLong *xTadShapeInfo,
-                                    Nd4jLong *xOffsets,
-									Nd4jLong *yTadShapeInfo,
-                                    Nd4jLong *yOffsets) {
+									int *dimension, int dimensionLength,
+									Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
+									Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets,
+									Nd4jLong* hTADShapeInfo) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-    // auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    // auto hZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-    auto hostTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
         printf("D119 opNum:[%i]\n", opNum);
@@ -3097,7 +3065,7 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
     int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
     double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-    dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hostTADShapeInfo, funcAttributes[7], dimensionLength, sizeof(double), 2);
+    dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[7], dimensionLength, sizeof(double), 2);
 
     if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
         printf("AD119 opNum:[%i]\n", opNum);
@@ -3127,10 +3095,10 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
 void NativeOps::sort(Nd4jPointer *extraPointers,
 					 void *x, Nd4jLong *xShapeInfo,
 					 void *dX, Nd4jLong *dXShapeInfo,
-					 bool descending) {
+					 bool descending,
+					 Nd4jLong* hXShapeInfo) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[     1]);
-    auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
 
     auto xLength = shape::length(hXShapeInfo);
     auto xEWS = shape::elementWiseStride(hXShapeInfo);
@@ -3208,11 +3176,10 @@ void NativeOps::sortTad(Nd4jPointer *extraPointers,
 						int dimensionLength,
 						Nd4jLong *tadShapeInfo,
 						Nd4jLong *tadOffsets,
-						bool descending) {
+						bool descending,
+						Nd4jLong* hXShapeInfo) {
     // to be implemented
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-
     // cudaSortTadFloat<<<512, 512, 1088 * sizeof(float), *stream>>>(dX, dXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
     // BUILD_SINGLE_SELECTOR(xType, oes_tad, (dX, dXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending), LIBND4J_TYPES);                     
@@ -3225,10 +3192,14 @@ void NativeOps::sortCooIndices(Nd4jPointer *extraPointers, Nd4jLong *indices, vo
 }
 
 
-Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong *dXShapeInfo, Nd4jLong N, int *dz, float threshold) {
+Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers, 
+								void *dx, Nd4jLong *dXShapeInfo, 
+								Nd4jLong N, 
+								int *dz, 
+								float threshold,
+								Nd4jLong* hXShapeInfo) {
+    
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    auto *hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-
     int *resultPointer = reinterpret_cast<int *>(extraPointers[2]);
     int *reductionPointer = reinterpret_cast<int *>(extraPointers[3]);
     
@@ -3244,11 +3215,13 @@ Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong 
 }
 
 
-void NativeOps::decodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo) {	
+void NativeOps::decodeBitmap(Nd4jPointer *extraPointers, 
+							void *dx, 
+							Nd4jLong N, 
+							void *dz, Nd4jLong *zShapeInfo,
+							Nd4jLong* hXShapeInfo) {
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);    
     // cudaDecodeBitmapFloat<<<512, 512, 512 * sizeof(float) + 384, *stream>>>(dx, N, dz);    
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     // BUILD_SINGLE_SELECTOR(xType, cudaDecodeBitmapGeneric, (dx, N, dz), LIBND4J_TYPES);
