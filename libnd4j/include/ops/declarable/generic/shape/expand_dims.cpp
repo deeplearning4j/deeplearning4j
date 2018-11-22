@@ -72,7 +72,7 @@ namespace nd4j {
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
 
                 Nd4jLong x = 1;
-                shape::shapeBuffer(1, block.dataType(), &x, newShape);
+                shape::shapeBuffer(1, ArrayOptions::dataType(inShape), &x, newShape);
                 return SHAPELIST(newShape);
             }
 
@@ -81,7 +81,7 @@ namespace nd4j {
                 Nd4jLong* newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
 
-                shape::shapeBuffer(2, block.dataType(), shape::shapeOf(inShape), newShape);
+                shape::shapeBuffer(2, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), newShape);
                 return SHAPELIST(newShape);
             }
 
