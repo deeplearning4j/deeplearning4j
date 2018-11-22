@@ -101,7 +101,7 @@ public:
                                          void *extraParams,
                                          void *hZ, Nd4jLong *hZShapeInfo,
                                          void *dZ, Nd4jLong *dZShapeInfo,
-                                         Nd4jLong* hTADShapeInfo,
+                                         Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
                                          Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets);
 
     /**
@@ -123,7 +123,7 @@ public:
             void *hZ, Nd4jLong *hZShapeInfo,
             void *dZ, Nd4jLong *dZShapeInfo,
             int *dimension, int dimensionLength,
-            Nd4jLong* hTADShapeInfo,
+            Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
             Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets);
 
     /**
@@ -148,7 +148,8 @@ public:
             void *hZ, Nd4jLong *hZShapeInfo,
             void *dZ, Nd4jLong *dZShapeInfo,
             int *dimension,int dimensionLength,
-            Nd4jLong* hTADShapeInfo,
+            Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
+            Nd4jLong* hTADShapeInfoZ, Nd4jLong* hTADOffsetsZ,
             Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets,
             Nd4jLong* dTADShapeInfoZ, Nd4jLong* dTADOffsetsZ);
 
@@ -163,7 +164,8 @@ public:
             void *hZ, Nd4jLong *hZShapeInfo,
             void *dZ, Nd4jLong *dZShapeInfo,
             int *dimension,int dimensionLength,
-            Nd4jLong* hTADShapeInfo,
+            Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
+            Nd4jLong* hTADShapeInfoZ, Nd4jLong* hTADOffsetsZ,
             Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets,
             Nd4jLong* dTADShapeInfoZ, Nd4jLong* dTADOffsetsZ);
 
@@ -240,6 +242,7 @@ public:
                           Nd4jLong* hTADShapeInfo,
                           Nd4jLong* dTADShapeInfo);
 
+
     void  execReduceLong(Nd4jPointer *extraPointers,
                           int opNum,
                           void *hX, Nd4jLong *hXShapeInfo,
@@ -267,7 +270,7 @@ public:
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             int *dimension,int dimensionLength,
-                            Nd4jLong* hTADShapeInfo,
+                            Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
                             Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets);
 
 
@@ -279,8 +282,8 @@ public:
                       void *hZ, Nd4jLong *hZShapeInfo,
                       void *dZ, Nd4jLong *dZShapeInfo,
                       int *dimension, int dimensionLength,
-                      Nd4jLong* hTADShapeInfo,
-                      Nd4jLong* dTADShapeInfo);
+                      Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
+                      Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets);
 
     void   execReduceBool(Nd4jPointer *extraPointers,
                       int opNum,
@@ -290,8 +293,8 @@ public:
                       void *hZ, Nd4jLong *hZShapeInfo,
                       void *dZ, Nd4jLong *dZShapeInfo,
                       int *dimension, int dimensionLength,
-                      Nd4jLong* hTADShapeInfo,
-                      Nd4jLong* dTADShapeInfo);
+                      Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
+                      Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets);
 
     void   execReduceLong(Nd4jPointer *extraPointers,
                       int opNum,
@@ -301,8 +304,8 @@ public:
                       void *hZ, Nd4jLong *hZShapeInfo,
                       void *dZ, Nd4jLong *dZShapeInfo,
                       int *dimension, int dimensionLength,
-                      Nd4jLong* hTADShapeInfo,
-                      Nd4jLong* dTADShapeInfo);
+                      Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
+                      Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets);
 
     /**
      *

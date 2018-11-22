@@ -683,7 +683,8 @@ void   NativeOps::execBroadcastBool(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         int *dimension, int dimensionLength,
-        Nd4jLong* hTADShapeInfo,
+		Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
+        Nd4jLong* hTADShapeInfoZ, Nd4jLong* hTADOffsetsZ,
         Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets,
         Nd4jLong* dTADShapeInfoZ, Nd4jLong* dTADOffsetsZ) {
 
@@ -731,9 +732,10 @@ void   NativeOps::execBroadcast(
 		void *hZ, Nd4jLong *hZShapeInfo,
 		void *dZ, Nd4jLong *dZShapeInfo,
 		int *dimension, int dimensionLength,
-		Nd4jLong* hTADShapeInfo,
-        Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets,
-        Nd4jLong* dTADShapeInfoZ, Nd4jLong* dTADOffsetsZ) {
+		Nd4jLong* hTADShapeInfo,  Nd4jLong* hTADOffsets,
+        Nd4jLong* hTADShapeInfoZ, Nd4jLong* hTADOffsetsZ,
+        Nd4jLong* dTADShapeInfo,  Nd4jLong* dTADOffsets,
+		Nd4jLong* dTADShapeInfoZ, Nd4jLong* dTADOffsetsZ) {
 /*
     cudaEvent_t start;
     cudaEventCreateWithFlags(&start, cudaEventDisableTiming);
@@ -840,8 +842,8 @@ void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong* hTADShapeInfo,
-							Nd4jLong* dTADShapeInfo) {
+                            Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
+                      		Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -872,8 +874,8 @@ void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             int *dimension,int dimensionLength,
-                            Nd4jLong* hTADShapeInfo,
-							Nd4jLong* dTADShapeInfo) {
+                            Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
+                            Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -936,8 +938,8 @@ void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong* hTADShapeInfo,
-							Nd4jLong* dTADShapeInfo) {
+                            Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
+                      		Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -1010,7 +1012,7 @@ void   NativeOps::execIndexReduce(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
 		int *dimension,int dimensionLength,
-		Nd4jLong* hTADShapeInfo,
+		Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
 		Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets) {
 	
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -1049,7 +1051,7 @@ void   NativeOps::execReduceFloat(
         void *hZ, Nd4jLong *hZShapeInfo,
 		void *dZ, Nd4jLong *dZShapeInfo,
 		int *dimension,int dimensionLength,
-		Nd4jLong* hTADShapeInfo,
+		Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
 		Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets) {
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
@@ -1067,7 +1069,7 @@ void   NativeOps::execReduceFloat(
 			            extraParams, 
 			            nullptr, nullptr, dZ, dZShapeInfo, 
 			            dimension, dimensionLength,
-			            hTADShapeInfo, 
+			            hTADShapeInfo, nullptr, 
 			            dTADShapeInfo, dTADOffsets);
 
 	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
@@ -1102,7 +1104,7 @@ void NativeOps::execIndexReduceScalar(
         void *extraParams,
         void *hZ, Nd4jLong *hZShapeInfo,
 		void *dZ, Nd4jLong *dZShapeInfo,
-		Nd4jLong* hTADShapeInfo,
+		Nd4jLong* hTADShapeInfo, Nd4jLong* hTADOffsets,
 		Nd4jLong* dTADShapeInfo, Nd4jLong* dTADOffsets){
 
 	if (nd4j::Environment::getInstance()->isDebug())
