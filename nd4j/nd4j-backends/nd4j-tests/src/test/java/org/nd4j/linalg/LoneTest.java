@@ -216,7 +216,6 @@ public class LoneTest extends BaseNd4jTest {
 
         for (int e = 0; e < 32; e++) {
             val arr = Nd4j.create(DataType.FLOAT, shape, 'c').assign(e);
-            log.info("ARR: {}", arr);
             cArrays.add(arr);
             //            fArrays.add(cOrder.dup('f'));
         }
@@ -231,7 +230,6 @@ public class LoneTest extends BaseNd4jTest {
 
         for (int e = 0; e < 32; e++) {
             INDArray tad = res.tensorAlongDimension(e, 1, 2);
-            log.info("TAD: {}", tad.shape());
             assertEquals("Failed for TAD [" + e + "]",(double) e, tad.meanNumber().doubleValue(), 1e-5);
         }
     }

@@ -287,12 +287,13 @@ public class MixedDataTypesTests {
         val result = Nd4j.getExecutioner().exec(new OldSoftMax(arrayX)).z();
     }
 
-    @Test(expected = IllegalArgumentException.class)
     public void testTypesValidation_4() throws Exception {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.DOUBLE);
+        val arrayE = Nd4j.create(new int[]{2, 2, 3, 8}, new  long[]{4}, DataType.INT);
 
         arrayX.addi(arrayY);
+        assertEquals(arrayE, arrayX);
     }
 
 
