@@ -150,10 +150,11 @@ public class Transpose extends DynamicCustomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if (args().length > 1){
-            return super.calculateOutputShape();
-        }
-        if (permuteDims == null && arg() != null && arg().getShape() != null) {
+        if (args().length > 1) {
+            if (args()[0].getArr() != null && args()[1].getArr() != null) {
+                return super.calculateOutputShape();
+            }
+        } else  if (permuteDims == null && arg() != null && arg().getShape() != null) {
             this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arg().getShape().length));
             val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
             return Arrays.asList(LongShapeDescriptor.fromShape(permutedShape, larg().dataType()));

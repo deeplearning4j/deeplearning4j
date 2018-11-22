@@ -288,7 +288,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
         memcpy(shapeInfoNew, arr.getShapeInfo(), shape::shapeInfoByteLength(rank));
         // perform buffer permutation
         shape::doPermuteShapeInfo(shapeInfoNew, dimensions);
-
+        ArrayOptions::setDataType(shapeInfoNew, arr.dataType());
         return shapeInfoNew;
     }
 

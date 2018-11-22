@@ -111,6 +111,7 @@ namespace ops {
                 newshape[1] = 0;
                 newshape[2] = 1;
                 newshape[3] = 99;
+                ArrayOptions::copyDataType(newshape, inputShape->at(0));
                 shapeList->push_back(newshape);
             } else if (arguments->size() > 0 || inputShape->size() > 1) {
                 auto axis = arguments->size() > 0 ? *arguments : (INPUT_VARIABLE(1))->template asVectorT<int>();
@@ -121,7 +122,6 @@ namespace ops {
                 auto axis = INPUT_VARIABLE(1);
                 auto axisV = axis->template asVectorT<Nd4jLong>();
                 auto newshape = ShapeUtils::evalPermShapeInfo(axisV.data(), axisV.size(), *INPUT_VARIABLE(0), block.workspace());
-
                 shapeList->push_back(newshape);
             } else {
                 int rank = shape::rank(inputShape->at(0));

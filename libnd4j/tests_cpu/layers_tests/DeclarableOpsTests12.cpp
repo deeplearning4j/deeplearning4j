@@ -37,3 +37,17 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(DeclarableOpsTests12, test_any_validation_1) {
+    auto x = NDArrayFactory::create<double>('c', {2, 1}, {1.0, 2.0});
+    auto y = NDArrayFactory::create<int>('c', {2}, {1, 0});
+
+    nd4j::ops::transpose op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_EQ(x.dataType(), z->dataType());
+
+    delete result;
+}
