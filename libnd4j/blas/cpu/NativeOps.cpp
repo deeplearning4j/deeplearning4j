@@ -1417,7 +1417,7 @@ void NativeOps::checkP2P() {
     // no-op
 }
 
-void NativeOps::decodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong* hXShapeInfo, Nd4jLong N, void *dz, Nd4jLong *hZShapeInfo) {
+void NativeOps::decodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong N, void *dz, Nd4jLong *hZShapeInfo) {
     NativeOpExcutioner::decodeBitmap(hX, N, dz, hZShapeInfo);
 }
 

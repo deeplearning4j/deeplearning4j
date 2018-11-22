@@ -1472,7 +1472,7 @@ public:
             Nd4jLong *tadOffsets);
 
     Nd4jLong encodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold);
-    void decodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong* xShapeInfo, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
+    void decodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
 
 
     void encodeThresholdP1(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold);

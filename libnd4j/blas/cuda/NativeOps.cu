@@ -3215,13 +3215,13 @@ Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers,
 
 
 void NativeOps::decodeBitmap(Nd4jPointer *extraPointers, 
-							void *dx, Nd4jLong* hXShapeInfo,
+							void *dx,
 							Nd4jLong N, 
 							void *dz, Nd4jLong *zShapeInfo) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);    
     // cudaDecodeBitmapFloat<<<512, 512, 512 * sizeof(float) + 384, *stream>>>(dx, N, dz);    
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(zShapeInfo);
     // BUILD_SINGLE_SELECTOR(xType, cudaDecodeBitmapGeneric, (dx, N, dz), LIBND4J_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "decodeBitmapFloat(...) failed");
