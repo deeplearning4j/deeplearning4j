@@ -7,11 +7,13 @@ import org.junit.Test;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.*;
 
@@ -103,10 +105,10 @@ public class RngValidationTests {
                 //truncated normal clips at (mean-2*std, mean+2*std). Mean for equal 2 sided clipping about mean is same as original mean. Variance is difficult to calculate...
                 //Assume variance is similar to non-truncated normal (should be a bit less in practice) but use large relative error here
             testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(new long[0]).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0).build());       //Don't check mean/std for 1 element
-            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(1000).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
-                    .expectedMean(0.0).expectedStd(1.0).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.01).build());
-            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(100,10000).minValue(1.0).maxValue(3.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
-                    .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.001).build());
+//            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(1000).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
+//                    .expectedMean(0.0).expectedStd(1.0).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.01).build());
+//            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(100,10000).minValue(1.0).maxValue(3.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
+//                    .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.001).build());
 
             //Dropout (non-inverted): same as bernoulli distribution, when dropout applied to "ones" array
             testCases.add(TestCase.builder().opType("dropout").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element
@@ -117,12 +119,27 @@ public class RngValidationTests {
 
             //Dropout (inverted): basically bernoulli distribution * 2, when inverted dropout applied to "ones" array
             testCases.add(TestCase.builder().opType("dropout_inverted").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element
-            //TODO not sure on stdev values here
-//            testCases.add(TestCase.builder().opType("dropout_inverted").dataType(type).shape(1000).minValue(0).maxValue(1.0/0.4).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.4)
-//                    //Mean: 0.4 probability of  being retained - mean is 0.4 probability * (1.0/0.4) = 1.0. i.e., expected mean is unchanged by inverted dropout
-//                    .expectedMean(1.0).expectedStd(Math.sqrt(0.4*(1-0.4)) /*var = p*(1-p)*/).build());
-//            testCases.add(TestCase.builder().opType("dropout_inverted").dataType(type).shape(100,10000).minValue(0).maxValue(1.0/0.3).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.3)
-//                    .expectedMean(1.0).expectedStd(2*Math.sqrt(0.3*(1-0.3)) /*var = p*(1-p); note var(aX) = a^2 var(X)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+            testCases.add(TestCase.builder().opType("dropout_inverted").dataType(type).shape(1000).minValue(0).maxValue(1.0/0.4).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.4)
+                    //Mean: 0.4 probability of  being retained - mean is 0.4 probability * (1.0/0.4) = 1.0. i.e., expected mean is unchanged by inverted dropout
+                    .expectedMean(1.0).expectedStd(1/0.4*Math.sqrt(0.4*(1-0.4)) /*var = p*(1-p)*/).build());
+            testCases.add(TestCase.builder().opType("dropout_inverted").dataType(type).shape(100,10000).minValue(0).maxValue(1.0/0.3).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.3)
+                    .expectedMean(1.0).expectedStd(1/0.3*Math.sqrt(0.3*(1-0.3)) /*var = p*(1-p); note var(aX) = a^2 var(X)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+
+            //Linspace: we'll treat is as basically a uniform distribution for the purposes of these tests...
+            testCases.add(TestCase.builder().opType("linspace").dataType(type).shape(1000).minValue(1).maxValue(2).minValueInclusive(true).maxValueInclusive(true).arg("from", 1.0).arg("to",2.0)
+                    .expectedMean(1.5).expectedStd(Math.sqrt(1/12.0 * Math.pow(2.0-1.0, 2)) /*Var: 1/12 * (b-a)^2*/).build());
+
+            //Log normal distribution: parameterized such that if X~lognormal(m,s) then mean(log(X))=m and std(log(X))=s
+            //mean is given by exp(mu+s^2/2), variance [exp(s^2)-1]*[exp(2*mu+s^2)]
+            testCases.add(TestCase.builder().opType("lognormal").dataType(type).shape(new long[0]).minValue(0).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
+                    .arg("mu", 0.0).arg("s", 1.0).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("lognormal").dataType(type).shape(1000).minValue(0).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
+                    .arg("mu", 0.0).arg("s", 1.0).expectedMean(Math.exp(0.0 + 1.0/2.0)).expectedStd(Math.sqrt((Math.exp(1.0)-1)*Math.exp(1.0)) ).meanRelativeErrorTolerance(0.05).stdRelativeErrorTolerance(0.05)
+                    .meanMinAbsErrorTolerance(0.1).stdMinAbsErrorTolerance(0.1).build());
+            testCases.add(TestCase.builder().opType("lognormal").dataType(type).shape(100,10000).minValue(0).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mu", 2.0).arg("s", 0.5)
+                    .expectedMean(Math.exp(2.0 + 0.5*0.5/2.0)).expectedStd(Math.sqrt((Math.exp(0.5*0.5)-1)*Math.exp(2.0*2.0+0.5*0.5))).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
+
+            //Remaining: AlphaDropout, Choice, ProbabilisticMerge, Range
         }
 
 
@@ -175,6 +192,19 @@ public class RngValidationTests {
                 double re = relError(tc.getExpectedStd(), std);
                 double ae = Math.abs(tc.getExpectedStd() - std);
                 if(re > tc.getStdRelativeErrorTolerance() && (tc.getStdMinAbsErrorTolerance() == null || ae > tc.getStdMinAbsErrorTolerance())){
+                    /*
+                    //Histogram for debugging
+                    INDArray range = Nd4j.create(new double[]{op.z().minNumber().doubleValue(), op.z().maxNumber().doubleValue()}).castTo(tc.getDataType());
+                    INDArray n = Nd4j.scalar(DataType.INT,100);
+                    INDArray out = Nd4j.create(DataType.INT, 100);
+                    DynamicCustomOp histogram = DynamicCustomOp.builder("histogram_fixed_width")
+                            .addInputs(op.z(), range, n)
+                            .addOutputs(out)
+                            .build();
+                    Nd4j.getExecutioner().exec(histogram);
+                    System.out.println(range);
+                    System.out.println(out.toString().replaceAll("\\s", ""));
+                    */
                     fail("Relative error for stdev (" + re + ") exceeds maximum (" + tc.getStdRelativeErrorTolerance() +
                             ") - expected stdev = " + tc.getExpectedStd() + " vs. observed stdev = " + std + " - test: " + tc);
                 }
@@ -193,7 +223,7 @@ public class RngValidationTests {
            case FLOAT:
                return -Float.MAX_VALUE;
            case HALF:
-               return 0;
+               return -65504.0;
            default:
                throw new RuntimeException("Dtype not supported: " + dataType);
        }
@@ -206,7 +236,7 @@ public class RngValidationTests {
             case FLOAT:
                 return Float.MAX_VALUE;
             case HALF:
-                return 0;
+                return 65504.0;
             default:
                 throw new RuntimeException("Dtype not supported: " + dataType);
         }
@@ -235,6 +265,10 @@ public class RngValidationTests {
                 INDArray z2 = tc.arr();
                 z2.assign(1.0);
                 return new DropOutInverted(z2, tc.prop("p"));
+            case "linspace":
+                return new Linspace(tc.arr(), tc.prop("from"), tc.prop("to"));
+            case "lognormal":
+                return new LogNormalDistribution(tc.arr(), (double)tc.prop("mu"), tc.prop("s"));
             default:
                 throw new RuntimeException("Not yet implemented: " + tc.getOpType());
         }
