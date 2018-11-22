@@ -1996,7 +1996,7 @@ NDArray NDArray::transp() const {
             throw std::runtime_error("NDArray::addRowVector: you can't use this method on String array!");
         if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->lengthOf())
             throw std::invalid_argument("NDArray::addRowVector: wrong arguments !");
-        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
+        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType) && !(isR() && row->isR() && target->isR()))
             throw std::invalid_argument("NDArray::addRowVector: wrong type of target array !");
 
         int dimension[1] = {1};

@@ -940,12 +940,12 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
                 if (fa.length == 1)
-                    return Nd4j.trueScalar(fa[0]);
+                    return Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.FLOAT, fa[0]);
 
                 if (arrayShape.length == 1)
-                    return Nd4j.trueVector(fa);
+                    return Nd4j.create(fa, new long[]{fa.length}, new long[]{1}, 'c', org.nd4j.linalg.api.buffer.DataType.FLOAT);
 
-                val array = Nd4j.create(fa, arrayShape, 'c');
+                val array = Nd4j.create(fa, arrayShape, Nd4j.getStrides(arrayShape, 'c'), 'c', org.nd4j.linalg.api.buffer.DataType.FLOAT);
                 return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_DOUBLE) {
@@ -964,7 +964,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 }
 
                 // TF arrays are always C
-                INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
+                val array = Nd4j.create(jArray, arrayShape, Nd4j.getStrides(arrayShape, 'c'), 'c', org.nd4j.linalg.api.buffer.DataType.DOUBLE);
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0) {
                 // binary representation

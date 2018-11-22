@@ -357,4 +357,14 @@ public class MixedDataTypesTests {
         assertEquals(exp, asFloat);
     }
 
+
+    @Test
+    public void testAssignScalarSimple(){
+        for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            INDArray arr = Nd4j.scalar(dt, 10.0);
+            arr.assign(2.0);
+            System.out.println(dt + " - value: " + arr + " - " + arr.getDouble(0));
+        }
+    }
+
 }

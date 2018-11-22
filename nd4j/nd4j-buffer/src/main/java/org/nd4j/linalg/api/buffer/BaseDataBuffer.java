@@ -625,6 +625,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if (initialize)
                 fillPointerWithZero();
 
+        } else if (dataType() == DataType.HALF) {
+            pointer = new ShortPointer(length());
+            setIndexer(HalfIndexer.create((ShortPointer) pointer));
+
+            if (initialize)
+                fillPointerWithZero();
+
         } else if (dataType() == DataType.INT) {
             pointer = new IntPointer(length());
             setIndexer(IntIndexer.create((IntPointer) pointer));
@@ -697,6 +704,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asFloatPointer(); //new FloatPointer(length());
             setIndexer(FloatIndexer.create((FloatPointer) pointer));
+
+        } else if (dataType() == DataType.HALF) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer(); //new FloatPointer(length());
+            setIndexer(HalfIndexer.create((ShortPointer) pointer));
 
         } else if (dataType() == DataType.INT) {
             attached = true;
