@@ -90,6 +90,8 @@
         (20, Reverse), \
         (21, Copy)
 
+#define TRANSFORM_ANY_OPS \
+        (0, Assign)
 
 // these ops return bool
 #define TRANSFORM_BOOL_OPS \

@@ -2750,7 +2750,7 @@ template <typename T>
  * buffer
  */
     INLINEDEF _CUDA_HD Nd4jLong elementWiseStride(const Nd4jLong *buffer) {
-        return buffer[shapeInfoLength(buffer[0]) - 2];
+        return buffer[shapeInfoLength(static_cast<int>(buffer[0])) - 2];
     }
 
 /**

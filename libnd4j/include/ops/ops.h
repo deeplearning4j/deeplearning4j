@@ -568,6 +568,14 @@ namespace simdOps {
 	};
 
 	template <typename X, typename Z>
+	class Assign {
+	public:
+		op_def static Z op(X d1, void *params) {
+			return static_cast<Z>(d1);
+		}
+	};
+
+	template <typename X, typename Z>
 	class And {
 	public:
 		no_op_exec_special_bool
