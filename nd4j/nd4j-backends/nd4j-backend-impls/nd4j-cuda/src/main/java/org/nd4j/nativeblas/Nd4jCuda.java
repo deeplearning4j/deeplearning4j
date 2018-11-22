@@ -1276,6 +1276,28 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
                           Pointer extraParams);
 
+    public native void execTransformAny(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                               int opNum,
+                               Pointer hX, @Cast("Nd4jLong*") LongPointer hXShapeInfo,
+                               Pointer dX, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                               Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo,
+                               Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+                               Pointer extraParams);
+    public native void execTransformAny(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                               int opNum,
+                               Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo,
+                               Pointer dX, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                               Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo,
+                               Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+                               Pointer extraParams);
+    public native void execTransformAny(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                               int opNum,
+                               Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo,
+                               Pointer dX, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                               Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
+                               Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
+                               Pointer extraParams);
+
     public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
                               Pointer hX, @Cast("Nd4jLong*") LongPointer hXShapeInfo,
