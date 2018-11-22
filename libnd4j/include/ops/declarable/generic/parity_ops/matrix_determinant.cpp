@@ -19,12 +19,12 @@
 //
 
 #include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_matrix_determinant)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/lup.h>
 namespace nd4j {
     namespace ops {
+#if NOT_EXCLUDED(OP_matrix_determinant)
         CUSTOM_OP_IMPL(matrix_determinant, 1, 1, false, 0, 0) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* output = OUTPUT_VARIABLE(0);
@@ -66,7 +66,8 @@ namespace nd4j {
 
             return helpers::log_abs_determinant(input, output);
         }
-
+#endif
+#if NOT_EXCLUDED(OP_log_matrix_determinant)
         DECLARE_SHAPE_FN(log_matrix_determinant) {
             auto inShape = inputShape->at(0);
 
@@ -88,7 +89,7 @@ namespace nd4j {
             }
             return SHAPELIST(determinantShape);
         }
+#endif
     }
 }
 
-#endif

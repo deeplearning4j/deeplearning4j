@@ -197,6 +197,9 @@ namespace helpers {
     template int determinant(NDArray<float>* input, NDArray<float>* output);
     template int determinant(NDArray<float16>* input, NDArray<float16>* output);
     template int determinant(NDArray<double>* input, NDArray<double>* output);
+    template int log_abs_determinant(NDArray<float>* input, NDArray<float>* output);
+    template int log_abs_determinant(NDArray<float16>* input, NDArray<float16>* output);
+    template int log_abs_determinant(NDArray<double>* input, NDArray<double>* output);
 
     template <typename T>
     int inverse(NDArray<T>* input, NDArray<T>* output) {
@@ -219,7 +222,7 @@ namespace helpers {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
                 (*matrix)(row++) = (*input)(k);
             }
-            T det = lup(matrix.get(), compound.get(), permutation.get());
+            T det = lup(matrix.get(), compound.get(), permutation.get(), (T*)nullptr);
 
             if (nd4j::math::nd4j_abs(det) < T(0.0000001)) {
                 nd4j_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", e, det);
