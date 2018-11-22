@@ -27,10 +27,12 @@ import org.deeplearning4j.optimize.solvers.accumulation.FancyBlockingQueue;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.IndexedTail;
 import org.deeplearning4j.optimize.solvers.accumulation.SmartFancyBlockingQueue;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -169,7 +171,9 @@ public class UpdatesConsumer implements UpdatesHandler {
                 log.info("Skipped flushing updates - params: {}, updates: {}, hasSomething: {}", (params == null ? "null" : "not null"),
                         (updates == null ? "null" : "not null"), hasSomething.get());
             }
-            log.info("Params (first 10) post flush: %nd10", params);
+
+            log.info("Params (first 10) post flush: first 10: {}, 100k+10: {}", params.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,10)),
+                    params.get(NDArrayIndex.point(0), NDArrayIndex.interval(100_000,100_010)));
         }
     }
 
