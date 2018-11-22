@@ -3097,13 +3097,12 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
 void NativeOps::sort(Nd4jPointer *extraPointers,
 					 void *x, Nd4jLong *xShapeInfo,
 					 void *dX, Nd4jLong *dXShapeInfo,
-					 bool descending,
-					 Nd4jLong* hXShapeInfo) {
+					 bool descending) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[     1]);
 
-    auto xLength = shape::length(hXShapeInfo);
-    auto xEWS = shape::elementWiseStride(hXShapeInfo);
+    auto xLength = shape::length(xShapeInfo);
+    auto xEWS = shape::elementWiseStride(xShapeInfo);
     auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
 
     // check if xLength is a power of 2, and use bitonic sort, if that's the case
@@ -3178,8 +3177,7 @@ void NativeOps::sortTad(Nd4jPointer *extraPointers,
 						int dimensionLength,
 						Nd4jLong *tadShapeInfo,
 						Nd4jLong *tadOffsets,
-						bool descending,
-						Nd4jLong* hXShapeInfo) {
+						bool descending) {
     // to be implemented
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     // cudaSortTadFloat<<<512, 512, 1088 * sizeof(float), *stream>>>(dX, dXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
@@ -3198,8 +3196,7 @@ Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers,
 								void *dx, Nd4jLong *dXShapeInfo, 
 								Nd4jLong N, 
 								int *dz, 
-								float threshold,
-								Nd4jLong* hXShapeInfo) {
+								float threshold) {
     
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     int *resultPointer = reinterpret_cast<int *>(extraPointers[2]);
@@ -3218,10 +3215,9 @@ Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers,
 
 
 void NativeOps::decodeBitmap(Nd4jPointer *extraPointers, 
-							void *dx, 
+							void *dx, Nd4jLong* hXShapeInfo,
 							Nd4jLong N, 
-							void *dz, Nd4jLong *zShapeInfo,
-							Nd4jLong* hXShapeInfo) {
+							void *dz, Nd4jLong *zShapeInfo) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);    
     // cudaDecodeBitmapFloat<<<512, 512, 512 * sizeof(float) + 384, *stream>>>(dx, N, dz);    
