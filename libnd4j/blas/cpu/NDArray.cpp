@@ -2203,7 +2203,7 @@ void NDArray::applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArra
         throw std::invalid_argument("NDArray::applyScalarArr method: operand is not a scalar!");
     if(target == nullptr)
         target = this;
-    if(target->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, scalar->_shapeInfo))
+    if(target->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, scalar->_shapeInfo) && !(target->_dataType == this->_dataType || target->_dataType == scalar->_dataType))
         throw std::invalid_argument("NDArray::applyScalarArr method: wrong type of target array!");
 
     NativeOpExcutioner::execScalar(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, scalar->_buffer, scalar->_shapeInfo, extraParams);

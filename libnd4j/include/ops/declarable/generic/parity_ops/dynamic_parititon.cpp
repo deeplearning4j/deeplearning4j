@@ -87,7 +87,7 @@ namespace ops {
     DECLARE_TYPES(dynamic_partition) {
         getOpDescriptor()
                 ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setSameMode(true);
+                ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
     }
 
     DECLARE_TYPES(dynamic_partition_bp) {

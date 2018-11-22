@@ -50,7 +50,7 @@ namespace ops {
     DECLARE_TYPES(dynamic_stitch) {
         getOpDescriptor()
                 ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setSameMode(true);
+                ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
     }
 
     DECLARE_SHAPE_FN(dynamic_stitch) {
