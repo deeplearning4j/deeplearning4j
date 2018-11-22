@@ -215,8 +215,8 @@ public class TFGraphTestAllSameDiff {
     @Test//(timeout = 25000L)
     public void testOutputOnly() throws Exception {
         Nd4j.create(1);
-        //Nd4j.getExecutioner().enableDebugMode(true);
-        //Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         if (SKIP_SET.contains(modelName)) {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;

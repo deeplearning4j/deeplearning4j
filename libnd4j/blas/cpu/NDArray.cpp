@@ -1535,6 +1535,17 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         NativeOpExcutioner::execTransformFloat(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
     }
 
+    void NDArray::applyTransform(nd4j::transform::AnyOps op, NDArray *target, void *extraParams) {
+
+        if (isS())
+            throw std::runtime_error("NDArray::applyTransform FloatOps: you can't use this method on String array!");
+
+        if (target == nullptr)
+            target = this;
+
+        NativeOpExcutioner::execTransformFloat(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
+    }
+
     void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, void *extraParams) {
         if (isS())
             throw std::runtime_error("NDArray::applyTransform SameOps: you can't use this method on String array!");
@@ -1577,6 +1588,10 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
 //////////////////////////////////////////////////////////////////////////
 // perform array transformation
     void NDArray::applyTransform(nd4j::transform::FloatOps op, void *extraParams) {
+        applyTransform(op, this, extraParams);
+    }
+
+    void NDArray::applyTransform(nd4j::transform::AnyOps op, void *extraParams) {
         applyTransform(op, this, extraParams);
     }
 

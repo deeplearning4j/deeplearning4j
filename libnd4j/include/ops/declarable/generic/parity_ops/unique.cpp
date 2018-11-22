@@ -31,6 +31,8 @@ namespace nd4j {
             auto values = OUTPUT_VARIABLE(0);
             auto indices = OUTPUT_VARIABLE(1);
 
+            REQUIRE_TRUE(x->dataType() == values->dataType(), 0, "Unique: input and output data types must be the same");
+
             return helpers::uniqueFunctor(x, values, indices,  (NDArray*)nullptr);
         }
 
@@ -86,13 +88,14 @@ namespace nd4j {
         DECLARE_TYPES(unique) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS})
+                    ->setAllowedOutputTypes(1, {ALL_INTS});
         }
 
         DECLARE_TYPES(unique_with_counts) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(0, DataType::INHERIT)
+                    ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS})
                     ->setAllowedOutputTypes(1, DataType::INT64)
                     ->setAllowedOutputTypes(2, DataType::INT64);
         }

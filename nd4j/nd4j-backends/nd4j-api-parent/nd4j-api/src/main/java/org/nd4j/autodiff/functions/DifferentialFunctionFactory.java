@@ -61,6 +61,7 @@ import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
 import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;

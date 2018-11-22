@@ -46,6 +46,10 @@ namespace nd4j {
             BUILD_ENUMERATION(TRANSFORM_BOOL_OPS)
         };
 
+        enum AnyOps {
+            BUILD_ENUMERATION(TRANSFORM_ANY_OPS)
+        };
+
         enum StrictOps {
             BUILD_ENUMERATION(TRANSFORM_STRICT_OPS)
         };

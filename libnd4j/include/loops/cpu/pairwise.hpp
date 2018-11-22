@@ -144,7 +144,7 @@ namespace functions {
             nd4j::OmpLaunchHelper info(n);
 
             if (shape::isScalar(yShapeInfo)) {
-                
+
                 if (xEws == 1 && zEws == 1) {
 
                     #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
@@ -191,7 +191,7 @@ namespace functions {
                 exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo));
             }          
             else {
-              
+
                 if(vx == vz) {
 
                     #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
@@ -208,7 +208,7 @@ namespace functions {
                     }
                 }
                 else {
-                    
+
                     #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                     {                
                         auto threadNum = omp_get_thread_num();
@@ -225,7 +225,5 @@ namespace functions {
                 }
             }
         }
-
-        //BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , LIBND4J_TYPES, LIBND4J_TYPES);
     }
 }

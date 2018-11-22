@@ -46,6 +46,7 @@ public interface Op {
         SCALAR_BOOL,
         TRANSFORM_SAME,
         TRANSFORM_FLOAT,
+        TRANSFORM_ANY,
         TRANSFORM_BOOL,
         TRANSFORM_STRICT,
         PAIRWISE,

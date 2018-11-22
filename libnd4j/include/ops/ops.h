@@ -36,6 +36,7 @@
 #define DOUBLE_PI_T T(2.0 * 3.14159265358979323846)
 #define DOUBLE_PI_X X(2.0 * 3.14159265358979323846)
 
+#define no_op_exec_special_any 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_bool 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_same 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, X *result, Nd4jLong *resultShapeBuffer, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
@@ -44,6 +45,7 @@
 #define no_op_exec_special_accumulation_same 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
 #ifdef __CUDACC__
 #include <helpers/sharedmem.h>
+#define no_op_exec_special_any_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_bool_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_same_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, X *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, X *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer,Z *result, Nd4jLong *resultShapeBuffer,Z *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
@@ -65,6 +67,7 @@
 #define no_op_exec_special_accumulation_cuda
 #define no_op_exec_special_accumulation_same_cuda
 #define no_op_exec_special_accumulation_long_cuda
+#define no_op_exec_special_any_cuda
 #define no_op_exec_special_bool_cuda
 #define no_op_exec_special_same_cuda
 #define no_op_exec_special_accumulation_same_cuda
@@ -570,7 +573,10 @@ namespace simdOps {
 	template <typename X, typename Z>
 	class Assign {
 	public:
-		op_def static Z op(X d1, void *params) {
+		no_op_exec_special_any
+		no_op_exec_special_any_cuda
+
+		op_def static Z op(X d1, X *params) {
 			return static_cast<Z>(d1);
 		}
 	};

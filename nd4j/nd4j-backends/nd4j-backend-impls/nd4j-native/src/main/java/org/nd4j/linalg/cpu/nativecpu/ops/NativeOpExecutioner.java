@@ -26,7 +26,6 @@ import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.base.Preconditions;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -42,7 +41,7 @@ import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
-import org.nd4j.linalg.api.ops.impl.transforms.bool.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -746,6 +745,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             "; z: " + op.z().length() + ", shape " + Arrays.toString(op.z().shape()));
 
                 switch (op.getOpType()) {
+                    case TRANSFORM_ANY:
                     case TRANSFORM_FLOAT:
                     case TRANSFORM_STRICT:
                     case TRANSFORM_SAME:
@@ -811,6 +811,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 xtraz);
                         break;
                         }
+                    case TRANSFORM_ANY: {
+                        val xtraz = getPointerForExtraArgs(op, op.x().dataType());
+                        val opNum = op.opNum();
+
+                        loop.execTransformAny(dummy, opNum,
+                                op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                                null, null,
+                                op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                                null, null,
+                                xtraz);
+                        break;
+                    }
                     case TRANSFORM_BOOL: {
                         val xtraz = getPointerForExtraArgs(op, op.x().dataType());
                         val opNum = op.opNum();

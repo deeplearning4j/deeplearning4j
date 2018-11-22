@@ -551,6 +551,13 @@ public abstract class NativeOps extends Pointer {
                                            Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
                                            Pointer extraParams);
 
+    public abstract void execTransformAny(PointerPointer extraPointers,
+                                           int opNum,
+                                           Pointer x, @Cast("Nd4jLong *") LongPointer xShapeInfo,
+                                           Pointer dx, @Cast("Nd4jLong *") LongPointer dxShapeInfo,
+                                           Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo,
+                                           Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
+                                           Pointer extraParams);
 
     /**
      * ScalarOp along dimension

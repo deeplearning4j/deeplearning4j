@@ -529,6 +529,9 @@ namespace nd4j {
         void applyTransform(nd4j::transform::SameOps op, NDArray *target = nullptr, void *extraParams = nullptr);
         void applyTransform(nd4j::transform::SameOps, void *extraParams = nullptr);
 
+        void applyTransform(nd4j::transform::AnyOps op, NDArray *target = nullptr, void *extraParams = nullptr);
+        void applyTransform(nd4j::transform::AnyOps , void *extraParams = nullptr);
+
         void applyTransform(nd4j::transform::BoolOps op, NDArray *target = nullptr, void *extraParams = nullptr);
         void applyTransform(nd4j::transform::BoolOps, void *extraParams = nullptr);
 

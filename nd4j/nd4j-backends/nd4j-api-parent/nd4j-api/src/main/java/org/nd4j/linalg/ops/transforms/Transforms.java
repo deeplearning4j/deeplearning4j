@@ -27,7 +27,7 @@ import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNot;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot;
-import org.nd4j.linalg.api.ops.impl.transforms.bool.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
@@ -37,7 +37,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAtan2Op;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.PowPairwise;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
 import org.nd4j.linalg.api.ops.impl.transforms.same.*;
@@ -958,8 +957,13 @@ public class Transforms {
         return exec(dup ? new OldIdentity(ndArray, ndArray.dup()) : new OldIdentity(ndArray));
     }
 
+    public static INDArray isMax(INDArray input, DataType dataType) {
+        return isMax(input, Nd4j.createUninitialized(dataType, input.shape(), input.ordering()));
+    }
+
+
     public static INDArray isMax(INDArray input) {
-        return isMax(input, Nd4j.createUninitialized(DataType.BOOL, input.shape(), input.ordering()));
+        return isMax(input, input);
     }
 
     public static INDArray isMax(INDArray input, INDArray output) {

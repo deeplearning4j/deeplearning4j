@@ -29,7 +29,7 @@ namespace helpers {
 
     Nd4jLong uniqueCount(NDArray* input);
 
-    Nd4jLong uniqueFunctor(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts);
+    Nd4jStatus uniqueFunctor(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts);
 
 }
 }

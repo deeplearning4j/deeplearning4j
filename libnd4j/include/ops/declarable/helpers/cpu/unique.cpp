@@ -49,7 +49,7 @@ namespace helpers {
 
 
     template <typename T>
-    static Nd4jLong uniqueFunctor_(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
+    static Nd4jStatus uniqueFunctor_(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
     
         std::vector<T> valuesVector;
         std::map<T, int> indicesMap;
@@ -84,11 +84,11 @@ namespace helpers {
         return Status::OK();
     }
 
-    Nd4jLong uniqueFunctor(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
+    Nd4jStatus uniqueFunctor(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return uniqueFunctor_,(input, values, indices, counts), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template Nd4jLong uniqueFunctor_, (NDArray* input, NDArray* values, NDArray* indices, NDArray* counts), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template Nd4jStatus uniqueFunctor_, (NDArray* input, NDArray* values, NDArray* indices, NDArray* counts), LIBND4J_TYPES);
 }
 }
 }

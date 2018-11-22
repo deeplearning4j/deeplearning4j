@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.bool;
+package org.nd4j.linalg.api.ops.impl.transforms.any;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformAnyOp;
 import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,7 +34,7 @@ import java.util.List;
  * [1, 2, 3, 1] -> [0, 0, 1, 0]
  * @author Adam Gibson
  */
-public class IsMax extends BaseTransformBoolOp {
+public class IsMax extends BaseTransformAnyOp {
     public IsMax(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -51,13 +52,12 @@ public class IsMax extends BaseTransformBoolOp {
     }
 
     public IsMax() {}
-
-    public IsMax(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public IsMax(INDArray x) {
         super(x, Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering()));
+    }
+
+    public IsMax(INDArray x, INDArray z, int... dimensions) {
+        this(x, z, x.length(), dimensions);
     }
 
     public IsMax(INDArray x, INDArray z, long n, int... dimensions) {
@@ -68,16 +68,8 @@ public class IsMax extends BaseTransformBoolOp {
             this.extraArgs[i + 1] = dimensions[i];
     }
 
-    public IsMax(INDArray x, INDArray y, INDArray z, long n, int... dimensions) {
-        super(x, y, z, n);
-        this.extraArgs = new Object[dimensions.length + 1];
-        this.extraArgs[0] = dimensions.length;
-        for (int i = 0; i < dimensions.length; i++)
-            this.extraArgs[i + 1] = dimensions[i];
-    }
-
     public IsMax(INDArray x, int... dimensions) {
-        super(x, Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering()));
+        super(x, Nd4j.createUninitialized(x.dataType(), x.shape(), x.ordering()));
         this.extraArgs = new Object[dimensions.length + 1];
         this.extraArgs[0] = dimensions.length;
         for (int i = 0; i < dimensions.length; i++)
@@ -86,7 +78,7 @@ public class IsMax extends BaseTransformBoolOp {
 
     @Override
     public int opNum() {
-        return 0;
+        return 1;
     }
 
     @Override
@@ -104,8 +96,6 @@ public class IsMax extends BaseTransformBoolOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-
 
     @Override
     public boolean isExecSpecial() {

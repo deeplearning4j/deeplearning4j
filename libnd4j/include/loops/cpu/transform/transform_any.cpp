@@ -75,7 +75,13 @@ namespace functions {
 
                 // loop2ArrsSame<X>(x, xShapeInfo, z, zShapeInfo, extraParams, OpType::op);
 
-                if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
+            if(OpType::requiresSpecial) {
+                OpType::execSpecial(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+                return;
+            }
+
+
+            if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
                     exec<OpType>(x,xEws,z,zEws,extraParams,len);
                 }
                 else {

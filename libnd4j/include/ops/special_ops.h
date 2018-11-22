@@ -2033,11 +2033,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 								maxIdx = i;
 							}
 
-							result[i] = false;
+							result[i] = static_cast<Z>(0);
 
 						}
 
-						result[maxIdx] = true;
+						result[maxIdx] = static_cast<Z>(1);
 
 					}
 					else {
@@ -2055,7 +2055,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 								currMaxLocal = dx[i];
 								maxIdxLocal = i;
 							}
-							result[i] = false;
+							result[i] = static_cast<Z>(0);
 						}
 #pragma omp critical
 {
@@ -2065,7 +2065,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 						}
 }
 }
-						result[maxIdx] = true;
+						result[maxIdx] = static_cast<Z>(1);
 					}
 
 				}
@@ -2075,14 +2075,14 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         auto currMax = dx[0];
 //#pragma omp simd reduction(max:maxIdx,currMax)
 						for (int i = 0; i < length; i++) {
-							result[i * resultEleStride] = false;
+							result[i * resultEleStride] = static_cast<Z>(0);
 							if (currMax < dx[i * eleStride]) {
 								currMax = dx[i * eleStride];
 								maxIdx = i;
 							}
 						}
 
-						result[maxIdx * resultEleStride] = true;
+						result[maxIdx * resultEleStride] = static_cast<Z>(1);
 
 					}
 					else {
@@ -2095,7 +2095,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 						auto currMaxLocal = currMax;
 //#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
 						for (int i = 0; i < length; i++) {
-							result[i * resultEleStride] = false;
+							result[i * resultEleStride] = static_cast<Z>(0);
 							if (currMaxLocal < dx[i * eleStride]) {
 								currMaxLocal = dx[i * eleStride];
 								maxIdxLocal = i;
@@ -2110,7 +2110,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 						}
 }
 }
-						result[maxIdx * resultEleStride] = true;
+						result[maxIdx * resultEleStride] = static_cast<Z>(1);
 					}
 
 				}
@@ -2128,7 +2128,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				auto resultStride = shape::stride(resultShapeBuffer);
 				auto rank = shape::rank(xShapeBuffer);
 				auto originalResult = result;
-				if (PrepareTwoRawArrayIter<X>(rank,
+				if (PrepareTwoRawArrayIter<X, Z>(rank,
 					xShape,
 					dx,
 					xStride,
@@ -2150,7 +2150,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 						}
 
 						idx++;
-						result[0] = (Z) 0;
+						result[0] = static_cast<Z>(0);
 
 					}
 					ND4J_RAW_ITER_TWO_NEXT(
@@ -2167,9 +2167,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					if (shape::order(resultShapeBuffer) == 'c' || (shape::order(resultShapeBuffer) == 'f' &&
 						maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
 						shape::length(resultShapeBuffer)))
-						originalResult[maxIdx] = (Z)1;
+						originalResult[maxIdx] = static_cast<Z>(1);
 					else
-						originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = (Z)1;
+						originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = static_cast<Z>(1);
 				}
 			}
 
@@ -2228,7 +2228,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				}
 				if (shape::shapeOf(xShapeBuffer)[dimension[0]] == 1) {
 					for (int i = 0; i < length; i++) {
-						result[i] = 1.0;
+						result[i] = static_cast<Z>(1);
 					}
 				}
 				else {
@@ -2245,7 +2245,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 									maxIdx = i;
 								}
 
-								result[i] = 0.0;
+								result[i] = static_cast<Z>(0);
 
 							}
 						}
@@ -2261,7 +2261,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 									maxIdxLocal = i;
 								}
 
-								result[i] = 0.0;
+								result[i] = static_cast<Z>(0);
 
 							}
 #pragma omp critical
@@ -2274,7 +2274,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 }
 						}
 
-						result[maxIdx] = 1.0;
+						result[maxIdx] = static_cast<Z>(1);
 
 					}
 
@@ -2290,7 +2290,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 									maxIdx = i;
 								}
 
-								result[i] = 0.0;
+								result[i] = static_cast<Z>(0);
 							}
 						}
 						else {
@@ -2306,7 +2306,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 									maxIdxLocal = i;
 								}
 
-								result[i] = 0.0;
+								result[i] = static_cast<Z>(0);
 							}
 #pragma omp critical
 {
@@ -2318,7 +2318,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 }
 						}
 
-						result[maxIdx] = 1.0;
+						result[maxIdx] = static_cast<Z>(1);
 					}
 				}
 
@@ -2357,7 +2357,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
                 int span = (tads / num_threads) + 8;
 
-//#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
+#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
                 {
                     int tid = omp_get_thread_num();
                     int start = span * tid;
@@ -2382,7 +2382,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 //#pragma omp simd
                                 for (int i = 0; i < tadLength; i++) {
-                                    rZ[i] = maxIdx == i;
+                                    rZ[i] = static_cast<Z>(maxIdx == i);
                                 }
 
                             } else {
@@ -2397,7 +2397,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 //#pragma omp simd
                                 for (int i = 0; i < tadLength; i++) {
-                                    rZ[i * zEWS] = maxIdx == i;
+                                    rZ[i * zEWS] = static_cast<Z>(maxIdx == i);
                                 }
                             }
                         } else {
@@ -2440,7 +2440,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                                            maxValue = xPointer[0];
                                        }
 
-                                       resultPointer[0] = false;
+                                       resultPointer[0] = static_cast<Z>(0);
                                    }
                                    ND4J_RAW_ITER_TWO_NEXT(dim,
                                                           rank,
@@ -2451,7 +2451,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                                                           resultPointer,
                                                           resultStridesIter);
                                    maxCursor = reinterpret_cast<Z *>(maxCursorLong);
-                                   maxCursor[0] = true;
+                                   maxCursor[0] = static_cast<Z>(1);;
                             }
                         }
                     }

@@ -91,11 +91,11 @@
         (21, Copy)
 
 #define TRANSFORM_ANY_OPS \
-        (0, Assign)
+        (0, Assign) , \
+        (1, IsMax)
 
 // these ops return bool
 #define TRANSFORM_BOOL_OPS \
-        (0, IsMax), \
         (1, IsInf), \
         (2, IsNan), \
         (3, IsFinite), \

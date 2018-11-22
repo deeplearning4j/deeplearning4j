@@ -24,7 +24,7 @@ import org.nd4j.evaluation.curves.Histogram;
 import org.nd4j.evaluation.curves.ReliabilityDiagram;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
-import org.nd4j.linalg.api.ops.impl.transforms.bool.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.LossUtil;

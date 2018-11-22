@@ -87,7 +87,7 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
 
     @Override
     public Type getOpType() {
-        return Type.TRANSFORM_SAME;
+        return Type.TRANSFORM_ANY;
     }
 
     @Override
@@ -97,18 +97,6 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
 
     @Override
     public boolean validateDataTypes() {
-
-        val op = opNum();
-
-        if (y() != null && z() != null)
-            Preconditions.checkArgument(y().dataType() == z().dataType() || x().dataType() == z().dataType(), "Op.Z type must be either Op.X or Op.Y");
-
-        if (y() != null) {
-            if (op != 1 && (y().isR() || x().isR()))
-                Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point, but got [" + z.dataType() +"] instead");
-        } else if (x().isR())
-            Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point");
-
         return true;
     }
 
