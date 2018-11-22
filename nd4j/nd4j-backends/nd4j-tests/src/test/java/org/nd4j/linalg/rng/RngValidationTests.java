@@ -100,13 +100,29 @@ public class RngValidationTests {
             testCases.add(TestCase.builder().opType("binomial").dataType(type).shape(100,10000).minValue(0).maxValue(20).minValueInclusive(true).maxValueInclusive(true).arg("n", 20).arg("p",0.2)
                     .expectedMean(20*0.2).expectedStd(Math.sqrt(20*0.2*(1-0.2)) /*var = np(1-p)*/).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.01).build());
 
-                //truncated normal clips at (mean-2*std, mean+2*std). Mean for equal 2-sided clipping about mean is same as original mean. Variance is difficult to calculate...
+                //truncated normal clips at (mean-2*std, mean+2*std). Mean for equal 2 sided clipping about mean is same as original mean. Variance is difficult to calculate...
                 //Assume variance is similar to non-truncated normal (should be a bit less in practice) but use large relative error here
             testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(new long[0]).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(1000).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
                     .expectedMean(0.0).expectedStd(1.0).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.01).build());
             testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(100,10000).minValue(1.0).maxValue(3.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
                     .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.001).build());
+
+            //Dropout (non-inverted): same as bernoulli distribution, when dropout applied to "ones" array
+            testCases.add(TestCase.builder().opType("dropout").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("dropout").dataType(type).shape(1000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.4)
+                    .expectedMean(0.4).expectedStd(Math.sqrt(0.4*(1-0.4)) /*var = p*(1-p)*/).build());
+            testCases.add(TestCase.builder().opType("dropout").dataType(type).shape(100,10000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.3)
+                    .expectedMean(0.3).expectedStd(Math.sqrt(0.3*(1-0.3)) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+
+            //Dropout (inverted): basically bernoulli distribution * 2, when inverted dropout applied to "ones" array
+            testCases.add(TestCase.builder().opType("dropout_inverted").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element
+            //TODO not sure on stdev values here
+//            testCases.add(TestCase.builder().opType("dropout_inverted").dataType(type).shape(1000).minValue(0).maxValue(1.0/0.4).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.4)
+//                    //Mean: 0.4 probability of  being retained - mean is 0.4 probability * (1.0/0.4) = 1.0. i.e., expected mean is unchanged by inverted dropout
+//                    .expectedMean(1.0).expectedStd(Math.sqrt(0.4*(1-0.4)) /*var = p*(1-p)*/).build());
+//            testCases.add(TestCase.builder().opType("dropout_inverted").dataType(type).shape(100,10000).minValue(0).maxValue(1.0/0.3).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.3)
+//                    .expectedMean(1.0).expectedStd(2*Math.sqrt(0.3*(1-0.3)) /*var = p*(1-p); note var(aX) = a^2 var(X)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
         }
 
 
@@ -139,9 +155,9 @@ public class RngValidationTests {
             //Check RNG seed repeatability
             Op op2 = getOp(tc);
             Nd4j.getRandom().setSeed(tc.getRngSeed());
-            Nd4j.getExecutioner().exec(op);
+            Nd4j.getExecutioner().exec(op2);
             INDArray out1 = op.z();
-            INDArray out2 = op.z();
+            INDArray out2 = op2.z();
             assertEquals(out1, out2);
 
             //Check mean, stdev
@@ -211,6 +227,14 @@ public class RngValidationTests {
                 return new BinomialDistribution(tc.arr(), tc.prop("n"), (double)tc.prop("p"));
             case "truncated_normal":
                 return new TruncatedNormalDistribution(tc.arr(), (double)tc.prop("mean"), (double)tc.prop("std") );
+            case "dropout":
+                INDArray z = tc.arr();
+                z.assign(1.0);
+                return new DropOut(z, tc.prop("p"));
+            case "dropout_inverted":
+                INDArray z2 = tc.arr();
+                z2.assign(1.0);
+                return new DropOutInverted(z2, tc.prop("p"));
             default:
                 throw new RuntimeException("Not yet implemented: " + tc.getOpType());
         }
