@@ -1471,8 +1471,8 @@ public:
             Nd4jLong *tadShapeInfo,
             Nd4jLong *tadOffsets);
 
-    Nd4jLong encodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold, Nd4jLong* hXShapeInfo);
-    void decodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo, Nd4jLong* hXShapeInfo);
+    Nd4jLong encodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold);
+    void decodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong* xShapeInfo, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
 
 
     void encodeThresholdP1(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold);
@@ -1486,8 +1486,7 @@ public:
     void sort(Nd4jPointer *extraPointers,
             void *x, Nd4jLong *xShapeInfo,
             void *dx, Nd4jLong *dxShapeInfo,
-            bool descending,
-            Nd4jLong* hXShapeInfo);
+            bool descending);
 
     void sortTad(Nd4jPointer *extraPointers,
             void *x, Nd4jLong *xShapeInfo,
@@ -1496,8 +1495,7 @@ public:
             int dimensionLength,
             Nd4jLong *tadShapeInfo,
             Nd4jLong *tadOffsets,
-            bool descending,
-            Nd4jLong* hXShapeInfo);
+            bool descending);
 
 
     // special sort impl for sorting out COO indices and values

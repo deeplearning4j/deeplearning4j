@@ -1417,7 +1417,7 @@ void NativeOps::checkP2P() {
     // no-op
 }
 
-void NativeOps::decodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong N, void *dz, Nd4jLong *hZShapeInfo, Nd4jLong* hXShapeInfo) {
+void NativeOps::decodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong* hXShapeInfo, Nd4jLong N, void *dz, Nd4jLong *hZShapeInfo) {
     NativeOpExcutioner::decodeBitmap(hX, N, dz, hZShapeInfo);
 }
 
@@ -1805,8 +1805,7 @@ Nd4jPointer NativeOps::pointerForAddress(Nd4jLong address) {
 void NativeOps::sort(Nd4jPointer *extraPointers,
         void *hX, Nd4jLong *hXShapeInfo,
         void *dX, Nd4jLong *dXShapeInfo,
-        bool descending,
-        Nd4jLong* xShapeInfo) {
+        bool descending) {
     NativeOpExcutioner::execSort(hX, hXShapeInfo, descending);
 }
 
@@ -1817,8 +1816,7 @@ void NativeOps::sortTad(Nd4jPointer *extraPointers,
             int dimensionLength,
             Nd4jLong *tadShapeInfo,
             Nd4jLong *tadOffsets,
-            bool descending,
-            Nd4jLong* xShapeInfo) {
+            bool descending) {
     NativeOpExcutioner::execSort(hX, hXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }
 
@@ -1830,7 +1828,7 @@ void NativeOps::sortCooIndices(Nd4jPointer *extraPointers,
     NativeOpExcutioner::execSortCooIndices(indices, values, length, rank);
 }
 
-Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong *hXShapeInfo, Nd4jLong N, int *dz, float threshold, Nd4jLong* xShapeInfo) {
+Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong *hXShapeInfo, Nd4jLong N, int *dz, float threshold) {
     return NativeOpExcutioner::encodeBitmap(hX, hXShapeInfo, N, dz, threshold);
 }
 
