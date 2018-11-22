@@ -2400,6 +2400,120 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
 }
 
 ////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_CropAndResize_1) {
+
+    NDArray<float> images   ('c', {1,2,2,1}, {1,2,3,4});
+    NDArray<float> boxes('c', {1,4}, {0,0,1,1});
+    NDArray<float> boxI('c', {1}, {0});
+    NDArray<float> cropSize({1.f, 1.f});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray<float> expected('c', {1,1,1,1}, {2.5f});
+
+    nd4j::ops::crop_and_resize<float> op;
+    auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+    result->printIndexedBuffer("Cropped and Resized");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_CropAndResize_2) {
+
+    NDArray<float> images   ('c', {1,2,2,1}, {1,2,3,4});
+    NDArray<float> boxes('c', {1,4}, {0,0,1,1});
+    NDArray<float> boxI('c', {1}, {0});
+    NDArray<float> cropSize({1.f, 1.f});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray<float> expected('c', {1,1,1,1}, {4.f});
+
+    nd4j::ops::crop_and_resize<float> op;
+    auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+    result->printIndexedBuffer("Cropped and Resized");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_CropAndResize_3) {
+
+    NDArray<float> images   ('c', {1,2,2,1}, {1,2,3,4});
+    NDArray<float> boxes('c', {1,4}, {0,0,1,1});
+    NDArray<float> boxI('c', {1}, {0});
+    NDArray<float> cropSize({3.f, 3.f});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray<float> expected('c', {1,3,3,1}, {1, 1.5f, 2., 2.f, 2.5f, 3.f, 3.f, 3.5f, 4.f});
+
+    nd4j::ops::crop_and_resize<float> op;
+    auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+    result->printIndexedBuffer("Cropped and Resized");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
+
+    NDArray<float> images   ('c', {1,2,2,1}, {1,2,3,4});
+    NDArray<float> boxes('c', {1,4}, {0,0,1,1});
+    NDArray<float> boxI('c', {1}, {0});
+    NDArray<float> cropSize({3.f, 3.f});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray<float> expected('c', {1,3,3,1}, {1, 2.f, 2.f, 3.f, 4, 4.f, 3.f, 4.f, 4.f});
+
+    nd4j::ops::crop_and_resize<float> op;
+    auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+    result->printIndexedBuffer("Cropped and Resized");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
+
+    NDArray<float> x('c', {2,3}, {-63.80f, -63.75f, -63.70f, -63.5f, 0.0f, 0.1f});
+    NDArray<float> exp('c', {2,3},  {-63.75f, -63.75f, -63.75f, -63.5f, 0.0f, 0.0f});
+    NDArray<float> min(-63.65f);
+    NDArray<float> max(0.1f);
+
+    nd4j::ops::fake_quant_with_min_max_vars<float> op;
+    auto results = op.execute({&x, &min, &max}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<float>* result = results->at(0);
+    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+////////////////////////////////////////////////////////////////////
 TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test1) {
 
     auto input    = NDArrayFactory::create<TypeParam>('c', {2,3,4});
@@ -2554,3 +2668,5 @@ TEST_F(DeclarableOpsTests10, printIndexedTest_1) {
     delete lastDims;
 
 }
+
+

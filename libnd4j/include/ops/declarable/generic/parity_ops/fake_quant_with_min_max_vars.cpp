@@ -25,7 +25,7 @@
 #include <ops/declarable/helpers/fake_quantization.h>
 namespace nd4j {
     namespace ops {
-        CONFIGURABLE_OP_IMPL(fake_quant_with_min_max_vars, 3, 1, true, 0, 2) {
+        CONFIGURABLE_OP_IMPL(fake_quant_with_min_max_vars, 3, 1, true, 0, 0) {
 
             auto x = INPUT_VARIABLE(0);
             auto min = INPUT_VARIABLE(1);

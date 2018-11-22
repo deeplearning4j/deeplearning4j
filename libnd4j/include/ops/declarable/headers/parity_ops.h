@@ -1633,7 +1633,7 @@ namespace nd4j {
          *    0 - NDArray with the same shape as input
          */
         #if NOT_EXCLUDED(OP_fake_quant_with_min_max_vars)
-        DECLARE_CONFIGURABLE_OP(fake_quant_with_min_max_vars, 3, 1, true, 0, 2);
+        DECLARE_CONFIGURABLE_OP(fake_quant_with_min_max_vars, 3, 1, true, 0, -2);
         #endif
 
     }
