@@ -56,15 +56,24 @@ namespace nd4j {
         _buffer[_length] = 0;
     }
 
+    void utf8string::Swap(utf8string &other) {
+        std::swap(_length, other._length);
+        std::swap(_buffer, other._buffer);// = new char[_length+1];
+        std::swap(_allocated, other._allocated); // = true;
+    }
+
     utf8string& utf8string::operator=(const utf8string &other) {
 //        if (_allocated && _length > 0)
 //            delete[] _buffer;
-
-        _length = other._length;
-        _buffer = new char[_length+1];
-        _allocated = true;
-        std::memcpy(_buffer, other._buffer, _length);
-        _buffer[_length] = 0;
+        if (this != &other) {
+            utf8string temp(other);
+            Swap(temp);
+//        _length = other._length;
+//        _buffer = new char[_length+1];
+//        _allocated = true;
+//        std::memcpy(_buffer, other._buffer, _length);
+//        _buffer[_length] = 0;
+        }
         return *this;
     }
 }
