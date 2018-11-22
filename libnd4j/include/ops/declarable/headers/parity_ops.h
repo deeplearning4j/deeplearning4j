@@ -1443,13 +1443,34 @@ namespace nd4j {
         *   1 - new height
         *
         * output array:
-        *   the tensor with calculated backproped dots
+        *   the 4D-Tensor with calculated backproped dots
         *
         * CAUTION: either size tensor or a pair of int params should be provided.
         */
 
         #if NOT_EXCLUDED(OP_resize_bilinear)
         DECLARE_CUSTOM_OP(resize_bilinear, 1, 1, false, 0, -2);
+        #endif
+
+        /**
+        * This op make nearest neighbor interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
+        *
+        * int arguments: (optional)
+        *   0 - new width
+        *   1 - new height
+        *
+        * output array:
+        *   the 4D-Tensor with calculated backproped dots
+        *
+        * CAUTION: either size tensor or a pair of int params should be provided.
+        */
+
+        #if NOT_EXCLUDED(OP_resize_bilinear)
+        DECLARE_CUSTOM_OP(resize_nearest_neighbor, 1, 1, false, 0, -2);
         #endif
 
         /**
@@ -1478,7 +1499,42 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_Assert)
         DECLARE_OP(Assert, 1, 1, false);
         #endif
+        /*
+         * image.non_max_suppression op.
+         * input:
+         *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
+         *     1 - scales - 1D-tensor with shape (num_boxes) by float type
+         *     2 - output_size - 0D-tensor by int type (optional)
+         * float args:
+         *     0 - threshold - threshold value for overlap checks (optional, by default 0.5)
+         * int args:
+         *     0 - output_size - as arg 2 used for same target. Eigher this or arg 2 should be provided.
+         *
+         * */
+        #if NOT_EXCLUDED(OP_image_non_max_suppression)
+        DECLARE_CUSTOM_OP(non_max_suppression, 2, 1, false, 0, 0);
+        #endif
 
+        /*
+         * cholesky op - decomposite positive square symetric matrix (or matricies when rank > 2).
+         * input:
+         *     0 - matricies - tensor with shape (..., N, N) by float type
+         *
+         * output - lower triangular matrix (matricies when rank > 2) with the same shape as input.
+         * */
+#if NOT_EXCLUDED(OP_cholesky)
+        DECLARE_OP(cholesky, 1, 1, true);
+#endif
+        /*
+         * nth_element - apply nth_element for last dimension of input tensor
+         * input array:
+         *     0 - input array
+         *     1 - scalar tensor with n for operation. n should be less than last dimension
+         *
+         */
+        #if NOT_EXCLUDED(OP_nth_element)
+        DECLARE_CUSTOM_OP(nth_element, 2, 1, false, 0, 0);
+        #endif
     }
 }
 

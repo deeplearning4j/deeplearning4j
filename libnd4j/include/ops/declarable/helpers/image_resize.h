@@ -28,6 +28,8 @@ namespace helpers {
 
     template <typename T>
     int resizeBilinearFunctor(NDArray<T> const* image, int width, int height, bool center, NDArray<T>* output);
+    template <typename T>
+    int resizeNeighborFunctor(NDArray<T> const* image, int width, int height, bool center, NDArray<T>* output);
 }
 }
 }

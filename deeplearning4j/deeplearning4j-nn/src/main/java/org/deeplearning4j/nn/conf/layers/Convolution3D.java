@@ -227,6 +227,13 @@ public class Convolution3D extends ConvolutionLayer {
             return this;
         }
 
+        /**
+         * The data format for input and output activations.<br>
+         * NCDHW: activations (in/out) should have shape [minibatch, channels, depth, height, width]<br>
+         * NDHWC: activations (in/out) should have shape [minibatch, depth, height, width, channels]<br>
+         *
+         * @param dataFormat Data format to use for activations
+         */
         public Builder dataFormat(DataFormat dataFormat) {
             this.dataFormat = dataFormat;
             return this;

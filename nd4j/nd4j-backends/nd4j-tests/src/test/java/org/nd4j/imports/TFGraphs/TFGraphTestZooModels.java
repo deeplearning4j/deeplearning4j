@@ -41,8 +41,11 @@ public class TFGraphTestZooModels {
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6462
             "inception_v4_2018_04_27",
-            "inception_resnet_v2_2018_04_27"
+            "inception_resnet_v2_2018_04_27",
 
+            //New models - ignore until fixes merged
+            "ssd_.*",
+            "resnetv2.*"
     };
 
     @Rule

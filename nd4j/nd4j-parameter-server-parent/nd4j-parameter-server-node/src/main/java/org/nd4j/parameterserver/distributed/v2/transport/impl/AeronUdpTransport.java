@@ -30,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingIdleStrategy;
-import org.jetbrains.annotations.NotNull;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
@@ -151,7 +150,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // this executor service han
     protected ExecutorService messagesExecutorService = Executors.newFixedThreadPool(SENDER_THREADS + MESSAGE_THREADS + SUBSCRIPTION_THREADS, new ThreadFactory() {
         @Override
-        public Thread newThread(@NotNull Runnable r) {
+        public Thread newThread(@NonNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
             //TODO implement support for multi-GPU masters

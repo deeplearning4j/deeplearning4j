@@ -78,7 +78,13 @@ public abstract class DifferentialFunction {
     private String ownName;
 
     public DifferentialFunction() {
-        setInstanceId();
+        this(true);
+    }
+
+    public DifferentialFunction(boolean sameDiff){
+        //Only need instance ID if using function in context of SameDiff, not standard ND4J with INDArray args
+        if(sameDiff)
+            setInstanceId();
     }
 
     /**

@@ -48,6 +48,10 @@ public class Size extends DynamicCustomOp {
         throw new NoOpNameFoundException("No onnx name found for shape " + opName());
     }
 
+    @Override
+    public String tensorflowName() {
+        return "Size";
+    }
 
     @Override
     public String opName() {

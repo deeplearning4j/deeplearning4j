@@ -17,9 +17,9 @@
 package org.deeplearning4j.ui.storage.mapdb;
 
 import lombok.Data;
+import lombok.NonNull;
 import org.deeplearning4j.api.storage.*;
 import org.deeplearning4j.ui.storage.BaseCollectionStatsStorage;
-import org.jetbrains.annotations.NotNull;
 import org.mapdb.*;
 
 import java.io.File;
@@ -257,14 +257,14 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
     //Simple serializer, based on MapDB's SerializerJava
     private static class SessionTypeWorkerIdSerializer implements Serializer<SessionTypeWorkerId> {
         @Override
-        public void serialize(@NotNull DataOutput2 out, @NotNull SessionTypeWorkerId value) throws IOException {
+        public void serialize(@NonNull DataOutput2 out, @NonNull SessionTypeWorkerId value) throws IOException {
             ObjectOutputStream out2 = new ObjectOutputStream(out);
             out2.writeObject(value);
             out2.flush();
         }
 
         @Override
-        public SessionTypeWorkerId deserialize(@NotNull DataInput2 in, int available) throws IOException {
+        public SessionTypeWorkerId deserialize(@NonNull DataInput2 in, int available) throws IOException {
             try {
                 ObjectInputStream in2 = new ObjectInputStream(new DataInput2.DataInputToStream(in));
                 return (SessionTypeWorkerId) in2.readObject();
@@ -282,14 +282,14 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
     //Simple serializer, based on MapDB's SerializerJava
     private static class SessionTypeIdSerializer implements Serializer<SessionTypeId> {
         @Override
-        public void serialize(@NotNull DataOutput2 out, @NotNull SessionTypeId value) throws IOException {
+        public void serialize(@NonNull DataOutput2 out, @NonNull SessionTypeId value) throws IOException {
             ObjectOutputStream out2 = new ObjectOutputStream(out);
             out2.writeObject(value);
             out2.flush();
         }
 
         @Override
-        public SessionTypeId deserialize(@NotNull DataInput2 in, int available) throws IOException {
+        public SessionTypeId deserialize(@NonNull DataInput2 in, int available) throws IOException {
             try {
                 ObjectInputStream in2 = new ObjectInputStream(new DataInput2.DataInputToStream(in));
                 return (SessionTypeId) in2.readObject();
@@ -307,7 +307,7 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
     private class PersistableSerializer<T extends Persistable> implements Serializer<T> {
 
         @Override
-        public void serialize(@NotNull DataOutput2 out, @NotNull Persistable value) throws IOException {
+        public void serialize(@NonNull DataOutput2 out, @NonNull Persistable value) throws IOException {
             //Persistable values can't be decoded in isolation, i.e., without knowing the type
             //So, we'll first write an integer representing the class name, so we can decode it later...
             int classIdx = getIntForClass(value.getClass());
@@ -316,7 +316,7 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
         }
 
         @Override
-        public T deserialize(@NotNull DataInput2 input, int available) throws IOException {
+        public T deserialize(@NonNull DataInput2 input, int available) throws IOException {
             int classIdx = input.readInt();
             String className = getClassForInt(classIdx);
             Class<?> clazz;
