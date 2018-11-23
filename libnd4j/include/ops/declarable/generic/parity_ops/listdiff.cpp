@@ -35,6 +35,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(values->rankOf() == 1, 0, "ListDiff: rank of values should be 1D, but got %iD instead", values->rankOf());
             REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
+            REQUIRE_TRUE(keep->dataType() == values->dataType(), 0, "ListDiff: both inputs must have same data type");
 
             return helpers::listDiffFunctor(values, keep, output1, output2);
         };
@@ -45,8 +46,11 @@ namespace nd4j {
 
             REQUIRE_TRUE(values->rankOf() == 1, 0, "ListDiff: rank of values should be 1D, but got %iD instead", values->rankOf());
             REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
+            auto v = values->dataType();
+            auto k = keep->dataType();
+            REQUIRE_TRUE(k == v, 0, "ListDiff: both inputs must have same data type");
 
-            int saved = helpers::listDiffCount(values, keep);
+            auto saved = helpers::listDiffCount(values, keep);
 
             REQUIRE_TRUE(saved > 0, 0, "ListDiff: no matches found");
 
@@ -59,9 +63,9 @@ namespace nd4j {
 
         DECLARE_TYPES(listdiff) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
                     ->setAllowedOutputTypes(0, DataType::INHERIT)
-                    ->setAllowedOutputTypes(1, DataType::INT64);
+                    ->setAllowedOutputTypes(1, {ALL_INTS});
         }
     }
 }

@@ -86,7 +86,7 @@ public class Range extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-
+/*
         NodeDef startNode = null,endNode = null,deltaNode = null;
         for(val  node : graph.getNodeList()) {
             if(node.getName().equals(nodeDef.getInput(0))) {
@@ -139,7 +139,7 @@ public class Range extends DynamicCustomOp {
         val fromVar = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(startNode.getName()));
         val toVar = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(endNode.getName()));
         val deltaVar =  initWith.getVariable(TFGraphMapper.getInstance().getNodeName(deltaNode.getName()));
-
+*/
 //        this.fromVertexId = fromVar.getVarName();
 //        this.toVertexId = toVar.getVarName();
 //        this.deltaVertexId = deltaVar.getVarName();
@@ -163,21 +163,16 @@ public class Range extends DynamicCustomOp {
         val inputArgs = inputArguments();
         int cnt = 0;
 
-        if (iArgs.length > 0) {
+        if(args().length > 1) {
+            if (inputArgs.length > 0)
+                return Nd4j.getExecutioner().calculateOutputShape(this);
+        } else if (iArgs.length > 0) {
+            return Nd4j.getExecutioner().calculateOutputShape(this);
+        } else if (tArgs.length > 0) {
             return Nd4j.getExecutioner().calculateOutputShape(this);
         }
-
-        else if (tArgs.length > 0) {
-            return Nd4j.getExecutioner().calculateOutputShape(this);
-        }
-
-        else if(inputArgs.length > 0) {
-            return Nd4j.getExecutioner().calculateOutputShape(this);
-        }
-
 
        return Collections.emptyList();
-
     }
 
     @Override

@@ -50,3 +50,14 @@ TEST_F(DeclarableOpsTests11, test_mixed_biasadd_1) {
 
     ASSERT_EQ(exp, z);
 }
+
+TEST_F(DeclarableOpsTests11, test_listdiff_1) {
+    auto x = NDArrayFactory::create<int>('c', {4}, {0, 1, 2, 3});
+    auto y = NDArrayFactory::create<int>('c',{2}, {3, 1});
+
+    nd4j::ops::listdiff op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    delete result;
+}

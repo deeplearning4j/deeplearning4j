@@ -27,7 +27,6 @@ namespace ops {
 namespace helpers {
     template <typename T>
     static Nd4jLong listDiffCount_(NDArray* values, NDArray* keep) {
-
         Nd4jLong saved = 0L;
         for (Nd4jLong e = 0; e < values->lengthOf(); e++) {
             T v = values->e<T>(e);
@@ -43,17 +42,16 @@ namespace helpers {
     Nd4jLong listDiffCount(NDArray* values, NDArray* keep) {
         auto xType = values->dataType();
 
-        BUILD_SINGLE_SELECTOR(xType, return listDiffCount_, (values, keep), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, return listDiffCount_, (values, keep), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template Nd4jLong listDiffCount_, (NDArray* values, NDArray* keep);, FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template Nd4jLong listDiffCount_, (NDArray* values, NDArray* keep);, LIBND4J_TYPES);
 
     template <typename T>
     static int listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
 
         std::vector<T> saved;
         std::vector<Nd4jLong> indices;
-
 
         for (Nd4jLong e = 0; e < values->lengthOf(); e++) {
             T v = values->e<T>(e);
@@ -85,18 +83,8 @@ namespace helpers {
                 nd4j_printf("ListDiff: output/actual indices size mismatch", "");
                 throw std::invalid_argument("Op validation failed");
             }
-//            if (nd4j::ops::conditionHelper(__FILE__, __LINE__, z0->lengthOf() == saved.size(), 0, "ListDiff: output/actual size mismatch") != 0)
-//                throw std::invalid_argument("Op validation failed");
-//            if (nd4j::ops::conditionHelper(__FILE__, __LINE__, z1->lengthOf() == saved.size(), 0, "ListDiff: output/actual indices size mismatch") != 0)
-//                throw std::invalid_argument("Op validation failed");
-//            REQUIRE_TRUE(z0->lengthOf() == saved.size(), 0, "ListDiff: output/actual size mismatch");
-//            REQUIRE_TRUE(z1->lengthOf() == saved.size(), 0, "ListDiff: output/actual size mismatch");
-
             memcpy(z0->buffer(), saved.data(), saved.size() * sizeof(T));
             memcpy(z1->buffer(), indices.data(), indices.size() * sizeof(Nd4jLong));
-
-            //OVERWRITE_2_RESULTS(z0, z1);
-    //        STORE_2_RESULTS(z0, z1);
         }
         return ND4J_STATUS_OK;
     }
@@ -104,10 +92,17 @@ namespace helpers {
     int listDiffFunctor(NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
         auto xType = values->dataType();
 
-        BUILD_SINGLE_SELECTOR(xType, return listDiffFunctor_, (values, keep, output1, output2), FLOAT_TYPES);
+        if (DataTypeUtils::isR(xType)) {
+            BUILD_SINGLE_SELECTOR(xType, return listDiffFunctor_, (values, keep, output1, output2), FLOAT_TYPES);
+        } else if (DataTypeUtils::isZ(xType)) {
+            BUILD_SINGLE_SELECTOR(xType, return listDiffFunctor_, (values, keep, output1, output2), INTEGER_TYPES);
+        } else {
+            throw std::runtime_error("ListDiff: Only integer and floating point data types are supported");
+        }
     }
 
     BUILD_SINGLE_TEMPLATE(template int listDiffFunctor_, (NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);, FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int listDiffFunctor_, (NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);, INTEGER_TYPES);
 
 }
 }
