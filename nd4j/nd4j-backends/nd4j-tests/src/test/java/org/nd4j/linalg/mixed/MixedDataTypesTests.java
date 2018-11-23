@@ -368,4 +368,22 @@ public class MixedDataTypesTests {
         }
     }
 
+    @Test
+    public void testSimple(){
+        for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.LONG}) {
+            System.out.println("----- " + dt + " -----");
+            Nd4j.setDataType(dt);
+            INDArray arr = Nd4j.ones(1, 5);
+            System.out.println("Ones: " + arr);
+            arr.assign(1.0);
+            System.out.println("assign(1.0): " + arr);
+            System.out.println("DIV: " + arr.div(8));
+            System.out.println("MUL: " + arr.mul(8));
+            System.out.println("SUB: " + arr.sub(8));
+            System.out.println("ADD: " + arr.add(8));
+            System.out.println("RDIV: " + arr.rdiv(8));
+            System.out.println("RSUB: " + arr.rsub(8));
+        }
+    }
+
 }

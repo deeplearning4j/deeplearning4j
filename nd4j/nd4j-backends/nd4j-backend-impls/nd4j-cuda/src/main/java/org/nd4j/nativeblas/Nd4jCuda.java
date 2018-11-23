@@ -454,8 +454,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer extraParams,
                 Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo,
                 Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                IntPointer dimension,
-                int dimensionLength);
+                IntPointer dimension, int dimensionLength);
     public native void execIndexReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
                 Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo,
@@ -463,8 +462,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer extraParams,
                 Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo,
                 Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                IntBuffer dimension,
-                int dimensionLength);
+                IntBuffer dimension, int dimensionLength);
     public native void execIndexReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
                 Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo,
@@ -472,8 +470,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer extraParams,
                 Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
                 Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                int[] dimension,
-                int dimensionLength);
+                int[] dimension, int dimensionLength);
+
     /**
      *
      * @param opNum
@@ -495,8 +493,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer dY, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
                 Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo,
                 Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                IntPointer dimension,
-                int dimensionLength);
+                IntPointer dimension,int dimensionLength);
     public native void execBroadcast(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
@@ -506,8 +503,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer dY, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
                 Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo,
                 Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                IntBuffer dimension,
-                int dimensionLength);
+                IntBuffer dimension,int dimensionLength);
     public native void execBroadcast(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
@@ -517,8 +513,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer dY, @Cast("Nd4jLong*") long[] dYShapeInfo,
                 Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
                 Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                int[] dimension,
-                int dimensionLength);
+                int[] dimension,int dimensionLength);
+
 
     public native void execBroadcastBool(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
@@ -529,8 +525,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer dY, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
                 Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo,
                 Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                IntPointer dimension,
-                int dimensionLength);
+                IntPointer dimension,int dimensionLength);
     public native void execBroadcastBool(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
@@ -540,8 +535,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer dY, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
                 Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo,
                 Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                IntBuffer dimension,
-                int dimensionLength);
+                IntBuffer dimension,int dimensionLength);
     public native void execBroadcastBool(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
@@ -551,8 +545,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer dY, @Cast("Nd4jLong*") long[] dYShapeInfo,
                 Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
                 Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                int[] dimension,
-                int dimensionLength);
+                int[] dimension,int dimensionLength);
 
     /**
      *
@@ -703,6 +696,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                               Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
                               Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo);
 
+
     public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
                               Pointer hX, @Cast("Nd4jLong*") LongPointer hXShapeInfo,
@@ -741,8 +735,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 Pointer extraParams,
                                 Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo,
                                 Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                                IntPointer dimension,
-                                int dimensionLength);
+                                IntPointer dimension,int dimensionLength);
     public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo,
@@ -750,8 +743,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 Pointer extraParams,
                                 Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo,
                                 Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                                IntBuffer dimension,
-                                int dimensionLength);
+                                IntBuffer dimension,int dimensionLength);
     public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo,
@@ -759,8 +751,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 Pointer extraParams,
                                 Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
                                 Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                                int[] dimension,
-                                int dimensionLength);
+                                int[] dimension,int dimensionLength);
+
 
     public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
@@ -769,8 +761,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           Pointer extraParams,
                           Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo,
                           Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                          IntPointer dimension,
-                          int dimensionLength);
+                          IntPointer dimension, int dimensionLength);
     public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
                           Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo,
@@ -778,8 +769,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           Pointer extraParams,
                           Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo,
                           Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                          IntBuffer dimension,
-                          int dimensionLength);
+                          IntBuffer dimension, int dimensionLength);
     public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
                           Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo,
@@ -787,8 +777,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           Pointer extraParams,
                           Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
                           Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                          int[] dimension,
-                          int dimensionLength);
+                          int[] dimension, int dimensionLength);
+
 
     public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
@@ -797,8 +787,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           Pointer extraParams,
                           Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo,
                           Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                          IntPointer dimension,
-                          int dimensionLength);
+                          IntPointer dimension, int dimensionLength);
     public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
                           Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo,
@@ -806,8 +795,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           Pointer extraParams,
                           Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo,
                           Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                          IntBuffer dimension,
-                          int dimensionLength);
+                          IntBuffer dimension, int dimensionLength);
     public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
                           Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo,
@@ -815,8 +803,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           Pointer extraParams,
                           Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
                           Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                          int[] dimension,
-                          int dimensionLength);
+                          int[] dimension, int dimensionLength);
+
 
     public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
@@ -825,8 +813,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           Pointer extraParams,
                           Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo,
                           Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                          IntPointer dimension,
-                          int dimensionLength);
+                          IntPointer dimension, int dimensionLength);
     public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
                           Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo,
@@ -834,8 +821,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           Pointer extraParams,
                           Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo,
                           Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                          IntBuffer dimension,
-                          int dimensionLength);
+                          IntBuffer dimension, int dimensionLength);
     public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
                           Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo,
@@ -843,8 +829,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           Pointer extraParams,
                           Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
                           Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                          int[] dimension,
-                          int dimensionLength);
+                          int[] dimension, int dimensionLength);
 
     /**
      *
@@ -990,12 +975,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 Pointer dY, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
                                 Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo,
                                 Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                                IntPointer dimension,
-                                int dimensionLength,
-                                @Cast("Nd4jLong*") LongPointer xTadShapeInfo,
-                                @Cast("Nd4jLong*") LongPointer xOffsets,
-                                @Cast("Nd4jLong*") LongPointer yTadShapeInfo,
-                                @Cast("Nd4jLong*") LongPointer yOffsets);
+                                IntPointer dimension, int dimensionLength,
+                                @Cast("Nd4jLong*") LongPointer xTadShapeInfo, @Cast("Nd4jLong*") LongPointer xOffsets,
+                                @Cast("Nd4jLong*") LongPointer yTadShapeInfo, @Cast("Nd4jLong*") LongPointer yOffsets);
     public native void execReduce3All(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo,
@@ -1005,12 +987,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 Pointer dY, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
                                 Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo,
                                 Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                                IntBuffer dimension,
-                                int dimensionLength,
-                                @Cast("Nd4jLong*") LongBuffer xTadShapeInfo,
-                                @Cast("Nd4jLong*") LongBuffer xOffsets,
-                                @Cast("Nd4jLong*") LongBuffer yTadShapeInfo,
-                                @Cast("Nd4jLong*") LongBuffer yOffsets);
+                                IntBuffer dimension, int dimensionLength,
+                                @Cast("Nd4jLong*") LongBuffer xTadShapeInfo, @Cast("Nd4jLong*") LongBuffer xOffsets,
+                                @Cast("Nd4jLong*") LongBuffer yTadShapeInfo, @Cast("Nd4jLong*") LongBuffer yOffsets);
     public native void execReduce3All(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                 int opNum,
                                 Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo,
@@ -1020,12 +999,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                 Pointer dY, @Cast("Nd4jLong*") long[] dYShapeInfo,
                                 Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
                                 Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                                int[] dimension,
-                                int dimensionLength,
-                                @Cast("Nd4jLong*") long[] xTadShapeInfo,
-                                @Cast("Nd4jLong*") long[] xOffsets,
-                                @Cast("Nd4jLong*") long[] yTadShapeInfo,
-                                @Cast("Nd4jLong*") long[] yOffsets);
+                                int[] dimension, int dimensionLength,
+                                @Cast("Nd4jLong*") long[] xTadShapeInfo, @Cast("Nd4jLong*") long[] xOffsets,
+                                @Cast("Nd4jLong*") long[] yTadShapeInfo, @Cast("Nd4jLong*") long[] yOffsets);
 
     /**
      *
@@ -1446,8 +1422,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 @Cast("Nd4jPointer*") PointerPointer ddata, @Cast("Nd4jPointer*") PointerPointer dinputShapeInfo,
                 Pointer result, @Cast("Nd4jLong*") LongPointer resultShapeInfo,
                 Pointer dresult, @Cast("Nd4jLong*") LongPointer dresultShapeInfo,
-                @Cast("Nd4jPointer*") PointerPointer tadPointers,
-                @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+                @Cast("Nd4jPointer*") PointerPointer tadPointers, @Cast("Nd4jPointer*") PointerPointer offsetPointers);
     public native void concat(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int dimension,
@@ -1456,8 +1431,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 @Cast("Nd4jPointer*") PointerPointer ddata, @Cast("Nd4jPointer*") PointerPointer dinputShapeInfo,
                 Pointer result, @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
                 Pointer dresult, @Cast("Nd4jLong*") LongBuffer dresultShapeInfo,
-                @Cast("Nd4jPointer*") PointerPointer tadPointers,
-                @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+                @Cast("Nd4jPointer*") PointerPointer tadPointers, @Cast("Nd4jPointer*") PointerPointer offsetPointers);
     public native void concat(
                 @Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int dimension,
@@ -1466,8 +1440,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 @Cast("Nd4jPointer*") PointerPointer ddata, @Cast("Nd4jPointer*") PointerPointer dinputShapeInfo,
                 Pointer result, @Cast("Nd4jLong*") long[] resultShapeInfo,
                 Pointer dresult, @Cast("Nd4jLong*") long[] dresultShapeInfo,
-                @Cast("Nd4jPointer*") PointerPointer tadPointers,
-                @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+                @Cast("Nd4jPointer*") PointerPointer tadPointers, @Cast("Nd4jPointer*") PointerPointer offsetPointers);
 
 
     public native void specialConcat(

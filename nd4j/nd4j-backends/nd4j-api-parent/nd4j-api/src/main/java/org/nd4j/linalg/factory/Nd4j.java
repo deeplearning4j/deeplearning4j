@@ -1514,15 +1514,7 @@ public class Nd4j {
      * @return
      */
     public static DataBuffer createBuffer(long length, boolean initialize) {
-        DataBuffer ret;
-        if (dataType() == DataType.FLOAT)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (dataType() == DataType.INT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize);
-        else if (dataType() == DataType.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
+        DataBuffer ret = createBuffer(Nd4j.dataType(), length, initialize);
 
         logCreationIfNecessary(ret);
         return ret;
