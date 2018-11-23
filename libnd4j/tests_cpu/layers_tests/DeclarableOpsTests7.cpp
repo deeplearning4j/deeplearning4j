@@ -3084,11 +3084,12 @@ TEST_F(DeclarableOpsTests7, transpose_test3) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, fill_test2) {
 
-    auto x = NDArrayFactory::create<double>('c', {1,2},  {2.f, 2.f});
+    auto x = NDArrayFactory::create<int>('c', {1,2},  {2, 2});
+    auto v = NDArrayFactory::create<double>(42.);
     auto exp = NDArrayFactory::create<double>('c', {2, 2},{42.f, 42.f, 42.f, 42.f});
     
     nd4j::ops::fill op;
-    auto result = op.execute({&x}, {42.f}, {});
+    auto result = op.execute({&x, &v}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -3103,11 +3104,12 @@ TEST_F(DeclarableOpsTests7, fill_test2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, fill_test3) {
 
-    auto x = NDArrayFactory::create<double>('c', {2},  {2.f, 2.f});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2},{42.f, 42.f, 42.f, 42.f});
+    auto x = NDArrayFactory::create<int>('c', {2},  {2, 2});
+    auto v = NDArrayFactory::create<double>(42.);
+    auto exp = NDArrayFactory::create<double>('c', {2, 2}, {42.f, 42.f, 42.f, 42.f});
         
     nd4j::ops::fill op;
-    auto result = op.execute({&x}, {42.f}, {});
+    auto result = op.execute({&x, &v}, {}, {});
     auto output = result->at(0);    
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
