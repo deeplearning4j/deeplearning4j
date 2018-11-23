@@ -56,6 +56,8 @@ import java.util.*;
 @Slf4j
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {
 
+    protected static final double HALF_LOGE_10 = 0.5 * Math.log(10.0);
+
     BatchNormalizationHelper helper = null;
     protected int helperCountFail = 0;
     protected int index = 0;
@@ -115,12 +117,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
 
         INDArray globalMean = params.get(BatchNormalizationParamInitializer.GLOBAL_MEAN);
-        INDArray globalVar = params.get(BatchNormalizationParamInitializer.GLOBAL_VAR);
+        INDArray globalVar = params.get(BatchNormalizationParamInitializer.GLOBAL_VAR);             //One of log10std will be null depending on config
+        INDArray globalLog10Std = params.get(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
         INDArray gamma = null;
         INDArray dGammaView;
         INDArray dBetaView;
         INDArray dGlobalMeanView = gradientViews.get(BatchNormalizationParamInitializer.GLOBAL_MEAN);
         INDArray dGlobalVarView = gradientViews.get(BatchNormalizationParamInitializer.GLOBAL_VAR);
+        INDArray dGlobalLog10StdView = gradientViews.get(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
         if (layerConf.isLockGammaBeta()) {
             val tempShape = new long[] {1, shape[1]};
             dGammaView = Nd4j.createUninitialized(tempShape, 'c');
@@ -170,7 +174,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             }
             if (ret != null) {
                 ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
-                ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
+                if(layerConf().isUseLogStd()){
+                    ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalLog10StdView);
+                } else {
+                    ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
+                }
 
                 if(input.rank() == 2){
                     INDArray e = ret.getSecond();
@@ -186,7 +194,13 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 Instead: We'll use the mathematically equivalent but "distributed safe" approach of:
                 mean[t+1] = mean[t] - updateMean
                 updateMean = mean[t] - mean[t+1] = (1-d) * (mean[t] - minibatchMean)
-                And use the same idea for global variance estimate
+                And use the same idea for global variance estimate.
+
+                Note also that we have 2 supported parameterizations here:
+                1. global variance estimate (only option until after 1.0.0-beta3)
+                2. global log10(std) estimate
+                These make zero difference for local training (other than perhaps when using FP16), but the latter is more
+                numerically stable and is scaled better for distributed training
                  */
                 INDArray batchMean = helper.getMeanCache();
                 INDArray batchVar = helper.getVarCache();
@@ -194,8 +208,26 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 Nd4j.getExecutioner().exec(new OldSubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
                 dGlobalMeanView.muli(1-layerConf().getDecay());
 
-                Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
-                dGlobalVarView.muli(1-layerConf().getDecay());
+                if(layerConf().isUseLogStd()){
+                    //Use log10(std) parameterization. This is more numerically stable for FP16 and better for distributed training
+                    //Note: log10(var) = loge(var) / loge(10), and log10(std) = 0.5*log10(var) -> log10(std) = 0.5 / loge(10) * loge(var)
+                    //Now, after reparameterizing: updateVar = var[t] - var[t+1],  we have:
+                    // updateLog10s = 0.5*log10(1-d) + 0.5*log10(var[t]-batchVar) = c + 0.5/loge(10) * loge(var[i]-batchVar]
+                    //Note that this is a moving average of variance accounting for the reparameterization
+                    double c = 0.5 * Math.log(1+layerConf().getDecay())/Math.log(10);
+                    //Determine global variance fro log10(stdev)
+                    INDArray gVar = Nd4j.valueArrayOf(globalLog10Std.shape(), 10.0);
+                    Transforms.pow(gVar, globalLog10Std, false);     //variance = (10^log10(s))^2 =
+                    gVar.muli(gVar);
+
+                    dGlobalLog10StdView.assign(c);
+                    Nd4j.getExecutioner().exec(new OldSubOp(gVar, batchVar, dGlobalLog10StdView));      //deltaGlobalLog10Std = globalVar[t] - batchVar
+                    Transforms.log(dGlobalLog10StdView, false).muli(HALF_LOGE_10);
+                } else {
+                    //Use variance estimate parameterization. This was only option up to and including 1.0.0-beta3
+                    Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
+                    dGlobalVarView.muli(1 - layerConf().getDecay());
+                }
 
 
                 return ret;
@@ -299,8 +331,29 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         Nd4j.getExecutioner().exec(new OldSubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
         dGlobalMeanView.muli(1-layerConf().getDecay());
 
-        Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
-        dGlobalVarView.muli(1-layerConf().getDecay());
+//        Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
+//        dGlobalVarView.muli(1-layerConf().getDecay());
+
+        if(layerConf().isUseLogStd()){
+            //Use log10(std) parameterization. This is more numerically stable for FP16 and better for distributed training
+            //Note: log10(var) = loge(var) / loge(10), and log10(std) = 0.5*log10(var) -> log10(std) = 0.5 / loge(10) * loge(var)
+            //Now, after reparameterizing: updateVar = var[t] - var[t+1],  we have:
+            // updateLog10s = 0.5*log10(1-d) + 0.5*log10(var[t]-batchVar) = c + 0.5/loge(10) * loge(var[i]-batchVar]
+            //Note that this is a moving average of variance accounting for the reparameterization
+            double c = 0.5 * Math.log(1+layerConf().getDecay())/Math.log(10);
+            //Determine global variance fro log10(stdev)
+            INDArray gVar = Nd4j.valueArrayOf(globalLog10Std.shape(), 10.0);
+            Transforms.pow(gVar, globalLog10Std, false);     //variance = (10^log10(s))^2 =
+            gVar.muli(gVar);
+
+            dGlobalLog10StdView.assign(c);
+            Nd4j.getExecutioner().exec(new OldSubOp(gVar, batchVar, dGlobalLog10StdView));      //deltaGlobalLog10Std = globalVar[t] - batchVar
+            Transforms.log(dGlobalLog10StdView, false).muli(HALF_LOGE_10);
+        } else {
+            //Use variance estimate parameterization. This was only option up to and including 1.0.0-beta3
+            Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
+            dGlobalVarView.muli(1 - layerConf().getDecay());
+        }
 
         retGradient.setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
         retGradient.setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
@@ -342,7 +395,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray gamma = null;
         INDArray beta = null;
         INDArray globalMeanView = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
-        INDArray globalVarView = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
+        INDArray globalVarView = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);           //Either this or log10std will be null depending on config
+        INDArray globalLog10StdView = getParam(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
         if (layerConf.isLockGammaBeta()) {
             if (helper != null && input.rank() == 4) {
                 //TODO: don't create these each iteration, when using cudnn
@@ -419,7 +473,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else {
             // Global mean and variance estimate - used after training
             mean = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
-            var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
+            if(layerConf().isUseLogStd()){
+                //var = (10^(log10(s)))^2
+                INDArray log10s = getParam(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
+                var = Transforms.pow(Nd4j.valueArrayOf(log10s.shape(), 10.0), log10s);
+                var.muli(var);
+            } else {
+                var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
+            }
             std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var).addi(layerConf().getEps()), false);
         }
 

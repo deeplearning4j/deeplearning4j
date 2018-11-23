@@ -42,10 +42,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     public static final String BETA = "beta";
     public static final String GLOBAL_MEAN = "mean";
     public static final String GLOBAL_VAR = "var";
-
-    public static List<String> keys() {
-        return Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_VAR);
-    }
+    public static final String GLOBAL_LOG_STD = "log10stdev";
 
     @Override
     public long numParams(NeuralNetConfiguration conf) {
@@ -70,7 +67,11 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
 
     @Override
     public List<String> paramKeys(Layer layer) {
-        return Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_VAR);
+        if(((BatchNormalization)layer).isUseLogStd()){
+            return Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_LOG_STD);
+        } else {
+            return Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_VAR);
+        }
     }
 
     @Override
@@ -120,13 +121,24 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
 
         if (initializeParams) {
             globalMeanView.assign(0);
-            globalVarView.assign(1);
+            if(layer.isUseLogStd()){
+                //Global log stdev: assign 0.0 as initial value (s=sqrt(v), and log10(s) = log10(sqrt(v)) -> log10(1) = 0
+                globalVarView.assign(0);
+            } else {
+                //Global variance view: assign 1.0 as initial value
+                globalVarView.assign(1);
+            }
         }
 
         params.put(GLOBAL_MEAN, globalMeanView);
         conf.addVariable(GLOBAL_MEAN);
-        params.put(GLOBAL_VAR, globalVarView);
-        conf.addVariable(GLOBAL_VAR);
+        if(layer.isUseLogStd()){
+            params.put(GLOBAL_LOG_STD, globalVarView);
+            conf.addVariable(GLOBAL_LOG_STD);
+        } else {
+            params.put(GLOBAL_VAR, globalVarView);
+            conf.addVariable(GLOBAL_VAR);
+        }
 
         return params;
     }
@@ -148,8 +160,13 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
 
         out.put(GLOBAL_MEAN,
                         gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(meanOffset, meanOffset + nOut)));
-        out.put(GLOBAL_VAR, gradientView.get(NDArrayIndex.point(0),
-                        NDArrayIndex.interval(meanOffset + nOut, meanOffset + 2 * nOut)));
+        if(layer.isUseLogStd()){
+            out.put(GLOBAL_LOG_STD, gradientView.get(NDArrayIndex.point(0),
+                    NDArrayIndex.interval(meanOffset + nOut, meanOffset + 2 * nOut)));
+        } else {
+            out.put(GLOBAL_VAR, gradientView.get(NDArrayIndex.point(0),
+                    NDArrayIndex.interval(meanOffset + nOut, meanOffset + 2 * nOut)));
+        }
 
         return out;
     }
