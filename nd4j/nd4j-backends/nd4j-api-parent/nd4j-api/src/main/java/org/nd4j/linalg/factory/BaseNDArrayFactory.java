@@ -1058,7 +1058,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray ones(long[] shape) {
         //ensure shapes that wind up being scalar end up with the write shape
 
-        INDArray ret = create(shape);
+        INDArray ret = createUninitialized(shape, Nd4j.order());
         ret.assign(1);
         return ret;
     }

@@ -5259,6 +5259,13 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray ones(DataType dataType, int rows, int columns) {
+        INDArray ret = INSTANCE.createUninitialized(dataType, new long[]{rows, columns}, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        ret.assign(1);
+        return ret;
+    }
+
     /**
      * Empty like
      *

@@ -372,8 +372,7 @@ public class MixedDataTypesTests {
     public void testSimple(){
         for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.LONG}) {
             System.out.println("----- " + dt + " -----");
-            Nd4j.setDataType(dt);
-            INDArray arr = Nd4j.ones(1, 5);
+            INDArray arr = Nd4j.ones(dt,1, 5);
             System.out.println("Ones: " + arr);
             arr.assign(1.0);
             System.out.println("assign(1.0): " + arr);
