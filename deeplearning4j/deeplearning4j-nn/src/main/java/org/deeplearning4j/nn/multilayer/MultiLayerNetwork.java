@@ -459,7 +459,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         //Get params for MultiLayerNetwork sub layers.
         int idx = param.indexOf('_');
         if (idx == -1)
-            throw new IllegalStateException("Invalid param key: not have layer separator: \"" + param + "\"");
+            throw new IllegalStateException("Invalid param key: does not have layer separator: \"" + param + "\"");
         int layerIdx = Integer.parseInt(param.substring(0, idx));
         String newKey = param.substring(idx + 1);
 

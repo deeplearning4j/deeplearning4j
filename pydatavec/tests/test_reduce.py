@@ -26,7 +26,7 @@ def test_reduce_2():
             schema.add_integer_column('hours')
 
             tp = TransformProcess(schema)
-            tp.reduce('name', red1, {'amount':red2})
+            tp.reduce('name', red1, {'amount': red2})
 
             tp.to_java()
 

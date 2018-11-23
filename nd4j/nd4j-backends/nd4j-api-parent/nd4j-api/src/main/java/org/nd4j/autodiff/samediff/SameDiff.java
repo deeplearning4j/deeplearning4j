@@ -205,6 +205,7 @@ public class SameDiff {
 
     private Map<String, List<String[]>> placeHolderMap;
     private Map<String, long[]> placeHolderOriginalShapes;
+    @Getter
     private Set<String> placeHolderVarNames;
     private MemoryWorkspace workspace;
     private Map<String, SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
@@ -2154,6 +2155,10 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(String name, WeightInitScheme weightInitScheme, long... shape) {
+        return var(name, weightInitScheme, true, shape);
+    }
+
+    protected SDVariable var(String name, WeightInitScheme weightInitScheme, boolean placeholderOnNullShape, long... shape) {
         if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name +
                     " already exists.");
@@ -2170,6 +2175,7 @@ public class SameDiff {
                 .sameDiff(this)
                 .shape(shape).weightInitScheme(weightInitScheme)
                 .varName(name)
+                .placeholderOnNullShape(placeholderOnNullShape)
                 .build();
 
 
@@ -2233,6 +2239,7 @@ public class SameDiff {
                 .sameDiff(this)
                 .shape(arr.getShape())
                 .varName(arr.getVarName())
+                .placeholderOnNullShape(false)
                 .weightInitScheme(new NDArraySupplierInitScheme(new NDArraySupplierInitScheme.NDArraySupplier() {
                     @Override
                     /**
@@ -2333,6 +2340,7 @@ public class SameDiff {
                 .sameDiff(this)
                 .shape(arr.shape())
                 .varName(name)
+                .placeholderOnNullShape(false)  //N/A here
                 .weightInitScheme(new NDArraySupplierInitScheme(new NDArraySupplierInitScheme.NDArraySupplier() {
                     @Override
                     /**
@@ -9617,7 +9625,7 @@ public class SameDiff {
                     SDVariable var = (i == 0 ? getVariable(baseName) : getVariable(baseName + ":" + i));
                     if (var == null) {
                         //Generate new variable name if one with the specified name doesn't exist
-                        var = var(generateNewVarName(baseName, i), null, new ZeroInitScheme(ordering));
+                        var = var(generateNewVarName(baseName, i), new ZeroInitScheme(ordering), false, (long[])null);
                     }
                     var.setOutputIndex(i);
                     var.setCreator(function);
@@ -9641,16 +9649,16 @@ public class SameDiff {
                     ordering = function.args()[0].getArr().ordering();
                 }
                 if (checkGet == null) {
-                    checkGet = var(baseName, null, new ZeroInitScheme(ordering));
+                    checkGet = var(baseName, new ZeroInitScheme(ordering), false, (long[])null);
                 } else if (!importedVarName.contains(baseName)) {
                     //need to find a new name
                     String newName = generateNewVarName(baseName, 0);
-                    checkGet = var(newName, null, new ZeroInitScheme(ordering));
+                    checkGet = var(newName, new ZeroInitScheme(ordering), false, (long[])null);
                 }
 
 
                 if (checkGet == null) {
-                    checkGet = var(baseName, null, new ZeroInitScheme(ordering));
+                    checkGet = var(baseName, new ZeroInitScheme(ordering), false, (long[])null);
                 }
 
                 checkGet.setOutputIndex(0);
@@ -9684,7 +9692,7 @@ public class SameDiff {
             SDVariable checkGet = getVariable(baseName);
             if (checkGet == null) {
                 // obviously - there's no such var, just add it
-                checkGet = var(baseName, shape, new ZeroInitScheme(ordering));
+                checkGet = var(baseName, new ZeroInitScheme(ordering), false, shape);
             } else if (shape != null && !shapeAlreadyExistsForVarName(checkGet.getVarName())) {
                 // var exists, let's update its shape
                 putShapeForVarName(checkGet.getVarName(), shape);
@@ -9706,11 +9714,11 @@ public class SameDiff {
                     throw new ND4JIllegalStateException("Converged on already generated variable!");
                 }
 
-                checkGet = var(name, shape, new ZeroInitScheme(ordering));
+                checkGet = var(name, new ZeroInitScheme(ordering), false, shape);
             }
 
             if (checkGet == null) {
-                checkGet = var(baseName + (i > 0 ? ":" + i : ""), shape, new ZeroInitScheme(ordering));
+                checkGet = var(baseName + (i > 0 ? ":" + i : ""), new ZeroInitScheme(ordering), false, shape);
             }
 
             checkGet.setOutputIndex(i);
@@ -11712,7 +11720,16 @@ public class SameDiff {
         int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatVariables));
         int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(flatNodes));
 
-        int fg = FlatGraph.createFlatGraph(bufferBuilder, graphId, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder));
+        int[] placeholderOffsets = new int[placeHolderVarNames == null ? 0 : placeHolderVarNames.size()];
+        if(placeHolderVarNames != null){
+            int i=0;
+            for(String s : placeHolderVarNames){
+                placeholderOffsets[i++] = bufferBuilder.createString(s);
+            }
+        }
+        int placeholdersOffset = FlatGraph.createPlaceholdersVector(bufferBuilder, placeholderOffsets);
+
+        int fg = FlatGraph.createFlatGraph(bufferBuilder, graphId, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder), placeholdersOffset);
         bufferBuilder.finish(fg);
 
         synchronized (this) {
@@ -11958,6 +11975,7 @@ public class SameDiff {
                     .varName(n)
                     .sameDiff(sd)
                     .shape(shape)
+                    .placeholderOnNullShape(false)      //Placeholders are stored separately
                     .build();
             sd.variableMap.put(n, var);
             sd.variableNameToShape.put(n, shape);
@@ -12053,6 +12071,7 @@ public class SameDiff {
                                 .varName(n)
                                 .sameDiff(sd)
                                 .shape(null)
+                                .placeholderOnNullShape(false)  //Placeholders are stored separately
                                 .build();
                         sd.variableMap.put(n, var);
                         variablesByNodeAndOutNum.put(new Pair<>(opId, i), var);
@@ -12070,6 +12089,14 @@ public class SameDiff {
                 }
             }
         }
+
+        //Reconstruct placeholders
+        int numPlaceholders = fg.placeholdersLength();
+        Set<String> ph = new LinkedHashSet<>();
+        for(int i=0; i<numPlaceholders; i++ ){
+            ph.add(fg.placeholders(i));
+        }
+        sd.placeHolderVarNames = ph;
 
         return sd;
     }

@@ -13,6 +13,7 @@ table FlatGraph {
     nodes:[FlatNode]; // list of nodes
     outputs:[IntPair]; // list of output variables or nodes, in format of IntPair.first is node Id, IntPair.second is output index of the node
     configuration:FlatConfiguration; // optional execution configuration
+	placeholders:[string];	//Placeholders. Used for SameDiff serialization/deserialization
 }
 
 

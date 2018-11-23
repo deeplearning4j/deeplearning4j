@@ -54,6 +54,7 @@ public class Subsampling3DLayer extends NoParamLayer {
     protected int[] padding;
     protected int[] dilation;
     protected boolean cudnnAllowFallback = true;
+    protected Convolution3D.DataFormat dataFormat = Convolution3D.DataFormat.NCDHW; //Default for 1.0.0-beta3 and earlier (before config added)
 
     public enum PoolingType {
         MAX, AVG;
@@ -69,7 +70,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         }
     }
 
-    protected Subsampling3DLayer(BaseSubsamplingBuilder builder) {
+    protected Subsampling3DLayer(Builder builder) {
         super(builder);
         this.poolingType = builder.poolingType;
         if (builder.kernelSize.length != 3)
@@ -82,6 +83,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         this.dilation = builder.dilation;
         this.convolutionMode = builder.convolutionMode;
         this.cudnnAllowFallback = builder.cudnnAllowFallback;
+        this.dataFormat = builder.dataFormat;
     }
 
     @Override
@@ -196,6 +198,7 @@ public class Subsampling3DLayer extends NoParamLayer {
     @NoArgsConstructor
     public static class Builder extends BaseSubsamplingBuilder<Builder> {
 
+        protected Convolution3D.DataFormat dataFormat = Convolution3D.DataFormat.NCDHW;
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             super(poolingType, kernelSize, stride);
@@ -274,6 +277,17 @@ public class Subsampling3DLayer extends NoParamLayer {
             return this;
         }
 
+        /**
+         * The data format for input and output activations.<br>
+         * NCDHW: activations (in/out) should have shape [minibatch, channels, depth, height, width]<br>
+         * NDHWC: activations (in/out) should have shape [minibatch, depth, height, width, channels]<br>
+         *
+         * @param dataFormat Data format to use for activations
+         */
+        public Builder dataFormat(Convolution3D.DataFormat dataFormat){
+            this.dataFormat = dataFormat;
+            return this;
+        }
 
         @Override
         @SuppressWarnings("unchecked")

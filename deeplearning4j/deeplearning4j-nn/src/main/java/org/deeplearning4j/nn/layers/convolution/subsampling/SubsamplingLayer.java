@@ -143,6 +143,11 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
                         layerConf().getPoolingType(), convolutionMode, dilation, workspaceMgr);
             } catch (Exception e){
+                if(e.getMessage().contains("Failed to allocate")){
+                    //This is a memory exception - don't fallback to built-in implementation
+                    throw e;
+                }
+
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
                     log.warn("CuDNN execution failed - falling back on built-in implementation",e);

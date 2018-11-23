@@ -67,6 +67,43 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         super(sameDiff, extraArgs);
     }
 
+    /**
+     * Specify an alternative result array
+     *
+     * @param x the input
+     * @param z the output array
+     */
+    public BaseOp(INDArray x, INDArray z) {
+        this(x, z, x.lengthLong());
+    }
+
+    /**
+     * Specify an alternative output array
+     *
+     * @param x the input
+     * @param z the output
+     * @param n the number of elements to iterate on
+     */
+    public BaseOp(INDArray x, INDArray z, long n) {
+        this(x, null, z, n);
+    }
+
+
+    public BaseOp(INDArray x, INDArray y, INDArray z, long n) {
+        super(false);
+        init(x, y, z, n);
+    }
+
+
+    /**
+     * An op for one ndarray
+     *
+     * @param x the ndarray
+     */
+    public BaseOp(INDArray x) {
+        this(x, null, x, x == null ? 0 : x.lengthLong());
+    }
+
     @Override
     public boolean isExecSpecial() {
         return false;
@@ -237,42 +274,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         } else
             this.y = y;
         numProcessed = 0;
-    }
-
-    /**
-     * Specify an alternative result array
-     *
-     * @param x the input
-     * @param z the output array
-     */
-    public BaseOp(INDArray x, INDArray z) {
-        this(x, z, x.lengthLong());
-    }
-
-    /**
-     * Specify an alternative output array
-     *
-     * @param x the input
-     * @param z the output
-     * @param n the number of elements to iterate on
-     */
-    public BaseOp(INDArray x, INDArray z, long n) {
-        this(x, null, z, n);
-    }
-
-
-    public BaseOp(INDArray x, INDArray y, INDArray z, long n) {
-        init(x, y, z, n);
-    }
-
-
-    /**
-     * An op for one ndarray
-     *
-     * @param x the ndarray
-     */
-    public BaseOp(INDArray x) {
-        this(x, null, x, x == null ? 0 : x.lengthLong());
     }
 
     @Override
