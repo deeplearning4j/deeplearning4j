@@ -325,8 +325,8 @@ namespace nd4j {
                                 auto iv = block.variable(0);
 
                                 if (iv->getNDArray()->dataType() != cType) {
-                                    nd4j_printf("Op [%s] failed check for output [%i], DataType: [%i]\n",
-                                                _descriptor->getOpName()->data(), index, (int) cType);
+                                    auto t = DataTypeUtils::asString(cType);
+                                    nd4j_printf("Op [%s] failed check for output [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), index, t.c_str());
                                     return ND4J_STATUS_BAD_ARGUMENTS;
                                 }
                             } else {
@@ -334,20 +334,22 @@ namespace nd4j {
                                 auto iv = block.variable(index);
 
                                 if (iv->getNDArray()->dataType() != cType) {
-                                    nd4j_printf("Op [%s] failed check for output [%i], DataType: [%i]\n",
-                                                _descriptor->getOpName()->data(), index, (int) cType);
+                                    auto t = DataTypeUtils::asString(cType);
+                                    nd4j_printf("Op [%s] failed check for output [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), index, t.c_str());
                                     return ND4J_STATUS_BAD_ARGUMENTS;
                                 }
                             }
                         } else if (_descriptor->isInherit(index)) {
                             // in inherit mode, output type must be the same as one of input types
                             if (std::find(inputTypes.begin(), inputTypes.end(), cType) == inputTypes.end()) {
-                                nd4j_printf("Op [%s] failed check for output [%i], DataType: [%i].\n", _descriptor->getOpName()->data(), index, (int)cType);
+                                auto t = DataTypeUtils::asString(cType);
+                                nd4j_printf("Op [%s] failed check for output [%i], DataType: [%s].\n", _descriptor->getOpName()->data(), index, t.c_str());
                                 return ND4J_STATUS_BAD_ARGUMENTS;
                             }
 
                         } else if (!_descriptor->checkOutputMatch(index, cType)) {
-                            nd4j_printf("Op [%s] failed check for output [%i], DataType: [%i];\n", _descriptor->getOpName()->data(), index, (int)cType);
+                            auto t = DataTypeUtils::asString(cType);
+                            nd4j_printf("Op [%s] failed check for output [%i], DataType: [%i];\n", _descriptor->getOpName()->data(), index, t.c_str());
                             return ND4J_STATUS_BAD_ARGUMENTS;
                         }
                     }
