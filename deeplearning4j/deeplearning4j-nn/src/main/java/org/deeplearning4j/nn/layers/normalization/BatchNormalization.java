@@ -56,8 +56,6 @@ import java.util.*;
  **/
 @Slf4j
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {
-
-    protected static final double HALF_LOGE_10 = 0.5 * Math.log(10.0);
     protected static final double ONE_ON_2LOGE_10 = 1.0 / (2 * Math.log(10.0));
 
     BatchNormalizationHelper helper = null;
@@ -218,17 +216,17 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     INDArray vari = Nd4j.valueArrayOf(globalLog10Std.shape(), 10.0);
                     Transforms.pow(vari, globalLog10Std, false);     //variance = (10^log10(s))^2
                     vari.muli(vari);
-                    INDArray varip1 = vari.mul(layerConf().getDecay()).addi(batchVar.mul(1-layerConf().getDecay()));
+
+                    double decay = layerConf().getDecay();
+                    INDArray varip1 = vari.mul(decay).addi(batchVar.mul(1-decay));
                     Nd4j.getExecutioner().exec(new OldDivOp(vari, varip1, dGlobalLog10StdView));
                     Transforms.log(dGlobalLog10StdView, false);
-                    dGlobalLog10StdView.muli(HALF_LOGE_10);
-
+                    dGlobalLog10StdView.muli(ONE_ON_2LOGE_10);
                 } else {
                     //Use variance estimate parameterization. This was only option up to and including 1.0.0-beta3
                     Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
                     dGlobalVarView.muli(1 - layerConf().getDecay());
                 }
-
 
                 return ret;
             }
@@ -339,11 +337,12 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             INDArray vari = Nd4j.valueArrayOf(globalLog10Std.shape(), 10.0);
             Transforms.pow(vari, globalLog10Std, false);     //variance = (10^log10(s))^2
             vari.muli(vari);
-            INDArray varip1 = vari.mul(layerConf().getDecay()).addi(batchVar.mul(1-layerConf().getDecay()));
+
+            double decay = layerConf().getDecay();
+            INDArray varip1 = vari.mul(decay).addi(batchVar.mul(1-decay));
             Nd4j.getExecutioner().exec(new OldDivOp(vari, varip1, dGlobalLog10StdView));
             Transforms.log(dGlobalLog10StdView, false);
-            dGlobalLog10StdView.muli(HALF_LOGE_10);
-
+            dGlobalLog10StdView.muli(ONE_ON_2LOGE_10);
         } else {
             //Use variance estimate parameterization. This was only option up to and including 1.0.0-beta3
             Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
@@ -597,7 +596,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public boolean updaterDivideByMinibatch(String paramName) {
         //Majority of params's gradients should be... Exception: batch norm mean/variance estimate
-        if(BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(paramName) || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(paramName)){
+        if(BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(paramName) || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(paramName)
+                || BatchNormalizationParamInitializer.GLOBAL_LOG_STD.equals(paramName)){
             return false;
         }
         return true;

@@ -563,55 +563,66 @@ public class BatchNormalizationTest extends BaseDL4JTest {
 
     @Test
     public void checkMeanVarianceEstimateCNN() throws Exception {
-        Nd4j.getRandom().setSeed(12345);
-        //Check that the internal global mean/variance estimate is approximately correct
 
-        //First, Mnist data as 2d input (NOT taking into account convolution property)
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.RMSPROP).seed(12345).list()
-                .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
-                        .activation(Activation.IDENTITY).nOut(10).build())
-                .setInputType(InputType.convolutional(5, 5, 3)).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
+        for(boolean useLogStd : new boolean[]{true, false}) {
+            Nd4j.getRandom().setSeed(12345);
+            //Check that the internal global mean/variance estimate is approximately correct
 
-        int minibatch = 32;
-        List<DataSet> list = new ArrayList<>();
-        for (int i = 0; i < 100; i++) {
-            list.add(new DataSet(Nd4j.rand(new int[]{minibatch, 3, 5, 5}), Nd4j.rand(minibatch, 10)));
+            //First, Mnist data as 2d input (NOT taking into account convolution property)
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .updater(Updater.RMSPROP).seed(12345).list()
+                    .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).useLogStd(useLogStd).build())
+                    .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
+                            .activation(Activation.IDENTITY).nOut(10).build())
+                    .setInputType(InputType.convolutional(5, 5, 3)).build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            int minibatch = 32;
+            List<DataSet> list = new ArrayList<>();
+            for (int i = 0; i < 100; i++) {
+                list.add(new DataSet(Nd4j.rand(new int[]{minibatch, 3, 5, 5}), Nd4j.rand(minibatch, 10)));
+            }
+
+            DataSetIterator iter = new ListDataSetIterator(list);
+
+            INDArray expMean = Nd4j.valueArrayOf(new int[]{1, 3}, 0.5);
+            INDArray expVar = Nd4j.valueArrayOf(new int[]{1, 3}, 1 / 12.0); //Expected variance of U(0,1) distribution: 1/12 * (1-0)^2 = 0.0833
+
+
+            for (int i = 0; i < 10; i++) {
+                iter.reset();
+                net.fit(iter);
+            }
+
+            INDArray estMean = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
+            INDArray estVar;
+            if(useLogStd){
+                INDArray log10std = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
+                estVar = Nd4j.valueArrayOf(log10std.shape(), 10);
+                Transforms.pow(estVar, log10std, false);    // stdev = 10^(log10(stdev))
+                estVar.muli(estVar);
+            } else {
+                estVar = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
+            }
+
+            float[] fMeanExp = expMean.data().asFloat();
+            float[] fMeanAct = estMean.data().asFloat();
+            float[] fVarExp = expVar.data().asFloat();
+            float[] fVarAct = estVar.data().asFloat();
+
+            //        System.out.println("Mean vs. estimated mean:");
+            //        System.out.println(Arrays.toString(fMeanExp));
+            //        System.out.println(Arrays.toString(fMeanAct));
+            //
+            //        System.out.println("Var vs. estimated var:");
+            //        System.out.println(Arrays.toString(fVarExp));
+            //        System.out.println(Arrays.toString(fVarAct));
+
+            assertArrayEquals(fMeanExp, fMeanAct, 0.01f);
+            assertArrayEquals(fVarExp, fVarAct, 0.01f);
         }
-
-        DataSetIterator iter = new ListDataSetIterator(list);
-
-        INDArray expMean = Nd4j.valueArrayOf(new int[]{1, 3}, 0.5);
-        INDArray expVar = Nd4j.valueArrayOf(new int[]{1, 3}, 1 / 12.0); //Expected variance of U(0,1) distribution: 1/12 * (1-0)^2 = 0.0833
-
-
-        for (int i = 0; i < 10; i++) {
-            iter.reset();
-            net.fit(iter);
-        }
-
-        INDArray estMean = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
-        INDArray estVar = net.getLayer(0).getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
-
-        float[] fMeanExp = expMean.data().asFloat();
-        float[] fMeanAct = estMean.data().asFloat();
-        float[] fVarExp = expVar.data().asFloat();
-        float[] fVarAct = estVar.data().asFloat();
-
-        //        System.out.println("Mean vs. estimated mean:");
-        //        System.out.println(Arrays.toString(fMeanExp));
-        //        System.out.println(Arrays.toString(fMeanAct));
-        //
-        //        System.out.println("Var vs. estimated var:");
-        //        System.out.println(Arrays.toString(fVarExp));
-        //        System.out.println(Arrays.toString(fVarAct));
-
-        assertArrayEquals(fMeanExp, fMeanAct, 0.01f);
-        assertArrayEquals(fVarExp, fVarAct, 0.01f);
     }
 
 
