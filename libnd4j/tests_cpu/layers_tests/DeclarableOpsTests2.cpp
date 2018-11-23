@@ -2124,7 +2124,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test3) {
     
     auto labels = NDArrayFactory::create<double>('c', {2,3,4});
     auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {1,1});
+    NDArray weights(nd4j::DataType::DOUBLE);
     auto expected = NDArrayFactory::create<double>('c', {2,3,4}, {1.60943663,  2.48403668,  3.05256081,  3.40363169,  3.57730675,  3.59525585,  3.46986699,  3.20791793,  2.81228209,  2.28273821,  1.61630058,  0.80721998, -0.15329313, -1.27764463, -2.5828433 , -4.09208679, -5.83734226, -7.8636713 ,-10.23689461,-13.05822182,-16.49509811,-20.85659218,-26.82411766,-36.52717209});
                                             
     predictions.linspace(0.04, 0.04);
@@ -2197,7 +2197,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test6) {
     
     auto labels = NDArrayFactory::create<double>('c', {2,3,4});
     auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {1,1});
+    NDArray weights(nd4j::DataType::DOUBLE);
                                             
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
@@ -2269,7 +2269,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test9) {
     
     auto labels = NDArrayFactory::create<double>('c', {2,3,4});
     auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {1,1});
+    NDArray weights(nd4j::DataType::DOUBLE);
                                             
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);

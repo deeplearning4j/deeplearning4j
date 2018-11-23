@@ -4679,8 +4679,16 @@ template void NDArray::operator/=(const bool scalar);
 
     ////////////////////////////////////////////////////////////////////////
     void NDArray::tileToShape(const std::initializer_list<Nd4jLong>& shape, NDArray* target) {
-        const std::vector<Nd4jLong> shapeV(shape);
-        tileToShape(shapeV, target);
+
+        tileToShape(std::vector<Nd4jLong>(shape), target);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::tileToShape(const Nd4jLong* shapeInfo) {
+
+        NDArray result(const_cast<Nd4jLong*>(shapeInfo), false, _workspace, false);
+        tile(result);
+        return result;
     }
 
     ////////////////////////////////////////////////////////////////////////

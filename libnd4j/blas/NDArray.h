@@ -1074,6 +1074,7 @@ namespace nd4j {
         */
         void tileToShape(const std::vector<Nd4jLong>& shape, NDArray* target = nullptr);
         void tileToShape(const std::initializer_list<Nd4jLong>& shape, NDArray* target = nullptr);
+        NDArray tileToShape(const Nd4jLong* shapeInfo);
 
         template <typename N>
         NDArray* asT();

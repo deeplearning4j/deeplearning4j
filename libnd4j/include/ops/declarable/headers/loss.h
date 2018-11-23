@@ -112,6 +112,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_log_loss)
         DECLARE_CUSTOM_OP(log_loss, 3, 1, false, 1, 1);
+        DECLARE_CUSTOM_OP(log_loss_grad, 3, 3, false, 1, 1);
         #endif
 
         /**
