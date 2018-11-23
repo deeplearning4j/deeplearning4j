@@ -112,10 +112,10 @@ public class OneHot extends DynamicCustomOp {
 
 
         val axis = PropertyMapping.builder()
-                .propertyNames(new String[] {"axis"})
+                .propertyNames(new String[] {"jaxis"})
                 .tfAttrName("axis")
                 .build();
-        attrs.put("axis",axis);
+        attrs.put("jaxis",axis);
 
         ret.put(tensorflowName(),attrs);
         return ret;
