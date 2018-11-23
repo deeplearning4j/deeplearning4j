@@ -179,6 +179,7 @@ public class BatchNormalization extends FeedForwardLayer {
                 return iUpdater;
             case BatchNormalizationParamInitializer.GLOBAL_MEAN:
             case BatchNormalizationParamInitializer.GLOBAL_VAR:
+            case BatchNormalizationParamInitializer.GLOBAL_LOG_STD:
                 return new NoOp();
             default:
                 throw new IllegalArgumentException("Unknown parameter: \"" + paramName + "\"");
