@@ -52,14 +52,16 @@ namespace nd4j {
 
         DECLARE_TYPES(fill) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setAllowedInputTypes(0, {ALL_INTS})
+                    ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
         }
         
         DECLARE_SHAPE_FN(fill) {
 
             auto shapeArray = INPUT_VARIABLE(0);
-            const int len = shapeArray->lengthOf();
+            auto val = INPUT_VARIABLE(1);
+            const int len = (int) shapeArray->lengthOf();
             Nd4jLong *newShape = nullptr;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), Nd4jLong);            
 
@@ -67,7 +69,7 @@ namespace nd4j {
             for (int e = 0; e < shapeArray->lengthOf(); e++)
                 newShape[e+1] = shapeArray->e<Nd4jLong>(e);
             
-            ShapeUtils::updateStridesAndType(newShape, shapeArray->dataType(), 'c');
+            ShapeUtils::updateStridesAndType(newShape, val->dataType(), 'c');
 
             return SHAPELIST(newShape);
         };

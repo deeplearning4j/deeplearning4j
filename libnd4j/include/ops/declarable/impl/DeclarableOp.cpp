@@ -424,8 +424,9 @@ namespace nd4j {
 
                     auto shape = ShapeUtils::shapeAsString(array);
                     auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(32);
+                    auto type = DataTypeUtils::asString(array->dataType());
 
-                    nd4j_printf("node_%i:%i result shape: %s; first values %s\n", block->nodeId(), e, shape.c_str(), first.c_str());
+                    nd4j_printf("node_%i:%i result shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(), type.c_str(), first.c_str());
                 }
             }
 

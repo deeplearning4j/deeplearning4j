@@ -116,14 +116,15 @@ public class Fill extends DynamicCustomOp {
             return Collections.emptyList();
 
         val shape = args()[0].getArr();
-        if(shape == null)
+        val value = args()[1].getArr();
+        if(shape == null || value == null)
             return Collections.emptyList();
         else {
             if(shape.isEmpty()){
                 //Edge case, mainly for TF import
-                return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], args()[0].dataType()));   //TODO is this OK?
+                return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], value.dataType()));   //TODO is this OK?
             } else {
-                return Arrays.asList(LongShapeDescriptor.fromShape(shape.data().asLong(), shape.dataType()));
+                return Arrays.asList(LongShapeDescriptor.fromShape(shape.data().asLong(), value.dataType()));
             }
         }
     }
