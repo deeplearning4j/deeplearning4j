@@ -157,9 +157,11 @@ public class TFGraphTestAllLibnd4j {
         this.localTestDir = localTestDir;
     }
 
-    @Test(timeout = 25000L)
+    @Test//(timeout = 25000L)
     public void test() throws Exception {
         Nd4j.create(1);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         if (SKIP_SET.contains(modelName)) {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;

@@ -18,7 +18,7 @@
 // Created by raver119 on 16.10.2017.
 //
 
-#include <ops/declarable/LegacyTransformFloatOp.h>
+#include <ops/declarable/LegacyTransformAnyOp.h>
 
 #include <NativeOpExcutioner.h>
 

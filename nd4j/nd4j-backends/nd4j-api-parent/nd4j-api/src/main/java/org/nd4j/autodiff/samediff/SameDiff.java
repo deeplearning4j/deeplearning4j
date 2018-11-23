@@ -12295,6 +12295,8 @@ public class SameDiff {
                 return Op.Type.TRANSFORM_FLOAT;
             case OpType.TRANSFORM_SAME:
                 return Op.Type.TRANSFORM_SAME;
+            case OpType.TRANSFORM_ANY:
+                return Op.Type.TRANSFORM_ANY;
             case OpType.TRANSFORM_STRICT:
                 return Op.Type.TRANSFORM_STRICT;
             case OpType.REDUCE_BOOL:

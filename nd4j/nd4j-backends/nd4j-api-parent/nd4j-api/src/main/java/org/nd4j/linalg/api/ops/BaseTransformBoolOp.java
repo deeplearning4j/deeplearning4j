@@ -92,6 +92,11 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
     }
 
     @Override
+    public Type opType() {
+        return Type.TRANSFORM_BOOL;
+    }
+
+    @Override
     public DataType resultType() {
         return DataType.BOOL;
     }

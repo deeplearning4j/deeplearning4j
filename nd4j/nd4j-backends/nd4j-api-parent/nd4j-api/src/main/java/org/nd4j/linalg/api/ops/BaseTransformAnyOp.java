@@ -91,6 +91,11 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
     }
 
     @Override
+    public Type opType() {
+        return Type.TRANSFORM_ANY;
+    }
+
+    @Override
     public DataType resultType() {
         return this.x().dataType();
     }

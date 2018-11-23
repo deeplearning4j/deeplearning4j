@@ -80,6 +80,11 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
     }
 
     @Override
+    public Type opType() {
+        return Type.TRANSFORM_STRICT;
+    }
+
+    @Override
     public DataType resultType() {
         return this.x().dataType();
     }

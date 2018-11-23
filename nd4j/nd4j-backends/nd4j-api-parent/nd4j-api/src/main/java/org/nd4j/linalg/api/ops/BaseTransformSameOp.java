@@ -91,6 +91,11 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
     }
 
     @Override
+    public Type opType() {
+        return Type.TRANSFORM_SAME;
+    }
+
+    @Override
     public DataType resultType() {
         return this.x().dataType();
     }
