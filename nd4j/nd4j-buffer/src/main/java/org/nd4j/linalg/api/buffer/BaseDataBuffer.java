@@ -1248,11 +1248,24 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @return
      */
     protected short getShort(long i) {
-        if (dataType() != DataType.HALF)
-            throw new UnsupportedOperationException("getShort() is supported for Half-precision buffers only");
-
-
-        return fromFloat(((HalfIndexer) indexer).get(offset() + i));
+        switch (dataType()) {
+            case DOUBLE:
+                return (short) ((DoubleIndexer) indexer).get(offset() + i);
+            case BOOL:
+                return (short) (((BooleanIndexer) indexer).get(offset() + i) ? 1 : 0);
+            case INT:
+                return (short) ((IntIndexer) indexer).get(offset() + i);
+            case SHORT:
+                return ((ShortIndexer) indexer).get(offset() + i);
+            case BYTE:
+                return  (short) ((ByteIndexer) indexer).get(offset() + i);
+            case LONG:
+                return (short) ((LongIndexer) indexer).get(offset() + i);
+            case FLOAT:
+                return (short) ((FloatIndexer) indexer).get(offset() + i);
+            default:
+                throw new UnsupportedOperationException();
+        }
     }
 
     /**

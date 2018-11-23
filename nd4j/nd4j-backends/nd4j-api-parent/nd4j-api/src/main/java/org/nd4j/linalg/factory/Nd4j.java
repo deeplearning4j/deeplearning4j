@@ -6625,7 +6625,7 @@ public class Nd4j {
             }
             case BYTE: {
                 val doubles = new byte[prod];
-                val sb = bb.order(_order).asCharBuffer();
+                val sb = bb.order(_order).asReadOnlyBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = (byte) sb.get(e);
 
@@ -6633,7 +6633,7 @@ public class Nd4j {
             }
             case BOOL: {
                 val doubles = new boolean[prod];
-                val sb = bb.order(_order).asShortBuffer();
+                val sb = bb.order(_order).asReadOnlyBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e) == 1;
 

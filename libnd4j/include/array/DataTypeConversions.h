@@ -70,9 +70,17 @@ namespace nd4j {
                         DataTypeConversions<T>::template rconv<bool>(isBe, canKeep, buffer, length, src);
                     }
                     break;
+                case UINT8: {
+                    DataTypeConversions<T>::template rconv<uint8_t>(isBe, canKeep, buffer, length, src);
+                    }
+                    break;
+                case INT8: {
+                    DataTypeConversions<T>::template rconv<int8_t>(isBe, canKeep, buffer, length, src);
+                    }
+                    break;
                 case INT16: {
                     DataTypeConversions<T>::template rconv<int16_t>(isBe, canKeep, buffer, length, src);
-                }
+                    }
                     break;
                 case INT32: {
                         DataTypeConversions<T>::template rconv<int>(isBe, canKeep, buffer, length, src);

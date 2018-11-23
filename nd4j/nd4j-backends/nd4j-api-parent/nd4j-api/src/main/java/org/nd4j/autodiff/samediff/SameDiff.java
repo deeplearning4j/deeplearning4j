@@ -12266,6 +12266,10 @@ public class SameDiff {
                 return DataType.BOOL;
             case SHORT:
                 return DataType.INT16;
+            case BYTE:
+                return DataType.INT8;
+            case UBYTE:
+                return DataType.UINT8;
             default:
                 throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
         }
