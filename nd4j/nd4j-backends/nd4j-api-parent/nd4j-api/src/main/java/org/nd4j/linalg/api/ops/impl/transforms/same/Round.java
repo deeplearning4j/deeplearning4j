@@ -60,7 +60,7 @@ public class Round extends BaseTransformSameOp {
 
     @Override
     public int opNum() {
-        return 1;
+        return 4;
     }
 
     @Override
