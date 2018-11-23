@@ -175,7 +175,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if (ret != null) {
                 ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
                 if(layerConf().isUseLogStd()){
-                    ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalLog10StdView);
+                    ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_LOG_STD, dGlobalLog10StdView);
                 } else {
                     ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
                 }
