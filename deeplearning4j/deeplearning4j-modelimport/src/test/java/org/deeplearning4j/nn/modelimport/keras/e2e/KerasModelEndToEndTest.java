@@ -64,10 +64,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -575,7 +572,7 @@ public class KerasModelEndToEndTest {
                 new int[] {24, 24, 3}, false);
         INDArray input = Nd4j.create(10, 3, 24, 24);
         model.output(input);
-        System.out.println(model.summary());
+//        System.out.println(model.summary());
     }
 
     /**
@@ -682,9 +679,22 @@ public class KerasModelEndToEndTest {
                 if (outputs.shape()[0] == 1) {
                     outputs = outputs.reshape(outputs.shape()[1], outputs.shape()[0]);
                 }
-
-                // FIXME: int cast
                 val nOut = (int) outputs.shape()[outputs.shape().length - 1];
+
+
+                if (predictionsDl4j.shape().length == 2 && predictionsDl4j.size(1) == 1) {
+                    predictionsDl4j = predictionsDl4j.reshape(predictionsDl4j.shape()[0]);
+                    predictionsKeras = predictionsKeras.reshape(predictionsKeras.shape()[0]);
+                    outputs = outputs.reshape(outputs.shape()[0]);
+
+                }
+
+                if (predictionsDl4j.shape().length == 2) {
+                    predictionsDl4j = predictionsDl4j.reshape(predictionsDl4j.shape()[1], predictionsDl4j.shape()[0]);
+                    predictionsKeras = predictionsKeras.reshape(predictionsKeras.shape()[1], predictionsKeras.shape()[0]);
+                    outputs = outputs.reshape(outputs.shape()[1], outputs.shape()[0]);
+                }
+
                 compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, nOut, EPS);
             }
 
