@@ -300,7 +300,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
         //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
         //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
-        Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var"));
+        Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, excludeParams);
 
@@ -679,7 +679,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
         //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
         //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
-        Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var"));
+        Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, excludeParams);
 
