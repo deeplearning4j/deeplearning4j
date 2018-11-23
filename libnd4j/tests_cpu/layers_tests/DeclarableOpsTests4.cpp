@@ -326,12 +326,13 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_NCHW_1) {
 }
 
 TEST_F(DeclarableOpsTests4, Test_Fill_1) {
-    auto x = NDArrayFactory::create<double>('c', {1, 3}, {3, 2, 4});
+    auto x = NDArrayFactory::create<int>('c', {1, 3}, {3, 2, 4});
+    auto v = NDArrayFactory::create<double>(2.);
     auto exp = NDArrayFactory::create<double>('c', {3, 2, 4});
     exp.assign(2.0f);
 
     nd4j::ops::fill op;
-    auto result = op.execute({&x}, {2.0f}, {});
+    auto result = op.execute({&x, &v}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
