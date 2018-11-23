@@ -418,6 +418,13 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             // FIXME: int cast
             INDArray ret = null;
             try {
+                if(globalVarView == null){
+                    //May be null when useLogStd is true
+                    INDArray log10s = getParam(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
+                    globalVarView = Transforms.pow(Nd4j.valueArrayOf(log10s.shape(), 10.0), log10s, false);
+                    globalVarView.muli(globalVarView);
+                }
+
                 ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
                         globalVarView, decay, layerConf.getEps(), workspaceMgr);
             } catch (Throwable t) {
