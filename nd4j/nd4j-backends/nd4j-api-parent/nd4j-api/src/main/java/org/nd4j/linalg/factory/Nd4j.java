@@ -6627,7 +6627,7 @@ public class Nd4j {
                 val doubles = new byte[prod];
                 val sb = bb.order(_order).asReadOnlyBuffer();
                 for (int e = 0; e < prod; e++)
-                    doubles[e] = (byte) sb.get(e);
+                    doubles[e] = (byte) sb.get(e + sb.position());
 
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BYTE);
             }
@@ -6635,7 +6635,7 @@ public class Nd4j {
                 val doubles = new boolean[prod];
                 val sb = bb.order(_order).asReadOnlyBuffer();
                 for (int e = 0; e < prod; e++)
-                    doubles[e] = sb.get(e) == 1;
+                    doubles[e] = sb.get(e + sb.position()) == 1;
 
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BOOL);
             }
