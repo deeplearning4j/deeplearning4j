@@ -585,7 +585,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      * opType and length.
      */
     @Override
-    public DataBuffer create(Pointer pointer, DataType type, long length, Indexer indexer) {
+    public DataBuffer create(Pointer pointer, DataType type, long length, @NonNull Indexer indexer) {
         switch (type) {
             case INT:
                 return new IntBuffer(pointer, indexer, length);

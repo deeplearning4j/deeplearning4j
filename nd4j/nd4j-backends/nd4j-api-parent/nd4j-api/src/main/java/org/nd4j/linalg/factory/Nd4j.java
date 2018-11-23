@@ -26,12 +26,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.ArrayUtils;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.HalfIndexer;
-import org.bytedeco.javacpp.indexer.Indexer;
+import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
@@ -1247,40 +1243,34 @@ public class Nd4j {
         return ret;
     }
 
-    /**
-     * Create a double data opType buffer
-     * of the specified length
-     * @param doublePointer
-     * @param length
-     * @return
-     */
-    public static DataBuffer createBuffer(DoublePointer doublePointer, long length) {
-        return DATA_BUFFER_FACTORY_INSTANCE.create(doublePointer, length);
+    protected static Indexer getIndexerByType(Pointer pointer, DataType dataType) {
+        switch (dataType) {
+            case LONG:
+                return LongIndexer.create((LongPointer) pointer);
+            case INT:
+                return IntIndexer.create((IntPointer) pointer);
+            case SHORT:
+                return ShortIndexer.create((ShortPointer) pointer);
+            case BYTE:
+                return ByteIndexer.create((BytePointer) pointer);
+            case UBYTE:
+                return UByteIndexer.create((BytePointer) pointer);
+            case BOOL:
+                return BooleanIndexer.create((BooleanPointer) pointer);
+            case FLOAT:
+                return FloatIndexer.create((FloatPointer) pointer);
+            case HALF:
+                return HalfIndexer.create((ShortPointer) pointer);
+            case DOUBLE:
+                return DoubleIndexer.create((DoublePointer) pointer);
+            default:
+                throw new UnsupportedOperationException();
+        }
     }
 
 
-    /**
-     * Create a float opType
-     * data buffer of the given length
-     * @param floatPointer
-     * @param length
-     * @return
-     */
-    public static DataBuffer createBuffer(FloatPointer floatPointer, long length) {
-        return DATA_BUFFER_FACTORY_INSTANCE.create(floatPointer, length);
-    }
-
-
-    /**
-     * Create an int data buffer
-     * from the given pointer
-     * and the given length
-     * @param intPointer
-     * @param length
-     * @return
-     */
-    public static DataBuffer createBuffer(IntPointer intPointer, long length) {
-        return DATA_BUFFER_FACTORY_INSTANCE.create(intPointer, length);
+    public static DataBuffer createBuffer(@NonNull Pointer pointer, long length, @NonNull DataType dataType) {
+        return DATA_BUFFER_FACTORY_INSTANCE.create(pointer, dataType, length, getIndexerByType(pointer, dataType));
     }
 
     /**
