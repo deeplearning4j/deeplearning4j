@@ -6633,7 +6633,7 @@ public class Nd4j {
             }
             case BOOL: {
                 val doubles = new boolean[prod];
-                val sb = bb.order(_order).asShortBuffer();
+                val sb = bb.order(_order).asReadOnlyBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e) == 1;
 
