@@ -1072,9 +1072,11 @@ namespace nd4j {
         *  shape  - contains new shape to broadcast array to 
         *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
-        void tileToShape(const std::vector<Nd4jLong>& shape, NDArray* target = nullptr);
-        void tileToShape(const std::initializer_list<Nd4jLong>& shape, NDArray* target = nullptr);
         NDArray tileToShape(const Nd4jLong* shapeInfo);
+        void tileToShape(const std::vector<Nd4jLong>& shape, NDArray* target = nullptr);
+#ifndef __JAVACPP_HACK__
+        void tileToShape(const std::initializer_list<Nd4jLong>& shape, NDArray* target = nullptr);
+#endif
 
         template <typename N>
         NDArray* asT();
