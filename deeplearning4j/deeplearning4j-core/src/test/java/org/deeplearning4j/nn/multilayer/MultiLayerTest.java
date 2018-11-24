@@ -50,6 +50,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.*;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -98,6 +99,11 @@ public class MultiLayerTest extends BaseDL4JTest {
     @AfterClass
     public static void afterClass(){
         Nd4j.getExecutioner().setProfilingMode(origMode);
+    }
+
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
     }
 
     @Test
@@ -271,7 +277,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         log.info("Train model....");
         int cnt = 0;
         while (cnt < numSamples) {
-            INDArray input = Nd4j.create(trainingData[cnt]);
+            INDArray input = Nd4j.create(trainingData[cnt]).reshape(1, -1);
             model.fit(new DataSet(input, input));
             cnt++;
         }
@@ -279,9 +285,9 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         log.info("Testing full cycle...");
 
-        List<INDArray> comparableResult = model.feedForward(Nd4j.create(trainingData[0]));
+        List<INDArray> comparableResult = model.feedForward(Nd4j.create(trainingData[0], new long[]{1, trainingData[0].length}));
 
-        INDArray encodeResult = model.activateSelectedLayers(0, 4, Nd4j.create(trainingData[0]));
+        INDArray encodeResult = model.activateSelectedLayers(0, 4, Nd4j.create(trainingData[0], new long[]{1, trainingData[0].length}));
 
         log.info("Compare feedForward results with selectedActivation");
 
@@ -533,8 +539,8 @@ public class MultiLayerTest extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        INDArray in = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0});
-        INDArray out = Nd4j.create(new double[] {1, 0, 0});
+        INDArray in = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0}, new long[]{1, 4});
+        INDArray out = Nd4j.create(new double[] {1, 0, 0}, new long[]{1,3});
 
         double score = net.score(new DataSet(in, out));
     }
@@ -603,7 +609,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         Environment environment = EnvironmentUtils.buildEnvironment();
         environment.setSerialVersionID(EnvironmentUtils.buildCId());
 
-        Task task = TaskUtils.buildTask(Nd4j.create(new double[] {1, 2, 3, 4, 5, 6}));
+        Task task = TaskUtils.buildTask(Nd4j.create(new double[] {1, 2, 3, 4, 5, 6}, new long[]{1,6}));
 
         Heartbeat.getInstance().reportEvent(Event.STANDALONE, environment, task);
 
@@ -1181,7 +1187,7 @@ public class MultiLayerTest extends BaseDL4JTest {
             final int minibatch = 5;
             final int seqLen = 6;
 
-            INDArray param = Nd4j.create(new double[]{0.54, 0.31, 0.98, -0.30, -0.66, -0.19, -0.29, -0.62, 0.13, -0.32, 0.01, -0.03, 0.00, 0.00, 0.00});
+            INDArray param = Nd4j.create(new double[]{0.54, 0.31, 0.98, -0.30, -0.66, -0.19, -0.29, -0.62, 0.13, -0.32, 0.01, -0.03, 0.00, 0.00, 0.00}).reshape(1, -1);
             graph.setParams(param);
 
             INDArray input = Nd4j.rand(new int[]{minibatch, nIn, seqLen}, 12);

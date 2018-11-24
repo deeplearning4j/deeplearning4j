@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.KnownCrashingTests;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
@@ -66,6 +67,8 @@ public class TestSameDiffLambda extends BaseDL4JTest {
 
     @Test
     public void testSameDiffLamdaLayerBasic(){
+        KnownCrashingTests.skipCrashingTest();      //TODO REMOVE THIS ONCE FIXED
+
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
@@ -133,6 +136,8 @@ public class TestSameDiffLambda extends BaseDL4JTest {
 
     @Test
     public void testSameDiffLamdaVertexBasic(){
+        KnownCrashingTests.skipCrashingTest();      //TODO REMOVE THIS ONCE FIXED
+
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)

@@ -159,8 +159,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             classPredictions = networkPredictions.gt(0.5);
         }
 
-        INDArray notLabels = Nd4j.getExecutioner().execAndReturn(new Not(labels.dup()));
-        INDArray notClassPredictions = Nd4j.getExecutioner().execAndReturn(new Not(classPredictions.dup()));
+        INDArray notLabels = labels.rsub(1.0);  //If labels are 0 or 1, then rsub(1) swaps
+        INDArray notClassPredictions = classPredictions.rsub(1.0);
 
         INDArray truePositives = classPredictions.mul(labels); //1s where predictions are 1, and labels are 1. 0s elsewhere
         INDArray trueNegatives = notClassPredictions.mul(notLabels); //1s where predictions are 0, and labels are 0. 0s elsewhere

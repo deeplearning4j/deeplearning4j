@@ -76,7 +76,7 @@ public class TestMasking extends BaseDL4JTest {
             net.init();
 
             DataSet data = new DataSet(Nd4j.linspace(1, 10, 10).reshape(1, 1, 10),
-                            Nd4j.linspace(2, 20, 10).reshape(1, 1, 10), Nd4j.ones(10), Nd4j.ones(10));
+                            Nd4j.linspace(2, 20, 10).reshape(1, 1, 10), Nd4j.ones(1, 10), Nd4j.ones(1, 10));
 
             net.fit(data);
             for (Layer l : net.getLayers()) {
@@ -105,7 +105,7 @@ public class TestMasking extends BaseDL4JTest {
         int nIn = 6;
         int layerSize = 4;
 
-        INDArray mask1 = Nd4j.create(new double[] {1, 0, 0, 1, 0});
+        INDArray mask1 = Nd4j.create(new double[] {1, 0, 0, 1, 0}, new long[]{1,5});
         INDArray mask3 = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {0, 1, 0, 1, 0}, {1, 0, 0, 1, 1}});
         INDArray[] labelMasks = new INDArray[] {mask1, mask3};
 
@@ -176,7 +176,7 @@ public class TestMasking extends BaseDL4JTest {
 
                 //Now: change the label values for the masked steps. The
 
-                INDArray maskZeroLocations = Nd4j.getExecutioner().execAndReturn(new Not(labelMask.dup()));
+                INDArray maskZeroLocations = Nd4j.getExecutioner().execAndReturn(new Not(labelMask.castTo(DataType.BOOL))).castTo(DataType.FLOAT);
                 INDArray rand = Nd4j.rand(maskZeroLocations.shape()).muli(0.5);
 
                 INDArray newLabels = labels.add(rand.muli(maskZeroLocations)); //Only the masked values are changed

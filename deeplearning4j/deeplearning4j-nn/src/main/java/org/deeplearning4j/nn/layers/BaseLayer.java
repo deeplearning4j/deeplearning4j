@@ -86,7 +86,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         Gradient ret = new DefaultGradient();
 
         INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
-        Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
+        Nd4j.gemm(input.castTo(weightGrad.dataType()), delta, weightGrad, true, false, 1.0, 0.0);           //TODO avoid castTo?
 
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
 
@@ -303,7 +303,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
 
         INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.size(0), W.size(1));
-        input.mmuli(W, ret);
+        input.castTo(ret.dataType()).mmuli(W, ret);     //TODO Can we avoid this cast? (It sohuld be a no op if not required, however)
         if(hasBias()){
             ret.addiRowVector(b);
         }

@@ -453,12 +453,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public INDArray params() {
-        //C order flattening, to match the gradient flattening order
-        return Nd4j.toFlattened('c', params.values());
-    }
-
-    @Override
     public void setParams(INDArray params) {
         //Override, as base layer does f order parameter flattening by default
         setParams(params, 'c');
