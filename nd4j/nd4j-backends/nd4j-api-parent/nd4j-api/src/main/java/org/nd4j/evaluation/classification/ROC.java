@@ -214,6 +214,9 @@ public class ROC extends BaseEvaluation<ROC> {
                             + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
         }
 
+        if(labels.dataType() != predictions.dataType())
+            labels = labels.castTo(predictions.dataType());
+
         double step = 1.0 / thresholdSteps;
         boolean singleOutput = labels.size(1) == 1;
 

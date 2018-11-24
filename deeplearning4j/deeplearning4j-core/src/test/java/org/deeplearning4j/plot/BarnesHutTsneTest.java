@@ -18,6 +18,7 @@ package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.KnownCrashingTests;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -49,6 +50,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
 
     @Test
     public void testTsne() throws Exception {
+        KnownCrashingTests.skipCrashingTest();
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);

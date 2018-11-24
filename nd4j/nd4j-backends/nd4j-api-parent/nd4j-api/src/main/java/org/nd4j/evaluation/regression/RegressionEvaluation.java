@@ -203,6 +203,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
                             + Arrays.toString(labels.shape()));
         }
 
+        if(labels.dataType() != predictions.dataType())
+            labels = labels.castTo(predictions.dataType());
+
         if (!initialized) {
             // FIXME: int cast
             initialize((int) labels.size(1));

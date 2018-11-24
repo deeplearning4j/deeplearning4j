@@ -96,6 +96,9 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
             return;
         }
 
+        if(labels.dataType() != networkPredictions.dataType())
+            labels = labels.castTo(networkPredictions.dataType());
+
         // FIXME: int cast
         int n = (int) labels.size(1);
         if (underlying == null) {

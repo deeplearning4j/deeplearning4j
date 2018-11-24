@@ -17,6 +17,7 @@
 package org.deeplearning4j.samediff;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.KnownCrashingTests;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -55,6 +56,7 @@ public class CompareTrainingImplementations {
 
     @Test
     public void testCompareMlpTrainingIris(){
+        KnownCrashingTests.skipCrashingTest();
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         NormalizerStandardize std = new NormalizerStandardize();

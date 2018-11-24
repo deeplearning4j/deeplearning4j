@@ -68,7 +68,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
     @Before
     public void beforeDo() {
-        gradients = Nd4j.ones(nIn * nOut + nOut);
+        gradients = Nd4j.ones(1, nIn * nOut + nOut);
         weightGradient = gradients.get(point(0), interval(0, nIn * nOut));
         biasGradient = gradients.get(point(0), interval(nIn * nOut, nIn * nOut + nOut));
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
@@ -725,7 +725,7 @@ public class TestUpdaters extends BaseDL4JTest {
     @Test
     public void testPretrain() {
 
-        gradients = Nd4j.ones(nIn * nOut + nOut + nIn);
+        gradients = Nd4j.ones(1, nIn * nOut + nOut + nIn);
         weightGradient = gradients.get(point(0), interval(0, nIn * nOut));
         biasGradient = gradients.get(point(0), interval(nIn * nOut, nIn * nOut + nOut));
         INDArray vbiasGradient = gradients.get(point(0),
@@ -772,7 +772,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
 
         //Test with pretrain == false
-        gradients = Nd4j.ones(nIn * nOut + nOut + nIn);
+        gradients = Nd4j.ones(1, nIn * nOut + nOut + nIn);
         weightGradient = gradients.get(point(0), interval(0, nIn * nOut));
         biasGradient = gradients.get(point(0), interval(nIn * nOut, nIn * nOut + nOut));
         vbiasGradient = gradients.get(point(0),

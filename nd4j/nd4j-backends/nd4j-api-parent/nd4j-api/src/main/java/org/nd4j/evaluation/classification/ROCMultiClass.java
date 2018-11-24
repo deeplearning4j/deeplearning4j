@@ -138,14 +138,17 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
             //Assume time series input -> reshape to 2d
             evalTimeSeries(labels, predictions);
         }
-        if (labels.rank() > 2 || predictions.rank() > 2 || labels.size(0) != predictions.size(0)) {
+        if (labels.rank() > 2 || predictions.rank() > 2 || labels.size(1) != predictions.size(1)) {
             throw new IllegalArgumentException("Invalid input data shape: labels shape = "
                             + Arrays.toString(labels.shape()) + ", predictions shape = "
                             + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
         }
 
+        if(labels.dataType() != predictions.dataType())
+            labels = labels.castTo(predictions.dataType());
+
         // FIXME: int cast
-        int n = (int) labels.size(0);
+        int n = (int) labels.size(1);
         if (underlying == null) {
             underlying = new ROC[n];
             for (int i = 0; i < n; i++) {
@@ -153,7 +156,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
             }
         }
 
-        if (underlying.length != labels.size(0)) {
+        if (underlying.length != labels.size(1)) {
             throw new IllegalArgumentException(
                             "Cannot evaluate data: number of label classes does not match previous call. " + "Got "
                                             + labels.size(1) + " labels (from array shape "

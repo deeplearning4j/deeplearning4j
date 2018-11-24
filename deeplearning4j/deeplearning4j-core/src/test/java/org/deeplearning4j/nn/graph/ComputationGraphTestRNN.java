@@ -402,7 +402,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
         Pair<Gradient, Double> graphTbpttPair = graphTBPTT.gradientAndScore();
 
         assertEquals(graphPair.getFirst().gradientForVariable(), graphTbpttPair.getFirst().gradientForVariable());
-        assertEquals(graphPair.getSecond(), graphTbpttPair.getSecond());
+        assertEquals(graphPair.getSecond(), graphTbpttPair.getSecond(), 1e-8);
 
         //Check states: expect stateMap to be empty but tBpttStateMap to not be
         Map<String, INDArray> l0StateMLN = graph.rnnGetPreviousState(0);
