@@ -1269,6 +1269,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
     @Test
     public void testInputActivationGradient(){
+        Nd4j.setDataType(DataType.DOUBLE);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)

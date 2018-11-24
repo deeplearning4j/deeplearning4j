@@ -94,10 +94,10 @@ public class EvalTest extends BaseNd4jTest {
         //actual 1      10      5
 
         Evaluation  evaluation = new Evaluation(Arrays.asList("class0", "class1"));
-        INDArray predicted0 = Nd4j.create(new double[] {1, 0});
-        INDArray predicted1 = Nd4j.create(new double[] {0, 1});
-        INDArray actual0 = Nd4j.create(new double[] {1, 0});
-        INDArray actual1 = Nd4j.create(new double[] {0, 1});
+        INDArray predicted0 = Nd4j.create(new double[] {1, 0}, new long[]{1, 2});
+        INDArray predicted1 = Nd4j.create(new double[] {0, 1}, new long[]{1, 2});
+        INDArray actual0 = Nd4j.create(new double[] {1, 0}, new long[]{1, 2});
+        INDArray actual1 = Nd4j.create(new double[] {0, 1}, new long[]{1, 2});
         for (int i = 0; i < 20; i++) {
             evaluation.eval(actual0, predicted0);
         }
@@ -380,10 +380,10 @@ public class EvalTest extends BaseNd4jTest {
         Evaluation e1 = new Evaluation(4);
         Evaluation e2 = new Evaluation(4);
 
-        INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0});
-        INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0});
-        INDArray i2 = Nd4j.create(new double[] {0, 0, 1, 0});
-        INDArray i3 = Nd4j.create(new double[] {0, 0, 0, 1});
+        INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0}, new long[]{1, 4});
+        INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0}, new long[]{1, 4});
+        INDArray i2 = Nd4j.create(new double[] {0, 0, 1, 0}, new long[]{1, 4});
+        INDArray i3 = Nd4j.create(new double[] {0, 0, 0, 1}, new long[]{1, 4});
 
         e1.eval(i0, i0); //order: actual, predicted
         e2.eval(0, 0); //order: predicted, actual
@@ -419,18 +419,18 @@ public class EvalTest extends BaseNd4jTest {
 
         Evaluation e = new Evaluation(null, 3);
 
-        INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0, 0});
-        INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0, 0});
+        INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0, 0}, new long[]{1, 5});
+        INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0, 0}, new long[]{1, 5});
 
-        INDArray p0_0 = Nd4j.create(new double[] {0.8, 0.05, 0.05, 0.05, 0.05}); //class 0: highest prob
-        INDArray p0_1 = Nd4j.create(new double[] {0.4, 0.45, 0.05, 0.05, 0.05}); //class 0: 2nd highest prob
-        INDArray p0_2 = Nd4j.create(new double[] {0.1, 0.45, 0.35, 0.05, 0.05}); //class 0: 3rd highest prob
-        INDArray p0_3 = Nd4j.create(new double[] {0.1, 0.40, 0.30, 0.15, 0.05}); //class 0: 4th highest prob
+        INDArray p0_0 = Nd4j.create(new double[] {0.8, 0.05, 0.05, 0.05, 0.05}, new long[]{1, 5}); //class 0: highest prob
+        INDArray p0_1 = Nd4j.create(new double[] {0.4, 0.45, 0.05, 0.05, 0.05}, new long[]{1, 5}); //class 0: 2nd highest prob
+        INDArray p0_2 = Nd4j.create(new double[] {0.1, 0.45, 0.35, 0.05, 0.05}, new long[]{1, 5}); //class 0: 3rd highest prob
+        INDArray p0_3 = Nd4j.create(new double[] {0.1, 0.40, 0.30, 0.15, 0.05}, new long[]{1, 5}); //class 0: 4th highest prob
 
-        INDArray p1_0 = Nd4j.create(new double[] {0.05, 0.80, 0.05, 0.05, 0.05}); //class 1: highest prob
-        INDArray p1_1 = Nd4j.create(new double[] {0.45, 0.40, 0.05, 0.05, 0.05}); //class 1: 2nd highest prob
-        INDArray p1_2 = Nd4j.create(new double[] {0.35, 0.10, 0.45, 0.05, 0.05}); //class 1: 3rd highest prob
-        INDArray p1_3 = Nd4j.create(new double[] {0.40, 0.10, 0.30, 0.15, 0.05}); //class 1: 4th highest prob
+        INDArray p1_0 = Nd4j.create(new double[] {0.05, 0.80, 0.05, 0.05, 0.05}, new long[]{1, 5}); //class 1: highest prob
+        INDArray p1_1 = Nd4j.create(new double[] {0.45, 0.40, 0.05, 0.05, 0.05}, new long[]{1, 5}); //class 1: 2nd highest prob
+        INDArray p1_2 = Nd4j.create(new double[] {0.35, 0.10, 0.45, 0.05, 0.05}, new long[]{1, 5}); //class 1: 3rd highest prob
+        INDArray p1_3 = Nd4j.create(new double[] {0.40, 0.10, 0.30, 0.15, 0.05}, new long[]{1, 5}); //class 1: 4th highest prob
 
 
         //                                              Correct     TopNCorrect     Total
@@ -480,18 +480,18 @@ public class EvalTest extends BaseNd4jTest {
         Evaluation e1 = new Evaluation(null, 3);
         Evaluation e2 = new Evaluation(null, 3);
 
-        INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0, 0});
-        INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0, 0});
+        INDArray i0 = Nd4j.create(new double[] {1, 0, 0, 0, 0}, new long[]{1, 5});
+        INDArray i1 = Nd4j.create(new double[] {0, 1, 0, 0, 0}, new long[]{1, 5});
 
-        INDArray p0_0 = Nd4j.create(new double[] {0.8, 0.05, 0.05, 0.05, 0.05}); //class 0: highest prob
-        INDArray p0_1 = Nd4j.create(new double[] {0.4, 0.45, 0.05, 0.05, 0.05}); //class 0: 2nd highest prob
-        INDArray p0_2 = Nd4j.create(new double[] {0.1, 0.45, 0.35, 0.05, 0.05}); //class 0: 3rd highest prob
-        INDArray p0_3 = Nd4j.create(new double[] {0.1, 0.40, 0.30, 0.15, 0.05}); //class 0: 4th highest prob
+        INDArray p0_0 = Nd4j.create(new double[] {0.8, 0.05, 0.05, 0.05, 0.05}, new long[]{1, 5}); //class 0: highest prob
+        INDArray p0_1 = Nd4j.create(new double[] {0.4, 0.45, 0.05, 0.05, 0.05}, new long[]{1, 5}); //class 0: 2nd highest prob
+        INDArray p0_2 = Nd4j.create(new double[] {0.1, 0.45, 0.35, 0.05, 0.05}, new long[]{1, 5}); //class 0: 3rd highest prob
+        INDArray p0_3 = Nd4j.create(new double[] {0.1, 0.40, 0.30, 0.15, 0.05}, new long[]{1, 5}); //class 0: 4th highest prob
 
-        INDArray p1_0 = Nd4j.create(new double[] {0.05, 0.80, 0.05, 0.05, 0.05}); //class 1: highest prob
-        INDArray p1_1 = Nd4j.create(new double[] {0.45, 0.40, 0.05, 0.05, 0.05}); //class 1: 2nd highest prob
-        INDArray p1_2 = Nd4j.create(new double[] {0.35, 0.10, 0.45, 0.05, 0.05}); //class 1: 3rd highest prob
-        INDArray p1_3 = Nd4j.create(new double[] {0.40, 0.10, 0.30, 0.15, 0.05}); //class 1: 4th highest prob
+        INDArray p1_0 = Nd4j.create(new double[] {0.05, 0.80, 0.05, 0.05, 0.05}, new long[]{1, 5}); //class 1: highest prob
+        INDArray p1_1 = Nd4j.create(new double[] {0.45, 0.40, 0.05, 0.05, 0.05}, new long[]{1, 5}); //class 1: 2nd highest prob
+        INDArray p1_2 = Nd4j.create(new double[] {0.35, 0.10, 0.45, 0.05, 0.05}, new long[]{1, 5}); //class 1: 3rd highest prob
+        INDArray p1_3 = Nd4j.create(new double[] {0.40, 0.10, 0.30, 0.15, 0.05}, new long[]{1, 5}); //class 1: 4th highest prob
 
 
         //                                              Correct     TopNCorrect     Total
@@ -558,9 +558,9 @@ public class EvalTest extends BaseNd4jTest {
         //[2, 2, 1]
         //[0, 3, 4]
 
-        INDArray zero = Nd4j.create(new double[] {1, 0, 0});
-        INDArray one = Nd4j.create(new double[] {0, 1, 0});
-        INDArray two = Nd4j.create(new double[] {0, 0, 1});
+        INDArray zero = Nd4j.create(new double[] {1, 0, 0}, new long[]{1, 3});
+        INDArray one = Nd4j.create(new double[] {0, 1, 0}, new long[]{1, 3});
+        INDArray two = Nd4j.create(new double[] {0, 0, 1}, new long[]{1, 3});
 
         Evaluation e = new Evaluation();
         apply(e, 3, zero, zero);
@@ -697,9 +697,9 @@ public class EvalTest extends BaseNd4jTest {
 
         Evaluation e = new Evaluation();
 
-        INDArray c0 = Nd4j.create(new double[] {1, 0, 0});
-        INDArray c1 = Nd4j.create(new double[] {0, 1, 0});
-        INDArray c2 = Nd4j.create(new double[] {0, 0, 1});
+        INDArray c0 = Nd4j.create(new double[] {1, 0, 0}, new long[]{1, 3});
+        INDArray c1 = Nd4j.create(new double[] {0, 1, 0}, new long[]{1, 3});
+        INDArray c2 = Nd4j.create(new double[] {0, 0, 1}, new long[]{1, 3});
 
         apply(e, 3, c2, c0); //Predicted class 2 when actually class 0, 3 times
         apply(e, 2, c0, c1); //Predicted class 0 when actually class 1, 2 times
@@ -728,28 +728,28 @@ public class EvalTest extends BaseNd4jTest {
 
 
         //Correct, actual positive class -> TP
-        INDArray p1_1 = Nd4j.create(new double[]{0.3, 0.7});
-        INDArray l1_1 = Nd4j.create(new double[]{0,1});
-        INDArray p1_0 = Nd4j.create(new double[]{0.7, 0.3});
-        INDArray l1_0 = Nd4j.create(new double[]{1,0});
+        INDArray p1_1 = Nd4j.create(new double[]{0.3, 0.7}, new long[]{1, 2});
+        INDArray l1_1 = Nd4j.create(new double[]{0,1}, new long[]{1, 2});
+        INDArray p1_0 = Nd4j.create(new double[]{0.7, 0.3}, new long[]{1, 2});
+        INDArray l1_0 = Nd4j.create(new double[]{1,0}, new long[]{1, 2});
 
         //Incorrect, actual positive class -> FN
-        INDArray p2_1 = Nd4j.create(new double[]{0.6, 0.4});
-        INDArray l2_1 = Nd4j.create(new double[]{0,1});
-        INDArray p2_0 = Nd4j.create(new double[]{0.4, 0.6});
-        INDArray l2_0 = Nd4j.create(new double[]{1,0});
+        INDArray p2_1 = Nd4j.create(new double[]{0.6, 0.4}, new long[]{1, 2});
+        INDArray l2_1 = Nd4j.create(new double[]{0,1}, new long[]{1, 2});
+        INDArray p2_0 = Nd4j.create(new double[]{0.4, 0.6}, new long[]{1, 2});
+        INDArray l2_0 = Nd4j.create(new double[]{1,0}, new long[]{1, 2});
 
         //Correct, actual negative class -> TN
-        INDArray p3_1 = Nd4j.create(new double[]{0.8, 0.2});
-        INDArray l3_1 = Nd4j.create(new double[]{1,0});
-        INDArray p3_0 = Nd4j.create(new double[]{0.2, 0.8});
-        INDArray l3_0 = Nd4j.create(new double[]{0,1});
+        INDArray p3_1 = Nd4j.create(new double[]{0.8, 0.2}, new long[]{1, 2});
+        INDArray l3_1 = Nd4j.create(new double[]{1,0}, new long[]{1, 2});
+        INDArray p3_0 = Nd4j.create(new double[]{0.2, 0.8}, new long[]{1, 2});
+        INDArray l3_0 = Nd4j.create(new double[]{0,1}, new long[]{1, 2});
 
         //Incorrect, actual negative class -> FP
-        INDArray p4_1 = Nd4j.create(new double[]{0.45, 0.55});
-        INDArray l4_1 = Nd4j.create(new double[]{1,0});
-        INDArray p4_0 = Nd4j.create(new double[]{0.55, 0.45});
-        INDArray l4_0 = Nd4j.create(new double[]{0,1});
+        INDArray p4_1 = Nd4j.create(new double[]{0.45, 0.55}, new long[]{1, 2});
+        INDArray l4_1 = Nd4j.create(new double[]{1,0}, new long[]{1, 2});
+        INDArray p4_0 = Nd4j.create(new double[]{0.55, 0.45}, new long[]{1, 2});
+        INDArray l4_0 = Nd4j.create(new double[]{0,1}, new long[]{1, 2});
 
         int tp = 7;
         int fn = 5;
@@ -757,39 +757,39 @@ public class EvalTest extends BaseNd4jTest {
         int fp = 1;
         for( int i=0; i<tp; i++ ) {
             ePosClass1_nOut2.eval(l1_1, p1_1);
-            ePosClass1_nOut1.eval(l1_1.getColumn(1), p1_1.getColumn(1));
+            ePosClass1_nOut1.eval(l1_1.getColumn(1).reshape(1,-1), p1_1.getColumn(1).reshape(1,-1));
             ePosClass0_nOut2.eval(l1_0, p1_0);
-            ePosClass0_nOut1.eval(l1_0.getColumn(1), p1_0.getColumn(1));    //label 0 = instance of positive class
+            ePosClass0_nOut1.eval(l1_0.getColumn(1).reshape(1,-1), p1_0.getColumn(1).reshape(1,-1));    //label 0 = instance of positive class
 
             ePosClassNull_nOut2.eval(l1_1, p1_1);
-            ePosClassNull_nOut1.eval(l1_0.getColumn(0), p1_0.getColumn(0));
+            ePosClassNull_nOut1.eval(l1_0.getColumn(0).reshape(1,-1), p1_0.getColumn(0).reshape(1,-1));
         }
         for( int i=0; i<fn; i++ ){
             ePosClass1_nOut2.eval(l2_1, p2_1);
-            ePosClass1_nOut1.eval(l2_1.getColumn(1), p2_1.getColumn(1));
+            ePosClass1_nOut1.eval(l2_1.getColumn(1).reshape(1,-1), p2_1.getColumn(1).reshape(1,-1));
             ePosClass0_nOut2.eval(l2_0, p2_0);
-            ePosClass0_nOut1.eval(l2_0.getColumn(1), p2_0.getColumn(1));
+            ePosClass0_nOut1.eval(l2_0.getColumn(1).reshape(1,-1), p2_0.getColumn(1).reshape(1,-1));
 
             ePosClassNull_nOut2.eval(l2_1, p2_1);
-            ePosClassNull_nOut1.eval(l2_0.getColumn(0), p2_0.getColumn(0));
+            ePosClassNull_nOut1.eval(l2_0.getColumn(0).reshape(1,-1), p2_0.getColumn(0).reshape(1,-1));
         }
         for( int i=0; i<tn; i++ ) {
             ePosClass1_nOut2.eval(l3_1, p3_1);
-            ePosClass1_nOut1.eval(l3_1.getColumn(1), p3_1.getColumn(1));
+            ePosClass1_nOut1.eval(l3_1.getColumn(1).reshape(1,-1), p3_1.getColumn(1).reshape(1,-1));
             ePosClass0_nOut2.eval(l3_0, p3_0);
-            ePosClass0_nOut1.eval(l3_0.getColumn(1), p3_0.getColumn(1));
+            ePosClass0_nOut1.eval(l3_0.getColumn(1).reshape(1,-1), p3_0.getColumn(1).reshape(1,-1));
 
             ePosClassNull_nOut2.eval(l3_1, p3_1);
-            ePosClassNull_nOut1.eval(l3_0.getColumn(0), p3_0.getColumn(0));
+            ePosClassNull_nOut1.eval(l3_0.getColumn(0).reshape(1,-1), p3_0.getColumn(0).reshape(1,-1));
         }
         for( int i=0; i<fp; i++ ){
             ePosClass1_nOut2.eval(l4_1, p4_1);
-            ePosClass1_nOut1.eval(l4_1.getColumn(1), p4_1.getColumn(1));
+            ePosClass1_nOut1.eval(l4_1.getColumn(1).reshape(1,-1), p4_1.getColumn(1).reshape(1,-1));
             ePosClass0_nOut2.eval(l4_0, p4_0);
-            ePosClass0_nOut1.eval(l4_0.getColumn(1), p4_0.getColumn(1));
+            ePosClass0_nOut1.eval(l4_0.getColumn(1).reshape(1,-1), p4_0.getColumn(1).reshape(1,-1));
 
             ePosClassNull_nOut2.eval(l4_1, p4_1);
-            ePosClassNull_nOut1.eval(l4_0.getColumn(0), p4_0.getColumn(0));
+            ePosClassNull_nOut1.eval(l4_0.getColumn(0).reshape(1,-1), p4_0.getColumn(0).reshape(1,-1));
         }
 
         for( int i=0; i<4; i++ ){
@@ -839,9 +839,9 @@ public class EvalTest extends BaseNd4jTest {
 
         Evaluation e = new Evaluation(Arrays.asList("a","b","c"));
 
-        INDArray class0 = Nd4j.create(new double[]{1,0,0});
-        INDArray class1 = Nd4j.create(new double[]{0,1,0});
-        INDArray class2 = Nd4j.create(new double[]{0,0,1});
+        INDArray class0 = Nd4j.create(new double[]{1,0,0}, new long[]{1, 3});
+        INDArray class1 = Nd4j.create(new double[]{0,1,0}, new long[]{1, 3});
+        INDArray class2 = Nd4j.create(new double[]{0,0,1}, new long[]{1, 3});
 
         //Predicted class 0, actual class 1 x2
         e.eval(class0, class1);

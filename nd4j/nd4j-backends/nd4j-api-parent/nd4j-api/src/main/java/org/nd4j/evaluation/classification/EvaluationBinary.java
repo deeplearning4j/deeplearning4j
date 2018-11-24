@@ -21,9 +21,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.EvaluationUtils;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
@@ -148,11 +148,17 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             return;
         }
 
+        if(labels.dataType() != networkPredictions.dataType())
+            labels = labels.castTo(networkPredictions.dataType());
+
+        if(decisionThreshold != null && decisionThreshold.dataType() != networkPredictions.dataType())
+            decisionThreshold = decisionThreshold.castTo(networkPredictions.dataType());
+
         //First: binarize the network prediction probabilities, threshold 0.5 unless otherwise specified
         //This gives us 3 binary arrays: labels, predictions, masks
         INDArray classPredictions;
         if (decisionThreshold != null) {
-            classPredictions = Nd4j.createUninitialized(networkPredictions.shape());
+            classPredictions = Nd4j.createUninitialized(DataType.BOOL, networkPredictions.shape());
             Nd4j.getExecutioner()
                             .exec(new BroadcastGreaterThan(networkPredictions, decisionThreshold, classPredictions, 1));
         } else {

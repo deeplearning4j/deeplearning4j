@@ -25,9 +25,9 @@ import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.evaluation.meta.Prediction;
 import org.nd4j.evaluation.serde.ConfusionMatrixDeserializer;
 import org.nd4j.evaluation.serde.ConfusionMatrixSerializer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
@@ -360,10 +360,13 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      */
     @Override
-    public void eval(final INDArray realOutcomes, final INDArray guesses,
+    public void eval(INDArray realOutcomes, final INDArray guesses,
                      final List<? extends Serializable> recordMetaData) {
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.size(0);
+
+        if(realOutcomes.dataType() != guesses.dataType())
+            realOutcomes = realOutcomes.castTo(guesses.dataType());
 
         // If confusion is null, then Evaluation was instantiated without providing the classes -> infer # classes from
         if (confusion == null) {
@@ -391,14 +394,14 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         if (nCols == 1) {
             INDArray binaryGuesses = guesses.gt(binaryDecisionThreshold == null ? 0.5 : binaryDecisionThreshold);
 
-            INDArray notLabel = Nd4j.getExecutioner().execAndReturn(new Not(realOutcomes.dup()));
-            INDArray notGuess = Nd4j.getExecutioner().execAndReturn(new Not(binaryGuesses.dup()));
+            INDArray notLabel = realOutcomes.rsub(1.0); //Invert entries (assuming 1 and 0)
+            INDArray notGuess = binaryGuesses.rsub(1.0);
             //tp: predicted = 1, actual = 1
-            int tp = binaryGuesses.mul(realOutcomes).sumNumber().intValue();
+            int tp = realOutcomes.mul(binaryGuesses).castTo(DataType.INT).sumNumber().intValue();
             //fp: predicted = 1, actual = 0
-            int fp = binaryGuesses.mul(notLabel).sumNumber().intValue();
+            int fp = notLabel.mul(binaryGuesses).castTo(DataType.INT).sumNumber().intValue();
             //fn: predicted = 0, actual = 1
-            int fn = notGuess.mul(realOutcomes).sumNumber().intValue();
+            int fn = notGuess.mul(realOutcomes).castTo(DataType.INT).sumNumber().intValue();
             int tn = nRows - tp - fp - fn;
 
             confusion().add(1, 1, tp);
