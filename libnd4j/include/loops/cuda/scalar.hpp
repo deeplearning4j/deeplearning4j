@@ -51,15 +51,15 @@ template<typename X, typename Y, typename Z, typename OpType>
 __device__ void scalarSimpleGeneric(
         Nd4jLong n,
         void* x,
-        void *y,
-        Nd4jLong yEWS, void *params,
+        void *scalar,
+        Nd4jLong xEWS, void *params,
         void *z, Nd4jLong zEws, int *allocationBuffer) {
 
     functions::scalar::ScalarTransform<X,Y,Z>::template transformCuda<OpType>(
             n,
             x,
-            y,
-            yEWS,
+            scalar,
+            xEWS,
             params,
             z,
             zEws,
@@ -102,8 +102,8 @@ __device__ void scalarSimpleGeneric(
     }
 
     template <typename X, typename Y, typename Z, typename OpType>
-    __global__ void scalarSimpleStrided(Nd4jLong length, void* x, void *y, Nd4jLong xEws, void *params, void *z, Nd4jLong zEws, int *allocationBuffer) {
-        scalarSimpleGeneric<X, Y, Z, OpType>(length, x, y, xEws, params, z, zEws, allocationBuffer);
+    __global__ void scalarSimpleStrided(Nd4jLong length, void* x, void *scalar, Nd4jLong xEws, void *params, void *z, Nd4jLong zEws, int *allocationBuffer) {
+        scalarSimpleGeneric<X, Y, Z, OpType>(length, x, scalar, xEws, params, z, zEws, allocationBuffer);
     }
 
     template <typename X, typename Y, typename Z, typename OpType>
@@ -158,10 +158,6 @@ namespace functions {
         if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		    printf("H14 opNum:[%i]\n", opNum);
 
-        auto xType = nd4j::DataTypeUtils::fromT<X>();
-        auto yType = nd4j::DataTypeUtils::fromT<Y>();
-        auto zType = nd4j::DataTypeUtils::fromT<Z>();
-
         DISPATCH_BY_OPNUM_TTT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vz, zShapeInfo, hzShapeInfo, vscalar, vextraParams, nullptr), SCALAR_OPS);
     }
 
@@ -200,8 +196,8 @@ __device__ void ScalarTransform<X,Y,Z>::transformCuda(void* vscalar,
                                                     int *allocationBuffer,
                                                     UnifiedSharedMemory *manager) {
 
-    auto scalar = reinterpret_cast<X*>(vscalar)[0];
-    auto y      = reinterpret_cast<Y*>(vy);
+    auto scalar = reinterpret_cast<Y*>(vscalar)[0];
+    auto y      = reinterpret_cast<X*>(vy);
     auto params = reinterpret_cast<Z*>(vparams);
     auto z = reinterpret_cast<Z*>(vz);
 
@@ -279,13 +275,13 @@ template<typename X, typename Y, typename Z>
 template<typename OpType>
 __device__ void ScalarTransform<X,Y,Z>::transformCuda( Nd4jLong n,
                                                     void* vx,
-                                                    void *vy, Nd4jLong yEWS,
+                                                    void *vscalar, Nd4jLong xEws,
                                                     void *vparams,
                                                     void *vz, Nd4jLong zEws,
                                                     int *allocationBuffer, UnifiedSharedMemory *manager) {
 
-    auto x = reinterpret_cast<X*>(vx)[0];
-    auto y = reinterpret_cast<Y*>(vy);
+    auto x = reinterpret_cast<X*>(vx);
+    auto y = reinterpret_cast<Y*>(vscalar)[0];
     auto z = reinterpret_cast<Z*>(vz);
     auto params = reinterpret_cast<Z*>(vparams);
 
@@ -293,7 +289,7 @@ __device__ void ScalarTransform<X,Y,Z>::transformCuda( Nd4jLong n,
     int tid = blockIdx.x * blockDim.x + threadIdx.x;            
             
     for (Nd4jLong i = tid; i < n; i += totalThreads)
-        z[i * zEws] = OpType::op(y[i * yEWS], x, params);
+        z[i * xEws] = OpType::op(x[i * xEws], y, params);
             
 }
 

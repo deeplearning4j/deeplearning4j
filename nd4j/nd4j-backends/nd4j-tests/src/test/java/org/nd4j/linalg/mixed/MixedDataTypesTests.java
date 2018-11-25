@@ -121,6 +121,7 @@ public class MixedDataTypesTests {
     public void testBasicOps_1() throws Exception {
         val exp = new int[]{1,1,1,1,1,1,1,1,1};
         val array = Nd4j.create(DataType.INT, 3, 3);
+        assertEquals(DataType.INT, array.dataType());
         array.assign(1);
 
         val vector = array.data().asInt();

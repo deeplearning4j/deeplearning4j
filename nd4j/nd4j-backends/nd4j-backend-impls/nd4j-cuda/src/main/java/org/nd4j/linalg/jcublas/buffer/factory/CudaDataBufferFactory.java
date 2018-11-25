@@ -334,7 +334,28 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer create(DataType dataType, long length, boolean initialize) {
-        return null;
+        switch (dataType) {
+            case LONG:
+                return new CudaLongDataBuffer(length, initialize);
+            case INT:
+                return new CudaIntDataBuffer(length, initialize);
+            case SHORT:
+                return new CudaShortDataBuffer(length, initialize);
+            case UBYTE:
+                return new CudaUByteDataBuffer(length, initialize);
+            case BYTE:
+                return new CudaByteDataBuffer(length, initialize);
+            case DOUBLE:
+                return new CudaDoubleDataBuffer(length, initialize);
+            case FLOAT:
+                return new CudaFloatDataBuffer(length, initialize);
+            case HALF:
+                return new CudaHalfDataBuffer(length, initialize);
+            case BOOL:
+                return new CudaBoolDataBuffer(length, initialize);
+            default:
+                throw new UnsupportedOperationException("Unknown data type: [" + dataType + "]");
+        }
     }
 
     @Override
@@ -342,7 +363,28 @@ public class CudaDataBufferFactory implements DataBufferFactory {
         if (workspace == null)
             return create(dataType, length, initialize);
 
-        return null;
+        switch (dataType) {
+            case LONG:
+                return new CudaLongDataBuffer(length, initialize, workspace);
+            case INT:
+                return new CudaIntDataBuffer(length, initialize, workspace);
+            case SHORT:
+                return new CudaShortDataBuffer(length, initialize, workspace);
+            case UBYTE:
+                return new CudaUByteDataBuffer(length, initialize, workspace);
+            case BYTE:
+                return new CudaByteDataBuffer(length, initialize, workspace);
+            case DOUBLE:
+                return new CudaDoubleDataBuffer(length, initialize, workspace);
+            case FLOAT:
+                return new CudaFloatDataBuffer(length, initialize, workspace);
+            case HALF:
+                return new CudaHalfDataBuffer(length, initialize, workspace);
+            case BOOL:
+                return new CudaBoolDataBuffer(length, initialize, workspace);
+            default:
+                throw new UnsupportedOperationException("Unknown data type: [" + dataType + "]");
+        }
     }
 
     @Override

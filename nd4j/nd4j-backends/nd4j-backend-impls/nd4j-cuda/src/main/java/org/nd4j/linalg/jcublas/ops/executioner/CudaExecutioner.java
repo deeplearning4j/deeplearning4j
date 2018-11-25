@@ -1128,7 +1128,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        validateDataType(Nd4j.dataType(), op);
+//        validateDataType(Nd4j.dataType(), op);
 
         if (op.x().length() != op.z().length())
             throw new ND4JIllegalStateException("op.X length should be equal to op.Y length: ["
@@ -1148,8 +1148,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
-        val hostXShapeInfo = op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
-        val hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.scalar().shapeInfoDataBuffer());
+        val hostXShapeInfo = op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
+        val hostYShapeInfo = op.scalar() == null ? null : AddressRetriever.retrieveHostPointer(op.scalar().shapeInfoDataBuffer());
         val hostZShapeInfo = op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
 
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
