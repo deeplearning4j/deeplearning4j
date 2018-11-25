@@ -154,7 +154,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray create(DataBuffer data, long rows, long columns, int[] stride, long offset) {
         // FIXME: int cast
-        return new JCublasNDArray(data, new long[] {rows, columns}, ArrayUtil.toLongArray(stride), offset, Nd4j.order());
+        return new JCublasNDArray(data, new long[] {rows, columns}, ArrayUtil.toLongArray(stride), Nd4j.order(), data.dataType());
     }
 
     @Override
@@ -256,7 +256,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, int[] shape, int[] stride, long offset) {
-        return new JCublasNDArray(data, shape, stride, offset);
+        return new JCublasNDArray(data, ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), Nd4j.order(), data.dataType());
     }
 
     /**
@@ -1552,42 +1552,42 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(double[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return null;
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(float[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return null;
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(long[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return null;
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(int[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return null;
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(short[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return null;
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return null;
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return null;
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(double[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return null;
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
@@ -1597,7 +1597,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, long[] shape, long[] stride, long offset) {
-        return new JCublasNDArray(data, shape, stride, offset, Nd4j.order());
+        return new JCublasNDArray(data, shape, stride, Nd4j.order(), data.dataType());
     }
 
     @Override
@@ -1617,12 +1617,12 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace) {
-        return null;
+        return create(dataType, shape, Nd4j.getStrides(shape, order), ordering, workspace);
     }
 
     @Override
     public INDArray create(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace workspace) {
-        return null;
+        return new JCublasNDArray(Nd4j.createBuffer(dataType, Shape.lengthOf(shape), true, workspace), shape, strides, ordering, dataType);
     }
 
     @Override
@@ -1646,7 +1646,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering) {
-        return new JCublasNDArray(data, newShape, newStride, offset, ordering);
+        return new JCublasNDArray(data, newShape, newStride, ordering, data.dataType());
     }
 
     @Override

@@ -3808,12 +3808,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  shape  - contains new shape to broadcast array to 
         *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
+        public native @ByVal NDArray tileToShape(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+        public native @ByVal NDArray tileToShape(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+        public native @ByVal NDArray tileToShape(@Cast("const Nd4jLong*") long[] shapeInfo);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, NDArray target/*=nullptr*/);
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongBuffer shape, NDArray target/*=nullptr*/);
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongBuffer shape);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector long[] shape, NDArray target/*=nullptr*/);
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector long[] shape);
+// #ifndef __JAVACPP_HACK__
+// #endif
 
         public native NDArray asT(@Cast("nd4j::DataType") int dtype);
 
@@ -20426,6 +20428,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public log_loss() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+        @Namespace("nd4j::ops") public static class log_loss_grad extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public log_loss_grad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public log_loss_grad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public log_loss_grad position(long position) {
+                return (log_loss_grad)super.position(position);
+            }
+        
+                                                                                    public log_loss_grad() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }

@@ -3808,12 +3808,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  shape  - contains new shape to broadcast array to 
         *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
+        public native @ByVal NDArray tileToShape(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+        public native @ByVal NDArray tileToShape(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+        public native @ByVal NDArray tileToShape(@Cast("const Nd4jLong*") long[] shapeInfo);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, NDArray target/*=nullptr*/);
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongBuffer shape, NDArray target/*=nullptr*/);
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongBuffer shape);
         public native void tileToShape(@Cast("Nd4jLong*") @StdVector long[] shape, NDArray target/*=nullptr*/);
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector long[] shape);
+// #ifndef __JAVACPP_HACK__
+// #endif
 
         public native NDArray asT(@Cast("nd4j::DataType") int dtype);
 

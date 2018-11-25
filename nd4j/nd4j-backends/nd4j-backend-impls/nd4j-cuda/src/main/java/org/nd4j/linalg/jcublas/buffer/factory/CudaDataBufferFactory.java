@@ -339,6 +339,9 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer create(DataType dataType, long length, boolean initialize, MemoryWorkspace workspace) {
+        if (workspace == null)
+            return create(dataType, length, initialize);
+
         return null;
     }
 
