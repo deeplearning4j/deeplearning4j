@@ -228,7 +228,7 @@ public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataType dataType() {
-        return DataType.HALF;
+        return DataType.BOOL;
     }
 
     @Override

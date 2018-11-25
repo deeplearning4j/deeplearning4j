@@ -228,7 +228,7 @@ public class CudaShortDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataType dataType() {
-        return DataType.HALF;
+        return DataType.SHORT;
     }
 
     @Override

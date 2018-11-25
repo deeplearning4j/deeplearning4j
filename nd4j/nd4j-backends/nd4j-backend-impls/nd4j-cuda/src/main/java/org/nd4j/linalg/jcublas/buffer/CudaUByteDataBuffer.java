@@ -228,7 +228,7 @@ public class CudaUByteDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataType dataType() {
-        return DataType.HALF;
+        return DataType.UBYTE;
     }
 
     @Override

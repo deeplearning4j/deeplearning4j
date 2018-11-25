@@ -79,7 +79,7 @@ public class MixedDataTypesTests {
 
     @Test
     public void testBasicCreation_4() throws Exception {
-        val scalar = Nd4j.trueScalar(1.0);
+        val scalar = Nd4j.scalar(DataType.DOUBLE, 1.0);
         assertNotNull(scalar);
         assertEquals(0, scalar.rank());
         assertEquals(1, scalar.length());
