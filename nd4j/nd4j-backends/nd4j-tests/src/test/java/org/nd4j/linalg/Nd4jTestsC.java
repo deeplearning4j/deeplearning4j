@@ -7092,6 +7092,26 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testEmptyCasting(){
+        for(DataType from : DataType.values()) {
+            for(DataType to : DataType.values()){
+                INDArray emptyFrom = Nd4j.empty(from);
+                INDArray emptyTo = emptyFrom.castTo(to);
+
+                String str = from + " -> " + to;
+
+                assertEquals(str, from, emptyFrom.dataType());
+                assertTrue(str, emptyFrom.isEmpty());
+                assertEquals(str,0, emptyFrom.length());
+
+                assertEquals(str, to, emptyTo.dataType());
+                assertTrue(str, emptyTo.isEmpty());
+                assertEquals(str,0, emptyTo.length());
+            }
+        }
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
