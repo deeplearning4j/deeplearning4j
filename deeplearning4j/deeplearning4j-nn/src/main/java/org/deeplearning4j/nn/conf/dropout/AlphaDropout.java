@@ -137,7 +137,8 @@ public class AlphaDropout implements IDropout {
         Nd4j.getExecutioner().exec(new BernoulliDistribution(mask, pValue));
 
         //a * (x * d + alphaPrime * (1-d)) + b
-        INDArray aPOneMinusD = Transforms.not(mask).muli(alphaPrime);
+        INDArray inverseMask = mask.rsub(1.0);
+        INDArray aPOneMinusD = inverseMask.muli(alphaPrime);
         Nd4j.getExecutioner().exec(new OldMulOp(inputActivations, mask, output));   //out = x * d
         output.addi(aPOneMinusD).muli(a).addi(b);
 

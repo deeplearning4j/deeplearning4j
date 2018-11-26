@@ -172,7 +172,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         int depth = 2;
         int hw = 5;
         int nOut = 3;
-        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw});
+        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw}).muli(5).subi(2.5);
         INDArray labels = Nd4j.zeros(minibatch, nOut);
         Random r = new Random(12345);
         for (int i = 0; i < minibatch; i++) {
