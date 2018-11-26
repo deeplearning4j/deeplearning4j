@@ -331,6 +331,23 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
         return dup(arrayType, toDup, toDup.ordering());
     }
 
+    @Override
+    public INDArray castTo(@NonNull T arrayType, @NonNull DataType dataType, @NonNull INDArray toCast, boolean dupIfCorrectType){
+        if(toCast.dataType() == dataType){
+            if(!dupIfCorrectType){
+                //Check if we can avoid duping... if not in workspace, or already in correct workspace
+                if(!toCast.isAttached() || toCast.data().getParentWorkspace().getId().equals(workspaceNames.get(arrayType))){
+                    return toCast;
+                }
+            }
+            return dup(arrayType, toCast);
+        } else {
+            try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
+                return toCast.castTo(dataType);
+            }
+        }
+    }
+
 
     private void validateConfig(@NonNull T arrayType){
         if(scopeOutOfWs.contains(arrayType)){
