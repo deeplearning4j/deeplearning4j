@@ -193,25 +193,6 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         return ArrayUtil.toDoubles(getFloatsAt(offset, inc, length));
     }
 
-
-
-    @Override
-    public void setData(float[] data) {
-        throw new UnsupportedOperationException("setData(float) should be implemented first");
-    }
-
-    @Override
-    public void setData(int[] data) {
-        setData(ArrayUtil.toFloats(data));
-    }
-
-
-
-    @Override
-    public void setData(double[] data) {
-        setData(ArrayUtil.toFloats(data));
-    }
-
     @Override
     public byte[] asBytes() {
         float[] data = asFloat();
