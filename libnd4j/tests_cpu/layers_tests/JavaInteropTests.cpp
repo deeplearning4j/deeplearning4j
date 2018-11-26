@@ -806,15 +806,29 @@ TEST_F(JavaInteropTests, Test_Mixed_Add_1) {
 
 TEST_F(JavaInteropTests, Test_Is_Max_1) {
     auto arrayX = NDArrayFactory::create<float>({1, 2, 1, 1});
-    auto arrayZ = NDArrayFactory::create<bool>({false, false, false, false});
-    auto arrayE = NDArrayFactory::create<bool>({false, true, false, false});
+    auto arrayZ = NDArrayFactory::create<bool>({0, 0, 0, 0});
+    auto arrayE = NDArrayFactory::create<bool>({0, 1, 0, 0});
 
     NativeOps ops;
-    ops.execTransformBool(nullptr, transform::IsMax, 
+    ops.execTransformAny(nullptr, transform::IsMax,
                           arrayX.buffer(), arrayX.shapeInfo(), nullptr, nullptr,
                           arrayZ.buffer(), arrayZ.shapeInfo(), nullptr, nullptr,
                           nullptr);
+    //arrayZ.printIndexedBuffer("JAVA ISMAX1");
+    ASSERT_EQ(arrayE, arrayZ);
+}
 
+TEST_F(JavaInteropTests, Test_Is_Max_1_2) {
+    auto arrayX = NDArrayFactory::create<float>({1, 2, 1, 1});
+    auto arrayZ = NDArrayFactory::create<float>({0, 0, 0, 0});
+    auto arrayE = NDArrayFactory::create<float>({0, 1, 0, 0});
+
+    NativeOps ops;
+    ops.execTransformAny(nullptr, transform::IsMax,
+                         arrayX.buffer(), arrayX.shapeInfo(), nullptr, nullptr,
+                         arrayZ.buffer(), arrayZ.shapeInfo(), nullptr, nullptr,
+                         nullptr);
+    //arrayZ.printIndexedBuffer("JAVA ISMAX1");
     ASSERT_EQ(arrayE, arrayZ);
 }
 
