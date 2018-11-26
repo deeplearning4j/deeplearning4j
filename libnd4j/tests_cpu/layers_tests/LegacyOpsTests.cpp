@@ -383,14 +383,15 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
 
     auto row = NDArrayFactory::create<double>('c', {1, 5});
     row.linspace(1);
-
+    auto axis = NDArrayFactory::create<int>('c', {1}, {1});
     nd4j::ops::LegacyBroadcastOp op(broadcast::Add);
-    Nd4jStatus status = op.execute({&x, &row}, {&x}, {}, {1}, {});
+    Nd4jStatus status = op.execute({&x, &row, &axis}, {&x}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto list = x.allTensorsAlongDimension({1});
-
+    x.printIndexedBuffer("Output broadcast");
+    list->at(0)->printIndexedBuffer("Column 0:");
     for (int e = 0; e < list->size(); e++)
         ASSERT_TRUE(row.equalsTo(list->at(e)));
 
