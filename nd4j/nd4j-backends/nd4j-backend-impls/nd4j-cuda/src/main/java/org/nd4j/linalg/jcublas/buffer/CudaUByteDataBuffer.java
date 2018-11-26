@@ -213,20 +213,6 @@ public class CudaUByteDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public byte[] asBytes() {
-        float[] data = asFloat();
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-        for (int i = 0; i < data.length; i++)
-            try {
-                dos.writeFloat(data[i]);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        return bos.toByteArray();
-    }
-
-    @Override
     public DataType dataType() {
         return DataType.UBYTE;
     }

@@ -760,6 +760,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    public void put(long i, boolean element) {
+        allocator.synchronizeHostData(this);
+        allocator.tickHostWrite(this);
+        super.put(i, element);
+    }
+
+    @Override
     public void put(long i, double element) {
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
@@ -768,6 +775,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, int element) {
+        allocator.synchronizeHostData(this);
+        allocator.tickHostWrite(this);
+        super.put(i, element);
+    }
+
+    @Override
+    public void put(long i, long element) {
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
         super.put(i, element);

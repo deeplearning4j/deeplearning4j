@@ -863,8 +863,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
-        val eb = op.extraArgsDataBuff(op.z().dataType());
-        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(eb, context) : null;
 
         long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
                 : ArrayUtil.removeIndex(op.x().shape(), dimension);
@@ -885,6 +883,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val ret = Nd4j.createUninitialized(dataType, retShape);
         op.setZ(ret);
+
+        val eb = op.extraArgsDataBuff(op.z().dataType() == DataType.BOOL ? op.x().dataType() : op.z().dataType());
+        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(eb, context) : null;
 
         val hostXShapeInfo = op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
         val hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
@@ -913,6 +914,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context);
 
         //log.info("Op.X address: {};", x.address());
+
+        op.validateDataTypes();
 
         if (op.z().isScalar()) {
             if (op instanceof Variance) {
@@ -1239,6 +1242,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Pointer devTadOffsets = null;
         Pointer devMaxTadOffsets = null;
+
+        op.validateDataTypes();
 
         if (op.opNum() >= 38 && op.opNum() <= 41) {
 
