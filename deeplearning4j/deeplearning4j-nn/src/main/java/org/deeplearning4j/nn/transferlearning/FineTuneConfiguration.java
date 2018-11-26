@@ -507,8 +507,14 @@ public class FineTuneConfiguration {
         WeightInit origWeightInit = null;
 
         if (l != null) {
-            if (dropout != null)
-                l.setIDropout(dropout.orElse(null));
+            //As per NeuralNetConfiguration.configureLayer and LayerValidation.configureBaseLayer: only copy dropout to base layers
+            // this excludes things like subsampling and activation layers
+            if (dropout != null && l instanceof BaseLayer) {
+                IDropout d = dropout.orElse(null);
+                if(d != null)
+                    d = d.clone();  //Clone to avoid shared state between layers
+                l.setIDropout(d);
+            }
             if(constraints != null)
                 l.setConstraints(constraints.orElse(null));
         }
