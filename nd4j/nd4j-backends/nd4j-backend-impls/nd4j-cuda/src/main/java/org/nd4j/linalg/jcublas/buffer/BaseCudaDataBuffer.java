@@ -261,6 +261,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBytePointer();
                 indexer = ByteIndexer.create((BytePointer) pointer);
                 break;
+            case BOOL:
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBooleanPointer();
+                indexer = BooleanIndexer.create((BooleanPointer) pointer);
+                break;
             default:
                 throw new UnsupportedOperationException();
         }
@@ -1172,13 +1176,16 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    public long getLong(long i) {
+        allocator.synchronizeHostData(this);
+        return super.getLong(i);
+    }
+
+
+    @Override
     public float getFloat(long i) {
         allocator.synchronizeHostData(this);
-
-        //log.info("Requesting data:  trackingPoint: ["+ trackingPoint+"], length: ["+length+"], offset: ["+ offset+ "], position: ["+ i  +"], elementSize: [" +getElementSize() + "], byteoffset: ["+ (offset + i) * getElementSize() + "], bufferCapacity: ["+this.wrappedBuffer.capacity()+"], dtype: ["+dataType()+"]");
-
         return super.getFloat(i);
-        //return wrappedBuffer.getFloat((int)(offset + i) * getElementSize());
     }
 
     @Override

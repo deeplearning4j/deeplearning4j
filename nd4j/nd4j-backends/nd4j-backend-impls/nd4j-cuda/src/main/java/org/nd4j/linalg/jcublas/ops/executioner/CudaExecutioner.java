@@ -1169,14 +1169,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer xShapeInfo = allocator.getPointer(op.x().shapeInfoDataBuffer(), context);
         Pointer extraArgs = op.extraArgs() != null ? allocator.getPointer(op.extraArgsDataBuff(op.z().dataType()), context) : null;
 
-        val hostXShapeInfo = op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
-        var hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
-        val hostZShapeInfo = op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
-
         Pointer dimensionDevPointer = null;
         Pointer dimensionHostPointer = null;
         Pointer retPointer = null;
         int dimension[] = null;
+
+        val hostXShapeInfo = op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
+        var hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
 
         if (op.opNum() == 41 && op.extraArgs() != null && op.extraArgs().length > 0) {
             // for IsMax along dimension we need special temporary buffer
@@ -1220,6 +1219,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             retPointer = allocator.getPointer(ret, context);
         }
+
+        ret = Nd4j.createUninitialized(op.resultType(), op.x().shape(), op.x().ordering());
+        op.setZ(ret);
+
+        val hostZShapeInfo = op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
 
         Pointer hostTadShapeInfo = null;
         Pointer devTadShapeInfo = null;

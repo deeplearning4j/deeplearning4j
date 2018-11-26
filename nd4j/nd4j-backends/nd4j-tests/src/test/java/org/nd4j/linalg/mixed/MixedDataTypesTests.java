@@ -209,6 +209,7 @@ public class MixedDataTypesTests {
         val exp = new long[]{1, 0, 0, 1};
 
         val result = Nd4j.getExecutioner().exec(new OldEqualTo(arrayX, arrayY)).z();
+        assertEquals(DataType.BOOL, result.dataType());
         val arr = result.data().asLong();
 
         assertArrayEquals(exp, arr);
