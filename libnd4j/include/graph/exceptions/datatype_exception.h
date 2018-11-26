@@ -32,6 +32,7 @@ namespace nd4j {
         ~datatype_exception() = default;
 
 
+        static datatype_exception build(std::string message, nd4j::DataType actual);
         static datatype_exception build(std::string message, nd4j::DataType expected, nd4j::DataType actual);
         static datatype_exception build(std::string message, nd4j::DataType expected, nd4j::DataType actualX, nd4j::DataType actualY);
     };

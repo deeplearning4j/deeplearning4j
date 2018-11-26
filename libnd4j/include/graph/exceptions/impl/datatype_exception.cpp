@@ -40,4 +40,10 @@ namespace nd4j {
         message += "; Expected: [" + exp + "]; Actual: [" + actX + ", " + actY + "]";
         return datatype_exception(message);
     }
+
+    datatype_exception datatype_exception::build(std::string message, nd4j::DataType actual) {
+        auto act = DataTypeUtils::asString(actual);
+        message += "; Actual: [" + act + "]";
+        return datatype_exception(message);
+    }
 }

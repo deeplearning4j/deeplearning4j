@@ -2525,14 +2525,17 @@ void NativeOps::execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
 	auto allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(dYShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    dim3 launchDims(256, 1024, 8192);
+    dim3 launchDims(256, 512, 32768);
 
     if (xType != yType)
-        throw std::runtime_error("NativeOps::execReduce3Scalar requires Y operand to have X type");
+        throw nd4j::datatype_exception::build("NativeOps::execReduce3Scalar requires Y operand to have X type", xType, yType);
+
+    if (!DataTypeUtils::isR(zType))
+        throw nd4j::datatype_exception::build("NativeOps::execReduce3Scalar requires Z operand to have floating point data type", zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execScalar(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, allocationPointer, reductionPointer, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 }

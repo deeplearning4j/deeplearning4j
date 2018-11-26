@@ -12,6 +12,7 @@ if(APPLE)
     link_directories(/usr/lib)
     link_directories(/lib)
 endif()
+
 if(WIN32)
     get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
@@ -27,7 +28,13 @@ if(WIN32)
     SET(CMAKE_CXX_RESPONSE_FILE_LINK_FLAG "@")
 
     SET(CMAKE_NINJA_FORCE_RESPONSE_FILE 1 CACHE INTERNAL "")
+else()
+    if (CUDA_BLAS)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medany")
+    endif()
 endif()
+
+
 
 if ("${LIBND4J_ALL_OPS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
