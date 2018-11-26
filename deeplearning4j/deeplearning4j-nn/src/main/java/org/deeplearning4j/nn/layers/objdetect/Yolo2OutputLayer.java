@@ -131,7 +131,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // all 0s if no class label is present
         val size1 = labels.size(1);
         INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());   //Shape: [minibatch, nClasses, H, W]
-        INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(nhw, 'c'), 1); //Shape: [minibatch, H, W]
+        INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(nhw, 'c'), 1).castTo(DataType.BOOL); //Shape: [minibatch, H, W]
 
         // ----- Step 1: Labels format conversion -----
         //First: Convert labels/ground truth (x1,y1,x2,y2) from "coordinates (grid box units)" format to "center position in grid box" format
@@ -461,14 +461,15 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray noIntMask1 = Nd4j.createUninitialized(DataType.BOOL, maxTL.shape(), maxTL.ordering());
         INDArray noIntMask2 = Nd4j.createUninitialized(DataType.BOOL, maxTL.shape(), maxTL.ordering());
         //Does both x and y on different dims
-        Broadcast.lt(predictedBR_XY, labelTL, noIntMask1, 0, 2, 3, 4);  //Predicted BR < label TL
-        Broadcast.gt(predictedTL_XY, labelBR, noIntMask2, 0, 2, 3, 4);  //predicted TL > label BR
+        Broadcast.lte(predictedBR_XY, labelTL, noIntMask1, 0, 2, 3, 4);  //Predicted BR <= label TL
+        Broadcast.gte(predictedTL_XY, labelBR, noIntMask2, 0, 2, 3, 4);  //predicted TL >= label BR
 
         noIntMask1 = Transforms.or(noIntMask1.get(all(), all(), point(0), all(), all()), noIntMask1.get(all(), all(), point(1), all(), all()) );    //Shape: [mb, b, H, W]. Values 1 if no intersection
         noIntMask2 = Transforms.or(noIntMask2.get(all(), all(), point(0), all(), all()), noIntMask2.get(all(), all(), point(1), all(), all()) );
         INDArray noIntMask = Transforms.or(noIntMask1, noIntMask2 );
 
-        INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask, noIntMask, 0.0)); //Values 0 if no intersection
+//        INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask, noIntMask, 0.0)); //Values 0 if no intersection
+        INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask)); //Values 0 if no intersection
         Broadcast.mul(intMask, objectPresentMask, intMask, 0, 2, 3);
 
         //Mask the intersection area: should be 0 if no intersection
@@ -491,18 +492,18 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         Broadcast.mul(iou, objectPresentMask, iou, 0, 2, 3);
 
         //Finally, calculate derivatives:
-        INDArray maskMaxTL = Nd4j.createUninitialized(maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
+        INDArray maskMaxTL = Nd4j.createUninitialized(DataType.BOOL, maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
         Broadcast.gt(predictedTL_XY, labelTL, maskMaxTL, 0, 2, 3, 4);   // z = x > y
 
-        INDArray maskMinBR = Nd4j.createUninitialized(maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
+        INDArray maskMinBR = Nd4j.createUninitialized(DataType.BOOL, maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
         Broadcast.lt(predictedBR_XY, labelBR, maskMinBR, 0, 2, 3, 4);   // z = x < y
 
         //dI/dx = lambda * (1^(min(x1+w1/2) - 1^(max(x1-w1/2))
         //dI/dy = omega * (1^(min(y1+h1/2) - 1^(max(y1-h1/2))
         //omega = min(x1+w1/2,x2+w2/2) - max(x1-w1/2,x2+w2/2)       i.e., from diff = minBR.sub(maxTL), which has shape [mb, b, 2, h, w]
         //lambda = min(y1+h1/2,y2+h2/2) - max(y1-h1/2,y2+h2/2)
-        INDArray dI_dxy = maskMinBR.sub(maskMaxTL);              //Shape: [mb, b, 2, h, w]
-        INDArray dI_dwh = maskMinBR.add(maskMaxTL).muli(0.5);    //Shape: [mb, b, 2, h, w]
+        INDArray dI_dxy = maskMinBR.castTo(DataType.FLOAT).subi(maskMaxTL);              //Shape: [mb, b, 2, h, w]
+        INDArray dI_dwh = maskMinBR.castTo(DataType.FLOAT).addi(maskMaxTL).muli(0.5);    //Shape: [mb, b, 2, h, w]
 
         dI_dxy.get(all(), all(), point(0), all(), all()).muli(diff.get(all(), all(), point(1), all(), all()));
         dI_dxy.get(all(), all(), point(1), all(), all()).muli(diff.get(all(), all(), point(0), all(), all()));
