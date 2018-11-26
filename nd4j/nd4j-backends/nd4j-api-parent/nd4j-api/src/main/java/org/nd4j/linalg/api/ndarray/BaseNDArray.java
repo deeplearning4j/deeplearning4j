@@ -4445,6 +4445,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray transpose() {
+        if (rank() < 2)
+            throw new ND4JIllegalStateException("Can't transpose array with rank < 2");
+
         return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
     }
 
@@ -4457,6 +4460,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray transposei() {
+        if (rank() < 2)
+            throw new ND4JIllegalStateException("Can't transpose array with rank < 2");
+        
         return permutei(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
     }
 

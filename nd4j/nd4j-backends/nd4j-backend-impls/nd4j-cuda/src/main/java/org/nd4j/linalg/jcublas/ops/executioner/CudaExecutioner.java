@@ -1184,7 +1184,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
@@ -1330,13 +1330,31 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
                 throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
 
-            nativeOps.execPairwiseTransform(xShapeInfoHostPointer, op.opNum(),
-                    null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
-                    null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
-                    null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                    (DoublePointer) extraArgs);
+            switch (op.getOpType()) {
+                case TRANSFORM_BOOL:
+                case PAIRWISE_BOOL:
+                    nativeOps.execPairwiseTransformBool(xShapeInfoHostPointer, op.opNum(),
+                            null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                            null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
+                            null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                            extraArgs);
+                    break;
+                default:
+                    nativeOps.execPairwiseTransform(xShapeInfoHostPointer, op.opNum(),
+                        null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                        null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
+                        null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                        extraArgs);
+                    break;
+            }
         } else {
             switch (op.getOpType()) {
+                case TRANSFORM_ANY:
+                    nativeOps.execTransformAny(xShapeInfoHostPointer, op.opNum(),
+                            null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                            null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                            (DoublePointer) extraArgs);
+                    break;
                 case TRANSFORM_FLOAT:
                     nativeOps.execTransformFloat(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,

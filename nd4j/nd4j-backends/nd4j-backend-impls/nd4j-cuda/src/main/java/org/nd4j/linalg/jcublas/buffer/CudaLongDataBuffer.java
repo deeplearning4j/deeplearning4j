@@ -208,19 +208,6 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
     }
 
 
-
-    @Override
-    public void setData(int[] data) {
-        setData(ArrayUtil.toDoubles(data));
-    }
-
-    @Override
-    public void setData(float[] data) {
-        setData(ArrayUtil.toDoubles(data));
-    }
-
-
-
     @Override
     public DataBuffer create(double[] data) {
         return new CudaLongDataBuffer(data);

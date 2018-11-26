@@ -609,9 +609,9 @@ void NativeOps::execPairwiseTransform(
 
     auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(dYShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     dim3 launchDims(256, 1024, 8192);
 

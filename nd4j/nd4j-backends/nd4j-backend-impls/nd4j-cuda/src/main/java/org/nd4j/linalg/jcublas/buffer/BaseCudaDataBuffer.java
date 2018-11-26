@@ -597,6 +597,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             // we're keeping pointer reference for JVM
             pointer.address();
+        } else if (dataType() == DataType.LONG) {
+            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toInts(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toInts(data));
+            val pointer = new LongPointer(ArrayUtil.toLongArray(data));
+            val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
         } else if (dataType() == DataType.HALF) {
             ShortPointer pointer = new ShortPointer(ArrayUtil.toHalfs(data));
             Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));

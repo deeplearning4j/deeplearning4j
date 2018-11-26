@@ -146,10 +146,13 @@ public class MixedDataTypesTests {
         val arrayX = Nd4j.create(DataType.INT, 3, 3);
         val arrayY = Nd4j.create(new int[]{1,1,1,1,1,1,1,1,1}, new long[]{3, 3}, DataType.LONG);
 
+        val vectorY = arrayY.data().asInt();
+        assertArrayEquals(exp, vectorY);
+
         arrayX.addi(arrayY);
 
-        val vector = arrayX.data().asInt();
-        assertArrayEquals(exp, vector);
+        val vectorX = arrayX.data().asInt();
+        assertArrayEquals(exp, vectorX);
     }
 
     @Test

@@ -1356,6 +1356,14 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static long[] toLongArray(float[] array) {
+        val ret = new long[array.length];
+        for (int i = 0; i < array.length; i++) {
+            ret[i] = (long) array[i];
+        }
+        return ret;
+    }
+
     /**
      *
      * @param byteArray
