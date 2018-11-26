@@ -17,6 +17,7 @@
 package org.nd4j.linalg.workspace;
 
 import lombok.NonNull;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -194,6 +195,17 @@ public interface WorkspaceMgr<T extends Enum<T>> {
 
     /**
      * Create an array in the specified array type's workspace (or detached if none is specified).
+     * Equivalent to {@link org.nd4j.linalg.factory.Nd4j#create(int...)}, other than the array location
+     * @param arrayType Array type
+     * @param dataType  Data type for the created array
+     * @param shape     Shape
+     * @return Created arary
+     */
+    INDArray create(T arrayType, DataType dataType, long... shape);
+
+
+    /**
+     * Create an array in the specified array type's workspace (or detached if none is specified).
      * Equivalent to {@link org.nd4j.linalg.factory.Nd4j#create(int[],char)}, other than the array location
      * @param arrayType Array type
      * @param shape     Shape
@@ -211,6 +223,19 @@ public interface WorkspaceMgr<T extends Enum<T>> {
      * @return Created arary
      */
     INDArray create(T arrayType, long[] shape, char ordering);
+
+
+    /**
+     * Create an array in the specified array type's workspace (or detached if none is specified).
+     * Equivalent to {@link org.nd4j.linalg.factory.Nd4j#create(int[],char)}, other than the array location
+     * @param arrayType Array type
+     * @param dataType  Data type for the created array
+     * @param shape     Shape
+     * @param ordering Order of the array
+     * @return Created arary
+     */
+    INDArray create(T arrayType, DataType dataType, long[] shape, char ordering);
+
 
     /**
      * Create an uninitialized array in the specified array type's workspace (or detached if none is specified).
@@ -232,6 +257,16 @@ public interface WorkspaceMgr<T extends Enum<T>> {
 
     /**
      * Create an uninitialized array in the specified array type's workspace (or detached if none is specified).
+     * Equivalent to {@link org.nd4j.linalg.factory.Nd4j#createUninitialized(int)} (int...)}, other than the array location
+     * @param arrayType Array type
+     * @param dataType  Data type of the created array
+     * @param shape     Shape
+     * @return Created array
+     */
+    INDArray createUninitialized(T arrayType, DataType dataType, long... shape);
+
+    /**
+     * Create an uninitialized array in the specified array type's workspace (or detached if none is specified).
      * Equivalent to {@link org.nd4j.linalg.factory.Nd4j#createUninitialized(int[], char)}}, other than the array location
      * @param arrayType Array type
      * @param shape     Shape
@@ -249,6 +284,17 @@ public interface WorkspaceMgr<T extends Enum<T>> {
      * @return Created array
      */
     INDArray createUninitialized(T arrayType, long[] shape, char order);
+
+    /**
+     * Create an uninitialized array in the specified array type's workspace (or detached if none is specified).
+     * Equivalent to {@link org.nd4j.linalg.factory.Nd4j#createUninitialized(int[], char)}}, other than the array location
+     * @param arrayType Array type
+     * @param dataType  Data type of the returned array
+     * @param shape     Shape
+     * @param order Order of the array
+     * @return Created array
+     */
+    INDArray createUninitialized(T arrayType, DataType dataType, long[] shape, char order);
 
     /**
      * Duplicate the array, where the array is put into the specified array type's workspace (if applicable)
