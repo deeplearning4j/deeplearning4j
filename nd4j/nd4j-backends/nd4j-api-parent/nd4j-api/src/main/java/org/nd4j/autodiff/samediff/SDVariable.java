@@ -305,6 +305,13 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     public DataType dataType() {
+        if(this.dataType == null){
+            //Try to infer datatype instead of returning null
+            if(getArr() != null){
+                this.dataType = getArr().dataType();
+            }
+        }
+
         return this.dataType;
     }
 
