@@ -1071,12 +1071,13 @@ public class Transforms {
     }
 
     public static INDArray not(INDArray x) {
-        val z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
+        INDArray z;
         if (x.isB()) {
+            z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
             Nd4j.getExecutioner().exec(new BooleanNot(x, z, x.length()));
         } else {
+            z = Nd4j.createUninitialized(x.dataType(), x.shape(), x.ordering());
             Nd4j.getExecutioner().exec(new ScalarNot(x, z, x.length(), 0.0f));
-
         }
         return z;
     }

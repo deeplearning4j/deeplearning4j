@@ -492,7 +492,6 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
     @Test
     public void testMaskingLstmAndBidirectionalLstmGlobalPooling() {
-        KnownCrashingTests.skipCrashingTest();      //TODO REMOVE THIS ONCE FIXED
         //Idea: mask some of the time steps, like [1,1,1,0,0]. We expect the activations out of the global pooling
         // to be the same as if we'd just fed in the in the present (1s) time steps only
 

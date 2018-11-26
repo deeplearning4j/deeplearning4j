@@ -862,7 +862,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         double s1 = net1.score();
         double s2 = net2.score();
-        assertEquals(s1, s2, 1e-8); //Biases initialized to 0 -> should initially have same score
+        assertEquals(s1, s2, 1e-6); //Biases initialized to 0 -> should initially have same score
 
         for (int i = 0; i < 10; i++) {
             net1.fit(features, labels);
