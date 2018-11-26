@@ -4515,6 +4515,21 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testTadDup_1() {
+        INDArray haystack = Nd4j.create(new double[] {-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951,
+                -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673,
+                0.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247})
+                .reshape(3, 5);
+        INDArray needle = Nd4j.create(new double[] {-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673});
+
+        val row = haystack.getRow(1);
+        val drow = row.dup();
+
+        log.info("row shape: {}", row.shapeInfoDataBuffer());
+        assertEquals(needle, drow);
+    }
+
+    @Test
     public void testTadReduce3_0() throws Exception {
         INDArray haystack = Nd4j.create(new double[] {-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527,
                 -0.77555125951, -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130,
@@ -4531,9 +4546,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, reduced);
 
         for (int i = 0; i < haystack.rows(); i++) {
-            double res = Nd4j.getExecutioner().execAndReturn(new CosineDistance(haystack.getRow(i).dup(), needle))
-                    .getFinalResult().doubleValue();
-            assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
+            val row = haystack.getRow(i).dup();
+            double res = Nd4j.getExecutioner().execAndReturn(new CosineDistance(row, needle)).z().getDouble(0);
+            assertEquals("Failed at " + i, reduced.getDouble(i), res, 1e-5);
         }
         //cosinedistance([-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951], [-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673)
         //cosinedistance([.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247], [-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673)

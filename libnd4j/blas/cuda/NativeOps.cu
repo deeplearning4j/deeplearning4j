@@ -2468,7 +2468,7 @@ void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 512, 16384);
+    dim3 launchDims = dim3(256, 512, 32768);
 
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -2494,14 +2494,17 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(dYShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    dim3 launchDims(256, 1024, 8192);
+    dim3 launchDims(256, 512, 32768);
 
     if (xType != yType)
-        throw std::runtime_error("NativeOps::execReduce3 requires Y operand to have X type");
+        throw nd4j::datatype_exception::build("NativeOps::execReduce3 requires Y operand to have X type", xType, yType);
+
+    if (!DataTypeUtils::isR(zType))
+        throw nd4j::datatype_exception::build("NativeOps::execReduce3 requires Z operand to have floating point data type", zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, 1, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), LIBND4J_TYPES, FLOAT_TYPES)
 }
@@ -2524,14 +2527,17 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(dYShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    dim3 launchDims(256, 1024, 8192);
+    dim3 launchDims(256, 512, 32768);
 
     if (xType != yType)
-        throw std::runtime_error("NativeOps::execReduce3 requires Y operand to have X type");
+        throw nd4j::datatype_exception::build("NativeOps::execReduce3 requires Y operand to have X type", xType, yType);
+
+    if (!DataTypeUtils::isR(zType))
+        throw nd4j::datatype_exception::build("NativeOps::execReduce3 requires Z operand to have floating point data type", zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), LIBND4J_TYPES, FLOAT_TYPES)
 }

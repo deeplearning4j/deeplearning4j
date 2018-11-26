@@ -370,6 +370,10 @@ public class JCublasNDArray extends BaseNDArray {
         super(buffer, shape, stride, offset, ordering);
     }
 
+    public JCublasNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering, DataType dataType) {
+        super(buffer, shape, stride, offset, ordering, dataType);
+    }
+
     public JCublasNDArray(DataBuffer buffer, long[] shape, long[] stride, char ordering, DataType dataType) {
         super(buffer, shape, stride, ordering, dataType);
     }

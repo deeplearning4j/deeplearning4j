@@ -423,8 +423,8 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 			__syncthreads();
 
 			for(int j = threadIdx.x; j < tadLength; j += blockDim.x) {
-            	Nd4jLong xOffset = shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
-                Nd4jLong yOffset = shape::getIndexOffset(j, yShapeInfo, tadLength);                            
+            	auto xOffset = shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength) + xOffsetForTad;
+                auto yOffset = shape::getIndexOffset(j, yShapeInfo, tadLength);
 				sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset],y[yOffset], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset],y[yOffset], extraZ), extraZ);
 			}
 			
