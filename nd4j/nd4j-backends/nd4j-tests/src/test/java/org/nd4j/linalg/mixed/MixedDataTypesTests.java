@@ -36,9 +36,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * Basic tests for mixed data types
@@ -376,7 +374,7 @@ public class MixedDataTypesTests {
         val arrayX = Nd4j.create(DataType.FLOAT, 10, 5000);
         val arrayY = Nd4j.create(DataType.FLOAT, 10, 5000);
 
-        assertEquals(arrayX, arrayY);
+        assertTrue(arrayX.equalsWithEps(arrayY, -1e-5f));
     }
 
 

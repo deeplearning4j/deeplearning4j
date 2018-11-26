@@ -314,7 +314,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
             //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createBufferDetached(array);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, type);
 
             if (constantOffsets.get(deviceId).get() + (array.length * 4) < MAX_CONSTANT_LENGTH) {
                 buffer.setConstant(true);
@@ -343,7 +343,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
             //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createBufferDetached(array);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, type);
 
             if (constantOffsets.get(deviceId).get() + (array.length * 8) < MAX_CONSTANT_LENGTH) {
                 buffer.setConstant(true);
@@ -380,7 +380,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
                  //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createBufferDetached(array);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, type);
 
             if (constantOffsets.get(deviceId).get() + (array.length * Nd4j.sizeOfDataType()) < MAX_CONSTANT_LENGTH) {
                 buffer.setConstant(true);
@@ -417,7 +417,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
             //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createBufferDetached(array);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, type);
 
             if (constantOffsets.get(deviceId).get() + (array.length * Nd4j.sizeOfDataType()) < MAX_CONSTANT_LENGTH) {
                 buffer.setConstant(true);

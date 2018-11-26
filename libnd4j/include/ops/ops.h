@@ -3365,7 +3365,7 @@ namespace simdOps {
 
         op_def static Y op(X d1, X d2, Y *extraParamsRef) {
 
-        	Y eps = extraParamsRef[2];
+        	Y eps = nd4j::math::nd4j_abs<Y>(extraParamsRef[2]);
     	    Y diff = static_cast<Y>(nd4j::math::nd4j_abs<X>(d1 - d2));
 
 

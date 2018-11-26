@@ -863,7 +863,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
-        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context) : null;
+        val eb = op.extraArgsDataBuff(op.z().dataType());
+        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(eb, context) : null;
 
         long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
                 : ArrayUtil.removeIndex(op.x().shape(), dimension);
