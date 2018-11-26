@@ -20,11 +20,12 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseBroadcastBoolOp;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
 import java.util.List;
 
-public class BroadcastNotEqual extends BaseBroadcastOp {
+public class BroadcastNotEqual extends BaseBroadcastBoolOp {
 
     public BroadcastNotEqual() {}
 
