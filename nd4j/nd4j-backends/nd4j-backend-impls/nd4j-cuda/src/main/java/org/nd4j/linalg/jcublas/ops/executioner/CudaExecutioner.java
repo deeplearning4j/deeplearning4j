@@ -853,10 +853,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());
 
-        val hostXShapeInfo = op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
-        val hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
-        val hostZShapeInfo = op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
-
         val tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
         val hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
@@ -864,25 +860,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val offsets = tadBuffers.getSecond();
         val devTadOffsets = offsets == null ? null : AtomicAllocator.getInstance().getPointer(offsets, context);
-
-        val xShapeInfoHostPointer = extraz.get().put(
-                AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
-                AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
-                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
-                hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
-
-        if (op.y() != null) {
-            Pair<DataBuffer, DataBuffer> yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
-
-            Pointer yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
-
-            DataBuffer yOffsets = yTadBuffers.getSecond();
-            Pointer yDevTadOffsets =
-                    yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
-
-            xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
-            xShapeInfoHostPointer.put(13, yDevTadOffsets);
-        }
 
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
@@ -907,6 +884,29 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val ret = Nd4j.createUninitialized(dataType, retShape);
         op.setZ(ret);
+
+        val hostXShapeInfo = op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
+        val hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
+        val hostZShapeInfo = op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
+
+        val xShapeInfoHostPointer = extraz.get().put(
+                AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
+                AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
+                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
+                hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
+
+        if (op.y() != null) {
+            val yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
+
+            val yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
+
+            val yOffsets = yTadBuffers.getSecond();
+            val yDevTadOffsets =
+                    yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
+
+            xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
+            xShapeInfoHostPointer.put(13, yDevTadOffsets);
+        }
 
         val z = AtomicAllocator.getInstance().getPointer(op.z(), context);
         val zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context);

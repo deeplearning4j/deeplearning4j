@@ -160,11 +160,11 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     }
 
     public BaseReduceOp(INDArray x) {
-        this(x, null, x, x.lengthLong());
+        this(x, null, null, x.lengthLong());
     }
 
     public BaseReduceOp(INDArray x, INDArray y) {
-        this(x, y, x, x.lengthLong());
+        this(x, y, null, x.lengthLong());
         //if (y != null)
         //    LinAlgExceptions.assertSameLength(x, y);
     }
