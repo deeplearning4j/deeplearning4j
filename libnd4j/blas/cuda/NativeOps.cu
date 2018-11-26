@@ -127,6 +127,65 @@ typedef struct {
 
 typedef __syncInfo SyncInfo;
 
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+__global__ void flattenKernelGeneric(
+					Nd4jPointer *extraPointers,
+					int dOffset,
+					char order,
+					void *vz, Nd4jLong *zShapeInfo,
+					void *vy,
+					Nd4jLong *yShapeInfo) {
+
+	auto z = reinterpret_cast<T *>(vz);
+    auto y = reinterpret_cast<T *>(vy);
+
+	__shared__ UnifiedSharedMemory *manager;
+
+	if (threadIdx.x == 0) {
+		extern __shared__ unsigned char shmem[];
+		manager = new(shmem) UnifiedSharedMemory(reinterpret_cast<int *>(shmem));
+		manager->init(sizeof(UnifiedSharedMemory), 4, 4, sizeof(shape::TAD), 2);
+	}
+	__syncthreads();
+
+	Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;	
+	
+	auto len = shape::length(yShapeInfo);
+	auto yOrder = shape::order(yShapeInfo);
+	auto zEWS = shape::elementWiseStride(zShapeInfo);
+	auto yEWS = shape::elementWiseStride(yShapeInfo);
+		
+	if (zEWS >= 1 && yEWS >= 1 && yOrder == order) {
+			
+		for (int i = tid; i < len; i+= gridDim.x * blockDim.x)
+			z[i * zEWS + dOffset] = y[i * yEWS];
+	} 
+	else {
+		
+		for(auto i = tid; i < len; i+= gridDim.x * blockDim.x) {
+				
+			auto offsetZ = shape::getIndexOffset(i, zShapeInfo, len);
+			auto offsetY = shape::getIndexOffset(i, yShapeInfo, len);
+			z[offsetZ + dOffset] = y[offsetY];
+		}
+	} 
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+__host__ void execFlatten(dim3 launchDims, cudaStream_t *stream, 
+							Nd4jPointer *extraPointers,
+							int dOffset,
+							char order,
+							void *vz, Nd4jLong *zShapeInfo,
+							void *vy, Nd4jLong *yShapeInfo) {
+
+	flattenKernelGeneric<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(extraPointers, dOffset, order, vz, zShapeInfo, vy, yShapeInfo);
+}
+
+
 /**
 * This is utility kernel, that updates given special buffer with proper values in device memory
 */
@@ -1245,372 +1304,6 @@ void NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
-/**
- *
- * @param opNum
- * @param dx
- * @param dXShapeInfo
- * @param dZ
- * @param dZShapeInfo
- * @param extraParams
- * @param n
- */
- /*
-void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
-		void *hX, Nd4jLong *hXShapeInfo,
-        void *dX, Nd4jLong *dXShapeInfo,
-        void *hZ, Nd4jLong *hZShapeInfo,
-		void *dZ, Nd4jLong *dZShapeInfo,
-		void *extraParams) {
-
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-	// auto hXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-	auto hYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
-	// auto hZShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[8]);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("F20 opNum:[%i]\n", opNum);
-
-	int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-	void *reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
-
-	int *dimension = reinterpret_cast<int *>(extraPointers[6]);
-	int *maxDimension = dimension + 1;
-	auto maxShapeBuffer = reinterpret_cast<Nd4jLong *>(maxDimension + 1);
-	void* special = reinterpret_cast<void*> (maxShapeBuffer + (MAX_RANK * 2 + 4));
-
-    int *maskedAllocPointer = allocPointer;
-
-    auto devTadShapeInfo = reinterpret_cast<Nd4jLong *> (extraPointers[10]);
-    Nd4jLong *devTadOffsets = reinterpret_cast<Nd4jLong *> (extraPointers[11]);
-
-    dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hZShapeInfo, funcAttributes[1]);
-    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);	
-
-	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-		printf("AF20 opNum:[%i]\n", opNum);
-
-	// simple trick to get workaround over reductions into scalar
-	// that's special ops: SoftMax, SoftMaxDerivative, LogSoftMax, IsMax
-	if (opNum >= 38 && opNum <= 41) {
-		if (shape::isVector(hXShapeInfo) && opNum != 41) {
-			// if that's vector, we just go directly to op in 1 block
-			int length = shape::length(hXShapeInfo);
-			int block = nd4j::math::nd4j_min<int>(length, 256);
-
-            launchDims.x = 1;
-            launchDims.y = block;
-            launchDims.z += (block * DataTypeUtils::sizeOf(zType) * 4);
-
-			BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dZ, dZShapeInfo, shape::rank(hZShapeInfo), allocPointer, reductionPointer, devTadShapeInfo, devTadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
-
-		} else {
-			// going for blockwise specials
-
-			auto shape = shape::shapeOf(hXShapeInfo);
-			switch (opNum) {
-				case 40: // LogSoftMax
-				case 39: // SoftMax Derivative
-				case 38: {// softmax
-					Nd4jPointer tempPointers[16];
-					tempPointers[0] = extraPointers[0];
-					tempPointers[1] = extraPointers[1];
-					tempPointers[2] = extraPointers[2];
-					tempPointers[3] = extraPointers[3];
-					tempPointers[4] = extraPointers[4];
-					tempPointers[5] = extraPointers[5];
-					tempPointers[6] = extraPointers[6];
-					tempPointers[7] = extraPointers[7];
-					tempPointers[8] = extraPointers[8];
-					tempPointers[9] = extraPointers[9];
-					tempPointers[10] = extraPointers[10];
-					tempPointers[11] = extraPointers[11];
-					tempPointers[12] = extraPointers[12];
-					tempPointers[13] = extraPointers[13];
-					tempPointers[14] = extraPointers[14];
-					tempPointers[15] = extraPointers[15];
-
-
-					Nd4jLong maxShape[2] = {shape::shapeOf(hXShapeInfo)[0], 1};
-					auto hostMaxShapeBuffer = shape::shapeBuffer(2, xType, maxShape);
-
-					tempPointers[7] = (Nd4jPointer) hostMaxShapeBuffer;
-					tempPointers[8] = (Nd4jPointer) hostMaxShapeBuffer;
-
-					prepareShapeBuffer <<< 1, 1, 128, *stream >>> (dimension, maxDimension, maxShapeBuffer, shape[0]);
-
-					DEBUG_KERNEL(stream, opNum);
-
-					//shape::printShapeInfo(maxShapeBuffer);
-					tempPointers[9] = extraPointers[12];
-					tempPointers[10] = extraPointers[13];
-					tempPointers[11] = extraPointers[14];
-
-					// max 3
-					execReduceFloat(tempPointers, 3, 
-									nullptr, nullptr, dX, dXShapeInfo, 
-									extraParams, 
-									nullptr, nullptr, special, maxShapeBuffer, 
-									maxDimension, 1);
-
-					DEBUG_KERNEL(stream, opNum);
-
-					tempPointers[8] = extraPointers[8];
-					tempPointers[9] = extraPointers[9];
-					tempPointers[10] = extraPointers[10];
-					tempPointers[11] = extraPointers[11];
-                    tempPointers[12] = extraPointers[10];
-                    tempPointers[13] = extraPointers[11];
-
-
-					// sub 1
-					execBroadcast(tempPointers, 1, 
-								  nullptr, nullptr,	dX, dXShapeInfo, 
-								  nullptr, nullptr, special, maxShapeBuffer, 
-								  nullptr, nullptr, dZ, dZShapeInfo, 
-								  dimension, 1);
-
-					DEBUG_KERNEL(stream, opNum);
-
-					// exp 3
-					execTransformFloat(extraPointers, 3, 
-										nullptr, nullptr, dZ, dZShapeInfo, 
-										nullptr, nullptr, dZ, dZShapeInfo, 
-										extraParams);
-
-					DEBUG_KERNEL(stream, opNum);
-
-
-					tempPointers[8] = tempPointers[7];
-					tempPointers[9] = extraPointers[12];
-					tempPointers[10] = extraPointers[13];
-					tempPointers[11] = extraPointers[14];
-
-					//sum 1
-					execReduceFloat(tempPointers, 1, 
-									nullptr, nullptr, dZ, dZShapeInfo, 
-									extraParams, 
-									nullptr, nullptr, special, maxShapeBuffer, 
-									maxDimension, 1);
-
-					DEBUG_KERNEL(stream, opNum);
-
-					tempPointers[8] = extraPointers[8];
-					tempPointers[9] = extraPointers[9];
-					tempPointers[10] = extraPointers[10];
-					tempPointers[11] = extraPointers[11];
-                    tempPointers[12] = extraPointers[10];
-                    tempPointers[13] = extraPointers[11];
-
-					// divide 3
-					execBroadcast(tempPointers, 3, 
-									nullptr, nullptr, dZ, dZShapeInfo, 
-									nullptr, nullptr, special, maxShapeBuffer, 
-									nullptr, nullptr, dZ, dZShapeInfo, 
-									dimension, 1);
-
-					DEBUG_KERNEL(stream, opNum);
-
-					// log 3
-					if (opNum == 40)
-						execTransformFloat(extraPointers, 5, 
-											nullptr, nullptr, dZ, dZShapeInfo, 
-											nullptr, nullptr, dZ, dZShapeInfo, 
-											extraParams);
-					else if (opNum == 39)
-						execTransformFloat(extraPointers, 42, 
-											nullptr, nullptr, dZ, dZShapeInfo, 
-											nullptr, nullptr, dZ, dZShapeInfo, 
-											extraParams);
-
-
-                    nd4j::DebugHelper::checkErrorCode(stream, "SoftMaxFloat(...) failed");
-
-					delete hostMaxShapeBuffer;
-
-					break;
-				}
-				case 41: {
-					// IsMax along all dimensions
-					bool scalarCheat = false;
-					if (extraParams == nullptr) {
-						scalarCheat = true;
-					}
-
-					if (scalarCheat) {
-						// if that's 1D input - we'll just go for single dim IMax op call + filler
-						int temp[1];
-						execIndexReduceScalar(extraPointers, 0, 
-											 nullptr, nullptr, dX, dXShapeInfo, 
-											 extraParams, 
-											 nullptr, nullptr, temp, nullptr);
-						int maxIdx = temp[0];						
-
-						int targetIdx = 0;
-
-						if (shape::order(hXShapeInfo) == 'c' || shape::order(hXShapeInfo) == 'f' && maxIdx * shape::stride(hXShapeInfo)[shape::rank(hXShapeInfo) - 1] >= shape::length(hXShapeInfo))
-							targetIdx = maxIdx;
-						else
-							targetIdx = maxIdx * shape::stride(hXShapeInfo)[shape::rank(hXShapeInfo) - 1];
-						
-						fillIsMaxGeneric(launchDims, stream, static_cast<bool*>(dZ), shape::length(hXShapeInfo), targetIdx);
-
-                        nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
-					} else {
-						// going for dimension-based IsMax
-						auto tadMaxShapeInfo = reinterpret_cast<Nd4jLong *> (extraPointers[10]);
-                        auto tadMaxOffsets = reinterpret_cast<Nd4jLong *> (extraPointers[11]);
-						auto dimension = reinterpret_cast<int *> (extraPointers[15]);
-                        special = reinterpret_cast<void *>(extraPointers[17]);
-                        int dimensionLength = getDeviceId(extraPointers[18]);
-
-						// we call for IMax on specified dimension
-						execIndexReduce(extraPointers, 0, 
-										nullptr, nullptr, dX, dXShapeInfo, 
-										extraParams, 
-										nullptr, nullptr, special, hYShapeInfo, 
-										dimension, dimensionLength);
-
-						DEBUG_KERNEL(stream, opNum);
-
-						// at this point, all IMax indexes are gathered, and we execute						
-						fillDimensionalIsMaxGeneric(launchDims, stream, special, hYShapeInfo, static_cast<bool*>(dZ), dZShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets);
-
-                        nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
-
-					}
-					break;
-				}
-				default: {
-					printf("Bad case for transformFloat\n");
-					break;
-				}
-			}
-		}
-    } else {
-		// we're enforcing larger grids for Col2Im & Im2Col
-		// TODO: for high-end gpus we might use higher values here
-        if (opNum == 37 || opNum == 36 || opNum == 71) {
-            launchDims.x = 512;
-            launchDims.y = 512;
-            launchDims.z += 512 * DataTypeUtils::sizeOf(zType);
-        } else if (opNum == 70) {
-			// we'll be using shared memory to speed up reverse
-
-			launchDims.z += launchDims.y * DataTypeUtils::sizeOf(zType);
-		}
-
-		// histogram op requies additional memory chunk :(
-        if (opNum == 48) {
-            int length = shape::length(hZShapeInfo);
-            cudaMalloc(reinterpret_cast<void **>(&maskedAllocPointer), length * launchDims.x * DataTypeUtils::sizeOf(zType));
-        }
-
-		if (opNum == 71) {
-			launchDims.z += 512 * DataTypeUtils::sizeOf(zType);
-		}
-
-		BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dZ, dZShapeInfo, shape::rank(hZShapeInfo), maskedAllocPointer, reductionPointer, devTadShapeInfo, devTadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
-
-        // we need guaranteed sync here, due to temp memory release
-        if (opNum == 48)
-            nd4j::DebugHelper::checkErrorCode(stream, "Legacy HistogramFloat(...) failed");
-
-		// release memory chunk
-        if (opNum == 48) {
-            cudaFree(reinterpret_cast<void *>(maskedAllocPointer));
-        }
-    }
-
-	DEBUG_KERNEL(stream, opNum);
-}
-
-  */
-
-template <typename T>
-__device__ void flattenKernelGeneric(
-					Nd4jPointer *extraPointers,
-					int dOffset,
-					char order,
-					void *vresult, Nd4jLong *dZShapeInfo,
-					void *vinput,
-					Nd4jLong *inputShapeInfo) {
-
-	auto dZ = reinterpret_cast<T *>(vresult);
-    auto input = reinterpret_cast<T *>(vinput);
-
-	__shared__ UnifiedSharedMemory *manager;
-
-	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory(reinterpret_cast<int *>(shmem));
-		manager->init(sizeof(UnifiedSharedMemory), 4, 4, sizeof(shape::TAD), 2);
-	}
-	__syncthreads();
-
-	Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-	auto zShape = shape::shapeOf(dZShapeInfo);
-	auto zStride = shape::stride(dZShapeInfo);
-
-
-	auto yShape = shape::shapeOf(inputShapeInfo);
-	auto yStride = shape::stride(inputShapeInfo);
-	auto yOrder = shape::order(inputShapeInfo);
-
-	auto len = shape::length(inputShapeInfo);
-
-	auto resultEWS = shape::elementWiseStride(dZShapeInfo);
-	auto inputEWS = shape::elementWiseStride(inputShapeInfo);
-
-	if (yOrder == order) {
-		if (resultEWS >= 1 && inputEWS >= 1) {
-			for (int i = tid; i < len; i+= gridDim.x * blockDim.x) {
-				dZ[i * resultEWS + dOffset] = input[i * inputEWS];
-			}
-		} else {
-
-			auto rank = shape::rank(inputShapeInfo);
-			Nd4jLong coord[MAX_RANK];
-
-			if(order == 'f') {
-				for(auto i = tid; i < len; i+= gridDim.x * blockDim.x) {
-					shape::ind2sub(rank,yShape,i,coord);
-					auto offset = shape::getOffset(0,yShape,yStride,coord,rank);
-					dZ[i + dOffset] = input[offset];
-				}
-			}
-			else {
-				for(auto i = tid; i < len; i+= gridDim.x * blockDim.x) {
-					shape::ind2subC(rank,yShape,i,coord);
-					auto offset = shape::getOffset(0,yShape,yStride,coord,rank);
-					dZ[i + dOffset] = input[offset];
-				}
-			}
-		}
-	} else {
-		int rank = shape::rank(inputShapeInfo);
-		Nd4jLong coord[MAX_RANK];
-
-		if(order == 'f') {
-			for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
-				shape::ind2sub(rank,yShape,i,coord);
-				auto offset = shape::getOffset(0,yShape,yStride,coord,rank);
-				dZ[i+dOffset] = input[offset];
-			}
-		}
-		else {
-			for(int i = tid; i < len; i+= gridDim.x * blockDim.x) {
-				shape::ind2subC(rank,yShape,i,coord);
-				auto offset = shape::getOffset(0,yShape,yStride,coord,rank);
-				dZ[i+dOffset] = input[offset];
-			}
-		}
-	}
-
-}
-
 
 /**
  * Append an input array
@@ -1643,10 +1336,9 @@ void NativeOps::flatten(Nd4jPointer *extraPointers,
 
 	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
 		printf("AF222 opNum:[7]\n");
-
-	// flattenKernelFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(offset, order, dZ, dZShapeInfo, input, inputShapeInfo, allocPointer);
-	auto xType = nd4j::ArrayOptions::dataType(hInputShapeInfo);
-    // BUILD_SINGLE_SELECTOR(xType, flattenKernelGeneric, (extraPointers, offset, order, dZ, dZShapeInfo, input, inputShapeInfo), LIBND4J_TYPES);
+	
+	auto type = nd4j::ArrayOptions::dataType(hInputShapeInfo);    
+    BUILD_SINGLE_SELECTOR(type, execFlatten, (launchDims, stream, extraPointers, offset, order, dZ, dZShapeInfo, dInput, dInputShapeInfo), LIBND4J_TYPES);
 
 	DEBUG_KERNEL(stream, -1);
 }
@@ -2112,7 +1804,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 	int smem = 8192;
 	bool isVstack = false;
 	bool isScalar = true;
-	bool isHstack = false;
+	bool isHstack = false;	
 
 	for (int i = 0; i < numArrays; i++) {
 		if (!shape::isScalar(hShapePointers[i])) {
@@ -2156,27 +1848,27 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 
 	if (isScalar) {
 		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-			printf("Going scalar concat\n");
+			printf("Going scalar concat\n");	
 
-		// concatKernelScalarFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), dZ, dZShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]));
+		dim3 launchDims(128, 128, smem);	
 		auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
-		// BUILD_SINGLE_SELECTOR(zType, concatKernelScalarGeneric, (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), dZ, dZShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0])), LIBND4J_TYPES);
+		BUILD_SINGLE_SELECTOR(zType, concatKernelScalarGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), dZ), LIBND4J_TYPES);		                                                        
 
 	} else if (isVstack) {
 		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 			printf("Going VStack concat\n");
 
-		// concatKernelVStackFloat<<< 128, 512, smem, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[, dZShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]));
+		dim3 launchDims(128, 512, smem);
 		auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
-		// BUILD_SINGLE_SELECTOR(zType, concatKernelVStackGeneric, (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), dZ, dZShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0])), LIBND4J_TYPES);
+		BUILD_SINGLE_SELECTOR(zType, concatKernelVStackGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), dZ, dZShapeInfo), LIBND4J_TYPES);
 
 	} else if (isHstack) {
 		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 			printf("Going HStack concat\n");
-
-		// concatKernelHStackFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), dZ, dZShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]));
+		
+		dim3 launchDims(128, 128, smem);
 		auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
-		// BUILD_SINGLE_SELECTOR(zType, concatKernelHStackGeneric, (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), dZ, dZShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0])), LIBND4J_TYPES);
+		BUILD_SINGLE_SELECTOR(zType, concatKernelHStackGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), dZ, dZShapeInfo), LIBND4J_TYPES);
 
 	} else {
 		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
@@ -2184,13 +1876,13 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 
         auto devZTadShape = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 		auto devZOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-		// concatKernelFloat<<< 512, 512, 8192, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), dZ, dZShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]), devZTadShape, devZOffsets);
-		auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
-		// BUILD_SINGLE_SELECTOR(zType, concatKernelGeneric, (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), dZ, dZShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]), devZTadShape, devZOffsets), LIBND4J_TYPES);		
+		
+		dim3 launchDims(512, 512, 8192);
+		auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);		
+		BUILD_SINGLE_SELECTOR(zType, concatKernelGeneric, (launchDims, stream, dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), dZ, dZShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]), devZTadShape, devZOffsets), LIBND4J_TYPES);
 	}
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
-
 
     nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
 }
@@ -2286,11 +1978,11 @@ void NativeOps::pullRows(Nd4jPointer *extraPointers,
 						 Nd4jLong *zTadShapeInfo,
 						 Nd4jLong *zTadOffsets) {
 
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-	// pullRowsKernelFloat<<<64, 256, 1024, *stream>>>(dX, dXShapeInfo, dZ, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);	
+	dim3 launchDims(64, 256, 1024);
 	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
-    // BUILD_SINGLE_SELECTOR(xType, pullRowsKernelGeneric, (dX, dXShapeInfo, dZ, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets), LIBND4J_TYPES);
-
+    BUILD_SINGLE_SELECTOR(xType, pullRowsKernelGeneric, (launchDims, stream, dX, dZ, n, indexes, tadShapeInfo, tadOffsets,  zTadShapeInfo,  zTadOffsets), LIBND4J_TYPES);
+	
 	DEBUG_KERNEL(stream, -1);
 }
 
@@ -2317,12 +2009,11 @@ void NativeOps::average(Nd4jPointer *extras,
 	if (mode == 0) {
 		dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float), funcAttributes[45]);		
 		// averagingKernelFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dX, dz, n, length, propagate);		
-    	// BUILD_SINGLE_SELECTOR(xType, averagingKernelGeneric, (dX, dz, n, length, propagate), LIBND4J_TYPES);		
+    	BUILD_SINGLE_SELECTOR(xType, averagingKernelGeneric, (launchDims, stream, dX, dz, n, length, propagate), LIBND4J_TYPES);		    	
         nd4j::DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
 	} else {
 		// launching on host memory
-        // nd4j::SpecialMethods<float>::averageGeneric(dX, dz, n, length, propagate);
-        // BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(dX, dz, zShapeInfo, n, length, propagate), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(dX, dz, zShapeInfo, n, length, propagate), LIBND4J_TYPES);
 	}
 }
 
@@ -2345,14 +2036,12 @@ void NativeOps::accumulate(Nd4jPointer *extras,
 
 	// launching on gpu
 	if (mode == 0) {
-		dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float), funcAttributes[45]);
-        // accumulateKernelFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dX, dz, n, length);
-        // BUILD_SINGLE_SELECTOR(xType, accumulateKernelGeneric, (dX, dz, n,length), LIBND4J_TYPES);
+		dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float), funcAttributes[45]);        
+        BUILD_SINGLE_SELECTOR(xType, accumulateKernelGeneric, (launchDims, stream, dX, dz, n,length), LIBND4J_TYPES);
         nd4j::DebugHelper::checkErrorCode(stream, "AccumulateFloat(...) failed");
 	} else {
-		// launching on host memory
-        // nd4j::SpecialMethods<float>::accumulateGeneric(dX, dz, n, length);        
-        // BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(dX, dz, zShapeInfo, n, length), LIBND4J_TYPES);
+		// launching on host memory        
+        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(dX, dz, zShapeInfo, n, length), LIBND4J_TYPES);
 	}
 }
 
@@ -2372,12 +2061,12 @@ void NativeOps::shuffle(Nd4jPointer *extras,
     void **dX = reinterpret_cast<void **>(dx);
     void **dZ = reinterpret_cast<void **>(dz);
     auto xShape = reinterpret_cast<Nd4jLong **>(dXShapeInfo);
-    auto zShape = reinterpret_cast<Nd4jLong **>(zShapeInfo);
     auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong **>(tadShapeInfo);
     auto tadOffset = reinterpret_cast<Nd4jLong **>(tadOffsets);
 
     auto xType = nd4j::ArrayOptions::dataType(xShape[0]);
-    // BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric, (dX, xShape, dX, zShape, N, shuffleMap,  tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
+    dim3 launchDims(32, 128, 2048);
+    BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric, (launchDims, stream, dX, xShape, dZ, N, shuffleMap,  tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);            
 
 	DEBUG_KERNEL(stream, 0);
 }
@@ -2695,6 +2384,19 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
 	DEBUG_KERNEL(stream, opNum);
 }
 
+// template <typename T> 
+// __host__ void aggregateHost(int opNum, 
+// 							T **arguments, int numArguments, 
+// 							Nd4jLong **shapeArguments, 
+// 							int numShapeArguments, 
+// 							int *indexArguments, int numIndexArguments, 
+// 							int **intArrays, int numIntArrays, 
+// 							T *realArguments, int numRealArguments) {
+
+// 	DISPATCH_BY_OPNUM_T(aggregateGeneric, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), AGGREGATE_OPS);
+// }
+
+
 void NativeOps::execAggregate(Nd4jPointer *extraPointers,
 								   int opNum,
                                    void **arguments,
@@ -2717,7 +2419,9 @@ void NativeOps::execAggregate(Nd4jPointer *extraPointers,
     dim3 launchDims = dim3(numBlocks, numThreads, shmem);
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
-    // DISPATCH_SIMPLE(aggregateSimple, float, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), OPS_A(AGGREGATE_OPS))
+    // DISPATCH_BY_OPNUM_T(aggregateGeneric, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), AGGREGATE_OPS)
+    // BUILD_SINGLE_SELECTOR(xType, aggre(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo), LIBND4J_TYPES);
+
     nd4j::DebugHelper::checkErrorCode(stream, "execAggregateFloat(...) failed");
 }
 
