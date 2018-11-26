@@ -11,6 +11,11 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
+import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
+import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
+import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
+import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
+import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -107,10 +112,10 @@ public class RngValidationTests {
                 //truncated normal clips at (mean-2*std, mean+2*std). Mean for equal 2 sided clipping about mean is same as original mean. Variance is difficult to calculate...
                 //Assume variance is similar to non-truncated normal (should be a bit less in practice) but use large relative error here
             testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(new long[0]).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0).build());       //Don't check mean/std for 1 element
-//            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(1000).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
-//                    .expectedMean(0.0).expectedStd(1.0).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.01).build());
-//            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(100,10000).minValue(1.0).maxValue(3.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
-//                    .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.001).build());
+            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(1000).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
+                    .expectedMean(0.0).expectedStd(1.0).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.01).build());
+            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(100,10000).minValue(1.0).maxValue(3.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
+                    .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.001).build());
 
             //Dropout (non-inverted): same as bernoulli distribution, when dropout applied to "ones" array
             testCases.add(TestCase.builder().opType("dropout").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element
@@ -173,6 +178,40 @@ public class RngValidationTests {
             testCases.add(TestCase.builder().opType("alphaDropout").dataType(type).shape(100,10000).maxValue(alphaDropoutA(0.3)+alphaDropoutB(0.3))
                     .minValue(alphaDropoutA(0.3)*ALPHA_PRIME+alphaDropoutB(0.3)).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.3)
                     .expectedMean(1.0).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+
+
+            //--- Custom ops ---
+            //DistributionUniform, RandomBernoulli, RandomExponential, RandomNormal, RandomStandardNormal
+            testCases.add(TestCase.builder().opType("distributionuniform").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("min", 0.0).arg("max", 1.0).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("distributionuniform").dataType(type).shape(1000).minValue(1).maxValue(2).minValueInclusive(true).maxValueInclusive(true).arg("min", 1.0).arg("max",2.0)
+                    .expectedMean((1+2)/2.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(2.0-1.0, 2)) /*Var: 1/12 * (b-a)^2*/).build());
+            testCases.add(TestCase.builder().opType("distributionuniform").dataType(type).shape(100,10000).minValue(-4).maxValue(-2).minValueInclusive(true).maxValueInclusive(true).arg("min", -4.0).arg("max",-2.0)
+                    .expectedMean(-3.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(-4.0+2.0, 2)) /*Var: 1/12 * (b-a)^2*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+
+            testCases.add(TestCase.builder().opType("randombernoulli").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("randombernoulli").dataType(type).shape(1000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5)
+                    .expectedMean(0.5).expectedStd(Math.sqrt(0.5*0.5) /*var = p*(1-p)*/).build());
+            testCases.add(TestCase.builder().opType("randombernoulli").dataType(type).shape(100,10000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.2)
+                    .expectedMean(0.2).expectedStd(Math.sqrt(0.2*(1-0.2)) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+
+            //3 cases: lambda = 1, 1, 0.4
+            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(new long[0]).minValue(0).maxValue(maxValue(type)).minValueInclusive(false).maxValueInclusive(true).arg("lambda", 1.0).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(1000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(false).maxValueInclusive(true).arg("lambda", 1.0)
+                    .expectedMean(1.0).expectedStd(1.0 /*var = 1 / lambda^2*/).build());
+            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(100,10000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(false).maxValueInclusive(true).arg("lambda", 0.4)
+                    .expectedMean(1.0 / 0.4).expectedStd(1.0 / Math.pow(0.4, 2) /*var = 1 / lambda^2*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+
+            testCases.add(TestCase.builder().opType("randomnormal").dataType(type).shape(new long[0]).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("randomnormal").dataType(type).shape(1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
+                    .expectedMean(0.0).expectedStd(1.0).meanMinAbsErrorTolerance(0.05).stdMinAbsErrorTolerance(0.05).build());
+            testCases.add(TestCase.builder().opType("randomnormal").dataType(type).shape(100,1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
+                    .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
+
+            testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(new long[0]).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
+                    .expectedMean(0.0).expectedStd(1.0).meanMinAbsErrorTolerance(0.05).stdMinAbsErrorTolerance(0.05).build());
+            testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(100,1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
+                    .expectedMean(0.0).expectedStd(1.0).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
         }
 
 
@@ -214,7 +253,7 @@ public class RngValidationTests {
             //Check RNG seed repeatability
             Object op2 = getOp(tc);
             Nd4j.getRandom().setSeed(tc.getRngSeed());
-            INDArray z2 = null;
+            INDArray z2;
             if(op2 instanceof Op) {
                 Op o = (Op)op2;
                 Nd4j.getExecutioner().exec(o);
@@ -339,6 +378,27 @@ public class RngValidationTests {
                 double alpha = alphaDropoutA(tc.prop("p"));
                 double beta = alphaDropoutB(tc.prop("p"));
                 return new AlphaDropOut(Nd4j.ones(tc.getDataType(), tc.shape), tc.arr(), tc.prop("p"), alpha, ALPHA_PRIME, beta);
+
+
+            case "distributionuniform":
+                INDArray shape = tc.getShape().length == 0 ? Nd4j.empty(DataType.LONG) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
+                return new DistributionUniform(shape, tc.arr(), tc.prop("min"), tc.prop("max"));
+            case "randombernoulli":
+                INDArray shape2 = tc.getShape().length == 0 ? Nd4j.empty(DataType.LONG) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
+                return new RandomBernoulli(shape2, tc.arr(), tc.prop("prob"));
+            case "randomexponential":
+                INDArray shape3 = tc.getShape().length == 0 ? Nd4j.empty(DataType.LONG) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
+                return new RandomExponential(shape3, tc.arr(), tc.prop("lambda"));
+            case "randomnormal":
+                INDArray shape4 = tc.getShape().length == 0 ? Nd4j.empty(DataType.LONG) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
+                return DynamicCustomOp.builder("randomnormal")
+                        .addFloatingPointArguments(tc.prop("mean"), tc.prop("std"))
+                        .addInputs(shape4)
+                        .addOutputs(tc.arr())
+                        .build();
+            case "randomstandardnormal":
+                INDArray shape5 = tc.getShape().length == 0 ? Nd4j.empty(DataType.LONG) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
+                return new RandomStandardNormal(shape5, Nd4j.create(tc.getDataType(), tc.getShape()));
             default:
                 throw new RuntimeException("Not yet implemented: " + tc.getOpType());
         }

@@ -19,6 +19,7 @@ package org.deeplearning4j.gradientcheck;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.KnownCrashingTests;
 import org.deeplearning4j.TestUtils;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -79,6 +80,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void testYoloOutputLayer() {
+        KnownCrashingTests.skipCrashingTest();
         int depthIn = 2;
         int[] minibatchSizes = {1, 3};
         int[] widths = new int[]{4, 7};
@@ -162,7 +164,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void yoloGradientCheckRealData() throws Exception {
-
+        KnownCrashingTests.skipCrashingTest();
         InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();
         InputStream is2 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2007_009346.xml").getInputStream();
         InputStream is3 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2008_003344.jpg").getInputStream();
