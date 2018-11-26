@@ -5130,13 +5130,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (n.ordering() == ordering()) {
             EqualsWithEps op = new EqualsWithEps(this, n, eps);
             Nd4j.getExecutioner().exec(op);
-            double diff = op.getFinalResult().doubleValue();
+            double diff = op.z().getDouble(0);
 
             return diff < 0.5;
         } else {
             EqualsWithEps op = new EqualsWithEps(this, n, eps);
             Nd4j.getExecutioner().exec(op);
-            double diff = op.getFinalResult().doubleValue();
+            double diff = op.z().getDouble(0);
 
             return diff < 0.5;
         }

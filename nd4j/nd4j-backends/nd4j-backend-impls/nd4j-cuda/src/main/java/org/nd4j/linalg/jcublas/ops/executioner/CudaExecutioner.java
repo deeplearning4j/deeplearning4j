@@ -1220,8 +1220,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             retPointer = allocator.getPointer(ret, context);
         }
 
-        ret = Nd4j.createUninitialized(op.resultType(), op.x().shape(), op.x().ordering());
-        op.setZ(ret);
+        if (op.z() == null) {
+            ret = Nd4j.createUninitialized(op.resultType(), op.x().shape(), op.x().ordering());
+            op.setZ(ret);
+        }
 
         val hostZShapeInfo = op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
 

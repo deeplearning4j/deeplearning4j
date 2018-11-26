@@ -15,26 +15,32 @@
  ******************************************************************************/
 
 //
-// Created by raver on 4/5/2018.
+// Created by raver on 11/26/2018.
 //
 
+#include "testlayers.h"
 #include <helpers/CudaLaunchHelper.h>
-#include <templatemath.h>
 
-namespace nd4j {
-    Triple CudaLaunchHelper::getFlatLaunchParams(Nd4jLong length, int SM, int CORES, int SHARED_MEMORY) {
-        // TODO: to be implemented
-        Triple triple(1, 2, 3);
+using namespace nd4j;
+using namespace nd4j::graph;
 
-        return triple;
-    }
+class CudaLaunchHelperTests : public testing::Test {
+public:
 
-    int CudaLaunchHelper::getReductionBlocks(Nd4jLong xLength, int blockSize) {
-        int div = xLength / blockSize;
-        int can = nd4j::math::nd4j_max<int>(div, 1);
-        if (xLength % blockSize != 0 && xLength > blockSize)
-            can++;
+};
 
-        return can;
-    }
+TEST_F(CudaLaunchHelperTests, test_reduction_blocks_1) {
+    ASSERT_EQ(1, CudaLaunchHelper::getReductionBlocks(512));
+}
+
+TEST_F(CudaLaunchHelperTests, test_reduction_blocks_2) {
+    ASSERT_EQ(1, CudaLaunchHelper::getReductionBlocks(121));
+}
+
+TEST_F(CudaLaunchHelperTests, test_reduction_blocks_3) {
+    ASSERT_EQ(2, CudaLaunchHelper::getReductionBlocks(513));
+}
+
+TEST_F(CudaLaunchHelperTests, test_reduction_blocks_4) {
+    ASSERT_EQ(3, CudaLaunchHelper::getReductionBlocks(1225));
 }

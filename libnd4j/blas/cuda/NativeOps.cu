@@ -71,6 +71,8 @@
 
 #include <graph/exceptions/datatype_exception.h>
 
+#include <helpers/CudaLaunchHelper.h>
+
 // FIXME: we need cuda-specific implementations
 #include <helpers/logger.h>
 #include <NDArray.h>
@@ -802,7 +804,10 @@ void NativeOps::execReduceFloat(Nd4jPointer *extraPointers,
     if (!DataTypeUtils::isR(zType))
         throw std::runtime_error("NativeOps::execReduceFloat requires Z operand to have floating point type");
 
-    dim3 launchDims(256, 512, 16384);
+    auto xLength = shape::length(hXShapeInfo);
+    auto blockWidth = 512;
+    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+    dim3 launchDims(numBlocks, blockWidth, 32768);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, FLOAT_TYPES);
 
@@ -832,7 +837,10 @@ void   NativeOps::execReduceSame(Nd4jPointer *extraPointers,
     if (zType != xType)
         throw std::runtime_error("NativeOps::execReduceSame requires both X & Z operands to have same type");
 
-    dim3 launchDims(256, 512, 16384);
+    auto xLength = shape::length(hXShapeInfo);
+    auto blockWidth = 512;
+    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+    dim3 launchDims(numBlocks, blockWidth, 32768);
 
     BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, dTADShapeInfo), LIBND4J_TYPES);
 
@@ -864,7 +872,7 @@ void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
     if (zType != xType)
         throw std::runtime_error("NativeOps::execReduceSame requires both X & Z operands to have same type");
 
-    dim3 launchDims(256, 512, 16384);
+    dim3 launchDims(256, 512, 32768);
 
     BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo), LIBND4J_TYPES);
 
@@ -897,7 +905,7 @@ void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
     if (zType != nd4j::DataType::INT64)
         throw datatype_exception::build("NativeOps::execReduceLong wrong Z data type", nd4j::DataType::INT64, zType);
 
-    dim3 launchDims(256, 512, 16384);
+    dim3 launchDims(256, 512, 32768);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, LONG_TYPES);
 
@@ -929,7 +937,10 @@ void   NativeOps::execReduceLong(Nd4jPointer *extraPointers,
     if (zType != nd4j::DataType::INT64)
         throw datatype_exception::build("NativeOps::execReduceLong wrong Z data type", nd4j::DataType::INT64, zType);
 
-    dim3 launchDims(256, 512, 16384);
+    auto xLength = shape::length(hXShapeInfo);
+    auto blockWidth = 512;
+    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+    dim3 launchDims(numBlocks, blockWidth, 32768);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, LONG_TYPES);
 
@@ -961,7 +972,7 @@ void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
     if (zType != nd4j::DataType::BOOL)
         throw std::runtime_error("NativeOps::execReduceBool requires Z operand to have BOOL type");
 
-    dim3 launchDims(256, 512, 16384);
+    dim3 launchDims(256, 512, 32768);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, BOOL_TYPES);
 
@@ -992,7 +1003,10 @@ void   NativeOps::execReduceBool(Nd4jPointer *extraPointers,
     if (zType != nd4j::DataType::BOOL)
         throw std::runtime_error("NativeOps::execReduceBool requires Z operand to have BOOL type");
 
-    dim3 launchDims(256, 512, 16384);
+    auto xLength = shape::length(hXShapeInfo);
+    auto blockWidth = 512;
+    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+    dim3 launchDims(numBlocks, blockWidth, 32768);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, BOOL_TYPES);
 
@@ -1108,12 +1122,23 @@ void NativeOps::execIndexReduceScalar(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	void *reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-    dim3 launchDims(256, 512, 16384);
+    auto xLength = shape::length(hXShapeInfo);
+    auto blockWidth = 512;
+    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+    dim3 launchDims(numBlocks, blockWidth, 32768);
 
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose() && launchDims.x == 1)
 		printf("AF1 opNum:[%i]\n", opNum);
 	
-	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
+	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    // FIXME: we want Z to be one of integer types
+	//if (!DataTypeUtils::isZ(zType))
+	//    throw nd4j::datatype_exception("NativeOps::execIndexReduceScalar requires Z operand to have one of integer types")
+	if (zType != nd4j::DataType::INT64)
+        throw nd4j::datatype_exception::build("NativeOps::execIndexReduceScalar requires Z operand to have INT64 data type", zType);
+
     auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 
     BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, nullptr, 0, nullptr, 1, 1, allocationPointer, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES);
@@ -2529,7 +2554,10 @@ void NativeOps::execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    dim3 launchDims(256, 512, 32768);
+    auto xLength = shape::length(hXShapeInfo);
+    auto blockWidth = 512;
+    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+    dim3 launchDims(numBlocks, blockWidth, 32768);
 
     if (xType != yType)
         throw nd4j::datatype_exception::build("NativeOps::execReduce3Scalar requires Y operand to have X type", xType, yType);

@@ -361,7 +361,22 @@ public class MixedDataTypesTests {
         System.out.println(not);
         System.out.println(asFloat);
         INDArray exp = Nd4j.ones(DataType.FLOAT, 3, 5000);
+        assertEquals(DataType.FLOAT, exp.dataType());
+        assertEquals(exp.dataType(), asFloat.dataType());
+
+        val arrX = asFloat.data().asFloat();
+        val arrE = exp.data().asFloat();
+        assertArrayEquals(arrE, arrX, 1e-5f);
+
         assertEquals(exp, asFloat);
+    }
+
+    @Test
+    public void testReduce3Large() {
+        val arrayX = Nd4j.create(DataType.FLOAT, 10, 5000);
+        val arrayY = Nd4j.create(DataType.FLOAT, 10, 5000);
+
+        assertEquals(arrayX, arrayY);
     }
 
 
