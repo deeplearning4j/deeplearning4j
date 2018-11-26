@@ -18,6 +18,7 @@ package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.KnownCrashingTests;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -73,6 +74,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
 
     @Test
     public void lossFunctionGradientCheck() {
+        KnownCrashingTests.skipCrashingTest();
 
         ILossFunction[] lossFunctions = new ILossFunction[] {new LossBinaryXENT(), new LossBinaryXENT(),
                         new LossCosineProximity(), new LossHinge(), new LossKLD(), new LossKLD(), new LossL1(),
@@ -223,6 +225,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
 
     @Test
     public void lossFunctionGradientCheckLossLayer() {
+        KnownCrashingTests.skipCrashingTest();
 
         ILossFunction[] lossFunctions = new ILossFunction[] {new LossBinaryXENT(), new LossBinaryXENT(),
                         new LossCosineProximity(), new LossHinge(), new LossKLD(), new LossKLD(), new LossL1(),

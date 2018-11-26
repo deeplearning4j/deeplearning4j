@@ -7,13 +7,20 @@ import org.junit.Test;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
+import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
+import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
+import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
+import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
+import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -105,10 +112,10 @@ public class RngValidationTests {
                 //truncated normal clips at (mean-2*std, mean+2*std). Mean for equal 2 sided clipping about mean is same as original mean. Variance is difficult to calculate...
                 //Assume variance is similar to non-truncated normal (should be a bit less in practice) but use large relative error here
             testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(new long[0]).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0).build());       //Don't check mean/std for 1 element
-//            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(1000).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
-//                    .expectedMean(0.0).expectedStd(1.0).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.01).build());
-//            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(100,10000).minValue(1.0).maxValue(3.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
-//                    .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.001).build());
+            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(1000).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
+                    .expectedMean(0.0).expectedStd(1.0).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.01).build());
+            testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(100,10000).minValue(1.0).maxValue(3.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
+                    .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.001).build());
 
             //Dropout (non-inverted): same as bernoulli distribution, when dropout applied to "ones" array
             testCases.add(TestCase.builder().opType("dropout").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element
@@ -139,7 +146,72 @@ public class RngValidationTests {
             testCases.add(TestCase.builder().opType("lognormal").dataType(type).shape(100,10000).minValue(0).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mu", 2.0).arg("s", 0.5)
                     .expectedMean(Math.exp(2.0 + 0.5*0.5/2.0)).expectedStd(Math.sqrt((Math.exp(0.5*0.5)-1)*Math.exp(2.0*2.0+0.5*0.5))).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
 
-            //Remaining: AlphaDropout, Choice, ProbabilisticMerge, Range
+            //Choice op. For the purposes of this test, use discrete uniform distribution with values 0 to 10 inclusive
+            testCases.add(TestCase.builder().opType("choice").dataType(type).shape(new long[0]).minValue(0).maxValue(10).minValueInclusive(true).maxValueInclusive(true).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("choice").dataType(type).shape(1000).minValue(0).maxValue(10).minValueInclusive(true).maxValueInclusive(true)
+                    .expectedMean(5.0 /*(a+b)/2 */).expectedStd(Math.sqrt((Math.pow(10-0+1,2)-1)/12.0) /* variance = ((b-a+1)^2-1)/12 */).meanRelativeErrorTolerance(0.05).stdRelativeErrorTolerance(0.05)
+                    .meanMinAbsErrorTolerance(0.05).stdMinAbsErrorTolerance(0.05).build());
+            testCases.add(TestCase.builder().opType("choice").dataType(type).shape(100,10000).minValue(0).maxValue(10).minValueInclusive(true).maxValueInclusive(true)
+                    .expectedMean(5.0 /*(a+b)/2 */).expectedStd(Math.sqrt((Math.pow(10-0+1,2)-1)/12.0) /* variance = ((b-a+1)^2-1)/12 */).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
+
+            //Probabilistic merge: use 0 and 1, 0.5 probability. Then it's same as bernoulli distribution
+            testCases.add(TestCase.builder().opType("probabilisticmerge").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("probabilisticmerge").dataType(type).shape(1000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5)
+                    .expectedMean(0.5).expectedStd(Math.sqrt(0.5*0.5) /*var = p*(1-p)*/).build());
+            testCases.add(TestCase.builder().opType("probabilisticmerge").dataType(type).shape(100,10000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.2)
+                    .expectedMean(0.2).expectedStd(Math.sqrt(0.2*(1-0.2)) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+
+            //Range: x to y in N steps - essentially same statistical properties as uniform distribution
+            testCases.add(TestCase.builder().opType("range").dataType(type).shape(10).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("min", 0.0).arg("max", 1.0).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("range").dataType(type).shape(1000).minValue(1).maxValue(2).minValueInclusive(true).maxValueInclusive(true).arg("min", 1.0).arg("max",2.0)
+                    .expectedMean((1+2)/2.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(2.0-1.0, 2)) /*Var: 1/12 * (b-a)^2*/).build());
+
+            //AlphaDropout: implements a * (x * d + alphaPrime * (1-d)) + b, where d ~ Bernoulli(p), i.e., d \in {0,1}.
+            //For ones input and p=0.5, this should give us values (a+b or a*alphaPrime+b) with probability 0.5
+            //Mean should be same as input - i.e., 1
+            testCases.add(TestCase.builder().opType("alphaDropout").dataType(type).shape(new long[0]).maxValue(alphaDropoutA(0.5)+alphaDropoutB(0.5))
+                    .minValue(alphaDropoutA(0.5)*ALPHA_PRIME+alphaDropoutB(0.5)).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("alphaDropout").dataType(type).shape(1000).maxValue(alphaDropoutA(0.4)+alphaDropoutB(0.4))
+                    .minValue(alphaDropoutA(0.4)*ALPHA_PRIME+alphaDropoutB(0.4)).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.4)
+                    //Mean: 0.4 probability of  being retained - mean is 0.4 probability * (1.0/0.4) = 1.0. i.e., expected mean is unchanged by inverted dropout
+                    .expectedMean(1.0).build());
+            testCases.add(TestCase.builder().opType("alphaDropout").dataType(type).shape(100,10000).maxValue(alphaDropoutA(0.3)+alphaDropoutB(0.3))
+                    .minValue(alphaDropoutA(0.3)*ALPHA_PRIME+alphaDropoutB(0.3)).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.3)
+                    .expectedMean(1.0).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+
+
+            //--- Custom ops ---
+            //DistributionUniform, RandomBernoulli, RandomExponential, RandomNormal, RandomStandardNormal
+            testCases.add(TestCase.builder().opType("distributionuniform").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("min", 0.0).arg("max", 1.0).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("distributionuniform").dataType(type).shape(1000).minValue(1).maxValue(2).minValueInclusive(true).maxValueInclusive(true).arg("min", 1.0).arg("max",2.0)
+                    .expectedMean((1+2)/2.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(2.0-1.0, 2)) /*Var: 1/12 * (b-a)^2*/).build());
+            testCases.add(TestCase.builder().opType("distributionuniform").dataType(type).shape(100,10000).minValue(-4).maxValue(-2).minValueInclusive(true).maxValueInclusive(true).arg("min", -4.0).arg("max",-2.0)
+                    .expectedMean(-3.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(-4.0+2.0, 2)) /*Var: 1/12 * (b-a)^2*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+
+            testCases.add(TestCase.builder().opType("randombernoulli").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("randombernoulli").dataType(type).shape(1000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.5)
+                    .expectedMean(0.5).expectedStd(Math.sqrt(0.5*0.5) /*var = p*(1-p)*/).build());
+            testCases.add(TestCase.builder().opType("randombernoulli").dataType(type).shape(100,10000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("prob", 0.2)
+                    .expectedMean(0.2).expectedStd(Math.sqrt(0.2*(1-0.2)) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+
+            //3 cases: lambda = 1, 1, 0.4
+            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(new long[0]).minValue(0).maxValue(maxValue(type)).minValueInclusive(false).maxValueInclusive(true).arg("lambda", 1.0).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(1000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(false).maxValueInclusive(true).arg("lambda", 1.0)
+                    .expectedMean(1.0).expectedStd(1.0 /*var = 1 / lambda^2*/).build());
+            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(100,10000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(false).maxValueInclusive(true).arg("lambda", 0.4)
+                    .expectedMean(1.0 / 0.4).expectedStd(1.0 / Math.pow(0.4, 2) /*var = 1 / lambda^2*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+
+            testCases.add(TestCase.builder().opType("randomnormal").dataType(type).shape(new long[0]).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("randomnormal").dataType(type).shape(1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
+                    .expectedMean(0.0).expectedStd(1.0).meanMinAbsErrorTolerance(0.05).stdMinAbsErrorTolerance(0.05).build());
+            testCases.add(TestCase.builder().opType("randomnormal").dataType(type).shape(100,1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
+                    .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
+
+            testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(new long[0]).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
+                    .expectedMean(0.0).expectedStd(1.0).meanMinAbsErrorTolerance(0.05).stdMinAbsErrorTolerance(0.05).build());
+            testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(100,1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
+                    .expectedMean(0.0).expectedStd(1.0).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
         }
 
 
@@ -148,38 +220,54 @@ public class RngValidationTests {
             log.info("Starting test case: {} of {}", count, testCases.size());
             log.info("{}", tc);
 
-            Op op = getOp(tc);
+            Object op = getOp(tc);
+            INDArray z = null;
             Nd4j.getRandom().setSeed(tc.getRngSeed());
-            Nd4j.getExecutioner().exec(op);
+            if(op instanceof Op) {
+                Op o = (Op)op;
+                Nd4j.getExecutioner().exec(o);
+                z = o.z();
+            } else {
+                CustomOp o = (CustomOp)op;
+                Nd4j.getExecutioner().exec(o);
+                z = o.getOutputArgument(0);
+            }
 
             //Check for NaNs, Infs, etc
-            int countNaN = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(op.z(), Nd4j.create(DataType.BOOL, op.z().shape()), Conditions.isNan())).sumNumber().intValue();
-            int countInf = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(op.z(), Nd4j.create(DataType.BOOL, op.z().shape()), Conditions.isInfinite())).sumNumber().intValue();
+            int countNaN = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isNan())).sumNumber().intValue();
+            int countInf = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isInfinite())).sumNumber().intValue();
             assertEquals("NaN - expected 0 values", 0, countNaN);
             assertEquals("Infinite - expected 0 values", 0, countInf);
 
             //Check min/max values
-            double min = op.z().minNumber().doubleValue();
+            double min = z.minNumber().doubleValue();
             if ((tc.isMinValueInclusive() && min < tc.getMinValue()) || (!tc.isMinValueInclusive() && min <= tc.getMinValue())) {
                 fail("Minimum value (" + min + ") is less than allowed minimum value (" + tc.getMinValue() + ", inclusive=" + tc.isMinValueInclusive() + "): test case: " + tc);
             }
 
-            double max = op.z().maxNumber().doubleValue();
+            double max = z.maxNumber().doubleValue();
             if ((tc.isMaxValueInclusive() && max > tc.getMaxValue()) || (!tc.isMaxValueInclusive() && max >= tc.getMaxValue())) {
                 fail("Maximum value (" + max + ") is greater than allowed maximum value (" + tc.getMaxValue() + ", inclusive=" + tc.isMaxValueInclusive() + "): test case: " + tc);
             }
 
             //Check RNG seed repeatability
-            Op op2 = getOp(tc);
+            Object op2 = getOp(tc);
             Nd4j.getRandom().setSeed(tc.getRngSeed());
-            Nd4j.getExecutioner().exec(op2);
-            INDArray out1 = op.z();
-            INDArray out2 = op2.z();
-            assertEquals(out1, out2);
+            INDArray z2;
+            if(op2 instanceof Op) {
+                Op o = (Op)op2;
+                Nd4j.getExecutioner().exec(o);
+                z2 = o.z();
+            } else {
+                CustomOp o = (CustomOp)op2;
+                Nd4j.getExecutioner().exec(o);
+                z2 = o.getOutputArgument(0);
+            }
+            assertEquals(z, z2);
 
             //Check mean, stdev
             if(tc.getExpectedMean() != null){
-                double mean = op.z().meanNumber().doubleValue();
+                double mean = z.meanNumber().doubleValue();
                 double re = relError(tc.getExpectedMean(), mean);
                 double ae = Math.abs(tc.getExpectedMean() - mean);
                 if(re > tc.getMeanRelativeErrorTolerance() && (tc.getMeanMinAbsErrorTolerance() == null || ae > tc.getMeanMinAbsErrorTolerance())){
@@ -188,17 +276,17 @@ public class RngValidationTests {
                 }
             }
             if(tc.getExpectedStd() != null){
-                double std = op.z().std(true).getDouble(0);
+                double std = z.std(true).getDouble(0);
                 double re = relError(tc.getExpectedStd(), std);
                 double ae = Math.abs(tc.getExpectedStd() - std);
                 if(re > tc.getStdRelativeErrorTolerance() && (tc.getStdMinAbsErrorTolerance() == null || ae > tc.getStdMinAbsErrorTolerance())){
                     /*
                     //Histogram for debugging
-                    INDArray range = Nd4j.create(new double[]{op.z().minNumber().doubleValue(), op.z().maxNumber().doubleValue()}).castTo(tc.getDataType());
+                    INDArray range = Nd4j.create(new double[]{z.minNumber().doubleValue(), z.maxNumber().doubleValue()}).castTo(tc.getDataType());
                     INDArray n = Nd4j.scalar(DataType.INT,100);
                     INDArray out = Nd4j.create(DataType.INT, 100);
                     DynamicCustomOp histogram = DynamicCustomOp.builder("histogram_fixed_width")
-                            .addInputs(op.z(), range, n)
+                            .addInputs(z, range, n)
                             .addOutputs(out)
                             .build();
                     Nd4j.getExecutioner().exec(histogram);
@@ -243,7 +331,7 @@ public class RngValidationTests {
     }
 
 
-    private static Op getOp(TestCase tc){
+    private static Object getOp(TestCase tc){
 
         switch (tc.getOpType()){
             //Legacy (non-custom) RNG ops
@@ -269,6 +357,48 @@ public class RngValidationTests {
                 return new Linspace(tc.arr(), tc.prop("from"), tc.prop("to"));
             case "lognormal":
                 return new LogNormalDistribution(tc.arr(), (double)tc.prop("mu"), tc.prop("s"));
+            case "choice":
+                INDArray source = Nd4j.linspace(0, 10, 11, tc.getDataType());
+                INDArray probs = Nd4j.ones(11).divi(11);
+                return new Choice(source, probs, tc.arr());
+            case "probabilisticmerge":
+                INDArray x = Nd4j.zeros(tc.getDataType(), tc.getShape());
+                INDArray y = Nd4j.ones(tc.getDataType(), tc.getShape());
+                return new ProbablisticMerge(x, y, tc.arr(), tc.prop("prob"));
+            case "range":
+                double rMin = tc.prop("min");
+                double rMax = tc.prop("max");
+                double step = (rMax - rMin) / (double) ArrayUtil.prodLong(tc.shape);
+                DynamicCustomOp op = DynamicCustomOp.builder("range")
+                        .addFloatingPointArguments(rMin, rMax, step)
+                        .addOutputs(tc.arr())
+                        .build();
+                return op;
+            case "alphaDropout":
+                double alpha = alphaDropoutA(tc.prop("p"));
+                double beta = alphaDropoutB(tc.prop("p"));
+                return new AlphaDropOut(Nd4j.ones(tc.getDataType(), tc.shape), tc.arr(), tc.prop("p"), alpha, ALPHA_PRIME, beta);
+
+
+            case "distributionuniform":
+                INDArray shape = tc.getShape().length == 0 ? Nd4j.empty(DataType.LONG) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
+                return new DistributionUniform(shape, tc.arr(), tc.prop("min"), tc.prop("max"));
+            case "randombernoulli":
+                INDArray shape2 = tc.getShape().length == 0 ? Nd4j.empty(DataType.LONG) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
+                return new RandomBernoulli(shape2, tc.arr(), tc.prop("prob"));
+            case "randomexponential":
+                INDArray shape3 = tc.getShape().length == 0 ? Nd4j.empty(DataType.LONG) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
+                return new RandomExponential(shape3, tc.arr(), tc.prop("lambda"));
+            case "randomnormal":
+                INDArray shape4 = tc.getShape().length == 0 ? Nd4j.empty(DataType.LONG) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
+                return DynamicCustomOp.builder("randomnormal")
+                        .addFloatingPointArguments(tc.prop("mean"), tc.prop("std"))
+                        .addInputs(shape4)
+                        .addOutputs(tc.arr())
+                        .build();
+            case "randomstandardnormal":
+                INDArray shape5 = tc.getShape().length == 0 ? Nd4j.empty(DataType.LONG) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
+                return new RandomStandardNormal(shape5, Nd4j.create(tc.getDataType(), tc.getShape()));
             default:
                 throw new RuntimeException("Not yet implemented: " + tc.getOpType());
         }
@@ -278,4 +408,16 @@ public class RngValidationTests {
         return Math.abs(x-y) / (Math.abs(x) + Math.abs(y));
     }
 
+
+    public static final double DEFAULT_ALPHA =  1.6732632423543772;
+    public static final double DEFAULT_LAMBDA = 1.0507009873554804;
+    public static final double ALPHA_PRIME = -DEFAULT_LAMBDA * DEFAULT_ALPHA;
+    public static double alphaDropoutA(double p){
+        return 1.0 / Math.sqrt(p + ALPHA_PRIME*ALPHA_PRIME * p * (1-p));
+    }
+
+    public static double alphaDropoutB(double p){
+        double alphaPrime = -DEFAULT_LAMBDA * DEFAULT_ALPHA;
+        return -alphaDropoutA(p) * (1-p)*alphaPrime;
+    }
 }
