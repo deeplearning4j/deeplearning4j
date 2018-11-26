@@ -177,8 +177,6 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void testLSTMWithMasking() {
-        KnownCrashingTests.skipCrashingTest();
-
         //Basic test of GravesLSTM layer
         Nd4j.getRandom().setSeed(12345L);
 
@@ -249,7 +247,6 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void testCnnGlobalPoolingMasking() {
-        KnownCrashingTests.skipCrashingTest();
         //Global pooling w/ CNN + masking, where mask is along dimension 2, then separately test along dimension 3
         Nd4j.getRandom().setSeed(12345L);
 

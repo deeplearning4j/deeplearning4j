@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -160,7 +161,9 @@ public class Transpose extends DynamicCustomOp {
             return Arrays.asList(LongShapeDescriptor.fromShape(permutedShape, larg().dataType()));
         } else if (permuteDims != null && arg() != null && arg().getShape() != null) {
             val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
-            return Arrays.asList(LongShapeDescriptor.fromShape(permutedShape, larg().dataType()));
+            SDVariable lArg = larg();
+            DataType lArgType = lArg.dataType();
+            return Arrays.asList(LongShapeDescriptor.fromShape(permutedShape, lArgType));
         }
 
         return Collections.emptyList();

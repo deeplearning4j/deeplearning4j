@@ -176,7 +176,7 @@ public class TestMasking extends BaseDL4JTest {
 
                 //Now: change the label values for the masked steps. The
 
-                INDArray maskZeroLocations = Nd4j.getExecutioner().execAndReturn(new Not(labelMask.castTo(DataType.BOOL))).castTo(DataType.FLOAT);
+                INDArray maskZeroLocations = labelMask.rsub(1.0);   //rsub(1): swap 0s and 1s
                 INDArray rand = Nd4j.rand(maskZeroLocations.shape()).muli(0.5);
 
                 INDArray newLabels = labels.add(rand.muli(maskZeroLocations)); //Only the masked values are changed
