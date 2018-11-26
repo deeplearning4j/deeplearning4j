@@ -70,8 +70,6 @@ public class DropoutGradientCheck extends BaseDL4JTest {
 
     @Test
     public void testDropoutGradient() {
-        KnownCrashingTests.skipCrashingTest();
-
         int minibatch = 3;
 
         for(boolean cnn : new boolean[]{false, true}) {

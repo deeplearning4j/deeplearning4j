@@ -117,7 +117,6 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
     @Test
     public void testMaskingCnnDim3_SingleExample() {
-        KnownCrashingTests.skipCrashingTest();      //TODO REMOVE THIS ONCE FIXED
         //Test masking, where mask is along dimension 3
 
         int minibatch = 1;
@@ -181,8 +180,6 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
     @Test
     public void testMaskingCnnDim2_SingleExample() {
-        KnownCrashingTests.skipCrashingTest();      //TODO REMOVE THIS ONCE FIXED
-
         //Test masking, where mask is along dimension 2
 
         int minibatch = 1;
@@ -247,8 +244,6 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
     @Test
     public void testMaskingCnnDim3() {
-        KnownCrashingTests.skipCrashingTest();      //TODO REMOVE THIS ONCE FIXED
-
         //Test masking, where mask is along dimension 3
 
         int minibatch = 3;
@@ -308,8 +303,6 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
     @Test
     public void testMaskingCnnDim2() {
-        KnownCrashingTests.skipCrashingTest();      //TODO REMOVE THIS ONCE FIXED
-
         //Test masking, where mask is along dimension 2
 
         int minibatch = 3;
@@ -368,8 +361,6 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
     @Test
     public void testMaskingCnnDim23() {
-        KnownCrashingTests.skipCrashingTest();      //TODO REMOVE THIS ONCE FIXED
-
         //Test masking, where mask is along dimension 2 AND 3
         //For example, input images of 2 different sizes
 
