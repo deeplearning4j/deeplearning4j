@@ -192,7 +192,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long st = profilingHookIn(op);
         INDArray ret = op.z();
 
-        validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
 
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
@@ -204,12 +204,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());
 
-        val hostXShapeInfo =
-                op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
-        val hostYShapeInfo =
-                op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
-        val hostZShapeInfo =
-                op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
+        val hostXShapeInfo = op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
+        val hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
+        val hostZShapeInfo = op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
@@ -270,14 +267,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
 
-        Pointer extraArgs = op.extraArgs() != null
-                ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context) : null;
-        //Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(), context) : 0;
-        //Pointer dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
-        Pointer dimensionPointer = AtomicAllocator.getInstance()
-                .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
-
-        //log.info("Reduce Device: {}; Op.X address: {};", Nd4j.getAffinityManager().getDeviceForCurrentThread(), x.address());
+        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context) : null;
+        Pointer dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
 
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
@@ -417,13 +408,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long st = profilingHookIn(op);
         checkForCompression(op);
 
-        validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
 
-
-        Arrays.sort(dimension);
-
-
-        validateDataType(Nd4j.dataType(), op);
+        if (dimension != null && dimension.length > 1)
+            Arrays.sort(dimension);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -455,12 +443,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             else
                 retShape = new long[] {retShape[0], 1};
         } else if (retShape.length == 0) {
-            retShape = new long[] {1, 1};
+            retShape = new long[] {};
         }
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
 
+        val dtype = op.resultType();
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
             if (op.isComplexAccumulation()) {
@@ -468,7 +457,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 val yT = op.y().tensorssAlongDimension(dimension);
 
                 // we intentionally want to set it to 0.0
-                ret = Nd4j.create(xT, yT);
+                ret = Nd4j.createUninitialized(dtype, new long[] {xT, yT});
             } else {
                 if (op.y() != null) {
                     val xT = op.x().tensorAlongDimension(0, dimension).lengthLong();
@@ -478,42 +467,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         throw new ND4JIllegalStateException("Number of TADs along dimension doesn't match");
                 }
 
-                /*
-                if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
-                    ret = Nd4j.zeros(retShape);
-                } else {
-                    if (op.x().data().dataType() == DataType.DOUBLE)
-                        ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-                    else if (op.x().data().dataType() == DataType.FLOAT)
-                        ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
-                    else if (op.x().data().dataType() == DataType.HALF)
-                        ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
-                }
-                */
-
                 // in case of regular accumulation we don't care about array state before op
-                ret = Nd4j.create(retShape);
+                ret = Nd4j.createUninitialized(dtype, retShape);
             }
             op.setZ(ret);
         } else {
             // compare length
             if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
-/*
-            if (op.x().data().dataType() == DataType.DOUBLE) {
-                op.z().assign(op.zeroDouble());
-            } else if (op.x().data().dataType() == DataType.FLOAT) {
-                op.z().assign(op.zeroFloat());
-            } else if (op.x().data().dataType() == DataType.HALF) {
-                op.z().assign(op.zeroHalf());
-            }
-
-            ret = op.z();
-            */
         }
 
         naiveExec(op, dimension);
-
 
         profilingHookOut(op, st);
 
