@@ -20,7 +20,8 @@
 
 #include <ops/declarable/LegacyBroadcastOp.h>
 #include <helpers/TAD.h>
-
+#include <ops/declarable/helpers/axis.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
     namespace ops {
@@ -31,6 +32,11 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             std::vector<int> dims(*block.getAxis());
+            if (dims.size() == 0 && block.width() > 2) {
+                auto axis = INPUT_VARIABLE(2);
+                helpers::adjustAxis(x, axis, dims);
+                //dims = ShapeUtils::convertAxisToTadTarget(z->rankOf(), dims);
+            }
             if (dims.size() > 0)
                 std::sort(dims.begin(), dims.end());
 
@@ -40,8 +46,8 @@ namespace nd4j {
             shape::TAD tad(x->shapeInfo(), dims.data(), dims.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
-
-            REQUIRE_TRUE(shape::length(tad.tadOnlyShapeInfo) == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]", (int) shape::length(tad.tadOnlyShapeInfo), (int) y->lengthOf());
+            Nd4jLong tadLen = shape::length(tad.tadOnlyShapeInfo);
+            REQUIRE_TRUE(tadLen == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]",tadLen, (int) y->lengthOf());
 
             if (x == z)
                 NativeOpExcutioner::execBroadcast(opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);

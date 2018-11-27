@@ -225,29 +225,38 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
 					*dLdw = 0.;
 				else if(weights != weightsBroad) {
 					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());				
-					((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);		
+					((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
 				}					
 				else 
-					dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));
+					dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));					
 			}
 			break;
 		}
-		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E array divided by number of non-zero weights
-			*dLdw = 0.;
+		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E array divided by number of non-zero weights			
 			Nd4jLong numOfNonZeroWeights = 0;
 			if(weights->isScalar()) {
 				if(weights->e<double>(0) != 0.)
 					numOfNonZeroWeights = E.lengthOf();
 			}
-			else {
-				numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<Nd4jLong>(0);
-			}
+			else 
+				numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<Nd4jLong>(0);			
 
 			if (numOfNonZeroWeights == 0) {
 				*dLdp = 0.;
-				*dLdl = 0.;				
+				*dLdl = 0.;
+				*dLdw = 0.;
 			}
 			else {
+				if(weights->isScalar())
+					dLdw->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
+				else if(weights != weightsBroad) {
+					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+					E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+					*dLdw /= numOfNonZeroWeights;
+				}
+				else
+					dLdw->assign(E / numOfNonZeroWeights);
+				
 				NDArray temp = *weightsBroad / numOfNonZeroWeights;
 				*dLdp *= temp;
 				*dLdl *= temp;

@@ -74,7 +74,6 @@ class ND4J_EXPORT NativeOps {
 
 public:
 
-
     /**
      *
      * @param num

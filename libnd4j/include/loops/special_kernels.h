@@ -58,10 +58,10 @@ template <typename T>
 __host__ void concatKernelGeneric(dim3& launchDims, cudaStream_t *stream, int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfos, void *vresult, Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, Nd4jLong *zTadShape, Nd4jLong *zOffsets);
 
 template <typename T>
-__device__ void pullRowsKernelGeneric(dim3& launchDims, cudaStream_t *stream, void *vx, void *vz, Nd4jLong n, Nd4jLong *indexes, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets);
+__host__ void pullRowsKernelGeneric(dim3& launchDims, cudaStream_t *stream, void *vx, void *vz, Nd4jLong n, Nd4jLong *indexes, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets);
 
 template <typename T>
-__device__ void averagingKernelGeneric(dim3& launchDims, cudaStream_t *stream, void **vdx, void *vdz, int n, Nd4jLong length, bool propagate);
+__host__ void averagingKernelGeneric(dim3& launchDims, cudaStream_t *stream, void **vdx, void *vdz, int n, Nd4jLong length, bool propagate);
 
 /**
  * This kernel accumulates X arrays, and stores z into Z

@@ -68,7 +68,7 @@ TEST_F(DataTypesValidationTests, Basic_Test_2) {
 
     auto z = result->at(0);
 
-    ASSERT_EQ(exp, *z);
+    ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
 }
