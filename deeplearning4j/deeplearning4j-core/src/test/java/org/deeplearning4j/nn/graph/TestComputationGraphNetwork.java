@@ -1847,4 +1847,31 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         assertEquals(newP1b, p1b);
     }
+
+    @Test
+    public void testOutputSpecificLayers(){
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new DenseLayer.Builder().nIn(10).nOut(9).build(), "in")
+                .layer("1", new DenseLayer.Builder().nIn(9).nOut(8).build(), "0")
+                .layer("2", new DenseLayer.Builder().nIn(8).nOut(7).build(), "1")
+                .layer("3", new OutputLayer.Builder().nIn(7).nOut(6).build(), "2")
+                .setOutputs("3")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray in = Nd4j.rand(1, 10);
+
+        Map<String,INDArray> outMap = cg.feedForward(in, false);
+
+        INDArray[] outSpecific = cg.output(Arrays.asList("1", "3"), false, new INDArray[]{in}, null);
+        assertEquals(2, outSpecific.length);
+
+        assertEquals(outMap.get("1"), outSpecific[0]);
+        assertEquals(outMap.get("3"), outSpecific[1]);
+    }
 }

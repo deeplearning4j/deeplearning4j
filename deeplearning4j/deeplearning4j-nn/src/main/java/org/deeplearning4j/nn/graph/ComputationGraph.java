@@ -1839,6 +1839,27 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return output(iterator)[0];
     }
 
+    /**
+     * Get the activations for the specific layers only
+     * @param layers       Layers to get the specified activations for
+     * @param train        If true: train mode. False: test (inference) mode
+     * @param features     Features array
+     * @param featureMasks Feature masks array. May be null
+     * @return Activations of the selected layers, in the same order as the "layers" arg/list
+     */
+    public INDArray[] output(List<String> layers, boolean train, INDArray[] features, INDArray[] featureMasks){
+        Preconditions.checkState(layers != null && layers.size() > 0, "Layers must not be null: got later names %s", layers);
+        int[] layerNums = new int[layers.size()];
+        for( int i=0; i<layers.size(); i++ ){
+            String n = layers.get(i);
+            Preconditions.checkState(verticesMap.containsKey(n), "Layer with name %s not found in network", n);
+            layerNums[i] = verticesMap.get(n).getVertexIndex();
+        }
+        INDArray[] out = outputOfLayersDetached(train, FwdPassType.STANDARD, layerNums, features, featureMasks, null, true,
+                false, null);
+        return out;
+    }
+
 
     protected void validateArrayWorkspaces(LayerWorkspaceMgr mgr, INDArray array, ArrayType arrayType, String vertexName, boolean isInputVertex, String op){
         try{
