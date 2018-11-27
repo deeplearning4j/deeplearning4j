@@ -288,9 +288,6 @@ namespace functions {
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
-            Nd4jPointer state;// = buffer->getDevicePointer();
-
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomSingle, float, PARAMS(stateHost, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -304,9 +301,6 @@ namespace functions {
             auto extraArguments = reinterpret_cast<float16*>(vextraArguments);
             
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
-            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomSingle, float16, PARAMS(stateHost, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -322,9 +316,6 @@ namespace functions {
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
-            Nd4jPointer state;// = buffer->getDevicePointer();
-
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomSingle, double, PARAMS(stateHost, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -339,9 +330,6 @@ namespace functions {
             auto extraArguments = reinterpret_cast<float*>(vextraArguments);
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
-            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomDouble, float, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -359,9 +347,6 @@ namespace functions {
             
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
-            Nd4jPointer state;// = buffer->getDevicePointer();
-
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomDouble, float16, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -376,9 +361,6 @@ namespace functions {
             auto extraArguments = reinterpret_cast<double*>(vextraArguments);
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
-            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomDouble, double, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -397,9 +379,6 @@ namespace functions {
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
-            Nd4jPointer state;// = buffer->getDevicePointer();
-
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomTriple, float, PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
@@ -415,9 +394,6 @@ namespace functions {
             auto extraArguments = reinterpret_cast<float16*>(vextraArguments);
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-
-            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
-            Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomTriple, float16, PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
@@ -437,11 +413,8 @@ namespace functions {
 
             cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-            nd4j::graph::RandomGenerator *buffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (stateHost);
-            Nd4jPointer state;// = buffer->getDevicePointer();
-
             // this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(randomTriple, double, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+            DISPATCH_SIMPLE(randomTriple, double, PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }

@@ -4668,7 +4668,12 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
              * These methods set up only node states, with non-changed root ones
              */
             public native void setSeed(int seed);
+
             public native void setSeed(@Cast("uint64_t") long seed);
+
+            public native @Cast("Nd4jLong") long rootState();
+
+            public native @Cast("Nd4jLong") long nodeState();
         }
 
 

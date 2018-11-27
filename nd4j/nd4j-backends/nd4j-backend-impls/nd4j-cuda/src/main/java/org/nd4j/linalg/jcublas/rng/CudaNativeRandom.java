@@ -41,16 +41,17 @@ public class CudaNativeRandom extends NativeRandom {
     }
 
     public CudaNativeRandom(long seed) {
-        this(seed, 10000000);
+        super(seed);
     }
 
-    public CudaNativeRandom(long seed, long numberOfElements) {
-        super(seed, numberOfElements);
+    public CudaNativeRandom(long seed, long nodeSeed) {
+        super(seed, nodeSeed);
     }
 
     @Override
     public void init() {
-        statePointer = new Nd4jCuda.RandomGenerator(seed, seed * 2);
+        statePointer = new Nd4jCuda.RandomGenerator(seed, seed ^ 0xdeadbeef);
+        setSeed(seed);
     }
 
     @Override
@@ -60,21 +61,31 @@ public class CudaNativeRandom extends NativeRandom {
 
     @Override
     public void setSeed(long seed) {
-
+        this.seed = seed;
+        this.currentPosition.set(0);
+        ((Nd4jCuda.RandomGenerator) statePointer).setStates(seed, seed ^ 0xdeadbeef);
     }
 
     @Override
     public long getSeed() {
-        return 0;
+        return seed;
     }
 
     @Override
     public int nextInt() {
-        return 0;
+        return ((Nd4jCuda.RandomGenerator) statePointer).relativeInt(currentPosition.getAndIncrement());
     }
 
     @Override
     public long nextLong() {
-        return 0;
+        return ((Nd4jCuda.RandomGenerator) statePointer).relativeLong(currentPosition.getAndIncrement());
+    }
+
+    public long rootState() {
+        return ((Nd4jCuda.RandomGenerator) statePointer).rootState();
+    }
+
+    public long nodeState() {
+        return ((Nd4jCuda.RandomGenerator) statePointer).nodeState();
     }
 }

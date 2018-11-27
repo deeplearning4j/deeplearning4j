@@ -82,7 +82,7 @@ public class RandomTests extends BaseNd4jTest {
         int[] shape = {1, 12};
         double mean = 0;
         double standardDeviation = 1.0;
-        INDArray exp = Nd4j.create(new double[] {-0.7706380791041281, -0.3758118978292837, 0.48737085559690635, 0.027394307987528472, -1.468191897024841, -0.3645864986265372, -0.1454132438279702, 0.06501471740705274, 0.4656134949950283, -0.7363530317864846, 0.8086065604300632, 1.098882292168018});
+        INDArray exp = Nd4j.create(new double[] {-0.832718168582558, 1.3312306172061867, -0.27101354040045766, 1.0368130323476494, -0.6257379511224601, 0.30653534119847814, 0.28250229228899343, -0.5464191486048424, 0.5182898732953277, 1.463107608378911, 0.5634855878214299, -1.4979616922031507});
         Nd4j.getRandom().setSeed(12345);
         INDArray arr = Nd4j.getExecutioner().exec(new GaussianDistribution(
                         Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), Nd4j.getRandom());
@@ -119,15 +119,21 @@ public class RandomTests extends BaseNd4jTest {
 
     @Test
     public void testDistribution2() throws Exception {
-        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
-        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        val random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        val random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        log.info("States cpu: {}/{}", random1.rootState(), random1.nodeState());
 
         INDArray z1 = Nd4j.create(32);
         INDArray z2 = Nd4j.create(32);
         UniformDistribution distribution = new UniformDistribution(z1, 1.0, 2.0);
         Nd4j.getExecutioner().exec(distribution, random1);
+        log.info("States cpu: {}/{}", random1.rootState(), random1.nodeState());
+
         UniformDistribution distribution2 = new UniformDistribution(z2, 1.0, 2.0);
         Nd4j.getExecutioner().exec(distribution2, random2);
+
+        log.info("States cpu: {}/{}", random1.rootState(), random1.nodeState());
 
         System.out.println("Data: " + z1);
         System.out.println("Data: " + z2);
@@ -647,7 +653,7 @@ public class RandomTests extends BaseNd4jTest {
         INDArray z1 = Nd4j.zeros(20);
         INDArray z2 = Nd4j.zeros(20);
         INDArray z1Dup = Nd4j.zeros(20);
-        INDArray exp = Nd4j.create(new double[] {1.0000,    1.0000,         0,         0,         0,         0,         0,         0,    1.0000,    1.0000,         0,    1.0000,    1.0000,    1.0000,    1.0000,    1.0000,         0,    1.0000,    1.0000,         0});
+        INDArray exp = Nd4j.create(new double[] {0,    1.0000,         0,    1.0000,    1.0000,         0,    1.0000,    1.0000,         0,    1.0000,    1.0000,    1.0000,         0,    1.0000,    1.0000,         0,         0,    1.0000,         0,    1.0000});
 
         BernoulliDistribution op1 = new BernoulliDistribution(z1, 0.50);
         BernoulliDistribution op2 = new BernoulliDistribution(z2, 0.50);
@@ -673,7 +679,7 @@ public class RandomTests extends BaseNd4jTest {
         INDArray z1 = Nd4j.zeros(10);
         INDArray z2 = Nd4j.zeros(10);
         INDArray z1Dup = Nd4j.zeros(10);
-        INDArray exp = Nd4j.create(new double[] {1.0000,         0,         0,         0,    1.0000,    1.0000,         0,         0,    1.0000,         0});
+        INDArray exp = Nd4j.create(new double[] {1.0000,         0,         0,    1.0000,    1.0000,    1.0000,         0,    1.0000,         0,         0});
 
         BernoulliDistribution op1 = new BernoulliDistribution(z1, prob);
         BernoulliDistribution op2 = new BernoulliDistribution(z2, prob);

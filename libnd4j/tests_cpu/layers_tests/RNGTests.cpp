@@ -68,6 +68,32 @@ public:
     }
 };
 
+TEST_F(RNGTests, TestSeeds_1) {
+    RandomGenerator generator(123L, 456L);
+
+    ASSERT_EQ(123, generator.rootState());
+    ASSERT_EQ(456, generator.nodeState());
+
+    Nd4jPointer ptr = malloc(sizeof(RandomGenerator));
+    memcpy(ptr, &generator, sizeof(RandomGenerator));
+
+    auto cast = reinterpret_cast<RandomGenerator*>(ptr);
+    ASSERT_EQ(123, cast->rootState());
+    ASSERT_EQ(456, cast->nodeState());
+
+    free(ptr);
+}
+
+TEST_F(RNGTests, TestSeeds_2) {
+    RandomGenerator generator(12, 13);
+
+    generator.setStates(123L, 456L);
+
+    ASSERT_EQ(123, generator.rootState());
+    ASSERT_EQ(456, generator.nodeState());
+}
+
+
 TEST_F(RNGTests, Test_Dropout_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});

@@ -45,14 +45,12 @@ namespace nd4j {
 
         public:
             void *operator new(size_t len) {
-                nd4j_printf("Allocating CudaManagedRandomGenerator\n","");
                 void *ptr;
                 cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
                 return ptr;
              }
 
             void operator delete(void *ptr) {
-                nd4j_printf("Deallocating CudaManagedRandomGenerator\n","");
                 cudaFreeHost(ptr);
             }
         };
@@ -62,6 +60,9 @@ namespace nd4j {
         class ND4J_EXPORT RandomGenerator {
 #endif
         private:
+#ifndef __CUDACC__
+            void *placeHolder;
+#endif
             // GRAPH-LEVEL STATE
             u64 _rootState;
 
@@ -118,8 +119,21 @@ namespace nd4j {
             /**
              * These methods set up only node states, with non-changed root ones
              */
-            FORCEINLINE _CUDA_H void setSeed(int seed) { _nodeState._ulong = static_cast<uint64_t>(seed); }
-            FORCEINLINE _CUDA_H void setSeed(uint64_t seed) { _nodeState._ulong = seed; }
+            FORCEINLINE _CUDA_H void setSeed(int seed) {
+                _nodeState._ulong = static_cast<uint64_t>(seed);
+            }
+
+            FORCEINLINE _CUDA_H void setSeed(uint64_t seed) {
+                _nodeState._ulong = seed;
+            }
+
+            FORCEINLINE _CUDA_HD Nd4jLong rootState() {
+                return _rootState._long;
+            }
+
+            FORCEINLINE _CUDA_HD Nd4jLong nodeState() {
+                return _nodeState._long;
+            }
         };
 
 
@@ -214,8 +228,8 @@ namespace nd4j {
             auto s1 = _nodeState._ulong;
 
             // xor by idx
-            s0 |= ((index + 1) * s1);
-            s1 ^= ((index + 1) * s0);
+            s0 |= ((index + 2) * (s1 + 24243287));
+            s1 ^= ((index + 2) * (s0 + 723829));
 
             u64 v;
 
@@ -229,8 +243,8 @@ namespace nd4j {
             auto s1 = _nodeState._ulong;
 
             // xor by idx
-            s0 |= ((index + 1) * s1);
-            s1 ^= ((index + 1) * s0);
+            s0 |= ((index + 2) * (s1 + 24243287));
+            s1 ^= ((index + 2) * (s0 + 723829));
 
             // since we're not modifying state - do rotl step right here
             s1 ^= s0;
@@ -248,8 +262,7 @@ namespace nd4j {
             _nodeState._du32._v0 = rotl(s0, 26) ^ s1 ^ (s1 << 9); // a, b
             _nodeState._du32._v1 = rotl(s1, 13); // c
 
-            // TODO: improve this
-            _nodeState._long ^= steps;
+            _nodeState._long ^= (steps ^ 0xdeadbeef);
         }
     }
 }

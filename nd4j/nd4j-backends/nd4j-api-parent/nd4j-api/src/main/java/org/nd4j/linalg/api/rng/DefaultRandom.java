@@ -290,4 +290,12 @@ public class DefaultRandom implements Random, RandomGenerator {
     public void reSeed(long seed) {
         setSeed(seed);
     }
+
+    public long rootState() {
+        return 0L;
+    }
+
+    public long nodeState() {
+        return 0L;
+    }
 }

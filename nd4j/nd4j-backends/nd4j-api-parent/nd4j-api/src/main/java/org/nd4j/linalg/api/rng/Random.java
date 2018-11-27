@@ -318,6 +318,10 @@ public interface Random extends AutoCloseable {
      * @param seed
      */
     void reSeed(long seed);
+
+    long rootState();
+
+    long nodeState();
 }
 
 
