@@ -21,72 +21,72 @@
 
 #include <loops/special_kernels.h>
 
+namespace nd4j {
+
 ///////////////////////////////////////////////////////////////////////
-template <typename T>
-__device__ void pullRowsKernel(void *vx,
-                              void *vz,
-                              Nd4jLong len,
-                              Nd4jLong *indexes,
-                              Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                              Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
+    template<typename T>
+    __device__ void pullRowsKernel(void *vx,
+                                   void *vz,
+                                   Nd4jLong len,
+                                   Nd4jLong *indexes,
+                                   Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                   Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
 
-	auto x = reinterpret_cast<T*>(vx);
-	auto z = reinterpret_cast<T*>(vz);
-    auto xEWS = shape::elementWiseStride(tadShapeInfo);
-    auto zEWS = shape::elementWiseStride(zTadShapeInfo);
-    auto tadLength = shape::length(tadShapeInfo);
+        auto x = reinterpret_cast<T *>(vx);
+        auto z = reinterpret_cast<T *>(vz);
+        auto xEWS = shape::elementWiseStride(tadShapeInfo);
+        auto zEWS = shape::elementWiseStride(zTadShapeInfo);
+        auto tadLength = shape::length(tadShapeInfo);
 
-    if (xEWS >= 1 && zEWS >= 1) {
-        for (int idx = blockIdx.x; idx < len; idx += gridDim.x) {
-            T *rX = x + tadOffsets[indexes[idx]];
-            T *rZ = z + zTadOffsets[idx];
+        if (xEWS >= 1 && zEWS >= 1) {
+            for (int idx = blockIdx.x; idx < len; idx += gridDim.x) {
+                T *rX = x + tadOffsets[indexes[idx]];
+                T *rZ = z + zTadOffsets[idx];
 
-            for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-                rZ[i * zEWS] = rX[i * xEWS];
+                for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+                    rZ[i * zEWS] = rX[i * xEWS];
+                }
             }
-        }
-    } 
-    else {
-        for (int idx = blockIdx.x; idx < len; idx += gridDim.x) {
-            T *rX = x + tadOffsets[indexes[idx]];
-            T *rZ = z + zTadOffsets[idx];
+        } else {
+            for (int idx = blockIdx.x; idx < len; idx += gridDim.x) {
+                T *rX = x + tadOffsets[indexes[idx]];
+                T *rZ = z + zTadOffsets[idx];
 
-            for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-		    	auto xOffset = shape::getIndexOffset(i, tadShapeInfo, tadLength);
-		    	auto zOffset = shape::getIndexOffset(i, zTadShapeInfo, tadLength);
-                rZ[zOffset] = rX[xOffset];
+                for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+                    auto xOffset = shape::getIndexOffset(i, tadShapeInfo, tadLength);
+                    auto zOffset = shape::getIndexOffset(i, zTadShapeInfo, tadLength);
+                    rZ[zOffset] = rX[xOffset];
+                }
             }
         }
     }
-}
 
 ///////////////////////////////////////////////////////////////////////
-template <typename T>
-__global__ void execPullRowsKernel(void *vx,
-                              void *vz,
-                              Nd4jLong len,
-                              Nd4jLong *indexes,
-                              Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                              Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
+    template<typename T>
+    __global__ void execPullRowsKernel(void *vx,
+                                       void *vz,
+                                       Nd4jLong len,
+                                       Nd4jLong *indexes,
+                                       Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                       Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
 
-    pullRowsKernel<T>(vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
-}
+        pullRowsKernel<T>(vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
+    }
 
 ///////////////////////////////////////////////////////////////////////
-template <typename T>
-__host__ void pullRowsKernelGeneric(dim3& launchDims, cudaStream_t *stream,
-                                void *vx,
-                                void *vz,
-                                Nd4jLong len,
-                                Nd4jLong *indexes,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
+    template<typename T>
+    __host__ void pullRowsKernelGeneric(dim3 &launchDims, cudaStream_t *stream,
+                                        void *vx,
+                                        void *vz,
+                                        Nd4jLong len,
+                                        Nd4jLong *indexes,
+                                        Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                        Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
 
-    execPullRowsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
+        execPullRowsKernel<T> << < launchDims.x, launchDims.y, launchDims.z, *stream >> >
+                                                                             (vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT pullRowsKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * vx, void * vz, Nd4jLong len, Nd4jLong * indexes, Nd4jLong * tadShapeInfo, Nd4jLong * tadOffsets, Nd4jLong *zTadShapeInfo, Nd4jLong * zTadOffsets), LIBND4J_TYPES);
 }
-
-
-
-
-
 

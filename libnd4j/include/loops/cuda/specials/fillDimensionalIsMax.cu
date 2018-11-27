@@ -21,67 +21,74 @@
 
 #include <loops/special_kernels.h>
 
+namespace nd4j {
+
+
 ////////////////////////////////////////////////////////////////////////
-__device__ void fillDimensionalIsMax(void *vdX,
-                                    bool *dZ, Nd4jLong *zShapeInfo, 
-                                    Nd4jLong *tadOnlyShapeInfo, 
-                                    int *dimension, int dimensionLength, 
-                                    Nd4jLong *tadOffsets) {
+    __device__ void fillDimensionalIsMax(void *vdX,
+                                         bool *dZ, Nd4jLong *zShapeInfo,
+                                         Nd4jLong *tadOnlyShapeInfo,
+                                         int *dimension, int dimensionLength,
+                                         Nd4jLong *tadOffsets) {
 
-    auto dX = reinterpret_cast<int*>(vdX);
+        auto dX = reinterpret_cast<int *>(vdX);
 
-    __shared__ int tadLength;
-    __shared__ int tadEWS;
-    __shared__ int numTads;
+        __shared__ int tadLength;
+        __shared__ int tadEWS;
+        __shared__ int numTads;
 
-    if (threadIdx.x == 0) {
-        tadLength = shape::tadLength(zShapeInfo, dimension, dimensionLength);
-        tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-        numTads = shape::length(zShapeInfo) / tadLength;
-    }
-    __syncthreads();
+        if (threadIdx.x == 0) {
+            tadLength = shape::tadLength(zShapeInfo, dimension, dimensionLength);
+            tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+            numTads = shape::length(zShapeInfo) / tadLength;
+        }
+        __syncthreads();
 
-    for (int r = blockIdx.x; r < numTads; r+= gridDim.x) {
-        auto tadOffsetForBlock = tadOffsets[r];
+        for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+            auto tadOffsetForBlock = tadOffsets[r];
 
-        int highestElement = (int) dX[r];
+            int highestElement = (int) dX[r];
 
-        if (dimensionLength > 1 || tadEWS < 1) {
+            if (dimensionLength > 1 || tadEWS < 1) {
 
-            for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
-                
-            	auto xOffset = tadOffsetForBlock + shape::getIndexOffset(e, tadOnlyShapeInfo, tadLength);
-                dZ[xOffset] = (e == highestElement? true : false);
-            }
-        } 
-        else {
-            for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
-                // so, we just set dZ[e] for each TAD. Sure, e should be replaced with
-                auto idx = tadOffsetForBlock + (e * tadEWS);
-                dZ[idx] = (e == highestElement? true : false);
+                for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
+
+                    auto xOffset = tadOffsetForBlock + shape::getIndexOffset(e, tadOnlyShapeInfo, tadLength);
+                    dZ[xOffset] = (e == highestElement ? true : false);
+                }
+            } else {
+                for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
+                    // so, we just set dZ[e] for each TAD. Sure, e should be replaced with
+                    auto idx = tadOffsetForBlock + (e * tadEWS);
+                    dZ[idx] = (e == highestElement ? true : false);
+                }
             }
         }
     }
-}
 
 
 ////////////////////////////////////////////////////////////////////////
-__global__ void execfillDimensionalIsMax(void *dX,
-                                    bool *dZ, Nd4jLong *zShapeInfo, 
-                                    Nd4jLong *tadOnlyShapeInfo, 
-                                    int *dimension, int dimensionLength, 
-                                    Nd4jLong *tadOffsets) {
+    __global__ void execfillDimensionalIsMax(void *dX,
+                                             bool *dZ, Nd4jLong *zShapeInfo,
+                                             Nd4jLong *tadOnlyShapeInfo,
+                                             int *dimension, int dimensionLength,
+                                             Nd4jLong *tadOffsets) {
 
-    fillDimensionalIsMax(dX, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
-}
+        fillDimensionalIsMax(dX, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
+    }
 
 ////////////////////////////////////////////////////////////////////////
-__host__ void fillDimensionalIsMaxGeneric(dim3& launchDims, cudaStream_t *stream,
-                                    void *dX,
-                                    bool *dZ, Nd4jLong *zShapeInfo, 
-                                    Nd4jLong *tadOnlyShapeInfo, 
-                                    int *dimension, int dimensionLength, 
-                                    Nd4jLong *tadOffsets) {
-    
-    execfillDimensionalIsMax<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dX, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
+    __host__ void fillDimensionalIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream,
+                                              void *dX,
+                                              bool *dZ, Nd4jLong *zShapeInfo,
+                                              Nd4jLong *tadOnlyShapeInfo,
+                                              int *dimension, int dimensionLength,
+                                              Nd4jLong *tadOffsets) {
+
+        execfillDimensionalIsMax << < launchDims.x, launchDims.y, launchDims.z, *stream >> >
+                                                                                (dX, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
+    }
+
+// TODO: uncomment this as soon as kernel gets T
+//BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT fillDimensionalIsMaxGeneric, (dim3& launchDims, cudaStream_t *stream, void *dX, bool *dZ, Nd4jLong *zShapeInfo, Nd4jLong *tadOnlyShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOffsets), LIBND4J_TYPES);
 }

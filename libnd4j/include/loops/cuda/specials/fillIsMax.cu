@@ -21,24 +21,29 @@
 
 #include <loops/special_kernels.h>
 
-////////////////////////////////////////////////////////////////////////
-__device__ void fillIsMax(bool* dx, long length, long idx) {
-
-   int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-   for (long i = tid; i < length; i+= blockDim.x * gridDim.x) 
-        dx[i] = (i == idx? true : false);
-}
+namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////
-__global__ void execFillIsMax(bool* dx, long length, long idx) {
+    __device__ void fillIsMax(bool *dx, long length, long idx) {
 
-	fillIsMax(dx, length, idx);
-}
+        int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+        for (long i = tid; i < length; i += blockDim.x * gridDim.x)
+            dx[i] = (i == idx ? true : false);
+    }
 
 ////////////////////////////////////////////////////////////////////////
-__host__ void fillIsMaxGeneric(dim3& launchDims, cudaStream_t *stream, bool* dx, long length, long idx) {	
-	
-	execFillIsMax<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, length, idx);
-}
+    __global__ void execFillIsMax(bool *dx, long length, long idx) {
 
+        fillIsMax(dx, length, idx);
+    }
+
+////////////////////////////////////////////////////////////////////////
+    __host__ void fillIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, bool *dx, long length, long idx) {
+
+        execFillIsMax << < launchDims.x, launchDims.y, launchDims.z, *stream >> > (dx, length, idx);
+    }
+
+// TODO: uncomment this as soon as kernel gets T
+//BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT fillIsMaxGeneric, (dim3& launchDims, cudaStream_t *stream, bool* dx, long length, long idx), LIBND4J_TYPES);
+}

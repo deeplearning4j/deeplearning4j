@@ -21,28 +21,34 @@
 
 #include <loops/special_kernels.h>
 
-///////////////////////////////////////////////////////////////////////
-template <typename T>
-__device__ void concatKernelScalar(int numArrays, Nd4jPointer *data, void *vz) {
-
-    auto z = static_cast<T*>(vz);
-    Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
-    T **input = (T **) data;
-
-    for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x)
-		z[i] = input[i][0];
-}
+namespace nd4j {
 
 ///////////////////////////////////////////////////////////////////////
-template <typename T>
-__global__ void execConcatKernelScalar(int numArrays, Nd4jPointer *data,void *vz) {
+    template<typename T>
+    __device__ void concatKernelScalar(int numArrays, Nd4jPointer *data, void *vz) {
 
-	concatKernelScalar<T>(numArrays, data, vz);
-}
+        auto z = static_cast<T *>(vz);
+        Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
+        T **input = (T **) data;
+
+        for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x)
+            z[i] = input[i][0];
+    }
 
 ///////////////////////////////////////////////////////////////////////
-template <typename T>
-__host__ void concatKernelScalarGeneric(dim3& launchDims, cudaStream_t *stream, int numArrays, Nd4jPointer *data, void *vz) {
+    template<typename T>
+    __global__ void execConcatKernelScalar(int numArrays, Nd4jPointer *data, void *vz) {
 
-	concatKernelScalar<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(numArrays, data, vz);
+        concatKernelScalar<T>(numArrays, data, vz);
+    }
+
+///////////////////////////////////////////////////////////////////////
+    template<typename T>
+    __host__ void
+    concatKernelScalarGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, Nd4jPointer *data, void *vz) {
+
+        execConcatKernelScalar<T> << < launchDims.x, launchDims.y, launchDims.z, *stream >> > (numArrays, data, vz);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT concatKernelScalarGeneric, (dim3 & launchDims, cudaStream_t * stream, int numArrays, Nd4jPointer * data, void * vz), LIBND4J_TYPES);
 }
