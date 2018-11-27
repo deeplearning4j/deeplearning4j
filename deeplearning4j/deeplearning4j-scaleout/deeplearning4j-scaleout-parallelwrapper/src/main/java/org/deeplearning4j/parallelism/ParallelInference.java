@@ -510,12 +510,12 @@ public class ParallelInference {
                                         INDArray output = ((MultiLayerNetwork) replicatedModel).output(f, false, fm, null);
                                         out.add(new INDArray[]{output});
                                     } finally {
+                                        Nd4j.getExecutioner().commit();
                                         modelLock.readLock().unlock();
                                     }
                                 }
                                 request.setOutputBatches(out);
                             } catch (Exception e){
-                                Nd4j.getExecutioner().commit();
                                 request.setOutputException(e);
                             }
                         }
