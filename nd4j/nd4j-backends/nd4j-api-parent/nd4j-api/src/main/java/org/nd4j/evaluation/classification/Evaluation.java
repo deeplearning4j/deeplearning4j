@@ -305,38 +305,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     }
 
 
-//    /**
-//     * Evaluate the output
-//     * using the given true labels,
-//     * the input to the multi layer network
-//     * and the multi layer network to
-//     * use for evaluation
-//     * @param trueLabels the labels to ise
-//     * @param input the input to the network to use
-//     *              for evaluation
-//     * @param network the network to use for output
-//     */
-//    public void eval(INDArray trueLabels, INDArray input, ComputationGraph network) {
-//        eval(trueLabels, network.output(false, input)[0]);
-//    }
-//
-//
-//    /**
-//     * Evaluate the output
-//     * using the given true labels,
-//     * the input to the multi layer network
-//     * and the multi layer network to
-//     * use for evaluation
-//     * @param trueLabels the labels to ise
-//     * @param input the input to the network to use
-//     *              for evaluation
-//     * @param network the network to use for output
-//     */
-//    public void eval(INDArray trueLabels, INDArray input, MultiLayerNetwork network) {
-//        eval(trueLabels, network.output(input, Layer.TrainingMode.TEST));
-//    }
-
-
     /**
      * Collects statistics on the real outcomes vs the
      * guesses. This is for logistic outcome matrices.
@@ -362,6 +330,12 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     @Override
     public void eval(final INDArray realOutcomes, final INDArray guesses,
                      final List<? extends Serializable> recordMetaData) {
+
+        //Check for NaNs in predictions - without this, evaulation could silently be intepreted as class 0 prediction due to argmax
+        long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(guesses, Conditions.isNan())).getFinalResult().longValue();
+        org.nd4j.base.Preconditions.checkState(count == 0, "Cannot perform evaluation with NaNs present in predictions:" +
+                " %s NaNs present in predictions INDArray", count);
+
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.size(0);
 
