@@ -488,6 +488,7 @@ public class ParallelInference {
                                         INDArray[] output = ((ComputationGraph) replicatedModel).output(false, inBatch.getFirst(), inBatch.getSecond());
                                         out.add(output);
                                     } finally {
+                                        Nd4j.getExecutioner().commit();
                                         modelLock.readLock().unlock();
                                     }
 
@@ -514,6 +515,7 @@ public class ParallelInference {
                                 }
                                 request.setOutputBatches(out);
                             } catch (Exception e){
+                                Nd4j.getExecutioner().commit();
                                 request.setOutputException(e);
                             }
                         }
