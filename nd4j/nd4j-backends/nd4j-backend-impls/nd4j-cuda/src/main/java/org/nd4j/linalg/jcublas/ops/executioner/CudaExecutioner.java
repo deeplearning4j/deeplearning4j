@@ -1668,8 +1668,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else {
             // single arg call
             nativeOps.execRandom(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                        null, (LongPointer) hostZShapeInfo, (FloatPointer) AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                        (FloatPointer) AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context));
+                        null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                         AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context));
         }
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());

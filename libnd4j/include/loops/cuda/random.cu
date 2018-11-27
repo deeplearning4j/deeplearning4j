@@ -124,7 +124,7 @@ namespace functions {
                 __shared__ int yEWS;
                 __shared__ int zEWS;
 
-                nd4j::graph::RandomGenerator *buffer;
+                __shared__ nd4j::graph::RandomGenerator *buffer;
                 __shared__ unsigned char *cB;
                 __shared__ unsigned char *dB;
                 nd4j::graph::RandomGenerator *devBuffer;
@@ -163,12 +163,12 @@ namespace functions {
                         auto yOffset2 = shape::getIndexOffset(i, yShapeBuffer, length);
                         auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, length);                        
 
-                        z[zOffset2];// = OpClass::op(x[xOffset2], y[yOffset2], i, length, buffer, extraArguments);
+                        z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, buffer, extraArguments);
                     }
                 }
 
                 __syncthreads();
-                // devBuffer->rewindH(length);
+                //devBuffer->rewindH(length);
                 }
             };
 
