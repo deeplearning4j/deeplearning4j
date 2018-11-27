@@ -128,64 +128,6 @@ typedef struct {
 typedef __syncInfo SyncInfo;
 
 
-////////////////////////////////////////////////////////////////////////
-template <typename T>
-__global__ void flattenKernelGeneric(
-					Nd4jPointer *extraPointers,
-					int dOffset,
-					char order,
-					void *vz, Nd4jLong *zShapeInfo,
-					void *vy,
-					Nd4jLong *yShapeInfo) {
-
-	auto z = reinterpret_cast<T *>(vz);
-    auto y = reinterpret_cast<T *>(vy);
-
-	__shared__ UnifiedSharedMemory *manager;
-
-	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory(reinterpret_cast<int *>(shmem));
-		manager->init(sizeof(UnifiedSharedMemory), 4, 4, sizeof(shape::TAD), 2);
-	}
-	__syncthreads();
-
-	Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;	
-	
-	auto len = shape::length(yShapeInfo);
-	auto yOrder = shape::order(yShapeInfo);
-	auto zEWS = shape::elementWiseStride(zShapeInfo);
-	auto yEWS = shape::elementWiseStride(yShapeInfo);
-		
-	if (zEWS >= 1 && yEWS >= 1 && yOrder == order) {
-			
-		for (int i = tid; i < len; i+= gridDim.x * blockDim.x)
-			z[i * zEWS + dOffset] = y[i * yEWS];
-	} 
-	else {
-		
-		for(auto i = tid; i < len; i+= gridDim.x * blockDim.x) {
-				
-			auto offsetZ = shape::getIndexOffset(i, zShapeInfo, len);
-			auto offsetY = shape::getIndexOffset(i, yShapeInfo, len);
-			z[offsetZ + dOffset] = y[offsetY];
-		}
-	} 
-}
-
-////////////////////////////////////////////////////////////////////////
-template <typename T>
-__host__ void execFlatten(dim3 launchDims, cudaStream_t *stream, 
-							Nd4jPointer *extraPointers,
-							int dOffset,
-							char order,
-							void *vz, Nd4jLong *zShapeInfo,
-							void *vy, Nd4jLong *yShapeInfo) {
-
-	flattenKernelGeneric<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(extraPointers, dOffset, order, vz, zShapeInfo, vy, yShapeInfo);
-}
-
-
 /**
 * This is utility kernel, that updates given special buffer with proper values in device memory
 */
@@ -1338,7 +1280,7 @@ void NativeOps::flatten(Nd4jPointer *extraPointers,
 		printf("AF222 opNum:[7]\n");
 	
 	auto type = nd4j::ArrayOptions::dataType(hInputShapeInfo);    
-    BUILD_SINGLE_SELECTOR(type, execFlatten, (launchDims, stream, extraPointers, offset, order, dZ, dZShapeInfo, dInput, dInputShapeInfo), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(type, flattenKernelGeneric, (launchDims, stream, extraPointers, offset, order, dZ, dZShapeInfo, dInput, dInputShapeInfo), LIBND4J_TYPES);
 
 	DEBUG_KERNEL(stream, -1);
 }
@@ -2446,14 +2388,24 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers,
                           void *hZ, Nd4jLong *hZShapeInfo,
                           void *dZ, Nd4jLong *dZShapeInfo,
                           void *extraArguments) {
-    
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float)) );
-    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
+    auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    auto sizeOf = sizeof(nd4j::graph::RandomGenerator);
+    Nd4jPointer stateDevice;
+
+    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
+
+    dim3 launchDims = dim3(512, 512, 32768);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     // functions::random::RandomFunction<float>::executeCudaSingle(launchDims, extraPointers, opNum, stateHost, dZ, dZShapeInfo, extraArguments),
-    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::executeCudaSingle(launchDims, extraPointers, opNum, stateHost, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::executeCudaSingle(launchDims, extraPointers, opNum, stateDevice, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+    cudaFree(stateDevice);
 }
 
 void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, 
@@ -2463,12 +2415,22 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
 						   void *dZ, Nd4jLong *dZShapeInfo, 
 						   void *extraArguments) {
     
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float)) );
-    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
+    auto sizeOf = sizeof(nd4j::graph::RandomGenerator);
+    Nd4jPointer stateDevice;
+
+    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
+
+    dim3 launchDims = dim3(512, 512, 32768);
+    auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     // functions::random::RandomFunction<float>::executeCudaDouble(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments);
-    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaDouble(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaDouble(launchDims, extraPointers, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+
+    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+    cudaFree(stateDevice);
 }
 
 void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, 
@@ -2480,10 +2442,21 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
 							void *dZ, Nd4jLong *dZShapeInfo, 
 							void *extraArguments) {
 
-    dim3 launchDims = dim3(512, 512, sizeof(nd4j::random::RandomBuffer) + (560 * sizeof(float)) );
-    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
+    auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    auto sizeOf = sizeof(nd4j::graph::RandomGenerator);
+    Nd4jPointer stateDevice;
+
+    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
+
+    dim3 launchDims = dim3(512, 512, 32768);
+    auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     // functions::random::RandomFunction<float>::executeCudaTriple(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments);
-    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaTriple(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaTriple(launchDims, extraPointers, opNum, stateDevice, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+
+    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+    cudaFree(stateDevice);
 }
 
 
