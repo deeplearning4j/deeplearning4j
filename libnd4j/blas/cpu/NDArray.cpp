@@ -1760,9 +1760,17 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
                     printf(", ");
             }
         }
+        else if (this->isS()) {
+            for (Nd4jLong e = 0; e < limit; e++) {
+                printf("\"%s\"", this->e<utf8string>(e)._buffer);
+                if (e < limit - 1)
+                    printf(", ");
+            }
+        }
         printf("]\n");
         fflush(stdout);
     }
+
     static void printFormatted(NDArray const* arr, int depth, int limit) {
         if (arr->rankOf() == 2) {
             Nd4jLong rows = arr->rows();
@@ -1783,8 +1791,11 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
                         printf("%f", arr->e<float>(row, col));
                     else if (arr->isZ())
                         printf("%lld", arr->e<Nd4jLong>(row, col));
-                    if (arr->isB())
+                    else if (arr->isB())
                         printf("%s", arr->e<bool>(row, col)?"true":"false");
+                    else if (arr->isS()) {
+                        printf("\"%s\"", arr->e<std::string>(row * cols + col).c_str());
+                    }
                 }
                 if (row < rows - 1)
                     printf("]\n");
@@ -1840,6 +1851,9 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
                 printf("%f\n", this->e<float>(0));
             else if (this->isB()) {
                 printf("%s\n", this->e<bool>(0)?"true":"false");
+            }
+            else if (this->isS()) {
+                printf("\"%s\"\n", this->e<std::string>(0).c_str());
             }
 
         }
