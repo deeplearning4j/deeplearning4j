@@ -298,8 +298,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             extraArgs,
                             null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.y(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),context),
-                            null, (LongPointer) hostZShapeInfo, (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
-                            (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                            null, (LongPointer) hostZShapeInfo, (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                             (IntPointer) dimensionPointer, dimension.length,
                             (LongPointer) devTadShapeInfo,
                             dT,
@@ -314,6 +313,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.y(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
                             null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context));
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+
+                    op.setFinalResult(op.z().getDouble(0));
                 } else {
                     nativeOps.execReduce3(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
@@ -356,6 +357,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     }
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+                    op.setFinalResult(op.z().getDouble(0));
                 } else {
                     switch (op.getOpType()) {
                         case REDUCE_FLOAT:
@@ -924,6 +926,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             extraArgs,
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
                             ((Variance) op).isBiasCorrected());
+                AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
             } else if (op.y() != null) {
                 Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
                 Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
@@ -932,6 +935,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             extraArgs,
                             null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo);
+
+                AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+
+                op.setFinalResult(op.z().getDouble(0));
             } else {
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
@@ -961,6 +968,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     default:
                         throw new UnsupportedOperationException();
                 }
+
+                AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
             }
         } else {
             Pointer dimensionPointer = AtomicAllocator.getInstance()
@@ -1020,9 +1029,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     }
                 }
             }
+
+            AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
         }
 
-        AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
         profilingHookOut(op, st);
 

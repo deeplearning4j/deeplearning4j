@@ -278,13 +278,13 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 											Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
 											Nd4jLong *yTadShapeInfo,Nd4jLong *yOffsets) {
 
-	X* x = reinterpret_cast<X*>(vx);
-	X* y = reinterpret_cast<X*>(vy);
-	Z* z = reinterpret_cast<Z*>(vz);
+	auto dx = reinterpret_cast<X*>(vx);
+	auto dy = reinterpret_cast<X*>(vy);
+	auto z = reinterpret_cast<Z*>(vz);
 
     // initialize partials first
-    Z *sPartials = reinterpret_cast<Z*>(manager->getSharedReductionBuffer());
-    Z startingVal = OpType::startingValue(x);
+    auto sPartials = reinterpret_cast<Z*>(manager->getSharedReductionBuffer());
+    Z startingVal = OpType::startingValue(dx);
 	sPartials[threadIdx.x] = startingVal;
 	X *tempX = reinterpret_cast<X*>(sPartials) + blockDim.x;
 
@@ -314,22 +314,22 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 
 	for (int r = blockIdx.x; r < xTads; r += blockDim.x * gridDim.x) {
     	
-    	X *x = x + xOffsets[r];
+    	X *x = dx + xOffsets[r];
 
         if (threadIdx.x < xTadLength && threadIdx.x < maxBlock) {                                
-        	auto xO = shape::getIndexOffset(threadIdx.x, xTadShapeInfo, shape::length(xTadShapeInfo));
-            tempX[threadIdx.x] = x[xO];
+        	auto x0 = shape::getIndexOffset(threadIdx.x, xTadShapeInfo, shape::length(xTadShapeInfo));
+            tempX[threadIdx.x] = x[x0];
         }
+        __syncthreads();
 
         for (int g = 0; g < yTads; g++) {
         	
-        	X *y = y + yOffsets[g];
+        	X *y = dy + yOffsets[g];
 			int ri = (r * yTads) + g;
 
             sPartials[threadIdx.x] = startingVal;
             if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen)
-				extraZ[threadIdx.x] = startingVal;				                
-			
+				extraZ[threadIdx.x] = startingVal;
 			__syncthreads();
 
             // we might have data too large for single cache block, rendering cache useless though :(
@@ -338,14 +338,13 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 				// we reset tempX IF we have >1 tiles
                 if (t >= 1 || (limit > 1 && g > 0))
                 	if (threadIdx.x + (t * maxBlock) < xTadLength) {                                            
-                    	auto xO = shape::getIndexOffset(threadIdx.x + (t * maxBlock), xTadShapeInfo, shape::length(xTadShapeInfo));
-                        tempX[threadIdx.x] = x[xO];
-            			//tempX[threadIdx.x] = x[threadIdx.x + (t * maxBlock)];
+                    	auto x0 = shape::getIndexOffset(threadIdx.x + (t * maxBlock), xTadShapeInfo, xTadLength);
+                    	tempX[threadIdx.x] = x[x0];
                  	}
 
                     for (int f = threadIdx.x + (t * maxBlock); f < xTadLength && f < threadIdx.x + ((t + 1) * maxBlock); f += blockDim.x * gridDim.x) {                                        
-                    	auto yO = shape::getIndexOffset(f, xTadShapeInfo, shape::length(xTadShapeInfo));
-                        sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(tempX[threadIdx.x], y[yO], extraZ), extraZ);
+                    	auto y0 = shape::getIndexOffset(f, yTadShapeInfo, yTadLength);
+                    	sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(tempX[threadIdx.x], y[y0], extraZ), extraZ);
                     }
 
                     // we MUST step through this block altogether
@@ -355,8 +354,9 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 			aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, xTadLength), extraZ);
 			__syncthreads();
 
-            if (threadIdx.x == 0) 
-				z[ri] = OpType::postProcess(sPartials[threadIdx.x],xTadLength, extraZ);
+            if (threadIdx.x == 0) {
+                z[ri] = OpType::postProcess(sPartials[threadIdx.x], xTadLength, extraZ);
+            }
 				
 			__syncthreads();
 		}

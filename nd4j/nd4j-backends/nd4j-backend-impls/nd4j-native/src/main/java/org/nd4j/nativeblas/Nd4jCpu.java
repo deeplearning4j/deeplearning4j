@@ -394,7 +394,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     }
 
 
-
     /**
      *
      * @param num

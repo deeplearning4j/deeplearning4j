@@ -2759,13 +2759,17 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
     int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
     double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
-    dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hXShapeInfo, hTADShapeInfo, funcAttributes[7], dimensionLength, sizeof(double), 2);
+    dim3 launchDims(shape::length(hZShapeInfo), 256, 32768);
 
     if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
         printf("AD119 opNum:[%i]\n", opNum);
     
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (yType != xType)
+        throw nd4j::datatype_exception::build("NativeOps::execReduce3All both operands must have same data type", xType, yType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execAll(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParamsVals, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets), LIBND4J_TYPES, FLOAT_TYPES);
     

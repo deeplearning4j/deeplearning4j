@@ -4885,6 +4885,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray result = Transforms.allEuclideanDistances(initialX, initialY, 1);
 
+        Nd4j.getExecutioner().commit();
+
         assertEquals(5 * 7, result.length());
 
         for (int x = 0; x < initialX.rows(); x++) {
@@ -4896,6 +4898,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 double res = result.getDouble(x, y);
                 double exp = Transforms.euclideanDistance(rowX, initialY.getRow(y).dup());
 
+                //log.info("Expected [{}, {}]: {}",x, y, exp);
                 assertEquals("Failed for [" + x + ", " + y + "]", exp, res, 0.001);
             }
         }
