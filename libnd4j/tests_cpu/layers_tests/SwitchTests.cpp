@@ -64,10 +64,10 @@ TEST_F(SwitchTests, SwitchTest1) {
     // now, this is Switch operation. It takes BooleanOperation operation in,
     // and based on evaluation result (true/false) - it'll pass data via :0 or :1 output
     // other idx will be considered disabled, and that graph branch won't be executed
-    auto nodeSwitch = new Node(OpType_CUSTOM, 0, 3, {2, 119}, {4, 5});
-
     nd4j::ops::Switch switchOp;
-    nodeSwitch->setCustomOp(&switchOp);
+    auto nodeSwitch = new Node(&switchOp, 3, {2, 119}, {4, 5});
+
+//    nodeSwitch->setCustomOp(&switchOp);
 
 
     // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE

@@ -51,10 +51,11 @@ TEST_F(NodeTests, Test_Dtype_Conversion_1) {
 
 
 TEST_F(NodeTests, Test_Dtype_Conversion_2) {
-    nd4j::ops::add op;
+    nd4j::ops::add opA;
 
-    auto nodeA = new Node(OpType_CUSTOM, 0, 1, {-1}, {2});
-    nodeA->setCustomOp(&op);
+    //auto nodeA = new Node(OpType_CUSTOM, 0, 1, {-1}, {2});
+    auto nodeA = new Node(&opA, 1, {-1}, {2});
+    //nodeA->setCustomOp(&op);
 
     auto nd = nodeA->asT<double>();
     auto nf = nd->asT<float>();
