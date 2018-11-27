@@ -179,6 +179,6 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
         for (List<Writable> record : batch) {
             write(record);
         }
-        return new PartitionMetaData(batch.size(), -1);
+        return PartitionMetaData.builder().numRecordsUpdated(batch.size()).build();
     }
 }
