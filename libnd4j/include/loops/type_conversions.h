@@ -79,7 +79,7 @@ namespace nd4j {
 
         #ifdef __CUDACC__
         template<typename S, typename T>
-        static _CUDA_H void convertGenericCuda(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+        static _CUDA_H void convertGenericCuda(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);        
         #endif
     };
 
@@ -107,7 +107,7 @@ namespace nd4j {
  * PLEASE NOTE: This kernel doesn't allow loop for data. Basically: grid will be huge.
  */
     template<typename T>
-    __device__ inline void encoderKernelP1Generic(void *dx, Nd4jLong N, void *dz, float threshold) {
+    __device__ inline void encoderKernelP1(void *dx, Nd4jLong N, void *dz, float threshold) {
         auto x = reinterpret_cast<T *> (dx);
         auto z = reinterpret_cast<int *> (dz);
 
@@ -130,6 +130,8 @@ namespace nd4j {
         return 1<<e;
     }
 
+    template<typename T>
+    __host__ void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz, float threshold);
 
 /*
  * PLEASE NOTE: This kernel doesn't allow loop for data. Basically: grid will be huge.
@@ -137,7 +139,7 @@ namespace nd4j {
  * Based on: https://github.com/knotman90/cuStreamComp <-- efficient CUDA stream compaction algorithm
  */
     template<typename T>
-    __device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jLong N, void *dz) {
+    __device__ inline void encoderKernelP3(void *dx, int *offsets, Nd4jLong N, void *dz) {
         T *x = reinterpret_cast<T *> (dx);
         int *z = reinterpret_cast<int *> (dz);
 
@@ -194,13 +196,17 @@ namespace nd4j {
         }
     }
 
+    template<typename T>
+    __host__ void encoderKernelP3Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, Nd4jLong N, void *dz);
+
+
     /*
 *   This kernel handles decode from sparse threshold array, to dense array
  *
  *   PLEASE NOTE: Z is expected to be memset to 0
 */
     template<typename T>
-    __device__ inline void decoderKernelGeneric(void *dx, Nd4jLong N, void *dz) {
+    __device__ inline void decoderKernel(void *dx, Nd4jLong N, void *dz) {
         auto x = reinterpret_cast<int *> (dx);
         auto z = reinterpret_cast<T *> (dz);
 
@@ -225,9 +231,13 @@ namespace nd4j {
         }
     }
 
-    
     template<typename T>
-    __device__ inline void cudaEncodeBitmapGeneric(void *vdx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
+    __host__ void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz);
+
+
+//////////////////////////////////////////////////////////////////////////    
+    template<typename T>
+    __device__ inline void cudaEncodeBitmapKernel(void *vdx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
 
         auto dx = reinterpret_cast<T *>(vdx);
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -293,7 +303,11 @@ namespace nd4j {
     }
 
     template<typename T>
-    __device__ inline void cudaDecodeBitmapGeneric(void *dx, Nd4jLong N, void *vdz) {
+    __host__ void cudaEncodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *vdx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold);
+
+//////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    __device__ inline void cudaDecodeBitmapKernel(void *dx, Nd4jLong N, void *vdz) {
 
         auto dz = static_cast<T*>(vdz);
         
@@ -346,37 +360,41 @@ namespace nd4j {
             dz[i] = shmem[threadIdx.x];
         }
     }
-    __global__ void cudaEncodeBitmapFloat(float *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold);
 
-    __global__ void cudaEncodeBitmapDouble(double *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold);
+    template<typename T>
+    __host__ void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *vdz);
 
-    __global__ void cudaEncodeBitmapHalf(float16 *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold);
+    // __global__ void cudaEncodeBitmapFloat(float *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold);
 
-    __global__ void cudaDecodeBitmapFloat(void *dx, Nd4jLong N, float *dz);
+    // __global__ void cudaEncodeBitmapDouble(double *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold);
 
-    __global__ void cudaDecodeBitmapDouble(void *dx, Nd4jLong N, double *dz);
+    // __global__ void cudaEncodeBitmapHalf(float16 *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold);
 
-    __global__ void cudaDecodeBitmapHalf(void *dx, Nd4jLong N, float16 *dz);
+    // __global__ void cudaDecodeBitmapFloat(void *dx, Nd4jLong N, float *dz);
 
-    __global__ void encoderKernelP1Float(void *dx, Nd4jLong N, void *dz, float threshold);
+    // __global__ void cudaDecodeBitmapDouble(void *dx, Nd4jLong N, double *dz);
 
-    __global__ void encoderKernelP1Double(void *dx, Nd4jLong N, void *dz, float threshold);
+    // __global__ void cudaDecodeBitmapHalf(void *dx, Nd4jLong N, float16 *dz);
 
-    __global__ void encoderKernelP1Half(void *dx, Nd4jLong N, void *dz, float threshold);
+    // __global__ void encoderKernelP1Float(void *dx, Nd4jLong N, void *dz, float threshold);
 
-    __global__ void encoderKernelP2Float(int *dx, Nd4jLong N, int *dz);
+    // __global__ void encoderKernelP1Double(void *dx, Nd4jLong N, void *dz, float threshold);
 
-    __global__ void encoderKernelP3Float(void *dx, int *offsets, Nd4jLong N, void *dz);
+    // __global__ void encoderKernelP1Half(void *dx, Nd4jLong N, void *dz, float threshold);
 
-    __global__ void encoderKernelP3Double(void *dx, int *offsets, Nd4jLong N, void *dz);
+    // __global__ void encoderKernelP2Float(int *dx, Nd4jLong N, int *dz);
 
-    __global__ void encoderKernelP3Half(void *dx, int *offsets, Nd4jLong N, void *dz);
+    // __global__ void encoderKernelP3Float(void *dx, int *offsets, Nd4jLong N, void *dz);
 
-    __global__ void decoderKernelFloat(void *dx, Nd4jLong N, void *dz);
+    // __global__ void encoderKernelP3Double(void *dx, int *offsets, Nd4jLong N, void *dz);
 
-    __global__ void decoderKernelDouble(void *dx, Nd4jLong N, void *dz);
+    // __global__ void encoderKernelP3Half(void *dx, int *offsets, Nd4jLong N, void *dz);
 
-    __global__ void decoderKernelHalf(void *dx, Nd4jLong N, void *dz);
+    // __global__ void decoderKernelFloat(void *dx, Nd4jLong N, void *dz);
+
+    // __global__ void decoderKernelDouble(void *dx, Nd4jLong N, void *dz);
+
+    // __global__ void decoderKernelHalf(void *dx, Nd4jLong N, void *dz);
 
     __global__ void uniformAdd(int *g_data, int *uniforms, int n, int blockOffset, int baseIndex);
 

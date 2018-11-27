@@ -23,6 +23,7 @@
 
 #include <helpers/shape.h>
 
+#include <TAD.h>
 #include <types/types.h>
 #include <dll.h>
 #include <cuda.h>
@@ -74,21 +75,13 @@ namespace nd4j {
                           Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets);
 
     template<typename T>
-    _CUDA_H void averagingKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vdx, void *vdz, int n, Nd4jLong length,
-                           bool propagate);
+    _CUDA_H void averagingKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vdx, void *vdz, int n, Nd4jLong length, bool propagate);
 
-/**
- * This kernel accumulates X arrays, and stores z into Z
- *
- * @tparam T
- * @param x
- * @param z
- * @param n
- * @param length
- */
     template<typename T>
     _CUDA_H void accumulateKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vx, void *vz, int n, const Nd4jLong length);
 
+    template<typename T>
+    _CUDA_H void flattenKernelGeneric(dim3& launchDims, cudaStream_t *stream, Nd4jPointer *extraPointers, int dOffset, char order, void *vz, Nd4jLong *zShapeInfo, void *vy, Nd4jLong *yShapeInfo);
 
 
 

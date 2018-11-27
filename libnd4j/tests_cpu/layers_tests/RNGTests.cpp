@@ -352,7 +352,57 @@ TEST_F(RNGTests, Test_Truncated_1) {
     x1.printIndexedBuffer("Distribution TN");
 
 }
+TEST_F(RNGTests, Test_Truncated_2) {
+    auto x0 = NDArrayFactory::create<float>('c', {1000, 1000});
+    auto x1 = NDArrayFactory::create<float>('c', {1000, 1000});
 
+    RandomLauncher::fillTruncatedNormal(_rngA, &x0, 1.0f, 2.0f);
+    RandomLauncher::fillTruncatedNormal(_rngB, &x1, 1.0f, 2.0f);
+
+    ASSERT_TRUE(x0.equalsTo(&x1));
+
+    //ASSERT_FALSE(x0.equalsTo(nexp0));
+    //ASSERT_FALSE(x0.equalsTo(nexp1));
+    //ASSERT_FALSE(x0.equalsTo(nexp2));
+
+    /* Check up distribution */
+    auto mean = x1.reduceNumber(reduce::Mean);
+    mean.printIndexedBuffer("Mean 1.0");
+    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
+
+    auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    //deviation /= (double)x1.lengthOf();
+    deviation.printIndexedBuffer("Deviation should be 2.0");
+    //x1.printIndexedBuffer("Distribution TN");
+    ASSERT_NEAR(mean.e<float>(0), 1.f, 0.002);
+    ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.002);
+}
+
+TEST_F(RNGTests, Test_Truncated_3) {
+    auto x0 = NDArrayFactory::create<float>('c', {10000, 1000});
+    auto x1 = NDArrayFactory::create<float>('c', {10000, 1000});
+
+    RandomLauncher::fillTruncatedNormal(_rngA, &x0, 1.0f, 2.0f);
+    RandomLauncher::fillTruncatedNormal(_rngB, &x1, 1.0f, 2.0f);
+
+    ASSERT_TRUE(x0.equalsTo(&x1));
+
+    //ASSERT_FALSE(x0.equalsTo(nexp0));
+    //ASSERT_FALSE(x0.equalsTo(nexp1));
+    //ASSERT_FALSE(x0.equalsTo(nexp2));
+
+    /* Check up distribution */
+    auto mean = x1.reduceNumber(reduce::Mean);
+    mean.printIndexedBuffer("Mean 1.0");
+    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
+
+    auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    //deviation /= (double)x1.lengthOf();
+    deviation.printIndexedBuffer("Deviation should be 2.0");
+    //x1.printIndexedBuffer("Distribution TN");
+    ASSERT_NEAR(mean.e<float>(0), 1.f, 0.001);
+    ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.001);
+}
 
 TEST_F(RNGTests, Test_Binomial_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
@@ -447,7 +497,6 @@ TEST_F(RNGTests, Test_TruncatedNorm_2) {
 
     ASSERT_TRUE(x1.isSameShape(z));
     ASSERT_TRUE(x1.equalsTo(z));
-
     delete op;
     delete result;
 }
