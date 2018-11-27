@@ -128,64 +128,6 @@ typedef struct {
 typedef __syncInfo SyncInfo;
 
 
-////////////////////////////////////////////////////////////////////////
-template <typename T>
-__global__ void flattenKernelGeneric(
-					Nd4jPointer *extraPointers,
-					int dOffset,
-					char order,
-					void *vz, Nd4jLong *zShapeInfo,
-					void *vy,
-					Nd4jLong *yShapeInfo) {
-
-	auto z = reinterpret_cast<T *>(vz);
-    auto y = reinterpret_cast<T *>(vy);
-
-	__shared__ UnifiedSharedMemory *manager;
-
-	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory(reinterpret_cast<int *>(shmem));
-		manager->init(sizeof(UnifiedSharedMemory), 4, 4, sizeof(shape::TAD), 2);
-	}
-	__syncthreads();
-
-	Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;	
-	
-	auto len = shape::length(yShapeInfo);
-	auto yOrder = shape::order(yShapeInfo);
-	auto zEWS = shape::elementWiseStride(zShapeInfo);
-	auto yEWS = shape::elementWiseStride(yShapeInfo);
-		
-	if (zEWS >= 1 && yEWS >= 1 && yOrder == order) {
-			
-		for (int i = tid; i < len; i+= gridDim.x * blockDim.x)
-			z[i * zEWS + dOffset] = y[i * yEWS];
-	} 
-	else {
-		
-		for(auto i = tid; i < len; i+= gridDim.x * blockDim.x) {
-				
-			auto offsetZ = shape::getIndexOffset(i, zShapeInfo, len);
-			auto offsetY = shape::getIndexOffset(i, yShapeInfo, len);
-			z[offsetZ + dOffset] = y[offsetY];
-		}
-	} 
-}
-
-////////////////////////////////////////////////////////////////////////
-template <typename T>
-__host__ void execFlatten(dim3 launchDims, cudaStream_t *stream, 
-							Nd4jPointer *extraPointers,
-							int dOffset,
-							char order,
-							void *vz, Nd4jLong *zShapeInfo,
-							void *vy, Nd4jLong *yShapeInfo) {
-
-	flattenKernelGeneric<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(extraPointers, dOffset, order, vz, zShapeInfo, vy, yShapeInfo);
-}
-
-
 /**
 * This is utility kernel, that updates given special buffer with proper values in device memory
 */
@@ -1338,7 +1280,7 @@ void NativeOps::flatten(Nd4jPointer *extraPointers,
 		printf("AF222 opNum:[7]\n");
 	
 	auto type = nd4j::ArrayOptions::dataType(hInputShapeInfo);    
-    BUILD_SINGLE_SELECTOR(type, execFlatten, (launchDims, stream, extraPointers, offset, order, dZ, dZShapeInfo, dInput, dInputShapeInfo), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(type, flattenKernelGeneric, (launchDims, stream, extraPointers, offset, order, dZ, dZShapeInfo, dInput, dInputShapeInfo), LIBND4J_TYPES);
 
 	DEBUG_KERNEL(stream, -1);
 }
