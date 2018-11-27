@@ -54,6 +54,7 @@ import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.CrashReportingUtil;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
+import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.evaluation.IEvaluation;
@@ -3816,6 +3817,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), Evaluation.class);
+        }
+
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.Evaluation(labelsList, topN))[0];
     }
 
@@ -3829,6 +3835,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public <T extends Evaluation> T evaluate(MultiDataSetIterator iterator, List<String> labelsList, int topN) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), Evaluation.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.Evaluation(labelsList, topN))[0];
     }
 
@@ -3892,6 +3902,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return ROC evaluation on the given dataset
      */
     public <T extends ROC> T evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROC.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
     }
 
@@ -3914,6 +3928,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return ROC evaluation on the given dataset
      */
     public <T extends ROC> T evaluateROC(MultiDataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROC.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
     }
 
@@ -3936,6 +3954,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public <T extends ROCMultiClass> T evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROCMultiClass.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
     }
 
@@ -3947,6 +3969,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public <T extends ROCMultiClass> T evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROCMultiClass.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
     }
 

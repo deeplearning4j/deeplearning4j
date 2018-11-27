@@ -56,6 +56,7 @@ import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.CrashReportingUtil;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
+import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
@@ -3221,6 +3222,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return ROC evaluation on the given dataset
      */
     public <T extends ROC> T evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer();
+        if(getLayerWiseConfigurations().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROC.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
     }
 
@@ -3243,6 +3248,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return Multi-class ROC evaluation on the given dataset
      */
     public <T extends ROCMultiClass> T evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer();
+        if(getLayerWiseConfigurations().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROCMultiClass.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
     }
 
@@ -3434,8 +3443,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (layers == null || !(getOutputLayer() instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
-        if (labelsList == null)
-            labelsList = iterator.getLabels();
+        if (labelsList == null) {
+            try {
+                labelsList = iterator.getLabels();
+            } catch (Throwable t){ }    //Ignore, maybe UnsupportedOperationException etc
+        }
+
+        Layer outputLayer = getOutputLayer();
+        if(getLayerWiseConfigurations().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), Evaluation.class);
+        }
 
         Evaluation e = new org.deeplearning4j.eval.Evaluation(labelsList, topN);
         doEvaluation(iterator, e);

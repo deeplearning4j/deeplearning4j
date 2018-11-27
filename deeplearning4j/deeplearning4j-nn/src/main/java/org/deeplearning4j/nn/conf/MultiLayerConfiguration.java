@@ -62,6 +62,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected int tbpttBackLength = 20;
     @Getter @Setter
     protected boolean legacyBatchScaledL2 = true;   //Default to legacy for pre 1.0.0-beta3 networks on deserialization
+    protected boolean validateOutputLayerConfig = true; //Default to legacy for pre 1.0.0-beta3 networks on deserialization
 
     @Getter
     @Setter

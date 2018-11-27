@@ -76,6 +76,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     @Setter
     protected CacheMode cacheMode;
 
+    protected boolean validateOutputLayerConfig = true;     //Default for 10.0.-beta3 and earlier nets
+
     /**
      * List of inputs to the network, by name
      */
@@ -1034,6 +1036,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.trainingWorkspaceMode = globalConfiguration.trainingWorkspaceMode;
             conf.inferenceWorkspaceMode = globalConfiguration.inferenceWorkspaceMode;
             conf.cacheMode = globalConfiguration.cacheMode;
+            conf.validateOutputLayerConfig = validateOutputConfig;
 
             conf.defaultConfiguration = globalConfiguration.build();
             conf.getDefaultConfiguration().setPretrain(pretrain);
