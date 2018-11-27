@@ -3060,10 +3060,10 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
     if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
         printf("AD119 opNum:[%i]\n", opNum);
     
-    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    // BUILD_DOUBLE_SELECTOR(xType, zType, reduce3AllGeneric, (opNum, dX, xInfo, dY, yInfo, extraParamsVals, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execAll(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParamsVals, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets), LIBND4J_TYPES, FLOAT_TYPES);
     
     // reduce3AllDouble<<<launchDims.x, 512, (512 * 8 * 2 + 512), *stream>>>(
     //         opNum,

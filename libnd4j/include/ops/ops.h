@@ -1967,6 +1967,12 @@ namespace simdOps {
                     return nd4j::math::nd4j_abs<X>(d1) >= compare ? true : false;
                 case 13: // abs_less_or_equals_than
                     return nd4j::math::nd4j_abs<X>(d1) <= compare ? true : false;
+                case 14:
+                    // isFinite
+                    return !(nd4j::math::nd4j_isinf(d1) || nd4j::math::nd4j_isnan(d1));
+                case 15:
+                    // isInfinite
+                    return nd4j::math::nd4j_isinf(d1) || nd4j::math::nd4j_isnan(d1);
                 default:
                     printf("Undefined match condition: [%i]\n", mode);
             }
@@ -2033,6 +2039,12 @@ namespace simdOps {
 					return nd4j::math::nd4j_abs<X>(d1) >= compare ? 1 : 0;
 				case 13: // abs_less_or_equals_than
 					return nd4j::math::nd4j_abs<X>(d1) <= compare ? 1 : 0;
+                case 14:
+                    // isFinite
+                    return !(nd4j::math::nd4j_isinf(d1) || nd4j::math::nd4j_isnan(d1));
+                case 15:
+                    // isInfinite
+                    return nd4j::math::nd4j_isinf(d1) || nd4j::math::nd4j_isnan(d1);
 				default:
 					printf("Undefined match condition: [%i]\n", mode);
 			}

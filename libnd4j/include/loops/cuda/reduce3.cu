@@ -52,6 +52,31 @@ __global__ void execScalarGeneric(const int opNum,
     Reduce3<X,Z>::execScalarCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, manager, tadOnlyShapeInfo);
 }
 
+template <typename X, typename Z>
+__global__ void execAllGeneric(const int opNum,
+                                      void *vx, Nd4jLong *xShapeInfo,
+                                      void *vy, Nd4jLong *yShapeInfo,
+                                      void *extraParams,
+                                      void *vz, Nd4jLong *zShapeInfo,
+                                      int *dimension, int dimensionLength,
+                                      int postProcessOrNot,
+                                      int *allocationPointer,
+                                      Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                      Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+
+        __shared__ UnifiedSharedMemory *manager;
+
+        if (threadIdx.x == 0) {
+            extern __shared__ unsigned char shmem[];
+            manager = new(shmem) UnifiedSharedMemory((int *) shmem);
+            manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<X,Z>), sizeof(shape::TAD), shape::rank(xShapeInfo));
+        }
+
+        __syncthreads();
+
+        Reduce3<X,Z>::execAllCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
+    }
+
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
@@ -592,6 +617,23 @@ __host__ void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
         
     execGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
 }
+
+////////////////////////////////////////////////////////////////////////
+	template <typename X, typename Z>
+	__host__ void Reduce3<X,Z>::execAll(dim3 launchDims, cudaStream_t *stream,
+									 int opNum,
+									 void *vx, Nd4jLong *xShapeInfo,
+									 void *vy, Nd4jLong *yShapeInfo,
+									 void *extraParams,
+									 void *vz, Nd4jLong *zShapeInfo,
+									 int *dimension, int dimensionLength,
+									 int postProcessOrNot,
+									 int *allocationPointer,
+									 Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+									 Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+
+		execAllGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
+	}
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
