@@ -45,12 +45,14 @@ namespace nd4j {
 
         public:
             void *operator new(size_t len) {
+                nd4j_printf("Allocating CudaManagedRandomGenerator\n","");
                 void *ptr;
                 cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
                 return ptr;
              }
 
             void operator delete(void *ptr) {
+                nd4j_printf("Deallocating CudaManagedRandomGenerator\n","");
                 cudaFreeHost(ptr);
             }
         };

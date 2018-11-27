@@ -153,10 +153,9 @@ namespace functions {
 
                 if (xEWS >= 1 && yEWS >= 1 && zEWS >= 1) {
                     for (Nd4jLong e = tid; e < length; e += blockDim.x * gridDim.x) {
-                        z[e * zEWS];// = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, buffer, extraArguments);
+                        z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, buffer, extraArguments);
                     }
                 } else {
-
                     for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {
                         
                         auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer, length);
@@ -168,7 +167,8 @@ namespace functions {
                 }
 
                 __syncthreads();
-                //devBuffer->rewindH(length);
+                if (threadIdx.x == 0 && blockIdx.x == 0)
+                    devBuffer->rewindH(length);
                 }
             };
 
@@ -211,7 +211,7 @@ namespace functions {
 
                 if (xEWS >= 1 && zEWS >= 1) {
                     for (Nd4jLong e = blockIdx.x * blockDim.x + threadIdx.x; e < length; e += blockDim.x * gridDim.x) {
-                        z[e * zEWS];// = OpClass::op(x[e * xEWS], e, length, buffer, extraArguments);
+                        z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, buffer, extraArguments);
                     }
                 } else {
                     
@@ -220,12 +220,14 @@ namespace functions {
                         auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer, length);
                         auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, length);
 
-                        z[zOffset2];// = OpClass::op(x[xOffset2], i, length, buffer, extraArguments);
+                        z[zOffset2] = OpClass::op(x[xOffset2], i, length, buffer, extraArguments);
                     }
                 }
 
                 __syncthreads();
-                // devBuffer->rewindH(length);
+
+                if (threadIdx.x == 0 && blockIdx.x == 0)
+                    devBuffer->rewindH(length);
             }
 
 
@@ -262,18 +264,20 @@ namespace functions {
 
                 if (ews >= 1) {
                     for (Nd4jLong x = tid; x < length; x += blockDim.x * gridDim.x) {
-                        z[x * ews];// = OpClass::op(x, length, buffer, extraArguments);
+                        z[x * ews] = OpClass::op(x, length, buffer, extraArguments);
                     }
                 } else {
                     
                     for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {                        
                         auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, length);
-                        z[zOffset2];// = OpClass::op(i, length, buffer,  extraArguments);
+                        z[zOffset2] = OpClass::op(i, length, buffer,  extraArguments);
                     }
                 }
 
                 __syncthreads();
-                // devBuffer->rewindH(length);
+
+                if (threadIdx.x == 0 && blockIdx.x == 0)
+                    devBuffer->rewindH(length);
             }
 
         template <>
@@ -288,7 +292,7 @@ namespace functions {
             Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(randomSingle, float, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+            DISPATCH_SIMPLE(randomSingle, float, PARAMS(stateHost, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }
@@ -305,7 +309,7 @@ namespace functions {
             Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(randomSingle, float16, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+            DISPATCH_SIMPLE(randomSingle, float16, PARAMS(stateHost, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }
@@ -322,7 +326,7 @@ namespace functions {
             Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(randomSingle, double, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+            DISPATCH_SIMPLE(randomSingle, double, PARAMS(stateHost, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }
@@ -340,7 +344,7 @@ namespace functions {
             Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(randomDouble, float, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+            DISPATCH_SIMPLE(randomDouble, float, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }
@@ -359,7 +363,7 @@ namespace functions {
             Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(randomDouble, float16, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+            DISPATCH_SIMPLE(randomDouble, float16, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }
@@ -377,7 +381,7 @@ namespace functions {
             Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(randomDouble, double, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+            DISPATCH_SIMPLE(randomDouble, double, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }
@@ -397,7 +401,7 @@ namespace functions {
             Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(randomTriple, float, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+            DISPATCH_SIMPLE(randomTriple, float, PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }
@@ -416,7 +420,7 @@ namespace functions {
             Nd4jPointer state;// = buffer->getDevicePointer();
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(randomTriple, float16, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+            DISPATCH_SIMPLE(randomTriple, float16, PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }

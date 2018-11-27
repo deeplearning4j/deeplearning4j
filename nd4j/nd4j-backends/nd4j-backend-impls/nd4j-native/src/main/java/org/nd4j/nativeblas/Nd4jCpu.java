@@ -4613,6 +4613,14 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <pointercast.h>
 // #include <op_boilerplate.h>
 // #include <dll.h>
+// #include <chrono>
+// #include <array/DataTypeUtils.h>
+// #include <helpers/logger.h>
+
+// #ifdef __CUDACC__
+// #endif
+// #ifdef __CUDACC__
+// #else
         @Namespace("nd4j::graph") @NoOffset public static class RandomGenerator extends Pointer {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -4662,6 +4670,42 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native void setSeed(int seed);
             public native void setSeed(@Cast("uint64_t") long seed);
         }
+
+
+        
+
+        
+
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+
+        
+
+        
+
+        //////
+        @Namespace("nd4j::graph") public static native @Cast("uint32_t") int rotl(@Cast("const uint32_t") int x, int k);
+
+        @Namespace("nd4j::graph") public static native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, int k);
+
+        
+
+        
+
+        
     
 
 
