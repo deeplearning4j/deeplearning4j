@@ -228,6 +228,8 @@ public class ParallelInference {
      * @return Output from the network
      */
     public INDArray[] output(INDArray[] input, INDArray[] inputMasks){
+        Nd4j.getExecutioner().commit(); //Commit before passing input to other thread
+
         // basically, depending on model type we either throw stuff to specific model, or wait for batch
 
         BasicInferenceObserver observer = new BasicInferenceObserver();
