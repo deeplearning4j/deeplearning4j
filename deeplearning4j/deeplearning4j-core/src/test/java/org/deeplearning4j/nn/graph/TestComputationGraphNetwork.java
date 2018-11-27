@@ -1819,4 +1819,32 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .addVertex("test", new ScaleVertex(0), "toRemove")
                 .removeVertex("toRemove", true);
     }
+
+
+    @Test
+    public void testGetSetParamUnderscores(){
+        //Test get/set param with underscores in layer nome
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .layer("layer_zero", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                .layer("layer_one", new OutputLayer.Builder().nIn(10).nOut(10).build(), "layer_zero")
+                .setOutputs("layer_one")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+        cg.params().assign(Nd4j.linspace(1, 220, 220).reshape(1, -11));
+
+        INDArray p0w = cg.getParam("layer_zero_W");
+        assertEquals(Nd4j.linspace(1, 100, 100).reshape('f', 10, 10), p0w);
+
+        INDArray p1b = cg.getParam("layer_one_b");
+        assertEquals(Nd4j.linspace(211, 220, 10).reshape(1,10), p1b);
+
+        INDArray newP1b = Nd4j.valueArrayOf(new long[]{1,10}, -1);
+        cg.setParam("layer_one_b", newP1b);
+
+        assertEquals(newP1b, p1b);
+    }
 }

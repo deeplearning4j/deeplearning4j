@@ -3124,7 +3124,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
             String key = entry.getKey();
             INDArray val = entry.getValue();
-            int idx = key.indexOf('_');
+            int idx = key.lastIndexOf('_');
             if (idx == -1)
                 throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
             String layerName = key.substring(0, idx);
@@ -3281,7 +3281,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Override
     public INDArray getParam(String paramName) {
         //        throw new UnsupportedOperationException("Not implemented");
-        int idx = paramName.indexOf('_');
+        int idx = paramName.lastIndexOf('_');
         if (idx == -1)
             throw new IllegalStateException("Invalid param key: not have layer separator: \"" + paramName + "\"");
         String layerName = paramName.substring(0, idx);
@@ -3332,7 +3332,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Override
     public void setParam(String key, INDArray val) {
         //        throw new UnsupportedOperationException("Not implemented");
-        int idx = key.indexOf('_');
+        int idx = key.lastIndexOf('_');
         if (idx == -1)
             throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
         String layerName = key.substring(0, idx);
