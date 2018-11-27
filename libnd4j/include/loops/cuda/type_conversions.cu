@@ -214,75 +214,83 @@ namespace nd4j {
         // TODO: to be remove
     }
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void execEncoderKernelP1(void *dx, Nd4jLong N, void *dz, float threshold) {
+
+    encoderKernelP1<T>(dx, N, dz, threshold);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__host__ void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz, float threshold) {
+
+    execEncoderKernelP1<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, dz, threshold);
+}
+BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT encoderKernelP1Generic, (dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz, float threshold), LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void execEncoderKernelP3(void *dx, int *offsets, Nd4jLong N, void *dz) {
+
+    encoderKernelP3<T>(dx, offsets, N, dz);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__host__ void encoderKernelP3Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, Nd4jLong N, void *dz) {
+
+    execEncoderKernelP3<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, offsets, N, dz);
+}
+BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT encoderKernelP3Generic, (dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, Nd4jLong N, void *dz), LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void execDecoderKernel(void *dx, Nd4jLong N, void *dz) {
+
+    decoderKernel<T>(dx, N, dz);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__host__ void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz) {
+
+    execDecoderKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, dz);
+}
+BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT decoderKernelGeneric, (dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES);
 
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void execCudaEncodeBitmapKernel(void *vdx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
+
+    cudaEncodeBitmapKernel<T>(vdx, N, dz, scalar, reductionBuffer, threshold);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__host__ void cudaEncodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *vdx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
+
+    execCudaEncodeBitmapKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdx, N, dz, scalar, reductionBuffer, threshold);
+}
+BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaEncodeBitmapGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vdx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold), LIBND4J_TYPES);
 
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void execCudaDecodeBitmapKernel(void *dx, Nd4jLong N, void *vdz) {
 
-    __global__ void cudaEncodeBitmapFloat(float *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
-        nd4j::cudaEncodeBitmapGeneric<float>(dx, N, dz, scalar, reductionBuffer, threshold);
-    }
+     cudaDecodeBitmapKernel<T>(dx, N, vdz);
+}
 
-    __global__ void cudaEncodeBitmapDouble(double *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
-        nd4j::cudaEncodeBitmapGeneric<double>(dx, N, dz, scalar, reductionBuffer, threshold);
-    }
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__host__ void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *vdz) {
 
-    __global__ void cudaEncodeBitmapHalf(float16 *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
-        nd4j::cudaEncodeBitmapGeneric<float16>(dx, N, dz, scalar, reductionBuffer, threshold);
-    }
+    execCudaDecodeBitmapKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, vdz);
+}
+BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaDecodeBitmapGeneric, (dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *vdz), LIBND4J_TYPES);
 
-    __global__ void cudaDecodeBitmapFloat(void *dx, Nd4jLong N, float *dz) {
-        nd4j::cudaDecodeBitmapGeneric<float>(dx, N, dz);
-    }
-
-    __global__ void cudaDecodeBitmapDouble(void *dx, Nd4jLong N, double *dz) {
-        nd4j::cudaDecodeBitmapGeneric<double>(dx, N, dz);
-    }
-
-    __global__ void cudaDecodeBitmapHalf(void *dx, Nd4jLong N, float16 *dz) {
-        nd4j::cudaDecodeBitmapGeneric<float16>(dx, N, dz);
-    }
-
-
-    __global__ void encoderKernelP1Float(void *dx, Nd4jLong N, void *dz, float threshold) {
-        nd4j::encoderKernelP1Generic<float>(dx, N, dz, threshold);
-    }
-
-    __global__ void encoderKernelP1Double(void *dx, Nd4jLong N, void *dz, float threshold) {
-        nd4j::encoderKernelP1Generic<double>(dx, N, dz, threshold);
-    }
-
-    __global__ void encoderKernelP1Half(void *dx, Nd4jLong N, void *dz, float threshold) {
-        nd4j::encoderKernelP1Generic<float16>(dx, N, dz, threshold);
-    }
-
-    __global__ void encoderKernelP2Float(int *dx, Nd4jLong N, int *dz) {
-        nd4j::encoderKernelP2Generic<float>(dx, N, dz);
-    }
-
-    __global__ void encoderKernelP3Float(void *dx, int *offsets, Nd4jLong N, void *dz) {
-        nd4j::encoderKernelP3Generic<float>(dx, offsets, N, dz);
-    }
-
-    __global__ void encoderKernelP3Double(void *dx, int *offsets, Nd4jLong N, void *dz) {
-        nd4j::encoderKernelP3Generic<double>(dx, offsets, N, dz);
-    }
-
-    __global__ void encoderKernelP3Half(void *dx, int *offsets, Nd4jLong N, void *dz) {
-        nd4j::encoderKernelP3Generic<float16>(dx, offsets, N, dz);
-    }
-
-    __global__ void decoderKernelFloat(void *dx, Nd4jLong N, void *dz) {
-        nd4j::decoderKernelGeneric<float>(dx, N, dz);
-    }
-
-    __global__ void decoderKernelDouble(void *dx, Nd4jLong N, void *dz) {
-        nd4j::decoderKernelGeneric<double>(dx, N, dz);
-    }
-
-    __global__ void decoderKernelHalf(void *dx, Nd4jLong N, void *dz) {
-        nd4j::decoderKernelGeneric<float16>(dx, N, dz);
-    }
 
     template <bool storeSum, bool isNP2>
     __host__ void prescanLauncher(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex) {
