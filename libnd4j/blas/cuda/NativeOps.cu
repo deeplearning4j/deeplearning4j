@@ -2326,19 +2326,6 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
 	DEBUG_KERNEL(stream, opNum);
 }
 
-// template <typename T> 
-// __host__ void aggregateHost(int opNum, 
-// 							T **arguments, int numArguments, 
-// 							Nd4jLong **shapeArguments, 
-// 							int numShapeArguments, 
-// 							int *indexArguments, int numIndexArguments, 
-// 							int **intArrays, int numIntArrays, 
-// 							T *realArguments, int numRealArguments) {
-
-// 	DISPATCH_BY_OPNUM_T(aggregateGeneric, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), AGGREGATE_OPS);
-// }
-
-
 void NativeOps::execAggregate(Nd4jPointer *extraPointers,
 								   int opNum,
                                    void **arguments,
@@ -2359,15 +2346,17 @@ void NativeOps::execAggregate(Nd4jPointer *extraPointers,
     int shmem = getDeviceId(extraPointers[4]);
 
     dim3 launchDims = dim3(numBlocks, numThreads, shmem);
-
-	// this macro builds bunch of IF/ELSE selectors for kernel launch
-    // DISPATCH_BY_OPNUM_T(aggregateGeneric, PARAMS(arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), AGGREGATE_OPS)
-    // BUILD_SINGLE_SELECTOR(xType, aggre(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo), LIBND4J_TYPES);
-
+	
+    BUILD_SINGLE_SELECTOR(dtype, functions::aggregate::AggregatedFunction, ::aggregateKernelGeneric(launchDims, stream, opNum, arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), FLOAT_TYPES);
     nd4j::DebugHelper::checkErrorCode(stream, "execAggregateFloat(...) failed");
 }
 
-void NativeOps::execAggregateBatch(Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals,  void *ptrToArguments, nd4j::DataType dtype) {
+void NativeOps::execAggregateBatch(Nd4jPointer *extraPointers, 
+									int numAggregates, int opNum, 
+									int maxArgs, int maxShapes, 
+									int maxIntArrays, int maxIntArraySize, 
+									int maxIdx, int maxReals,  
+									void *ptrToArguments, nd4j::DataType dtype) {
     // not implemented yet
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     int numBlocks = getDeviceId(extraPointers[2]);
@@ -2376,8 +2365,7 @@ void NativeOps::execAggregateBatch(Nd4jPointer *extraPointers, int numAggregates
 
     dim3 launchDims = dim3(numAggregates, numThreads, shmem);
 
-	// this macro builds bunch of IF/ELSE selectors for kernel launch
-    DISPATCH_SIMPLE(aggregateBatchSimple, float, PARAMS(numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments), OPS_A(AGGREGATE_OPS))
+	BUILD_SINGLE_SELECTOR(dtype, functions::aggregate::AggregatedFunction, ::aggregateBatchKernelGeneric(launchDims, stream, opNum, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments), FLOAT_TYPES);
 
 	DEBUG_KERNEL(stream, opNum);
 }
