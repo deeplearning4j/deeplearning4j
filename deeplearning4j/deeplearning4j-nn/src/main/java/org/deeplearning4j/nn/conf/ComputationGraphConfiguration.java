@@ -268,6 +268,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.cacheMode = this.cacheMode;
         conf.defaultConfiguration.cacheMode = this.cacheMode;
         conf.legacyBatchScaledL2 = this.legacyBatchScaledL2;
+        conf.validateOutputLayerConfig = this.validateOutputLayerConfig;
 
         return conf;
     }
