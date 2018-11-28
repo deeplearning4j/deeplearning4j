@@ -1542,7 +1542,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType) {
-        return null;
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
