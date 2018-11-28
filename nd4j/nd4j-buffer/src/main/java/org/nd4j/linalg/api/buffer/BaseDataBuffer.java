@@ -743,6 +743,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer(); //new LongPointer(length());
             setIndexer(ShortIndexer.create((ShortPointer) pointer));
+        } else if (dataType() == DataType.BOOL) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asBoolPointer(); //new LongPointer(length());
+            setIndexer(BooleanIndexer.create((BooleanPointer) pointer));
         } else if (dataType() == DataType.UTF8) {
             attached = true;
             parentWorkspace = workspace;

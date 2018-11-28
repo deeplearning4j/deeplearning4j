@@ -284,7 +284,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             extraArgs,
                             null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                            (IntPointer) dimensionPointer, dimension.length, ((Variance) op).isBiasCorrected());
+                            (IntPointer) dimensionPointer, dimension.length, ((Variance) op).isBiasCorrected(),
+                            (LongPointer) devTadShapeInfo,
+                            (LongPointer) devTadOffsets);
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 }
@@ -993,7 +995,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
                                 (IntPointer) dimensionPointer,
                                 dimension.length,
-                                ((Variance) op).isBiasCorrected());
+                                ((Variance) op).isBiasCorrected(),
+                                (LongPointer) devTadShapeInfo,
+                                (LongPointer) devTadOffsets);
                 } else {
                     switch (op.getOpType()) {
                         case REDUCE_FLOAT:

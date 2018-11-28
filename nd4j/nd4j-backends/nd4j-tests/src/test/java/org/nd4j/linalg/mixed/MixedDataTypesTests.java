@@ -23,6 +23,11 @@ import org.junit.Test;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.IsInf;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.IsNaN;
@@ -33,6 +38,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -402,8 +408,29 @@ public class MixedDataTypesTests {
             System.out.println("RDIV: " + arr.rdiv(8));
             System.out.println("RSUB: " + arr.rsub(8));
         }
-
-
     }
 
+    @Test
+    public void testWorkspaceBool(){
+        val conf = WorkspaceConfiguration.builder().minSize(10 * 1024 * 1024)
+                .overallocationLimit(1.0).policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .policyLearning(LearningPolicy.FIRST_LOOP).policyMirroring(MirroringPolicy.FULL)
+                .policySpill(SpillPolicy.EXTERNAL).build();
+
+        val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
+
+        for( int i=0; i<10; i++ ) {
+            try (val workspace = (Nd4jWorkspace)ws.notifyScopeEntered() ) {
+                val bool = Nd4j.create(DataType.BOOL, 1, 10);
+                val dbl = Nd4j.create(DataType.DOUBLE, 1, 10);
+
+                val boolAttached = bool.isAttached();
+                val doubleAttached = dbl.isAttached();
+
+                System.out.println(i + "\tboolAttached=" + boolAttached + ", doubleAttached=" + doubleAttached );
+                //System.out.println("bool: " + bool);        //java.lang.IllegalStateException: Indexer must never be null
+                //System.out.println("double: " + dbl);
+            }
+        }
+    }
 }

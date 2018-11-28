@@ -1153,7 +1153,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                       Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
                                       IntPointer dimension,
                                       int dimensionLength,
-                                      @Cast("bool") boolean biasCorrected);
+                                      @Cast("bool") boolean biasCorrected,
+                                      @Cast("Nd4jLong*") LongPointer tadShapeInfo, @Cast("Nd4jLong*") LongPointer tadOffsets);
     public native void execSummaryStats(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                       int opNum,
                                       Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo,
@@ -1163,7 +1164,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                       Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
                                       IntBuffer dimension,
                                       int dimensionLength,
-                                      @Cast("bool") boolean biasCorrected);
+                                      @Cast("bool") boolean biasCorrected,
+                                      @Cast("Nd4jLong*") LongBuffer tadShapeInfo, @Cast("Nd4jLong*") LongBuffer tadOffsets);
     public native void execSummaryStats(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                       int opNum,
                                       Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo,
@@ -1173,7 +1175,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                       Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
                                       int[] dimension,
                                       int dimensionLength,
-                                      @Cast("bool") boolean biasCorrected);
+                                      @Cast("bool") boolean biasCorrected,
+                                      @Cast("Nd4jLong*") long[] tadShapeInfo, @Cast("Nd4jLong*") long[] tadOffsets);
 
     /**
      *

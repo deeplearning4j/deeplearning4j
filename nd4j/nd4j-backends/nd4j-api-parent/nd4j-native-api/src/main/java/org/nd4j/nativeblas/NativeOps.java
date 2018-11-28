@@ -507,7 +507,9 @@ public abstract class NativeOps extends Pointer {
                                           Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfoBuffer,
                                           IntPointer dimension,
                                           int dimensionLength,
-                                          boolean biasCorrected);
+                                          boolean biasCorrected,
+                                          @Cast("Nd4jLong *") LongPointer tadShapeInfo,
+                                          @Cast("Nd4jLong *") LongPointer tadOffsets);
 
 
     /**

@@ -108,8 +108,8 @@ public class PagedPointer extends Pointer {
         return new ShortPointer(this);
     }
 
-    public BoolPointer asBoolPointer() {
-        return new BoolPointer(this);
+    public BooleanPointer asBoolPointer() {
+        return new BooleanPointer(this);
     }
 
     @Override
