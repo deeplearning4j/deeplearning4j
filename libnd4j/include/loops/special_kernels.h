@@ -82,22 +82,6 @@ namespace nd4j {
 
     template<typename T>
     _CUDA_H void flattenKernelGeneric(dim3& launchDims, cudaStream_t *stream, Nd4jPointer *extraPointers, int dOffset, char order, void *vz, Nd4jLong *zShapeInfo, void *vy, Nd4jLong *yShapeInfo);
-
-
-
-// extern "C" __global__ void prepareDimensionalShapeBuffer(Nd4jLong *xShapeInfoBuffer, float *extraParams, Nd4jLong *zShapeInfo) {
-//     // extraParams[0] - number of dimensions
-//     // extraParams[1] - dimension
-//     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-//     if (tid > 0)
-//         return;
-
-//     int targetDimension = (int) extraParams[1];
-//     //printf("Target dimension: [%i]\n", targetDimension);
-
-//     int targetWidth = shape::shapeOf(xShapeInfoBuffer)[targetDimension];
-//     //printf("Target rank: [%i]\n", targetWidth);
-// }
 }
 
 #endif

@@ -430,7 +430,7 @@ public class RandomTests extends BaseNd4jTest {
 
         log.info("1: ----------------");
 
-        INDArray z0 = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(1000000), 0.0, 1.0));
+        INDArray z0 = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(DataType.DOUBLE, 1000000), 0.0, 1.0));
 
         assertEquals(0.0, z0.meanNumber().doubleValue(), 0.01);
         assertEquals(1.0, z0.stdNumber().doubleValue(), 0.01);
@@ -439,18 +439,17 @@ public class RandomTests extends BaseNd4jTest {
 
         log.info("2: ----------------");
 
-        INDArray z2 = Nd4j.zeros(55000000);
-        INDArray z1 = Nd4j.zeros(55000000);
+        INDArray z1 = Nd4j.zeros(DataType.DOUBLE, 55000000);
+        INDArray z2 = Nd4j.zeros(DataType.DOUBLE, 55000000);
 
         GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
         Nd4j.getExecutioner().exec(op1, random1);
-
 
         log.info("2: ----------------");
 
         //log.info("End: [{}, {}, {}, {}]", z1.getFloat(29000000), z1.getFloat(29000001), z1.getFloat(29000002), z1.getFloat(29000003));
 
-        log.info("Sum: {}", z1.sumNumber().doubleValue());
+        //log.info("Sum: {}", z1.sumNumber().doubleValue());
         log.info("Sum2: {}", z2.sumNumber().doubleValue());
 
 
@@ -468,10 +467,19 @@ public class RandomTests extends BaseNd4jTest {
         }
         */
 
-        assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
+        assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
     }
 
+    @Test
+    public void testSum_119() {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        INDArray z2 = Nd4j.zeros(DataType.DOUBLE, 55000000);
+        val sum = z2.sumNumber().doubleValue();
+        log.info("Sum2: {}", sum);
+        assertEquals(0.0, sum, 1e-5);
+    }
 
     @Test
     public void testLegacyDistribution1() throws Exception {

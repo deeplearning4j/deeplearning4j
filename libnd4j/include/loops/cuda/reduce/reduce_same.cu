@@ -258,7 +258,6 @@ __device__ void ReduceSameFunction<X>::execScalarCuda(void *vx, Nd4jLong *xShape
         __syncthreads();
 
         if (amLast) {
-            
             tc[16384] = 0;
             sPartials[threadIdx.x] = OpType::startingValue(x);
 
@@ -277,7 +276,7 @@ __device__ void ReduceSameFunction<X>::execScalarCuda(void *vx, Nd4jLong *xShape
     else {
         
         if (threadIdx.x == 0) {
-            unsigned int *tc = (unsigned *)reductionBuffer;
+            auto tc = reinterpret_cast<unsigned int *>(reductionBuffer);
             tc[16384] = 0;
             z[0] = OpType::postProcess(sPartials[0], len, extraParams);
         }
@@ -296,7 +295,6 @@ __host__ void ReduceSameFunction<X>::intermediateXD(dim3 launchDims, cudaStream_
 template <typename X>
 template<typename OpType>
 __host__ void ReduceSameFunction<X>::intermediateScalar(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
-
     simpleScalar<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
 }
 

@@ -1969,7 +1969,7 @@ NDArray NDArray::transp() const {
         this->permutei(perm);
     }
 
-    bool NDArray::equalsTo(NDArray &other, double eps) const {
+    bool NDArray::equalsTo(const NDArray &other, double eps) const {
         return equalsTo(&other, eps);
     }
 
