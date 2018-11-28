@@ -445,7 +445,8 @@ public:
                                   void *dZ, Nd4jLong *dZShapeInfo,
                                   int *dimension,
                                   int dimensionLength,
-                                  bool biasCorrected);
+                                  bool biasCorrected,
+                                  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
     /**
      *

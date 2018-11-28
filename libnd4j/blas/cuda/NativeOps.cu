@@ -669,13 +669,14 @@ void NativeOps::execSummaryStatsScalar(Nd4jPointer *extraPointers,
                                        bool biasCorrected) {
 	
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-    dim3 launchDims = dim3(256, 512, 16384);
+    dim3 launchDims = dim3(256, 512, 32768);
 
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, reductionPointer), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 void   NativeOps::execBroadcastBool(
@@ -2075,13 +2076,13 @@ void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
                                  bool biasCorrected) {
     auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 512, 16384);
+    dim3 launchDims = dim3(256, 512, 32768);
 
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-	if (!DataTypeUtils::isR(zType))
-		throw std::runtime_error("NativeOps::execSummaryStats requires Z operand to be one of float types!");
+    if (!DataTypeUtils::isR(zType))
+        throw nd4j::datatype_exception::build("NativeOps::execReduce3 requires Z operand to have floating point data type", zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 }
@@ -2095,19 +2096,21 @@ void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
                                  void *dZ, Nd4jLong *dZShapeInfo,
                                  int *dimension,
                                  int dimensionLength,
-                                 bool biasCorrected) {
+                                 bool biasCorrected,
+								 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+	auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
     dim3 launchDims = dim3(256, 512, 32768);
 
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-	if (!DataTypeUtils::isR(zType))
-		throw std::runtime_error("NativeOps::execSummaryStats requires Z operand to be one of float types!");
+    if (!DataTypeUtils::isR(zType))
+        throw nd4j::datatype_exception::build("NativeOps::execReduce3 requires Z operand to have floating point data type", zType);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, dimension, dimensionLength, nullptr, nullptr, biasCorrected, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, biasCorrected, reductionPointer), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 void NativeOps::execReduce3(Nd4jPointer *extraPointers,

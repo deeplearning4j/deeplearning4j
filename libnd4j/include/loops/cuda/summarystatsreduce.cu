@@ -395,7 +395,7 @@ namespace functions {
 
 
         template <typename X, typename Z>
-        _CUDA_H Z SummaryStatsReduce<X,Z>::execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
+        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
             
             auto x = static_cast<X*>(vx);
             auto extraParams = static_cast<Z*>(vextraParams);                                        
@@ -417,9 +417,7 @@ namespace functions {
                             1,biasCorrected, nullptr, reductionPointerA, tadShapeInfo, tadOffsets);
 
             // this is blocking method since method should return scalar
-            nd4j::DebugHelper::checkErrorCode(stream, "execSSReduceScalarDouble(...) failed");
-
-            return *z;
+            nd4j::DebugHelper::checkErrorCode(stream, "execSSReduceScalar(...) failed");
         }
 
         template <typename X, typename Z>
