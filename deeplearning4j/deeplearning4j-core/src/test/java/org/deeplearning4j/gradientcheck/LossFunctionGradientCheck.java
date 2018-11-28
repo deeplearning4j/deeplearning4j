@@ -510,7 +510,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 ret[1] = Nd4j.rand(new long[] {labelsShape[0], labelWidth});
                 break;
             case "LossMultiLabel":
-                ret[1] = Nd4j.rand(labelsShape).lt(0.3);
+                ret[1] = Nd4j.rand(labelsShape).lt(0.3).castTo(Nd4j.defaultFloatintPointType());
                 // ensure that there is no example that is all ones or all zeros
                 final INDArray sum = ret[1].sum(0);
                 for (int i = 0; i < labelsShape[0]; i++) {
