@@ -1302,6 +1302,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray cumsumi(int dimension) {
 
+        if(isScalar())
+            return this;
+
         if (isVector()) {
             double s = 0.0;
             for (int i = 0; i < length(); i++) {

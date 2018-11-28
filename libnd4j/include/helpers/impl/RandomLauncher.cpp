@@ -119,7 +119,7 @@ namespace nd4j {
         auto extra = NDArrayFactory::create(array->dataType(), {2}, {mean, stdev});
         auto extraPtr = extra.getBufferAsPointer(array->dataType());
 
-        NativeOpExcutioner::execRandom(random::GaussianDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), extraPtr);
+        NativeOpExcutioner::execRandom(random::TruncatedNormalDistribution, &rng, array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), array->buffer(), array->shapeInfo(), extraPtr);
 
         delete[] (reinterpret_cast<int8_t *>(extraPtr));
     }
