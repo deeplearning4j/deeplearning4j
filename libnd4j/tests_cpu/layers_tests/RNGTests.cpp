@@ -378,14 +378,31 @@ TEST_F(RNGTests, Test_Truncated_2) {
     ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.002);
 }
 
-TEST_F(RNGTests, Test_Truncated_3) {
-    auto x0 = NDArrayFactory::create<float>('c', {10000, 1000});
-    auto x1 = NDArrayFactory::create<float>('c', {10000, 1000});
+TEST_F(RNGTests, Test_Truncated_21) {
+    auto x0 = NDArrayFactory::create<float>('c', {1000, 1000});
+    auto x1 = NDArrayFactory::create<float>('c', {1000, 1000});
 
-    RandomLauncher::fillTruncatedNormal(_rngA, &x0, 1.0f, 2.0f);
-    RandomLauncher::fillTruncatedNormal(_rngB, &x1, 1.0f, 2.0f);
+    RandomLauncher::fillGaussian(_rngA, &x0, 1.0f, 2.0f);
+    RandomLauncher::fillGaussian(_rngB, &x1, 1.0f, 2.0f);
 
     ASSERT_TRUE(x0.equalsTo(&x1));
+    float topBound = 1.f + 2 * 2.0f;
+    float bottom = 1.f - 2 * 2.0f;
+    for (Nd4jLong e = 0; e < x0.lengthOf(); ++e) {
+        if (x0.e<float>(e) < bottom || x0.e<float>(e) > topBound) {
+            x0.p(e, 1.f);
+        }
+        if (x1.e<float>(e) < bottom || x1.e<float>(e) > topBound) {
+            x1.p(e, (e > 0?x1.e<float>(e-1):1.f));
+        }
+
+    }
+    auto mean0 = x0.reduceNumber(reduce::Mean);
+    mean0.printIndexedBuffer("0Mean 1.0");
+    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
+
+    auto deviation0 = x0.varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    deviation0.printIndexedBuffer("0Deviation should be 2.0");
 
     //ASSERT_FALSE(x0.equalsTo(nexp0));
     //ASSERT_FALSE(x0.equalsTo(nexp1));
@@ -400,10 +417,37 @@ TEST_F(RNGTests, Test_Truncated_3) {
     //deviation /= (double)x1.lengthOf();
     deviation.printIndexedBuffer("Deviation should be 2.0");
     //x1.printIndexedBuffer("Distribution TN");
+    ASSERT_NEAR(mean.e<float>(0), 1.f, 0.002);
+    ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.5);
+}
+
+/*
+TEST_F(RNGTests, Test_Truncated_3) {
+    auto x0 = NDArrayFactory::create<float>('c', {10000, 1000});
+    auto x1 = NDArrayFactory::create<float>('c', {10000, 1000});
+
+    RandomLauncher::fillTruncatedNormal(_rngA, &x0, 1.0f, 2.0f);
+    RandomLauncher::fillTruncatedNormal(_rngB, &x1, 1.0f, 2.0f);
+
+    ASSERT_TRUE(x0.equalsTo(&x1));
+
+    //ASSERT_FALSE(x0.equalsTo(nexp0));
+    //ASSERT_FALSE(x0.equalsTo(nexp1));
+    //ASSERT_FALSE(x0.equalsTo(nexp2));
+
+    // Check up distribution
+    auto mean = x1.reduceNumber(reduce::Mean);
+    mean.printIndexedBuffer("Mean 1.0");
+    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
+
+    auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    //deviation /= (double)x1.lengthOf();
+    deviation.printIndexedBuffer("Deviation should be 2.0");
+    //x1.printIndexedBuffer("Distribution TN");
     ASSERT_NEAR(mean.e<float>(0), 1.f, 0.001);
     ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.001);
 }
-
+*/
 TEST_F(RNGTests, Test_Binomial_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
