@@ -362,6 +362,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     @Override
     public void eval(INDArray realOutcomes, final INDArray guesses,
                      final List<? extends Serializable> recordMetaData) {
+        Preconditions.checkArgument(realOutcomes.rank() == 2, "Expected rank 2 labels for evaluation." +
+                " Got labels array with shape %ndShape. For time series, use evalTimeSeries", realOutcomes);
+        Preconditions.checkArgument(guesses.rank() == 2, "Expected rank 2 network predictions for evaluation." +
+                " Got predictions array with shape %ndShape. For time series, use evalTimeSeries", guesses);
+
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.size(0);
 

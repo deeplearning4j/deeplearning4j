@@ -676,24 +676,10 @@ public class KerasModelEndToEndTest {
                 compareINDArrays("predictions", predictionsKeras, predictionsDl4j, EPS);
                 INDArray outputs = getOutputs(outputsArchive, true)[0];
 
-                if (outputs.shape()[0] == 1) {
-                    outputs = outputs.reshape(outputs.shape()[1], outputs.shape()[0]);
+                if(outputs.rank() == 1){
+                    outputs = outputs.reshape(outputs.length(), 1);
                 }
-                val nOut = (int) outputs.shape()[outputs.shape().length - 1];
-
-
-                if (predictionsDl4j.shape().length == 2 && predictionsDl4j.size(1) == 1) {
-                    predictionsDl4j = predictionsDl4j.reshape(predictionsDl4j.shape()[0]);
-                    predictionsKeras = predictionsKeras.reshape(predictionsKeras.shape()[0]);
-                    outputs = outputs.reshape(outputs.shape()[0]);
-
-                }
-
-                if (predictionsDl4j.shape().length == 2) {
-                    predictionsDl4j = predictionsDl4j.reshape(predictionsDl4j.shape()[1], predictionsDl4j.shape()[0]);
-                    predictionsKeras = predictionsKeras.reshape(predictionsKeras.shape()[1], predictionsKeras.shape()[0]);
-                    outputs = outputs.reshape(outputs.shape()[1], outputs.shape()[0]);
-                }
+                val nOut = (int) outputs.size(-1);
 
                 compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, nOut, EPS);
             }
