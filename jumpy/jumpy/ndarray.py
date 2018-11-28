@@ -277,7 +277,7 @@ class ndarray(object):
     def __init__(self, data, dtype=None):
         # we ignore dtype for now
         typ = type(data)
-        if typ is INDArray:
+        if 'nd4j' in typ.__name__:
             # Note that we don't make a copy here
             self.array = data
         elif typ is ndarray:
