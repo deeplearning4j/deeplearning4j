@@ -18,6 +18,7 @@ package org.nd4j.linalg.shape;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,6 +33,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**
  * @author raver119@gmail.com
@@ -128,7 +131,34 @@ public class TADTests extends BaseNd4jTest {
                         + javaFTad.shapeInfoDataBuffer());
         log.info("Got TADShapeC: {}", Arrays.toString(tadBuffersC.getFirst().asInt()) + " with java "
                         + javaCTad.shapeInfoDataBuffer());
+    }
 
+    @Test
+    public void testTADEWSStride(){
+        INDArray orig = Nd4j.linspace(1, 600, 600).reshape('f', 10, 1, 60);
+
+        for( int i=0; i<60; i++ ){
+            INDArray tad = orig.tensorAlongDimension(i, 0, 1);
+            //TAD: should be equivalent to get(all, all, point(i))
+            INDArray get = orig.get(all(), all(), point(i));
+
+            String str = String.valueOf(i);
+            assertEquals(str, get, tad);
+            assertEquals(str, get.data().offset(), tad.data().offset());
+            assertEquals(str, get.elementWiseStride(), tad.elementWiseStride());
+
+            char orderTad = Shape.getOrder(tad.shape(), tad.stride(), 1);
+            char orderGet = Shape.getOrder(get.shape(), get.stride(), 1);
+
+            assertEquals('f', orderTad);
+            assertEquals('f', orderGet);
+
+            long ewsTad = Shape.elementWiseStride(tad.shape(), tad.stride(), tad.ordering() == 'f');
+            long ewsGet = Shape.elementWiseStride(get.shape(), get.stride(), get.ordering() == 'f');
+
+            assertEquals(1, ewsTad);
+            assertEquals(1, ewsGet);
+        }
     }
 
     @Override
