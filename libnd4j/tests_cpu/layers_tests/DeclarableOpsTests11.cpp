@@ -510,3 +510,413 @@ TEST_F(DeclarableOpsTests11, summaryStatsData_test1) {
     delete []arr;
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test1) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    
+    NDArray dLdpExp('c', {2,3,4}, {-0.96, -1.92, -2.88, -3.84, -4.8 , -5.76, -6.72, -7.68, -8.64, -9.6 ,-10.56,-11.52,
+                                   -12.48,-13.44,-14.4 ,-15.36,-16.32,-17.28,-18.24,-19.2 ,-20.16,-21.12,-22.08,-23.04});
+    NDArray dLdwExp('c', {2,3,4}, {0.9216 ,  3.6864 ,  8.2944 , 14.7456 , 23.04   , 33.1776 , 45.1584 , 58.9824 , 74.6496 , 92.16   ,111.51361,132.7104 ,
+                                   155.75038,180.63359,207.35999,235.9296 ,266.34238,298.59842,332.6976 ,368.64001,406.4256 ,446.05444,487.5264 ,530.84161});
+
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);    
+
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto dLdp = results->at(0);       
+    auto dLdw = results->at(1);
+    auto dLdl = results->at(2);
+
+    ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
+    ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+    ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
+    ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
+
+    delete results;
+}
+ 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test2) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {2,1,4}, nd4j::DataType::DOUBLE);
+    
+    NDArray dLdwExp('c', {2,1,4}, {98.61121,129.024  , 164.9664 , 206.4384 , 828.51837,925.28644,1027.58398,1135.41113});
+
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);    
+
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdw = results->at(1);
+    
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test3) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights(nd4j::DataType::DOUBLE);
+    
+    NDArray dLdpExp('c', {2,3,4}, {-0.96, -1.92, -2.88, -3.84, -4.8 , -5.76, -6.72, -7.68, -8.64, -9.6 ,-10.56,-11.52,
+                                   -12.48,-13.44,-14.4 ,-15.36,-16.32,-17.28,-18.24,-19.2 ,-20.16,-21.12,-22.08,-23.04});
+    NDArray dLdwExp('c', {0}, {4515.84});
+    
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);    
+
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdp = results->at(0);       
+    auto *dLdw = results->at(1);
+    auto *dLdl = results->at(2);
+
+    ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
+    ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+    ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
+    ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test4) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
+    
+    NDArray dLdwExp('c', {1,3,1}, {807.32153, 1426.63684, 2281.88159});
+
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);    
+
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+        
+    auto *dLdw = results->at(1);
+
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test5) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    
+    NDArray dLdpExp('c', {2,3,4}, {-0.08,-0.16,-0.24,-0.32,-0.4 ,-0.48,-0.56,-0.64,-0.72,-0.8 ,-0.88,-0.96,
+                                   -1.04,-1.12,-1.2 ,-1.28,-1.36,-1.44,-1.52,-1.6 ,-1.68,-1.76,-1.84,-1.92});
+    NDArray dLdwExp('c', {2,3,4}, {-15.6032,-15.3728,-14.9888,-14.4512,-13.76  ,-12.9152,-11.9168,-10.7648, -9.4592, -8.    , -6.3872, -4.6208,
+                                   -2.7008, -0.6272,  1.6   ,  3.9808,  6.5152,  9.2032, 12.0448, 15.04  , 18.1888, 21.4912, 24.9472, 28.5568});
+
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);    
+
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdp = results->at(0);       
+    auto *dLdw = results->at(1);
+    auto *dLdl = results->at(2);
+
+    ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
+    ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+    ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
+    ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test6) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
+        
+    NDArray dLdwExp('c', {1,3,1}, {-58.16319, -6.5536 , 64.71682});
+    
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);    
+
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdw = results->at(1);
+    
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test7) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights(nd4j::DataType::DOUBLE);
+        
+    NDArray dLdwExp('c', {0}, {0.});
+    
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);    
+
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdw = results->at(1);
+    
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+
+    delete results;
+}
+ 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test8) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    
+    NDArray dLdpExp('c', {2,3,4}, {0. ,0. ,0. ,0. ,-0.48 ,-0.576,-0.672,-0.768,-0.864,-0.96 ,-1.056,-1.152,
+                                 -1.248,-1.344,-1.44 ,-1.536,-1.632,-1.728,-1.824,-1.92 ,-2.016,-2.112,-2.208,-2.304});
+    NDArray dLdwExp('c', {2,3,4}, {-22.3488 ,-22.07232,-21.61152,-20.9664 ,-20.13696,-19.1232 ,-17.92512,-16.54272,-14.976  ,-13.22496,-11.2896 , -9.16992,
+                                   -6.86592, -4.3776 , -1.70496,  1.152  ,  4.19328,  7.41888, 10.8288 , 14.42304, 18.2016 , 22.16449, 26.31168, 30.6432 });
+
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);
+    weights.p(0, 0.);
+    weights.p(1, 0.);
+    weights.p(2, 0.);
+    weights.p(3, 0.);
+
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdp = results->at(0);       
+    auto *dLdw = results->at(1);
+    auto *dLdl = results->at(2);
+
+    ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
+    ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+    ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
+    ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test9) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    
+    NDArray dLdpExp('c', {2,3,4}, {-0.04,-0.08,-0.12,-0.16,-0.2 ,-0.24,-0.28,-0.32,-0.36,-0.4 ,-0.44,-0.48,
+                                   -0.52,-0.56,-0.6 ,-0.64,-0.68,-0.72,-0.76,-0.8 ,-0.84,-0.88,-0.92,-0.96});
+    NDArray dLdwExp('c', {2,3,4}, {0.0384, 0.1536, 0.3456, 0.6144, 0.96  , 1.3824, 1.8816, 2.4576, 3.1104, 3.84  , 4.6464, 5.5296,
+                                    6.4896, 7.5264, 8.64  , 9.8304,11.0976,12.4416,13.8624,15.36  ,16.9344,18.5856,20.3136,22.1184});
+
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);
+    
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdp = results->at(0);       
+    auto *dLdw = results->at(1);
+    auto *dLdl = results->at(2);
+
+    ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
+    ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+    ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
+    ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test10) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {1,1}, nd4j::DataType::DOUBLE);
+
+    NDArray dLdwExp('c', {1,1}, {188.16});
+
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);
+
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+        
+    auto *dLdw = results->at(1);    
+
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test11) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
+
+    NDArray dLdwExp('c', {1,3,1}, {33.6384 ,59.4432 ,95.07841});
+
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);
+
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+        
+    auto *dLdw = results->at(1);    
+
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test12) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    
+    NDArray dLdpExp('c', {2,3,4}, {0.,0.,0.,0., -0.24 ,-0.288,-0.336,-0.384,-0.432,-0.48 ,-0.528,-0.576,
+                                  -0.624,-0.672,-0.72 ,-0.768,-0.816,-0.864,-0.912,-0.96 ,-1.008,-1.056,-1.104,-1.152});
+    NDArray dLdwExp('c', {2,3,4}, {0.04608, 0.18432, 0.41472, 0.73728, 1.152  , 1.65888, 2.25792, 2.94912, 3.73248, 4.608  , 5.57568, 6.63552,
+                                   7.78752, 9.03168,10.368  ,11.79648,13.31712,14.92992,16.63488,18.432  ,20.32128,22.30272,24.37632,26.54208});
+
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);
+    weights.t<double>(0) = 0.;
+    weights.t<double>(1) = 0.;
+    weights.t<double>(2) = 0.;
+    weights.t<double>(3) = 0.;
+    
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdp = results->at(0);       
+    auto *dLdw = results->at(1);
+    auto *dLdl = results->at(2);    
+
+    ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
+    ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+    ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
+    ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test13) {
+    
+    NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {2,3,1}, nd4j::DataType::DOUBLE);
+    
+    NDArray dLdpExp('c', {2,3,4}, {0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                                  -1.04,-1.12,-1.2 ,-1.28,-1.36,-1.44,-1.52,-1.6 ,-1.68,-1.76,-1.84,-1.92});
+    NDArray dLdwExp('c', {2,3,1}, {2.304  , 13.3632 , 34.2528 , 64.97279,105.5232 ,155.90401});
+
+    predictions.linspace(0.04, 0.04);
+    labels.linspace(1);
+    weights.assign(0.5);
+    weights.t<double>(0) = 0.;
+    weights.t<double>(1) = 0.;
+    weights.t<double>(2) = 0.;    
+    
+    nd4j::ops::mean_sqerr_loss_grad op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdp = results->at(0);       
+    auto *dLdw = results->at(1);
+    auto *dLdl = results->at(2);    
+
+    ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
+    ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
+    ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
+    ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
+    ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
+
+    delete results;
+}
+

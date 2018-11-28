@@ -739,7 +739,7 @@ namespace nd4j {
         *  eps - epsilon, this value defines the precision of elements comparison
         */
         bool equalsTo(const NDArray *other, double eps = 1e-5) const;
-        bool equalsTo(NDArray &other, double eps = 1e-5) const;
+        bool equalsTo(const NDArray &other, double eps = 1e-5) const;
         
         /**
         *  add given row vector to all rows of this array
@@ -1205,7 +1205,7 @@ namespace nd4j {
 
         // returns true if arrays have same shape
         FORCEINLINE bool isSameShape(const NDArray *other) const;
-        FORCEINLINE bool isSameShape(NDArray &other) const;
+        FORCEINLINE bool isSameShape(const NDArray &other) const;
         FORCEINLINE bool isSameShape(const std::initializer_list<Nd4jLong>& shape) const;
         FORCEINLINE bool isSameShape(const std::vector<Nd4jLong>& shape) const;
         FORCEINLINE bool areSameShapeAndType(const NDArray& other) const;
@@ -1826,7 +1826,7 @@ bool NDArray::isSameShape(const NDArray *other) const {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::isSameShape(NDArray &other) const {
+bool NDArray::isSameShape(const NDArray &other) const {
     return isSameShape(&other);
 }
 
