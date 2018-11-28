@@ -1398,7 +1398,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number sumNumber() {
-        return sum(Integer.MAX_VALUE).getDouble(0);
+        val scalar = sum(Integer.MAX_VALUE);
+        Nd4j.getExecutioner().commit();
+        return scalar.getDouble(0);
     }
 
     /**

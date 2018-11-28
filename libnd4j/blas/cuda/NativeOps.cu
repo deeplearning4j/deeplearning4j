@@ -807,7 +807,7 @@ void NativeOps::execReduceFloat(Nd4jPointer *extraPointers,
         throw std::runtime_error("NativeOps::execReduceFloat requires Z operand to have floating point type");
 
     auto xLength = shape::length(hXShapeInfo);
-    auto blockWidth = 512;
+    auto blockWidth = 256;
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks, blockWidth, 32768);
 
@@ -829,7 +829,7 @@ void   NativeOps::execReduceSame(Nd4jPointer *extraPointers,
 	auto dTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        printf("SF7 opNum:[%i]\n", opNum);
+        printf("SF8 opNum:[%i]\n", opNum);
 
     auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
@@ -837,10 +837,10 @@ void   NativeOps::execReduceSame(Nd4jPointer *extraPointers,
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     if (zType != xType)
-        throw std::runtime_error("NativeOps::execReduceSame requires both X & Z operands to have same type");
+        throw datatype_exception::build("NativeOps::execReduceSame requires both X & Z operands to have same type", xType, zType);
 
     auto xLength = shape::length(hXShapeInfo);
-    auto blockWidth = 512;
+    auto blockWidth = 256;
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks, blockWidth, 32768);
 
@@ -870,13 +870,15 @@ void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+    auto xRank = shape::rank(hXShapeInfo);
 
     if (zType != xType)
-        throw std::runtime_error("NativeOps::execReduceSame requires both X & Z operands to have same type");
+        throw datatype_exception::build("NativeOps::execReduceSame requires both X & Z operands to have same type", xType, zType);
 
-    dim3 launchDims(256, 512, 32768);
+    auto numBlocks = shape::length(hZShapeInfo);
+    dim3 launchDims(numBlocks, 256, 32768);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceSame(...) failed");
 }
@@ -907,9 +909,11 @@ void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
     if (zType != nd4j::DataType::INT64)
         throw datatype_exception::build("NativeOps::execReduceLong wrong Z data type", nd4j::DataType::INT64, zType);
 
-    dim3 launchDims(256, 512, 32768);
+    auto xRank = shape::rank(hXShapeInfo);
+    auto numBlocks = shape::length(hZShapeInfo);
+    dim3 launchDims(numBlocks, 256, 32768);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, LONG_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES, LONG_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceLong(...) failed");
 
@@ -940,7 +944,7 @@ void   NativeOps::execReduceLong(Nd4jPointer *extraPointers,
         throw datatype_exception::build("NativeOps::execReduceLong wrong Z data type", nd4j::DataType::INT64, zType);
 
     auto xLength = shape::length(hXShapeInfo);
-    auto blockWidth = 512;
+    auto blockWidth = 256;
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks, blockWidth, 32768);
 
@@ -962,6 +966,7 @@ void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 	auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
 	auto dTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+    auto dTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
         printf("BF7 opNum:[%i]\n", opNum);
@@ -974,9 +979,11 @@ void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
     if (zType != nd4j::DataType::BOOL)
         throw std::runtime_error("NativeOps::execReduceBool requires Z operand to have BOOL type");
 
-    dim3 launchDims(256, 512, 32768);
+    auto xRank = shape::rank(hXShapeInfo);
+    auto numBlocks = shape::length(hZShapeInfo);
+    dim3 launchDims(numBlocks, 256, 32768);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES, BOOL_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execReduceBool(...) failed");
 }
@@ -1006,7 +1013,7 @@ void   NativeOps::execReduceBool(Nd4jPointer *extraPointers,
         throw std::runtime_error("NativeOps::execReduceBool requires Z operand to have BOOL type");
 
     auto xLength = shape::length(hXShapeInfo);
-    auto blockWidth = 512;
+    auto blockWidth = 256;
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks, blockWidth, 32768);
 
@@ -1091,9 +1098,11 @@ void   NativeOps::execReduceFloat(
 	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(dZShapeInfo);
 
+    auto xRank = shape::rank(hXShapeInfo);
+    auto numBlocks = shape::length(hZShapeInfo);
+    dim3 launchDims(numBlocks, 256, 32768);
 
-    dim3 launchDims(256, 512, 16384);
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceXD(launchDims, stream, opNum, shape::rank(hTADShapeInfo), dX,dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX,dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 /**
@@ -2385,6 +2394,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers,
     Nd4jPointer stateDevice;
 
     cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
     checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
     dim3 launchDims = dim3(512, 512, 32768);
@@ -2411,6 +2421,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
     Nd4jPointer stateDevice;
 
     cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
     checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
     dim3 launchDims = dim3(512, 512, 32768);
@@ -2437,6 +2448,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
     Nd4jPointer stateDevice;
 
     cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
     checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
     dim3 launchDims = dim3(512, 512, 32768);

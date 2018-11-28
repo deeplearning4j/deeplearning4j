@@ -35,6 +35,7 @@ namespace nd4j {
         if (xLength % blockSize != 0 && xLength > blockSize)
             can++;
 
-        return can;
+        // not more then 512 blocks
+        return nd4j::math::nd4j_min<int>(can, 512);
     }
 }
