@@ -279,6 +279,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             ((Variance) op).isBiasCorrected());
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+                    op.setFinalResult(op.z().getDouble(0));
                 } else {
                     nativeOps.execSummaryStats(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,

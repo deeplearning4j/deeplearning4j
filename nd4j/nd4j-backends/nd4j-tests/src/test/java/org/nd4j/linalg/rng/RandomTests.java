@@ -341,6 +341,8 @@ public class RandomTests extends BaseNd4jTest {
         GaussianDistribution op4 = new GaussianDistribution(z4, 0.0, 1.0);
         Nd4j.getExecutioner().exec(op4, random4);
 
+        Nd4j.getExecutioner().commit();
+
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
         assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
 

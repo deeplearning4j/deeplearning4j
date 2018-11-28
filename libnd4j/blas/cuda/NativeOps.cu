@@ -671,7 +671,7 @@ void NativeOps::execSummaryStatsScalar(Nd4jPointer *extraPointers,
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-    dim3 launchDims = dim3(256, 512, 32768);
+    dim3 launchDims = dim3(256, 256, 32768);
 
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -2076,7 +2076,7 @@ void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
                                  bool biasCorrected) {
     auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims = dim3(256, 512, 32768);
+    dim3 launchDims = dim3(256, 256, 32768);
 
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -2102,7 +2102,7 @@ void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 	auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-    dim3 launchDims = dim3(256, 512, 32768);
+    dim3 launchDims = dim3(256, 256, 32768);
 
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
