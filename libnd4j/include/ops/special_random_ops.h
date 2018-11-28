@@ -357,7 +357,7 @@ namespace randomOps {
             auto yEWS = shape::elementWiseStride(yShapeBuffer);
             auto zEWS = shape::elementWiseStride(zShapeBuffer);
 
-            auto middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
+            auto middle = zLength % 2  + zLength / 2;
 
             int elementsPerThread = middle / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
@@ -648,6 +648,27 @@ namespace randomOps {
     // This Op produces random Gaussian values within [mean-2*stddev,mean+2*stddev]
     template<typename T>
     class TruncatedNormalDistribution {
+    private:
+        static T step(nd4j::graph::RandomGenerator* rng, T mean, T stddev, Nd4jLong e, Nd4jLong middle, T& z) {
+            auto epm = e + middle;
+            const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
+            const T epsilon = static_cast<T>(1.e-5f);
+            // we need to get random values
+            T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+            T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
+
+            T realMean0 = mean;
+
+            auto z0 =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
+            z = z0;
+            if (epm < middle) {
+                T realMean1 = mean;
+                auto z1 = (nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(r0)) *
+                           nd4j::math::nd4j_sin<T, T>(two_pi * r1)) * stddev + realMean1;
+                z = z1;
+            }
+            return z;
+        }
     public:
 
         method_XY
@@ -655,7 +676,6 @@ namespace randomOps {
         method_idx
 
         static const bool requiresSpecial = true;
-
 
 #ifdef __CUDACC__
         __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
@@ -750,6 +770,29 @@ namespace randomOps {
 
         static inline void
         specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+            GaussianDistribution<T>::specialOp(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
+            Nd4jLong zLength = shape::length(zShapeBuffer);
+            //auto yEWS = shape::elementWiseStride(yShapeBuffer);
+            //auto zEWS = shape::elementWiseStride(zShapeBuffer);
+            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+            T mean = extraArguments[0];
+            T stddev = extraArguments[1];
+            T ds = nd4j::math::nd4j_abs<T>(stddev) * (T) 2.0f;
+            Nd4jLong middle = zLength / 2 + (zLength % 2);
+            int elementsPerThread = middle / TAD_THRESHOLD;
+            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+
+            const T epsilon = static_cast<T>(1e-5);
+
+#pragma omp parallel for num_threads(_threads) if (_threads > 1) proc_bind(spread)
+            for (Nd4jLong e = 0; e < zLength; ++e) {
+                if (z[e] > mean + ds)
+                    z[e] = step(rng, mean, stddev, e, middle, z[e]);// = e > 0 ? z[e - 1] : mean; // + stddev;
+                else if (z[e] < mean - ds)
+                    z[e] = step(rng, mean, stddev, e, middle, z[e]); //z[e] = e > 0? z[e - 1]: mean;
+            }
+            /*
             const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
             Nd4jLong zLength = shape::length(zShapeBuffer);
@@ -789,16 +832,16 @@ namespace randomOps {
 
                 for (Nd4jLong e = start; e < end; e++) {
                    
-                    /*
-                    * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
-                    */
+                    //
+                    // Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
+                    ///
                     Nd4jLong generation0 = 0;
                     auto epm = e + middle;
                     T realMean0 = y == z ? mean : y[e * yEWS];
                     T realMean1 = y == z ? mean : y[epm * yEWS];
                     T aRealMean0 = nd4j::math::nd4j_abs<T>(realMean0);
                     T aRealMean1 = nd4j::math::nd4j_abs<T>(realMean1);
-                    do
+//                    do
                     {
                         u0 = rng->relativeT<T>(e + generation0, static_cast<T>(1e-6f), static_cast<T>(1.0f));
                         u1 = rng->relativeT<T>((epm + generation0), static_cast<T>(1e-6f), static_cast<T>(1.0f));
@@ -811,9 +854,9 @@ namespace randomOps {
                         result1 = z1 * stddev + realMean1;
                         generation0 += zLength;
                     }
-                    while (aRealMean0 + nd4j::math::nd4j_abs<T>(result0) > ds || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds);
-//                        result0 = mean;
-//                    }
+                    if (aRealMean0 + nd4j::math::nd4j_abs<T>(result0) > ds || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds) {
+                        result0 = mean;
+                    }
                     z[e*zEWS] = result0;
                     if(epm < zLength)
                         z[epm * zEWS] = result1;
@@ -821,7 +864,7 @@ namespace randomOps {
             }
             // update rng state
             rng->rewindH(zLength);
-
+*/
         }
     };
 
