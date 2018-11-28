@@ -233,6 +233,7 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E array divided by number of non-zero weights			
+		
 			Nd4jLong numOfNonZeroWeights = 0;
 			if(weights->isScalar()) {
 				if(weights->e<double>(0) != 0.)
