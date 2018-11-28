@@ -537,4 +537,72 @@ public class EvalTest extends BaseDL4JTest {
 
         cg.evaluate(new SingletonMultiDataSetIterator(mds), m);
     }
+
+    @Test
+    public void testInvalidEvaluation(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .list()
+                .layer(new DenseLayer.Builder().nIn(4).nOut(10).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(3).lossFunction(LossFunctions.LossFunction.MSE).activation(Activation.RELU).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        try {
+            net.evaluate(iter);
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage().contains("Classifier") && e.getMessage().contains("Evaluation"));
+        }
+
+        try {
+            net.evaluateROC(iter);
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage().contains("Classifier") && e.getMessage().contains("ROC"));
+        }
+
+        try {
+            net.evaluateROCMultiClass(iter);
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage().contains("Classifier") && e.getMessage().contains("ROCMultiClass"));
+        }
+
+        ComputationGraph cg = net.toComputationGraph();
+        try {
+            cg.evaluate(iter);
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage().contains("Classifier") && e.getMessage().contains("Evaluation"));
+        }
+
+        try {
+            cg.evaluateROC(iter);
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage().contains("Classifier") && e.getMessage().contains("ROC"));
+        }
+
+        try {
+            cg.evaluateROCMultiClass(iter);
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage().contains("Classifier") && e.getMessage().contains("ROCMultiClass"));
+        }
+
+
+        //Disable validation, and check same thing:
+        net.getLayerWiseConfigurations().setValidateOutputLayerConfig(false);
+        net.evaluate(iter);
+        net.evaluateROCMultiClass(iter);
+
+        cg.getConfiguration().setValidateOutputLayerConfig(false);
+        cg.evaluate(iter);
+        cg.evaluateROCMultiClass(iter);
+    }
 }
