@@ -104,6 +104,8 @@ public class ArrayOptionsHelper {
             case BOOL:
                 bit = 524288;
                 break;
+            case UBYTE:
+                storage |= 8388608; // unsigned bit
             case BYTE:
                 bit = 32768;
                 break;
@@ -117,6 +119,7 @@ public class ArrayOptionsHelper {
                 bit = 4;
                 break;
             case UNKNOWN:
+            default:
                 throw new UnsupportedOperationException();
         }
 

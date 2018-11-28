@@ -45,8 +45,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
@@ -287,6 +286,89 @@ public class SpecialTests extends BaseNd4jTest {
             INDArray z = Nd4j.create(DataType.BOOL, 1, 3, 2, 4, 4);
             Broadcast.lt(x, y, z, 0, 2, 3, 4);
 
+        }
+    }
+
+    @Test
+    public void reproduceWorkspaceCrash(){
+        val conf = WorkspaceConfiguration.builder().build();
+
+        val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
+
+        INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0, 0, 0, 0, 0}, new long[]{1, 10});
+
+        //assertNotEquals(Nd4j.defaultFloatintPointType(), arr.dataType());
+        Nd4j.setDefaultFloatingPointDataType(DataType.DOUBLE);
+
+        for( int i=0; i<100; i++ ) {
+            try(val ws2 = ws.notifyScopeEntered()) {
+                System.out.println("Iteration: " + i);
+                INDArray ok = arr.eq(0.0);
+                ok.dup();
+
+                assertEquals(arr.dataType(), Nd4j.defaultFloatintPointType());
+                assertEquals(DataType.DOUBLE, Nd4j.defaultFloatintPointType());
+                INDArray crash = arr.eq(0.0).castTo(Nd4j.defaultFloatintPointType());
+                crash.dup();        //Crashes here on i=1 iteration
+            }
+        }
+    }
+
+    @Test
+    public void reproduceWorkspaceCrash_2(){
+        val dtypes = new DataType[]{DataType.LONG, DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
+        for (val dX : dtypes) {
+            for (val dZ: dtypes) {
+                val array = Nd4j.create(dX, 100, 100).assign(1);
+
+                log.info("Trying to cast {} to {}", dX, dZ);
+                val casted = array.castTo(dZ);
+
+                val exp = Nd4j.create(dZ, 100, 100).assign(1);
+                assertEquals(exp, casted);
+            }
+        }
+    }
+
+    @Test
+    public void reproduceWorkspaceCrash_3(){
+        val conf = WorkspaceConfiguration.builder().build();
+
+        val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
+        val dtypes = new DataType[]{DataType.LONG, DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
+        for (val dX : dtypes) {
+            for (val dZ: dtypes) {
+                try(val ws2 = ws.notifyScopeEntered()) {
+                    val array = Nd4j.create(dX, 100, 100).assign(1);
+
+                    log.info("Trying to cast {} to {}", dX, dZ);
+                    val casted = array.castTo(dZ);
+
+                    val exp = Nd4j.create(dZ, 100, 100).assign(1);
+                    assertEquals(exp, casted);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void reproduceWorkspaceCrash_4(){
+        val conf = WorkspaceConfiguration.builder().build();
+
+        val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
+        val dtypes = new DataType[]{DataType.LONG, DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
+        for (val dX : dtypes) {
+            for (val dZ: dtypes) {
+                try(val ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS")) {
+                    val array = Nd4j.create(dX, 100, 100).assign(1);
+
+                    log.info("Trying to cast {} to {}", dX, dZ);
+                    val casted = array.castTo(dZ);
+
+                    val exp = Nd4j.create(dZ, 100, 100).assign(1);
+                    assertEquals(exp, casted);
+                }
+            }
         }
     }
 
