@@ -372,6 +372,25 @@ public class SpecialTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void reproduceWorkspaceCrash_5(){
+        val conf = WorkspaceConfiguration.builder().build();
+
+        val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
+
+        INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0, 0, 0, 0, 0}, new long[]{1, 10});
+
+        Nd4j.setDefaultFloatingPointDataType(DataType.DOUBLE);
+        assertEquals(DataType.DOUBLE, arr.dataType());
+
+        for( int i=0; i<100; i++ ) {
+            try(val ws2 = ws.notifyScopeEntered()) {
+                INDArray crash = arr.castTo(DataType.BOOL).castTo(DataType.DOUBLE);
+                crash.dup();
+            }
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';

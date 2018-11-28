@@ -469,7 +469,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         Pair<Gradient, Double> tbpttPair = mlnTBPTT.gradientAndScore();
 
         assertEquals(mlnPair.getFirst().gradientForVariable(), tbpttPair.getFirst().gradientForVariable());
-        assertEquals(mlnPair.getSecond(), tbpttPair.getSecond());
+        assertEquals(mlnPair.getSecond(), tbpttPair.getSecond(), 1e-8);
 
         //Check states: expect stateMap to be empty but tBpttStateMap to not be
         Map<String, INDArray> l0StateMLN = mln.rnnGetPreviousState(0);

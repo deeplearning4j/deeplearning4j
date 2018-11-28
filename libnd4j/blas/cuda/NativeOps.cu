@@ -2747,7 +2747,7 @@ void NativeOps::sort(Nd4jPointer *extraPointers,
 
     auto xLength = shape::length(xShapeInfo);
     auto xEWS = shape::elementWiseStride(xShapeInfo);
-    auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
 
 
     // check if xLength is a power of 2, and use bitonic sort, if that's the case
@@ -2757,60 +2757,42 @@ void NativeOps::sort(Nd4jPointer *extraPointers,
         if (xLength % numThreads > 0 || numBlocks == 0)
             numBlocks++;
 
-        dim3 launchDims(numBlocks, numThreads, 512);
+        dim3 launchDims(numBlocks, numThreads, 32768);
 
         for (int k = 2; k <= xLength; k = 2*k) {
-            for (int j = k >> 1; j > 0; j = j >> 1)         
-                BUILD_SINGLE_SELECTOR(xType, bitonicSortStepGeneric, (launchDims, stream, dX, dXShapeInfo, j, k, xLength, descending), LIBND4J_TYPES);
+            for (int j = k >> 1; j > 0; j = j >> 1) {
+				BUILD_SINGLE_SELECTOR(xType, bitonicSortStepGeneric, (launchDims, stream, dX, dXShapeInfo, j, k, xLength, descending), LIBND4J_TYPES);
+			}
         }
     } else {
+    	int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+    	int numBlocks = xLength / numThreads;
+    	if (xLength % numThreads > 0 || numBlocks == 0)
+    		numBlocks++;
 
-#ifdef  __clang__
-        if (1 > 0) {
-// #elif __GNUC__
-//         if ((xLength > 1024 * 1024 * 10) && xEWS == 1) {
-//             b40c::radix_sort::Enactor enactor;
+    	numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
+    	dim3 launchDims(numBlocks, numThreads, 32768);
 
-//             b40c::util::DoubleBuffer<void> sort_storage(dX);
+    	int max = 2, dg = 0;
+    	while (max < xLength) {
+    		max <<= 1;
+    		dg++;
+    	}
+    	max <<= 1;
 
-//             enactor.Sort(sort_storage, xLength);
-
-//             // fire reverse op
-//             if (descending)
-//                 execTransformFloat(extraPointers, 70, dX, dXShapeInfo, dX, dXShapeInfo, nullptr);            
-//         } else {
-#else
-        if (1 > 0) {
-#endif
-            int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
-            int numBlocks = xLength / numThreads;
-            if (xLength % numThreads > 0 || numBlocks == 0)
-                numBlocks++;
-
-            numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
-            dim3 launchDims(numBlocks, numThreads, numThreads*2);
-
-            int max = 2, dg = 0;
-            while (max < xLength) {
-                max <<= 1;
-                dg++;
-            }
-            max <<= 1;
-
-            for (int window = 2; window < max; window<<=1) {
-                int n = window;
-                int rev = 0;
-                do{
-                    int half = n >> 1;
-                    BUILD_SINGLE_SELECTOR(xType, bitonicArbitraryStepGeneric, (launchDims, stream, dX, dXShapeInfo, n, xLength, rev, descending), LIBND4J_TYPES);
-                    n>>=1;
-                    rev = 1;
-                } while(n > 1);
-            }
-        }
+    	for (int window = 2; window < max; window<<=1) {
+    		int n = window;
+    		int rev = 0;
+    		do{
+    			int half = n >> 1;
+    			BUILD_SINGLE_SELECTOR(xType, bitonicArbitraryStepGeneric, (launchDims, stream, dX, dXShapeInfo, n, xLength, rev, descending), LIBND4J_TYPES);
+    			n>>=1;
+    			rev = 1;
+    		} while(n > 1);
+    	}
     }
 
-    nd4j::DebugHelper::checkErrorCode(stream, "sortFloat(...) failed");
+    nd4j::DebugHelper::checkErrorCode(stream, "sort(...) failed");
 }
 
 
@@ -2824,8 +2806,8 @@ void NativeOps::sortTad(Nd4jPointer *extraPointers,
 						bool descending) {
     // to be implemented
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    dim3 launchDims(512, 512, 1024);    
-	auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
+    dim3 launchDims(512, 512, 32768);
+	auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(xType, oesTadGeneric, (launchDims, stream, dX, dXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending), LIBND4J_TYPES);                     
     
     nd4j::DebugHelper::checkErrorCode(stream, "sortTadFloat(...) failed");
@@ -2846,7 +2828,7 @@ Nd4jLong NativeOps::encodeBitmap(Nd4jPointer *extraPointers,
     int *resultPointer = reinterpret_cast<int *>(extraPointers[2]);
     int *reductionPointer = reinterpret_cast<int *>(extraPointers[3]);
         
-    dim3 launchDims(512, 512, 1024);
+    dim3 launchDims(512, 512, 32768);
     auto xType = nd4j::ArrayOptions::dataType(dXShapeInfo);
     BUILD_SINGLE_SELECTOR(xType, cudaEncodeBitmapGeneric, (launchDims, stream, dx, N, dz, resultPointer, reductionPointer, threshold), LIBND4J_TYPES);     
 
@@ -2865,7 +2847,7 @@ void NativeOps::decodeBitmap(Nd4jPointer *extraPointers,
 							void *dz, Nd4jLong *zShapeInfo) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);        
-    dim3 launchDims(512, 512, 512);
+    dim3 launchDims(512, 512, 16384);
     auto xType = nd4j::ArrayOptions::dataType(zShapeInfo);
     BUILD_SINGLE_SELECTOR(xType, cudaDecodeBitmapGeneric, (launchDims, stream, dx, N, dz), LIBND4J_TYPES);
 

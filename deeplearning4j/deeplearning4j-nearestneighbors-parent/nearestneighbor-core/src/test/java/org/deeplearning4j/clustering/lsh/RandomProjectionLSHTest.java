@@ -18,7 +18,9 @@ package org.deeplearning4j.clustering.lsh;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo;
 import org.nd4j.linalg.factory.Nd4j;
@@ -128,8 +130,9 @@ public class RandomProjectionLSHTest {
         INDArray row = inputs.getRow(idx);
         INDArray bucketData =  rpLSH.bucketData(row);
 
-        INDArray res = Nd4j.zeros(bucketData.shape());
+        INDArray res = Nd4j.zeros(DataType.BOOL, bucketData.shape());
         Nd4j.getExecutioner().exec(new BroadcastEqualTo(bucketData, row, res, -1));
+        res = res.castTo(DataType.FLOAT);
 
         assertEquals(
                 String.format("Expected one bucket content to be the query %s, but found %s", row, rpLSH.bucket(row)),
@@ -159,8 +162,9 @@ public class RandomProjectionLSHTest {
         INDArray searchResults = rpLSH.search(row, 10.0f);
 
 
-        INDArray res = Nd4j.zeros(searchResults.shape());
+        INDArray res = Nd4j.zeros(DataType.BOOL, searchResults.shape());
         Nd4j.getExecutioner().exec(new BroadcastEqualTo(searchResults, row, res, -1));
+        res = res.castTo(DataType.FLOAT);
 
         assertEquals(
                 String.format("Expected one search result to be the query %s, but found %s", row, searchResults),
@@ -191,8 +195,9 @@ public class RandomProjectionLSHTest {
         INDArray searchResults = rpLSH.search(row, 100);
 
 
-        INDArray res = Nd4j.zeros(searchResults.shape());
+        INDArray res = Nd4j.zeros(DataType.BOOL, searchResults.shape());
         Nd4j.getExecutioner().exec(new BroadcastEqualTo(searchResults, row, res, -1));
+        res = res.castTo(DataType.FLOAT);
 
         assertEquals(
                 String.format("Expected one search result to be the query %s, but found %s", row, searchResults),
