@@ -25,7 +25,6 @@
 #include <ops/ops.h>
 #include <GradCheck.h>
 
-
 using namespace nd4j;
 
 
@@ -489,3 +488,25 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test13) {
 
     delete results;
 }
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, summaryStatsData_test1) {
+    
+    functions::summarystats::SummaryStatsData<double> var1;
+    functions::summarystats::SummaryStatsData<double> var2;
+    var2.n = var2.mean = var2.M2 = var2.M3 = var2.M4 = var2.bias = 5; 
+
+    functions::summarystats::SummaryStatsData<double>* arr = new functions::summarystats::SummaryStatsData<double>[2];
+    arr[0] = var1;
+    arr[1] = var2;
+    arr[0] = arr[1];
+
+    functions::summarystats::SummaryStatsData<double> var3(var1);
+
+    ASSERT_TRUE(arr[0].n == arr[0].mean && arr[0].M2 == arr[0].M3 && arr[0].n == 5);
+    ASSERT_TRUE(arr[1].n == arr[1].mean && arr[1].M2 == arr[1].M3 && arr[1].n == 5);
+    ASSERT_TRUE(var3.n == var3.mean && var3.M2 == var3.M3 && var3.n == 0);
+
+    delete []arr;
+}
+

@@ -2619,6 +2619,55 @@ TEST_F(ConvolutionTests, Test_Dilation2D_Again_2) {
     delete result;
 }
 
-#endif //LIBND4J_CONVOLUTIONTESTS_H
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, sconv2d_bp_test2) {
 
+    int bS=3, iH=16,iW=16,  iC=3,mC=3,  kH=1,kW=1,  sH=1,sW=1,  pH=0,pW=0,  dH=2,dW=2;
+    int       oH=16,oW=16;
+    int       oC=2;
+    int paddingMode = 0;             // 1-SAME, 0-VALID;
+    int dataFormat  = 0;             // 1-NHWC, 0-NCHW
+
+    NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::DOUBLE);
+    NDArray gradO('c', {bS, oC, oH, oW}, nd4j::DataType::DOUBLE);
+    NDArray weightsDepth('f', {kH, kW, iC, mC}, nd4j::DataType::DOUBLE);
+    NDArray weightsPoint('f', {1, 1, iC*mC, oC}, nd4j::DataType::DOUBLE);
+    NDArray bias('c', {1,oC}, {0.5, 0.5});
+
+    NDArray gradI(&input);
+    NDArray gradWD(&weightsDepth);
+    NDArray gradWP(&weightsPoint);
+    NDArray gradB(&bias);
+
+    input = 2.;
+    weightsDepth.linspace(0.1, 0.1);
+    weightsPoint.linspace(0.15, 0.1);
+    gradO.linspace(0.01, 0.01);    
+
+    nd4j::ops::sconv2d_bp op;
+    Nd4jStatus status = op.execute({&input, &gradO, &weightsDepth, & weightsPoint, &bias}, 
+                              {&gradI, &gradWD, &gradWP, &gradB},
+                              {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat}, {});
+
+    ASSERT_EQ(Status::OK(), status);
+
+    NDArray expGradI  = gradI;
+    NDArray expGradWD = gradWD;
+    NDArray expGradWP = gradWP;
+    NDArray expGradB  = gradB;
+    
+    for( int i=0; i<10; i++ ) {        
+        Nd4jStatus status = op.execute({&input, &gradO, &weightsDepth, & weightsPoint, &bias}, 
+                              {&gradI, &gradWD, &gradWP, &gradB},
+                              {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat}, {});
+        ASSERT_EQ(Status::OK(), status);
+        
+        ASSERT_TRUE(expGradI.equalsTo(gradI));
+        ASSERT_TRUE(expGradWD.equalsTo(gradWD));
+        ASSERT_TRUE(expGradWP.equalsTo(gradWP));
+        ASSERT_TRUE(expGradB.equalsTo(expGradB));
+    }   
+}
+
+#endif //LIBND4J_CONVOLUTIONTESTS_H
 
