@@ -32,12 +32,12 @@ namespace ops  {
 
 CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
 
-    NDArray *input        = INPUT_VARIABLE(0);                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    NDArray *weightsDepth = INPUT_VARIABLE(1);                                           // [kH, kW, iC, mC]  always
-    NDArray *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] always
-    NDArray *bias         = nullptr;                                                     // [oC], oC = iC*mC if weightsPoint=nullptr
+    NDArray *input        = INPUT_VARIABLE(0);                    // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
+    NDArray *weightsDepth = INPUT_VARIABLE(1);                    // [kH, kW, iC, mC]  always
+    NDArray *weightsPoint = nullptr;                              // [1, 1, iC*mC, oC] always
+    NDArray *bias         = nullptr;                              // [oC], oC = iC*mC if weightsPoint=nullptr
 
-    NDArray *output    = OUTPUT_VARIABLE(0);                                          // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)
+    NDArray *output    = OUTPUT_VARIABLE(0);                      // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)
 
     if(block.width() == 3) {
         if((INPUT_VARIABLE(2))->rankOf() == 4)
