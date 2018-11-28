@@ -18,6 +18,7 @@ package org.deeplearning4j.clustering.lsh;
 
 import lombok.Getter;
 import lombok.val;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
@@ -162,9 +163,9 @@ public class RandomProjectionLSH implements LSH {
     INDArray rawBucketOf(INDArray query){
         INDArray pattern = hash(query);
 
-        INDArray res = Nd4j.zeros(index.shape());
+        INDArray res = Nd4j.zeros(DataType.BOOL, index.shape());
         Nd4j.getExecutioner().exec(new BroadcastEqualTo(index, pattern, res, -1));
-        return res.min(-1);
+        return res.castTo(Nd4j.defaultFloatintPointType()).min(-1);
     }
 
     @Override
