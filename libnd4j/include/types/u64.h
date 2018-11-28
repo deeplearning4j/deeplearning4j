@@ -48,7 +48,7 @@ namespace nd4j {
         int8_t _char;
         int16_t _short;
         int32_t _int;
-        float16 _half = 0.0f;
+        //float16 _half = 0.0f;
         float _float;
         double _double;
         Nd4jLong _long;

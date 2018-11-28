@@ -202,7 +202,7 @@ TEST_F(RNGTests, Test_Uniform_1) {
 }
 
 TEST_F(RNGTests, Test_Uniform_3) {
-    auto x0 = NDArrayFactory::create<double>('c', {1000000});
+    auto x0 = NDArrayFactory::create<float>('c', {1000000});
 
     RandomLauncher::fillUniform(_rngA, &x0, 1.0f, 2.0f);
 
@@ -294,8 +294,8 @@ TEST_F(RNGTests, Test_Gaussian_22) {
     auto mean0 = result->at(0);
     auto variance0 = result->at(1);
 
-    mean0->printIndexedBuffer("Mean");
-    variance0->printIndexedBuffer("Variance");
+    //mean0->printIndexedBuffer("Mean");
+    //variance0->printIndexedBuffer("Variance");
     ASSERT_NEAR(nd4j::math::nd4j_abs(mean0->e<float>(0)), 0.f, 1.0e-3f);
     ASSERT_NEAR(variance0->e<float>(0), 1.0f, 1.e-3f);
     delete result;
