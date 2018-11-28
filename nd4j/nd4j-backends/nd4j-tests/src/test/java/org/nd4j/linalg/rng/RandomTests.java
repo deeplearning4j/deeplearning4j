@@ -358,8 +358,8 @@ public class RandomTests extends BaseNd4jTest {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
-        INDArray z1 = Nd4j.create(100000);
-        INDArray z2 = Nd4j.create(100000);
+        INDArray z1 = Nd4j.create(DataType.DOUBLE, 1000000);
+        INDArray z2 = Nd4j.create(DataType.DOUBLE, 1000000);
 
         GaussianDistribution op1 = new GaussianDistribution(z1, 1.0, 1.0);
         Nd4j.getExecutioner().exec(op1, random1);
@@ -1264,6 +1264,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testTruncatedNormal1() throws Exception {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 

@@ -233,7 +233,7 @@ public abstract class BaseLapack implements Lapack {
         byte jobvt = (byte) (VT == null ? 'N' : 'A');
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-                        Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, A.dataType()).getFirst());
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, DataType.INT).getFirst());
 
         if (A.data().dataType() == DataType.DOUBLE)
             dgesvd(jobu, jobvt, m, n, A, S, U, VT, INFO);
