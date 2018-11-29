@@ -76,13 +76,13 @@ namespace functions {
 
             template<typename OpType>
             __device__
-            static void transformCuda(void* scalar, void *dy, Nd4jLong *shapeInfo, void *params, void *result,Nd4jLong *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
+            static void transformCuda(void* scalar, void *dy, Nd4jLong *shapeInfo, void *params, void *result,Nd4jLong *resultShapeInfo, int *allocationBuffer);
 
-            static __device__ void transformCudaLegacy(int opNum, void* scalar, void *dy, Nd4jLong *shapeInfo, void *params, void *result,Nd4jLong *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
+            static __device__ void transformCudaLegacy(int opNum, void* scalar, void *dy, Nd4jLong *shapeInfo, void *params, void *result,Nd4jLong *resultShapeInfo, int *allocationBuffer);
 
             template<typename OpType>
             __device__
-	        static void transformCuda(Nd4jLong len, void* dx, void *dy, Nd4jLong incy, void *params, void *result, Nd4jLong resultStride, int *allocationBuffer, UnifiedSharedMemory *manager);
+	        static void transformCuda(Nd4jLong len, void* dx, void *dy, Nd4jLong incy, void *params, void *result, Nd4jLong resultStride, int *allocationBuffer);
 
 #endif
             template <typename OpType>

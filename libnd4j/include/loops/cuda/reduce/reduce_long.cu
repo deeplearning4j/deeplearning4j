@@ -36,17 +36,7 @@ __device__ void reduceSimpleGeneric(void *x,  Nd4jLong *xShapeInfo,
                                     void *reductionBuffer, 
                                     Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
-    __shared__ UnifiedSharedMemory *manager;
-
-    if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceLongFunction<X,Z>), sizeof(shape::TAD), shape::rank(xShapeInfo));
-    }
-
-    __syncthreads();
-
-    functions::reduce::ReduceLongFunction<X,Z>::template transformCudaXD<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
+    functions::reduce::ReduceLongFunction<X,Z>::template transformCudaXD<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -57,16 +47,7 @@ __device__ void reduceScalarGeneric(void *x, Nd4jLong *xShapeInfo,
                                     int *dimension, int dimensionLength,
                                     void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
 
-    __shared__ UnifiedSharedMemory *manager;
-
-    if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceLongFunction<X,Z>), sizeof(shape::TAD), 0);
-    }
-    __syncthreads();
-
-    functions::reduce::ReduceLongFunction<X, Z>::template execScalarCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, reductionBuffer, manager, tadOnlyShapeInfo);
+    functions::reduce::ReduceLongFunction<X, Z>::template execScalarCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, reductionBuffer, tadOnlyShapeInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -136,7 +117,6 @@ __device__ void ReduceLongFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xS
                                                         void *vz, Nd4jLong *zShapeInfo,
                                                         int *dimension,  int dimensionLength,
                                                         void *vreductionBuffer, 
-                                                        UnifiedSharedMemory *manager,
                                                         Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
     auto x = reinterpret_cast<X*>(vx);
@@ -189,7 +169,6 @@ __device__ void ReduceLongFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSha
                                                         void *vextraParams,
                                                         void *vz, Nd4jLong *zShapeInfo,
                                                         void *vreductionBuffer,
-                                                        UnifiedSharedMemory *manager,
                                                         Nd4jLong *tadOnlyShapeInfo) {
 
     auto x = reinterpret_cast<X*>(vx);
@@ -202,7 +181,12 @@ __device__ void ReduceLongFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSha
     auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
     //shared memory space for storing intermediate results
-    Z* sPartials = reinterpret_cast<Z*>(manager->getSharedReductionBuffer());
+    __shared__ Z* sPartials;
+    if(threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        sPartials = reinterpret_cast<Z*>(shmem);
+    }
+    __syncthreads();
 
     sPartials[threadIdx.x] = OpType::startingValue(x);
 

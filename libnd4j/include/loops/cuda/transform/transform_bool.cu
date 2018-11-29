@@ -29,55 +29,6 @@
 using namespace simdOps;
 
 
-template<typename X, typename Z, typename OpClass>
-__device__ void transformBoolSimpleGeneric(
-		Nd4jLong n,
-		void *dy,
-		Nd4jLong incy,
-		void *params,
-		void *result,
-		Nd4jLong resultStride, int *allocationPointer, void *reductionPointer) {
-
-	functions::transform::TransformBool<X,Z>::template transformCuda<OpClass>(
-		n,
-		dy,
-		incy,
-		params,
-		result,
-		resultStride,
-		allocationPointer,
-		reductionPointer,
-		nullptr);
-}
-
-template<typename X, typename Z, typename OpClass>
-__device__ void transformBoolSimpleGeneric(
-		void *dy,
-		Nd4jLong *xShapeInfo, int xRank,
-		void *params,
-		void *result, Nd4jLong *zShapeInfo, int zRank, int *allocationPointer, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-
-	__shared__ UnifiedSharedMemory *manager;
-
-	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::transform::TransformBool<X,Z>), sizeof(shape::TAD), xRank);
-	}
-	__syncthreads();
-	
-    functions::transform::TransformBool<X,Z>::template transformCuda<OpClass>(
-	    dy,
-	    xShapeInfo,
-	    params,
-	    result,
-	    zShapeInfo,
-	    allocationPointer,
-	    reductionPointer,
-		manager, tadShapeInfo, tadOffsets);
-}
-
-
 template <typename X, typename Z, typename OpType>
 __global__ void transformBoolSimple(void *dy, Nd4jLong *xShapeInfo, int xRank,
 								void *params,
@@ -85,7 +36,8 @@ __global__ void transformBoolSimple(void *dy, Nd4jLong *xShapeInfo, int xRank,
 								int *allocationPointer,
 								void *reductionPointer,
 								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-	transformBoolSimpleGeneric<X, Z, OpType>(dy, xShapeInfo, xRank, params, result, zShapeInfo, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+
+	functions::transform::TransformBool<X,Z>::template transformCuda<OpType>(dy,xShapeInfo,params,result,zShapeInfo,allocationPointer,reductionPointer,tadShapeInfo, tadOffsets);
 }
 
 
@@ -103,12 +55,13 @@ namespace functions {
         template<typename X, typename Z>
         template <typename OpType>
         __device__ void TransformBool<X,Z>::transformCuda(
-			void *vdy,
-			Nd4jLong *shapeInfo,
-			void *vparams,
-			void *vresult,
-			Nd4jLong *zShapeInfo,
-			int *allocationPointer, void *vreductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+						void *vdy,
+						Nd4jLong *shapeInfo,
+						void *vparams,
+						void *vresult,
+						Nd4jLong *zShapeInfo,
+						int *allocationPointer, void *vreductionPointer, 
+						Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
         	auto dy = static_cast<X*>(vdy);
 		    auto result = static_cast<Z*>(vresult);
@@ -116,7 +69,7 @@ namespace functions {
 		    auto reductionPointer = static_cast<Z*>(vreductionPointer);
 
 		    if(OpType::requiresSpecial) {
-			    OpType::execSpecialCuda(dy,shapeInfo,result,zShapeInfo,params, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			    OpType::execSpecialCuda(dy,shapeInfo,result,zShapeInfo,params, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			    return;
 		    } else {
 
@@ -139,7 +92,7 @@ namespace functions {
 				    	xEws,
 				    	params,
 				    	result,
-				    	zEws, allocationPointer, reductionPointer, manager);
+				    	zEws, allocationPointer, reductionPointer);
 		        }
 		        else {
 			
@@ -161,7 +114,7 @@ namespace functions {
 			void *vparams,
 			void *vresult,
 			Nd4jLong resultStride,
-			int *allocationPointer, void *vreductionPointer, UnifiedSharedMemory *manager) {
+			int *allocationPointer, void *vreductionPointer) {
 		
         	auto dy = static_cast<X*>(vdy);
 		    auto result = static_cast<Z*>(vresult);

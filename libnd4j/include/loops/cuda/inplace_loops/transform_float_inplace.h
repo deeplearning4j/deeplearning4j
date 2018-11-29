@@ -38,10 +38,10 @@ namespace functions {
         template <typename X, typename Z>
         class TransformFloatInplace {
         public:
-            static FORCEINLINE _CUDA_D void transformCudaLegacy(int opNum, void *dy, Nd4jLong *shapeInfo, void *params, void *result, Nd4jLong *zShapeInfo, int *allocationPointer, void *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+            static FORCEINLINE _CUDA_D void transformCudaLegacy(int opNum, void *dy, Nd4jLong *shapeInfo, void *params, void *result, Nd4jLong *zShapeInfo, int *allocationPointer, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
             template <typename OpClass>
-            static FORCEINLINE _CUDA_D void transformCuda(void *vdy, Nd4jLong *shapeInfo, void *vparams, void *vresult, Nd4jLong *zShapeInfo, int *allocationPointer, void *vreductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+            static FORCEINLINE _CUDA_D void transformCuda(void *vdy, Nd4jLong *shapeInfo, void *vparams, void *vresult, Nd4jLong *zShapeInfo, int *allocationPointer, void *vreductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
         };
 
         template<typename X, typename Z>
@@ -52,7 +52,7 @@ namespace functions {
                 void *vparams,
                 void *vresult,
                 Nd4jLong *zShapeInfo,
-                int *allocationPointer, void *vreductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                int *allocationPointer, void *vreductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
             auto dy = static_cast<X*>(vdy);
             auto result = static_cast<Z*>(vresult);
@@ -89,10 +89,9 @@ namespace functions {
                 Nd4jLong *zShapeInfo,
                 int *allocationPointer,
                 void *reductionPointer,
-                UnifiedSharedMemory *manager,
                 Nd4jLong *tadShapeInfo,
                 Nd4jLong *tadOffsets) {
-            DISPATCH_BY_OPNUM_TT(transformCuda, PARAMS(dy, shapeInfo, params, result, zShapeInfo, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets), LOCAL_TRANSFORM_FLOAT_OPS);
+            DISPATCH_BY_OPNUM_TT(transformCuda, PARAMS(dy, shapeInfo, params, result, zShapeInfo, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), LOCAL_TRANSFORM_FLOAT_OPS);
         }
     }
 }

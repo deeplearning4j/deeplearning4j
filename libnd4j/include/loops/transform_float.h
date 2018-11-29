@@ -71,7 +71,6 @@ namespace functions {
 			Nd4jLong *resultShapeInfo,
 			int *allocationPointer,
 			void *reductionPointer,
-			UnifiedSharedMemory *manager,
 			Nd4jLong *tadShapeInfo,
 			Nd4jLong *tadOffsets);
 
@@ -84,7 +83,6 @@ namespace functions {
 			Nd4jLong *resultShapeInfo,
 			int *allocationPointer,
 			void *reductionPointer,
-			UnifiedSharedMemory *manager,
 			Nd4jLong *tadShapeInfo,
 			Nd4jLong *tadOffsets);
 
@@ -97,8 +95,7 @@ namespace functions {
 			void *result,
 			Nd4jLong resultStride,
 			int *allocationPointer,
-			void *reductionPointer,
-			UnifiedSharedMemory *manager);
+			void *reductionPointer);
 
 
 	template <typename OpType>

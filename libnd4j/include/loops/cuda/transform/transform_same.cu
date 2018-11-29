@@ -28,56 +28,6 @@
 
 using namespace simdOps;
 
-
-template<typename X, typename OpClass>
-__device__ void transformSameSimpleGeneric(
-		Nd4jLong n,
-		void *y,
-		Nd4jLong incy,
-		void *params,
-		void *z,
-		Nd4jLong resultStride, int *allocationPointer, void *reductionPointer) {
-
-	functions::transform::TransformSame<X>::template transformCuda<OpClass>(
-		n,
-		y,
-		incy,
-		params,
-		z,
-		resultStride,
-		allocationPointer,
-		reductionPointer,
-		nullptr);
-}
-
-template<typename X, typename OpClass>
-__device__ void transformSameSimpleGeneric(
-		void *y,
-		Nd4jLong *xShapeInfo, int xRank,
-		void *params,
-		void *z, Nd4jLong *zShapeInfo, int zRank, int *allocationPointer, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-
-	__shared__ UnifiedSharedMemory *manager;
-
-	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::transform::TransformSame<X>), sizeof(shape::TAD), xRank);
-	}
-	__syncthreads();
-	
-    functions::transform::TransformSame<X>::template transformCuda<OpClass>(
-	    y,
-	    xShapeInfo,
-	    params,
-	    z,
-	    zShapeInfo,
-	    allocationPointer,
-	    reductionPointer,
-		manager, tadShapeInfo, tadOffsets);
-}
-
-
 template <typename X, typename OpType>
 __global__ void transformSameSimple(void *y, Nd4jLong *xShapeInfo, int xRank,
 								void *params,
@@ -85,7 +35,8 @@ __global__ void transformSameSimple(void *y, Nd4jLong *xShapeInfo, int xRank,
 								int *allocationPointer,
 								void *reductionPointer,
 								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-	transformSameSimpleGeneric<X, OpType>(y, xShapeInfo, xRank, params, z, zShapeInfo, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+	
+	functions::transform::TransformSame<X>::template transformCuda<OpType>(y,xShapeInfo,params,z,zShapeInfo,allocationPointer,reductionPointer, tadShapeInfo, tadOffsets);
 }
 
 
@@ -108,7 +59,7 @@ namespace functions {
 			void *vparams,
 			void *vresult,
 			Nd4jLong *zShapeInfo,
-			int *allocationPointer, void *vreductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+			int *allocationPointer, void *vreductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
         	auto y = static_cast<X*>(vdy);
 		    auto z = static_cast<X*>(vresult);
@@ -116,7 +67,7 @@ namespace functions {
 		    auto reductionPointer = static_cast<X*>(vreductionPointer);
 
 		    if(OpType::requiresSpecial) {
-			    OpType::execSpecialCuda(y,shapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			    OpType::execSpecialCuda(y,shapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			    return;
 		    } else {
 
@@ -138,7 +89,7 @@ namespace functions {
 				    	xEws,
 				    	params,
 				    	z,
-				    	zEws, allocationPointer, reductionPointer, manager);
+				    	zEws, allocationPointer, reductionPointer);
 		        }
 		        else {
 			        Nd4jLong xCoord[MAX_RANK];
@@ -162,7 +113,7 @@ namespace functions {
 			void *vparams,
 			void *vresult,
 			Nd4jLong resultStride,
-			int *allocationPointer, void *vreductionPointer, UnifiedSharedMemory *manager) {
+			int *allocationPointer, void *vreductionPointer) {
 		
         	auto y = static_cast<X*>(vdy);
 		    auto z = static_cast<X*>(vresult);

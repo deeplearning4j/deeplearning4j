@@ -35,16 +35,7 @@ __global__ void flattenKernel(
 
     auto z = reinterpret_cast<T *>(vz);
     auto y = reinterpret_cast<T *>(vy);
-
-    __shared__ UnifiedSharedMemory *manager;
-
-    if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory(reinterpret_cast<int *>(shmem));
-        manager->init(sizeof(UnifiedSharedMemory), 4, 4, sizeof(shape::TAD), 2);
-    }
-    __syncthreads();
-
+    
     Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;   
     
     auto len = shape::length(yShapeInfo);

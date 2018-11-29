@@ -35,10 +35,10 @@ namespace functions {
         template <typename X>
         class ReduceSameInplace {
         public:
-            static FORCEINLINE void _CUDA_D execScalarCudaLegacy(int opNum, void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, void *vreductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
+            static FORCEINLINE void _CUDA_D execScalarCudaLegacy(int opNum, void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, void *vreductionBuffer, Nd4jLong *tadOnlyShapeInfo);
 
             template <typename OpClass>
-            static FORCEINLINE void _CUDA_D execScalarCuda(void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, void *vreductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo);
+            static FORCEINLINE void _CUDA_D execScalarCuda(void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, void *vreductionBuffer, Nd4jLong *tadOnlyShapeInfo);
 
             template <typename OpClass>
             static FORCEINLINE void _CUDA_D aggregatePartials(void *vsPartials, Nd4jLong tid, Nd4jLong numItems, void *vextraParams);
@@ -81,9 +81,8 @@ namespace functions {
                                                                     void *vextraParams,
                                                                     void *vz, Nd4jLong *zShapeInfo,
                                                                     void *vreductionBuffer,
-                                                                    UnifiedSharedMemory *manager,
                                                                     Nd4jLong *tadOnlyShapeInfo) {
-            DISPATCH_BY_OPNUM_T(execScalarCuda, PARAMS(vx, xShapeInfo, vextraParams, vz, zShapeInfo, vreductionBuffer, manager, tadOnlyShapeInfo), REDUCE_SAME_OPS);
+            DISPATCH_BY_OPNUM_T(execScalarCuda, PARAMS(vx, xShapeInfo, vextraParams, vz, zShapeInfo, vreductionBuffer, tadOnlyShapeInfo), REDUCE_SAME_OPS);
         }
 
         template <typename X>
@@ -92,7 +91,6 @@ namespace functions {
                                                               void *vextraParams,
                                                               void *vz, Nd4jLong *zShapeInfo,
                                                               void *vreductionBuffer,
-                                                              UnifiedSharedMemory *manager,
                                                               Nd4jLong *tadOnlyShapeInfo) {
 
             auto x = reinterpret_cast<X*>(vx);
@@ -105,8 +103,12 @@ namespace functions {
             auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
             //shared memory space for storing intermediate results
-            X* sPartials = reinterpret_cast<X*>(manager->getSharedReductionBuffer());
-
+            __shared__ X* sPartials;
+            if(threadIdx.x == 0) {
+                extern __shared__ unsigned char shmem[];
+                sPartials = reinterpret_cast<X*>(shmem);
+            }
+            __syncthreads();
             sPartials[threadIdx.x] = OpType::startingValue(x);
 
             if (xEws > 0)

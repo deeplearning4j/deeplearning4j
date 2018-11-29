@@ -32,34 +32,6 @@
 using namespace simdOps;
 
 template<typename X, typename Y, typename Z, typename OpClass>
-__device__ void broadcastSimpleGeneric(
-		void *x,
-		Nd4jLong *xShapeInfo,
-		void *y,
-		Nd4jLong *yShapeInfo,
-		void *z,
-		Nd4jLong *zShapeInfo,
-		int *dimension,
-		int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-
-
-	functions::broadcast::Broadcast<X,Y,Z>::template transformCuda<OpClass>(
-			x,
-			xShapeInfo,
-			y,
-			yShapeInfo,
-			z,
-			zShapeInfo,
-			dimension,
-			dimensionLength,
-			NULL,
-			tadOnlyShapeInfo,
-			tadOffsets,
-			tadOnlyShapeInfoZ,
-			tadOffsetsZ);
-}
-
-template<typename X, typename Y, typename Z, typename OpClass>
 static __global__ void broadcastSimple(
         void *x,
         Nd4jLong *xShapeInfo,
@@ -69,7 +41,8 @@ static __global__ void broadcastSimple(
         Nd4jLong *zShapeInfo,
         int *dimension,
         int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-    broadcastSimpleGeneric<X, Y, Z, OpClass>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
+    
+    functions::broadcast::Broadcast<X,Y,Z>::template transformCuda<OpClass>(x,xShapeInfo,y,yShapeInfo,z,zShapeInfo,dimension,dimensionLength,tadOnlyShapeInfo,tadOffsets,tadOnlyShapeInfoZ,tadOffsetsZ);
 }
 
 namespace functions {
@@ -100,7 +73,7 @@ namespace functions {
 		void *vz,
 		Nd4jLong *zShapeInfo,
 		int *dimension,
-		int dimensionLength, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+		int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
       auto x = reinterpret_cast<X*>(vx);
       auto y = reinterpret_cast<Y*>(vy);
