@@ -35,7 +35,8 @@ void reverseArray(void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong
             auto inArr = reinterpret_cast<T *>(vinArr);
             auto outArr = reinterpret_cast<T *>(voutArr);
 
-            Nd4jLong inLength = shape::length(inShapeBuffer);
+            Nd4jLong inLength  = shape::length(inShapeBuffer);
+            Nd4jLong outLength = shape::length(outShapeBuffer);
             if(numOfElemsToReverse == 0)
                 numOfElemsToReverse = inLength;
             int inEWS = shape::elementWiseStride(inShapeBuffer);
@@ -64,26 +65,12 @@ void reverseArray(void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong
                     }
                 } 
                 else {
-                    int inRank = shape::rank(inShapeBuffer);
-                    auto inShape = shape::shapeOf(inShapeBuffer);
-                    auto inStride = shape::stride(inShapeBuffer);
-
-                    Nd4jLong inCoord[MAX_RANK];
-                    Nd4jLong outCoord[MAX_RANK];
-
-#pragma omp parallel for private(inCoord, outCoord) schedule(guided)
+                    
+#pragma omp parallel for schedule(guided)
                     for (Nd4jLong e = 0; e < numOfElemsToReverse / 2; e++) {
-                        if (inOrder == 'c') {
-                            shape::ind2subC(inRank, inShape, e, inCoord);
-                            shape::ind2subC(inRank, inShape, sLength - e, outCoord);
-                        } else {
-                            shape::ind2sub(inRank, inShape, e, inCoord);
-                            shape::ind2sub(inRank, inShape, sLength - e, outCoord);
-                        }
-
-                        auto inOffset  = shape::getOffset(0, inShape, inStride, inCoord, inRank);
-                        auto outOffset = shape::getOffset(0, inShape, inStride, outCoord, inRank);
-
+                   
+                        auto inOffset  = shape::getIndexOffset(e, inShapeBuffer, inLength);
+                        auto outOffset = shape::getIndexOffset(sLength - e, inShapeBuffer, inLength);
                         outArr[outOffset] = inArr[inOffset];
                     }
                 }
@@ -119,54 +106,21 @@ void reverseArray(void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong
                 } 
                 else {
 
-                    int inRank = shape::rank(inShapeBuffer);
-                    auto inShape = shape::shapeOf(inShapeBuffer);
-                    auto inStride = shape::stride(inShapeBuffer);
-
-                    int outRank = shape::rank(outShapeBuffer);
-                    auto outShape = shape::shapeOf(outShapeBuffer);
-                    auto outStride = shape::stride(outShapeBuffer);
-
-                    Nd4jLong inCoord[MAX_RANK];
-                    Nd4jLong outCoord[MAX_RANK];
-
-#pragma omp parallel for private(inCoord, outCoord) schedule(guided)
+#pragma omp parallel for schedule(guided)
                     for (Nd4jLong e = 0; e < numOfElemsToReverse; e++) {
 
-                        if (inOrder == 'c')
-                            shape::ind2subC(inRank, inShape, e, inCoord);
-                        else
-                            shape::ind2sub(inRank, inShape, e, inCoord);
-
-                        if (outOrder == 'c')
-                            shape::ind2subC(outRank, outShape, (sLength - e), outCoord);
-                        else
-                            shape::ind2sub(outRank, outShape, (sLength - e), outCoord);
-
-                        auto inOffset = shape::getOffset(0, inShape, inStride, inCoord, inRank);
-                        auto outOffset = shape::getOffset(0, outShape, outStride, outCoord, outRank);
-
+                        auto inOffset = shape::getIndexOffset(e, inShapeBuffer, inLength);
+                        auto outOffset = shape::getIndexOffset(sLength - e, outShapeBuffer, outLength);
                         outArr[outOffset] = inArr[inOffset];
                     }
 
                     if(inLength != numOfElemsToReverse) {
 
-#pragma omp parallel for private(inCoord, outCoord) schedule(guided)
+#pragma omp parallel for schedule(guided)
                         for (Nd4jLong e = numOfElemsToReverse; e < inLength; e++) {
-                             
-                             if (inOrder == 'c')
-                                shape::ind2subC(inRank, inShape, e, inCoord);
-                            else
-                                shape::ind2sub(inRank, inShape, e, inCoord);
 
-                            if (outOrder == 'c')
-                                shape::ind2subC(outRank, outShape, e, outCoord);
-                            else
-                                shape::ind2sub(outRank, outShape, e, outCoord);
-
-                            auto inOffset = shape::getOffset(0, inShape, inStride, inCoord, inRank);
-                            auto outOffset = shape::getOffset(0, outShape, outStride, outCoord, outRank);
-
+                            auto inOffset  = shape::getIndexOffset(e, inShapeBuffer, inLength);
+                            auto outOffset = shape::getIndexOffset(e, outShapeBuffer, outLength);
                             outArr[outOffset] = inArr[inOffset];        
                         }
                     }

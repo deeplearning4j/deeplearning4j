@@ -873,26 +873,9 @@ void flattenGeneric(Nd4jPointer *extraPointers,
             }
         }
         else {
-            int idx = 0;
-            Nd4jLong coord[MAX_RANK];
-
-            // FIXME: hZ[idx++] is bad idea, because of possible negative EWS
-            if(order == 'f') {
-                for(int i = 0; i < len; i++) {
-                    shape::ind2sub(rank, xShape, i, coord);
-                    auto offset = shape::getOffset(0,xShape,xStride,coord,rank);
-                    hZ[idx++] = input[offset];
-
-                }
-            }
-            else {
-                for(int i = 0; i < len; i++) {
-                    shape::ind2subC(rank, xShape, i, coord);
-                    auto offset = shape::getOffset(0,xShape,xStride,coord,rank);
-                    hZ[idx++] = input[offset];
-
-                }
-            }
+            int idx = 0;            
+            for(int i = 0; i < len; i++)                            
+                    hZ[idx++] = input[shape::getIndexOffset(i, inputShapeInfo, len)];
         }
     }
     else {
@@ -1244,23 +1227,11 @@ void pullRowsGeneric(void *vx,
             for (int i = 0; i < tadLength; i++ ) {
                 rZ[i * zEWS] = rX[i * xEWS];
             }
-        } else {
-            auto zShape = shape::shapeOf(zTadShapeInfo);
-            auto zStride = shape::stride(zTadShapeInfo);
-            auto xShape = shape::shapeOf(tadShapeInfo);
-            auto xStride = shape::stride(tadShapeInfo);
-            auto zRank = shape::rank(zTadShapeInfo);
-            auto tadRank = shape::rank(tadShapeInfo);
-
-            Nd4jLong xCoord[MAX_RANK];
-            Nd4jLong zCoord[MAX_RANK];
-
-            for (int i = 0; i < tadLength; i++) {
-                shape::ind2subC(tadRank,xShape, i, xCoord);
-                shape::ind2subC(zRank,zShape, i, zCoord);
-
-                auto xOffset = shape::getOffset(xTadOffsetForBlock, xShape, xStride, xCoord, tadRank);
-                auto zOffset = shape::getOffset(zTadOffsetForBlock, zShape, zStride, zCoord, zRank);
+        } 
+        else {            
+            for (int i = 0; i < tadLength; i++) {                
+                auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo, tadLength);
+                auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo, tadLength);
                 hZ[zOffset] = hX[xOffset];
             }
         }
@@ -1296,12 +1267,6 @@ void tearGeneric(void *vx,
     const auto tadLength = shape::length(tadShapeInfo);
     auto tadEWS = shape::elementWiseStride(tadShapeInfo);
     auto zEWS = shape::elementWiseStride(hZShapeInfo);
-    auto tadRank = shape::rank(tadShapeInfo);
-    auto zRank = shape::rank(hZShapeInfo);
-    auto tadShape = shape::shapeOf(tadShapeInfo);
-    auto tadStride = shape::stride(tadShapeInfo);
-    auto zShape = shape::shapeOf(hZShapeInfo);
-    auto zStride = shape::stride(hZShapeInfo);
     auto numTads = shape::length(hXShapeInfo) / tadLength;
 
 #pragma omp parallel for schedule(guided) default(shared)
@@ -1319,19 +1284,11 @@ void tearGeneric(void *vx,
             for (Nd4jLong j = 0; j < tadLength; j++) {
                 hZ[j * zEWS] = s[j * tadEWS];
             }
-        } else {
-            Nd4jLong xCoord[MAX_RANK];
-            Nd4jLong zCoord[MAX_RANK];
-
-            for (Nd4jLong j = 0; j < tadLength; j++) {
-                shape::ind2sub(tadRank,tadShape, j, xCoord);
-                shape::ind2sub(zRank, zShape, j, zCoord);
-
-                auto xOffset = shape::getOffset(0, tadShape, tadStride, xCoord, tadRank);
-                auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-
-                hZ[zOffset] = s[xOffset];
-            }
+        } 
+        else {
+            
+            for (Nd4jLong j = 0; j < tadLength; j++)                 
+                hZ[shape::getIndexOffset(j, hZShapeInfo, tadLength)] = s[shape::getIndexOffset(j, tadShapeInfo, tadLength)];            
         }
     }
 }
@@ -1455,20 +1412,13 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
                     nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
                 }
 
-            } else {
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong yCoord[MAX_RANK];
-
-                // ind2sub branch
-#pragma omp parallel for schedule(guided) if (N == 1 && tadLength > 512) private(xCoord, yCoord)
-                for (Nd4jLong i = 0; i < tadLength; i++) {
-                    shape::ind2subC(tadRank,tadShape, i, xCoord);
-                    shape::ind2subC(tadRank,tadShape, i, yCoord);
-
-                    auto xOffset = shape::getOffset(oldOffset, tadShape, tadStride, xCoord, tadRank);
-                    auto yOffset = shape::getOffset(newOffset, tadShape, tadStride, yCoord, tadRank);
-
-                    nd4j::math::nd4j_swap<T>(hX[xOffset], hX[yOffset]);
+            } 
+            else {
+                
+#pragma omp parallel for schedule(guided) if (N == 1 && tadLength > 512)
+                for (Nd4jLong i = 0; i < tadLength; i++) {                    
+                    auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);                    
+                    nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
                 }
 
             }

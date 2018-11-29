@@ -104,40 +104,29 @@ namespace simdOps {
 
 				//                __shared__ shape::TAD *tad;
 				__shared__ Nd4jLong tadLength;
-				__shared__ Nd4jLong tadRank;
 				__shared__ Nd4jLong numTads;
-				__shared__ Nd4jLong *tadShape;
-				__shared__ Nd4jLong *tadStride;
+
 				if (threadIdx.x == 0) {
 				    extern __shared__ unsigned char shmem[];
 				    sPartials = (Z *) shmem;
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-					tadRank = shape::rank(tadOnlyShapeInfo);
-					numTads = shape::length(xShapeInfo) / tadLength;
-
-					tadShape = shape::shapeOf(tadOnlyShapeInfo);
-					tadStride = shape::stride(tadOnlyShapeInfo);
+					numTads = shape::length(xShapeInfo) / tadLength;					
 				}
-				__syncthreads();
-
-				Nd4jLong xCoord[MAX_RANK];
+				__syncthreads();				
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 					auto tadOffsetForBlock = tadOffsets[r];
 
 					sPartials[threadIdx.x] = startingValue(dx + tadOffsetForBlock);
 
-					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-						shape::ind2subC(tadRank, tadShape, i, xCoord);
-						auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
-
+					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {						
+						auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
 						sPartials[threadIdx.x] = update(sPartials[threadIdx.x], op(dx[xOffset], result[r]), extraParams);
 					}
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
 					aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), &result[r]);
-
 
 					__syncthreads();
 					if (threadIdx.x == 0)
@@ -206,22 +195,15 @@ namespace simdOps {
                 }
             }
             else {
-                auto tadShape = shape::shapeOf(tadOnlyShapeInfo);
-                auto tadStride = shape::stride(tadOnlyShapeInfo);
-                auto tadRank = shape::rank(tadOnlyShapeInfo);
 
 #pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(close) default(shared)
                 for (int i = 0; i < resultLength; i++) {
 
                     auto offset = tadOffsets[i];
-                    Nd4jLong xCoord[MAX_RANK];
-
                     T start = startingValue(x + offset);
 
-                    for (int j = 0; j < tadLength; j++) {
-                        shape::ind2subC(tadRank, tadShape, j, xCoord);
-                        auto xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
-
+                    for (int j = 0; j < tadLength; j++) {                        
+                        auto xOffset = offset + shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
                         start = update(start, op(x[xOffset], result[i]), extraParams);
                     }
 

@@ -78,7 +78,7 @@ namespace simdOps {
 
 		static inline __device__ void execSpecialCuda(
 			             T *dx, Nd4jLong *xShapeBuffer,
-			             Z *result, Nd4jLong *resultShapeBuffer,
+			             Z *result, Nd4jLong *zShapeBuffer,
 			             Z *extraParams, 
                          int *allocationPointer, Z *reductionPointer, 
                          Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
@@ -133,8 +133,8 @@ namespace simdOps {
 
 				batchSize = shape::sizeAt(xShapeBuffer, 0);
 				inChannels = shape::sizeAt(xShapeBuffer, 1);
-				outH = shape::sizeAt(resultShapeBuffer, 2);
-				outW = shape::sizeAt(resultShapeBuffer, 3);
+				outH = shape::sizeAt(zShapeBuffer, 2);
+				outW = shape::sizeAt(zShapeBuffer, 3);
 				inH = shape::sizeAt(xShapeBuffer, 2);
 				inW = shape::sizeAt(xShapeBuffer, 3);
 
@@ -143,18 +143,18 @@ namespace simdOps {
             	strideY = shape::stride(xShapeBuffer)[2];
             	strideX = shape::stride(xShapeBuffer)[3];
 
-				strideOB = shape::stride(resultShapeBuffer)[0];
-            	strideOC = shape::stride(resultShapeBuffer)[1];
-            	strideOY = shape::stride(resultShapeBuffer)[2];
-            	strideOX = shape::stride(resultShapeBuffer)[3];
+				strideOB = shape::stride(zShapeBuffer)[0];
+            	strideOC = shape::stride(zShapeBuffer)[1];
+            	strideOY = shape::stride(zShapeBuffer)[2];
+            	strideOX = shape::stride(zShapeBuffer)[3];
 
-            	length = shape::length(resultShapeBuffer);
+            	length = shape::length(zShapeBuffer);
 
 				//Replace kernel H/W with *effective* kernel H/W accounting for dilatyon
 				kHEff = kH + (kH-1)*(dH-1);
 				kWEff = kW + (kW-1)*(dW-1);
 
-				fOrder = shape::order(resultShapeBuffer) == 'f';
+				fOrder = shape::order(zShapeBuffer) == 'f';
 /*
 				if (blockIdx.x == 0) {
 					printf("kH: %i; kW: %i; sH: %i; sW: %i; pH: %i; pW: %i; dH: %i; dW: %i; poolingMode: %i; extraParam0: %f;\n", kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, (float) extraParam0);
@@ -496,7 +496,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 		static inline __device__ void execSpecialCuda(
 			                             T *dx, Nd4jLong *xShapeBuffer,
-			                             T *result, Nd4jLong *resultShapeBuffer,
+			                             T *result, Nd4jLong *zShapeBuffer,
 			                             T *extraParams, 
                                          int *allocationPointer, T *reductionPointer, 
                                          Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
@@ -513,9 +513,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			int kSize = kernelWidth * kernelHeight;
 			T zeroPadVal = (T)extraParams[9];	//Value to use when value is padding. Usually 0 but not always
 
-			auto outShape = shape::shapeOf(resultShapeBuffer);
-			auto resultOrder = shape::order(resultShapeBuffer);
-			auto outStride = shape::stride(resultShapeBuffer);
+			auto outShape = shape::shapeOf(zShapeBuffer);
+			auto resultOrder = shape::order(zShapeBuffer);
+			auto outStride = shape::stride(zShapeBuffer);
 
 			auto inShape = shape::shapeOf(xShapeBuffer);
 			auto inStride = shape::stride(xShapeBuffer);
@@ -734,7 +734,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 #ifdef __CUDACC__
 		static inline __device__ void execSpecialCuda(
 			                 T *dx, Nd4jLong *xShapeBuffer,
-			                 Z *result, Nd4jLong *resultShapeBuffer,
+			                 Z *result, Nd4jLong *zShapeBuffer,
 			                 Z *extraParams, 
                              int *allocationPointer, Z *reductionPointer, 
                              Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
@@ -829,7 +829,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				T *dx,
 				Nd4jLong *xShapeBuffer,
 				Z *result,
-				Nd4jLong *resultShapeBuffer,
+				Nd4jLong *zShapeBuffer,
 				Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 			int length = shape::length(xShapeBuffer);
@@ -916,7 +916,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 		static inline __device__ void execSpecialCuda(
 			X *dx, Nd4jLong *xShapeBuffer,
-			X *result, Nd4jLong *resultShapeBuffer,
+			X *result, Nd4jLong *zShapeBuffer,
 			X *extraParams, int *allocationPointer, 
             X *reductionPointer, 
             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
@@ -945,9 +945,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			int dY = (int)extraParams[6];			//Dilation in height/y dimension
             int dX = (int)extraParams[7];			//Dilation in width/x dimension
 
-			auto outShape = shape::shapeOf(resultShapeBuffer);
-			auto resultOrder = shape::order(resultShapeBuffer);
-			auto outStride = shape::stride(resultShapeBuffer);
+			auto outShape = shape::shapeOf(zShapeBuffer);
+			auto resultOrder = shape::order(zShapeBuffer);
+			auto outStride = shape::stride(zShapeBuffer);
 
 			int samples = outShape[0];
 			int depth = outShape[1];
@@ -1202,33 +1202,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         dx[idx2] = dx[idx1];
                         dx[idx1] = tmp;
                     }
-                } else {
-                    __shared__ int xRank;
-                    __shared__ Nd4jLong *xShape;
-                    __shared__ Nd4jLong *xStride;
-
-                    if (threadIdx.x == 0) {
-				        xRank = shape::rank(xShapeBuffer);
-                        xShape = shape::shapeOf(xShapeBuffer);
-                        xStride = shape::stride(xShapeBuffer);
-				    }
-				    __syncthreads();
-
-					Nd4jLong xCoord[MAX_RANK];
-					Nd4jLong zCoord[MAX_RANK];
+                } 
+                else {                    
 
 					for (int e = tid; e < xLength / 2; e += blockDim.x * gridDim.x) {
-                        if (xOrder == 'c') {
-                            shape::ind2subC(xRank, xShape, e, xCoord);
-                            shape::ind2subC(xRank, xShape, sLength - e, zCoord);
-                        } else {
-                            shape::ind2sub(xRank, xShape, e, xCoord);
-                            shape::ind2sub(xRank, xShape, sLength - e, zCoord);
-                        }
-
-                        auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                        auto zOffset = shape::getOffset(0, xShape, xStride, zCoord, xRank);
-
+                        auto xOffset = shape::getIndexOffset(e, xShapeBuffer, xLength);
+                        auto zOffset = shape::getIndexOffset(sLength - e, xShapeBuffer, xLength);
                         result[zOffset] = dx[xOffset];
 					}
                 }
@@ -1253,42 +1232,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                     for (int e = tid; e < xLength; e += blockDim.x * gridDim.x) {
                         result[(sLength - e) * zEWS] = dx[e * xEWS];
                     }
-                } else {
-                    __shared__ int xRank;
-                    __shared__ Nd4jLong *xShape;
-                    __shared__ Nd4jLong *xStride;
-
-					__shared__ int zRank;
-					__shared__ Nd4jLong *zShape;
-                    __shared__ Nd4jLong *zStride;
-
-                    if (threadIdx.x == 0) {
-				        xRank = shape::rank(xShapeBuffer);
-                        xShape = shape::shapeOf(xShapeBuffer);
-                        xStride = shape::stride(xShapeBuffer);
-
-					    zRank = shape::rank(zShapeBuffer);
-					    zShape = shape::shapeOf(zShapeBuffer);
-                        zStride = shape::stride(zShapeBuffer);
-				    }
-				    __syncthreads();
-
-					Nd4jLong xCoord[MAX_RANK];
-					Nd4jLong zCoord[MAX_RANK];
+                } 
+                else {                  
 
                     for (int e = tid; e < xLength; e += blockDim.x * gridDim.x) {
-                        if (xOrder == 'c') {
-                            shape::ind2subC(xRank, xShape, e, xCoord);
-                            shape::ind2subC(xRank, xShape, sLength - e, zCoord);
-                        } else {
-                            shape::ind2sub(xRank, xShape, e, xCoord);
-                            shape::ind2sub(xRank, xShape, sLength - e, zCoord);
-                        }
-
-
-                        auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                        auto zOffset = shape::getOffset(0, xShape, xStride, zCoord, xRank);
-
+                        auto xOffset = shape::getIndexOffset(e, xShapeBuffer, xLength);
+                        auto zOffset = shape::getIndexOffset(sLength - e, xShapeBuffer, xLength);
                         result[zOffset] = dx[xOffset];
                     }
                 }
@@ -1323,26 +1272,13 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         dx[idx2] = dx[idx1];
                         dx[idx1] = tmp;
                     }
-				} else {
-                    int xRank = shape::rank(xShapeBuffer);
-                    auto xShape = shape::shapeOf(xShapeBuffer);
-                    auto xStride = shape::stride(xShapeBuffer);
-
-                    Nd4jLong xCoord[MAX_RANK];
-                    Nd4jLong zCoord[MAX_RANK];
-
-#pragma omp parallel for private(xCoord, zCoord) schedule(guided)
-                    for (Nd4jLong e = 0; e < xLength / 2; e++) {
-                        if (xOrder == 'c') {
-                            shape::ind2subC(xRank, xShape, e, xCoord);
-                            shape::ind2subC(xRank, xShape, sLength - e, zCoord);
-                        } else {
-                            shape::ind2sub(xRank, xShape, e, xCoord);
-                            shape::ind2sub(xRank, xShape, sLength - e, zCoord);
-                        }
-
-                        auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                        auto zOffset = shape::getOffset(0, xShape, xStride, zCoord, xRank);
+				} 
+                else {
+                    
+#pragma omp parallel for schedule(guided)
+                    for (Nd4jLong e = 0; e < xLength / 2; e++) {                        
+                        auto xOffset = shape::getIndexOffset(e, xShapeBuffer, xLength);
+                        auto zOffset = shape::getIndexOffset(sLength - e, xShapeBuffer, xLength);
 
                         result[zOffset] = dx[xOffset];
                     }
@@ -1362,35 +1298,13 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					for (Nd4jLong e = 0; e < xLength; e++) {
 						result[(sLength - e) * zEWS] = dx[e * xEWS];
 					}
-				} else {
+				} 
+                else {
 
-					auto xRank = shape::rank(xShapeBuffer);
-                    auto xShape = shape::shapeOf(xShapeBuffer);
-                    auto xStride = shape::stride(xShapeBuffer);
-
-					auto zRank = shape::rank(zShapeBuffer);
-					auto zShape = shape::shapeOf(zShapeBuffer);
-                    auto zStride = shape::stride(zShapeBuffer);
-
-					Nd4jLong xCoord[MAX_RANK];
-					Nd4jLong zCoord[MAX_RANK];
-
-#pragma omp parallel for private(xCoord, zCoord) schedule(guided)
+#pragma omp parallel for schedule(guided)
 					for (Nd4jLong e = 0; e < xLength; e++) {
-
-						if (xOrder == 'c')
-							shape::ind2subC(xRank, xShape, e, xCoord);
-						else
-							shape::ind2sub(xRank, xShape, e, xCoord);
-
-						if (zOrder == 'c')
-                            shape::ind2subC(zRank, zShape, (sLength - e), zCoord);
-                        else
-                        	shape::ind2sub(zRank, zShape, (sLength - e), zCoord);
-
-						auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                        auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-
+						auto xOffset = shape::getIndexOffset(e, xShapeBuffer, xLength);
+                        auto zOffset = shape::getIndexOffset(sLength - e, zShapeBuffer, xLength);
 						result[zOffset] = dx[xOffset];
 					}
 				}
@@ -1414,7 +1328,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 		static inline __device__ void execSpecialCuda(
 			void *vx, Nd4jLong *xShapeBuffer,
-			void *vresult, Nd4jLong *resultShapeBuffer,
+			void *vresult, Nd4jLong *zShapeBuffer,
 			void *vextraParams,
 			int *allocationPointer, void *reductionPointer, 
             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
@@ -1449,19 +1363,19 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//subtract max of each row
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, zShapeBuffer, allocationPointer);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, zShapeBuffer, extraParams, result, zShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, zShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, zShapeBuffer, extraParams, result, zShapeBuffer, allocationPointer);
 
 		}
 #endif
@@ -1470,7 +1384,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			void *vx,
 			Nd4jLong *xShapeBuffer,
 			void *vresult,
-			Nd4jLong *resultShapeBuffer,
+			Nd4jLong *zShapeBuffer,
 			void *vextraParams,
 			Nd4jLong *tadShapeInfo,
 			Nd4jLong *tadOffsets) {
@@ -1493,16 +1407,16 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,  nullptr, nullptr);
 
 				//subtract max of each row
-				functions::broadcast::Broadcast<X, X, X>::exec(nd4j::broadcast::Subtract, dx, xShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X, X, X>::exec(nd4j::broadcast::Subtract, dx, xShapeBuffer, maxResult, maxResultShapeBuffer, result, zShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
-				functions::transform::TransformFloat<X,X>::exec(nd4j::transform::Exp, result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
+				functions::transform::TransformFloat<X,X>::exec(nd4j::transform::Exp, result, zShapeBuffer, result, zShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
-				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Sum, result, zShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//divide by the sum
-				functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Divide, result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Divide, result, zShapeBuffer, maxResult, maxResultShapeBuffer, result, zShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				delete[] maxResultShapeBuffer;
 				delete[] maxResult;
@@ -1511,7 +1425,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				auto max = -nd4j::DataTypeUtils::max<X>();
 				X sum = 0;
 				int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
-				int resultElementWiseStride = shape::elementWiseStride(resultShapeBuffer);
+				int resultElementWiseStride = shape::elementWiseStride(zShapeBuffer);
 				int length = shape::length(xShapeBuffer);
 				if (elementWiseStride >= 1 && resultElementWiseStride >= 1) {
 					if (elementWiseStride == 1 && resultElementWiseStride == 1) {
@@ -1573,7 +1487,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 		static inline __device__ void execSpecialCuda(
             			void *vx, Nd4jLong *xShapeBuffer,
-            			void *vresult, Nd4jLong *resultShapeBuffer,
+            			void *vresult, Nd4jLong *zShapeBuffer,
             			void *vextraParams,
             			int *allocationPointer, void *reductionPointer, 
                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
@@ -1605,22 +1519,22 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//subtract max of each row
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, zShapeBuffer, allocationPointer);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, zShapeBuffer, extraParams, result, zShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, zShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, zShapeBuffer, extraParams, result, zShapeBuffer, allocationPointer);
 			__syncthreads();
 
-			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Log, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Log, result, zShapeBuffer, extraParams, result, zShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 
 		}
 #endif
@@ -1630,7 +1544,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			void *vx,
 			Nd4jLong *xShapeBuffer,
 			void *vresult,
-			Nd4jLong *resultShapeBuffer,
+			Nd4jLong *zShapeBuffer,
 			void *vextraParams,
 			Nd4jLong *tadShapeInfo,
 			Nd4jLong *tadOffsets) {
@@ -1656,18 +1570,18 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//subtract max of each row
-				functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Subtract, dx, xShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Subtract, dx, xShapeBuffer, maxResult, maxResultShapeBuffer, result, zShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
-				functions::transform::TransformFloat<X,X>::exec(nd4j::transform::Exp, result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
+				functions::transform::TransformFloat<X,X>::exec(nd4j::transform::Exp, result, zShapeBuffer, result, zShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
-				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Sum, result, zShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//divide by the sum
-				functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Divide, result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Divide, result, zShapeBuffer, maxResult, maxResultShapeBuffer, result, zShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
-				functions::transform::TransformFloat<X,X>::exec(nd4j::transform::Log, result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
+				functions::transform::TransformFloat<X,X>::exec(nd4j::transform::Log, result, zShapeBuffer, result, zShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 
 				delete[] maxResultShapeBuffer;
@@ -1738,7 +1652,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 		static inline __device__ void execSpecialCuda(
 			                 void *vx, Nd4jLong *xShapeBuffer,
-			                 void *vresult, Nd4jLong *resultShapeBuffer,
+			                 void *vresult, Nd4jLong *zShapeBuffer,
 			                 void *vextraParams,
 			                 int *allocationPointer, void *reductionPointer, 
                              Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
@@ -1755,7 +1669,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			auto length = shape::length(xShapeBuffer);
 
 			if (threadIdx.x == 0) {
-				resultEWS = shape::elementWiseStride(resultShapeBuffer);
+				resultEWS = shape::elementWiseStride(zShapeBuffer);
 
 				maxResult = (X) 0.0;
 			}
@@ -1774,19 +1688,19 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			__syncthreads();
 
 			//subtract max of each row
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, zShapeBuffer, allocationPointer);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, zShapeBuffer, extraParams, result, zShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, zShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, zShapeBuffer, extraParams, result, zShapeBuffer, allocationPointer);
 			__syncthreads();
 
 			if (resultEWS >= 1) {
@@ -1806,7 +1720,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			void *vx,
 			Nd4jLong *xShapeBuffer,
 			void *vresult,
-			Nd4jLong *resultShapeBuffer,
+			Nd4jLong *zShapeBuffer,
 			void *vextraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
             auto dx = reinterpret_cast<X *>(vx);
@@ -1816,7 +1730,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			if (shape::isMatrix(xShapeBuffer, 2)) {
 				auto shape = shape::shapeOf(xShapeBuffer);
 
-				auto resultEleStide = shape::elementWiseStride(resultShapeBuffer);
+				auto resultEleStide = shape::elementWiseStride(zShapeBuffer);
 
 				//iterate along rows
 				int dimension[1] = { 0 };
@@ -1833,16 +1747,16 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//subtract max of each row
-				functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Subtract, result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Subtract, result, zShapeBuffer, maxResult, maxResultShapeBuffer, result, zShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
-				functions::transform::TransformFloat<X,X>::exec(nd4j::transform::Exp, result, resultShapeBuffer, result, resultShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
+				functions::transform::TransformFloat<X,X>::exec(nd4j::transform::Exp, result, zShapeBuffer, result, zShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
 
 				//take the sum for the exponential
-				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Sum, result, zShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//divide by the sum
-				functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Divide, result, resultShapeBuffer, maxResult, maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+				functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Divide, result, zShapeBuffer, maxResult, maxResultShapeBuffer, result, zShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
 
 				if (resultEleStide >= 1) {
 					if (resultEleStide == 1) {
@@ -1861,15 +1775,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					}
 				}
 				else {
-                    auto zShape = shape::shapeOf(resultShapeBuffer);
-                    auto zStride = shape::stride(resultShapeBuffer);
-                    auto zRank = shape::rank(resultShapeBuffer);
-
-                    Nd4jLong zCoord[MAX_RANK];
-
-                    for (int i = 0; i < len; i++) {
-                        shape::ind2subC(zRank,zShape, i, zCoord);
-                        Nd4jLong zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+                    
+                    for (int i = 0; i < len; i++) {                        
+                        Nd4jLong zOffset = shape::getIndexOffset(i, zShapeBuffer, len);
                         result[zOffset] = result[zOffset] * ((X) 1.0f - result[zOffset]);
                     }
                 }
@@ -1955,7 +1863,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			void *vx,
 			Nd4jLong *xShapeBuffer,
 			void *vresult,
-			Nd4jLong *resultShapeBuffer,
+			Nd4jLong *zShapeBuffer,
 			void *vextraParams,
 			int *allocationPointer, void *reductionPointer) {
 
@@ -1968,7 +1876,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			__shared__ int maxIdx;
 			__shared__ int length;
 			if (threadIdx.x == 0) {
-				length = shape::length(resultShapeBuffer);
+				length = shape::length(zShapeBuffer);
 			}
 			__syncthreads();
 
@@ -1977,7 +1885,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				xShapeBuffer,
 				extraParams,
 				result,
-				resultShapeBuffer,
+				zShapeBuffer,
 				nullptr,
 				1,
 				1, allocationPointer, reductionPointer,  nullptr, nullptr);
@@ -2009,7 +1917,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			void *vx,
 			Nd4jLong *xShapeBuffer,
             void *vresult,
-			Nd4jLong *resultShapeBuffer,
+			Nd4jLong *zShapeBuffer,
 			void *vextraParams) {
 
             auto dx = reinterpret_cast<X *>(vx);
@@ -2018,9 +1926,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 			auto length = shape::length(xShapeBuffer);
 			auto eleStride = shape::elementWiseStride(xShapeBuffer);
-			auto resultEleStride = shape::elementWiseStride(resultShapeBuffer);
+			auto resultEleStride = shape::elementWiseStride(zShapeBuffer);
 			auto xOrder = shape::order(xShapeBuffer);
-			auto resultOrder = shape::order(resultShapeBuffer);
+			auto resultOrder = shape::order(zShapeBuffer);
 /*
 			int tadsPerThread = tads / TAD_THRESHOLD;
 			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
@@ -2130,7 +2038,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				Nd4jLong resultStridesIter[MAX_RANK];
 				auto xShape = shape::shapeOf(xShapeBuffer);
 				auto xStride = shape::stride(xShapeBuffer);
-				auto resultStride = shape::stride(resultShapeBuffer);
+				auto resultStride = shape::stride(zShapeBuffer);
 				auto rank = shape::rank(xShapeBuffer);
 				auto originalResult = result;
 				if (PrepareTwoRawArrayIter<X, Z>(rank,
@@ -2169,12 +2077,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 						resultStridesIter);
 
 					//pointer to where max value would be
-					if (shape::order(resultShapeBuffer) == 'c' || (shape::order(resultShapeBuffer) == 'f' &&
-						maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1] >=
-						shape::length(resultShapeBuffer)))
+					if (shape::order(zShapeBuffer) == 'c' || (shape::order(zShapeBuffer) == 'f' &&
+						maxIdx * shape::stride(zShapeBuffer)[shape::rank(zShapeBuffer) - 1] >=
+						shape::length(zShapeBuffer)))
 						originalResult[maxIdx] = static_cast<Z>(1);
 					else
-						originalResult[maxIdx * shape::stride(resultShapeBuffer)[shape::rank(resultShapeBuffer) - 1]] = static_cast<Z>(1);
+						originalResult[maxIdx * shape::stride(zShapeBuffer)[shape::rank(zShapeBuffer) - 1]] = static_cast<Z>(1);
 				}
 			}
 
@@ -2190,7 +2098,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 		static inline __device__ void execSpecialCuda(
 			             void *vx, Nd4jLong *xShapeBuffer,
-			             void *vresult, Nd4jLong *resultShapeBuffer,
+			             void *vresult, Nd4jLong *zShapeBuffer,
 			             void *vextraParams, int *allocationPointer, 
                          void *reductionPointer, 
                          Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
@@ -2201,7 +2109,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 			// FIXME: MAX_DIMENSION is lower then FP16 frame
 			if (extraParams == nullptr || (int) extraParams[0] == MAX_DIMENSION) {
-				doAllCuda(dx, xShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, reductionPointer);
+				doAllCuda(dx, xShapeBuffer, result, zShapeBuffer, extraParams, allocationPointer, reductionPointer);
 			}
 		}
 #endif
@@ -2210,7 +2118,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			void *vx,
 			Nd4jLong *xShapeBuffer,
 			void *vresult,
-			Nd4jLong *resultShapeBuffer,
+			Nd4jLong *zShapeBuffer,
 			void *vextraParams,
 			Nd4jLong *tadShapeInfo,
 			Nd4jLong *tadOffsets) {
@@ -2222,7 +2130,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			//FIXME: this op should be moved to CustomOps
 			if (extraParams == nullptr || (int)extraParams[0] == 0 ||
 				((int)extraParams[0] == 1 && (int)extraParams[1] == MAX_DIMENSION)) {
-				doAll(dx, xShapeBuffer, result, resultShapeBuffer, extraParams);
+				doAll(dx, xShapeBuffer, result, zShapeBuffer, extraParams);
 			}
 			else if (shape::isVector(xShapeBuffer)) {
 				auto dimensionLength = (int)extraParams[0];

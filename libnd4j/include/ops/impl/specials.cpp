@@ -171,21 +171,12 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     Nd4jLong SpecialMethods<T>::getPosition(Nd4jLong *xShapeInfo, Nd4jLong index) {
         auto xEWS = shape::elementWiseStride(xShapeInfo);
 
-        if (xEWS == 1) {
-            return index;
-        } else if (xEWS > 1) {
+        if (xEWS == 1) 
+            return index;        
+        else if (xEWS > 1)
             return index * xEWS;
-        } else {
-            Nd4jLong xCoord[MAX_RANK];
-            int xRank = shape::rank(xShapeInfo);
-            auto xShape = shape::shapeOf(xShapeInfo);
-            auto xStride = shape::stride(xShapeInfo);
-
-            shape::ind2subC(xRank, xShape, index, xCoord);
-            auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-
-            return xOffset;
-        }
+        else 
+            return shape::getIndexOffset(index, xShapeInfo, shape::length(xShapeInfo));
     }
 
     template<typename T>

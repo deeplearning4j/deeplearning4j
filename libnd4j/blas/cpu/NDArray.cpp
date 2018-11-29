@@ -4877,18 +4877,16 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
     if (i >= _length)
         throw std::invalid_argument("NDArray::getOffset: input index is out of array length !");
 
-    auto ews   = this->ews();
-    auto order = ordering();
+    auto ews   = this->ews();    
 
-    if(ews == 1 && order == 'c')
-        return i;
-
-    if(ews > 1 && order == 'c')
-        return i * ews;
-
-    Nd4jLong idx[MAX_RANK];
-    shape::ind2subC(rankOf(), shapeOf(), i, idx);
-    return shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+    if(ordering() == 'c') {
+        if(ews == 1)
+            return i;
+        if(ews > 1)
+            return i * ews;
+    }
+    
+    return shape::getIndexOffset(i, _shapeInfo, _length);
 }
 
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);

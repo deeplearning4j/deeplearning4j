@@ -58,20 +58,17 @@ void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& outp
     const auto imEWS = shape::elementWiseStride(imShapeBuffer);
     if(imEWS == 1) {
         memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
-    } else if (imEWS > 1) {
+    } 
+    else if (imEWS > 1) {
 #pragma omp parallel for schedule(static) proc_bind(close)
         for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS)
             imBuff[i] = static_cast<T>(0.f);
-    } else {
-        Nd4jLong idx[MAX_RANK];
+    } 
+    else {        
         const auto len = shape::length(imShapeBuffer);
-#pragma omp parallel for schedule(static) proc_bind(close) private(idx)
-        for (int i = 0; i < len; i++) {
-            shape::ind2subC(shape::rank(imShapeBuffer), imShape, i, len, idx);
-            auto imOffset = shape::getOffset(0, imShape, imStride, idx, shape::rank(imShapeBuffer));
-
-            imBuff[imOffset] = static_cast<T>(0.f);
-        }
+#pragma omp parallel for schedule(static) proc_bind(close)
+        for (int i = 0; i < len; i++)            
+            imBuff[shape::getIndexOffset(i, imShapeBuffer, len)] = static_cast<T>(0.f);
     }
             
 	T *col, *im;

@@ -103,57 +103,24 @@ namespace randomOps {
                     }
                     __syncthreads();
                 }
-            } else {
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong yCoord[MAX_RANK];
-                Nd4jLong zCoord[MAX_RANK];
-
-                __shared__ int xRank;
-                __shared__ int yRank;
-                __shared__ int zRank;
-
-                __shared__ Nd4jLong *xShape;
-                __shared__ Nd4jLong *yShape;
-                __shared__ Nd4jLong *zShape;
-
-                __shared__ Nd4jLong *xStride;
-                __shared__ Nd4jLong *yStride;
-                __shared__ Nd4jLong *zStride;
-
-
-                if (threadIdx.x == 0) {
-                    xRank = shape::rank(xShapeBuffer);
-                    yRank = shape::rank(yShapeBuffer);
-                    zRank = shape::rank(zShapeBuffer);
-
-                    xShape = shape::shapeOf(xShapeBuffer);
-                    yShape = shape::shapeOf(yShapeBuffer);
-                    zShape = shape::shapeOf(zShapeBuffer);
-
-                    xStride = shape::stride(xShapeBuffer);
-                    yStride = shape::stride(yShapeBuffer);
-                    zStride = shape::stride(zShapeBuffer);
-                }
-                __syncthreads();
-
+            } 
+            else {
+            
                 for (Nd4jLong i = tid; i < zLength; i+=blockDim.x * gridDim.x) {
-                    shape::ind2sub(zRank, zShape, i, zCoord);
 
-                    auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-
+                    auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, zLength);
                     T prob = rng->relativeT<T>(i);
                     T cumProb = (T) 0.0f;
-                    for (Nd4jLong f = 0; f < yLength; f++) {
-                        shape::ind2sub(yRank, yShape, i, yCoord);
-                        auto yOffset2 = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 
+                    for (Nd4jLong f = 0; f < yLength; f++) {
+                        
+                        auto yOffset2 = shape::getIndexOffset(f, yShapeBuffer, yLength);
                         T relProb = y[yOffset2];
                         cumProb += relProb;
 
-                        if (prob <= cumProb || f == yLength - 1) {
-                            shape::ind2sub(xRank, xShape, f, xCoord);
-                            auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-
+                        if (prob <= cumProb || f == yLength - 1) {                            
+                            
+                            auto xOffset2 = shape::getIndexOffset(f, xShapeBuffer, xLength);
                             z[zOffset2] = x[xOffset2];
                             f += yLength;
                         }
@@ -181,6 +148,7 @@ namespace randomOps {
             // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
             //T probSum = extraArguments[0];
 
+            Nd4jLong xLength = shape::length(xShapeBuffer);
             Nd4jLong yLength = shape::length(yShapeBuffer);
             Nd4jLong zLength = shape::length(zShapeBuffer);
 
@@ -207,43 +175,25 @@ namespace randomOps {
                         }
                     }
                 }
-            } else {
-                Nd4jLong xCoord[MAX_RANK];
-                Nd4jLong yCoord[MAX_RANK];
-                Nd4jLong zCoord[MAX_RANK];
-
-                int xRank = shape::rank(xShapeBuffer);
-                int yRank = shape::rank(yShapeBuffer);
-                int zRank = shape::rank(zShapeBuffer);
-
-                auto xShape = shape::shapeOf(xShapeBuffer);
-                auto yShape = shape::shapeOf(yShapeBuffer);
-                auto zShape = shape::shapeOf(zShapeBuffer);
-
-                auto xStride = shape::stride(xShapeBuffer);
-                auto yStride = shape::stride(yShapeBuffer);
-                auto zStride = shape::stride(zShapeBuffer);
-
+            } 
+            else {            
 
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
                 for (Nd4jLong i = 0; i < zLength; i++) {
-                    shape::ind2sub(zRank, zShape, i, zCoord);
 
-                    auto zOffset2 = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-
+                    auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, zLength);
                     T prob = rng->relativeT<T>(i);
                     T cumProb = (T) 0.0f;
-                    for (Nd4jLong f = 0; f < yLength; f++) {
-                        shape::ind2sub(yRank, yShape, i, yCoord);
-                        auto yOffset2 = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 
+                    for (Nd4jLong f = 0; f < yLength; f++) {
+                        
+                        auto yOffset2 = shape::getIndexOffset(f, yShapeBuffer, yLength);
                         T relProb = y[yOffset2];
                         cumProb += relProb;
 
-                        if (prob <= cumProb || f == yLength - 1) {
-                            shape::ind2sub(xRank, xShape, f, xCoord);
-                            Nd4jLong xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-
+                        if (prob <= cumProb || f == yLength - 1) {                        
+                            
+                            Nd4jLong xOffset2 = shape::getIndexOffset(f, xShapeBuffer, xLength);
                             z[zOffset2] = x[xOffset2];
                             f += yLength;
                         }
