@@ -5667,6 +5667,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testReduceAlongDimension_1() {
+        val original = Nd4j.linspace(1, 100, 100, DataType.DOUBLE).reshape(10, 10);
+
+        val reduced0 = original.max(0);
+        log.info("Reduced0: {}", reduced0);
+
+        val reduced1 = original.max(1);
+        log.info("Reduced1: {}", reduced1);
+    }
+
+    @Test
     public void testRDiv() throws Exception {
         val x = Nd4j.create(new double[]{2,2,2});
         val y = Nd4j.create(new double[]{4,6,8});

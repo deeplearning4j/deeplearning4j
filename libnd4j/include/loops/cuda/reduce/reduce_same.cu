@@ -171,12 +171,10 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
     __syncthreads();
     
     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-        
-        Nd4jLong tadOffsetForBlock = tadOffsets[r];
+        auto tadOffsetForBlock = tadOffsets[r];
         sPartials[threadIdx.x] = OpType::startingValue(x + tadOffsetForBlock);
 
           for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-            
             auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
           }
@@ -189,6 +187,8 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
 
           if (threadIdx.x == 0)
             z[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+
+          __syncthreads();
     }
 }
 
