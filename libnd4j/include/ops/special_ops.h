@@ -77,11 +77,11 @@ namespace simdOps {
 		*/
 
 		static inline __device__ void execSpecialCuda(
-			T *dx,
-			Nd4jLong *xShapeBuffer,
-			Z *result,
-			Nd4jLong *resultShapeBuffer,
-			Z *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+			             T *dx, Nd4jLong *xShapeBuffer,
+			             Z *result, Nd4jLong *resultShapeBuffer,
+			             Z *extraParams, 
+                         int *allocationPointer, Z *reductionPointer, 
+                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 			__shared__ int kH;
 			__shared__ int kW;
@@ -495,11 +495,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		*/
 
 		static inline __device__ void execSpecialCuda(
-			T *dx,
-			Nd4jLong *xShapeBuffer,
-			T *result,
-			Nd4jLong *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+			                             T *dx, Nd4jLong *xShapeBuffer,
+			                             T *result, Nd4jLong *resultShapeBuffer,
+			                             T *extraParams, 
+                                         int *allocationPointer, T *reductionPointer, 
+                                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 			int kernelHeight = (int)extraParams[0];
 			int kernelWidth = (int)extraParams[1];
@@ -732,11 +733,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 #ifdef __CUDACC__
 		static inline __device__ void execSpecialCuda(
-			T *dx,
-			Nd4jLong *xShapeBuffer,
-			Z *result,
-			Nd4jLong *resultShapeBuffer,
-			Z *extraParams, int *allocationPointer, Z *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+			                 T *dx, Nd4jLong *xShapeBuffer,
+			                 Z *result, Nd4jLong *resultShapeBuffer,
+			                 Z *extraParams, 
+                             int *allocationPointer, Z *reductionPointer, 
+                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
             int numBins = (int) extraParams[0];
             Z min_val = extraParams[1];
@@ -914,11 +915,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		*/
 
 		static inline __device__ void execSpecialCuda(
-			X *dx,
-			Nd4jLong *xShapeBuffer,
-			X *result,
-			Nd4jLong *resultShapeBuffer,
-			X *extraParams, int *allocationPointer, X *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+			X *dx, Nd4jLong *xShapeBuffer,
+			X *result, Nd4jLong *resultShapeBuffer,
+			X *extraParams, int *allocationPointer, 
+            X *reductionPointer, 
+            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
 			auto inShape = shape::shapeOf(xShapeBuffer);
 			auto inStride = shape::stride(xShapeBuffer);
 
@@ -1157,7 +1159,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
-		static inline __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, X *result, Nd4jLong *zShapeBuffer, X *extraParams, int *allocationPointer, X *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+		static inline __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, 
+                                                    X *result, Nd4jLong *zShapeBuffer, 
+                                                    X *extraParams, int *allocationPointer, 
+                                                    X *reductionPointer, 
+                                                    Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
             __shared__ Nd4jLong xLength;
 			__shared__ int xEWS;
             __shared__ char xOrder;
@@ -1406,12 +1413,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		*/
 
 		static inline __device__ void execSpecialCuda(
-			void *vx,
-			Nd4jLong *xShapeBuffer,
-			void *vresult,
-			Nd4jLong *resultShapeBuffer,
+			void *vx, Nd4jLong *xShapeBuffer,
+			void *vresult, Nd4jLong *resultShapeBuffer,
 			void *vextraParams,
-			int *allocationPointer, void *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+			int *allocationPointer, void *reductionPointer, 
+            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
             auto dx = reinterpret_cast<X *>(vx);
             auto result = reinterpret_cast<X *>(vresult);
@@ -1439,23 +1445,23 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			}
 			__syncthreads();
 
-			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
 
 		}
 #endif
@@ -1566,12 +1572,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		*/
 
 		static inline __device__ void execSpecialCuda(
-			void *vx,
-			Nd4jLong *xShapeBuffer,
-			void *vresult,
-			Nd4jLong *resultShapeBuffer,
-			void *vextraParams,
-			int *allocationPointer, void *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+            			void *vx, Nd4jLong *xShapeBuffer,
+            			void *vresult, Nd4jLong *resultShapeBuffer,
+            			void *vextraParams,
+            			int *allocationPointer, void *reductionPointer, 
+                        Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
 			auto shape = shape::shapeOf(xShapeBuffer);
 			auto stride = shape::stride(xShapeBuffer);
 			//iterate along rows
@@ -1595,26 +1601,26 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape, tempBuffer);
 			__syncthreads();
 
-			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
 			__syncthreads();
 
-			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Log, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Log, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 
 		}
 #endif
@@ -1731,12 +1737,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		*/
 
 		static inline __device__ void execSpecialCuda(
-			void *vx,
-			Nd4jLong *xShapeBuffer,
-			void *vresult,
-			Nd4jLong *resultShapeBuffer,
-			void *vextraParams,
-			int *allocationPointer, void *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+			                 void *vx, Nd4jLong *xShapeBuffer,
+			                 void *vresult, Nd4jLong *resultShapeBuffer,
+			                 void *vextraParams,
+			                 int *allocationPointer, void *reductionPointer, 
+                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
             auto dx = reinterpret_cast<X *>(vx);
             auto result = reinterpret_cast<X *>(vresult);
@@ -1765,23 +1770,23 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape, tempBuffer);
 			__syncthreads();
 
-			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
 			__syncthreads();
 
 			//subtract max of each row
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Subtract, &maxResult, dx, xShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			functions::transform::TransformFloatInplace<X,X>::transformCudaLegacy(nd4j::transform::Exp, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
-			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
+			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Sum, result, resultShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
 			__syncthreads();
 
 			//divide by the sum
-			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
+			functions::scalar::ScalarInplace<X,X,X>::transformCudaLegacy(nd4j::scalar::Divide, &maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer);
 			__syncthreads();
 
 			if (resultEWS >= 1) {
@@ -1952,7 +1957,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			void *vresult,
 			Nd4jLong *resultShapeBuffer,
 			void *vextraParams,
-			int *allocationPointer, void *reductionPointer, UnifiedSharedMemory *manager) {
+			int *allocationPointer, void *reductionPointer) {
 
             auto dx = reinterpret_cast<X *>(vx);
             auto result = reinterpret_cast<Z *>(vresult);
@@ -1975,7 +1980,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				resultShapeBuffer,
 				nullptr,
 				1,
-				1, allocationPointer, reductionPointer, manager, nullptr, nullptr);
+				1, allocationPointer, reductionPointer,  nullptr, nullptr);
 
 			__syncthreads();
 			if (threadIdx.x == 0)
@@ -2184,11 +2189,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		*/
 
 		static inline __device__ void execSpecialCuda(
-			void *vx,
-			Nd4jLong *xShapeBuffer,
-			void *vresult,
-			Nd4jLong *resultShapeBuffer,
-			void *vextraParams, int *allocationPointer, void *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+			             void *vx, Nd4jLong *xShapeBuffer,
+			             void *vresult, Nd4jLong *resultShapeBuffer,
+			             void *vextraParams, int *allocationPointer, 
+                         void *reductionPointer, 
+                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
             auto dx = reinterpret_cast<X *>(vx);
             auto result = reinterpret_cast<Z *>(vresult);
@@ -2196,7 +2201,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 			// FIXME: MAX_DIMENSION is lower then FP16 frame
 			if (extraParams == nullptr || (int) extraParams[0] == MAX_DIMENSION) {
-				doAllCuda(dx, xShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, reductionPointer, manager);
+				doAllCuda(dx, xShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, reductionPointer);
 			}
 		}
 #endif

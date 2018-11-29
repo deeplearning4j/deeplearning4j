@@ -28,70 +28,21 @@
 
 using namespace simdOps;
 
-
-template<typename X, typename Z, typename OpClass>
-__device__ void transformFloatSimpleGeneric(
-		Nd4jLong n,
-		void *dy,
-		Nd4jLong incy,
-		void *params,
-		void *result,
-		Nd4jLong resultStride, int *allocationPointer, void *reductionPointer) {
-
-	functions::transform::TransformFloat<X,Z>::template transformCuda<OpClass>(
-		n,
-		dy,
-		incy,
-		params,
-		result,
-		resultStride,
-		allocationPointer,
-		reductionPointer,
-		nullptr);
-}
-
-template<typename X, typename Z, typename OpClass>
-__device__ void transformFloatSimpleGeneric(
-		void *dy,
-		Nd4jLong *xShapeInfo, int xRank,
-		void *params,
-		void *result, Nd4jLong *zShapeInfo, int zRank, int *allocationPointer, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-
-	__shared__ UnifiedSharedMemory *manager;
-
-	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::transform::TransformFloat<X,Z>), sizeof(shape::TAD), xRank);
-	}
-	__syncthreads();
-	
-    functions::transform::TransformFloat<X,Z>::template transformCuda<OpClass>(
-	    dy,
-	    xShapeInfo,
-	    params,
-	    result,
-	    zShapeInfo,
-	    allocationPointer,
-	    reductionPointer,
-		manager, tadShapeInfo, tadOffsets);
-}
-
 template <typename X, typename Z, typename OpType>
 __global__ void transformFloatSimple(void *dy, Nd4jLong *xShapeInfo, int xRank,
 								void *params,
-								void *result, Nd4jLong *zShapeInfo, int zRank,
+								void *z, Nd4jLong *zShapeInfo, int zRank,
 								int *allocationPointer,
 								void *reductionPointer,
 								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-	transformFloatSimpleGeneric<X, Z, OpType>(dy, xShapeInfo, xRank, params, result, zShapeInfo, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+	
+	functions::transform::TransformFloat<X,Z>::template transformCuda<OpType>(
+	    											dy, xShapeInfo,
+	    											params,
+	    											z, zShapeInfo,
+	    											allocationPointer, reductionPointer,
+													tadShapeInfo, tadOffsets);
 }
-
-// transform shaped
-// DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float, INPUT(float *x, Nd4jLong *xShape, int xRank, float *extraParams, float *z, Nd4jLong *zShape, int zRank, int *allocationPointer, float *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
-// DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, double, INPUT(double *x, Nd4jLong *xShape, int xRank, double *extraParams, double *z, Nd4jLong *zShape, int zRank, int *allocationPointer, double *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
-// DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float16, INPUT(float16 *x, Nd4jLong *xShape, int xRank, float16 *extraParams, float16 *z, Nd4jLong *zShape, int zRank, int *allocationPointer, float16 *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
-
 
 
 namespace functions {
@@ -108,20 +59,21 @@ namespace functions {
         template<typename X, typename Z>
         template <typename OpType>
         __device__ void TransformFloat<X,Z>::transformCuda(
-			void *vdy,
-			Nd4jLong *shapeInfo,
-			void *vparams,
-			void *vresult,
-			Nd4jLong *zShapeInfo,
-			int *allocationPointer, void *vreductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+											void *vdy,
+											Nd4jLong *shapeInfo,
+											void *vparams,
+											void *vresult,
+											Nd4jLong *zShapeInfo,
+											int *allocationPointer, void *vreductionPointer, 
+											Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
         	auto dy = static_cast<X*>(vdy);
-		    auto result = static_cast<Z*>(vresult);
+		    auto z = static_cast<Z*>(vresult);
 		    auto params = static_cast<Z*>(vparams);
 		    auto reductionPointer = static_cast<Z*>(vreductionPointer);
 
 		    if(OpType::requiresSpecial) {
-			    OpType::execSpecialCuda(dy,shapeInfo,result,zShapeInfo,params, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
+			    OpType::execSpecialCuda(dy,shapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			    return;
 		    } else {
 
@@ -143,15 +95,15 @@ namespace functions {
 				    	dy,
 				    	xEws,
 				    	params,
-				    	result,
-				    	zEws, allocationPointer, reductionPointer, manager);
+				    	z,
+				    	zEws, allocationPointer, reductionPointer);
 		        }
 		        else {			        
 			
 		    	    for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
 						auto xOffset2 = shape::getIndexOffset(i, shapeInfo,  length);
 						auto zOffset2 = shape::getIndexOffset(i, zShapeInfo, length);				        
-	    			    result[zOffset2] = OpType::op(dy[xOffset2], params);
+	    			    z[zOffset2] = OpType::op(dy[xOffset2], params);
 		    	    }
 		        }
 	        }
@@ -159,48 +111,47 @@ namespace functions {
 
         template<typename X, typename Y>
         __device__ void TransformFloat<X,Y>::transformCudaLegacy(
-                int opNum,
-                void *dy,
-                Nd4jLong *shapeInfo,
-                void *params,
-                void *result,
-                Nd4jLong *zShapeInfo,
-                int *allocationPointer,
-                void *reductionPointer,
-                UnifiedSharedMemory *manager,
-                Nd4jLong *tadShapeInfo,
-                Nd4jLong *tadOffsets) {
-            DISPATCH_BY_OPNUM_TT(transformCuda, PARAMS(dy, shapeInfo, params, result, zShapeInfo, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
+						                int opNum,
+						                void *dy,
+						                Nd4jLong *shapeInfo,
+						                void *params,
+						                void *z,
+						                Nd4jLong *zShapeInfo,
+						                int *allocationPointer,
+						                void *reductionPointer,
+						                Nd4jLong *tadShapeInfo,
+						                Nd4jLong *tadOffsets) {
+            DISPATCH_BY_OPNUM_TT(transformCuda, PARAMS(dy, shapeInfo, params, z, zShapeInfo, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
         }
 
         template<typename X, typename Z>
         template <typename OpType>
 	    __device__ void TransformFloat<X,Z>::transformCuda(
-			Nd4jLong n,
-			void *vdy,
-			Nd4jLong incy,
-			void *vparams,
-			void *vresult,
-			Nd4jLong resultStride,
-			int *allocationPointer, void *vreductionPointer, UnifiedSharedMemory *manager) {
-		
+								Nd4jLong n,
+								void *vdy,
+								Nd4jLong incy,
+								void *vparams,
+								void *vresult,
+								Nd4jLong zEws,
+								int *allocationPointer, void *vreductionPointer) {
+
         	auto dy = static_cast<X*>(vdy);
-		    auto result = static_cast<Z*>(vresult);
+		    auto z = static_cast<Z*>(vresult);
 		    auto params = static_cast<Z*>(vparams);
 		    auto reductionPointer = static_cast<Z*>(vreductionPointer);
 
             int totalThreads = gridDim.x * blockDim.x;
 		    Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    		if(incy == 1 && resultStride == 1) {
+    		if(incy == 1 && zEws == 1) {
 	    		/* equal, positive, non-unit increments. */
 			    for (; i < n; i += totalThreads) {
-				    result[i] = OpType::op(dy[i], params);
+				    z[i] = OpType::op(dy[i], params);
 			    }
 		    }
 		    else {
 			    for (; i < n; i += totalThreads) {
-				    result[i * resultStride] = OpType::op(dy[i * incy], params);
+				    z[i * zEws] = OpType::op(dy[i * incy], params);
 			    }
 		    }
 	    }

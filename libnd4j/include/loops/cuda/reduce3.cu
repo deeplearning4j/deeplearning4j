@@ -39,17 +39,7 @@ __global__ void execScalarGeneric(const int opNum,
 								void *reductionBuffer,
 								Nd4jLong *tadOnlyShapeInfo) {
 
-	__shared__ UnifiedSharedMemory *manager;
-
-    if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<X,Z>), sizeof(shape::TAD), shape::rank(xShapeInfo));
-	}
-
-    __syncthreads();
-      
-    Reduce3<X,Z>::execScalarCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, manager, tadOnlyShapeInfo);
+    Reduce3<X,Z>::execScalarCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, tadOnlyShapeInfo);
 }
 
 template <typename X, typename Z>
@@ -64,18 +54,8 @@ __global__ void execAllGeneric(const int opNum,
                                       Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                                       Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 
-        __shared__ UnifiedSharedMemory *manager;
-
-        if (threadIdx.x == 0) {
-            extern __shared__ unsigned char shmem[];
-            manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-            manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<X,Z>), sizeof(shape::TAD), shape::rank(xShapeInfo));
-        }
-
-        __syncthreads();
-
-        Reduce3<X,Z>::execAllCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
-    }
+	Reduce3<X,Z>::execAllCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
+}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -90,18 +70,8 @@ __global__ void execGeneric(const int opNum,
 								int *allocationPointer,
 								Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
 								Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
-
-	__shared__ UnifiedSharedMemory *manager;
-
-    if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce3::Reduce3<X,Z>), sizeof(shape::TAD), shape::rank(xShapeInfo));
-	}
-
-    __syncthreads();
       
-    Reduce3<X,Z>::execCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);    
+    Reduce3<X,Z>::execCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);    
 }
 
 
@@ -144,17 +114,20 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 								void *vy, Nd4jLong *yShapeInfo,
 								void *extraParams,
 								void *vz, Nd4jLong *zShapeInfo, 
-								int *allocationPointer, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo) {
+								int *allocationPointer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
 
 	auto x = reinterpret_cast<X*>(vx);
 	auto y = reinterpret_cast<X*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
 
-	auto sPartials = reinterpret_cast<Z*>(manager->getSharedReductionBuffer()); // val.getPointer();
-
 	__shared__ Z extraZ[3];
-	
+	__shared__ Z* sPartials;
+    
 	if (threadIdx.x == 0) {
+		
+		extern __shared__ unsigned char shmem[];
+        sPartials = reinterpret_cast<Z*>(shmem);
+
 		extraZ[0] = (Z) 0.0f;
 		extraZ[1] = (Z) 0.0f;
 
@@ -191,7 +164,6 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 	else {
 
 		Z startingVal = OpType::startingValue(x);
-		Z *sPartials = (Z *) manager->getSharedReductionBuffer();
 		sPartials[threadIdx.x] = startingVal;
 
 		for(Nd4jLong i = tid ;i < length; i += gridDim.x * blockDim.x) {
@@ -274,7 +246,7 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 											void *vz, Nd4jLong *zShapeInfo,
 											int *dimension, int dimensionLength,
 											int postProcessOrNot,
-											int *allocationPointer, UnifiedSharedMemory *manager,
+											int *allocationPointer,
 											Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
 											Nd4jLong *yTadShapeInfo,Nd4jLong *yOffsets) {
 
@@ -283,7 +255,13 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 	auto z = reinterpret_cast<Z*>(vz);
 
     // initialize partials first
-    auto sPartials = reinterpret_cast<Z*>(manager->getSharedReductionBuffer());
+    __shared__ Z* sPartials;
+    if(threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        sPartials = reinterpret_cast<Z*>(shmem);
+    }
+    __syncthreads();
+    
     Z startingVal = OpType::startingValue(dx);
 	sPartials[threadIdx.x] = startingVal;
 	X *tempX = reinterpret_cast<X*>(sPartials) + blockDim.x;
@@ -372,7 +350,7 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 										void *vz, Nd4jLong *zShapeInfo,
 										int *dimension, int dimensionLength,
 										int postProcessOrNot, 
-										int *allocationPointer, UnifiedSharedMemory *manager,
+										int *allocationPointer,
 										Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
 										Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 				
@@ -387,8 +365,12 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 	__shared__ int yElementWiseStride;
 	
 	//shared memory space for storing intermediate results
-	//SharedMemory <T> val;
-	Z *sPartials = (Z *) manager->getSharedReductionBuffer(); //val.getPointer();
+	__shared__ Z* sPartials;
+    if(threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        sPartials = reinterpret_cast<Z*>(shmem);
+    }
+    __syncthreads();
 	Z init = OpType::startingValue(x);
 	sPartials[threadIdx.x] = init;
 
@@ -560,11 +542,11 @@ __device__ void Reduce3<X,Y>::execCuda(const int opNum,
 									void *vz, Nd4jLong *zShapeInfo,
 									int *dimension, int dimensionLength,
 									int postProcessOrNot,
-									int *allocationPointer, UnifiedSharedMemory *manager,
+									int *allocationPointer,
 									Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
 									Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
                            
-	DISPATCH_BY_OPNUM_TT(transform, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
+	DISPATCH_BY_OPNUM_TT(transform, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 }
 
 
@@ -578,11 +560,11 @@ __device__ void Reduce3<X,Y>::execAllCuda( const int opNum,
 										void *vz, Nd4jLong *zShapeInfo,
 										int *dimension, int dimensionLength,
 										int postProcessOrNot,
-										int *allocationPointer, UnifiedSharedMemory *manager,
+										int *allocationPointer,
 										Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
 										Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 
-	DISPATCH_BY_OPNUM_TT(transformAll, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
+	DISPATCH_BY_OPNUM_TT(transformAll, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 }
 
 
@@ -593,11 +575,10 @@ __device__ void Reduce3<X,Y>::execScalarCuda(const int opNum,
 										void *vy, Nd4jLong *yShapeInfo,
 										void *extraParams,
 										void *vz, Nd4jLong *zShapeInfo,
-										int * allocationPointer, void *reductionBuffer, 
-										UnifiedSharedMemory *manager,
+										int * allocationPointer, void *reductionBuffer, 										
 										Nd4jLong *tadOnlyShapeInfo) {
 
-	DISPATCH_BY_OPNUM_TT(execScalarCuda, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, manager, tadOnlyShapeInfo), REDUCE3_OPS);
+	DISPATCH_BY_OPNUM_TT(execScalarCuda, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, tadOnlyShapeInfo), REDUCE3_OPS);
 }
 
 

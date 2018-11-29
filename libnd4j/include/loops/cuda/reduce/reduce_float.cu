@@ -28,48 +28,6 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-__device__ void reduceSimpleGeneric(void *x,  Nd4jLong *xShapeInfo,
-                                    void *extraParams,
-                                    void *z, Nd4jLong *zShapeInfo,
-                                    int *dimension, int dimensionLength,
-                                    void *reductionBuffer, 
-                                    Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-
-    __shared__ UnifiedSharedMemory *manager;
-
-    if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceFloatFunction<X,Z>), sizeof(shape::TAD), shape::rank(xShapeInfo));
-    }
-
-    __syncthreads();
-
-    functions::reduce::ReduceFloatFunction<X,Z>::template transformCudaXD<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
-}
-
-////////////////////////////////////////////////////////////////////////
-template <typename X, typename Z, typename OpType>
-__device__ void reduceScalarGeneric(void *x, Nd4jLong *xShapeInfo,
-                                    void *extraParams,
-                                    void *z, Nd4jLong *zShapeInfo,
-                                    int *dimension, int dimensionLength,
-                                    void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
-
-    __shared__ UnifiedSharedMemory *manager;
-
-    if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::reduce::ReduceFloatFunction<X,Z>), sizeof(shape::TAD), 0);
-    }
-    __syncthreads();
-
-    functions::reduce::ReduceFloatFunction<X, Z>::template execScalarCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, reductionBuffer, manager, tadOnlyShapeInfo);
-}
-
-////////////////////////////////////////////////////////////////////////
-template <typename X, typename Z, typename OpType>
 __global__ void simpleReduce(void *x, Nd4jLong *xShapeInfo,
                             void *extraParams,
                             void *z, Nd4jLong *zShapeInfo,
@@ -77,7 +35,7 @@ __global__ void simpleReduce(void *x, Nd4jLong *xShapeInfo,
                             void *reductionBuffer, 
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
       
-    reduceSimpleGeneric<X, Z, OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+    functions::reduce::ReduceFloatFunction<X,Z>::template transformCudaXD<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -88,7 +46,7 @@ __global__ void simpleScalar(void *x, Nd4jLong *xShapeInfo,
                             int *dimension, int dimensionLength,
                             void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
 
-    reduceScalarGeneric<X, Z, OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
+    functions::reduce::ReduceFloatFunction<X, Z>::template execScalarCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, reductionBuffer, tadOnlyShapeInfo);
 }
 
 namespace functions {
@@ -135,7 +93,6 @@ __device__ void ReduceFloatFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *x
                                                         void *vz, Nd4jLong *zShapeInfo,
                                                         int *dimension,  int dimensionLength,
                                                         void *vreductionBuffer, 
-                                                        UnifiedSharedMemory *manager,
                                                         Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
     auto x = reinterpret_cast<X*>(vx);
@@ -188,7 +145,6 @@ __device__ void ReduceFloatFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSh
                                                         void *vextraParams,
                                                         void *vz, Nd4jLong *zShapeInfo,
                                                         void *vreductionBuffer,
-                                                        UnifiedSharedMemory *manager,
                                                         Nd4jLong *tadOnlyShapeInfo) {
 
     auto x = reinterpret_cast<X*>(vx);
@@ -200,8 +156,13 @@ __device__ void ReduceFloatFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSh
     auto len = shape::length(xShapeInfo);
     auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
-    //shared memory space for storing intermediate results
-    Z* sPartials = reinterpret_cast<Z*>(manager->getSharedReductionBuffer());
+    //shared memory space for storing intermediate results    
+    __shared__ Z* sPartials;
+    if(threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        sPartials = reinterpret_cast<Z*>(shmem);
+    }
+    __syncthreads();
 
     sPartials[threadIdx.x] = OpType::startingValue(x);
 

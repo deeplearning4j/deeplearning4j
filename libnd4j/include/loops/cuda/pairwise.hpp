@@ -34,7 +34,7 @@ __device__ void pairwiseSimpleShapedGeneric(void* x, Nd4jLong *xShapeInfo,
 									void *params, 
 									int *allocationBuffer) {
    
-    functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer, nullptr, nullptr);
+    functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer, nullptr);
 }
 
 template<typename X, typename Y, typename Z, typename OpType>
@@ -44,7 +44,7 @@ __device__ void pairwiseSimpleStridedGeneric(Nd4jLong length, void* x, Nd4jLong 
 									  void *params,
 									  int *allocationBuffer) {
 
-	functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<OpType>(length, x, y, xEws, yEws,  params, z, zEws, allocationBuffer, nullptr, nullptr);
+	functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<OpType>(length, x, y, xEws, yEws,  params, z, zEws, allocationBuffer, nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -108,7 +108,6 @@ __device__ void PairWiseTransform<T,Y,Z>::transformCuda(Nd4jLong len,
 														void *vparams,
 														void *vz, Nd4jLong zEws,
 														int *allocPointer, 
-														UnifiedSharedMemory *manager,
 														Nd4jLong *tadOnlyShapeInfo) {
 	auto x = reinterpret_cast<T*>(vx);
 	auto y = reinterpret_cast<Y*>(vy);
@@ -131,7 +130,6 @@ __device__ void PairWiseTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xSha
 														void *vz, Nd4jLong *zShapeInfo, 
 														void *vextraParams, 
 														int *allocPointer, 
-														UnifiedSharedMemory *manager, 
 														Nd4jLong *tadOnlyShapeInfo) {
 
 	auto x = reinterpret_cast<X*>(vx);

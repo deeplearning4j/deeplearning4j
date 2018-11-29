@@ -27,18 +27,6 @@
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Z, typename OpType>
-__device__ void pairwiseSimpleGeneric(void* x, Nd4jLong *xShapeInfo, 
-									void *y, Nd4jLong *yShapeInfo, 
-									void *z, Nd4jLong *zShapeInfo, 
-									void *params, 
-									int *allocationBuffer) {
-   
-    functions::pairwise_transforms::PairWiseBoolTransform<X,Z>::template transformCuda<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer, nullptr, nullptr);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
 __global__ void pairwiseSimpleShaped(void* x, Nd4jLong *xShapeInfo, 
 									void *y, Nd4jLong *yShapeInfo, 
@@ -46,7 +34,7 @@ __global__ void pairwiseSimpleShaped(void* x, Nd4jLong *xShapeInfo,
 									void *params, 
 									int *allocationBuffer) {
         
-	pairwiseSimpleGeneric<X, Z, OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer);
+	functions::pairwise_transforms::PairWiseBoolTransform<X,Z>::template transformCuda<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer, nullptr);
 }
 
 
@@ -76,7 +64,6 @@ __device__ void PairWiseBoolTransform<X,Z>::transformCuda(Nd4jLong len,
 														void *vparams,
 														void *vz, Nd4jLong zEws,
 														int *allocPointer, 
-														UnifiedSharedMemory *manager,
 														Nd4jLong *tadOnlyShapeInfo) {
 	auto x = reinterpret_cast<X*>(vx);
 	auto y = reinterpret_cast<X*>(vy);
@@ -103,7 +90,6 @@ __device__ void PairWiseBoolTransform<X,Z>::transformCuda(void *vx, Nd4jLong *xS
 														void *vz, Nd4jLong *zShapeInfo, 
 														void *vextraParams, 
 														int *allocPointer, 
-														UnifiedSharedMemory *manager, 
 														Nd4jLong *tadOnlyShapeInfo) {
 
 	auto x = reinterpret_cast<X*>(vx);
@@ -143,7 +129,7 @@ __device__ void PairWiseBoolTransform<X,Z>::transformCuda(void *vx, Nd4jLong *xS
 	Nd4jLong len = shape::length(xShapeInfo);
 	if((xEWS >= 1 && yEWS == xEWS && zEWS == xEWS &&  xOrder == yOrder && zOrder == xOrder) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
 		// TODO: this is wrong, and should be moved to host side
-		transformCuda<OpType>(len, x, y, xEWS, yEWS, extraParams, z, zEWS, allocPointer, manager, tadOnlyShapeInfo);
+		transformCuda<OpType>(len, x, y, xEWS, yEWS, extraParams, z, zEWS, allocPointer, tadOnlyShapeInfo);
     } 
     else {
 

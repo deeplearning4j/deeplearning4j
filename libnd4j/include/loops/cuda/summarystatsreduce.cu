@@ -38,66 +38,11 @@ using namespace simdOps;
 namespace functions {
     namespace summarystats {
 
-        /**
- * The driver interface for summary stats
- * @param op the op number
- * @param n the length
- * @param dx the input
- * @param xShapeInfo the shape information for x
- * @param extraParams the extra parameters
- * @param result the result buffer
- * @param resultShapeInfo the shape information for the result
- * @param gpuInformation the gpu information such as block dim, grid dim and shared memory
- * @param dimension the dimension to execute along long
- * @param dimensionLength the length of the dimension
- * @param postProcessOrNot whether to post process or not
- */
-        template <typename X, typename Z>
-        _CUDA_D void SummaryStatsReduce<X,Z>::summaryStatsReduceGeneric(const int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-    
-            __shared__ UnifiedSharedMemory *manager;
-
-            if (threadIdx.x == 0) {
-                extern __shared__ unsigned char shmem[];
-                manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-                manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::summarystats::SummaryStatsReduce<X,Z>), sizeof(shape::TAD), xRank);
-            }
-            __syncthreads();
-
-            functions::summarystats::SummaryStatsReduce<X,Z>::transform(
-                    op,
-                    dx,
-                    xShapeInfo,
-                    extraParams,
-                    result,
-                    resultShapeInfo,
-                    dimension,
-                    dimensionLength,
-                    biasCorrected,
-                    allocationBuffer,
-                    reductionBuffer,
-                    manager,
-                    tadOnlyShapeInfo,
-                    tadOffsets);
-        }
-
-
-        template <typename X, typename Z>
-        void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            functions::summarystats::SummaryStatsReduce<X,Z>::summaryStatsReduceGeneric(
-                    op,
-                    dx,
-                    xShapeInfo, xRank,
-                    extraParams,
-                    result,
-                    resultShapeInfo, zRank,
-                    dimension,
-                    dimensionLength,
-                    postProcessOrNot,biasCorrected, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
-
-        }
-
-
+template <typename X, typename Z>
+void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+            
+    functions::summarystats::SummaryStatsReduce<X,Z>::transform(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,biasCorrected,allocationBuffer,reductionBuffer,tadOnlyShapeInfo,tadOffsets);
+}
 
         /**
 		 *
@@ -158,7 +103,7 @@ namespace functions {
 			 */
         template<typename X, typename Z>
         template<typename OpType>
-        _CUDA_D void SummaryStatsReduce<X,Z>::transform(void *vdx, Nd4jLong *xShapeInfo, void *vextraParams, void *vresult, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *vreductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        _CUDA_D void SummaryStatsReduce<X,Z>::transform(void *vdx, Nd4jLong *xShapeInfo, void *vextraParams, void *vresult, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *vreductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
             /**
              * Gpu information for the problem
@@ -176,9 +121,12 @@ namespace functions {
             int numElements = blockDim.x;
             //shared memory space for storing intermediate results
             SummaryStatsData<X> *sPartials;
-            //functions::summarystats::SharedSummaryStatsData<T> holder;
+            if(threadIdx.x == 0) {
+                extern __shared__ unsigned char shmem[];
+                sPartials = reinterpret_cast<SummaryStatsData<X>*>(shmem);
+            }
+            __syncthreads();
 
-            sPartials = (SummaryStatsData<X> *) manager->getSharedReductionBuffer(); //holder.getPointer();
             Z startingVal = startingValue(dx);
 
             SummaryStatsData<X> val;
@@ -389,8 +337,8 @@ namespace functions {
 
 
         template <typename X, typename Y>
-        _CUDA_D void SummaryStatsReduce<X,Y>::transform(const int opNum, void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            DISPATCH_BY_OPNUM_TT(transform, PARAMS(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets), SUMMARY_STATS_OPS);
+        _CUDA_D void SummaryStatsReduce<X,Y>::transform(const int opNum, void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+            DISPATCH_BY_OPNUM_TT(transform, PARAMS(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets), SUMMARY_STATS_OPS);
         };
 
 

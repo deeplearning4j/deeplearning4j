@@ -27,19 +27,6 @@
 
 using namespace simdOps;
 
-
-template<typename X, typename Z, typename OpType>
-__device__ void scalarAlongDimensionGeneric(void *x, Nd4jLong *xShapeInfo,
-                                            void *extraParams,
-                                            void *z, Nd4jLong *zShapeInfo,
-                                            void *scalars,
-                                            int *dimension, int dimensionLength,
-                                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                            Nd4jLong *tadShapeInfoZ,Nd4jLong *tadOffsetsZ) {
-
-    functions::scalar::ScalarBoolTransform<X,Z>::template transformCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
-}
-
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
 __global__ void scalarAlongDimension(void *x, Nd4jLong *xShapeInfo,
@@ -50,27 +37,15 @@ __global__ void scalarAlongDimension(void *x, Nd4jLong *xShapeInfo,
                                     Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                                     Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
         
-    scalarAlongDimensionGeneric<X, Z, OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+    functions::scalar::ScalarBoolTransform<X,Z>::template transformCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
 
-////////////////////////////////////////////////////////////////////////
-template<typename X, typename Z, typename OpType>
-__device__ void scalarSimpleStridedGeneric(Nd4jLong len, void* x, void *y, Nd4jLong yEWS, void *params, void *z, Nd4jLong zEWS, int *allocationBuffer) {
-
-    functions::scalar::ScalarBoolTransform<X,Z>::template transformCuda<OpType>(len, x, y, yEWS, params, z, zEWS, allocationBuffer, nullptr); 
-}
-
-////////////////////////////////////////////////////////////////////////
-template<typename X, typename Z, typename OpType>
-__device__ void scalarSimpleShapedGeneric(void* x, void *y, Nd4jLong *xShapeInfo, void *params, void *z, Nd4jLong *zShapeInfo, int *allocationBuffer) {
-    functions::scalar::ScalarBoolTransform<X,Z>::template transformCuda<OpType>(y, x, xShapeInfo, params, z, zShapeInfo, allocationBuffer, nullptr);
-}
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
 __global__ void scalarSimpleShaped(void* x, void *y, Nd4jLong *xShapeInfo, void *params, void *z, Nd4jLong *zShapeInfo, int *allocationBuffer) {
 
-    scalarSimpleShapedGeneric<X, Z, OpType>(x, y, xShapeInfo, params, z, zShapeInfo, allocationBuffer);
+    functions::scalar::ScalarBoolTransform<X,Z>::template transformCuda<OpType>(y, x, xShapeInfo, params, z, zShapeInfo, allocationBuffer);
 }
 
 
@@ -89,7 +64,7 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void* vscalar,
                                                         void *vy, Nd4jLong *yShapeInfo, 
                                                         void *vparams, 
                                                         void *vz, Nd4jLong *zShapeInfo, 
-                                                        int *allocationBuffer, UnifiedSharedMemory *manager) {
+                                                        int *allocationBuffer) {
     auto scalar = reinterpret_cast<X*>(vscalar)[0];
     auto y      = reinterpret_cast<X*>(vy);
     auto params = reinterpret_cast<X*>(vparams);
@@ -114,7 +89,7 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void* vscalar,
     __syncthreads();
 
     if(yEWS >= 1 && zEWS >= 1 && shape::order(yShapeInfo) == shape::order(zShapeInfo)) {
-            transformCuda<OpType>(len, vscalar, vy, yEWS, vparams, vz, zEWS, allocationBuffer, manager);    
+            transformCuda<OpType>(len, vscalar, vy, yEWS, vparams, vz, zEWS, allocationBuffer);    
     }
     else {
         for (Nd4jLong i = tid; i < len; i+= totalThreads)                        
@@ -130,7 +105,7 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(Nd4jLong len,
                                                           void *vy, Nd4jLong yEWS, 
                                                           void *vparams, 
                                                           void *vz, Nd4jLong zEWS, 
-                                                          int *allocationBuffer, UnifiedSharedMemory *manager) {
+                                                          int *allocationBuffer) {
 
     auto x = reinterpret_cast<X*>(vx)[0];
     auto y = reinterpret_cast<X*>(vy);

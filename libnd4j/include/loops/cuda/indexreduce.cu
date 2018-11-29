@@ -30,44 +30,6 @@ using namespace simdOps;
 
 
 template <typename T>
-static __device__ void indexReduceGeneric(
-        const int op,
-        void *dx,
-        Nd4jLong *xShapeInfo, int xRank,
-        void *extraParams,
-        Nd4jLong *result,
-        Nd4jLong *resultShapeInfo, int zRank,
-        int *dimension,
-        int dimensionLength,
-        int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-
-    __shared__ UnifiedSharedMemory *manager;
-
-    if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-        manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::indexreduce::IndexReduce<T>), sizeof(shape::TAD), xRank);
-    }
-    __syncthreads();
-
-    functions::indexreduce::IndexReduce<T>::transform(
-            op,
-            dx,
-            xShapeInfo,
-            extraParams,
-            result,
-            resultShapeInfo,
-            dimension,
-            dimensionLength,
-            postProcessOrNot,
-            allocationBuffer,
-            reductionBuffer,
-            manager,
-            tadOnlyShapeInfo,
-            tadOffsets);
-}
-
-template <typename T>
 static __global__ void simpleIndexReduceGeneric(const int op,
                                            void *dx,
                                            Nd4jLong *xShapeInfo, int xRank,
@@ -77,7 +39,8 @@ static __global__ void simpleIndexReduceGeneric(const int op,
                                            int *dimension,
                                            int dimensionLength,
                                            int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-    indexReduceGeneric<T>(op, dx, xShapeInfo, xRank, extraParams, result, resultShapeInfo, zRank, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+     
+     functions::indexreduce::IndexReduce<T>::transform(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot,allocationBuffer,reductionBuffer,tadOnlyShapeInfo,tadOffsets);
 }
 
 namespace functions {
@@ -199,10 +162,9 @@ namespace functions {
                 int postProcessOrNot,
                 int *allocationBuffer,
                 void *reductionBuffer,
-                UnifiedSharedMemory *manager,
                 Nd4jLong *tadShapeInfo,
                 Nd4jLong *tadOffset) {
-            // DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
+            // DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
         }
 
 
@@ -219,7 +181,6 @@ namespace functions {
                 int postProcessOrNot,
                 int *allocationBuffer,
                 void *vreductionBuffer,
-                UnifiedSharedMemory *manager,
                 Nd4jLong *tadOnlyShapeInfo,
                 Nd4jLong *tadOffsets){
             /**int
@@ -233,14 +194,13 @@ namespace functions {
             __shared__ volatile int resultScalar;
 
             //shared memory space for storing intermediate results
-            IndexValue<T> *sPartials;
+            IndexValue<T>* sPartials;                        
+            if(threadIdx.x == 0) {
+                extern __shared__ unsigned char shmem[];
+                sPartials = reinterpret_cast<IndexValue<T>*>(shmem);
+            }
+            __syncthreads();
 
-
-            sPartials = (IndexValue<T> *)manager->getSharedReductionBuffer(); //holder.getPointer();
-//		T startingVal = OpType::startingValue(dx);
-
-
-            //	IndexValue <T> val = {startingVal, threadIdx.x};
             sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
             //length for the tad

@@ -35,10 +35,10 @@ namespace functions {
         template <typename X, typename Y, typename Z>
         class ScalarInplace {
         public:
-            static FORCEINLINE _CUDA_D void transformCudaLegacy(int opNum, void* vscalar, void *vy, Nd4jLong *yShapeInfo, void *vparams, void *vz, Nd4jLong *zShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
+            static FORCEINLINE _CUDA_D void transformCudaLegacy(int opNum, void* vscalar, void *vy, Nd4jLong *yShapeInfo, void *vparams, void *vz, Nd4jLong *zShapeInfo, int *allocationBuffer);
 
             template <typename OpClass>
-            static FORCEINLINE _CUDA_D void transformCuda(void* vscalar, void *vy, Nd4jLong *yShapeInfo, void *vparams, void *vz, Nd4jLong *zShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
+            static FORCEINLINE _CUDA_D void transformCuda(void* vscalar, void *vy, Nd4jLong *yShapeInfo, void *vparams, void *vz, Nd4jLong *zShapeInfo, int *allocationBuffer);
         };
 
         template<typename X, typename Y, typename Z>
@@ -46,9 +46,9 @@ namespace functions {
                                                                     void *vy, Nd4jLong *yShapeInfo,
                                                                     void *vparams,
                                                                     void *vz, Nd4jLong *zShapeInfo,
-                                                                    int *allocationBuffer,
-                                                                    UnifiedSharedMemory *manager) {
-            DISPATCH_BY_OPNUM_TTT(transformCuda, PARAMS(vscalar, vy, yShapeInfo, vparams, vz, zShapeInfo, allocationBuffer, manager), SCALAR_OPS);
+                                                                    int *allocationBuffer) {
+
+            DISPATCH_BY_OPNUM_TTT(transformCuda, PARAMS(vscalar, vy, yShapeInfo, vparams, vz, zShapeInfo, allocationBuffer), SCALAR_OPS);
         }
 
         template<typename X, typename Y, typename Z>
@@ -57,8 +57,7 @@ namespace functions {
                                                               void *vy, Nd4jLong *yShapeInfo,
                                                               void *vparams,
                                                               void *vz, Nd4jLong *zShapeInfo,
-                                                              int *allocationBuffer,
-                                                              UnifiedSharedMemory *manager) {
+                                                              int *allocationBuffer) {
 
             auto scalar = reinterpret_cast<X*>(vscalar)[0];
             auto y      = reinterpret_cast<Y*>(vy);

@@ -94,7 +94,6 @@ namespace simdOps {
 				int *dimension,
 				int dimensionLength,
 				Z *reductionBuffer,
-				UnifiedSharedMemory *manager,
 				Nd4jLong *tadOnlyShapeInfo,
 				Nd4jLong *tadOffsets) {
 
