@@ -123,6 +123,7 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
 
     @Override
     public void applyDropout(INDArray input, INDArray resultArray, double dropoutInputRetainProb) {
+        validateDeviceId();
         float p = (float)(1.0 - dropoutInputRetainProb);    //CuDNN uses p = probability of setting to 0. We use p = probability of retaining
 
         //TODO int cast

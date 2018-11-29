@@ -141,6 +141,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
                     AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
                     ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+        validateDeviceId();
         int code;
 
         val miniBatch = input.size(0);
@@ -352,6 +353,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     @Override
     public INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
                               AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+        validateDeviceId();
         int code;
 
         val miniBatch = input.size(0);

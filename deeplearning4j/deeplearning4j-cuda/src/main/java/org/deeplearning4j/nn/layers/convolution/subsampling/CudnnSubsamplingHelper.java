@@ -120,6 +120,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
             //CuDNN doesn't support dilated subsampling
             return null;
         }
+        validateDeviceId();
 
         //We require the output as one of the arguments for backprop here
         //TODO we could add cache mode support here somehow...
@@ -215,6 +216,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
             //CuDNN doesn't support dilated subsampling
             return null;
         }
+        validateDeviceId();
 
         val miniBatch = input.size(0);
         val inDepth = input.size(1);
@@ -276,9 +278,5 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
     public Map<String, Long> helperMemoryUse() {
         //No persistent memory use other than the structs (which are small)
         return Collections.emptyMap();
-    }
-
-    protected void reinitContext(){
-
     }
 }

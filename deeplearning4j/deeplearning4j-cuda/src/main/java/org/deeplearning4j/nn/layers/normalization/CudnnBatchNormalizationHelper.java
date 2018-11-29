@@ -116,7 +116,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public void validateDeviceId() {
         if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
-            log.info("Creating new CudnnBatchNormalizationContext - previous device {}, current device {}", deviceId, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            log.debug("Creating new CudnnBatchNormalizationContext - previous device {}, current device {}", deviceId, Nd4j.getAffinityManager().getDeviceForCurrentThread());
             cudnnContext = new CudnnBatchNormalizationContext();
             meanCache = null;
             varCache = null;
@@ -136,6 +136,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                     INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr layerWorkspaceMgr) {
+        validateDeviceId();
         this.eps = eps;
         val miniBatch = (int) input.size(0);
         val depth = (int) input.size(1);
@@ -227,6 +228,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
+        validateDeviceId();
         this.eps = eps;
         final boolean isHalf = (Nd4j.dataType() == DataBuffer.Type.HALF);
         INDArray origGamma = gamma;
