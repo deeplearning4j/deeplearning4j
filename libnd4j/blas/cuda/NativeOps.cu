@@ -1212,8 +1212,6 @@ void NativeOps::execTransformAny(Nd4jPointer *extraPointers,int opNum,
 	auto xType = ArrayOptions::dataType(hXShapeInfo);
 	auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-	nd4j_printf("Launching transformAny op %i\n", opNum);
-
 	switch (opNum) {
         case transform::IsMax: {
                 bool scalarCheat = false;
