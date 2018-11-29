@@ -131,7 +131,7 @@ typedef __syncInfo SyncInfo;
 /**
 * This is utility kernel, that updates given special buffer with proper values in device memory
 */
-extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension, Nd4jLong *specialPointer, int rows) {
+extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension, Nd4jLong *specialPointer, int rows, nd4j::DataType dataType) {
     Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid > 0)
         return;
@@ -147,6 +147,8 @@ extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension,
     specialPointer[5] = 0;
     specialPointer[6] = 1;
     specialPointer[7] = 99;
+
+    ArrayOptions::setDataType(specialPointer, dataType);
 
     //printf("special[0]: [%lld]\n", (long long) specialPointer[0]);
     //shape::printShapeInfoLinear("prepareShapeBuffer", specialPointer);
@@ -1232,9 +1234,124 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
     auto zType = ArrayOptions::dataType(hZShapeInfo);
 
     if (xType != zType || !DataTypeUtils::isR(xType))
-        throw std::runtime_error("NativeOps::execTransformStrict requires X & Z to have same floating point type");
+        throw datatype_exception::build("NativeOps::execTransformStrict requires X & Z to have same floating point type", xType, zType);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
+    switch (opNum) {
+        case transform::SoftMax:
+        case transform::SoftMaxDerivative:
+        case transform::LogSoftMax: {
+                if (shape::isVector(hXShapeInfo)) {
+                    int length = shape::length(hXShapeInfo);
+                    int block = nd4j::math::nd4j_min<int>(length, 256);
+
+                    launchDims.x = 1;
+                    launchDims.y = block;
+                    launchDims.z += (block * sizeof(double) * 4);
+
+                    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
+                } else {
+                    auto shape = shape::shapeOf(hXShapeInfo);
+                    int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
+                    float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
+
+                    // special pointer for special buffer for special ops
+                    auto specialPointer = reinterpret_cast<double *>(extraPointers[6]);
+                    auto dimension = reinterpret_cast<int *>(specialPointer);
+                    auto maxDimension = dimension + 1;
+                    auto maxShapeBuffer = reinterpret_cast<Nd4jLong *>(maxDimension + 1);
+                    auto special = reinterpret_cast<double *> (maxShapeBuffer + (MAX_RANK * 2 + 4));
+
+                    Nd4jPointer tempPointers[16];
+                    tempPointers[0] = extraPointers[0];
+                    tempPointers[1] = extraPointers[1];
+                    tempPointers[2] = extraPointers[2];
+                    tempPointers[3] = extraPointers[3];
+                    tempPointers[4] = extraPointers[4];
+                    tempPointers[5] = extraPointers[5];
+                    tempPointers[6] = extraPointers[6];
+                    tempPointers[7] = extraPointers[7];
+                    tempPointers[8] = extraPointers[8];
+                    tempPointers[9] = extraPointers[9];
+                    tempPointers[10] = extraPointers[10];
+                    tempPointers[11] = extraPointers[11];
+                    tempPointers[12] = extraPointers[12];
+                    tempPointers[13] = extraPointers[13];
+                    tempPointers[14] = extraPointers[14];
+                    tempPointers[15] = extraPointers[15];
+
+                    Nd4jLong maxShape[2] = {shape::shapeOf(hXShapeInfo)[0], 1};
+                    auto hostMaxShapeBuffer = shape::shapeBuffer(2, xType, maxShape);
+
+                    tempPointers[7] = (Nd4jPointer) hostMaxShapeBuffer;
+                    tempPointers[8] = (Nd4jPointer) hostMaxShapeBuffer;
+
+                    prepareShapeBuffer<<<1, 1, 128, *stream>>>(dimension, maxDimension, maxShapeBuffer, shape[0], xType);
+
+                    DEBUG_KERNEL(stream, opNum);
+
+                    //shape::printShapeInfo(maxShapeBuffer);
+                    tempPointers[9] = extraPointers[12];
+                    tempPointers[10] = extraPointers[13];
+                    tempPointers[11] = extraPointers[14];
+
+                    // max 3
+                    execReduceSame(tempPointers, reduce::Max, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1);
+
+                    DEBUG_KERNEL(stream, opNum);
+
+                    tempPointers[8] = extraPointers[8];
+                    tempPointers[9] = extraPointers[9];
+                    tempPointers[10] = extraPointers[10];
+                    tempPointers[11] = extraPointers[11];
+                    tempPointers[12] = extraPointers[10];
+                    tempPointers[13] = extraPointers[11];
+
+                    // sub 1
+                    execBroadcast(tempPointers, broadcast::Subtract, hX, hXShapeInfo, dX, dXShapeInfo, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, nullptr, hZShapeInfo, dZ, dZShapeInfo, dimension, 1);
+
+                    DEBUG_KERNEL(stream, opNum);
+
+                    // exp 3
+                    execTransformFloat(extraPointers, transform::Exp, hZ, hZShapeInfo, dZ, dZShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+
+                    DEBUG_KERNEL(stream, opNum);
+
+                    tempPointers[8] = tempPointers[7];
+                    tempPointers[9] = extraPointers[12];
+                    tempPointers[10] = extraPointers[13];
+                    tempPointers[11] = extraPointers[14];
+
+                    //sum 1
+                    execReduceSame(tempPointers, reduce::Sum, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1);
+
+                    tempPointers[8] = extraPointers[8];
+                    tempPointers[9] = extraPointers[9];
+                    tempPointers[10] = extraPointers[10];
+                    tempPointers[11] = extraPointers[11];
+                    tempPointers[12] = extraPointers[10];
+                    tempPointers[13] = extraPointers[11];
+
+                    // divide 3
+                    execBroadcast(tempPointers, broadcast::Divide, hZ, hZShapeInfo, dZ, dZShapeInfo, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, nullptr, hZShapeInfo, dZ, dZShapeInfo, dimension, 1);
+
+                    DEBUG_KERNEL(stream, opNum);
+
+                    // log 3
+                    if (opNum == transform::LogSoftMax)
+                        execTransformFloat(extraPointers, transform::Log, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+                    else if (opNum == transform::SoftMaxDerivative)
+                        execTransformStrict(extraPointers, transform::SpecialDerivative, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+
+                    nd4j::DebugHelper::checkErrorCode(stream, "SoftMax(...) failed");
+
+                    delete hostMaxShapeBuffer;
+                }
+            }
+            break;
+        default: {
+            BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
+        }
+    }
 }
 
 void NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
@@ -1252,7 +1369,7 @@ void NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
     auto zType = ArrayOptions::dataType(hZShapeInfo);
 
     if (!DataTypeUtils::isR(zType))
-        throw std::runtime_error("NativeOps::execTransformFloat requires Z to have floating point type");
+        throw datatype_exception::build("NativeOps::execTransformFloat requires Z to have floating point type", zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 }
