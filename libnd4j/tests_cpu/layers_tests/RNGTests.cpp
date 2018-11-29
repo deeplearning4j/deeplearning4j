@@ -202,7 +202,7 @@ TEST_F(RNGTests, Test_Uniform_1) {
 }
 
 TEST_F(RNGTests, Test_Uniform_3) {
-    auto x0 = NDArrayFactory::create<float>('c', {1000000});
+    auto x0 = NDArrayFactory::create<double>('c', {1000000});
 
     RandomLauncher::fillUniform(_rngA, &x0, 1.0f, 2.0f);
 
