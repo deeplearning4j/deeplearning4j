@@ -792,7 +792,7 @@ namespace randomOps {
 
                 //else if (z[e] < mean - ds)
                     if (z[e] > mean + ds || z[e] < mean - ds)
-                        z[e] = mean;
+                        z[e] = mean + DataTypeUtils::min<float>();
                 }
             }
             /*
