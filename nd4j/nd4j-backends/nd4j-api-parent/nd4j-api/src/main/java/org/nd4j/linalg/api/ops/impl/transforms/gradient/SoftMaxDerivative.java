@@ -111,6 +111,6 @@ public class SoftMaxDerivative extends BaseGradientOp  {
         if (x() != null)
             return x().dataType();
 
-        return Nd4j.defaultFloatintPointType();
+        return Nd4j.defaultFloatingPointType();
     }
 }

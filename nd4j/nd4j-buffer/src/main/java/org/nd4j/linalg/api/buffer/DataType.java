@@ -45,4 +45,18 @@ public enum DataType {
             default: throw new UnsupportedOperationException("Unknown data type: [" + type + "]");
         }
     }
+
+    /**
+     * @return Returns true if the datatype is a floating point type (double, float or half precision)
+     */
+    public boolean isFPType(){
+        return this == FLOAT || this == DOUBLE || this == HALF;
+    }
+
+    /**
+     * @return Returns true if the datatype is an integer type (long, integer, short, ubyte or byte)
+     */
+    public boolean isIntType(){
+        return this == LONG || this == INT || this == SHORT || this == UBYTE || this == BYTE;
+    }
 }

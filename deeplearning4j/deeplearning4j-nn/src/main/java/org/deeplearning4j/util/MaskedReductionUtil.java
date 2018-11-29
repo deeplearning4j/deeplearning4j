@@ -65,7 +65,7 @@ public class MaskedReductionUtil {
                 //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
                 INDArray negInfMask;
                 if(mask.dataType() == DataType.BOOL){
-                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatintPointType());
+                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
                 } else {
                     negInfMask = mask.rsub(1.0);
                 }
@@ -124,7 +124,7 @@ public class MaskedReductionUtil {
                 //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
                 INDArray negInfMask;
                 if(mask.dataType() == DataType.BOOL){
-                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatintPointType());
+                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
                 } else {
                     negInfMask = mask.rsub(1.0);
                 }
@@ -214,7 +214,7 @@ public class MaskedReductionUtil {
                 //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
                 INDArray negInfMask;
                 if(mask.dataType() == DataType.BOOL){
-                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatintPointType());
+                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
                 } else {
                     negInfMask = mask.rsub(1.0);
                 }
@@ -280,7 +280,7 @@ public class MaskedReductionUtil {
                 //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
                 INDArray negInfMask;
                 if(mask.dataType() == DataType.BOOL){
-                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatintPointType());
+                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
                 } else {
                     negInfMask = mask.rsub(1.0);
                 }

@@ -28,18 +28,14 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -297,8 +293,8 @@ public class SpecialTests extends BaseNd4jTest {
 
         INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0, 0, 0, 0, 0}, new long[]{1, 10});
 
-        //assertNotEquals(Nd4j.defaultFloatintPointType(), arr.dataType());
-        Nd4j.setDefaultFloatingPointDataType(DataType.DOUBLE);
+        //assertNotEquals(Nd4j.defaultFloatingPointType(), arr.dataType());
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
 
         for( int i=0; i<100; i++ ) {
             try(val ws2 = ws.notifyScopeEntered()) {
@@ -306,9 +302,9 @@ public class SpecialTests extends BaseNd4jTest {
                 INDArray ok = arr.eq(0.0);
                 ok.dup();
 
-                assertEquals(arr.dataType(), Nd4j.defaultFloatintPointType());
-                assertEquals(DataType.DOUBLE, Nd4j.defaultFloatintPointType());
-                INDArray crash = arr.eq(0.0).castTo(Nd4j.defaultFloatintPointType());
+                assertEquals(arr.dataType(), Nd4j.defaultFloatingPointType());
+                assertEquals(DataType.DOUBLE, Nd4j.defaultFloatingPointType());
+                INDArray crash = arr.eq(0.0).castTo(Nd4j.defaultFloatingPointType());
                 crash.dup();        //Crashes here on i=1 iteration
             }
         }
@@ -380,7 +376,7 @@ public class SpecialTests extends BaseNd4jTest {
 
         INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0, 0, 0, 0, 0}, new long[]{1, 10});
 
-        Nd4j.setDefaultFloatingPointDataType(DataType.DOUBLE);
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
         assertEquals(DataType.DOUBLE, arr.dataType());
 
         for( int i=0; i<100; i++ ) {

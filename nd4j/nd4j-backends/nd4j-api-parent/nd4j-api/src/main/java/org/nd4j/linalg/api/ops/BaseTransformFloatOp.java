@@ -23,7 +23,6 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -81,7 +80,7 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
         if (this.x() != null && this.x().isR())
             return this.x().dataType();
 
-        return Nd4j.defaultFloatintPointType();
+        return Nd4j.defaultFloatingPointType();
     }
 
     @Override
@@ -102,7 +101,7 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
         if(arr == null)
             return Collections.emptyList();
 
-        ret.add(LongShapeDescriptor.fromShape(arr.shape(), arr.isR() ? arr.dataType() : Nd4j.defaultFloatintPointType()));
+        ret.add(LongShapeDescriptor.fromShape(arr.shape(), arr.isR() ? arr.dataType() : Nd4j.defaultFloatingPointType()));
         this.n = arr.length();
         return ret;
     }

@@ -185,10 +185,10 @@ public class Linear extends BaseModule {
                                         WeightInitScheme paramsScheme,
                                         WeightInitScheme biasInitScheme) {
         if(biasInitScheme != null) {
-            return new INDArray[] {paramsScheme.create(Nd4j.defaultFloatintPointType(), new long[]{nOut,nIn}),biasInitScheme.create(Nd4j.defaultFloatintPointType(), new long[]{nOut,1})};
+            return new INDArray[] {paramsScheme.create(Nd4j.defaultFloatingPointType(), new long[]{nOut,nIn}),biasInitScheme.create(Nd4j.defaultFloatingPointType(), new long[]{nOut,1})};
         }
         else {
-            return new INDArray[] {paramsScheme.create(Nd4j.defaultFloatintPointType(), new long[]{nOut,nIn})};
+            return new INDArray[] {paramsScheme.create(Nd4j.defaultFloatingPointType(), new long[]{nOut,nIn})};
 
         }
     }
