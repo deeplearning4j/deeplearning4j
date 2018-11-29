@@ -1364,31 +1364,31 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     nativeOps.execTransformAny(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                            (DoublePointer) extraArgs);
+                            extraArgs);
                     break;
                 case TRANSFORM_FLOAT:
                     nativeOps.execTransformFloat(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                            null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                            (DoublePointer) extraArgs);
+                            extraArgs);
                     break;
                 case TRANSFORM_BOOL:
                     nativeOps.execTransformBool(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                            (DoublePointer) extraArgs);
+                            extraArgs);
                     break;
                 case TRANSFORM_SAME:
                     nativeOps.execTransformSame(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                            (DoublePointer) extraArgs);
+                            extraArgs);
                     break;
                 case TRANSFORM_STRICT:
                     nativeOps.execTransformStrict(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                            (DoublePointer) extraArgs);
+                            extraArgs);
                     break;
                 default:
                     throw new UnsupportedOperationException();
