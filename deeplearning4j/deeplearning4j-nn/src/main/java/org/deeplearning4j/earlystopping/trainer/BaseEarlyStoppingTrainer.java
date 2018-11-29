@@ -23,6 +23,7 @@ import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -130,7 +131,11 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
             while (iterator.hasNext()) {
                 try {
                     if(pretrain){
-
+                        if(train != null){
+                            pretrain((DataSet)iterator.next());
+                        } else {
+                            pretrain(trainMulti.next());
+                        }
                     } else {
                         if (train != null) {
                             fit((DataSet) iterator.next());
@@ -152,7 +157,16 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 }
 
                 //Check per-iteration termination conditions
-                lastScore = model.score();
+                if(pretrain){
+                    //TODO support for non-first-layer pretraining
+                    if(model instanceof MultiLayerNetwork){
+                        lastScore = (((MultiLayerNetwork) model).getLayer(0)).score();
+                    } else {
+                        lastScore = (((ComputationGraph) model).getLayer(0)).score();
+                    }
+                } else {
+                    lastScore = model.score();
+                }
                 for (IterationTerminationCondition c : esConfig.getIterationTerminationConditions()) {
                     if (c.terminate(lastScore)) {
                         terminate = true;
