@@ -267,7 +267,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(8, new DenseLayer.Builder().nIn(500).nOut(1000).build())
                         .layer(9, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(1000)
                                         .nOut(numRows * numColumns).activation(Activation.SOFTMAX).build())
-                        .pretrain(true).build();
+                        .build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
@@ -1367,7 +1367,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                 .layer(new VariationalAutoencoder.Builder()
                         .nIn(10).nOut(10).encoderLayerSizes(10).decoderLayerSizes(10).build())
                 .layer(new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build())
-                .pretrain(true)
+
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

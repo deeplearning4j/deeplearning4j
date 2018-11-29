@@ -1761,7 +1761,7 @@ public class Nd4j {
      * @deprecated use {@link #setDefaultDataTypes(DataType, DataType)}. Equivalent to {@code setDefaultDataTypes(dtype, (dtype.isFPType() ? dtype : defaultFloatingPointType()))}
      */
     @Deprecated
-    public static void setDataType(@NonNull DataType dType) {
+    public static void setDataType(@NonNull DataType dtype) {
         setDefaultDataTypes(dtype, (dtype.isFPType() ? dtype : defaultFloatingPointType()));
     }
 

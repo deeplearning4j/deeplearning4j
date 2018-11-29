@@ -654,32 +654,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Whether to do back prop (standard supervised learning) or not
-         *
-         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#fit(MultiDataSet)} when training for backprop.
-         *
-         * @param backprop whether to do back prop or not
-         */
-        @Deprecated
-        public GraphBuilder backprop(boolean backprop) {
-            this.backprop = backprop;
-            return this;
-        }
-
-        /**
-         * Whether to do layerwise pre training or not
-         *
-         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#pretrain(MultiDataSetIterator)} when training for layerwise pretraining.
-         *
-         * @param pretrain whether to do pre train or not
-         */
-        @Deprecated
-        public GraphBuilder pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
-            return this;
-        }
-
-        /**
          * The type of backprop. Default setting is used for most networks (MLP, CNN etc),
          * but optionally truncated BPTT can be used for training recurrent neural networks.
          * If using TruncatedBPTT make sure you set both tBPTTForwardLength() and tBPTTBackwardLength()

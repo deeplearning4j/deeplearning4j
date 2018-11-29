@@ -332,6 +332,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
 
     @Test
     public void testAEScoreFunctionSimple() throws Exception {
+        DataType dt = Nd4j.defaultFloatingPointType();
 
         for(RegressionEvaluation.Metric metric : new RegressionEvaluation.Metric[]{RegressionEvaluation.Metric.MSE,
                 RegressionEvaluation.Metric.MAE}) {
@@ -342,7 +343,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
                     .addInputs("in")
                     .layer("0", new AutoEncoder.Builder().nIn(784).nOut(32).build(), "in")
                     .setOutputs("0")
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             ComputationGraph net = new ComputationGraph(conf);
@@ -391,7 +392,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
                             .decoderLayerSizes(64)
                             .build(), "in")
                     .setOutputs("0")
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             ComputationGraph net = new ComputationGraph(conf);
@@ -439,7 +440,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
                             .reconstructionDistribution(new BernoulliReconstructionDistribution(Activation.SIGMOID))
                             .build(), "in")
                     .setOutputs("0")
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             ComputationGraph net = new ComputationGraph(conf);

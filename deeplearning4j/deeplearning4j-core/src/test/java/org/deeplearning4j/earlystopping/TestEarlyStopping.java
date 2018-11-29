@@ -614,7 +614,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .list()
                     .layer(new AutoEncoder.Builder().nIn(784).nOut(32).build())
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -661,7 +661,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                             .encoderLayerSizes(64)
                             .decoderLayerSizes(64)
                             .build())
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -707,7 +707,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                             .decoderLayerSizes(64)
                             .reconstructionDistribution(new BernoulliReconstructionDistribution(Activation.SIGMOID))
                             .build())
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);

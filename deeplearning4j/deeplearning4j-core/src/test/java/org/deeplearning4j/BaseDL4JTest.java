@@ -44,10 +44,14 @@ public class BaseDL4JTest {
         return DataType.DOUBLE;
     }
 
+    public DataType getDefaultFPDataType(){
+        return getDataType();
+    }
+
     @Before
     public void beforeTest(){
         Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
-        Nd4j.setDataType(getDataType());
+        Nd4j.setDefaultDataTypes(getDataType(), getDefaultFPDataType());
     }
 
     @After

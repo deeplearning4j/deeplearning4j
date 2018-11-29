@@ -166,18 +166,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             this(globalConfig, new HashMap<Integer, Builder>());
         }
 
-        @Deprecated
-        public ListBuilder backprop(boolean backprop) {
-            this.backprop = backprop;
-            return this;
-        }
-
-        @Deprecated
-        public ListBuilder pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
-            return this;
-        }
-
         public ListBuilder layer(int ind, @NonNull Layer layer) {
             if (layerwise.containsKey(ind)) {
                 log.info("Layer index {} already exists, layer of type {} will be replace by layer type {}",
