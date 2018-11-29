@@ -55,16 +55,14 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             assertEquals(test.getFeatures(), randomDS.getfoldK(i, true));
             assertEquals(test.getLabels(), randomDS.getfoldK(i, false));
             i++;
-            System.out.println("Fold " + i + " passed");
         }
         assertEquals(i, 4);
     }
 
-    /*
     //this will throw illegal argument exception
-    @Test
-    public void checkCornerCaseA() {
-        randomDataSet randomDS = new randomDataSet(new int[] {2,3},new int []{3});
+    @Test(expected = IllegalArgumentException.class)
+    public void checkCornerCase_Exception() {
+        RandomDataSet randomDS = new RandomDataSet(new int[] {2,3},new int []{3});
         DataSet allData = randomDS.getAllFolds();
         KFoldIterator kiter = new KFoldIterator(1,allData);
         int i = 0;
@@ -78,14 +76,12 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             assertEquals(test.getFeatures(),randomDS.getfoldK(i,true));
             assertEquals(test.getLabels(),randomDS.getfoldK(i,false));
             i++;
-            System.out.println("Fold "+i+" passed");
         }
         assertEquals(i,1);
     }
-    */
 
     @Test
-    public void checkCornerCaseA() {
+    public void checkCornerCase() {
         RandomDataSet randomDS = new RandomDataSet(new int[] {2, 3}, new int[] {2, 1});
         DataSet allData = randomDS.getAllFolds();
         KFoldIterator kiter = new KFoldIterator(2, allData);
