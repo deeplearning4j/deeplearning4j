@@ -45,31 +45,8 @@ public class Not extends BaseTransformBoolOp {
         this.extraArgs = new Object[] {this.comparable};
     }
 
-    public Not(@NonNull INDArray x) {
-        this(x, 0.0);
-    }
-
-    public Not(@NonNull INDArray x, Number comparable) {
-        this(x, x, comparable, x.lengthLong());
-    }
-
-    public Not(@NonNull INDArray x, INDArray z, Number comparable) {
-        this(x, z, comparable, x.lengthLong());
-    }
-
-
-    public Not(@NonNull INDArray x, INDArray z, long n) {
-        this(x, z, 0.0, n);
-    }
-
     public Not(@NonNull INDArray x, INDArray y, INDArray z, Number comparable) {
         super(x, null, z, x.length());
-        this.comparable = comparable.doubleValue();
-        this.extraArgs = new Object[] {this.comparable};
-    }
-
-    public Not(@NonNull INDArray x, INDArray z, Number comparable, long n) {
-        super(x, null, z, n);
         this.comparable = comparable.doubleValue();
         this.extraArgs = new Object[] {this.comparable};
     }

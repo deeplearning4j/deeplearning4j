@@ -1440,17 +1440,6 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
     @Test
-    public void testLogicalNot(){
-        Nd4j.setDataType(DataType.FLOAT);
-        INDArray x = Nd4j.create(new long[]{3,4});
-        INDArray z = Nd4j.create(new long[]{3,4});
-
-        Op op = new Not(x, z, 0.0);
-        Nd4j.getExecutioner().exec(op);
-    }
-
-
-    @Test
     public void testScatterOpsScalar(){
         for(String s : new String[]{"add", "sub", "mul", "div"}) {
             INDArray ref = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(10, 3);

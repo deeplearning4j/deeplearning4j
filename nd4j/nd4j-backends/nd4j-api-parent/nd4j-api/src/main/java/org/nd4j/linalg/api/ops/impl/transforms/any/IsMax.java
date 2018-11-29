@@ -20,11 +20,10 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformAnyOp;
-import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
@@ -102,6 +101,10 @@ public class IsMax extends BaseTransformAnyOp {
         return true;
     }
 
+    @Override
+    public DataBuffer extraArgsDataBuff(DataType dtype) {
+        return this.extraArgs == null ? null : Nd4j.createBuffer(DataType.LONG, 1, false);
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

@@ -69,7 +69,7 @@ Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextra
             auto xi = x + xEws * threadOffset;
             #pragma omp simd
             for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {            
-                IndexValue<X> curr(threadOffset + i, xi[i*xEws]);
+                IndexValue<X> curr(xi[i*xEws], threadOffset + i);
                 local = OpType::update(local, curr, extraParams);
             }
             #pragma omp critical
@@ -84,7 +84,7 @@ Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextra
             Nd4jLong threadOffset = info.getThreadOffset(threadNum);     
             #pragma omp simd
             for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {            
-                IndexValue<X> curr(threadOffset + i, x[shape::getIndexOffset(threadOffset + i, xShapeInfo, len)]);
+                IndexValue<X> curr(x[shape::getIndexOffset(threadOffset + i, xShapeInfo, len)], threadOffset + i);
                 local = OpType::update(local, curr, extraParams);
             }
             #pragma omp critical
@@ -150,7 +150,7 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
             #pragma omp simd
             for(int j = 0; j < tadLength; j++) {
                 auto xOffset = offset + shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
-                IndexValue<X> comp(j, x[xOffset]);
+                IndexValue<X> comp(x[xOffset], j);
                 indexValue = OpType::update(indexValue,comp,extraParams);
             }
             z[i] = indexValue.index;
@@ -166,7 +166,7 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
 // FIXME: proper reduction required here
             #pragma omp simd
             for(int j = 0; j < tadLength; j++) {
-                IndexValue<X> comp(j, x[offset + tadEws * j]);
+                IndexValue<X> comp(x[offset + tadEws * j], j);
                 indexValue = OpType::update(indexValue,comp,extraParams);
             }
             z[i] = indexValue.index;

@@ -168,8 +168,6 @@
         (34, ATanh)
 
 
-
-
 #define SUMMARY_STATS_OPS \
         (0, SummaryStatsVariance), \
         (1, SummaryStatsStandardDeviation)

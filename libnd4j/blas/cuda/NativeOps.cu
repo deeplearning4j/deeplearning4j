@@ -1058,12 +1058,13 @@ void   NativeOps::execIndexReduce(
 	void *reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 	auto numBlocks = shape::length(hZShapeInfo);
     dim3 launchDims(numBlocks, 256, 32768);
 
-	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-		printf("AF2 opNum:[%i]\n", opNum);
-	
+    if (zType != nd4j::DataType::INT64)
+        throw datatype_exception::build("NativeOps::execIndexReduce requires Z operand to have INT64 type", zType);
+
 	auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 	BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce,  ::executeIndexReduce(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, dZShapeInfo, shape::rank(hZShapeInfo), dimension, dimensionLength, 1, allocationPointer, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES);
 }
@@ -1128,16 +1129,13 @@ void NativeOps::execIndexReduceScalar(
 		printf("F1 opNum:[%i]\n", opNum);
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);	
-	Nd4jLong *hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	Nd4jLong *dTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-	Nd4jLong *dTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
 
 	// void *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	void *reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
     auto xLength = shape::length(hXShapeInfo);
-    auto blockWidth = 512;
+    auto blockWidth = 256;
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks, blockWidth, 32768);
 
@@ -1155,7 +1153,7 @@ void NativeOps::execIndexReduceScalar(
 
     auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, nullptr, 0, nullptr, 1, 1, allocationPointer, reductionPointer, dTADShapeInfo, dTADOffsets), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, nullptr, 0, nullptr, 0, 1, allocationPointer, reductionPointer, nullptr, nullptr), LIBND4J_TYPES);
 
     nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalar(...) failed");
 }
@@ -1207,15 +1205,75 @@ void NativeOps::execTransformAny(Nd4jPointer *extraPointers,int opNum,
 								  void *hZ, Nd4jLong *hZShapeInfo,
 								  void *dZ, Nd4jLong *dZShapeInfo,
 								  void *extraParams) {
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-	dim3 launchDims(512, 1024, 8192);
+	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	auto xRank = shape::rank(hXShapeInfo);
 	auto zRank = shape::rank(hZShapeInfo);
 	auto xType = ArrayOptions::dataType(hXShapeInfo);
 	auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-	BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, BOOL_TYPES);
+	nd4j_printf("Launching transformAny op %i\n", opNum);
+
+	switch (opNum) {
+        case transform::IsMax: {
+                bool scalarCheat = false;
+                if (extraParams == nullptr) {
+                    scalarCheat = true;
+                }
+
+                auto special = reinterpret_cast<double *>(extraPointers[17]);
+
+                if (scalarCheat) {
+                    auto scalarShape = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64);
+                    /**
+                    * In case of vector-input for IsMax, it just turns into IndexReduce call + further filler call
+                    */
+                    execIndexReduceScalar(extraPointers, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, scalarShape, special, nullptr);
+                    Nd4jLong maxIdx = -119;
+                    checkCudaErrors(cudaStreamSynchronize(*stream));
+                    cudaMemcpyAsync(&maxIdx, special, sizeof(Nd4jLong), cudaMemcpyDeviceToHost, *stream);
+                    checkCudaErrors(cudaStreamSynchronize(*stream));
+                    int targetIdx = 0;
+
+                    if (shape::order(hXShapeInfo) == 'c' || shape::order(hXShapeInfo) == 'f' && maxIdx * shape::stride(hXShapeInfo)[shape::rank(hXShapeInfo) - 1] >= shape::length(hXShapeInfo))
+                        targetIdx = maxIdx;
+                    else
+                        targetIdx = maxIdx * shape::stride(hXShapeInfo)[shape::rank(hXShapeInfo) - 1];
+
+                    dim3 launchDims(1, 512, 1024);
+                    BUILD_SINGLE_SELECTOR(zType, fillIsMaxGeneric, (launchDims, stream, dZ, shape::length(hZShapeInfo), targetIdx), LIBND4J_TYPES);
+
+                    nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
+
+                    delete[] scalarShape;
+                } else {
+                    auto hostYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
+                    auto hostTShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[19]);
+                    auto tadMaxShapeInfo = reinterpret_cast<Nd4jLong *> (extraPointers[10]);
+                    auto tadMaxOffsets = reinterpret_cast<Nd4jLong *> (extraPointers[11]);
+                    int *dimension = reinterpret_cast<int *> (extraPointers[15]);
+                    int dimensionLength = getDeviceId(extraPointers[18]);
+
+                    // we call for IMax on specified dimension
+                    execIndexReduce(extraPointers, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostTShapeInfo, special, hostYShapeInfo, dimension, dimensionLength);
+
+                    DEBUG_KERNEL(stream, opNum);
+
+                    dim3 launchDims(256, 256, 16384);
+
+                    // at this point, all IMax indexes are gathered, and we execute filler
+                    BUILD_SINGLE_SELECTOR(zType, fillDimensionalIsMaxGeneric, (launchDims, stream, special, dZ, dZShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets), LIBND4J_TYPES);
+
+                    nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
+                }
+            }
+            break;
+        default: {
+            dim3 launchDims(512, 1024, 16384);
+
+            BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
+        }
+	}
 }
 
 

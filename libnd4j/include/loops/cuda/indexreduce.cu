@@ -186,8 +186,8 @@ namespace functions {
             }
         }
 
-        template <typename T>
-        __device__ void IndexReduce<T>::transform(
+        template <typename X>
+        __device__ void IndexReduce<X>::transform(
                 const int opNum,
                 void *x,
                 Nd4jLong *xShapeInfo,
@@ -202,7 +202,7 @@ namespace functions {
                 UnifiedSharedMemory *manager,
                 Nd4jLong *tadShapeInfo,
                 Nd4jLong *tadOffset) {
-            // DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
+             DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
         }
 
 
@@ -293,7 +293,7 @@ namespace functions {
 
                     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
                         
-                        Nd4jLong tadOffsetForBlock = tadOffsets[r];
+                        auto tadOffsetForBlock = tadOffsets[r];
                         sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
                         for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {                            
@@ -307,7 +307,7 @@ namespace functions {
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
-                            result[r] = (T) sPartials[threadIdx.x].index;
+                            result[r] = sPartials[threadIdx.x].index;
                         }
                     }
                 } else {
@@ -327,15 +327,11 @@ namespace functions {
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
-                            result[i] = (T)  sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
+                            result[i] = sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
                         }
                     }
                 }
-            }
-
-
-                //reduce to 1 result
-            else if (resultScalar) {
+            } else {
                 auto n = shape::length(xShapeInfo);
                 auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
@@ -365,7 +361,7 @@ namespace functions {
                     unsigned int *tc = (unsigned int *) reductionBuffer;
                     tid = threadIdx.x;
                     if (threadIdx.x == 0) {
-                        IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
+                        auto pBuffer = reinterpret_cast<IndexValue<T> *>(reductionBuffer);
                         pBuffer[blockIdx.x] = {sPartials[0].value, sPartials[0].index};
                     }
                     __threadfence();
@@ -393,21 +389,19 @@ namespace functions {
 
                         __syncthreads();
                         if (tid == 0) {
-                            result[0] = (T)  sPartials[0].index;
+                            result[0] = sPartials[0].index;
                         }
                     }
                 } else {
                     if (tid == 0) {
-                        unsigned int *tc = (unsigned *) reductionBuffer;
+                        auto tc = reinterpret_cast<unsigned int *>(reductionBuffer);
                         tc[16384] = 0;
-                        result[0] = (T) sPartials[0].index;
+                        result[0] = sPartials[0].index;
                     }
                 }
             }
         }
 
-        //template class ND4J_EXPORT IndexReduce<float>;
-        //template class ND4J_EXPORT IndexReduce<double>;
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES);
     }
 }

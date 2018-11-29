@@ -246,7 +246,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testIsMax() {
+    public void testIsMaxVectorCase() {
         INDArray arr = Nd4j.create(new double[] {1, 2, 4, 3}, new long[] {2, 2});
         INDArray assertion = Nd4j.create(new boolean[] {false, false, true, false}, new long[] {2, 2}, DataType.BOOL);
         INDArray test = Nd4j.getExecutioner().exec(new IsMax(arr)).z();
@@ -268,6 +268,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(valueArrayThree, argMaxTwo);
     }
 
+    @Test
+    public void testArgMax_119() {
+        val array = Nd4j.create(new double[]{1, 2, 119, 2});
+        val max = array.argMax();
+
+        assertTrue(max.isScalar());
+        assertEquals(2L, max.getInt(0));
+    }
 
     @Test
     public void testAutoBroadcastShape() {
@@ -838,6 +846,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(expAlong0, alongDim0);
         assertEquals(expAlong1, alongDim1);
+
 
         //1d: col vector
         System.out.println("----------------------------------");
@@ -3695,14 +3704,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
 
         INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
-        IMax iMax = new IMax(arr.dup());
+        IMax iMax = new IMax(arr);
         IAMax iaMax = new IAMax(arr.dup());
-        double imax = Nd4j.getExecutioner().execAndReturn(iMax).getFinalResult();
-        double iamax = Nd4j.getExecutioner().execAndReturn(iaMax).getFinalResult();
+        val imax = Nd4j.getExecutioner().execAndReturn(iMax).getFinalResult();
+        val iamax = Nd4j.getExecutioner().execAndReturn(iaMax).getFinalResult();
         System.out.println("IMAX: " + imax);
         System.out.println("IAMAX: " + iamax);
-        assertEquals(1, iamax, 0.0);
-        assertEquals(3, imax, 0.0);
+        assertEquals(1, iamax);
+        assertEquals(3, imax);
     }
 
 

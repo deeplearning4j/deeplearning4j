@@ -65,20 +65,28 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer create(DataBuffer underlyingBuffer, long offset, long length) {
-        if (underlyingBuffer.dataType() == DataType.DOUBLE) {
-            return new CudaDoubleDataBuffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataType.FLOAT) {
-            return new CudaFloatDataBuffer(underlyingBuffer, length, offset);
-
-        } else if (underlyingBuffer.dataType() == DataType.INT) {
-            return new CudaIntDataBuffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataType.HALF) {
-            return new CudaHalfDataBuffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataType.LONG) {
-            return new CudaLongDataBuffer(underlyingBuffer, length, offset);
+        switch (underlyingBuffer.dataType()) {
+            case DOUBLE:
+                return new CudaDoubleDataBuffer(underlyingBuffer, length, offset);
+            case FLOAT:
+                return new CudaFloatDataBuffer(underlyingBuffer, length, offset);
+            case HALF:
+                return new CudaHalfDataBuffer(underlyingBuffer, length, offset);
+            case LONG:
+                return new CudaLongDataBuffer(underlyingBuffer, length, offset);
+            case INT:
+                return new CudaIntDataBuffer(underlyingBuffer, length, offset);
+            case SHORT:
+                return new CudaShortDataBuffer(underlyingBuffer, length, offset);
+            case UBYTE:
+                return new CudaUByteDataBuffer(underlyingBuffer, length, offset);
+            case BYTE:
+                return new CudaByteDataBuffer(underlyingBuffer, length, offset);
+            case BOOL:
+                return new CudaBoolDataBuffer(underlyingBuffer, length, offset);
+            default:
+                throw new ND4JIllegalStateException("Unknown data buffer type: " + underlyingBuffer.dataType().toString());
         }
-
-        throw new ND4JIllegalStateException("Unknown data buffer type: " + underlyingBuffer.dataType().toString());
     }
 
     /**

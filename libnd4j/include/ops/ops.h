@@ -98,8 +98,8 @@ namespace functions {
 		struct IndexValue {
 			T value;
             Nd4jLong index;
-            IndexValue() = default;
-            IndexValue(const Nd4jLong ind, const T val): index(ind), value(val) {}
+            _CUDA_HD IndexValue() = default;
+			_CUDA_HD IndexValue(const T val, const Nd4jLong ind): index(ind), value(val) {}
 		};
 	}
 
@@ -3513,17 +3513,11 @@ namespace simdOps {
 	template <typename X>
 	class IndexAbsoluteMax  {
 	public:
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
+		static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
 			return nd4j::math::nd4j_abs<X>(val);
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
+		static _CUDA_HD inline functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X> &old, functions::indexreduce::IndexValue<X> &opOutput, X *extraParams) {
 			opOutput.value = nd4j::math::nd4j_abs<X>(opOutput.value);
 			old.value = nd4j::math::nd4j_abs<X>(old.value);
 			if (opOutput.value > old.value)
@@ -3538,10 +3532,7 @@ namespace simdOps {
 			return old;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline functions::indexreduce::IndexValue<X> merge(
+		static _CUDA_HD inline functions::indexreduce::IndexValue<X> merge(
 				functions::indexreduce::IndexValue<X> f1,
 		functions::indexreduce::IndexValue<X> f2, X *extraParams) {
 			if (nd4j::math::nd4j_abs<X>(f1.value) > nd4j::math::nd4j_abs<X>(f2.value))
@@ -3549,36 +3540,24 @@ namespace simdOps {
 			return f1;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline functions::indexreduce::IndexValue<X> postProcess(
+		static _CUDA_HD inline functions::indexreduce::IndexValue<X> postProcess(
 				functions::indexreduce::IndexValue<X> reduction, int n, int xOffset,
 				X *dx, int incx, X *extraParams, X *result) {
 			return reduction;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline X startingValue(X *input) {
+		static _CUDA_HD inline X startingValue(X *input) {
 			return 0;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = 0;
             return local;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
+		static _CUDA_HD  inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
 		functions::indexreduce::IndexValue<X> d2, X *extraParams) {
 			return d1;
 		}
@@ -3587,17 +3566,11 @@ namespace simdOps {
     template <typename X>
     class FirstIndex {
     public:
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
             return val;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
+        static _CUDA_HD  functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X> &old, functions::indexreduce::IndexValue<X> &opOutput, X *extraParams) {
 
 #ifdef __CUDACC__
             if (opOutput.index < 0)
@@ -3620,36 +3593,23 @@ namespace simdOps {
             return old;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline X startingValue(X *input) {
+        static _CUDA_HD inline X startingValue(X *input) {
             return -nd4j::DataTypeUtils::max<X>();
         }
 
-
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = -1;
             return local;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
                                                                functions::indexreduce::IndexValue<X> d2, X *extraParams) {
             return d1;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> merge(
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> merge(
                 functions::indexreduce::IndexValue<X> f1,
                 functions::indexreduce::IndexValue<X> f2, X *extraParams) {
             if (f1.index > f2.index)
@@ -3657,10 +3617,7 @@ namespace simdOps {
             return f1;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> postProcess(
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> postProcess(
                 functions::indexreduce::IndexValue<X> reduction, int n, int xOffset,
                 X *dx, int incx, X *extraParams, X *result) {
             return reduction;
@@ -3671,17 +3628,11 @@ namespace simdOps {
     template <typename X>
     class LastIndex {
     public:
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
             return val;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
+        static _CUDA_HD functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X> &old, functions::indexreduce::IndexValue<X> &opOutput, X *extraParams) {
 #ifdef __CUDACC__
             if (opOutput.index < 0)
                 return old;
@@ -3701,36 +3652,23 @@ namespace simdOps {
             return old;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline X startingValue(X *input) {
+        static _CUDA_HD inline X startingValue(X *input) {
             return -nd4j::DataTypeUtils::max<X>();
         }
 
-
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = -1;
             return local;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
                                                                functions::indexreduce::IndexValue<X> d2, X *extraParams) {
             return d1;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> merge(
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> merge(
                 functions::indexreduce::IndexValue<X> f1,
                 functions::indexreduce::IndexValue<X> f2, X *extraParams) {
             if (f1.index < f2.index)
@@ -3738,10 +3676,7 @@ namespace simdOps {
             return f1;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> postProcess(
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> postProcess(
                 functions::indexreduce::IndexValue<X> reduction, int n, int xOffset,
                 X *dx, int incx, X *extraParams, X *result) {
             return reduction;
@@ -3753,17 +3688,11 @@ namespace simdOps {
 	class IndexMax  {
 	public:
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
 			return val;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
+        static _CUDA_HD functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X> &old, functions::indexreduce::IndexValue<X> &opOutput, X *extraParams) {
 			if (opOutput.value > old.value) {
                 return opOutput;
             }
@@ -3777,10 +3706,7 @@ namespace simdOps {
 			return old;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> merge(
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> merge(
 				functions::indexreduce::IndexValue<X> f1,
 				functions::indexreduce::IndexValue<X> f2, X *extraParams) {
 			if (f1.value > f2.value)
@@ -3788,36 +3714,24 @@ namespace simdOps {
 			return f1;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> postProcess(
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> postProcess(
 				functions::indexreduce::IndexValue<X> reduction, int n, int xOffset,
 				X *dx, int incx, X *extraParams, X *result) {
 			return reduction;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline X startingValue(X *input) {
+        static _CUDA_HD inline X startingValue(X *input) {
 			return -nd4j::DataTypeUtils::max<X>();
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = 0;
             return local;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
 				functions::indexreduce::IndexValue<X> d2, X *extraParams) {
 			return d1;
 		}
@@ -3827,35 +3741,23 @@ namespace simdOps {
 	template <typename X>
 	class IndexAbsoluteMin {
 	public:
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline functions::indexreduce::IndexValue<X> op(
+		static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(
 				functions::indexreduce::IndexValue<X> val, X *extraParams) {
 			return val;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline X startingValue(X *input) {
+		static _CUDA_HD inline X startingValue(X *input) {
 			return nd4j::DataTypeUtils::max<X>();
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = 0;
             return local;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
+		static _CUDA_HD inline functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X> &old, functions::indexreduce::IndexValue<X> &opOutput, X *extraParams) {
 			opOutput.value = nd4j::math::nd4j_abs<X>(opOutput.value);
 			old.value = nd4j::math::nd4j_abs<X>(old.value);
 			if (opOutput.value < old.value)
@@ -3871,10 +3773,7 @@ namespace simdOps {
 			return old;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline functions::indexreduce::IndexValue<X> merge(
+		static _CUDA_HD inline functions::indexreduce::IndexValue<X> merge(
 				functions::indexreduce::IndexValue<X> f1,
 		functions::indexreduce::IndexValue<X> f2, X *extraParams) {
 			if (nd4j::math::nd4j_abs<X>(f1.value) < nd4j::math::nd4j_abs<X>(f2.value))
@@ -3882,19 +3781,13 @@ namespace simdOps {
 			return f1;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline functions::indexreduce::IndexValue<X> postProcess(
+		static _CUDA_HD inline functions::indexreduce::IndexValue<X> postProcess(
 				functions::indexreduce::IndexValue<X> reduction, int n, int xOffset,
 				X *dx, int incx, X *extraParams, X *result) {
 			return reduction;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-		static inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
+		static _CUDA_HD  inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
 		functions::indexreduce::IndexValue<X> d2, X *extraParams) {
 			return d1;
 		}
@@ -3904,36 +3797,23 @@ namespace simdOps {
 	template <typename X>
 	class IndexMin {
 	public:
-
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> op(
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(
 				functions::indexreduce::IndexValue<X> val, X *extraParams) {
 			return val;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline X startingValue(X *input) {
+        static _CUDA_HD inline X startingValue(X *input) {
 			return nd4j::DataTypeUtils::max<X>();
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = 0;
             return local;
         }
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X>& old, functions::indexreduce::IndexValue<X>& opOutput, X *extraParams) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X> &old, functions::indexreduce::IndexValue<X> &opOutput, X *extraParams) {
 			if (opOutput.value < old.value)
 				return opOutput;
 
@@ -3947,11 +3827,7 @@ namespace simdOps {
 			return old;
 		}
 
-
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> merge(
+		static _CUDA_HD inline functions::indexreduce::IndexValue<X> merge(
 				functions::indexreduce::IndexValue<X> f1,
 				functions::indexreduce::IndexValue<X> f2, X *extraParams) {
 			if (f1.value < f2.value)
@@ -3959,19 +3835,13 @@ namespace simdOps {
 			return f1;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> postProcess(
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> postProcess(
 				functions::indexreduce::IndexValue<X> reduction, int n, int xOffset,
 				X *dx, int incx, X *extraParams, X *result) {
 			return reduction;
 		}
 
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        static inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
 				functions::indexreduce::IndexValue<X> d2, X *extraParams) {
 			return d1;
 		}
