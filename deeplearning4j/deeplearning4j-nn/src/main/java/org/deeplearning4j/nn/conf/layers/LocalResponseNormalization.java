@@ -108,11 +108,6 @@ public class LocalResponseNormalization extends Layer {
     }
 
     @Override
-    public boolean isPretrain() {
-        return false;
-    }
-
-    @Override
     public double getL1ByParam(String paramName) {
         //Not applicable
         return 0;

@@ -720,9 +720,6 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         // Test pretrain true
         MultiLayerNetwork aePre = getAeModel(true, nIn, nOut);
-        assertTrue(aePre.conf().isPretrain()); // check on the network
-        assertTrue(aePre.getLayer(0).conf().isPretrain()); // check pretrain layer
-        assertFalse(aePre.getLayer(1).conf().isPretrain()); // check none pretrain layer
         int actualNP = (int)aePre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
         INDArray params = aePre.params();
@@ -736,9 +733,6 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         // Test pretrain false, expect same for true because its not changed when applying update
         MultiLayerNetwork aeNoPre = getAeModel(false, nIn, nOut);
-        assertFalse(aeNoPre.conf().isPretrain());
-        assertFalse(aeNoPre.getLayer(0).conf().isPretrain());
-        assertFalse(aePre.getLayer(1).conf().isPretrain());
         actualNP = (int)aeNoPre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
         params = aeNoPre.params();
@@ -757,7 +751,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                                 LossFunctions.LossFunction.COSINE_PROXIMITY)
                                 .activation(Activation.IDENTITY).nOut(nOut)
                                 .build())
-                .pretrain(preTrain).setInputType(InputType.feedForward(nOut)).build();
+                .setInputType(InputType.feedForward(nOut)).build();
         MultiLayerNetwork network = new MultiLayerNetwork(vae);
         network.init();
         return network;

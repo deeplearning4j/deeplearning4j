@@ -590,10 +590,6 @@ public class FineTuneConfiguration {
     }
 
     public void applyToMultiLayerConfiguration(MultiLayerConfiguration conf) {
-        if (pretrain != null)
-            conf.setPretrain(pretrain);
-        if (backprop != null)
-            conf.setBackprop(backprop);
         if (backpropType != null)
             conf.setBackpropType(backpropType);
         if (tbpttFwdLength != null)
@@ -603,10 +599,6 @@ public class FineTuneConfiguration {
     }
 
     public void applyToComputationGraphConfiguration(ComputationGraphConfiguration conf) {
-        if (pretrain != null)
-            conf.setPretrain(pretrain);
-        if (backprop != null)
-            conf.setBackprop(backprop);
         if (backpropType != null)
             conf.setBackpropType(backpropType);
         if (tbpttFwdLength != null)

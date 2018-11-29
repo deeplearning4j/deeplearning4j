@@ -347,23 +347,6 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
         assertEquals(conf, conf3);
     }
 
-    @Test
-    public void testPreBackFineValidation() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-
-        assertFalse(conf.isPretrain());
-        assertTrue(conf.isBackprop());
-
-        conf = new NeuralNetConfiguration.Builder().list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .build();
-
-        assertTrue(conf.isPretrain());
-        assertFalse(conf.isBackprop());
-    }
-
 
     @Test
     public void testBiasLr() {

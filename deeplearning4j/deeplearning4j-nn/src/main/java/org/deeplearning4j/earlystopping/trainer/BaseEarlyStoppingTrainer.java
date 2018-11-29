@@ -74,8 +74,21 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
 
     protected abstract void fit(MultiDataSet mds);
 
+    protected abstract void pretrain(DataSet ds);
+
+    protected abstract void pretrain(MultiDataSet mds);
+
     @Override
     public EarlyStoppingResult<T> fit() {
+        return fit(false);
+    }
+
+    @Override
+    public EarlyStoppingResult<T> pretrain(){
+        return fit(true);
+    }
+
+    protected EarlyStoppingResult<T> fit(boolean pretrain){
         esConfig.validate();
         log.info("Starting early stopping training");
         if (esConfig.getScoreCalculator() == null)
@@ -116,10 +129,14 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
             triggerEpochListeners(true, model, epochCount);
             while (iterator.hasNext()) {
                 try {
-                    if (train != null) {
-                        fit((DataSet) iterator.next());
-                    } else
-                        fit(trainMulti.next());
+                    if(pretrain){
+
+                    } else {
+                        if (train != null) {
+                            fit((DataSet) iterator.next());
+                        } else
+                            fit(trainMulti.next());
+                    }
                 } catch (Exception e) {
                     log.warn("Early stopping training terminated due to exception at epoch {}, iteration {}",
                             epochCount, iterCount, e);

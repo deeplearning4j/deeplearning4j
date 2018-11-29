@@ -65,9 +65,6 @@ public class RegressionTest080 extends BaseDL4JTest {
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(2, conf.getConfs().size());
 
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
-
         DenseLayer l0 = (DenseLayer) conf.getConf(0).getLayer();
         assertTrue(l0.getActivationFn() instanceof ActivationReLU);
         assertEquals(3, l0.getNIn());
@@ -111,9 +108,6 @@ public class RegressionTest080 extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(2, conf.getConfs().size());
-
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
 
         DenseLayer l0 = (DenseLayer) conf.getConf(0).getLayer();
         assertTrue(l0.getActivationFn() instanceof ActivationLReLU);
@@ -171,9 +165,6 @@ public class RegressionTest080 extends BaseDL4JTest {
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(3, conf.getConfs().size());
 
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
-
         ConvolutionLayer l0 = (ConvolutionLayer) conf.getConf(0).getLayer();
         assertTrue(l0.getActivationFn() instanceof ActivationTanH);
         assertEquals(3, l0.getNIn());
@@ -230,9 +221,6 @@ public class RegressionTest080 extends BaseDL4JTest {
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(3, conf.getConfs().size());
 
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
-
         GravesLSTM l0 = (GravesLSTM) conf.getConf(0).getLayer();
         assertTrue(l0.getActivationFn() instanceof ActivationTanH);
         assertEquals(3, l0.getNIn());
@@ -268,9 +256,6 @@ public class RegressionTest080 extends BaseDL4JTest {
 
         ComputationGraphConfiguration conf = net.getConfiguration();
         assertEquals(3, conf.getVertices().size());
-
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
 
         GravesLSTM l0 = (GravesLSTM) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
         assertTrue(l0.getActivationFn() instanceof ActivationTanH);

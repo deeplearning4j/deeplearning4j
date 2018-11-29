@@ -253,8 +253,6 @@ public class TestVAE extends BaseDL4JTest {
         INDArray features = Nd4j.rand(3, 10);
         INDArray labels = Nd4j.rand(3, 6);
 
-        net.getLayerWiseConfigurations().setPretrain(false);
-
         for (int i = 0; i < 3; i++) {
             net.fit(features, labels);
         }

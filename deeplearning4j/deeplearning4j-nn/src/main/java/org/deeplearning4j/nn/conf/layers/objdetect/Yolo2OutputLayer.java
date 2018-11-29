@@ -140,11 +140,6 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public boolean isPretrain() {
-        return false;
-    }
-
-    @Override
     public double getL1ByParam(String paramName) {
         return 0;   //No params
     }

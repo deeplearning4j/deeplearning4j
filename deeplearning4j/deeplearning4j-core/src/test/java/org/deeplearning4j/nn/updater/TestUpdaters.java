@@ -746,7 +746,6 @@ public class TestUpdaters extends BaseDL4JTest {
                                         .activation(Activation.IDENTITY).nIn(nIn).nOut(nOut).build())
                         .build();
         long numParams = conf.getLayer().initializer().numParams(conf);
-        conf.setPretrain(true);
         INDArray params = Nd4j.create(1, numParams);
         BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
@@ -792,7 +791,6 @@ public class TestUpdaters extends BaseDL4JTest {
         gradientCopyPreUpdate.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbg);
         gradientCopyPreUpdate.setFlattenedGradient(g);
 
-        conf.setPretrain(false);
         params = Nd4j.create(1, numParams);
         layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);

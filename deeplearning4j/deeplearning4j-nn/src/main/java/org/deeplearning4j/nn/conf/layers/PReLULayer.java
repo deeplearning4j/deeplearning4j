@@ -93,11 +93,6 @@ public class PReLULayer extends BaseLayer {
     }
 
     @Override
-    public boolean isPretrain() {
-        return false;
-    }
-
-    @Override
     public double getL1ByParam(String paramName) {
         switch (paramName) {
             case DefaultParamInitializer.WEIGHT_KEY:
