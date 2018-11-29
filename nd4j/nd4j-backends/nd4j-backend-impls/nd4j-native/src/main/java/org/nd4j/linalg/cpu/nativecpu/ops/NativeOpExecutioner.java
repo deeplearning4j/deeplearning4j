@@ -588,19 +588,42 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, devTadShapeInfoZ, devTadOffsetsZ);
+        //PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, devTadShapeInfoZ, devTadOffsetsZ);
 
 
-        loop.execScalar(dummy, op.opNum(),
-                    op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                    null, null,
-                    op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                    null, null,
-                    op.y().data().addressPointer(), (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                    null, null,
-                    getPointerForExtraArgs(op, op.z().dataType()),
-                    (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.INT).addressPointer(),
-                    dimension.length);
+        switch (op.getOpType()) {
+            case SCALAR:
+                loop.execScalar(null, op.opNum(),
+                        op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        null, null,
+                        op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        null, null,
+                        op.y().data().addressPointer(), (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                        null, null,
+                        getPointerForExtraArgs(op, op.z().dataType()),
+                        (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.INT).addressPointer(),
+                        dimension.length,
+                        (LongPointer) hostTadShapeInfo, (LongPointer) hostTadOffsets,
+                        (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
+                break;
+            case SCALAR_BOOL:
+                loop.execScalarBool(null, op.opNum(),
+                        op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        null, null,
+                        op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        null, null,
+                        op.y().data().addressPointer(), (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                        null, null,
+                        getPointerForExtraArgs(op, op.z().dataType()),
+                        (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.INT).addressPointer(),
+                        dimension.length,
+                        (LongPointer) hostTadShapeInfo, (LongPointer) hostTadOffsets,
+                        (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
+
     }
 
     private void exec(ScalarOp op) {

@@ -5426,6 +5426,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         matrix.putiColumnVector(row);
 
+        Nd4j.getExecutioner().commit();
+
         assertEquals(exp, matrix);
     }
 

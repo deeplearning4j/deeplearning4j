@@ -1542,11 +1542,9 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
                                  void *dScalars, Nd4jLong *dScalarShapeInfo,
                                  void *extraParams,
                                  int *dimension,
-                                 int dimensionLength) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    auto tadShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
-    auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
+                                 int dimensionLength,
+                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                 Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
     NativeOpExcutioner::execScalar(
             opNum,
@@ -1575,11 +1573,9 @@ void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
                            void *dScalars, Nd4jLong *dScalarShapeInfo,
                            void *extraParams,
                            int *dimension,
-                           int dimensionLength) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    auto tadShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
-    auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
+                           int dimensionLength,
+                           Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                           Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
     NativeOpExcutioner::execScalarBool(
             opNum,

@@ -2176,7 +2176,8 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    dim3 launchDims(256, 512, 32768);
+    auto numBlocks = shape::length(hZShapeInfo);
+    dim3 launchDims(numBlocks, 256, 32768);
 
     if (xType != yType)
         throw nd4j::datatype_exception::build("NativeOps::execReduce3 requires Y operand to have X type", xType, yType);
@@ -2206,7 +2207,7 @@ void NativeOps::execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     auto xLength = shape::length(hXShapeInfo);
-    auto blockWidth = 512;
+    auto blockWidth = 256;
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks, blockWidth, 32768);
 
@@ -2261,7 +2262,9 @@ void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
 						   void *dScalars, Nd4jLong *dScalarShapeInfo,
 						   void *extraParams,
 						   int *dimension,
-						   int dimensionLength) {
+						   int dimensionLength,
+                           Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                           Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -2321,20 +2324,22 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
                      void *dScalars, Nd4jLong *dScalarShapeInfo,
 					 void *extraParams,
 					 int *dimension,
-					 int dimensionLength) {
+					 int dimensionLength,
+                     Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                     Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
     
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
-    dim3 launchDims(256, 512, 8192);
-
-	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+	dim3 launchDims(256, 256, 16384);
+
 #ifndef __ND4J_EXPERIMENTAL__
-    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES);
+	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
 #endif
 
 	DEBUG_KERNEL(stream, opNum);

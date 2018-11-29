@@ -301,7 +301,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             extraArgs,
                             null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.y(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),context),
-                            null, (LongPointer) hostZShapeInfo, (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                            null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                             (IntPointer) dimensionPointer, dimension.length,
                             (LongPointer) devTadShapeInfo,
                             dT,
@@ -323,7 +323,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             extraArgs,
                             null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.y(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
-                            null, (LongPointer) hostZShapeInfo, (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                            null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                             (IntPointer) dimensionPointer, dimension.length, (LongPointer) devTadShapeInfo, (LongPointer) devTadOffsets, (LongPointer) yDevTadShapeInfo, (LongPointer) yDevTadOffsets);
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
@@ -1094,12 +1094,30 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
 
-        nativeOps.execScalar(extraPointers, op.opNum(),
-                null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
-                null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
-                extraArgs,
-                (IntPointer) dimensionPointer, dimension.length);
+        switch (op.getOpType()) {
+            case SCALAR:
+                nativeOps.execScalar(extraPointers, op.opNum(),
+                        null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                       null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                        null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
+                        extraArgs,
+                        (IntPointer) dimensionPointer, dimension.length,
+                        (LongPointer) devTadShapeInfo, (LongPointer) devTadOffsets,
+                        (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
+                break;
+            case SCALAR_BOOL:
+                nativeOps.execScalarBool(extraPointers, op.opNum(),
+                        null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                        null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                        null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
+                        extraArgs,
+                        (IntPointer) dimensionPointer, dimension.length,
+                        (LongPointer) devTadShapeInfo, (LongPointer) devTadOffsets,
+                        (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
 

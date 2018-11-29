@@ -521,7 +521,9 @@ public:
                           void *dScalars, Nd4jLong *dScalarShapeInfo,
                           void *extraParams,
                           int *dimension,
-                          int dimensionLength);
+                          int dimensionLength,
+                          Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                          Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
     void execScalarBool(Nd4jPointer *extraPointers,
                     int opNum,
@@ -533,7 +535,9 @@ public:
                     void *dScalars, Nd4jLong *dScalarShapeInfo,
                     void *extraParams,
                     int *dimension,
-                    int dimensionLength);
+                    int dimensionLength,
+                    Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                    Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
 
 /**

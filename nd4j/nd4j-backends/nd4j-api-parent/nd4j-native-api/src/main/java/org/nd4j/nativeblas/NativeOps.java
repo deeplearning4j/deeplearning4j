@@ -585,7 +585,9 @@ public abstract class NativeOps extends Pointer {
                                     Pointer dscalars, @Cast("Nd4jLong *") LongPointer dscalarShapeInfo,
                                     Pointer extraParams,
                                     IntPointer dimension,
-                                    int dimensionLength);
+                                    int dimensionLength,
+                                    @Cast("Nd4jLong *") LongPointer tadShapeInfo, @Cast("Nd4jLong *") LongPointer tadOffsets,
+                                    @Cast("Nd4jLong *") LongPointer tadShapeInfoZ, @Cast("Nd4jLong *") LongPointer tadOffsetsZ);
 
     public abstract void execScalarBool(PointerPointer extraPointers,
                                         int opNum,
@@ -597,7 +599,9 @@ public abstract class NativeOps extends Pointer {
                                         Pointer dscalars, @Cast("Nd4jLong *") LongPointer dscalarShapeInfo,
                                         Pointer extraParams,
                                         IntPointer dimension,
-                                        int dimensionLength);
+                                        int dimensionLength,
+                                        @Cast("Nd4jLong *") LongPointer tadShapeInfo, @Cast("Nd4jLong *") LongPointer tadOffsets,
+                                        @Cast("Nd4jLong *") LongPointer tadShapeInfoZ, @Cast("Nd4jLong *") LongPointer tadOffsetsZ);
 
     /**
      * @param extraPointers
