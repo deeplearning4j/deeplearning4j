@@ -83,7 +83,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
     @Override
     public DataType getDataType(){
-        return DataType.FLOAT;
+        return DataType.DOUBLE;
     }
 
     @Test
@@ -640,7 +640,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                             .build();
 
             EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);
-            EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+            EarlyStoppingResult<MultiLayerNetwork> result = trainer.pretrain();
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);
@@ -733,7 +733,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                             .build();
 
             EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);
-            EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+            EarlyStoppingResult<MultiLayerNetwork> result = trainer.pretrain();
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);

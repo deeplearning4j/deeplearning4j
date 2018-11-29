@@ -185,7 +185,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // IOU of any in the grid cell
         //We also need 1_ij^noobj, which is (a) no object, or (b) object present in grid cell, but this box doesn't
         // have the highest IOU
-        INDArray mask1_ij_obj = Nd4j.getExecutioner().execAndReturn(new IsMax(iou.dup('c'), 1));
+        INDArray mask1_ij_obj = Nd4j.create(DataType.BOOL, iou.shape(), 'c');
+        Nd4j.getExecutioner().execAndReturn(new IsMax(iou, mask1_ij_obj, 1));
         Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskObjectPresent, mask1_ij_obj, 0,2,3));
         INDArray mask1_ij_noobj = Transforms.not(mask1_ij_obj);
 
