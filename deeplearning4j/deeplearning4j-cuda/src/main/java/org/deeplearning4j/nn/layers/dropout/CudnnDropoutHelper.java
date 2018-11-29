@@ -109,6 +109,19 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
     private float lastInitializedP;
 
     @Override
+    public void validateDeviceId() {
+        if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            cudnnContext = new CudnnDropoutContext();
+            deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            initializedDescriptor = false;
+            rngStates = null;
+            mask = null;
+            stateSizeBytesPtr = null;
+            reserveSizeBytesPtr = null;
+        }
+    }
+
+    @Override
     public void applyDropout(INDArray input, INDArray resultArray, double dropoutInputRetainProb) {
         float p = (float)(1.0 - dropoutInputRetainProb);    //CuDNN uses p = probability of setting to 0. We use p = probability of retaining
 

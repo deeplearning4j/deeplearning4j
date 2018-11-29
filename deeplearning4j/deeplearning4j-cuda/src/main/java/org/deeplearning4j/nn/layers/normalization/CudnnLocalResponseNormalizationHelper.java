@@ -124,6 +124,15 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
     }
 
     @Override
+    public void validateDeviceId() {
+        if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            cudnnContext = new CudnnLocalResponseNormalizationContext();
+            activations = null;
+            deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
+    }
+
+    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
                                                      double beta, LayerWorkspaceMgr workspaceMgr) {
         val miniBatch = (int) input.size(0);

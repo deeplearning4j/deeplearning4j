@@ -106,6 +106,14 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
     private CudnnSubsamplingContext cudnnContext = new CudnnSubsamplingContext();
 
     @Override
+    public void validateDeviceId() {
+        if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            cudnnContext = new CudnnSubsamplingContext();
+            deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
+    }
+
+    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
                  int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
         if(dilation[0] != 1 || dilation[1] != 1){
@@ -270,4 +278,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         return Collections.emptyMap();
     }
 
+    protected void reinitContext(){
+
+    }
 }

@@ -113,6 +113,16 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     private INDArray varCache;
     private double eps;
 
+    @Override
+    public void validateDeviceId() {
+        if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            cudnnContext = new CudnnBatchNormalizationContext();
+            meanCache = null;
+            varCache = null;
+            deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
+    }
+
     public boolean checkSupported(double eps) {
         boolean supported = checkSupported();
         if (eps < CUDNN_BN_MIN_EPSILON) {

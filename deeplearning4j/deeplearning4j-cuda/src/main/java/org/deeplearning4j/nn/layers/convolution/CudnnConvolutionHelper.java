@@ -128,6 +128,14 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     private CudnnConvolutionContext cudnnContext = new CudnnConvolutionContext();
 
     @Override
+    public void validateDeviceId() {
+        if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            cudnnContext = new CudnnConvolutionContext();
+            deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
+    }
+
+    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
                     AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,

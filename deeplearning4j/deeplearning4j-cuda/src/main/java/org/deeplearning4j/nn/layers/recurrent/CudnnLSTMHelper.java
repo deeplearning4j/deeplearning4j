@@ -169,6 +169,21 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
     private boolean initializedDropoutDescriptor = false;
 
+    @Override
+    public void validateDeviceId() {
+        if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            cudnnContext = new CudnnLSTMContext();
+            xDesc = new TensorArray();
+            yDesc = new TensorArray();
+            dxDesc = new TensorArray();
+            dyDesc = new TensorArray();
+            stateSpace = new DataCache();
+            reserveSpace = new DataCache();
+            weightsSpace = new DataCache();
+            deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
+    }
+
     private static INDArray toCOrder(INDArray arr) {
         if (arr.isView() || arr.ordering() != 'c' || !Shape.strideDescendingCAscendingF(arr)) {
             arr = arr.dup('c');

@@ -117,6 +117,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     //Workspaces for CUDNN. Pass to LayerWorkspaceMgr for re-use in cudnn helpers
     @Getter
     protected transient Map<String,Pointer> helperWorkspaces = new HashMap<>();
+    protected transient long helperWorkspacesDeviceId = -1;      //Helper memory isn't usually safe to pass between devices
 
     private transient final AtomicLong occupiedBy = new AtomicLong(-1);
 
@@ -915,6 +916,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         if(!iter.hasNext() && iter.resetSupported())
@@ -1134,6 +1136,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         if (configuration.isBackprop()) {
@@ -1350,6 +1353,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         boolean tbptt = configuration.getBackpropType() == BackpropType.TruncatedBPTT;
@@ -1925,6 +1929,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspaceMgr.setNoLeverageOverride(features[0].data().getParentWorkspace().getId());
             }
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         Map<String, INDArray> activations = new HashMap<>();
@@ -2071,6 +2076,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspaceMgr.setWorkspace(ArrayType.FF_CACHE, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
             }
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         Map<String, INDArray> activations = new HashMap<>();
@@ -2235,6 +2241,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         WorkspaceMode wsm = (train ? configuration.getTrainingWorkspaceMode() : configuration.getInferenceWorkspaceMode());
         boolean noWS = wsm == WorkspaceMode.NONE;
+        validateHelperWorkspaceThreads();
         LayerWorkspaceMgr allNone = noWS ? LayerWorkspaceMgr.noWorkspaces(helperWorkspaces) : null;
         List<MemoryWorkspace>[] closeAtEndIteraton = (List<MemoryWorkspace>[])new List[topologicalOrder.length];
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
@@ -2277,6 +2284,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         allWorkspaceManagers.add(workspaceMgr);
                     }
                 }
+                validateHelperWorkspaceThreads();
                 workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
                 //Is this one of the layers/vertices that we want the output for?
@@ -2524,6 +2532,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
 
         boolean noWS = configuration.getInferenceWorkspaceMode() == WorkspaceMode.NONE;
+        validateHelperWorkspaceThreads();
         LayerWorkspaceMgr allNone = noWS ? LayerWorkspaceMgr.noWorkspaces(helperWorkspaces) : null;
 
         List<LayerWorkspaceMgr> allWorkspaceManagers = new ArrayList<>();
@@ -2587,6 +2596,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         allWorkspaceManagers.add(workspaceMgr);
                     }
                 }
+                validateHelperWorkspaceThreads();
                 workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
                 if (current.isOutputVertex()) {
@@ -2974,6 +2984,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         mgr.setHelperWorkspacePointers(helperWorkspaces);
 
         boolean hasMaskArrays = dataSet.hasMaskArrays();
@@ -3069,6 +3080,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         mgr.setHelperWorkspacePointers(helperWorkspaces);
 
         boolean hasMaskArrays = dataSet.hasMaskArrays();
@@ -4645,6 +4657,25 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         // FIXME: int cast
         return (int) ffl.getNIn();
+    }
+
+    /**
+     * Validate and clear the helper workspace pointer(s) from the helperWorkspaces if the calling thread's device is
+     * different to past devices.
+     * This is necessary because CuDNN workspace pointers can't be relocated between devices, and hence we'll cause
+     * a crash if we use the pointer initialized on one device, on another device.
+     */
+    protected void validateHelperWorkspaceThreads(){
+        if(helperWorkspacesDeviceId == -1) {
+            helperWorkspacesDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            return;
+        }
+
+        if(helperWorkspacesDeviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            if(helperWorkspaces != null){
+                helperWorkspaces.clear();
+            }
+        }
     }
 
     /**
