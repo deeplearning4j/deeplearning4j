@@ -158,38 +158,40 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
     __shared__ int numTads;
     __shared__ Nd4jLong *tadShape;
     __shared__ Nd4jLong *tadStride;
-    
-    if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sPartials = reinterpret_cast<X*>(shmem);
-        tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-        tadRank = shape::rank(tadOnlyShapeInfo);
-        numTads = shape::length(xShapeInfo) / tadLength;
-        tadShape = shape::shapeOf(tadOnlyShapeInfo);
-        tadStride = shape::stride(tadOnlyShapeInfo);
-    }
-    __syncthreads();
-    
-    for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-        auto tadOffsetForBlock = tadOffsets[r];
-        sPartials[threadIdx.x] = OpType::startingValue(x + tadOffsetForBlock);
 
-          for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
-            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
-          }
-          __syncthreads();
 
-          // aggregate. do NOT reduce for elements > tadLength
-          aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+        if (threadIdx.x == 0) {
+            extern __shared__ unsigned char shmem[];
+            sPartials = reinterpret_cast<X*>(shmem);
+            tadLength = shape::length(tadOnlyShapeInfo);
+            tadRank = shape::rank(tadOnlyShapeInfo);
+            numTads = shape::length(xShapeInfo) / tadLength;
+            tadShape = shape::shapeOf(tadOnlyShapeInfo);
+            tadStride = shape::stride(tadOnlyShapeInfo);
+        }
+        __syncthreads();
 
-          __syncthreads();
 
-          if (threadIdx.x == 0)
-            z[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+        for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+            auto tadOffsetForBlock = tadOffsets[r];
+            sPartials[threadIdx.x] = OpType::startingValue(x + tadOffsetForBlock);
 
-          __syncthreads();
-    }
+              for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+                auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
+                sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
+              }
+              __syncthreads();
+
+              // aggregate. do NOT reduce for elements > tadLength
+              aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+
+              __syncthreads();
+
+              if (threadIdx.x == 0)
+                z[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+
+              __syncthreads();
+        }
 }
 
 ////////////////////////////////////////////////////////////////////////

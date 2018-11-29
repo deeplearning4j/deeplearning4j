@@ -150,8 +150,8 @@ extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension,
 
     ArrayOptions::setDataType(specialPointer, dataType);
 
-    //printf("special[0]: [%lld]\n", (long long) specialPointer[0]);
-    //shape::printShapeInfoLinear("prepareShapeBuffer", specialPointer);
+    printf("special[0]: [%lld]\n", (long long) specialPointer[0]);
+    shape::printShapeInfoLinear("prepareShapeBuffer", specialPointer);
 }
 
 
@@ -1295,8 +1295,7 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                     tempPointers[11] = extraPointers[14];
 
                     // max 3
-                    nd4j_printf("Max step\n","")
-                    execReduceFloat(tempPointers, reduce::Max, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1);
+                    execReduceSame(tempPointers, reduce::Max, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1);
 
                     DEBUG_KERNEL(stream, opNum);
 
@@ -1307,14 +1306,11 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                     tempPointers[12] = extraPointers[10];
                     tempPointers[13] = extraPointers[11];
 
-                    nd4j_printf("Subtract step\n","")
-
                     // sub 1
                     execBroadcast(tempPointers, broadcast::Subtract, hX, hXShapeInfo, dX, dXShapeInfo, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, nullptr, hZShapeInfo, dZ, dZShapeInfo, dimension, 1);
 
                     DEBUG_KERNEL(stream, opNum);
 
-                    nd4j_printf("Exp step\n","")
                     // exp 3
                     execTransformFloat(extraPointers, transform::Exp, hZ, hZShapeInfo, dZ, dZShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
 
@@ -1326,7 +1322,6 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                     tempPointers[11] = extraPointers[14];
 
                     //sum 1
-                    nd4j_printf("Sum step\n","")
                     execReduceSame(tempPointers, reduce::Sum, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1);
 
                     tempPointers[8] = extraPointers[8];

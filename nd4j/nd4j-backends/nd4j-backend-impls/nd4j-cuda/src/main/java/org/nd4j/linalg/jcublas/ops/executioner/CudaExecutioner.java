@@ -1278,9 +1278,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         op.validateDataTypes();
 
-        if (op.opNum() >= 38 && op.opNum() <= 41) {
-
-            if (op.opNum() != 41) {
+        // SoftMax, LogSoftMax, SoftMaxDerivative
+        if (op.getOpType() == Op.Type.TRANSFORM_STRICT && (op.opNum() >= 0 && op.opNum() <= 2)) {
                 tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), new int[] {0});
                 tadMaxBuffers = tadManager.getTADOnlyShapeInfo(op.x(), new int[] {1});
 
@@ -1295,7 +1294,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
                 DataBuffer maxOffsets = tadMaxBuffers.getSecond();
                 devMaxTadOffsets = maxOffsets == null ? null : allocator.getPointer(maxOffsets, context);
-            } else {
+                /*
                 tadBuffers = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
 
                 hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
@@ -1303,7 +1302,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
                 DataBuffer offsets = tadBuffers.getSecond();
                 devTadOffsets = offsets == null ? null : allocator.getPointer(offsets, context);
-            }
+                */
         }
 
         Pointer z = allocator.getPointer(op.z(), context);

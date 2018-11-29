@@ -2921,8 +2921,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testSoftmaxStability() {
-        INDArray input = Nd4j.create(new double[] {-0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04})
-                .transpose();
+        INDArray input = Nd4j.create(new double[] {-0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04}).reshape(1, -1).transpose();
         System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
         INDArray output = Nd4j.create(10, 1);
         System.out.println("Element wise stride of output " + output.elementWiseStride());
@@ -5656,25 +5655,12 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val reference = original.dup(original.ordering());
         val expected = original.dup(original.ordering());
 
-        Nd4j.getExecutioner().commit();
-
         Nd4j.getExecutioner().execAndReturn(new OldSoftMax(expected));
 
         val result = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(original, original.dup(original.ordering())));
 
         assertEquals(reference, original);
         assertEquals(expected, result);
-    }
-
-    @Test
-    public void testReduceAlongDimension_1() {
-        val original = Nd4j.linspace(1, 100, 100, DataType.DOUBLE).reshape(10, 10);
-
-        val reduced0 = original.max(0);
-        log.info("Reduced0: {}", reduced0);
-
-        val reduced1 = original.max(1);
-        log.info("Reduced1: {}", reduced1);
     }
 
     @Test
