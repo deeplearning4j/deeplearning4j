@@ -29,6 +29,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -102,7 +103,9 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
     @Override
     public boolean validateDataTypes() {
         if (y() != null)
-            Preconditions.checkArgument(x().dataType() == y().dataType(),"Op.X [" + x().dataType() + "] type must be the same as Op.Y [" + y().dataType() + "]");
+            Preconditions.checkArgument(x().dataType() == y().dataType(),
+                    "Op.X [" + x().dataType() + "] type must be the same as Op.Y [" + y().dataType() + "] for op " + getClass().getName()
+                    + ": x.shape=" + Arrays.toString(x().shape()) + ", y.shape=" + Arrays.toString(y().shape()));
 
         if (z() != null)
             Preconditions.checkArgument(z().isR(),"Op.X must be one of floating types");

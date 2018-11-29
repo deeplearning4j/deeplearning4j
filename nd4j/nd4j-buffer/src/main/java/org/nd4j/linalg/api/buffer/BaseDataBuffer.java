@@ -24,6 +24,7 @@ import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
@@ -33,6 +34,8 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -1333,7 +1336,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return getFloat(i);
     }
 
-    public void pointerIndexerByGlobalType(DataType currentType) {
+    public void pointerIndexerByCurrentType(DataType currentType) {
         switch (currentType) {
             case LONG:
                 pointer = new LongPointer(length());
@@ -1364,7 +1367,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
-    public void putByGlobalType(long i, Number element, DataType globalType) {
+    public void putByDestinationType(long i, Number element, DataType globalType) {
         if (globalType == DataType.INT || type == DataType.INT) {
             int anElement = element.intValue();
             put(i, anElement);
@@ -1377,6 +1380,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (globalType == DataType.DOUBLE) {
             double anElement = element.doubleValue();
             put(i, anElement);
+        } else {
+            throw new IllegalStateException("Unknown type: " + globalType);
         }
     }
 
@@ -1691,32 +1696,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             // old AllocationMode values are: DIRECT, HEAP, JAVACPP. Just using legacy here
             if (savedMode.ordinal() < 3) {
+                //Do an implicit conversion: keep current buffer data type unchanged, and convert values from source type
                 length = s.readInt();
-                val currentType = DataType.valueOf(s.readUTF());
-                if (currentType != DataType.COMPRESSED)
-                    type = DataTypeUtil.getDtypeFromContext();
-                else
-                    type = currentType;
+                DataType sourceType = DataType.valueOf(s.readUTF());
+                pointerIndexerByCurrentType(type);      //also updates indexer based on newly set length
 
-                if (currentType == DataType.LONG)
-                    elementSize = 8;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.DOUBLE && currentType != DataType.INT)
-                    elementSize = 8;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.FLOAT || currentType == DataType.INT)
-                    elementSize = 4;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.HALF && currentType != DataType.INT)
-                    elementSize = 2;
-
-                if (currentType != DataTypeUtil.getDtypeFromContext() && currentType != DataType.HALF && (currentType != DataType.INT && currentType != DataType.LONG)
-                        && !(DataTypeUtil.getDtypeFromContext() == DataType.DOUBLE)) {
-                    log.warn("Loading a data stream with opType different from what is set globally. Expect precision loss");
-                    if (DataTypeUtil.getDtypeFromContext() == DataType.INT)
-                        log.warn("Int to float/double widening UNSUPPORTED!!!");
+                if (sourceType != DataType.COMPRESSED) {
+                    DataType thisType = dataType();
+                    readContent(s, sourceType, thisType);
                 }
-                pointerIndexerByGlobalType(currentType);
-
-                if (currentType != DataType.COMPRESSED)
-                    readContent(s, currentType, DataTypeUtil.getDtypeFromContext());
 
                 // we should switch types here
 
@@ -1745,7 +1733,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     if (DataTypeUtil.getDtypeFromContext() == DataType.INT)
                         log.warn("Int to float/double widening UNSUPPORTED!!!");
                 }
-                pointerIndexerByGlobalType(currentType);
+                pointerIndexerByCurrentType(currentType);
 
                 if (currentType != DataType.COMPRESSED)
                     readContent(s, currentType, DataTypeUtil.getDtypeFromContext());
@@ -1775,7 +1763,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                         throw new UnsupportedOperationException();
                 }
 
-                pointerIndexerByGlobalType(type);
+                pointerIndexerByCurrentType(type);
 
                 if (type != DataType.COMPRESSED)
                     readContent(s, type, type);
@@ -1785,17 +1773,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
-    protected void readContent(DataInputStream s, DataType currentType, DataType globalType) {
+    protected void readContent(DataInputStream s, DataType sourceType, DataType thisType) {
         try {
-            if (currentType == DataType.DOUBLE) {
+            //Use AtomicX as a mutable Number class to reduce garbage vs. auto boxing to Double/Float etc classes
+            if (sourceType == DataType.DOUBLE) {
+                AtomicDouble aDbl = new AtomicDouble();
                 for (long i = 0; i < length(); i++) {
-                    putByGlobalType(i, s.readDouble(), globalType);
+                    aDbl.set(s.readDouble());
+                    putByDestinationType(i, aDbl, thisType);
                 }
-            } else if (currentType == DataType.FLOAT) {
+            } else if (sourceType == DataType.FLOAT) {
+                //TODO no AtomicFloat to use here?
                 for (long i = 0; i < length(); i++) {
-                    putByGlobalType(i, s.readFloat(), globalType);
+                    putByDestinationType(i, s.readFloat(), thisType);
                 }
-            } else if (currentType == DataType.COMPRESSED) {
+            } else if (sourceType == DataType.COMPRESSED) {
                 String compressionAlgorithm = s.readUTF();
                 long compressedLength = s.readLong();
                 long originalLength = s.readLong();
@@ -1810,18 +1802,26 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     ti.put(i, s.readByte());
                 }
 
-            } else if (currentType == DataType.HALF) {
+            } else if (sourceType == DataType.HALF) {
+                AtomicInteger aInt = new AtomicInteger();
                 for (long i = 0; i < length(); i++) {
-                    putByGlobalType(i, toFloat(s.readShort()), globalType);
+                    aInt.set(s.readShort());
+                    putByDestinationType(i, aInt, thisType);
                 }
-            } else if (currentType == DataType.LONG) {
-                val idx = (LongIndexer) indexer;
-                for (long i = 0; i < length(); i++)
-                    idx.put(i, s.readLong());
+            } else if (sourceType == DataType.LONG) {
+                AtomicLong aLong = new AtomicLong();
+                for (long i = 0; i < length(); i++) {
+                    aLong.set(s.readLong());
+                    putByDestinationType(i, aLong, thisType);
+                }
+            } else if (sourceType == DataType.INT ){
+                AtomicInteger aInt = new AtomicInteger();
+                for (long i = 0; i < length(); i++) {
+                    aInt.set(s.readInt());
+                    putByDestinationType(i, aInt, thisType);
+                }
             } else {
-                val idx = (IntIndexer) indexer;
-                for (long i = 0; i < length(); i++)
-                    idx.put(i, s.readInt());
+                throw new UnsupportedOperationException("Cannot read type: " + sourceType + " to " + thisType);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

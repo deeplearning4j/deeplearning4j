@@ -1365,14 +1365,28 @@ public class Nd4j {
 
     public static DataBuffer createBufferDetached(long[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
-        if (type == DataType.INT)
-            return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
-        else if (type == DataType.LONG)
-            return DATA_BUFFER_FACTORY_INSTANCE.createLong(length);
-        else if (type == DataType.HALF)
-            return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
+        switch (type){
 
-        return type == DataType.DOUBLE ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+            case DOUBLE:
+                DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
+            case FLOAT:
+                DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+            case HALF:
+                return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
+            case LONG:
+                return DATA_BUFFER_FACTORY_INSTANCE.createLong(length);
+            case INT:
+                return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
+            case SHORT:
+            case UBYTE:
+            case BYTE:
+            case BOOL:
+            case UTF8:
+            case COMPRESSED:
+            case UNKNOWN:
+            default:
+                throw new UnsupportedOperationException("Cannot create type: " + type);
+        }
     }
 
     /**
@@ -2613,7 +2627,8 @@ public class Nd4j {
             type = ArrayOptionsHelper.dataType(shapeInformation.asLong());
             data = CompressedDataBuffer.readUnknown(dis, length, type);
         } catch (ND4JUnknownDataTypeException e) {
-            type = Nd4j.dataType();
+            //Must be a legacy array, pre dtype changes... read as default floating point type
+            type = Nd4j.defaultFloatintPointType();
             data = CompressedDataBuffer.readUnknown(dis, length, type);
 
             // manually setting data type
