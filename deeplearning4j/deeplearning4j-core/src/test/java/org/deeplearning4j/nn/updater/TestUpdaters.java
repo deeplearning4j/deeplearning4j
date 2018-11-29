@@ -795,21 +795,6 @@ public class TestUpdaters extends BaseDL4JTest {
         layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         updater = UpdaterCreator.getUpdater(layer);
-
-        updater.update(layer, gradient, -1, 0, 1, LayerWorkspaceMgr.noWorkspaces());
-
-        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
-            //            System.out.println(entry.getKey());
-            val = entry.getValue();
-            if (!entry.getKey().equals("vb")) {
-                gradExpected = val.mul(lr);
-            } else {
-                //With pretrain == false, we shouldn't be updating the pretrain params (vb)
-                gradExpected = val;
-            }
-            //            System.out.println(gradExpected + "\t" + gradient.getGradientFor(entry.getKey()));
-            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
-        }
         assertEquals(lr, ((Sgd)layer.layerConf().getIUpdater()).getLearningRate(), 1e-4);
     }
 

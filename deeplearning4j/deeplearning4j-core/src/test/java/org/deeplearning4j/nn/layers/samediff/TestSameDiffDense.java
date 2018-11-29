@@ -233,6 +233,7 @@ public class TestSameDiffDense extends BaseDL4JTest {
 
     @Test
     public void testSameDiffDenseBackward() {
+        KnownCrashingTests.skipCrashingTest();
         int nIn = 3;
         int nOut = 4;
 

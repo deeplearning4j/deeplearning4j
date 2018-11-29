@@ -469,8 +469,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         noIntMask2 = Transforms.or(noIntMask2.get(all(), all(), point(0), all(), all()), noIntMask2.get(all(), all(), point(1), all(), all()) );
         INDArray noIntMask = Transforms.or(noIntMask1, noIntMask2 );
 
-//        INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask, noIntMask, 0.0)); //Values 0 if no intersection
-        INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask)); //Values 0 if no intersection
+        INDArray intMask = Transforms.not(noIntMask); //Values 0 if no intersection
         Broadcast.mul(intMask, objectPresentMask, intMask, 0, 2, 3);
 
         //Mask the intersection area: should be 0 if no intersection
