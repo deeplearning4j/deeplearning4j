@@ -787,10 +787,13 @@ namespace randomOps {
 
 #pragma omp parallel for num_threads(_threads) if (_threads > 1) proc_bind(spread)
             for (Nd4jLong e = 0; e < zLength; ++e) {
-                if (z[e] > mean + ds)
+                if (z[e] > mean + ds || z[e] < mean - ds) {
                     z[e] = step(rng, mean, stddev, e, middle, z[e]);// = e > 0 ? z[e - 1] : mean; // + stddev;
-                else if (z[e] < mean - ds)
-                    z[e] = step(rng, mean, stddev, e, middle, z[e]); //z[e] = e > 0? z[e - 1]: mean;
+
+                //else if (z[e] < mean - ds)
+                    if (z[e] > mean + ds || z[e] < mean - ds)
+                        z[e] = mean;
+                }
             }
             /*
             const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);

@@ -414,6 +414,15 @@ TEST_F(RNGTests, Test_Truncated_21) {
     result->at(0)->printBuffer("MEAN");
     result->at(1)->printBuffer("VARIANCE");
     delete result;
+    nd4j::ops::reduce_min minOp;
+    nd4j::ops::reduce_max maxOp;
+    auto minRes = minOp.execute({&x1}, {}, {}, {});
+    auto maxRes = maxOp.execute({&x0}, {}, {}, {});
+    minRes->at(0)->printBuffer("MIN for Truncated");
+    maxRes->at(0)->printBuffer("MAX for Truncated");
+
+    delete minRes;
+    delete maxRes;
 }
 
 
