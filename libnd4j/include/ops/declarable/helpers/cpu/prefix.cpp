@@ -48,32 +48,19 @@ namespace nd4j {
 
                             prevSum = sum;
                         }
-                    } else {
-                        Nd4jLong xCoord[MAX_RANK];
-                        Nd4jLong zCoord[MAX_RANK];
-
-                        int xRank = shape::rank(xShapeInfo);
-                        int zRank = shape::rank(zShapeInfo);
-
-                        auto xShape = shape::shapeOf(xShapeInfo);
-                        auto zShape = shape::shapeOf(zShapeInfo);
-
-                        auto xStride = shape::stride(xShapeInfo);
-                        auto zStride = shape::stride(zShapeInfo);
-
+                    } 
+                    else {
+                        
                         for (Nd4jLong e = length - 1; e >= 0; --e) {
-                            shape::ind2subC(xRank, xShape, e, length, xCoord);
-                            shape::ind2subC(zRank, zShape, e, length, zCoord);
 
-                            auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                            auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-
+                            auto xOffset = shape::getIndexOffset(e, xShapeInfo, length);
+                            auto zOffset = shape::getIndexOffset(e, zShapeInfo, length);
                             sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
+                            
                             if (!exclusive)
                                 prevSum = sum;
 
                             z[zOffset] = prevSum;
-
                             prevSum = sum;
                         }
                     }
@@ -91,33 +78,19 @@ namespace nd4j {
 
                             prevSum = sum;
                         }
-                    } else {
-                        Nd4jLong xCoord[MAX_RANK];
-                        Nd4jLong zCoord[MAX_RANK];
-
-                        auto xRank = shape::rank(xShapeInfo);
-                        auto zRank = shape::rank(zShapeInfo);
-
-                        auto xShape = shape::shapeOf(xShapeInfo);
-                        auto zShape = shape::shapeOf(zShapeInfo);
-
-                        auto xStride = shape::stride(xShapeInfo);
-                        auto zStride = shape::stride(zShapeInfo);
-
+                    } 
+                    else {
+                    
                         for (int e = 0; e < length; e++) {
-                            shape::ind2subC(xRank, xShape, e, length, xCoord);
-                            shape::ind2subC(zRank, zShape, e, length, zCoord);
-
-                            auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                            auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
-
+                            
+                            auto xOffset = shape::getIndexOffset(e, xShapeInfo, length);
+                            auto zOffset = shape::getIndexOffset(e, zShapeInfo, length);
                             sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
 
                             if (!exclusive)
                                 prevSum = sum;
 
                             z[zOffset] = prevSum;
-
                             prevSum = sum;
                         }
                     }

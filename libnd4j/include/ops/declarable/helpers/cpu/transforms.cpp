@@ -1302,15 +1302,12 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
         }
     }
     else {
-        Nd4jLong idx[MAX_RANK];
-        Nd4jLong* gradOShape   = gradO.shapeOf();
-        Nd4jLong* gradOStrides = gradO.stridesOf();
-        const int gradORank    = gradO.rankOf();
-#pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
+        
+#pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
-            shape::ind2subC(gradORank, gradOShape, i, gradOLen, idx);
+
             auto fidx = shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i);
-            gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[shape::getOffset(0, gradOShape, gradOStrides, idx, gradORank)]);
+            gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[shape::getIndexOffset(i, gradO.getShapeInfo(), gradOLen)]);
         }
     }
 }

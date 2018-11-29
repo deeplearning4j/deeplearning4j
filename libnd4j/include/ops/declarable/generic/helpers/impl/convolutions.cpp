@@ -345,14 +345,9 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, cons
         for (Nd4jLong i = 0; i < volLen * volEWS; i += volEWS)
             volBuff[i] = static_cast<T>(0.f);
     }
-    else {
-        Nd4jLong idx[MAX_RANK];
-        for (Nd4jLong i = 0; i < volLen; i++) {
-            shape::ind2subC(volume.rankOf(), volume.shapeOf(), i, volLen, idx);
-            auto volOffset = shape::getOffset(0, volume.shapeOf(), volume.stridesOf(), idx, volume.rankOf());
-
-            volBuff[volOffset] = static_cast<T>(0.f);
-        }
+    else {        
+        for (Nd4jLong i = 0; i < volLen; i++)
+            volBuff[shape::getIndexOffset(i, volume.getShapeInfo(), volLen)] = static_cast<T>(0.f);
     }
 
     T* col, *vol;
@@ -1274,15 +1269,10 @@ static void pooling2dBP_(const NDArray& input, const NDArray& gradO, NDArray& gr
         for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gI[i] = static_cast<T>(0.f);
     }
-    else {
-        Nd4jLong idx[MAX_RANK];
-#pragma omp parallel for schedule(static) proc_bind(close) private(idx)
-        for (Nd4jLong i = 0; i < gradILen; i++) {
-            shape::ind2subC(gradI.rankOf(), gradI.shapeOf(), i, gradILen, idx);
-            auto offset = shape::getOffset(0, gradI.shapeOf(), gradI.stridesOf(), idx, gradI.rankOf());
-
-            gI[offset] = static_cast<T>(0.f);
-        }
+    else {        
+#pragma omp parallel for schedule(static) proc_bind(close)
+        for (Nd4jLong i = 0; i < gradILen; i++) 
+            gI[shape::getIndexOffset(i, gradI.getShapeInfo(), gradILen)] = static_cast<T>(0.f);        
     }
 
     const int kHEff = kH + (kH-1)*(dH-1);
@@ -1476,16 +1466,12 @@ static void pooling3dBP_(const NDArray& input, const NDArray& gradO, NDArray& gr
         for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gI[i] = static_cast<T>(0.f);
     }
-    else {
-        Nd4jLong idx[MAX_RANK];
-#pragma omp parallel for schedule(static) proc_bind(close) private(idx)
-        for (Nd4jLong i = 0; i < gradILen; i++) {
-            shape::ind2subC(gradI.rankOf(), gradI.shapeOf(), i, gradILen, idx);
-            auto offset = shape::getOffset(0, gradI.shapeOf(), gradI.stridesOf(), idx, gradI.rankOf());
-
-            gI[offset] = static_cast<T>(0.f);
-        }
+    else {        
+#pragma omp parallel for schedule(static) proc_bind(close)
+        for (Nd4jLong i = 0; i < gradILen; i++)             
+            gI[shape::getIndexOffset(i, gradI.getShapeInfo(), gradILen)] = static_cast<T>(0.f);        
     }
+
     const int kDEff = kD + (kD-1)*(dD-1);
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);

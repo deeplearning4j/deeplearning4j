@@ -679,19 +679,13 @@ TEST_F(PlaygroundTests, loopThroughArrs_test1) {
     
     //***********************************
     //***********************************
-    Nd4jLong xCoord[MAX_RANK];
-    Nd4jLong yCoord[MAX_RANK];
-    memset(xCoord, 0, MAX_RANK * sizeof(Nd4jLong));
-    memset(yCoord, 0, MAX_RANK * sizeof(Nd4jLong));
-
+    
     timeStart = std::chrono::system_clock::now();
-#pragma omp parallel for schedule(guided) firstprivate(xCoord, yCoord)
+#pragma omp parallel for schedule(guided)
     for(Nd4jLong i = 0; i < len; ++i) {
-
-        shape::ind2subC(x.rankOf(), x.shapeOf(), i, xCoord);
-        Nd4jLong offset1 = shape::getOffset(0, x.shapeOf(), x.stridesOf(), xCoord, x.rankOf());
-        shape::ind2subC(y.rankOf(), y.shapeOf(), i, yCoord);
-        Nd4jLong offset2 = shape::getOffset(0, y.shapeOf(), y.stridesOf(), yCoord, y.rankOf());
+        
+        Nd4jLong offset1 = shape::getIndexOffset(i, x.getShapeInfo(), len);
+        Nd4jLong offset2 = shape::getIndexOffset(i, y.getShapeInfo(), len);
         xBuff[offset1] = yBuff[offset2];
     }
     timeEnd = std::chrono::system_clock::now();

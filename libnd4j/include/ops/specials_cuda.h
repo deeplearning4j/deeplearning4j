@@ -37,22 +37,17 @@ __host__ void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd
 
 
 __device__ inline int getDevicePosition(Nd4jLong *xShapeInfo, int index) {
+    
     int xEWS = shape::elementWiseStride(xShapeInfo);
 
     if (xEWS == 1) {
         return index;
-    } else if (xEWS > 1) {
+    }
+    else if (xEWS > 1) {
         return index * xEWS;
-    } else {
-        Nd4jLong xCoord[MAX_RANK];
-        int xRank = shape::rank(xShapeInfo);
-        auto xShape = shape::shapeOf(xShapeInfo);
-        auto xStride = shape::stride(xShapeInfo);
-
-        shape::ind2subC(xRank, xShape, index, xCoord);
-        auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-
-        return xOffset;
+    } 
+    else {                
+        return shape::getIndexOffset(index, xShapeInfo, shape::length(xShapeInfo));
     }
 }
 
