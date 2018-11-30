@@ -5263,6 +5263,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public long length() {
+        if (isEmpty())
+            return 0;
         return jvmShapeInfo.length;
     }
 
