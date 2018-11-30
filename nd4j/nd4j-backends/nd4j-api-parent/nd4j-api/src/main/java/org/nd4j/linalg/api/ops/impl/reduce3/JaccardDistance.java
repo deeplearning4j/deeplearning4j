@@ -143,7 +143,6 @@ public class JaccardDistance extends BaseReduceFloatOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-
     @Override
     public DataType resultType() {
         return Nd4j.defaultFloatingPointType();

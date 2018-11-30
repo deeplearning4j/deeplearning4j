@@ -322,7 +322,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 indexer = LongIndexer.create((LongPointer) pointer);
                 break;
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("Unknown data type: " + dataType());
         }
 
         workspaceGenerationId = workspace.getGenerationId();

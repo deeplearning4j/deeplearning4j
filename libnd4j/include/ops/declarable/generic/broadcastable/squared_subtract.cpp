@@ -103,9 +103,10 @@ namespace nd4j {
 
                 //epsNext->applyTriplewiseLambda(x, y, lambdaX, preX);
                 //epsNext->applyTriplewiseLambda(x, y, lambdaY, preY);
-
-                preX->assign(epsNext * ts * ((*x) - (*y)));
-                preY->assign(epsNext * ts * ((*y) - (*x)));
+                auto resX = (*epsNext) * ts * ((*x) - (*y));
+                preX->assign(resX);
+                auto resY = (*epsNext) * ts * ((*y) - (*x));
+                preY->assign(resY);
 
                 auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
                 auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());

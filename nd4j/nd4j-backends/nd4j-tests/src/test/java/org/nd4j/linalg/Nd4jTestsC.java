@@ -499,7 +499,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         values2.put(1, 1, 2);
 
 
-        INDArray expected = Nd4j.repeat(Nd4j.scalar(DataType.DOUBLE, 2), 2).reshape(2, 1);
+        INDArray expected = Nd4j.repeat(Nd4j.scalar(DataType.DOUBLE, 2).reshape(1, 1), 2).reshape(2, 1);
 
         val accum = Nd4j.getOpFactory().createAccum("euclidean", values, values2);
         INDArray results = Nd4j.getExecutioner().exec(accum, 1);
@@ -953,8 +953,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testSoftmaxDerivative() {
-        INDArray input = Nd4j.create(new double[] {-1.07, -0.01, 0.45, 0.95, 0.45, 0.16, 0.20, 0.80, 0.89, 0.25})
-                .transpose();
+        INDArray input = Nd4j.create(new double[] {-1.07, -0.01, 0.45, 0.95, 0.45, 0.16, 0.20, 0.80, 0.89, 0.25}).reshape(1, -1).transpose();
         INDArray output = Nd4j.create(10, 1);
         Nd4j.getExecutioner().exec(new SoftMaxDerivative(input, output));
     }
@@ -962,6 +961,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVStackDifferentOrders() {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray expected = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
 
         for (char order : new char[] {'c', 'f'}) {
@@ -2904,6 +2905,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatHorizontally() {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray rowVector = Nd4j.ones(1, 5);
         INDArray other = Nd4j.ones(1, 5);
         INDArray concat = Nd4j.hstack(other, rowVector);
@@ -4258,7 +4261,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
-
     @Test
     public void testAveraging2() {
 
@@ -4434,7 +4436,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val initial = Nd4j.create(3, 5);
         val mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
         val result = Nd4j.createUninitialized(DataType.BOOL, initial.shape());
-        val exp = Nd4j.create(new boolean[] {true, true, true, false, false});
+        val exp = Nd4j.create(new boolean[] {true, true, true, false, false}).reshape(1, -1);
 
         for (int i = 0; i < initial.columns(); i++) {
             initial.getColumn(i).assign(i);
@@ -4442,13 +4444,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
 
-
         Nd4j.getExecutioner().exec(new BroadcastLessThan(initial, mask, result, 1));
 
-
-
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, result.getRow(i));
+            val row = result.getRow(i);
+            assertEquals("Failed at row " + i, exp, row);
         }
     }
 
@@ -5846,7 +5846,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(new long[]{3, 2}, newShape.shape());
     }
 
-    @Test
+    @Test(expected = ND4JIllegalStateException.class)
     public void testTranspose1() {
         val vector = Nd4j.trueVector(new float[]{1, 2, 3, 4, 5, 6});
 
@@ -5858,7 +5858,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(vector.shape(), transposed.shape());
     }
 
-    @Test
+    @Test(expected = ND4JIllegalStateException.class)
     public void testTranspose2() {
         val scalar = Nd4j.trueScalar(2.f);
 
@@ -6131,6 +6131,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcat_1() throws Exception{
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         for(char order : new char[]{'c', 'f'}) {
 
             INDArray arr1 = Nd4j.create(new double[]{1, 2}, new long[]{1, 2}, order);
@@ -6322,8 +6324,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testMeshGrid(){
 
-        INDArray x1 = Nd4j.create(new double[]{1,2,3,4});
-        INDArray y1 = Nd4j.create(new double[]{5,6,7});
+        INDArray x1 = Nd4j.create(new double[]{1,2,3,4}).reshape(1, -1);
+        INDArray y1 = Nd4j.create(new double[]{5,6,7}).reshape(1, -1);
 
         INDArray expX = Nd4j.create(new double[][]{
                 {1,2,3,4},
@@ -7120,9 +7122,12 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testEmptyCasting(){
-        for(DataType from : DataType.values()) {
-            for(DataType to : DataType.values()){
-                if(from == DataType.COMPRESSED || to == DataType.COMPRESSED || from == DataType.UNKNOWN || to == DataType.UNKNOWN)
+        for(val from : DataType.values()) {
+            if (from == DataType.UTF8 || from == DataType.UNKNOWN || from == DataType.COMPRESSED)
+                continue;
+
+            for(val to : DataType.values()){
+                if (to == DataType.UTF8 || to == DataType.UNKNOWN || to == DataType.COMPRESSED)
                     continue;
 
                 INDArray emptyFrom = Nd4j.empty(from);

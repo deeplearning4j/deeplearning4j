@@ -227,7 +227,6 @@ public class MixedDataTypesTests {
 
         val op = new CosineSimilarity(arrayX, arrayY);
         val result = Nd4j.getExecutioner().exec(op).z();
-        assertEquals(DataType.FLOAT, result.dataType());
         val arr = result.getDouble(0);
 
         assertEquals(1.0, arr, 1e-5);

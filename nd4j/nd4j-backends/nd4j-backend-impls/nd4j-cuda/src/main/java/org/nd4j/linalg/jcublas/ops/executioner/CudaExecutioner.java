@@ -719,11 +719,25 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 .getPointer(AtomicAllocator.getInstance().getConstantBuffer(op.getDimension()), context);
 
 
-        nativeOps.execBroadcast(xShapeInfoHostPointer, op.opNum(),
-                    null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
-                    null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
-                null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                    (IntPointer) dimensionPointer, op.getDimension().length);
+        switch (op.getOpType()) {
+            case BROADCAST:
+                nativeOps.execBroadcast(xShapeInfoHostPointer, op.opNum(),
+                        null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                        null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
+                        null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                        (IntPointer) dimensionPointer, op.getDimension().length);
+                break;
+            case BROADCAST_BOOL:
+                nativeOps.execBroadcastBool(xShapeInfoHostPointer, op.opNum(),
+                        null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                        null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
+                        null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                        (IntPointer) dimensionPointer, op.getDimension().length);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unknown opType: " + op.getOpType());
+        }
+
 
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
@@ -746,7 +760,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -873,8 +887,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             retShape = new long[] {1, 1};
         }
 
-        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape)) {
+            if (op.x().isScalar()) {
+                op.setFinalResult(op.x().getDouble(0));
+            }
             return null;
+        }
 
         val dataType = op.resultType();
 
@@ -922,6 +940,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
                             ((Variance) op).isBiasCorrected());
                 AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+
+                op.setFinalResult(op.z().getDouble(0));
             } else if (op.y() != null) {
                 Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
                 Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
@@ -965,6 +985,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
 
                 AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+
+                op.setFinalResult(op.z().getDouble(0));
             }
         } else {
             Pointer dimensionPointer = AtomicAllocator.getInstance()
