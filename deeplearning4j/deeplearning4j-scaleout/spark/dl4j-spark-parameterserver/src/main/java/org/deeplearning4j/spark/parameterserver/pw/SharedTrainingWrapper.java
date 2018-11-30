@@ -248,6 +248,10 @@ public class SharedTrainingWrapper {
             // now we're attaching VoidParameterServer to GradientsAccumulator, but doing that only once
             //But also reinit if device changes for master thread - at least until this is fixed https://github.com/deeplearning4j/deeplearning4j/issues/6795
             if (wrapper == null || originalModelDeviceAffinity != Nd4j.getAffinityManager().getDeviceForCurrentThread()) {
+                if(wrapper != null){
+                    log.info("Reinitializing model and encoding etc due to thread/device affinity difference with initial model:" +
+                            " Existing model device affinity {}, current thread device affinity {}", originalModelDeviceAffinity, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                }
                 log.debug("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
 
                 model = worker.getInitialModel();
