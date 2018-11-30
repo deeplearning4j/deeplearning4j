@@ -920,3 +920,42 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test13) {
     delete results;
 }
 
+TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test1) {
+    auto x = NDArrayFactory::create<float>('c', {4}, {0, 1, 2, 3});
+    auto y = NDArrayFactory::create<float>('c',{4}, {3, 2, 1, 0});
+    auto exp = NDArrayFactory::create<float>('c', {4}, {9, 1,1, 9});
+    nd4j::ops::squaredsubtract op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+    result->at(0)->printBuffer("Output");
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test2) {
+    auto x = NDArrayFactory::create<float>('c', {2, 4}, {0, 1, 2, 3, 0, 1, 2, 3});
+    auto y = NDArrayFactory::create<float>('c',{4}, {3, 2, 1, 0});
+    auto exp = NDArrayFactory::create<float>('c', {2, 4}, {9, 1,1, 9, 9, 1, 1, 9});
+    nd4j::ops::squaredsubtract op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    result->at(0)->printBuffer("Output");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test3) {
+    auto x = NDArrayFactory::create<float>('c', {2, 4}, {0, 1, 2, 3, 0, 1, 2, 3});
+    auto y = NDArrayFactory::create<float>('c',{4}, {3, 2, 1, 0});
+    auto exp = NDArrayFactory::create<float>('c', {2, 4}, {-6, -4, 6, 24, -30, -12, 14, 48});
+    auto eps = NDArrayFactory::create<float>('c', {2, 4}, {1,2,3,4,5,6,7,8});
+    nd4j::ops::squaredsubtract_bp op;
+    auto result = op.execute({&x, &y, &eps}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    result->at(0)->printBuffer("Output");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+//    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+    delete result;
+}
+
