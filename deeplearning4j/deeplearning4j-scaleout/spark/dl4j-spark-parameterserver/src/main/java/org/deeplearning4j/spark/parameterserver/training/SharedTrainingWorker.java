@@ -17,6 +17,7 @@
 package org.deeplearning4j.spark.parameterserver.training;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -42,6 +43,7 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 @Getter
+@Slf4j
 public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResult>
                 implements TrainingWorker<SharedTrainingResult> {
 
@@ -86,6 +88,7 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
 
         // This method will be called ONLY once, in master thread
         //Before getting NetBroadcastTuple, to ensure it always gets mapped to device 0
+        log.info("Attaching thread {} to device 0", Thread.currentThread().getId());
         Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
         Nd4j.getAffinityManager().unsafeSetDevice(0);
 
@@ -110,6 +113,7 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
     @Override
     public ComputationGraph getInitialModelGraph() {
         //Before getting NetBroadcastTuple, to ensure it always gets mapped to device 0
+        log.info("Attaching thread {} to device 0", Thread.currentThread().getId());
         Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
         Nd4j.getAffinityManager().unsafeSetDevice(0);
 

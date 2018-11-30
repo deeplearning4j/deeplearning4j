@@ -248,7 +248,7 @@ public class SharedTrainingWrapper {
             // now we're attaching VoidParameterServer to GradientsAccumulator, but doing that only once
             //But also reinit if device changes for master thread - at least until this is fixed https://github.com/deeplearning4j/deeplearning4j/issues/6795
             boolean reinitDueToAffinity = originalModelDeviceAffinity != Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            if (wrapper == null || reinitDueToAffinity) {
+            if (wrapper == null ||  reinitDueToAffinity) {
                 if(wrapper != null){
                     log.info("Reinitializing model and encoding etc due to thread/device affinity difference with initial model:" +
                             " Existing model device affinity {}, current thread device affinity {}", originalModelDeviceAffinity, Nd4j.getAffinityManager().getDeviceForCurrentThread());
@@ -284,6 +284,12 @@ public class SharedTrainingWrapper {
 
                 // this accumulator will provide sharing gradients over network, via WiredEncodedHandler. But we create it only once
                 if (accumulator == null || reinitDueToAffinity) {
+                    if(accumulator == null){
+                        log.info("Creating initial accumulator");
+                    } else {
+                        log.info("Reinitializing accumulator due to affinity change");
+                    }
+
                     /**
                      *  We know, that updates are guaranteed to have MAX size of params / 16. So, here we go.
                      *  I.e. for model with 100m params, that's 400m of floats (or 800m of doubles)
@@ -327,6 +333,7 @@ public class SharedTrainingWrapper {
                     log.debug("Checking for ModelParameterServer existence");
 
                     // we're saving reference to original model
+                    log.info("Saving model in originalModel field...");
                     originalModel = model;
                     originalModelDeviceAffinity = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
