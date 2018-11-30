@@ -1193,7 +1193,7 @@ void NativeOps::execTransformBool(Nd4jPointer *extraPointers,int opNum,
 	auto xType = ArrayOptions::dataType(hXShapeInfo);
     auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-    if (!DataTypeUtils::isB(xType))
+    if (!DataTypeUtils::isB(zType))
         throw std::runtime_error("NativeOps::execTransformBool requires Z to have same boolean type");
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, BOOL_TYPES);
@@ -2159,10 +2159,10 @@ void NativeOps::accumulate(Nd4jPointer *extras,
 						   int n,
 						   Nd4jLong length) {
 	
-	cudaStream_t * stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+	auto stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 	int mode = getDeviceId(extras[3]);
 
-	void **dX = reinterpret_cast<void **>(dx);
+	auto dX = reinterpret_cast<void **>(dx);
 
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("accumulateFloat called\n");
@@ -2170,12 +2170,12 @@ void NativeOps::accumulate(Nd4jPointer *extras,
 
 	// launching on gpu
 	if (mode == 0) {
-		dim3 launchDims(n, 256, 32768);
+		dim3 launchDims(n, 256, 16384);
         BUILD_SINGLE_SELECTOR(xType, accumulateKernelGeneric, (launchDims, stream, dX, dz, n,length), LIBND4J_TYPES);
         nd4j::DebugHelper::checkErrorCode(stream, "AccumulateFloat(...) failed");
 	} else {
 		// launching on host memory        
-        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(dX, dz, dzShapeInfo, n, length), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(x, z, zShapeInfo, n, length), LIBND4J_TYPES);
 	}
 }
 

@@ -4437,7 +4437,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val initial = Nd4j.create(3, 5);
         val mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
         val result = Nd4j.createUninitialized(DataType.BOOL, initial.shape());
-        val exp = Nd4j.create(new boolean[] {true, true, true, false, false});
+        val exp = Nd4j.create(new boolean[] {true, true, true, false, false}).reshape(1, -1);
 
         for (int i = 0; i < initial.columns(); i++) {
             initial.getColumn(i).assign(i);
@@ -4445,10 +4445,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
 
-
         Nd4j.getExecutioner().exec(new BroadcastLessThan(initial, mask, result, 1));
-
-
 
         for (int i = 0; i < initial.rows(); i++) {
             assertEquals(exp, result.getRow(i));
