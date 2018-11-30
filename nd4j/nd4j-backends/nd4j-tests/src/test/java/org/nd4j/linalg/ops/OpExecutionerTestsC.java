@@ -1032,13 +1032,15 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testMean1() throws Exception {
-        INDArray array = Nd4j.create(32, 100, 100);
+        INDArray array = Nd4j.create(32, 100, 100).assign((float) -119f);
         for (int i = 0; i < 32; i++) {
-            array.tensorAlongDimension(i, 1, 2).assign((float) 100 + i);
+            val tad = array.tensorAlongDimension(i, 1, 2);
+            tad.assign((float) 100 + i);
         }
 
         for (int i = 0; i < 32; i++) {
             INDArray tensor = array.tensorAlongDimension(i, 1, 2);
+            log.info("tad {}: {}", i, array.getDouble(0));
             assertEquals((float) (100 + i) * (100 * 100), tensor.sumNumber().floatValue(), 0.001f);
             assertEquals((float) 100 + i, tensor.meanNumber().floatValue(), 0.001f);
         }

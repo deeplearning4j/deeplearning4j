@@ -126,14 +126,14 @@ namespace functions {
 */
 template<typename X, typename Y, typename Z>
 template<typename OpType>
-__device__ void ScalarTransform<X,Y,Z>::transformCuda(void* vscalar,
-                                                    void *vy, Nd4jLong *yShapeInfo,
+__device__ void ScalarTransform<X,Y,Z>::transformCuda(void* vx,
+                                                    void *vscalar, Nd4jLong *xShapeInfo,
                                                     void *vparams,
                                                     void *vz, Nd4jLong *zShapeInfo,
                                                     int *allocationBuffe) {
 
     auto scalar = reinterpret_cast<Y*>(vscalar)[0];
-    auto y      = reinterpret_cast<X*>(vy);
+    auto x      = reinterpret_cast<X*>(vx);
     auto params = reinterpret_cast<Z*>(vparams);
     auto z = reinterpret_cast<Z*>(vz);
 
@@ -141,13 +141,14 @@ __device__ void ScalarTransform<X,Y,Z>::transformCuda(void* vscalar,
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     __shared__ Nd4jLong length;
-    if(threadIdx.x == 0)
-        length = shape::length(yShapeInfo);
+    if(threadIdx.x == 0) {
+        length = shape::length(xShapeInfo);
+    }
     __syncthreads();
 
 
     for (Nd4jLong i = tid; i < length; i+= totalThreads) {
-        z[shape::getIndexOffset(i, zShapeInfo, length)] = OpType::op(y[shape::getIndexOffset(i, yShapeInfo, length)], scalar, params);
+        z[shape::getIndexOffset(i, zShapeInfo, length)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], scalar, params);
     }
 }
 
