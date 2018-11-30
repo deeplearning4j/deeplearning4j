@@ -332,23 +332,46 @@ public class SpecialTests extends BaseNd4jTest {
 
     @Test
     public void reproduceWorkspaceCrash_3(){
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         val conf = WorkspaceConfiguration.builder().build();
 
         val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
         val dtypes = new DataType[]{DataType.LONG, DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
         for (val dX : dtypes) {
             for (val dZ: dtypes) {
-                try(val ws2 = ws.notifyScopeEntered()) {
+                //try(val ws2 = ws.notifyScopeEntered()) {
                     val array = Nd4j.create(dX, 100, 100).assign(1);
+
+                    Nd4j.getExecutioner().commit();
 
                     log.info("Trying to cast {} to {}", dX, dZ);
                     val casted = array.castTo(dZ);
 
+                    Nd4j.getExecutioner().commit();
+
                     val exp = Nd4j.create(dZ, 100, 100).assign(1);
+
+                    Nd4j.getExecutioner().commit();
+
                     assertEquals(exp, casted);
-                }
+
+                    Nd4j.getExecutioner().commit();
+             //   }
             }
         }
+    }
+
+    @Test
+    public void testCastLong_1() {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+
+        val array = Nd4j.create(DataType.LONG, 100, 100).assign(1);
+        val castedA = array.castTo(DataType.BYTE).assign(0);
+        val castedB = array.castTo(DataType.BYTE).assign(0);
+        Nd4j.getExecutioner().commit();
+        assertEquals(castedA, castedB);
     }
 
     @Test
