@@ -54,7 +54,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.LongPointerWrapper;
@@ -458,8 +457,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
             if (op.isComplexAccumulation()) {
-                val xT = op.x().tensorssAlongDimension(dimension);
-                val yT = op.y().tensorssAlongDimension(dimension);
+                val xT = op.x().tensorsAlongDimension(dimension);
+                val yT = op.y().tensorsAlongDimension(dimension);
 
                 // we intentionally want to set it to 0.0
                 ret = Nd4j.createUninitialized(dtype, new long[] {xT, yT});
@@ -664,7 +663,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));

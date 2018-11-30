@@ -1606,7 +1606,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, long[] shape, long[] stride, long offset) {
-        return new JCublasNDArray(data, shape, stride, Nd4j.order(), data.dataType());
+        return new JCublasNDArray(data, shape, stride, offset, Nd4j.order(), data.dataType());
     }
 
     @Override
@@ -1660,8 +1660,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType) {
-        if (data.dataType() != dataType)
-            throw new ND4JIllegalStateException("Data types mismatch");
+        //if (data.dataType() != dataType  && data.dataType() != DataType.COMPRESSED)
+        //    throw new ND4JIllegalStateException("Data types mismatch: [" + data.dataType() + "] vs [" + dataType + "]");
 
         return new JCublasNDArray(data, newShape, newStride, offset, ordering, dataType);
     }

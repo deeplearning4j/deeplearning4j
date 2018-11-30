@@ -35,7 +35,6 @@ import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 import org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
-import org.nd4j.linalg.api.ops.impl.meta.ReduceMetaOp;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.rng.Random;
@@ -45,7 +44,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.aggregates.AggregateDescriptor;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.nativeblas.LongPointerWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -654,8 +652,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
             if (op.isComplexAccumulation()) {
-                val xT = op.x().tensorssAlongDimension(dimension);
-                val yT = op.y().tensorssAlongDimension(dimension);
+                val xT = op.x().tensorsAlongDimension(dimension);
+                val yT = op.y().tensorsAlongDimension(dimension);
 
                 ret = Nd4j.create(xT, yT);
             } else {

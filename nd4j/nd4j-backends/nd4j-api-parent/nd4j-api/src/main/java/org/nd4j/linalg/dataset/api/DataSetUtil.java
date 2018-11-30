@@ -142,7 +142,7 @@ public class DataSetUtil {
 
         INDArray in2d = Nd4j.create(channels, height * width * instances);
 
-        long tads = data.tensorssAlongDimension(3, 2, 0);
+        long tads = data.tensorsAlongDimension(3, 2, 0);
         for (int i = 0; i < tads; i++) {
             INDArray thisTAD = data.tensorAlongDimension(i, 3, 2, 0);
             in2d.putRow(i, Nd4j.toFlattened(thisTAD));

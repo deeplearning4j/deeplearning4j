@@ -763,7 +763,7 @@ public class DataSetTest extends BaseNd4jTest {
         //Checking Nd dataset which is the data
         for (int dim = 1; dim < numDims; dim++) {
             //get tensor along dimension - the order in every dimension but zero should be preserved
-            for (int tensorNum = 0; tensorNum < ds_data.tensorssAlongDimension(dim); tensorNum++) {
+            for (int tensorNum = 0; tensorNum < ds_data.tensorsAlongDimension(dim); tensorNum++) {
                 //the difference between consecutive elements should be equal to the stride
                 for (int i = 0, j = 1; j < shape[dim]; i++, j++) {
                     int f_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(i);
@@ -777,7 +777,7 @@ public class DataSetTest extends BaseNd4jTest {
         //Checking 2d, features
         int dim = 1;
         //get tensor along dimension - the order in every dimension but zero should be preserved
-        for (int tensorNum = 0; tensorNum < ds_labels.tensorssAlongDimension(dim); tensorNum++) {
+        for (int tensorNum = 0; tensorNum < ds_labels.tensorsAlongDimension(dim); tensorNum++) {
             //the difference between consecutive elements should be equal to the stride
             for (int i = 0, j = 1; j < nLabels; i++, j++) {
                 int l_element = ds.getLabels().tensorAlongDimension(tensorNum, dim).getInt(i);

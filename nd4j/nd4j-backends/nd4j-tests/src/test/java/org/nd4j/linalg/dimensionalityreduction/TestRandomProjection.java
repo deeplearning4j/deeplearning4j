@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.dimensionalityreduction;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -42,6 +43,7 @@ import static org.nd4j.linalg.dimensionalityreduction.RandomProjection.targetSha
 /**
  * Created by huitseeker on 7/28/17.
  */
+@Ignore
 @RunWith(Parameterized.class)
 public class TestRandomProjection extends BaseNd4jTest {
 

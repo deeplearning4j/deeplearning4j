@@ -183,7 +183,7 @@ public class ConcatTestsC extends BaseNd4jTest {
 
         //ConcatV2, dim 1
         second = Nd4j.linspace(24, 32, 8).reshape('c', 2, 1, 4);
-        for (int i = 0; i < second.tensorssAlongDimension(1); i++) {
+        for (int i = 0; i < second.tensorsAlongDimension(1); i++) {
             INDArray secondTad = second.javaTensorAlongDimension(i, 1);
             System.out.println(second.tensorAlongDimension(i, 1));
         }

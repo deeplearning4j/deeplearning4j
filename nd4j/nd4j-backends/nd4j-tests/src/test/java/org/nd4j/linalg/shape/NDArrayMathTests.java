@@ -96,7 +96,7 @@ public class NDArrayMathTests extends BaseNd4jTest {
         int[] dimensions = {0, 1};
         INDArray permuted = arr.permute(2, 3, 0, 1);
         int[] test = {0, 0, 1, 1};
-        for (int i = 0; i < permuted.tensorssAlongDimension(dimensions); i++) {
+        for (int i = 0; i < permuted.tensorsAlongDimension(dimensions); i++) {
             assertEquals(test[i], NDArrayMath.sliceOffsetForTensor(i, permuted, new int[] {2, 2}));
         }
 
@@ -118,7 +118,7 @@ public class NDArrayMathTests extends BaseNd4jTest {
         INDArray otherTest = Nd4j.linspace(1, 144, 144, DataType.DOUBLE).reshape(6, 3, 2, 2, 2);
         System.out.println(otherTest);
         INDArray baseArr = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(2, 2, 2);
-        for (int i = 0; i < baseArr.tensorssAlongDimension(0, 1); i++) {
+        for (int i = 0; i < baseArr.tensorsAlongDimension(0, 1); i++) {
             System.out.println(NDArrayMath.sliceOffsetForTensor(i, baseArr, new int[] {2, 2}));
         }
 

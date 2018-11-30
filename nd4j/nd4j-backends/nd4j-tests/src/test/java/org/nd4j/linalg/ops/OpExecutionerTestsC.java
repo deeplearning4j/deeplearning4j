@@ -345,7 +345,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testTad() {
         INDArray arr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(2, 3, 2);
-        for (int i = 0; i < arr.tensorssAlongDimension(0); i++) {
+        for (int i = 0; i < arr.tensorsAlongDimension(0); i++) {
             System.out.println(arr.tensorAlongDimension(i, 0));
         }
     }
@@ -962,7 +962,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
 
             INDArray out = Nd4j.getExecutioner().exec(new EuclideanDistance(first, second), 1, 2, 3);
-            for (int i = 0; i < first.tensorssAlongDimension(1, 2, 3); i++) {
+            for (int i = 0; i < first.tensorsAlongDimension(1, 2, 3); i++) {
                 val j = first.javaTensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
                 val t = first.tensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
 
@@ -974,7 +974,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
                             Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(first, 1, 2, 3);
             Pair<DataBuffer, DataBuffer> secondTadInfo =
                             Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(second, 1, 2, 3);
-            for (int i = 0; i < first.tensorssAlongDimension(1, 2, 3); i++) {
+            for (int i = 0; i < first.tensorsAlongDimension(1, 2, 3); i++) {
                 assertEquals(first.javaTensorAlongDimension(i, 1, 2, 3).offset(), firstTadInfo.getSecond().getLong(i));
                 assertEquals(second.javaTensorAlongDimension(i, 1, 2, 3).offset(),
                                 secondTadInfo.getSecond().getLong(i));

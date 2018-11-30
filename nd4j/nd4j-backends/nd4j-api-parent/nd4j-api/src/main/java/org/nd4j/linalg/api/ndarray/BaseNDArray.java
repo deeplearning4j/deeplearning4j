@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.ByteOrder;
@@ -58,7 +57,6 @@ import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
@@ -1020,7 +1018,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public long tensorssAlongDimension(int... dimension) {
+    public long tensorsAlongDimension(int... dimension) {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
         if (dimension.length >= rank() || dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
@@ -1057,7 +1055,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             Arrays.sort(dimension);
         }
 
-        long tads = tensorssAlongDimension(dimension);
+        long tads = tensorsAlongDimension(dimension);
         if (index >= tads)
             throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
 
@@ -1135,7 +1133,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (dimension.length > 1)
             Arrays.sort(dimension);
 
-        long tads = tensorssAlongDimension(dimension);
+        long tads = tensorsAlongDimension(dimension);
         if (index >= tads)
             throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
 
@@ -4354,11 +4352,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         for (int i = 0; i < newShape.length; i++)
             newShape[i] = size(i) * repeats[i];
 
-        INDArray ret = Nd4j.create(newShape);
+        INDArray ret = Nd4j.create(this.dataType(), newShape);
 
         //number of times to repeat each value
         long repeatDelta = ArrayUtil.prod(newShape) / length();
-        for (int i = 0; i < tensorssAlongDimension(dimension); i++) {
+        for (int i = 0; i < tensorsAlongDimension(dimension); i++) {
             INDArray thisTensor = tensorAlongDimension(i, dimension);
             INDArray retTensor = ret.tensorAlongDimension(i, dimension);
             int retIdx = 0;
@@ -6237,7 +6235,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray sorted = Nd4j.getNDArrayFactory().sort(this.dup(this.ordering()), false, dimension);
 
         // there's no practical sense doing this on GPU, stride will be just size of TAD.
-        INDArray ret = Nd4j.createUninitialized(sorted.tensorssAlongDimension(dimension));
+        INDArray ret = Nd4j.createUninitialized(sorted.tensorsAlongDimension(dimension));
         for (int i = 0; i < ret.length(); i++) {
             ret.putScalar(i, getPercentile(quantile, sorted.tensorAlongDimension(i, dimension)));
         }

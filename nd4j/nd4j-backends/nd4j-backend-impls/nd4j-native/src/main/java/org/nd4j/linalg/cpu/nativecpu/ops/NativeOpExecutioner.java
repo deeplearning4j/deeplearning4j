@@ -285,8 +285,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray ret;
         if (op.z() == null || op.z() == op.x()) {
             if (op.isComplexAccumulation()) {
-                long xT = op.x().tensorssAlongDimension(dimension);
-                long yT = op.y().tensorssAlongDimension(dimension);
+                long xT = op.x().tensorsAlongDimension(dimension);
+                long yT = op.y().tensorsAlongDimension(dimension);
 
                 ret = Nd4j.create(op.resultType(), new long[]{xT, yT});
             } else {
@@ -295,14 +295,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
                     if(op.x().lengthLong() == op.y().lengthLong()) {
                         //Pairwise
-                        if (op.x().tensorssAlongDimension(dimension) != op.y().tensorssAlongDimension(dimension)) {
+                        if (op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
                             throw new ND4JIllegalStateException("Number of TADs along dimension don't match: (x shape = " +
                                     Arrays.toString(op.x().shape()) + ", y shape = " + Arrays.toString(op.y().shape()) +
                                     ", dimension = " + Arrays.toString(dimension) + ")");
                         }
                     } else {
                         //Every X TAD vs. entirety of Y
-                        val xTADSize = op.x().lengthLong() / op.x().tensorssAlongDimension(dimension);
+                        val xTADSize = op.x().lengthLong() / op.x().tensorsAlongDimension(dimension);
 
                         if (xTADSize != op.y().length()) {
                             throw new ND4JIllegalStateException("Size of TADs along dimension don't match for pairwise execution:" +
@@ -321,8 +321,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (!op.isComplexAccumulation() && op.z().lengthLong() != shapeProduct)
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
             else if (op.isComplexAccumulation()) {
-                long xT = op.x().tensorssAlongDimension(dimension);
-                long yT = op.y().tensorssAlongDimension(dimension);
+                long xT = op.x().tensorsAlongDimension(dimension);
+                long yT = op.y().tensorsAlongDimension(dimension);
 
                 if (op.z().lengthLong() != xT * yT)
                     throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + (xT * yT) + "]");
