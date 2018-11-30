@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
  	// process 4 possible reduction modes below
 	switch (reductionMode) {
 		case 0: {											// 0 - "none", un-reduced weighted losses with the same shape as labels.
-			output->assign(&E);
+			output->assign(E);
 			break;
 		}
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of E array
