@@ -18,13 +18,28 @@ package org.nd4j.linalg.api.shape.options;
 
 import lombok.NonNull;
 import lombok.val;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4JUnknownDataTypeException;
 
 public class ArrayOptionsHelper {
+    public static final long ATYPE_SPARSE_BIT = 2;
+    public static final long ATYPE_COMPRESSED_BIT = 4;
+    public static final long ATYPE_EMPTY_BIT = 8;
+
+    public static final long DTYPE_COMPRESSED_BIT = 4;
+    public static final long DTYPE_HALF_BIT = 4096;
+    public static final long DTYPE_FLOAT_BIT = 8192;
+    public static final long DTYPE_DOUBLE_BIT = 16384;
+    public static final long DTYPE_INT_BIT = 131072;
+    public static final long DTYPE_LONG_BIT = 262144;
+    public static final long DTYPE_BOOL_BIT = 524288;
+    public static final long DTYPE_BYTE_BIT = 32768;        //Also used for UBYTE in conjunction with sign bit
+    public static final long DTYPE_SHORT_BIT = 65536;
+    public static final long DTYPE_UTF8_BIT = 1048576;
+    public static final long DTYPE_UNSIGNED_BIT = 8388608;
+
     public static boolean hasBitSet(long[] shapeInfo, long bit) {
         val opt = Shape.options(shapeInfo);
 
@@ -43,36 +58,36 @@ public class ArrayOptionsHelper {
     public static ArrayType arrayType(long[] shapeInfo) {
         val opt = Shape.options(shapeInfo);
 
-        if (hasBitSet(opt, 2))
+        if (hasBitSet(opt, ATYPE_SPARSE_BIT))
             return ArrayType.SPARSE;
-        else if (hasBitSet(opt, 4))
+        else if (hasBitSet(opt, ATYPE_COMPRESSED_BIT))
             return ArrayType.COMPRESSED;
-        else if (hasBitSet(opt, 8))
+        else if (hasBitSet(opt, ATYPE_EMPTY_BIT))
             return ArrayType.EMPTY;
         else
             return ArrayType.DENSE;
     }
 
     public static DataType dataType(long opt) {
-        if (hasBitSet(opt, 4))
+        if (hasBitSet(opt, DTYPE_COMPRESSED_BIT))
             return DataType.COMPRESSED;
-        else if (hasBitSet(opt, 4096))
+        else if (hasBitSet(opt, DTYPE_HALF_BIT))
             return DataType.HALF;
-        else if (hasBitSet(opt, 8192))
+        else if (hasBitSet(opt, DTYPE_FLOAT_BIT))
             return DataType.FLOAT;
-        else if (hasBitSet(opt, 16384))
+        else if (hasBitSet(opt, DTYPE_DOUBLE_BIT))
             return DataType.DOUBLE;
-        else if (hasBitSet(opt, 131072))
+        else if (hasBitSet(opt, DTYPE_INT_BIT))
             return DataType.INT;
-        else if (hasBitSet(opt, 262144))
+        else if (hasBitSet(opt, DTYPE_LONG_BIT))
             return DataType.LONG;
-        else if (hasBitSet(opt, 524288))
+        else if (hasBitSet(opt, DTYPE_BOOL_BIT))
             return DataType.BOOL;
-        else if (hasBitSet(opt, 32768))
-            return DataType.BYTE;
-        else if (hasBitSet(opt, 65536))
+        else if (hasBitSet(opt, DTYPE_BYTE_BIT)) {
+            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UBYTE : DataType.BYTE;     //Byte bit set for both UBYTE and BYTE
+        } else if (hasBitSet(opt, DTYPE_SHORT_BIT))
             return DataType.SHORT;
-        else if (hasBitSet(opt, 1048576))
+        else if (hasBitSet(opt, DTYPE_UTF8_BIT))
             return DataType.UTF8;
         else
             throw new ND4JUnknownDataTypeException("Unknown extras set: [" + opt + "]");
@@ -87,36 +102,37 @@ public class ArrayOptionsHelper {
         long bit = 0;
         switch (type) {
             case HALF:
-                bit = 4096;
+                bit = DTYPE_HALF_BIT;
                 break;
             case FLOAT:
-                bit = 8192;
+                bit = DTYPE_FLOAT_BIT;
                 break;
             case DOUBLE:
-                bit = 16384;
+                bit = DTYPE_DOUBLE_BIT;
                 break;
             case INT:
-                bit = 131072;
+                bit = DTYPE_INT_BIT;
                 break;
             case LONG:
-                bit = 262144;
+                bit = DTYPE_LONG_BIT;
                 break;
             case BOOL:
-                bit = 524288;
+                bit = DTYPE_BOOL_BIT;
                 break;
             case UBYTE:
-                storage |= 8388608; // unsigned bit
+                storage |= DTYPE_UNSIGNED_BIT; // unsigned bit
+                //Intentional fallthrough
             case BYTE:
-                bit = 32768;
+                bit = DTYPE_BYTE_BIT;
                 break;
             case SHORT:
-                bit = 65536;
+                bit = DTYPE_SHORT_BIT;
                 break;
             case UTF8:
-                bit = 1048576;
+                bit = DTYPE_UTF8_BIT;
                 break;
             case COMPRESSED:
-                bit = 4;
+                bit = DTYPE_COMPRESSED_BIT;
                 break;
             case UNKNOWN:
             default:
@@ -131,13 +147,13 @@ public class ArrayOptionsHelper {
         long bit = 0;
         switch (type) {
             case SPARSE:
-                bit = 2L;
+                bit = ATYPE_SPARSE_BIT;
                 break;
             case COMPRESSED:
-                bit = 4L;
+                bit = ATYPE_COMPRESSED_BIT;
                 break;
             case EMPTY:
-                bit = 8L;
+                bit = ATYPE_EMPTY_BIT;
                 break;
             default:
             case DENSE:
