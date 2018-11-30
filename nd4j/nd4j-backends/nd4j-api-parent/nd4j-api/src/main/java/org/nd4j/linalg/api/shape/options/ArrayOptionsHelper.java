@@ -54,6 +54,8 @@ public class ArrayOptionsHelper {
     }
 
     public static DataType dataType(long opt) {
+        boolean unsigned = hasBitSet(opt, 8388608);
+
         if (hasBitSet(opt, 4))
             return DataType.COMPRESSED;
         else if (hasBitSet(opt, 4096))
@@ -69,7 +71,10 @@ public class ArrayOptionsHelper {
         else if (hasBitSet(opt, 524288))
             return DataType.BOOL;
         else if (hasBitSet(opt, 32768))
-            return DataType.BYTE;
+            if (unsigned)
+                return DataType.UBYTE;
+            else
+                return DataType.BYTE;
         else if (hasBitSet(opt, 65536))
             return DataType.SHORT;
         else if (hasBitSet(opt, 1048576))

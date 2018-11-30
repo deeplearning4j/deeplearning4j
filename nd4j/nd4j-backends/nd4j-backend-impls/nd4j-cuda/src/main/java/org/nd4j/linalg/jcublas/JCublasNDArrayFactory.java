@@ -1014,35 +1014,37 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                         context.getOldStream(), allocator.getDeviceIdPointer());
 
 
+        long[] hPointers = new long[arrays.size()];
         long[] xPointers = new long[arrays.size()];
         long[] xShapes = new long[arrays.size()];
         long[] tadShapes = new long[arrays.size()];
         long[] tadOffsets = new long[arrays.size()];
 
         for (int i = 0; i < arrays.size(); i++) {
-            INDArray array = arrays.get(i);
+            val array = arrays.get(i);
 
-            Pointer x = AtomicAllocator.getInstance().getPointer(array, context);
-            Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer(), context);
+            val x = AtomicAllocator.getInstance().getPointer(array, context);
+            val xShapeInfo = AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer(), context);
 
 
-            TADManager tadManager = Nd4j.getExecutioner().getTADManager();
+            val tadManager = Nd4j.getExecutioner().getTADManager();
 
             int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
 
-            Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
+            val tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
 
 //            log.info("Original shape: {}; dimension: {}; TAD shape: {}", array.shapeInfoDataBuffer().asInt(), dimension, tadBuffers.getFirst().asInt());
 
-            Pointer tadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
+            val tadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
 
-            DataBuffer offsets = tadBuffers.getSecond();
+            val offsets = tadBuffers.getSecond();
 
             if (offsets.length() != numTads)
                 throw new ND4JIllegalStateException("Can't symmetrically shuffle arrays with non-equal number of TADs");
 
-            Pointer tadOffset = AtomicAllocator.getInstance().getPointer(offsets, context);
+            val tadOffset = AtomicAllocator.getInstance().getPointer(offsets, context);
 
+            hPointers[i] = AtomicAllocator.getInstance().getHostPointer(array.shapeInfoDataBuffer()).address();
             xPointers[i] = x.address();
             xShapes[i] = xShapeInfo.address();
             tadShapes[i] = tadShapeInfo.address();
@@ -1050,10 +1052,12 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
 
-        CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(arrays.size());
-        CudaDoubleDataBuffer tempShapes = new CudaDoubleDataBuffer(arrays.size());
-        CudaDoubleDataBuffer tempTAD = new CudaDoubleDataBuffer(arrays.size());
-        CudaDoubleDataBuffer tempOffsets = new CudaDoubleDataBuffer(arrays.size());
+        val hostPointers = new LongPointer(hPointers);
+        val hosthost = new PointerPointerWrapper(hostPointers);
+        val tempX = new CudaDoubleDataBuffer(arrays.size());
+        val tempShapes = new CudaDoubleDataBuffer(arrays.size());
+        val tempTAD = new CudaDoubleDataBuffer(arrays.size());
+        val tempOffsets = new CudaDoubleDataBuffer(arrays.size());
 
         AtomicAllocator.getInstance().memcpyBlocking(tempX, new LongPointer(xPointers), xPointers.length * 8, 0);
         AtomicAllocator.getInstance().memcpyBlocking(tempShapes, new LongPointer(xShapes), xPointers.length * 8, 0);
@@ -1062,7 +1066,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         nativeOps.shuffle(extras,
                             null,
-                            null,
+                            hosthost,
                             new PointerPointer(allocator.getPointer(tempX, context)),
                             new PointerPointer(allocator.getPointer(tempShapes, context)),
                             null,
@@ -1079,6 +1083,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         // just to keep reference
         shuffle.address();
+        hostPointers.address();
 
         tempX.dataType();
         tempShapes.dataType();

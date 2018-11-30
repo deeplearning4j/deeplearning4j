@@ -499,7 +499,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         values2.put(1, 1, 2);
 
 
-        INDArray expected = Nd4j.repeat(Nd4j.scalar(DataType.DOUBLE, 2), 2).reshape(2, 1);
+        INDArray expected = Nd4j.repeat(Nd4j.scalar(DataType.DOUBLE, 2).reshape(1, 1), 2).reshape(2, 1);
 
         val accum = Nd4j.getOpFactory().createAccum("euclidean", values, values2);
         INDArray results = Nd4j.getExecutioner().exec(accum, 1);
@@ -2906,6 +2906,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatHorizontally() {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray rowVector = Nd4j.ones(1, 5);
         INDArray other = Nd4j.ones(1, 5);
         INDArray concat = Nd4j.hstack(other, rowVector);
@@ -5847,7 +5849,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(new long[]{3, 2}, newShape.shape());
     }
 
-    @Test
+    @Test(expected = ND4JIllegalStateException.class)
     public void testTranspose1() {
         val vector = Nd4j.trueVector(new float[]{1, 2, 3, 4, 5, 6});
 
@@ -5859,7 +5861,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(vector.shape(), transposed.shape());
     }
 
-    @Test
+    @Test(expected = ND4JIllegalStateException.class)
     public void testTranspose2() {
         val scalar = Nd4j.trueScalar(2.f);
 
@@ -7123,8 +7125,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testEmptyCasting(){
-        for(DataType from : DataType.values()) {
-            for(DataType to : DataType.values()){
+        for(val from : DataType.values()) {
+            if (from == DataType.UTF8 || from == DataType.UNKNOWN || from == DataType.COMPRESSED)
+                continue;
+
+            for(val to : DataType.values()){
+                if (to == DataType.UTF8 || to == DataType.UNKNOWN || to == DataType.COMPRESSED)
+                    continue;
+
                 INDArray emptyFrom = Nd4j.empty(from);
                 INDArray emptyTo = emptyFrom.castTo(to);
 

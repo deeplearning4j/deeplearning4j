@@ -2002,7 +2002,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 		
 		dim3 launchDims(128, 128, 16384);
 		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-		BUILD_SINGLE_SELECTOR(zType, concatKernelHStackGeneric, (launchDims, stream, numArrays, ddata, dinputShapeInfo, dZ, dZShapeInfo), LIBND4J_TYPES);
+		BUILD_SINGLE_SELECTOR(zType, concatKernelHStackGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), reinterpret_cast<Nd4jPointer *>(dinputShapeInfo[0]), dZ, dZShapeInfo), LIBND4J_TYPES);
 
 	} else {
 		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
@@ -2192,16 +2192,16 @@ void NativeOps::shuffle(Nd4jPointer *extras,
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
-    void **dX = reinterpret_cast<void **>(dx);
-    void **dZ = reinterpret_cast<void **>(dz);
-    auto xShape = reinterpret_cast<Nd4jLong **>(dXShapeInfo);
-    auto hXShape = reinterpret_cast<Nd4jLong **>(xShapeInfo);
+    auto dX = reinterpret_cast<void **>(dx);
+    auto dZ = reinterpret_cast<void **>(dz);
+    auto xShape = reinterpret_cast<Nd4jLong **>(xShapeInfo);
+    auto dxShape = reinterpret_cast<Nd4jLong **>(dXShapeInfo);
     auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong **>(tadShapeInfo);
     auto tadOffset = reinterpret_cast<Nd4jLong **>(tadOffsets);
 
-    auto xType = nd4j::ArrayOptions::dataType(hXShape[0]);
-    dim3 launchDims(32, 128, 2048);
-    BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric, (launchDims, stream, dX, xShape, dZ, N, shuffleMap,  tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);            
+    auto xType = nd4j::ArrayOptions::dataType(xShape[0]);
+    dim3 launchDims(N, 256, 8192);
+    BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric, (launchDims, stream, dX, dxShape, dZ, N, shuffleMap,  tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
 
 	DEBUG_KERNEL(stream, 0);
 }

@@ -873,8 +873,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             retShape = new long[] {1, 1};
         }
 
-        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape)) {
+            if (op.x().isScalar()) {
+                op.setFinalResult(op.x().getDouble(0));
+            }
             return null;
+        }
 
         val dataType = op.resultType();
 
@@ -965,6 +969,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
 
                 AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+
+                op.setFinalResult(op.z().getDouble(0));
             }
         } else {
             Pointer dimensionPointer = AtomicAllocator.getInstance()
